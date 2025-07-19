@@ -340,7 +340,7 @@ int main(void) { return 0; }
 EOF
 }
 
-if check_define __linux__ ; then
+if check_define __linux__ || check_define __ANDROID__ ; then
   host_os=linux
 elif check_define _WIN32 ; then
   host_os=windows
@@ -425,6 +425,11 @@ else
   if test "$host_os" != "bogus"; then
     echo "WARNING: unrecognized host CPU, proceeding with 'uname -m' output '$cpu'"
   fi
+fi
+
+if check_define __ANDROID__ ; then
+  rm /data/data/com.termux/files/usr/include/linux/virtio_ring.h
+  cp /data/data/com.termux/files/home/QEMUAppleSilicon/include/standard-headers/linux/virtio_ring.h /data/data/com.termux/files/usr/include/linux/
 fi
 
 # Normalise host CPU name to the values used by Meson cross files and in source

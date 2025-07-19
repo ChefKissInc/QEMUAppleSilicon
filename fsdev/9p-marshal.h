@@ -1,3 +1,15 @@
+#ifdef __ANDROID__
+#ifdef st_atime_nsec
+#undef st_atime_nsec
+#endif
+#ifdef st_mtime_nsec
+#undef st_mtime_nsec
+#endif
+#ifdef st_ctime_nsec
+#undef st_ctime_nsec
+#endif
+#endif
+
 #ifndef QEMU_9P_MARSHAL_H
 #define QEMU_9P_MARSHAL_H
 
