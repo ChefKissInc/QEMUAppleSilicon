@@ -3193,8 +3193,10 @@ static inline MemTxResult address_space_write_rom_internal(AddressSpace *as,
             }
         }
         len -= l;
-        buf += l;
         addr += l;
+        if (buf) {
+            buf += l;
+        }
     }
     return MEMTX_OK;
 }
