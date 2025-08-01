@@ -2173,6 +2173,7 @@ static int handle_aiocb_copy_range(void *opaque)
     off_t out_off = aiocb->copy_range.aio_offset2;
 
     while (bytes) {
+        #ifndef __ANDROID__
         ssize_t ret = copy_file_range(aiocb->aio_fildes, &in_off,
                                       aiocb->copy_range.aio_fd2, &out_off,
                                       bytes, 0);
@@ -2195,6 +2196,7 @@ static int handle_aiocb_copy_range(void *opaque)
             }
         }
         bytes -= ret;
+        #endif
     }
     return 0;
 }

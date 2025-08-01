@@ -17,6 +17,8 @@
 #define _GNU_SOURCE
 #endif
 
+#include <sys/stat.h>
+
 /* this code avoids GLib dependency */
 #include <stdlib.h>
 #include <stdio.h>
@@ -1876,15 +1878,42 @@ vu_inflight_queue_size(uint16_t queue_size)
 }
 
 #ifdef MFD_ALLOW_SEALING
+
+#ifdef __ANDROID__
+#ifndef __NR_memfd_create
+#define __NR_memfd_create 319
+#endif
+
+static inline int safe_memfd_create(const char *name, unsigned int flags) {
+#ifdef __ANDROID__
+    return syscall(__NR_memfd_create, name, flags);
+#else
+    return memfd_create(name, flags);
+#endif
+}
+#endif
+
 static void *
 memfd_alloc(const char *name, size_t size, unsigned int flags, int *fd)
 {
     void *ptr;
     int ret;
 
+#ifdef __ANDROID__
+    *fd = safe_memfd_create(name, MFD_ALLOW_SEALING);
+#else
     *fd = memfd_create(name, MFD_ALLOW_SEALING);
+#endif
     if (*fd < 0) {
+#ifdef __ANDROID__
+        char path[] = "/data/data/com.termux/files/usr/tmp/memfd-XXXXXX";
+        *fd = mkstemp(path);
+        if (*fd < 0)
+            return NULL;
+        unlink(path);
+#else
         return NULL;
+#endif
     }
 
     ret = ftruncate(*fd, size);

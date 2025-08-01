@@ -60,6 +60,19 @@
 
 #include "qemu/mmap-alloc.h"
 
+#ifdef __ANDROID__
+#ifndef HAVE_CLOSE_RANGE
+static int close_range(unsigned int first, unsigned int last, unsigned int flags) {
+    int ret = 0;
+    for (unsigned int fd = first; fd <= last; fd++) {
+        if (close(fd) < 0)
+            ret = -1;
+    }
+    return ret;
+}
+#endif
+#endif
+
 #define MAX_MEM_PREALLOC_THREAD_COUNT 16
 
 struct MemsetThread;
@@ -975,7 +988,11 @@ int qemu_shm_alloc(size_t size, Error **errp)
     g_string_printf(shm_name, "/qemu-" FMT_pid "-shm-%d", getpid(),
                     cur_sequence);
 
+    #ifdef __ANDROID__
+    fd = open(shm_name->str, oflag, mode);
+    #else
     fd = shm_open(shm_name->str, oflag, mode);
+    #endif
     if (fd < 0) {
         error_setg_errno(errp, errno,
                          "failed to create POSIX shared memory");
@@ -987,7 +1004,11 @@ int qemu_shm_alloc(size_t size, Error **errp)
      * POSIX shared memory object. However it will remain allocated as long as
      * there are file descriptors pointing to it.
      */
+    #ifdef __ANDROID__
+    unlink(shm_name->str);
+    #else
     shm_unlink(shm_name->str);
+    #endif
 
     if (ftruncate(fd, size) == -1) {
         error_setg_errno(errp, errno,
