@@ -435,7 +435,9 @@ static void cleanup(void)
     }
 
     if (tmpshm) {
+        #ifndef __ANDROID__
         shm_unlink(tmpshm);
+        #endif
         g_free(tmpshm);
         tmpshm = NULL;
     }
@@ -463,8 +465,14 @@ static gchar *mktempshm(int size, int *fd)
         gchar *name;
 
         name = g_strdup_printf("/qtest-%u-%u", getpid(), g_test_rand_int());
+        #ifndef __ANDROID__
         *fd = shm_open(name, O_CREAT|O_RDWR|O_EXCL,
                        S_IRWXU|S_IRWXG|S_IRWXO);
+        #else
+            gchar *filename = g_strdup_printf("/data/data/com.termux/files/usr/tmp/%s", name);
+            *fd = open(filename, O_CREAT | O_RDWR | O_EXCL, 0600);
+            g_free(filename);
+        #endif
         if (*fd > 0) {
             g_assert(ftruncate(*fd, size) == 0);
             return name;
