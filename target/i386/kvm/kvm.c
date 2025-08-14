@@ -5506,7 +5506,7 @@ void kvm_arch_pre_run(CPUState *cpu, struct kvm_run *run)
 
             bql_lock();
 
-            cpu_reset_interrupt(cpu, CPU_INTERRUPT_HARD);
+            cpu->interrupt_request &= ~CPU_INTERRUPT_HARD;
             irq = cpu_get_pic_interrupt(env);
             if (irq >= 0) {
                 struct kvm_interrupt intr;
