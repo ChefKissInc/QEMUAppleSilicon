@@ -141,11 +141,11 @@ static bool arm_cpu_has_work(CPUState *cs)
     ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
 
     return (cpu->power_state != PSCI_OFF)
-        && cs->interrupt_request &
-        (CPU_INTERRUPT_FIQ | CPU_INTERRUPT_HARD
-         | CPU_INTERRUPT_NMI | CPU_INTERRUPT_VINMI | CPU_INTERRUPT_VFNMI
-         | CPU_INTERRUPT_VFIQ | CPU_INTERRUPT_VIRQ | CPU_INTERRUPT_VSERR
-         | CPU_INTERRUPT_EXITTB);
+        && cpu_test_interrupt(cs,
+               CPU_INTERRUPT_FIQ | CPU_INTERRUPT_HARD
+               | CPU_INTERRUPT_NMI | CPU_INTERRUPT_VINMI | CPU_INTERRUPT_VFNMI
+               | CPU_INTERRUPT_VFIQ | CPU_INTERRUPT_VIRQ | CPU_INTERRUPT_VSERR
+               | CPU_INTERRUPT_EXITTB);
 }
 #endif /* !CONFIG_USER_ONLY */
 
