@@ -46,13 +46,6 @@ __thread uintptr_t helper_retaddr;
 
 //#define DEBUG_SIGNAL
 
-void cpu_interrupt(CPUState *cpu, int mask)
-{
-    g_assert(bql_locked());
-    cpu->interrupt_request |= mask;
-    qatomic_set(&cpu->neg.icount_decr.u16.high, -1);
-}
-
 /*
  * Adjust the pc to pass to cpu_restore_state; return the memop type.
  */
