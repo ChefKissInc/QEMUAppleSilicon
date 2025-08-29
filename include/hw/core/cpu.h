@@ -432,6 +432,7 @@ struct qemu_work_item;
  *   flags.  In this case, the write and read happen in the same thread
  *   and the write therefore can use qemu_atomic_set().
  * @interrupt_request: Indicates a pending interrupt request.
+ *   Only used by system emulation.
  * @halted: Nonzero if the CPU is in suspended state.
  * @stop: Indicates a pending stop request.
  * @stopped: Indicates the CPU has been artificially stopped.

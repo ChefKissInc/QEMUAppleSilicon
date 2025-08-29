@@ -49,13 +49,7 @@ __thread uintptr_t helper_retaddr;
 
 void qemu_cpu_kick(CPUState *cpu)
 {
-    tcg_kick_vcpu_thread(cpu);
-}
-
-void qemu_process_cpu_events(CPUState *cpu)
-{
-    qatomic_set(&cpu->exit_request, false);
-    process_queued_cpu_work(cpu);
+    g_assert_not_reached();
 }
 
 /*
