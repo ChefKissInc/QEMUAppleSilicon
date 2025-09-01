@@ -51,6 +51,7 @@
 #include "qemu/host-utils.h"
 #include "system/reset.h"
 #include "system/runstate.h"
+#include "system/system.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "system/kvm.h"
