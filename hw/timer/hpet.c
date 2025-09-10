@@ -38,6 +38,9 @@
 #include "hw/timer/i8254.h"
 #include "system/address-spaces.h"
 #include "qom/object.h"
+#include "qemu/lockable.h"
+#include "qemu/seqlock.h"
+#include "qemu/main-loop.h"
 #include "trace.h"
 
 struct hpet_fw_config hpet_fw_cfg = {.count = UINT8_MAX};
@@ -218,12 +221,15 @@ static void update_irq(struct HPETTimer *timer, int set)
                                  timer->fsb & 0xffffffff, MEMTXATTRS_UNSPECIFIED,
                                  NULL);
         } else if (timer->config & HPET_TN_TYPE_LEVEL) {
+            BQL_LOCK_GUARD();
             qemu_irq_raise(s->irqs[route]);
         } else {
+            BQL_LOCK_GUARD();
             qemu_irq_pulse(s->irqs[route]);
         }
     } else {
         if (!timer_fsb_route(timer)) {
+            BQL_LOCK_GUARD();
             qemu_irq_lower(s->irqs[route]);
         }
     }
@@ -515,10 +521,12 @@ static void hpet_ram_write(void *opaque, hwaddr addr,
             /* i8254 and RTC output pins are disabled
              * when HPET is in legacy mode */
             if (activating_bit(old_val, new_val, HPET_CFG_LEGACY)) {
+                BQL_LOCK_GUARD();
                 qemu_set_irq(s->pit_enabled, 0);
                 qemu_irq_lower(s->irqs[0]);
                 qemu_irq_lower(s->irqs[RTC_ISA_IRQ]);
             } else if (deactivating_bit(old_val, new_val, HPET_CFG_LEGACY)) {
+                BQL_LOCK_GUARD();
                 qemu_irq_lower(s->irqs[0]);
                 qemu_set_irq(s->pit_enabled, 1);
                 qemu_set_irq(s->irqs[RTC_ISA_IRQ], s->rtc_irq_level);
@@ -664,11 +672,13 @@ static void hpet_handle_legacy_irq(void *opaque, int n, int level)
 
     if (n == HPET_LEGACY_PIT_INT) {
         if (!hpet_in_legacy_mode(s)) {
+            BQL_LOCK_GUARD();
             qemu_set_irq(s->irqs[0], level);
         }
     } else {
         s->rtc_irq_level = level;
         if (!hpet_in_legacy_mode(s)) {
+            BQL_LOCK_GUARD();
             qemu_set_irq(s->irqs[RTC_ISA_IRQ], level);
         }
     }
