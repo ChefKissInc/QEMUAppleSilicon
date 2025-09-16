@@ -223,8 +223,7 @@ static int qio_channel_file_set_blocking(QIOChannel *ioc,
 #else
     QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
 
-    if (!g_unix_set_fd_nonblocking(fioc->fd, !enabled, NULL)) {
-        error_setg_errno(errp, errno, "Failed to set FD nonblocking");
+    if (!qemu_set_blocking(fioc->fd, enabled, errp)) {
         return -1;
     }
     return 0;
