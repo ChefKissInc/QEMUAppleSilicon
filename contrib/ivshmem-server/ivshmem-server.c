@@ -5,6 +5,13 @@
  * (at your option) any later version.  See the COPYING file in the
  * top-level directory.
  */
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#ifdef __ANDROID__
+#define SHM_SIZE 4096
+#endif
+
 #include "qemu/osdep.h"
 #include "qemu/host-utils.h"
 #include "qemu/sockets.h"
@@ -275,7 +282,11 @@ ivshmem_server_init(IvshmemServer *server, const char *unix_sock_path,
         return -1;
     }
 
+    #ifndef __ANDROID__
     server->use_shm_open = use_shm_open;
+    #else
+    server->use_shm_open = false;
+    #endif
     server->shm_size = shm_size;
     server->n_vectors = n_vectors;
 
@@ -291,6 +302,31 @@ ivshmem_server_start(IvshmemServer *server)
     struct sockaddr_un s_un;
     int shm_fd, sock_fd, ret;
 
+    #ifdef __ANDROID__
+    gchar *filename = g_strdup_printf("%s/ivshmem.XXXXXX", server->shm_path);
+    IVSHMEM_SERVER_DEBUG(server, "Using file-backed shared memory: %s\n", server->shm_path);
+    shm_fd = mkstemp(filename);
+    if (shm_fd == -1) {
+        perror("Failed to create temporary shm file");
+        g_free(filename);
+        return -1;
+    }
+    unlink(filename);
+    g_free(filename);
+
+    if (ftruncate(shm_fd, SHM_SIZE) == -1) {
+        perror("Failed to set size of shared memory");
+        close(shm_fd);
+        return -1;
+    }
+
+    void *shm_ptr = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (shm_ptr == MAP_FAILED) {
+        perror("Failed to map shared memory");
+        close(shm_fd);
+        return -1;
+    }
+    #else
     /* open shm file */
     if (server->use_shm_open) {
         IVSHMEM_SERVER_DEBUG(server, "Using POSIX shared memory: %s\n",
@@ -298,12 +334,12 @@ ivshmem_server_start(IvshmemServer *server)
         shm_fd = shm_open(server->shm_path, O_CREAT | O_RDWR, S_IRWXU);
     } else {
         gchar *filename = g_strdup_printf("%s/ivshmem.XXXXXX", server->shm_path);
-        IVSHMEM_SERVER_DEBUG(server, "Using file-backed shared memory: %s\n",
-                             server->shm_path);
+        IVSHMEM_SERVER_DEBUG(server, "Using file-backed shared memory: %s\n", server->shm_path);
         shm_fd = mkstemp(filename);
         unlink(filename);
         g_free(filename);
     }
+    #endif
 
     if (shm_fd < 0) {
         fprintf(stderr, "cannot open shm file %s: %s\n", server->shm_path,
@@ -354,7 +390,9 @@ err_close_sock:
     close(sock_fd);
 err_close_shm:
     if (server->use_shm_open) {
+        #ifndef __ANDROID__
         shm_unlink(server->shm_path);
+        #endif
     }
     close(shm_fd);
     return -1;
@@ -374,7 +412,9 @@ ivshmem_server_close(IvshmemServer *server)
 
     unlink(server->unix_sock_path);
     if (server->use_shm_open) {
+        #ifndef __ANDROID__
         shm_unlink(server->shm_path);
+        #endif
     }
     close(server->sock_fd);
     close(server->shm_fd);
