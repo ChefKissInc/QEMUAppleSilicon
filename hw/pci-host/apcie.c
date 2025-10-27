@@ -2172,8 +2172,6 @@ static void apple_pcie_host_class_init(ObjectClass *klass, const void *data)
     PCIHostBridgeClass *hc = PCI_HOST_BRIDGE_CLASS(klass);
     DeviceClass *dc = DEVICE_CLASS(klass);
 
-    set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
-
     hc->root_bus_path = apple_pcie_host_root_bus_path;
     dc->realize = apple_pcie_host_realize;
     device_class_set_legacy_reset(dc, apple_pcie_host_reset);
