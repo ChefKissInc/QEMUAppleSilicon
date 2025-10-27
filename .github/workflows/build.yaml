@@ -37,7 +37,7 @@ jobs:
           cd build
           make DESTDIR=$GITHUB_WORKSPACE/bin/ install
       - name: Publish binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux
           path: ${{ github.workspace }}/bin/
@@ -61,7 +61,7 @@ jobs:
           cd build
           make DESTDIR=$GITHUB_WORKSPACE/bin/ install
       - name: Publish binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos_aarch64
           path: ${{ github.workspace }}/bin/
@@ -85,7 +85,7 @@ jobs:
           cd build
           make DESTDIR=$GITHUB_WORKSPACE/bin/ install
       - name: Publish binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos_x86_64
           path: ${{ github.workspace }}/bin/
