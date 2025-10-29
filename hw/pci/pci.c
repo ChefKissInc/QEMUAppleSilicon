@@ -3079,6 +3079,10 @@ ssize_t pci_ats_request_translation(PCIDevice *dev, uint32_t pasid,
         return -EPERM;
     }
 
+    if (priv_req && !pcie_pasid_priv_enabled(dev)) {
+        return -EPERM;
+    }
+
     pci_device_get_iommu_bus_devfn(dev, &bus, &iommu_bus, &devfn);
     if (iommu_bus && iommu_bus->iommu_ops->ats_request_translation) {
         return iommu_bus->iommu_ops->ats_request_translation(bus,
