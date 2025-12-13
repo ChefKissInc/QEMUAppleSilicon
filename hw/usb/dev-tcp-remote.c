@@ -95,7 +95,7 @@ static void usb_tcp_remote_clean_completed_queue(USBTCPRemoteState *s)
 
 static void usb_tcp_remote_cleanup(void *opaque)
 {
-    USBTCPRemoteState *s = USB_TCP_REMOTE(opaque);
+    USBTCPRemoteState *s = opaque;
 
     if (s->fd == -1) {
         return;
@@ -119,7 +119,7 @@ static void usb_tcp_remote_cleanup(void *opaque)
 
 static void usb_tcp_remote_update_addr_bh(void *opaque)
 {
-    USBTCPRemoteState *s = USB_TCP_REMOTE(opaque);
+    USBTCPRemoteState *s = opaque;
     USBDevice *dev = USB_DEVICE(s);
     dev->addr = s->addr;
     trace_usb_set_addr(dev->addr);
@@ -127,7 +127,7 @@ static void usb_tcp_remote_update_addr_bh(void *opaque)
 
 static void usb_tcp_remote_completed_bh(void *opaque)
 {
-    USBTCPRemoteState *s = USB_TCP_REMOTE(opaque);
+    USBTCPRemoteState *s = opaque;
     USBDevice *dev = USB_DEVICE(s);
 
     USBTCPCompletedPacket *p;
@@ -341,7 +341,7 @@ static bool usb_tcp_remote_read_one(USBTCPRemoteState *s)
 
 static void *usb_tcp_remote_read_thread(void *opaque)
 {
-    USBTCPRemoteState *s = USB_TCP_REMOTE(opaque);
+    USBTCPRemoteState *s = opaque;
 
     bql_lock();
     while (usb_tcp_remote_read_one(s) && !s->closed) {
@@ -354,7 +354,7 @@ static void *usb_tcp_remote_read_thread(void *opaque)
 
 static void *usb_tcp_remote_thread(void *arg)
 {
-    USBTCPRemoteState *s = USB_TCP_REMOTE(arg);
+    USBTCPRemoteState *s = arg;
 
     while (!s->stopped) {
         // thanks to Visual for noticing that
