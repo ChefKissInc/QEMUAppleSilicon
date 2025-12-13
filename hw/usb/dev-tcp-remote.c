@@ -402,11 +402,8 @@ static void usb_tcp_remote_bind_unix(USBTCPRemoteState *s, Error **errp)
 #else
 static void usb_tcp_remote_bind_unix(USBTCPRemoteState *s, Error **errp)
 {
-    struct sockaddr_un addr;
-    struct stat addr_stat;
-
-    memset(&addr, 0, sizeof(addr));
-    memset(&addr_stat, 0, sizeof(addr_stat));
+    struct sockaddr_un addr = { 0 };
+    struct stat addr_stat = { 0 };
 
     if (s->conn_addr == NULL) {
         s->conn_addr = g_strdup(USB_TCP_REMOTE_UNIX_DEFAULT);
@@ -453,10 +450,8 @@ static void usb_tcp_remote_bind_unix(USBTCPRemoteState *s, Error **errp)
 
 static void usb_tcp_remote_bind_ipv4(USBTCPRemoteState *s, Error **errp)
 {
-    struct sockaddr_in addr;
+    struct sockaddr_in addr = { 0 };
     int ret;
-
-    memset(&addr, 0, sizeof(addr));
 
     if (s->conn_port == 0) {
         error_setg(errp, "Port must be specified.");
@@ -495,10 +490,8 @@ static void usb_tcp_remote_bind_ipv4(USBTCPRemoteState *s, Error **errp)
 
 static void usb_tcp_remote_bind_ipv6(USBTCPRemoteState *s, Error **errp)
 {
-    struct sockaddr_in6 addr;
+    struct sockaddr_in6 addr = { 0 };
     int ret;
-
-    memset(&addr, 0, sizeof(addr));
 
     if (s->conn_port == 0) {
         error_setg(errp, "Port must be specified.");
