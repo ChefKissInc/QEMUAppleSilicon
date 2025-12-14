@@ -133,8 +133,8 @@ static USBPort *usb_tcp_host_find_active_port(USBTCPHostState *s)
 
 static void coroutine_fn usb_tcp_host_respond_packet_co(void *opaque)
 {
-    USBTCPPacket *pkt = (USBTCPPacket *)opaque;
-    USBTCPHostState *s = USB_TCP_HOST(pkt->s);
+    USBTCPPacket *pkt = opaque;
+    USBTCPHostState *s = pkt->s;
     USBPacket *p = &pkt->p;
     tcp_usb_header_t hdr = { 0 };
     tcp_usb_response_header resp = { 0 };
@@ -203,7 +203,7 @@ static void coroutine_fn usb_tcp_host_msg_loop_co(void *opaque)
     QIOChannel *ioc;
     tcp_usb_header_t hdr;
 
-    s = USB_TCP_HOST(opaque);
+    s = opaque;
     port = usb_tcp_host_find_active_port(s);
     ioc = s->ioc;
 
@@ -327,10 +327,8 @@ static int usb_tcp_host_connect_unix(USBTCPHostState *s, Error **errp)
 #else
 static int usb_tcp_host_connect_unix(USBTCPHostState *s, Error **errp)
 {
-    struct sockaddr_un addr;
+    struct sockaddr_un addr = { 0 };
     int sock;
-
-    memset(&addr, 0, sizeof(addr));
 
     if (s->conn_addr == NULL) {
         s->conn_addr = g_strdup(USB_TCP_REMOTE_UNIX_DEFAULT);
@@ -363,11 +361,9 @@ static int usb_tcp_host_connect_unix(USBTCPHostState *s, Error **errp)
 
 static int usb_tcp_host_connect_ipv4(USBTCPHostState *s, Error **errp)
 {
-    struct sockaddr_in addr;
+    struct sockaddr_in addr = { 0 };
     int ret;
     int sock;
-
-    memset(&addr, 0, sizeof(addr));
 
     if (s->conn_port == 0) {
         error_setg(errp, "Port must be specified.");
@@ -411,11 +407,9 @@ static int usb_tcp_host_connect_ipv4(USBTCPHostState *s, Error **errp)
 
 static int usb_tcp_host_connect_ipv6(USBTCPHostState *s, Error **errp)
 {
-    struct sockaddr_in6 addr;
+    struct sockaddr_in6 addr = { 0 };
     int ret;
     int sock;
-
-    memset(&addr, 0, sizeof(addr));
 
     if (s->conn_port == 0) {
         error_setg(errp, "Port must be specified.");
@@ -465,7 +459,7 @@ static void usb_tcp_host_attach(USBPort *port)
     QIOChannel *ioc;
     Error *err;
 
-    s = USB_TCP_HOST(port->opaque);
+    s = port->opaque;
     err = NULL;
 
     if (port->index >= G_N_ELEMENTS(s->ports) - 1) {
@@ -524,7 +518,7 @@ static void usb_tcp_host_detach(USBPort *port)
 {
     USBTCPHostState *s;
 
-    s = USB_TCP_HOST(port->opaque);
+    s = port->opaque;
 
     usb_tcp_host_closed(s);
 }
@@ -533,7 +527,7 @@ static void usb_tcp_host_async_packet_complete(USBPort *port, USBPacket *p)
 {
     USBTCPHostState *s;
 
-    s = USB_TCP_HOST(port->opaque);
+    s = port->opaque;
 
     usb_tcp_host_respond_packet(s, container_of(p, USBTCPPacket, p));
 }
