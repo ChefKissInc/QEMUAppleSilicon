@@ -63,10 +63,10 @@
 #include "qemu/guest-random.h"
 #include "qemu/log.h"
 #include "qemu/units.h"
-#include "arm-powerctl.h"
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "system/system.h"
+#include "arm-powerctl.h"
 
 #define PROP_VISIT_GETTER_SETTER(_type, _name)                               \
     static void t8030_get_##_name(Object *obj, Visitor *v, const char *name, \
