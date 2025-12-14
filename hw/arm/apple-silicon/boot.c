@@ -849,24 +849,14 @@ void apple_boot_setup_bootargs(uint32_t build_version, AddressSpace *as,
                                hwaddr dtb_size, AppleVideoArgs *video_args,
                                const char *cmdline, hwaddr mem_size_actual)
 {
-    switch (BUILD_VERSION_MAJOR(build_version)) {
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-    case 17:
-        apple_boot_setup_bootargs_rev2(as, mem, addr, virt_base, phys_base,
-                                       mem_size, kernel_top, dtb_va, dtb_size,
-                                       video_args, cmdline, mem_size_actual);
-        break;
-    case 18:
-    case 26:
+    if (BUILD_VERSION_MAJOR(build_version) >= 18) {
         apple_boot_setup_bootargs_rev3(as, mem, addr, virt_base, phys_base,
                                        mem_size, kernel_top, dtb_va, dtb_size,
                                        video_args, cmdline, mem_size_actual);
-        break;
-    default:
-        g_assert_not_reached();
+    } else {
+        apple_boot_setup_bootargs_rev2(as, mem, addr, virt_base, phys_base,
+                                       mem_size, kernel_top, dtb_va, dtb_size,
+                                       video_args, cmdline, mem_size_actual);
     }
 }
 
