@@ -802,9 +802,7 @@ static void apple_boot_setup_bootargs_rev2(
     memcpy(&args.video_args, video_args, sizeof(args.video_args));
     args.device_tree_ptr = dtb_va;
     args.device_tree_length = dtb_size;
-    if (cmdline == NULL) {
-        memset(args.cmdline, 0, sizeof(args.cmdline));
-    } else {
+    if (cmdline != NULL) {
         g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline));
     }
     args.boot_flags = BOOT_FLAGS_DARK_BOOT;
@@ -834,9 +832,7 @@ static void apple_boot_setup_bootargs_rev3(
     memcpy(&args.video_args, video_args, sizeof(args.video_args));
     args.device_tree_ptr = dtb_va;
     args.device_tree_length = dtb_size;
-    if (cmdline == NULL) {
-        memset(args.cmdline, 0, sizeof(args.cmdline));
-    } else {
+    if (cmdline != NULL) {
         g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline));
     }
     args.boot_flags = BOOT_FLAGS_DARK_BOOT;
