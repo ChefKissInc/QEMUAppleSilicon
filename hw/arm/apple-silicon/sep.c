@@ -2468,8 +2468,6 @@ static void aess_handle_cmd(AppleAESSState *s)
             if (s->custom_key_index_enabled[custom_keywrap_index]) {
                 memcpy(used_key, s->custom_key_index[custom_keywrap_index],
                        sizeof(used_key));
-            } else {
-                memset(used_key, 0, sizeof(used_key));
             }
             // Custom takes precedence over GID0 or GID1
         } else if (keyselect_custom) {
