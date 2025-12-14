@@ -799,7 +799,7 @@ static void apple_boot_setup_bootargs_rev2(
     args.phys_base = phys_base;
     args.mem_size = mem_size;
     args.kernel_top = kernel_top;
-    memcpy(&args.video_args, video_args, sizeof(args.video_args));
+    args.video_args = *video_args;
     args.device_tree_ptr = dtb_va;
     args.device_tree_length = dtb_size;
     if (cmdline != NULL) {
@@ -829,7 +829,7 @@ static void apple_boot_setup_bootargs_rev3(
     args.phys_base = phys_base;
     args.mem_size = mem_size;
     args.kernel_top = kernel_top;
-    memcpy(&args.video_args, video_args, sizeof(args.video_args));
+    args.video_args = *video_args;
     args.device_tree_ptr = dtb_va;
     args.device_tree_length = dtb_size;
     if (cmdline != NULL) {
