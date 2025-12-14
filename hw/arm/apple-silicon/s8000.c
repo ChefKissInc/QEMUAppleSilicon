@@ -1460,8 +1460,8 @@ static void s8000_init(MachineState *machine)
     }
 
     if (s8000->securerom_filename == NULL) {
-        s8000->kernel = apple_boot_load_macho_file(machine->kernel_filename,
-                                                   &s8000->secure_monitor);
+        s8000->kernel = apple_boot_load_kernel(machine->kernel_filename,
+                                               &s8000->secure_monitor);
         g_assert_nonnull(s8000->kernel);
         g_assert_nonnull(s8000->secure_monitor);
         build_version = apple_boot_build_version(s8000->kernel);

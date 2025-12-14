@@ -2535,7 +2535,7 @@ static void t8030_init(MachineState *machine)
         return;
     }
 
-    t8030->kernel = apple_boot_load_macho_file(machine->kernel_filename, NULL);
+    t8030->kernel = apple_boot_load_kernel(machine->kernel_filename, NULL);
     g_assert_nonnull(t8030->kernel);
     build_version = apple_boot_build_version(t8030->kernel);
     info_report("%s %u.%u.%u", apple_boot_platform_string(t8030->kernel),

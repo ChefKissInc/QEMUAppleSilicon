@@ -939,8 +939,8 @@ void apple_boot_get_kc_bounds(MachoHeader64 *header, uint64_t *text_base,
     }
 }
 
-MachoHeader64 *apple_boot_load_macho_file(const char *filename,
-                                          MachoHeader64 **secure_monitor)
+MachoHeader64 *apple_boot_load_kernel(const char *filename,
+                                      MachoHeader64 **secure_monitor)
 {
     uint32_t len;
     uint8_t *data = NULL;

@@ -342,8 +342,8 @@ typedef struct {
     uint8_t boot_nonce_hash[XNU_BNCH_SIZE];
 } AppleBootInfo;
 
-MachoHeader64 *apple_boot_load_macho_file(const char *filename,
-                                          MachoHeader64 **secure_monitor);
+MachoHeader64 *apple_boot_load_kernel(const char *filename,
+                                      MachoHeader64 **secure_monitor);
 
 MachoHeader64 *apple_boot_parse_macho(uint8_t *data, uint32_t len);
 
