@@ -22,7 +22,7 @@
 
 #include "qemu/osdep.h"
 #include "hw/usb.h"
-#include "tcp-usb.h"
+#include "hw/usb/tcp-usb.h"
 
 typedef struct USBTCPInflightPacket {
     USBPacket *p;
@@ -43,7 +43,7 @@ struct USBTCPRemoteState {
     QemuThread thread;
     QemuThread read_thread;
     QemuCond cond;
-    QemuMutex mutex;
+    QemuMutex thr_mutex;
     QemuMutex request_mutex;
 
     QemuMutex queue_mutex;

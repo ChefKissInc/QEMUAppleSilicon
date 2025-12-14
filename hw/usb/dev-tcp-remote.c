@@ -20,6 +20,8 @@
 #include "qemu/osdep.h"
 #include "hw/qdev-properties.h"
 #include "hw/usb.h"
+#include "hw/usb/dev-tcp-remote.h"
+#include "hw/usb/tcp-usb.h"
 #include "migration/blocker.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
@@ -28,8 +30,6 @@
 #include "qemu/module.h"
 #include "qemu/sockets.h"
 #include "qom/object.h"
-#include "dev-tcp-remote.h"
-#include "tcp-usb.h"
 #include "trace.h"
 
 #if 0
@@ -358,7 +358,7 @@ static void *usb_tcp_remote_thread(void *arg)
 
     while (!s->stopped) {
         // thanks to Visual for noticing that
-        qemu_mutex_lock(&s->mutex);
+        qemu_mutex_lock(&s->thr_mutex);
 
         if (s->closed) {
             DPRINTF("%s: waiting on accept...\n", __func__);
@@ -388,10 +388,10 @@ static void *usb_tcp_remote_thread(void *arg)
         }
 
         while (!s->closed) {
-            qemu_cond_wait(&s->cond, &s->mutex);
+            qemu_cond_wait(&s->cond, &s->thr_mutex);
         }
 
-        qemu_mutex_unlock(&s->mutex);
+        qemu_mutex_unlock(&s->thr_mutex);
     }
 
     return NULL;
@@ -541,7 +541,7 @@ static void usb_tcp_remote_realize(USBDevice *dev, Error **errp)
     dev->auto_attach = 0;
 
     qemu_cond_init(&s->cond);
-    qemu_mutex_init(&s->mutex);
+    qemu_mutex_init(&s->thr_mutex);
     qemu_mutex_init(&s->request_mutex);
 
     qemu_mutex_init(&s->queue_mutex);
