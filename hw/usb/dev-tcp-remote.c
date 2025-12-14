@@ -359,15 +359,18 @@ static void *usb_tcp_remote_thread(void *arg)
     while (!s->stopped) {
         // thanks to Visual for noticing that
         qemu_mutex_lock(&s->mutex);
-        after_lock:
+
         if (s->closed) {
             DPRINTF("%s: waiting on accept...\n", __func__);
 
-            s->fd = accept(s->socket, NULL, NULL);
-            if (s->fd < 0) {
-                DPRINTF("%s: accept error %d.\n", __func__, errno);
-                goto after_lock;
+            while ((s->fd = accept(s->socket, NULL, NULL)) < 0 && !s->stopped) {
+                DPRINTF("%s: accept failed: %s.\n", __func__, strerror(errno));
             }
+
+            if (s->fd < 0) {
+                continue;
+            }
+
             migrate_add_blocker(&s->migration_blocker, NULL);
 
             s->closed = false;
@@ -651,8 +654,8 @@ static void usb_tcp_remote_cancel_packet(USBDevice *dev, USBPacket *p)
     pkt.ep = p->ep->nr;
     pkt.id = p->id;
 
-    DPRINTF("%s: pid: 0x%x ep %d id 0x%" PRIx64 "\n", __func__, pkt.pid,
-            pkt.ep, pkt.id);
+    DPRINTF("%s: pid: 0x%x ep %d id 0x%" PRIx64 "\n", __func__, pkt.pid, pkt.ep,
+            pkt.id);
 
     inflightPacket.p = p;
     inflightPacket.addr = dev->addr;
