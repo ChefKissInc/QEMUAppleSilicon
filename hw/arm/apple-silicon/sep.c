@@ -39,16 +39,16 @@
 #include "qemu/guest-random.h"
 #include "qemu/log.h"
 #include "qemu/units.h"
+#include "system/address-spaces.h"
+#include "system/block-backend-global-state.h"
+#include "system/block-backend-io.h"
+#include "system/tcg.h"
 #include "nettle/ccm.h"
 #include "nettle/cmac.h"
 #include "nettle/ecc-curve.h"
 #include "nettle/ecdsa.h"
 #include "nettle/hkdf.h"
 #include "nettle/hmac.h"
-#include "system/address-spaces.h"
-#include "system/block-backend-global-state.h"
-#include "system/block-backend-io.h"
-#include "system/tcg.h"
 #include "trace.h"
 #include <nettle/macros.h>
 #include <nettle/memxor.h>
@@ -229,27 +229,43 @@ static uint32_t AESS_UID_SEED_INVALID[0x20 / 4] = { 0x1FF11FF1, 0x1FF11FF1,
 
 #define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT 16
 #define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK 0x7f
-#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_GET(n) ((n >> SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT) & SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK)
-#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SET(n) ((n & SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK) << SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT)
+#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_GET(n)      \
+    ((n >> SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT) & \
+     SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK)
+#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SET(n)  \
+    ((n & SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK) \
+     << SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT)
 
 #define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT 24
 #define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK 0x7f
-#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_GET(n) ((n >> SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT) & SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK)
-#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SET(n) ((n & SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK) << SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT)
+#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_GET(n)      \
+    ((n >> SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT) & \
+     SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK)
+#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SET(n)  \
+    ((n & SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK) \
+     << SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT)
 
 // for KEY_BASE register 0x4: load key
 // interface value is a bitmask
 #define SEP_KEY_BASE_LOAD_KEY_OFFSET 0x4
 #define SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT 8
 #define SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK 0xff
-#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_GET(n) ((n >> SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT) & SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK)
-#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_SET(n) ((n & SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK) << SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT)
+#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_GET(n)      \
+    ((n >> SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT) & \
+     SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK)
+#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_SET(n)  \
+    ((n & SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK) \
+     << SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT)
 
 // unkn0 0x0==Lc128/DpkTx, 0x1/0x3==Km/Ks, 0x2==Km
 #define SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT 4
 #define SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK 0x3
-#define SEP_KEY_BASE_LOAD_KEY_UNKN0_GET(n) ((n >> SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT) & SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK)
-#define SEP_KEY_BASE_LOAD_KEY_UNKN0_SET(n) ((n & SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK) << SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT)
+#define SEP_KEY_BASE_LOAD_KEY_UNKN0_GET(n)      \
+    ((n >> SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT) & \
+     SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK)
+#define SEP_KEY_BASE_LOAD_KEY_UNKN0_SET(n)  \
+    ((n & SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK) \
+     << SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT)
 
 #define SEP_KEY_BASE_LOAD_KEY_ACTIVE BIT(0)
 
@@ -262,8 +278,12 @@ static uint32_t AESS_UID_SEED_INVALID[0x20 / 4] = { 0x1FF11FF1, 0x1FF11FF1,
 #define SEP_KEY_BASE_SEND_KEY_AES2_OFFSET 0x14
 #define SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT 8
 #define SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK 0x7
-#define SEP_KEY_BASE_SEND_KEY_INTERFACE_GET(n) ((n >> SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT) & SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK)
-#define SEP_KEY_BASE_SEND_KEY_INTERFACE_SET(n) ((n & SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK) << SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT)
+#define SEP_KEY_BASE_SEND_KEY_INTERFACE_GET(n)      \
+    ((n >> SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT) & \
+     SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK)
+#define SEP_KEY_BASE_SEND_KEY_INTERFACE_SET(n)  \
+    ((n & SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK) \
+     << SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT)
 #define SEP_KEY_BASE_SEND_KEY_ACTIVE BIT(0)
 
 // handler key selectors: Lc128==0x0; DpkTx==0x1; Km==0x2; Ks==0x3
@@ -1811,11 +1831,13 @@ static uint64_t key_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 #endif
     switch (addr) {
     case SEP_KEY_BASE_LOAD_KEY_OFFSET:
-        DPRINTF("SEP KEY_BASE: LOAD_KEY read-back. read at 0x" HWADDR_FMT_plx "\n", addr);
+        DPRINTF("SEP KEY_BASE: LOAD_KEY read-back. read at 0x" HWADDR_FMT_plx
+                "\n", addr);
         goto jump_default;
     case 0x40 ... 0x248:
         // actual size 0x20a
-        DPRINTF("SEP KEY_BASE: data0 read. read at 0x" HWADDR_FMT_plx "\n", addr);
+        DPRINTF("SEP KEY_BASE: data0 read. read at 0x" HWADDR_FMT_plx "\n",
+                addr);
         goto jump_default;
     default:
     jump_default:
@@ -2611,7 +2633,10 @@ jump_return:
             // always keep this flag
             s->interrupt_status |=
                 SEP_AESS_REGISTER_INTERRUPT_STATUS_UNRECOVERABLE_ERROR_INTERRUPT;
-            qemu_log_mask(LOG_GUEST_ERROR, "%s: unrecoverable_error just got raised, SEP will panic soon.: cmd 0x%03x\n", __func__, cmd);
+            qemu_log_mask(LOG_GUEST_ERROR,
+                          "%s: unrecoverable_error just got raised, SEP will "
+                          "panic soon.: cmd 0x%03x\n",
+                          __func__, cmd);
         }
         s->status &= ~SEP_AESS_REGISTER_STATUS_ACTIVE;
         // call raise_interrupt always instead of only on keywrap, because it's
