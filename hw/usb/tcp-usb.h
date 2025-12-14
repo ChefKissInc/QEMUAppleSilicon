@@ -40,7 +40,7 @@ extern const PropertyInfo qdev_usb_tcp_remote_conn_type;
                          qdev_usb_tcp_remote_conn_type, USBTCPRemoteConnType)
 
 enum {
-    TCP_USB_REQUEST,
+    TCP_USB_REQUEST = 1,
     TCP_USB_RESPONSE,
     TCP_USB_RESET,
     TCP_USB_CANCEL
@@ -54,8 +54,8 @@ typedef struct QEMU_PACKED tcp_usb_request_header {
     uint8_t addr;
     int pid;
     uint8_t ep;
-    unsigned int stream;
     uint64_t id;
+    unsigned int stream;
     uint8_t short_not_ok;
     uint8_t int_req;
     uint16_t length;

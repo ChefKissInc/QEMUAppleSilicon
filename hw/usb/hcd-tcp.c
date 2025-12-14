@@ -227,7 +227,7 @@ static void coroutine_fn usb_tcp_host_msg_loop_co(void *opaque)
                 return;
             }
 
-            DPRINTF("%s: TCP_USB_REQUEST pid: 0x%x ep: %d id: 0x%lx\n",
+            DPRINTF("%s: TCP_USB_REQUEST pid: 0x%x ep: %d id: 0x%" PRIx64 "\n",
                     __func__, pkt_hdr.pid, pkt_hdr.ep, pkt_hdr.id);
             ep = usb_ep_get(port->dev, pkt_hdr.pid, pkt_hdr.ep);
             if (ep == NULL) {
@@ -292,7 +292,7 @@ static void coroutine_fn usb_tcp_host_msg_loop_co(void *opaque)
                 pkt = container_of(p, USBTCPPacket, p);
                 usb_cancel_packet(&pkt->p);
                 DPRINTF("%s: TCP_USB_CANCEL: packet"
-                        " pid: 0x%x ep: %d id: 0x%lx len: 0x%x\n",
+                        " pid: 0x%x ep: %d id: 0x%" PRIx64 " len: 0x%x\n",
                         __func__, pkt_hdr.pid, pkt_hdr.ep, pkt_hdr.id,
                         p->actual_length);
                 usb_tcp_host_respond_packet(s, pkt);

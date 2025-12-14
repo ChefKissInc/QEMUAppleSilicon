@@ -254,13 +254,13 @@ static bool usb_tcp_remote_read_one(USBTCPRemoteState *s)
             p = pkt->p;
         }
         DPRINTF("%s: TCP_USB_RESPONSE "
-                "Received packet pid: 0x%x ep: 0x%x id: 0x%" PRIx64
+                "Received packet pid: 0x%x ep: %d id: 0x%" PRIx64
                 " status: %d\n",
                 __func__, rhdr.pid, rhdr.ep, rhdr.id, rhdr.status);
 
         if (p == NULL) {
             warn_report("%s: TCP_USB_RESPONSE "
-                        "Invalid packet pid: 0x%x ep: 0x%x id: 0x%" PRIx64 "\n",
+                        "Invalid packet pid: 0x%x ep: %d id: 0x%" PRIx64 "\n",
                         __func__, rhdr.pid, rhdr.ep, rhdr.id);
             //__builtin_dump_struct(&rhdr, &printf);
             /* likely canceled */
@@ -332,6 +332,7 @@ static bool usb_tcp_remote_read_one(USBTCPRemoteState *s)
     case TCP_USB_REQUEST:
     case TCP_USB_RESET:
     default:
+        // "Invalid header type: 0x0" can happen upon closing the connection
         DPRINTF("%s: Invalid header type: 0x%x\n", __func__, hdr.type);
         usb_tcp_remote_closed(s);
         return false;
@@ -356,17 +357,20 @@ static void *usb_tcp_remote_thread(void *arg)
     USBTCPRemoteState *s = USB_TCP_REMOTE(arg);
 
     while (!s->stopped) {
+        // thanks to Visual for noticing that
+        qemu_mutex_lock(&s->mutex);
+        after_lock:
         if (s->closed) {
             DPRINTF("%s: waiting on accept...\n", __func__);
 
             s->fd = accept(s->socket, NULL, NULL);
             if (s->fd < 0) {
                 DPRINTF("%s: accept error %d.\n", __func__, errno);
-                continue;
+                goto after_lock;
             }
             migrate_add_blocker(&s->migration_blocker, NULL);
 
-            s->closed = 0;
+            s->closed = false;
 
             qemu_cond_broadcast(&s->cond);
 
@@ -654,8 +658,8 @@ static void usb_tcp_remote_cancel_packet(USBDevice *dev, USBPacket *p)
     pkt.ep = p->ep->nr;
     pkt.id = p->id;
 
-    DPRINTF("%s: pid: 0x%x ep 0x%x id 0x%llx\n", __func__, pkt.pid, pkt.ep,
-            pkt.id);
+    DPRINTF("%s: pid: 0x%x ep %d id 0x%" PRIx64 "\n", __func__, pkt.pid,
+            pkt.ep, pkt.id);
 
     inflightPacket.p = p;
     inflightPacket.addr = dev->addr;
@@ -713,14 +717,14 @@ static void usb_tcp_remote_handle_packet(USBDevice *dev, USBPacket *p)
     pkt.addr = s->addr;
     pkt.pid = p->pid;
     pkt.ep = p->ep->nr;
-    pkt.stream = p->stream;
     pkt.id = p->id;
+    pkt.stream = p->stream;
     pkt.short_not_ok = p->short_not_ok;
     pkt.int_req = p->int_req;
     pkt.length = p->iov.size - p->actual_length;
 
-    DPRINTF("%s: pid: 0x%x ep 0x%x id 0x%llx len 0x%x\n", __func__, pkt.pid,
-            pkt.ep, pkt.id, pkt.length);
+    DPRINTF("%s: pid: 0x%x ep %d id 0x%" PRIx64 " len 0x%x\n", __func__,
+            pkt.pid, pkt.ep, pkt.id, pkt.length);
 
     if (p->pid != USB_TOKEN_IN && pkt.length) {
         buffer = g_malloc0(pkt.length);

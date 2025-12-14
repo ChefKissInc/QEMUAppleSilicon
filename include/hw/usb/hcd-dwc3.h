@@ -42,8 +42,8 @@ typedef struct DWC3EventRing {
 } DWC3EventRing;
 
 typedef struct DWC3TRB {
-    dma_addr_t bp;
     dma_addr_t addr;
+    dma_addr_t bp;
     union {
         uint32_t status;
         struct QEMU_PACKED {
