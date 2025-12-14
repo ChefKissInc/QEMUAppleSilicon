@@ -779,7 +779,7 @@ void apple_boot_setup_monitor_boot_args(
     args.kern_phys_slide = kern_phys_slide;
     args.kern_virt_slide = kern_virt_slide;
     args.kern_text_section_off = kern_text_section_off;
-    qemu_guest_getrandom_nofail(&args.random_bytes, sizeof(args.random_bytes));
+    qemu_guest_getrandom_nofail(args.random_bytes, sizeof(args.random_bytes));
 
     address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args),
                      true);
