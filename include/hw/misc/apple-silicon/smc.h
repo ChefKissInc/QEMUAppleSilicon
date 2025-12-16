@@ -135,8 +135,12 @@ typedef enum {
 typedef struct SMCKey SMCKey;
 typedef struct SMCKeyData SMCKeyData;
 
-typedef SMCResult SMCKeyFunc(SMCKey *key, SMCKeyData *data, void *payload,
-                             uint8_t length);
+/// in and in length refer to the function payload on reads,
+/// on writes it's the data being written to the key.
+/// additionally, the structure located in the data parameter
+/// will contain the old data, not the new data.
+typedef SMCResult SMCKeyFunc(SMCKey *key, SMCKeyData *data, const void *in,
+                             uint8_t in_length);
 
 typedef struct {
     union {
