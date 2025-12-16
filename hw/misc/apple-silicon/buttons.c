@@ -138,18 +138,14 @@ SysBusDevice *apple_buttons_create(AppleDTNode *node)
 
     AppleSMCState *smc = APPLE_SMC_IOP(object_property_get_link(
         OBJECT(qdev_get_machine()), "smc", &error_fatal));
-    apple_smc_create_key_func(smc, 'bVUP', 4, SMC_KEY_TYPE_UINT32,
-                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
-                              apple_buttons_smc_read_vol_up, NULL);
-    apple_smc_create_key_func(smc, 'bVDN', 4, SMC_KEY_TYPE_UINT32,
-                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
-                              apple_buttons_smc_read_vol_down, NULL);
-    apple_smc_create_key_func(smc, 'bHLD', 4, SMC_KEY_TYPE_UINT32,
-                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
-                              apple_buttons_smc_read_hold, NULL);
-    apple_smc_create_key_func(smc, 'bRIN', 4, SMC_KEY_TYPE_UINT32,
-                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
-                              apple_buttons_smc_read_ringer, NULL);
+    apple_smc_create_key_func(smc, 'bVUP', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_LE,
+                              s, apple_buttons_smc_read_vol_up, NULL);
+    apple_smc_create_key_func(smc, 'bVDN', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_LE,
+                              s, apple_buttons_smc_read_vol_down, NULL);
+    apple_smc_create_key_func(smc, 'bHLD', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_LE,
+                              s, apple_buttons_smc_read_hold, NULL);
+    apple_smc_create_key_func(smc, 'bRIN', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_LE,
+                              s, apple_buttons_smc_read_ringer, NULL);
     bool powered_by_hold_btn = true;
     apple_smc_create_key(smc, 'bPHD', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_R,
                          &powered_by_hold_btn);
