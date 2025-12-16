@@ -599,15 +599,7 @@ static int vmstate_apple_smc_post_load(void *opaque, int version_id)
 
     QTAILQ_FOREACH_SAFE (data, &s->key_data, next, data_next) {
         key = apple_smc_get_key(s, data->key);
-        if (key == NULL) {
-            fprintf(stderr, "Removing key `%c%c%c%c` as it no longer exists\n",
-                    SMC_KEY_FORMAT(data->key));
-            g_free(data->data);
-            QTAILQ_REMOVE(&s->key_data, data, next);
-            g_free(data);
-            continue;
-        }
-        if (key->info.size != data->size) {
+        if (key == NULL || key->info.size != data->size) {
             fprintf(stderr,
                     "Key `%c%c%c%c` has mismatched length, state cannot be "
                     "loaded.\n",
@@ -619,11 +611,10 @@ static int vmstate_apple_smc_post_load(void *opaque, int version_id)
     QTAILQ_FOREACH_SAFE (key, &s->keys, next, key_next) {
         data = apple_smc_get_key_data(s, key->key);
         if (data == NULL) {
-            data = g_new0(SMCKeyData, 1);
-            data->data = g_malloc(key->info.size);
-            data->size = key->info.size;
-            memset(data->data, 0, key->info.size);
-            QTAILQ_INSERT_TAIL(&s->key_data, data, next);
+            fprintf(stderr,
+                    "New key `%c%c%c%c` encountered, state cannot be loaded.\n",
+                    SMC_KEY_FORMAT(data->key));
+            return -1;
         }
     }
 
