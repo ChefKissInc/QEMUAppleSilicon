@@ -615,11 +615,10 @@ static int vmstate_apple_smc_post_load(void *opaque, int version_id)
     }
 
     QTAILQ_FOREACH_SAFE (key, &s->keys, next, key_next) {
-        data = apple_smc_get_key_data(s, key->key);
-        if (data == NULL) {
+        if (apple_smc_get_key_data(s, key->key) == NULL) {
             fprintf(stderr,
                     "New key `%c%c%c%c` encountered, state cannot be loaded.\n",
-                    SMC_KEY_FORMAT(data->key));
+                    SMC_KEY_FORMAT(key->key));
             return -1;
         }
     }
