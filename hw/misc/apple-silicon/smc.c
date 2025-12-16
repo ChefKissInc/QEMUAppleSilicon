@@ -605,11 +605,18 @@ static int vmstate_apple_smc_post_load(void *opaque, int version_id)
 
     QTAILQ_FOREACH_SAFE (data, &s->key_data, next, data_next) {
         key = apple_smc_get_key(s, data->key);
-        if (key == NULL || key->info.size != data->size) {
+        if (key == NULL) {
+            fprintf(stderr,
+                    "Key `%c%c%c%c` was removed, state cannot be loaded.\n",
+                    SMC_KEY_FORMAT(data->key));
+            return -1;
+        }
+
+        if (key->info.size != data->size) {
             fprintf(stderr,
                     "Key `%c%c%c%c` has mismatched length, state cannot be "
                     "loaded.\n",
-                    SMC_KEY_FORMAT(data->key));
+                    SMC_KEY_FORMAT(key->key));
             return -1;
         }
     }
