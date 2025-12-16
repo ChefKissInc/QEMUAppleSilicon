@@ -286,8 +286,10 @@ static void apple_smc_handle_key_endpoint(void *opaque, const uint32_t ep,
             resp.status = SMC_RESULT_KEY_NOT_FOUND;
         } else if (key_entry->info.attr & SMC_ATTR_R) {
             if (key_entry->read != NULL) {
-                resp.status = key_entry->read(key_entry, data_entry, s->sram,
-                                              kmsg->payload_length);
+                resp.status =
+                    key_entry->read(key_entry, data_entry,
+                                    kmsg->payload_length == 0 ? NULL : s->sram,
+                                    kmsg->payload_length);
             }
             if (resp.status == SMC_RESULT_SUCCESS) {
                 resp.status = apple_smc_key_read(
@@ -310,8 +312,9 @@ static void apple_smc_handle_key_endpoint(void *opaque, const uint32_t ep,
             resp.status = SMC_RESULT_KEY_NOT_FOUND;
         } else if (key_entry->info.attr & SMC_ATTR_W) {
             if (key_entry->write != NULL) {
-                resp.status = key_entry->write(key_entry, data_entry, s->sram,
-                                               kmsg->length);
+                resp.status = key_entry->write(
+                    key_entry, data_entry, kmsg->length == 0 ? NULL : s->sram,
+                    kmsg->length);
             } else {
                 resp.status = apple_smc_key_write(key_entry, data_entry,
                                                   kmsg->length, s->sram);
