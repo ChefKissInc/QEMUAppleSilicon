@@ -1,15 +1,25 @@
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
 #include "hw/misc/apple-silicon/a7iop/rtkit.h"
 #include "hw/misc/apple-silicon/smc.h"
-#include "hw/qdev-core.h"
 #include "migration/vmstate.h"
-#include "qemu/bitops.h"
-#include "qemu/log.h"
+#include "qapi/error.h"
 #include "qemu/memalign.h"
-#include "qemu/module.h"
 #include "qemu/queue.h"
 #include "system/runstate.h"
+
+#if 0
+#include "qemu/log.h"
+#define SMC_LOG_MSG(ep, msg)       \
+    qemu_log_mask(LOG_GUEST_ERROR, \
+                  "SMC: message: ep=%u msg=0x" HWADDR_FMT_plx "\n", ep, msg)
+#else
+#define SMC_LOG_MSG(ep, msg) \
+    do {                     \
+    } while (0)
+#endif
+
+#define APPLE_SMC_MMIO_ASC (0)
+#define APPLE_SMC_MMIO_SRAM (1)
 
 typedef struct {
     uint8_t cmd;
@@ -28,10 +38,9 @@ struct AppleSMCClass {
 struct AppleSMCState {
     AppleRTKit parent_obj;
 
-    MemoryRegion *iomems[3];
+    MemoryRegion iomems[2];
     QTAILQ_HEAD(, SMCKey) keys;
     QTAILQ_HEAD(, SMCKeyData) key_data;
-    uint32_t key_count;
     uint8_t *sram;
     uint32_t sram_size;
     bool is_booted;
@@ -63,29 +72,33 @@ SMCKeyData *apple_smc_get_key_data(AppleSMCState *s, uint32_t key)
     return NULL;
 }
 
-SMCKey *apple_smc_create_key(AppleSMCState *s, uint32_t key, uint32_t size,
-                             uint32_t type, uint32_t attr, void *data)
+SMCKey *apple_smc_create_key(AppleSMCState *s, uint32_t key, uint8_t size,
+                             SMCKeyType type, SMCKeyAttribute attr,
+                             const void *data)
 {
     SMCKey *key_entry;
     SMCKeyData *data_entry;
 
-    g_assert_null(apple_smc_get_key(s, key));
+    if (apple_smc_get_key(s, key) != NULL) {
+        error_setg(&error_fatal, "duplicate SMC key `%c%c%c%c`",
+                   SMC_KEY_FORMAT(key));
+        return NULL;
+    }
 
     key_entry = g_new0(SMCKey, 1);
     data_entry = g_new0(SMCKeyData, 1);
 
-    s->key_count += 1;
     key_entry->key = key;
     key_entry->info.size = size;
     key_entry->info.type = cpu_to_be32(type);
     key_entry->info.attr = attr;
     data_entry->key = key;
-    data_entry->data = g_malloc(size);
     data_entry->size = size;
 
     if (data == NULL) {
-        memset(data_entry->data, 0, size);
+        data_entry->data = g_malloc0(size);
     } else {
+        data_entry->data = g_malloc(size);
         memcpy(data_entry->data, data, size);
     }
 
@@ -95,30 +108,55 @@ SMCKey *apple_smc_create_key(AppleSMCState *s, uint32_t key, uint32_t size,
     return key_entry;
 }
 
-SMCKey *apple_smc_create_key_func(AppleSMCState *s, uint32_t key, uint32_t size,
-                                  uint32_t type, uint32_t attr,
-                                  KeyReader reader, KeyWriter writer)
+SMCKey *apple_smc_create_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
+                                  SMCKeyType type, SMCKeyAttribute attr,
+                                  void *opaque, SMCKeyFunc *reader,
+                                  SMCKeyFunc *writer)
 {
     SMCKey *key_entry;
 
-    attr |= SMC_ATTR_FUNCTION;
+    attr |= SMC_ATTR_FUNC;
     if (reader != NULL) {
-        attr |= SMC_ATTR_READABLE;
+        attr |= SMC_ATTR_R;
     }
     if (writer != NULL) {
-        attr |= SMC_ATTR_WRITEABLE;
+        attr |= SMC_ATTR_W;
     }
 
     key_entry = apple_smc_create_key(s, key, size, type, attr, NULL);
 
+    key_entry->opaque = opaque;
     key_entry->read = reader;
     key_entry->write = writer;
 
     return key_entry;
 }
 
-uint8_t apple_smc_set_key(AppleSMCState *s, uint32_t key, uint32_t size,
-                          void *data)
+static SMCResult apple_smc_key_read(const SMCKey *key_entry,
+                                    const SMCKeyData *data_entry, uint32_t size,
+                                    void *out)
+{
+    if (size < key_entry->info.size) {
+        return SMC_RESULT_KEY_SIZE_MISMATCH;
+    }
+    memcpy(out, data_entry->data, key_entry->info.size);
+    return SMC_RESULT_SUCCESS;
+}
+
+static SMCResult apple_smc_key_write(SMCKey *key_entry, SMCKeyData *data_entry,
+                                     uint8_t size, const void *data)
+{
+    if (key_entry->info.size != size) {
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
+    }
+
+    memcpy(data_entry->data, data, size);
+
+    return SMC_RESULT_SUCCESS;
+}
+
+SMCResult apple_smc_write_key(AppleSMCState *s, uint32_t key, uint8_t size,
+                              const void *data)
 {
     SMCKey *key_entry;
     SMCKeyData *data_entry;
@@ -127,20 +165,10 @@ uint8_t apple_smc_set_key(AppleSMCState *s, uint32_t key, uint32_t size,
     data_entry = apple_smc_get_key_data(s, key);
 
     if (key_entry == NULL) {
-        return kSMCKeyNotFound;
+        return SMC_RESULT_KEY_NOT_FOUND;
     }
 
-    if (key_entry->info.size != size) {
-        return kSMCBadArgumentError;
-    }
-
-    if (data_entry->data == NULL) {
-        data_entry->data = g_malloc(key_entry->info.size);
-    }
-
-    memcpy(data_entry->data, data, size);
-
-    return kSMCSuccess;
+    return apple_smc_key_write(key_entry, data_entry, size, data);
 }
 
 void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
@@ -158,38 +186,38 @@ void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
     r.status = SMC_NOTIFICATION;
     r.response[0] = state;
     r.response[1] = button;
-    r.response[2] = kSMCHIDEventNotifyTypeButton;
-    r.response[3] = kSMCEventHIDEventNotify;
+    r.response[2] = SMC_HID_EVENT_NOTIFY_BUTTON;
+    r.response[3] = SMC_EVENT_HID_EVENT_NOTIFY;
     apple_rtkit_send_user_msg(rtk, kSMCKeyEndpoint, r.raw);
 }
 
-static uint8_t smc_key_count_read(AppleSMCState *s, SMCKey *key,
-                                  SMCKeyData *data, void *payload,
-                                  uint8_t length)
+static SMCResult smc_key_count_read(SMCKey *key, SMCKeyData *data,
+                                    void *payload, uint8_t length)
 {
-    uint32_t key_count;
+    AppleSMCState *s = key->opaque;
+    SMCKey *cur;
+    SMCKey *next;
+    uint32_t key_count = 0;
 
-    key_count = cpu_to_le32(s->key_count);
-
-    if (data->data == NULL) {
-        data->data = g_malloc(key->info.size);
+    QTAILQ_FOREACH_SAFE (cur, &s->keys, next, next) {
+        ++key_count;
     }
 
-    memcpy(data->data, &key_count, sizeof(key_count));
+    stl_be_p(data->data, key_count);
 
-    return kSMCSuccess;
+    return SMC_RESULT_SUCCESS;
 }
 
-static uint8_t apple_smc_mbse_write(AppleSMCState *s, SMCKey *key,
-                                    SMCKeyData *data, void *payload,
-                                    uint8_t length)
+static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
+                                      void *payload, uint8_t length)
 {
+    AppleSMCState *s = key->opaque;
     AppleRTKit *rtk;
     uint32_t value;
     KeyResponse r = { 0 };
 
     if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
     rtk = APPLE_RTKIT(s);
@@ -199,31 +227,31 @@ static uint8_t apple_smc_mbse_write(AppleSMCState *s, SMCKey *key,
     case 'offw':
     case 'off1':
         qemu_system_shutdown_request(SHUTDOWN_CAUSE_GUEST_SHUTDOWN);
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     case 'susp':
         qemu_system_suspend_request();
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     case 'rest':
         qemu_system_reset_request(SHUTDOWN_CAUSE_GUEST_RESET);
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     case 'slpw':
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     case 'panb': {
         r.status = SMC_NOTIFICATION;
-        r.response[2] = kSMCSystemStateNotifySMCPanicProgress;
-        r.response[3] = kSMCEventSystemStateNotify;
+        r.response[2] = SMC_SYSTEM_STATE_NOTIFY_SMC_PANIC_PROGRESS;
+        r.response[3] = SMC_EVENT_SYSTEM_STATE_NOTIFY;
         apple_rtkit_send_user_msg(rtk, kSMCKeyEndpoint, r.raw);
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     case 'pane': {
         r.status = SMC_NOTIFICATION;
-        r.response[2] = kSMCSystemStateNotifySMCPanicDone;
-        r.response[3] = kSMCEventSystemStateNotify;
+        r.response[2] = SMC_SYSTEM_STATE_NOTIFY_SMC_PANIC_DONE;
+        r.response[3] = SMC_EVENT_SYSTEM_STATE_NOTIFY;
         apple_rtkit_send_user_msg(rtk, kSMCKeyEndpoint, r.raw);
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     default:
-        return kSMCBadFuncParameter;
+        return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
 }
 
@@ -233,108 +261,100 @@ static void apple_smc_handle_key_endpoint(void *opaque, const uint32_t ep,
     AppleRTKit *rtk = opaque;
     AppleSMCState *s = opaque;
     KeyMessage *kmsg;
+    uint32_t key;
     KeyResponse resp = { 0 };
     SMCKey *key_entry;
     SMCKeyData *data_entry;
 
     kmsg = (KeyMessage *)&msg;
 
-    kmsg->key = le32_to_cpu(kmsg->key);
+    key = le32_to_cpu(kmsg->key);
 
     SMC_LOG_MSG(ep, msg);
 
+    resp.tag_and_id = kmsg->tag_and_id;
+
     switch (kmsg->cmd) {
-    case SMC_GET_SRAM_ADDR: {
-        apple_rtkit_send_user_msg(rtk, ep,
-                                  s->iomems[APPLE_SMC_MMIO_SRAM]->addr);
+    case SMC_GET_SRAM_ADDR:
+        apple_rtkit_send_user_msg(rtk, ep, s->iomems[APPLE_SMC_MMIO_SRAM].addr);
         break;
-    }
     case SMC_READ_KEY:
     case SMC_READ_KEY_PAYLOAD: {
-        key_entry = apple_smc_get_key(s, kmsg->key);
-        data_entry = apple_smc_get_key_data(s, kmsg->key);
+        key_entry = apple_smc_get_key(s, key);
+        data_entry = apple_smc_get_key_data(s, key);
         if (key_entry == NULL) {
-            resp.status = kSMCKeyNotFound;
-        } else if (key_entry->info.attr & SMC_ATTR_READABLE) {
-            g_assert_nonnull(data_entry);
-
+            resp.status = SMC_RESULT_KEY_NOT_FOUND;
+        } else if (key_entry->info.attr & SMC_ATTR_R) {
             if (key_entry->read != NULL) {
-                resp.status = key_entry->read(s, key_entry, data_entry, s->sram,
+                resp.status = key_entry->read(key_entry, data_entry, s->sram,
                                               kmsg->payload_length);
             }
-            if (resp.status == kSMCSuccess) {
+            if (resp.status == SMC_RESULT_SUCCESS) {
+                resp.status = apple_smc_key_read(
+                    key_entry, data_entry, kmsg->length,
+                    key_entry->info.size <= 4 ? resp.response : s->sram);
+            }
+            if (resp.status == SMC_RESULT_SUCCESS) {
                 resp.length = key_entry->info.size;
-                if (key_entry->info.size <= 4) {
-                    memcpy(resp.response, data_entry->data,
-                           key_entry->info.size);
-                } else {
-                    memcpy(s->sram, data_entry->data, key_entry->info.size);
-                }
-                resp.status = kSMCSuccess;
             }
         } else {
-            resp.status = kSMCKeyNotReadable;
+            resp.status = SMC_RESULT_KEY_NOT_READABLE;
         }
-        resp.tag_and_id = kmsg->tag_and_id;
         apple_rtkit_send_user_msg(rtk, ep, resp.raw);
         break;
     }
     case SMC_WRITE_KEY: {
-        key_entry = apple_smc_get_key(s, kmsg->key);
-        data_entry = apple_smc_get_key_data(s, kmsg->key);
+        key_entry = apple_smc_get_key(s, key);
+        data_entry = apple_smc_get_key_data(s, key);
         if (key_entry == NULL) {
-            resp.status = kSMCKeyNotFound;
-        } else if (key_entry->info.attr & SMC_ATTR_WRITEABLE) {
-            g_assert_nonnull(data_entry);
-
+            resp.status = SMC_RESULT_KEY_NOT_FOUND;
+        } else if (key_entry->info.attr & SMC_ATTR_W) {
             if (key_entry->write != NULL) {
-                resp.status = key_entry->write(s, key_entry, data_entry,
-                                               s->sram, kmsg->length);
+                resp.status = key_entry->write(key_entry, data_entry, s->sram,
+                                               kmsg->length);
             } else {
-                resp.status =
-                    apple_smc_set_key(s, kmsg->key, kmsg->length, s->sram);
+                resp.status = apple_smc_key_write(key_entry, data_entry,
+                                                  kmsg->length, s->sram);
             }
-            resp.length = kmsg->length;
+            if (resp.status == SMC_RESULT_SUCCESS) {
+                resp.length = key_entry->info.size;
+            }
         } else {
-            resp.status = kSMCKeyNotWritable;
+            resp.status = SMC_RESULT_KEY_NOT_WRITABLE;
         }
-        resp.tag_and_id = kmsg->tag_and_id;
         apple_rtkit_send_user_msg(rtk, ep, resp.raw);
         break;
     }
     case SMC_GET_KEY_BY_INDEX: {
         key_entry = QTAILQ_FIRST(&s->keys);
 
-        for (int i = 0; i < kmsg->key && key_entry != NULL; i++) {
+        for (int i = 0; i < key && key_entry != NULL; i++) {
             key_entry = QTAILQ_NEXT(key_entry, next);
         }
 
         if (key_entry == NULL) {
-            resp.status = kSMCKeyIndexRangeError;
+            resp.status = SMC_RESULT_KEY_INDEX_RANGE_ERROR;
         } else {
-            resp.status = kSMCSuccess;
+            resp.status = SMC_RESULT_SUCCESS;
             stl_le_p(resp.response, cpu_to_le32(key_entry->key));
         }
 
-        resp.tag_and_id = kmsg->tag_and_id;
         apple_rtkit_send_user_msg(rtk, ep, resp.raw);
         break;
     }
     case SMC_GET_KEY_INFO: {
-        key_entry = apple_smc_get_key(s, kmsg->key);
+        key_entry = apple_smc_get_key(s, key);
         if (key_entry == NULL) {
-            resp.status = kSMCKeyNotFound;
+            resp.status = SMC_RESULT_KEY_NOT_FOUND;
         } else {
-            memcpy(s->sram, &key_entry->info, sizeof(key_entry->info));
-            resp.status = kSMCSuccess;
+            *(SMCKeyInfo *)s->sram = key_entry->info;
+            resp.status = SMC_RESULT_SUCCESS;
         }
-        resp.tag_and_id = kmsg->tag_and_id;
         apple_rtkit_send_user_msg(rtk, ep, resp.raw);
         break;
     }
     default: {
-        resp.status = kSMCBadCommand;
-        resp.tag_and_id = kmsg->tag_and_id;
+        resp.status = SMC_RESULT_BAD_COMMAND;
         apple_rtkit_send_user_msg(rtk, ep, resp.raw);
         fprintf(stderr, "SMC: Unknown command 0x%02x\n", kmsg->cmd);
         break;
@@ -383,25 +403,25 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     AppleDTNode *child;
     AppleDTProp *prop;
     uint64_t *reg;
-    uint8_t data[8] = { 0x00, 0x00, 0x70, 0x80, 0x00, 0x01, 0x19, 0x40 };
+    uint8_t data[8] = { 0x40, 0x19, 0x01, 0x00, 0x80, 0x70, 0x00, 0x00 };
     uint8_t ac_adapter_count = 1;
     uint8_t ac_w = 0x1; // should actually be a function
-    uint8_t battery_feature_flags = 0x0;
-    uint16_t battery_cycle_count = 0x7;
-    uint16_t battery_average_time_to_full = 0xffff; // not charging
-    uint32_t battery_max_capacity = 31337;
-    uint32_t battery_full_charge_capacity = battery_max_capacity * 0.98;
+    uint8_t batt_feature_flags = 0x0;
+    uint16_t batt_cycle_count = 0x7;
+    uint16_t batt_avg_time_to_full = 0xffff; // not charging
+    uint32_t batt_max_capacity = 31337;
+    uint32_t batt_full_charge_capacity = batt_max_capacity * 0.98;
     // *0.69 shows as 67%/68% (console debug output) with full_charge_capacity
     // of 98%
-    uint32_t battery_current_capacity = battery_full_charge_capacity * 0.69;
-    uint32_t battery_remaining_capacity =
-        battery_full_charge_capacity - battery_current_capacity;
+    uint32_t batt_current_capacity = batt_full_charge_capacity * 0.69;
+    uint32_t batt_remaining_capacity =
+        batt_full_charge_capacity - batt_current_capacity;
     // b0fv might mean "battery full voltage"
     uint16_t b0fv = 0x201;
     uint8_t battery_count = 0x1;
-    uint16_t battery_cell_voltage = 4200;
-    int16_t battery_actual_amperage = 0x0;
-    uint16_t battery_actual_voltage = battery_cell_voltage;
+    uint16_t batt_cell_voltage = 4200;
+    int16_t batt_actual_amperage = 0x0;
+    uint16_t batt_actual_voltage = batt_cell_voltage;
 
     g_assert_cmphex(sram_size, <=, UINT32_MAX);
 
@@ -422,19 +442,17 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     apple_rtkit_register_user_ep(rtk, kSMCKeyEndpoint, s,
                                  &apple_smc_handle_key_endpoint);
 
-    s->iomems[APPLE_SMC_MMIO_ASC] = g_new(MemoryRegion, 1);
-    memory_region_init_io(s->iomems[APPLE_SMC_MMIO_ASC], OBJECT(dev),
+    memory_region_init_io(&s->iomems[APPLE_SMC_MMIO_ASC], OBJECT(dev),
                           &ascv2_core_reg_ops, s,
                           TYPE_APPLE_SMC_IOP ".ascv2-core-reg", reg[3]);
-    sysbus_init_mmio(sbd, s->iomems[APPLE_SMC_MMIO_ASC]);
+    sysbus_init_mmio(sbd, &s->iomems[APPLE_SMC_MMIO_ASC]);
 
-    s->iomems[APPLE_SMC_MMIO_SRAM] = g_new(MemoryRegion, 1);
     s->sram = qemu_memalign(qemu_real_host_page_size(), sram_size);
     s->sram_size = sram_size;
-    memory_region_init_ram_device_ptr(s->iomems[APPLE_SMC_MMIO_SRAM],
+    memory_region_init_ram_device_ptr(&s->iomems[APPLE_SMC_MMIO_SRAM],
                                       OBJECT(dev), TYPE_APPLE_SMC_IOP ".sram",
                                       s->sram_size, s->sram);
-    sysbus_init_mmio(sbd, s->iomems[APPLE_SMC_MMIO_SRAM]);
+    sysbus_init_mmio(sbd, &s->iomems[APPLE_SMC_MMIO_SRAM]);
 
     apple_dt_set_prop_u32(child, "pre-loaded", 1);
     apple_dt_set_prop_u32(child, "running", 1);
@@ -442,183 +460,143 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     QTAILQ_INIT(&s->keys);
     QTAILQ_INIT(&s->key_data);
 
-    apple_smc_create_key_func(s, '#KEY', 4, SMCKeyTypeUInt32,
-                              SMC_ATTR_LITTLE_ENDIAN, &smc_key_count_read,
-                              NULL);
+    apple_smc_create_key_func(s, '#KEY', 4, SMC_KEY_TYPE_UINT32, 0, s,
+                              smc_key_count_read, NULL);
 
-    apple_smc_create_key(s, 'CLKH', 8, SMCKeyTypeClh, SMC_ATTR_DEFAULT_LE,
-                         data);
+    apple_smc_create_key(s, 'CLKH', 8, SMC_KEY_TYPE_CLH, SMC_ATTR_RW_LE, data);
 
     data[0] = 3;
-    apple_smc_create_key(s, 'RGEN', 1, SMCKeyTypeUInt8, SMC_ATTR_DEFAULT_LE,
-                         data);
+    apple_smc_create_key(s, 'RGEN', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R, data);
 
-    apple_smc_create_key(s, 'aDC#', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
-                         NULL);
+    apple_smc_create_key(s, 'aDC#', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R, NULL);
 
-    apple_smc_create_key_func(s, 'MBSE', 4, SMCKeyTypeHex,
-                              SMC_ATTR_LITTLE_ENDIAN, NULL,
-                              &apple_smc_mbse_write);
+    // seems to be readable, too
+    apple_smc_create_key_func(s, 'MBSE', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_LE, s,
+                              NULL, apple_smc_mbse_write);
 
-    apple_smc_create_key(s, 'LGPB', 1, SMCKeyTypeFlag,
-                         SMC_ATTR_LITTLE_ENDIAN | SMC_ATTR_WRITEABLE, NULL);
-    apple_smc_create_key(s, 'LGPE', 1, SMCKeyTypeFlag,
-                         SMC_ATTR_LITTLE_ENDIAN | SMC_ATTR_WRITEABLE, NULL);
-    apple_smc_create_key(s, 'NESN', 4, SMCKeyTypeHex,
-                         SMC_ATTR_LITTLE_ENDIAN | SMC_ATTR_WRITEABLE, NULL);
+    apple_smc_create_key(s, 'LGPB', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_RW, NULL);
+    apple_smc_create_key(s, 'LGPE', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_RW, NULL);
 
-    apple_smc_create_key(s, 'AC-N', 1, SMCKeyTypeUInt8, SMC_ATTR_DEFAULT_LE,
+    // should actually be a function for event notifications
+    apple_smc_create_key(s, 'NESN', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_W_LE, NULL);
+
+    apple_smc_create_key(s, 'AC-N', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R,
                          &ac_adapter_count);
-    apple_smc_create_key(s, 'AC-W', 1, SMCKeyTypeSInt8,
-                         SMC_ATTR_DEFAULT_LE | SMC_ATTR_READABLE, &ac_w);
-    apple_smc_create_key(s, 'CHAI', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
+
+    // all below should actually be a function
+    apple_smc_create_key(s, 'AC-W', 1, SMC_KEY_TYPE_SINT8, SMC_ATTR_R, &ac_w);
+    apple_smc_create_key(s, 'CHAI', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R_LE,
                          NULL);
-    apple_smc_create_key(s, 'TG0B', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TG0V', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP1A', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP2C', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP1d', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP2d', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP3d', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP4d', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP5d', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP3R', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP4H', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'TP0Z', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'B0AP', 4, SMCKeyTypeSInt32, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    // uint32_t b0ap = 0x80;
-    // apple_smc_create_key(s, 'B0AP', 4, SMCKeyTypeFLT,
-    //                      SMC_ATTR_DEFAULT_LE | SMC_ATTR_READABLE, &b0ap);
-    apple_smc_create_key(s, 'Th0a', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th1a', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th2a', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th0f', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th1f', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th2f', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th0x', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th1x', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Th2x', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc0a', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc1a', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc2a', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc0f', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc1f', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc2f', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc0x', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc1x', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'Tc2x', 8, SMCKeyTypeFLT, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'D0VR', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-#if 1
-    apple_smc_create_key(s, 'D1VR', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-    apple_smc_create_key(s, 'D2VR', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         NULL);
-#endif
-    apple_smc_create_key(s, 'TV0s', 8, SMCKeyTypeIOFT, SMC_ATTR_DEFAULT_LE,
+    apple_smc_create_key(s, 'TG0B', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TG0V', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // ----
+
+    apple_smc_create_key(s, 'TP1A', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP2C', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP1d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP2d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP3d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP4d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP5d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP3R', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP4H', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'TP0Z', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+
+    apple_smc_create_key(s, 'B0AP', 4, SMC_KEY_TYPE_SINT32, SMC_ATTR_R_LE,
                          NULL);
 
-#if 1
-    apple_smc_create_key(
-        s, 'BHTL', 1, SMCKeyTypeFlag,
-        SMC_ATTR_LITTLE_ENDIAN | SMC_ATTR_WRITEABLE | SMC_ATTR_READABLE, NULL);
-    apple_smc_create_key(s, 'BFS0', 1, SMCKeyTypeUInt8,
-                         SMC_ATTR_LITTLE_ENDIAN | SMC_ATTR_READABLE,
-                         &battery_feature_flags);
-    apple_smc_create_key(s, 'B0CT', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_cycle_count);
-    apple_smc_create_key(s, 'B0TF', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_average_time_to_full);
-    apple_smc_create_key(s, 'B0CM', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
-                         &battery_max_capacity);
-    apple_smc_create_key(s, 'B0FC', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
-                         &battery_full_charge_capacity);
-    apple_smc_create_key(s, 'B0UC', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
-                         &battery_current_capacity);
-    apple_smc_create_key(s, 'B0RM', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
-                         &battery_remaining_capacity);
-    apple_smc_create_key(s, 'B0FV', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &b0fv);
+    apple_smc_create_key(s, 'Th0a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th1a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th2a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th0f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th1f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th2f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th0x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th1x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Th2x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc0a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc1a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc2a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc0f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc1f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc2f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc0x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc1x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_create_key(s, 'Tc2x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+
+    apple_smc_create_key(s, 'D0VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         NULL);
+    apple_smc_create_key(s, 'D1VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         NULL);
+    apple_smc_create_key(s, 'D2VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         NULL);
+
+    apple_smc_create_key(s, 'TV0s', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_RW_LE,
+                         NULL);
+
+    apple_smc_create_key(s, 'BHTL', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_RW_LE, NULL);
+
+    // should actually be a function
+    apple_smc_create_key(s, 'BFS0', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE,
+                         &batt_feature_flags);
+
+    apple_smc_create_key(s, 'B0CT', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_cycle_count);
+    apple_smc_create_key(s, 'B0TF', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_avg_time_to_full);
+    apple_smc_create_key(s, 'B0CM', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_max_capacity);
+    apple_smc_create_key(s, 'B0FC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_full_charge_capacity);
+    apple_smc_create_key(s, 'B0UC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_current_capacity);
+    apple_smc_create_key(s, 'B0RM', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_remaining_capacity);
+    // should actually be a function
+    apple_smc_create_key(s, 'B0FV', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE, &b0fv);
     uint8_t bdd1 = 0x19;
-    apple_smc_create_key(s, 'BDD1', 1, SMCKeyTypeUInt8, SMC_ATTR_DEFAULT_LE,
+    apple_smc_create_key(s, 'BDD1', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE,
                          &bdd1);
-    uint8_t ub0c = 0x0;
-    apple_smc_create_key(s, 'UB0C', 1, SMCKeyTypeUInt8, SMC_ATTR_DEFAULT_LE,
-                         &ub0c);
-    apple_smc_create_key(s, 'BNCB', 1, SMCKeyTypeUInt8, SMC_ATTR_DEFAULT_LE,
+    // should actually be a function
+    apple_smc_create_key(s, 'UB0C', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_W_LE, NULL);
+    apple_smc_create_key(s, 'BNCB', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE,
                          &battery_count);
-    apple_smc_create_key(s, 'BC1V', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_cell_voltage);
-    apple_smc_create_key(s, 'BC2V', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_cell_voltage);
-    apple_smc_create_key(s, 'BC3V', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_cell_voltage);
-    apple_smc_create_key(s, 'BC4V', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_cell_voltage);
-    uint16_t b0dc = 0xef13;
-    apple_smc_create_key(s, 'B0DC', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
+    apple_smc_create_key(s, 'BC1V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_cell_voltage);
+    apple_smc_create_key(s, 'BC2V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_cell_voltage);
+    apple_smc_create_key(s, 'BC3V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_cell_voltage);
+    apple_smc_create_key(s, 'BC4V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_cell_voltage);
+    uint16_t b0dc = 0xEF13;
+    apple_smc_create_key(s, 'B0DC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
                          &b0dc);
-    uint16_t b0bl = 0x0;
-    apple_smc_create_key(s, 'B0BL', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &b0bl);
-    uint16_t b0ca = 0x0;
-    apple_smc_create_key(s, 'B0CA', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &b0ca);
-    uint16_t b0nc = 0x0;
-    apple_smc_create_key(s, 'B0NC', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &b0nc);
-    int16_t b0iv = 0x0;
-    apple_smc_create_key(s, 'B0IV', 2, SMCKeyTypeSInt16, SMC_ATTR_DEFAULT_LE,
-                         &b0iv);
-    apple_smc_create_key(s, 'B0AC', 2, SMCKeyTypeSInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_actual_amperage);
-    apple_smc_create_key(s, 'B0AV', 2, SMCKeyTypeUInt16, SMC_ATTR_DEFAULT_LE,
-                         &battery_actual_voltage);
-    uint8_t chnc = 0x1;
-    apple_smc_create_key(s, 'CHNC', 1, SMCKeyTypeUInt8, SMC_ATTR_DEFAULT_LE,
-                         &chnc);
-    uint32_t chas = 0x0;
-    apple_smc_create_key(s, 'CHAS', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
-                         &chas);
+    apple_smc_create_key(s, 'B0BL', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         NULL);
+    apple_smc_create_key(s, 'B0CA', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         NULL);
+    apple_smc_create_key(s, 'B0NC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         NULL);
+    apple_smc_create_key(s, 'B0IV', 2, SMC_KEY_TYPE_SINT16, SMC_ATTR_R_LE,
+                         NULL);
+    apple_smc_create_key(s, 'B0AC', 2, SMC_KEY_TYPE_SINT16, SMC_ATTR_R_LE,
+                         &batt_actual_amperage);
+    apple_smc_create_key(s, 'B0AV', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+                         &batt_actual_voltage);
+    uint64_t chnc = 0x1; // ???
+    apple_smc_create_key(s, 'CHNC', 8, SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE, &chnc);
+    // should actually be a function
+    apple_smc_create_key(s, 'CHAS', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R_LE,
+                         NULL);
     // settings (as a whole) won't open/will crash if cha1 is missing
     // maybe the settings and safari crashes are unrelated from smc
-    uint32_t cha1 = 0x0;
-    apple_smc_create_key(s, 'CHA1', 4, SMCKeyTypeUInt32, SMC_ATTR_DEFAULT_LE,
-                         &cha1);
+    // should actually be a function
+    apple_smc_create_key(s, 'CHA1', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R_LE,
+                         NULL);
     // TODO: BHT0 battery heat map function, length 0x19/25
     // TODO: battery settings page won't fully load
-#endif
+
     return sbd;
 }
 
@@ -647,15 +625,17 @@ static int vmstate_apple_smc_post_load(void *opaque, int version_id)
         key = apple_smc_get_key(s, data->key);
         if (key == NULL) {
             fprintf(stderr, "Removing key `%c%c%c%c` as it no longer exists\n",
-                    SMC_FORMAT_KEY(data->key));
+                    SMC_KEY_FORMAT(data->key));
             g_free(data->data);
             QTAILQ_REMOVE(&s->key_data, data, next);
+            g_free(data);
+            continue;
         }
         if (key->info.size != data->size) {
             fprintf(stderr,
                     "Key `%c%c%c%c` has mismatched length, state cannot be "
                     "loaded.\n",
-                    SMC_FORMAT_KEY(data->key));
+                    SMC_KEY_FORMAT(data->key));
             return -1;
         }
     }
@@ -684,7 +664,6 @@ static const VMStateDescription vmstate_apple_smc = {
             VMSTATE_APPLE_RTKIT(parent_obj, AppleSMCState),
             VMSTATE_QTAILQ_V(key_data, AppleSMCState, 0,
                              vmstate_apple_smc_key_data, SMCKeyData, next),
-            VMSTATE_UINT32(key_count, AppleSMCState),
             VMSTATE_UINT32(sram_size, AppleSMCState),
             VMSTATE_VBUFFER_ALLOC_UINT32(sram, AppleSMCState, 0, NULL,
                                          sram_size),

@@ -18,26 +18,13 @@
  */
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
 #include "hw/misc/apple-silicon/buttons.h"
 #include "hw/misc/apple-silicon/smc.h"
-#include "hw/qdev-core.h"
 #include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/lockable.h"
-#include "ui/input.h"
 #include "system/runstate.h"
-
-#if 0
-#define DPRINTF(fmt, ...)                    \
-    do {                                     \
-        fprintf(stderr, fmt, ##__VA_ARGS__); \
-    } while (0)
-#else
-#define DPRINTF(fmt, ...) \
-    do {                  \
-    } while (0)
-#endif
+#include "ui/input.h"
 
 #define TYPE_APPLE_BUTTONS "apple-buttons"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleButtonsState, APPLE_BUTTONS)
@@ -48,7 +35,7 @@ struct AppleButtonsState {
 
     /*< public >*/
     QemuMutex mutex;
-    bool states[SMC_HID_BUTTON_COUNT];
+    uint16_t states;
 };
 
 static void apple_buttons_handle_event(DeviceState *dev, QemuConsole *src,
@@ -68,9 +55,6 @@ static void apple_buttons_handle_event(DeviceState *dev, QemuConsole *src,
 
     qcode = qemu_input_key_value_to_qcode(key->key);
 
-    DPRINTF("%s: qcode=0x%x/%d, key->down=%d\n", __func__, qcode, qcode,
-            key->down);
-
     switch (qcode) {
     case Q_KEY_CODE_F1:
         button = SMC_HID_BUTTON_FORCE_SHUTDOWN;
@@ -78,8 +62,13 @@ static void apple_buttons_handle_event(DeviceState *dev, QemuConsole *src,
     case Q_KEY_CODE_F2:
         if (key->down) {
             button = SMC_HID_BUTTON_RINGER;
-            s->states[button] = !s->states[button];
-            apple_smc_send_hid_button(smc, button, s->states[button]);
+            if (s->states & BIT32(button)) {
+                s->states &= ~BIT32(button);
+            } else {
+                s->states |= BIT32(button);
+            }
+            apple_smc_send_hid_button(smc, button,
+                                      (s->states & BIT32(button)) != 0);
         }
         return;
     case Q_KEY_CODE_F3:
@@ -89,7 +78,7 @@ static void apple_buttons_handle_event(DeviceState *dev, QemuConsole *src,
         button = SMC_HID_BUTTON_VOL_UP;
         break;
     case Q_KEY_CODE_F5:
-        button = SMC_HID_BUTTON_POWER;
+        button = SMC_HID_BUTTON_HOLD;
         break;
     case Q_KEY_CODE_F6:
         button = SMC_HID_BUTTON_MENU;
@@ -110,65 +99,32 @@ static void apple_buttons_handle_event(DeviceState *dev, QemuConsole *src,
         return;
     }
 
-    if (s->states[button] != key->down) {
-        s->states[button] = key->down;
+    if (((s->states & BIT32(button)) != 0) != key->down) {
+        if (key->down) {
+            s->states |= BIT32(button);
+        } else {
+            s->states &= ~BIT32(button);
+        }
         apple_smc_send_hid_button(smc, button, key->down);
     }
 }
 
-static uint8_t smc_key_btnR_read(AppleSMCState *s, SMCKey *key,
-                                 SMCKeyData *data, void *payload,
-                                 uint8_t length)
-{
-    uint32_t value;
-
-    if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+#define BUTTON_READER(_btn, _op, _enum)                               \
+    static SMCResult apple_buttons_smc_read_##_btn(                   \
+        SMCKey *key, SMCKeyData *data, void *payload, uint8_t length) \
+    {                                                                 \
+        AppleButtonsState *s = key->opaque;                           \
+                                                                      \
+        stl_le_p(data->data,                                          \
+                 (s->states & BIT32(SMC_HID_BUTTON_##_enum)) _op 0);  \
+                                                                      \
+        return SMC_RESULT_SUCCESS;                                    \
     }
 
-    value = ldl_le_p(payload);
-
-    if (data->data == NULL) {
-        data->data = g_malloc(key->info.size);
-    } else {
-        DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
-                ldl_le_p(data->data));
-    }
-
-    DPRINTF("%s: key->info.size: 0x%08x ; length: 0x%08x\n", __func__,
-            key->info.size, length);
-    DPRINTF("%s: value: 0x%08x ; length: 0x%08x\n", __func__, value, length);
-
-    switch (value) {
-    default:
-        DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
-    }
-}
-
-static uint8_t smc_key_btnR_write(AppleSMCState *s, SMCKey *key,
-                                  SMCKeyData *data, void *payload,
-                                  uint8_t length)
-{
-    uint32_t value;
-
-    if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
-    }
-
-    value = ldl_le_p(payload);
-
-    // Do not use data->data here, as it only contains the data last written to
-    // by the read function (smc_key_btnR_read)
-
-    DPRINTF("%s: value: 0x%08x ; length: 0x%08x\n", __func__, value, length);
-
-    switch (value) {
-    default:
-        DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
-    }
-}
+BUTTON_READER(vol_up, ==, VOL_UP);
+BUTTON_READER(vol_down, ==, VOL_DOWN);
+BUTTON_READER(hold, ==, HOLD);
+BUTTON_READER(ringer, !=, RINGER);
 
 SysBusDevice *apple_buttons_create(AppleDTNode *node)
 {
@@ -182,10 +138,21 @@ SysBusDevice *apple_buttons_create(AppleDTNode *node)
 
     AppleSMCState *smc = APPLE_SMC_IOP(object_property_get_link(
         OBJECT(qdev_get_machine()), "smc", &error_fatal));
-    apple_smc_create_key_func(smc, 'btnR', 4, SMCKeyTypeUInt32,
-                              SMC_ATTR_FUNCTION | SMC_ATTR_WRITEABLE |
-                                  SMC_ATTR_READABLE | 0x20,
-                              smc_key_btnR_read, smc_key_btnR_write);
+    apple_smc_create_key_func(smc, 'bVUP', 4, SMC_KEY_TYPE_UINT32,
+                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                              apple_buttons_smc_read_vol_up, NULL);
+    apple_smc_create_key_func(smc, 'bVDN', 4, SMC_KEY_TYPE_UINT32,
+                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                              apple_buttons_smc_read_vol_down, NULL);
+    apple_smc_create_key_func(smc, 'bHLD', 4, SMC_KEY_TYPE_UINT32,
+                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                              apple_buttons_smc_read_hold, NULL);
+    apple_smc_create_key_func(smc, 'bRIN', 4, SMC_KEY_TYPE_UINT32,
+                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                              apple_buttons_smc_read_ringer, NULL);
+    bool powered_by_hold_btn = true;
+    apple_smc_create_key(smc, 'bPHD', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_R,
+                         &powered_by_hold_btn);
 
     qemu_mutex_init(&s->mutex);
 
@@ -196,7 +163,7 @@ static void apple_buttons_qdev_reset_hold(Object *obj, ResetType type)
 {
     AppleButtonsState *s = APPLE_BUTTONS(obj);
     QEMU_LOCK_GUARD(&s->mutex);
-    memset(s->states, 0, sizeof(s->states));
+    s->states = 0;
 }
 
 static const QemuInputHandler apple_buttons_handler = {
@@ -223,7 +190,7 @@ static const VMStateDescription vmstate_apple_buttons = {
     .minimum_version_id = 0,
     .fields =
         (const VMStateField[]){
-            VMSTATE_BOOL_ARRAY(states, AppleButtonsState, SMC_HID_BUTTON_COUNT),
+            VMSTATE_UINT16(states, AppleButtonsState),
             VMSTATE_END_OF_LIST(),
         }
 };

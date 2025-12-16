@@ -6,109 +6,121 @@
 #include "hw/misc/apple-silicon/a7iop/base.h"
 #include "hw/sysbus.h"
 
-#define APPLE_SMC_MMIO_ASC (1)
-#define APPLE_SMC_MMIO_SRAM (2)
-
 #define TYPE_APPLE_SMC_IOP "apple-smc"
 OBJECT_DECLARE_TYPE(AppleSMCState, AppleSMCClass, APPLE_SMC_IOP)
 
-#if 0
-#define SMC_LOG_MSG(ep, msg)       \
-    qemu_log_mask(LOG_GUEST_ERROR, \
-                  "SMC: message: ep=%u msg=0x" HWADDR_FMT_plx "\n", ep, msg)
-#else
-#define SMC_LOG_MSG(ep, msg) \
-    do {                     \
-    } while (0)
-#endif
-
-#define SMC_FORMAT_KEY(v)                                            \
+#define SMC_KEY_FORMAT(v)                                            \
     (((v) >> 24) & 0xFF), (((v) >> 16) & 0xFF), (((v) >> 8) & 0xFF), \
         ((v) & 0xFF)
 
-enum {
-    SMCKeyTypeFlag = 'flag',
-    SMCKeyTypeHex = 'hex_',
-    SMCKeyTypeSInt8 = 'si8 ',
-    SMCKeyTypeSInt16 = 'si16',
-    SMCKeyTypeSInt32 = 'si32',
-    SMCKeyTypeSInt64 = 'si64',
-    SMCKeyTypeUInt8 = 'ui8 ',
-    SMCKeyTypeUInt16 = 'ui16',
-    SMCKeyTypeUInt32 = 'ui32',
-    SMCKeyTypeUInt64 = 'ui64',
-    SMCKeyTypeSP78 = 'Sp78',
-    SMCKeyTypeClh = '{clh',
-    SMCKeyTypeIOFT = 'ioft',
-    SMCKeyTypeFLT = 'flt ',
-};
+typedef enum {
+    SMC_KEY_TYPE_FLAG = 'flag',
+    SMC_KEY_TYPE_HEX = 'hex_',
+    SMC_KEY_TYPE_SINT8 = 'si8 ',
+    SMC_KEY_TYPE_SINT16 = 'si16',
+    SMC_KEY_TYPE_SINT32 = 'si32',
+    SMC_KEY_TYPE_SINT64 = 'si64',
+    SMC_KEY_TYPE_UINT8 = 'ui8 ',
+    SMC_KEY_TYPE_UINT16 = 'ui16',
+    SMC_KEY_TYPE_UINT32 = 'ui32',
+    SMC_KEY_TYPE_UINT64 = 'ui64',
+    SMC_KEY_TYPE_SP78 = 'Sp78',
+    SMC_KEY_TYPE_CLH = '{clh',
+    SMC_KEY_TYPE_IOFLT = 'ioft',
+    SMC_KEY_TYPE_FLT = 'flt ',
+} SMCKeyType;
 
-enum SMCCommand {
+typedef enum {
+    SMC_NO_COMMAND = 0x0,
     SMC_READ_KEY = 0x10,
-    SMC_WRITE_KEY = 0x11,
-    SMC_GET_KEY_BY_INDEX = 0x12,
-    SMC_GET_KEY_INFO = 0x13,
+    SMC_WRITE_KEY,
+    SMC_GET_KEY_BY_INDEX,
+    SMC_GET_KEY_INFO,
     SMC_GET_SRAM_ADDR = 0x17,
-    SMC_NOTIFICATION = 0x18,
+    SMC_NOTIFICATION,
     SMC_READ_KEY_PAYLOAD = 0x20,
-};
+} SMCCommand;
 
-enum SMCResult {
-    kSMCSuccess = 0,
-    kSMCError = 1,
-    kSMCCommCollision = 0x80,
-    kSMCSpuriousData = 0x81,
-    kSMCBadCommand = 0x82,
-    kSMCBadParameter = 0x83,
-    kSMCKeyNotFound = 0x84,
-    kSMCKeyNotReadable = 0x85,
-    kSMCKeyNotWritable = 0x86,
-    kSMCKeySizeMismatch = 0x87,
-    kSMCFramingError = 0x88,
-    kSMCBadArgumentError = 0x89,
-    kSMCTimeoutError = 0xB7,
-    kSMCKeyIndexRangeError = 0xB8,
-    kSMCBadFuncParameter = 0xC0,
-    kSMCEventBuffWrongOrder = 0xC4,
-    kSMCEventBuffReadError = 0xC5,
-    kSMCDeviceAccessError = 0xC7,
-    kSMCUnsupportedFeature = 0xCB,
-    kSMCSMBAccessError = 0xCC,
-};
+typedef enum {
+    SMC_RESULT_SUCCESS = 0,
+    SMC_RESULT_ERROR = 1,
+    SMC_RESULT_COMM_COLLISION = 0x80,
+    SMC_RESULT_SPURIOUS_DATA = 0x81,
+    SMC_RESULT_BAD_COMMAND = 0x82,
+    SMC_RESULT_BAD_PARAMETER = 0x83,
+    SMC_RESULT_KEY_NOT_FOUND = 0x84,
+    SMC_RESULT_KEY_NOT_READABLE = 0x85,
+    SMC_RESULT_KEY_NOT_WRITABLE = 0x86,
+    SMC_RESULT_KEY_SIZE_MISMATCH = 0x87,
+    SMC_RESULT_FRAMING_ERROR = 0x88,
+    SMC_RESULT_BAD_ARGUMENT_ERROR = 0x89,
+    SMC_RESULT_TIMEOUT_ERROR = 0xB7,
+    SMC_RESULT_KEY_INDEX_RANGE_ERROR = 0xB8,
+    SMC_RESULT_BAD_FUNC_PARAMETER = 0xC0,
+    SMC_RESULT_EVENT_BUFF_WRONG_ORDER = 0xC4,
+    SMC_RESULT_EVENT_BUFF_READ_ERROR = 0xC5,
+    SMC_RESULT_DEVICE_ACCESS_ERROR = 0xC7,
+    SMC_RESULT_UNSUPPORTED_FEATURE = 0xCB,
+    SMC_RESULT_SMB_ACCESS_ERROR = 0xCC,
+} SMCResult;
 
-enum SMCEventType {
-    kSMCEventSystemStateNotify = 0x70,
-    kSMCEventPowerStateNotify = 0x71,
-    kSMCEventHIDEventNotify = 0x72,
-    kSMCEventBatteryAuthNotify = 0x73,
-    kSMCEventGGFwUpdateNotify = 0x74,
-};
+typedef enum {
+    SMC_EVENT_SYSTEM_STATE_NOTIFY = 0x70,
+    SMC_EVENT_POWER_STATE_NOTIFY,
+    SMC_EVENT_HID_EVENT_NOTIFY,
+    SMC_EVENT_BATTERY_AUTH_NOTIFY,
+    SMC_EVENT_GG_FW_UPDATE_NOTIFY,
+    SMC_EVENT_PLIMIT_CHANGE = 0x80,
+    SMC_EVENT_PCIE_READY = 0x83,
+} SMCEvent;
 
-enum SMCSystemStateNotifyType {
-    kSMCSystemStateNotifySMCPanicDone = 0xA,
-    kSMCSystemStateNotifySMCPanicProgress = 0x22,
-};
+typedef enum {
+    SMC_SYSTEM_STATE_NOTIFY_PANIC_DETECTED = 0x4,
+    SMC_SYSTEM_STATE_NOTIFY_PREPARE_FOR_S0 = 0x6,
+    SMC_SYSTEM_STATE_NOTIFY_SMC_PANIC_DONE = 0xA,
+    SMC_SYSTEM_STATE_NOTIFY_RESTART = 0xF,
+    SMC_SYSTEM_STATE_NOTIFY_MAC_EFI_FIRMWARE_UPDATED,
+    SMC_SYSTEM_STATE_NOTIFY_QUIESCE_DEVICES,
+    SMC_SYSTEM_STATE_NOTIFY_RESUME_DEVICES,
+    SMC_SYSTEM_STATE_NOTIFY_GPU_PANEL_POWER_ON,
+    SMC_SYSTEM_STATE_NOTIFY_SMC_PANIC_PROGRESS = 0x22,
+} SMCSystemStateNotify;
 
-enum SMCHIDEventNotifyType {
-    kSMCHIDEventNotifyTypeButton = 1,
-    kSMCHIDEventNotifyTypeInterruptVector = 2,
-    kSMCHIDEventNotifyTypeLidState = 3,
-};
+typedef enum {
+    SMC_PANIC_CAUSE_UNKNOWN = 0,
+    SMC_PANIC_CAUSE_MACOS_PANIC_DETECTED,
+    SMC_PANIC_CAUSE_WATCHDOG_DETECTED,
+    SMC_PANIC_CAUSE_X86_STRAIGHT_S5_SHUTDOWN_DETECTED,
+    SMC_PANIC_CAUSE_X86_GLOBAL_RESET_DETECTED,
+    SMC_PANIC_CAUSE_X86_CPU_CATERR_DETECTED,
+    SMC_PANIC_CAUSE_X86_ACPI_PANIC_DETECTED,
+    SMC_PANIC_CAUSE_X86_MACEFI_PANIC_DETECTED,
+    SMC_PANIC_CAUSE_COUNT,
+} SMCPanicCause;
+
+typedef enum {
+    SMC_HID_EVENT_NOTIFY_BUTTON = 1,
+    SMC_HID_EVENT_NOTIFY_INTERRUPT_VECTOR,
+    SMC_HID_EVENT_NOTIFY_LID_STATE,
+} SMCHIDEventNotify;
 
 #define kSMCKeyEndpoint (0)
 
-enum SMCAttr {
-    SMC_ATTR_LITTLE_ENDIAN = BIT(2),
-    SMC_ATTR_FUNCTION = BIT(4),
-    SMC_ATTR_WRITEABLE = BIT(6),
-    SMC_ATTR_READABLE = BIT(7),
-    SMC_ATTR_DEFAULT = SMC_ATTR_READABLE | SMC_ATTR_WRITEABLE,
-    SMC_ATTR_DEFAULT_LE = SMC_ATTR_LITTLE_ENDIAN | SMC_ATTR_DEFAULT,
-};
+typedef enum {
+    SMC_ATTR_LE = BIT(2),
+    SMC_ATTR_FUNC = BIT(4),
+    SMC_ATTR_UNK_0x20 = BIT(5),
+    SMC_ATTR_W = BIT(6),
+    SMC_ATTR_R = BIT(7),
+    SMC_ATTR_RW = SMC_ATTR_R | SMC_ATTR_W,
+    SMC_ATTR_RW_LE = SMC_ATTR_RW | SMC_ATTR_LE,
+    SMC_ATTR_R_LE = SMC_ATTR_R | SMC_ATTR_LE,
+    SMC_ATTR_W_LE = SMC_ATTR_W | SMC_ATTR_LE,
+} SMCKeyAttribute;
 
 typedef enum {
     SMC_HID_BUTTON_FORCE_SHUTDOWN = 0,
-    SMC_HID_BUTTON_POWER,
+    SMC_HID_BUTTON_HOLD,
     SMC_HID_BUTTON_VOL_UP,
     SMC_HID_BUTTON_VOL_DOWN,
     SMC_HID_BUTTON_RINGER,
@@ -123,10 +135,8 @@ typedef enum {
 typedef struct SMCKey SMCKey;
 typedef struct SMCKeyData SMCKeyData;
 
-typedef uint8_t (*KeyReader)(AppleSMCState *s, SMCKey *key, SMCKeyData *data,
-                             void *payload, uint8_t length);
-typedef uint8_t (*KeyWriter)(AppleSMCState *s, SMCKey *key, SMCKeyData *data,
-                             void *payload, uint8_t length);
+typedef SMCResult SMCKeyFunc(SMCKey *key, SMCKeyData *data, void *payload,
+                             uint8_t length);
 
 typedef struct {
     union {
@@ -150,8 +160,9 @@ typedef struct {
 struct SMCKey {
     uint32_t key;
     SMCKeyInfo info;
-    KeyReader read;
-    KeyWriter write;
+    void *opaque;
+    SMCKeyFunc *read;
+    SMCKeyFunc *write;
     QTAILQ_ENTRY(SMCKey) next;
 };
 
@@ -167,13 +178,15 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
 
 SMCKey *apple_smc_get_key(AppleSMCState *s, uint32_t key);
 SMCKeyData *apple_smc_get_key_data(AppleSMCState *s, uint32_t key);
-SMCKey *apple_smc_create_key(AppleSMCState *s, uint32_t key, uint32_t size,
-                             uint32_t type, uint32_t attr, void *data);
-SMCKey *apple_smc_create_key_func(AppleSMCState *s, uint32_t key, uint32_t size,
-                                  uint32_t type, uint32_t attr,
-                                  KeyReader reader, KeyWriter writer);
-uint8_t apple_smc_set_key(AppleSMCState *s, uint32_t key, uint32_t size,
-                          void *data);
+SMCKey *apple_smc_create_key(AppleSMCState *s, uint32_t key, uint8_t size,
+                             SMCKeyType type, SMCKeyAttribute attr,
+                             const void *data);
+SMCKey *apple_smc_create_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
+                                  SMCKeyType type, SMCKeyAttribute attr,
+                                  void *opaque, SMCKeyFunc *reader,
+                                  SMCKeyFunc *writer);
+SMCResult apple_smc_write_key(AppleSMCState *s, uint32_t key, uint8_t size,
+                              const void *data);
 void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
                                bool state);
 

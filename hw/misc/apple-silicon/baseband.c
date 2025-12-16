@@ -681,26 +681,21 @@ static const MemoryRegionOps bar2_ops = {
         },
 };
 
-static uint8_t smc_key_gP07_read(AppleSMCState *s, SMCKey *key,
-                                 SMCKeyData *data, void *payload,
-                                 uint8_t length)
+static SMCResult smc_key_gP07_read(SMCKey *key, SMCKeyData *data, void *payload,
+                                   uint8_t length)
 {
     uint32_t value;
     uint32_t tmpval0;
 
     if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
     value = ldl_le_p(payload);
 
-    if (data->data == NULL) {
-        data->data = g_malloc(key->info.size);
-    } else {
-        uint32_t *data0 = data->data;
-        DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
-                data0[0]);
-    }
+    uint32_t *data0 = data->data;
+    DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
+            data0[0]);
 
     DPRINTF("%s: key->info.size: 0x%08x ; length: 0x%08x\n", __func__,
             key->info.size, length);
@@ -709,19 +704,16 @@ static uint8_t smc_key_gP07_read(AppleSMCState *s, SMCKey *key,
     switch (value) {
     default:
         DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
+        return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
 }
 
-static uint8_t smc_key_gP07_write(AppleSMCState *s, SMCKey *key,
-                                  SMCKeyData *data, void *payload,
-                                  uint8_t length)
+static SMCResult smc_key_gP07_write(SMCKey *key, SMCKeyData *data,
+                                    void *payload, uint8_t length)
 {
-    AppleRTKit *rtk;
     uint32_t value;
 
-    AppleBasebandState *baseband = APPLE_BASEBAND(object_property_get_link(
-        OBJECT(qdev_get_machine()), "baseband", &error_fatal));
+    AppleBasebandState *baseband = key->opaque;
     AppleBasebandDeviceState *baseband_device = baseband->device;
     ApplePCIEPort *port = baseband_device->port;
     ApplePCIEHost *host = port->host;
@@ -729,10 +721,9 @@ static uint8_t smc_key_gP07_write(AppleSMCState *s, SMCKey *key,
     PCIDevice *port_pci_dev = PCI_DEVICE(port);
 
     if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    rtk = APPLE_RTKIT(s);
     value = ldl_le_p(payload);
 
     // Do not use data->data here, as it only contains the data last written to
@@ -758,34 +749,29 @@ static uint8_t smc_key_gP07_write(AppleSMCState *s, SMCKey *key,
         //baseband_gpio_set_reset_det(DEVICE(baseband_device), enable_baseband_power); // 1 means 0 == alive
         apple_baseband_set_irq(baseband, 0, 1);
 #endif
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     default:
         DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
+        return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
 }
 
-static uint8_t smc_key_gP09_read(AppleSMCState *s, SMCKey *key,
-                                 SMCKeyData *data, void *payload,
-                                 uint8_t length)
+static SMCResult smc_key_gP09_read(SMCKey *key, SMCKeyData *data, void *payload,
+                                   uint8_t length)
 {
     uint32_t value;
     uint32_t tmpval0;
 
     if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
     value = ldl_le_p(payload);
 
-    if (data->data == NULL) {
-        data->data = g_malloc(key->info.size);
-    } else {
-        uint32_t *data0 = data->data;
-        DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
-                data0[0]);
-    }
+    uint32_t *data0 = data->data;
+    DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
+            data0[0]);
 
     DPRINTF("%s: key->info.size: 0x%08x ; length: 0x%08x\n", __func__,
             key->info.size, length);
@@ -795,7 +781,7 @@ static uint8_t smc_key_gP09_read(AppleSMCState *s, SMCKey *key,
     // function-pmu_exton: 0x02000000 read?
     case 0x02000000: {
         DPRINTF("%s: pmu_exton\n", __func__);
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     case 0x06000000: {
         DPRINTF("%s: getVectorType\n", __func__);
@@ -805,24 +791,21 @@ static uint8_t smc_key_gP09_read(AppleSMCState *s, SMCKey *key,
         // tmpval0 = 0x1;
         tmpval0 = 0x2;
         memcpy(data->data, &tmpval0, sizeof(tmpval0));
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     default:
         DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
+        return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
 }
 
-static uint8_t smc_key_gP09_write(AppleSMCState *s, SMCKey *key,
-                                  SMCKeyData *data, void *payload,
-                                  uint8_t length)
+static SMCResult smc_key_gP09_write(SMCKey *key, SMCKeyData *data,
+                                    void *payload, uint8_t length)
 {
-    AppleRTKit *rtk;
     uint32_t value;
     KeyResponse r = { 0 };
 
-    AppleBasebandState *baseband = APPLE_BASEBAND(object_property_get_link(
-        OBJECT(qdev_get_machine()), "baseband", &error_fatal));
+    AppleBasebandState *baseband = key->opaque;
     AppleBasebandDeviceState *baseband_device = baseband->device;
     ApplePCIEPort *port = baseband_device->port;
     ApplePCIEHost *host = port->host;
@@ -830,10 +813,9 @@ static uint8_t smc_key_gP09_write(AppleSMCState *s, SMCKey *key,
     PCIDevice *port_pci_dev = PCI_DEVICE(port);
 
     if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    rtk = APPLE_RTKIT(s);
     value = ldl_le_p(payload);
 
     // Do not use data->data here, as it only contains the data last written to
@@ -847,7 +829,7 @@ static uint8_t smc_key_gP09_write(AppleSMCState *s, SMCKey *key,
         DPRINTF("%s: disableVectorHard\n", __func__);
         // apple_baseband_set_irq(baseband, 0, 1);
         // goto enableVector;
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     case 0x04000001: {
         // enableVector/IENA
@@ -865,7 +847,7 @@ static uint8_t smc_key_gP09_write(AppleSMCState *s, SMCKey *key,
         r.response[3] = 0x72;
         apple_rtkit_send_user_msg(rtk, kSMCKeyEndpoint, r.raw);
 #endif
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     // function-pmu_exton_config: 0x07000000/0x07000001 write?
     case 0x07000000:
@@ -881,17 +863,15 @@ static uint8_t smc_key_gP09_write(AppleSMCState *s, SMCKey *key,
             DPRINTF("%s: ignoring pmuExtOnConfigGated/pmu_exton_config enable:"
                     " %d\n",
                     __func__, use_pmuExtOnConfigOverride_pulldown);
-            // DPRINTF("%s: set false pmuExtOnConfigGated/pmu_exton_config
-            // enable:"
-            //         " %d\n",
+            // DPRINTF("%s: set false pmuExtOnConfigGated/pmu_exton_config "
+            //         "enable:  %d\n",
             //         __func__, use_pmuExtOnConfigOverride_pulldown);
             // baseband_gpio_set_reset_det(DEVICE(baseband_device), false);
-            // DPRINTF("%s: set true pmuExtOnConfigGated/pmu_exton_config
-            // enable:"
+            // DPRINTF("%s: set true pmuExtOnConfigGated/pmu_exton_config enable: "
             //         " %d\n",
             //         __func__, use_pmuExtOnConfigOverride_pulldown);
             // baseband_gpio_set_reset_det(DEVICE(baseband_device), true);
-            return kSMCSuccess;
+            return SMC_RESULT_SUCCESS;
         }
 #if 0
         AppleSPMIBasebandState *baseband_spmi = APPLE_SPMI_BASEBAND(object_property_get_link(OBJECT(qdev_get_machine()), "baseband-spmi", &error_fatal));
@@ -926,34 +906,29 @@ static uint8_t smc_key_gP09_write(AppleSMCState *s, SMCKey *key,
         return kSMCSuccess;
 #endif
         // apple_baseband_set_irq(baseband, 0, 1);
-        return kSMCSuccess;
+        return SMC_RESULT_SUCCESS;
     }
     default:
         DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
+        return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
 }
 
-static uint8_t smc_key_gP11_read(AppleSMCState *s, SMCKey *key,
-                                 SMCKeyData *data, void *payload,
-                                 uint8_t length)
+static SMCResult smc_key_gP11_read(SMCKey *key, SMCKeyData *data, void *payload,
+                                   uint8_t length)
 {
     uint32_t value;
     uint32_t tmpval0;
 
     if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
     value = ldl_le_p(payload);
 
-    if (data->data == NULL) {
-        data->data = g_malloc(key->info.size);
-    } else {
-        uint32_t *data0 = data->data;
-        DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
-                data0[0]);
-    }
+    uint32_t *data0 = data->data;
+    DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
+            data0[0]);
 
     DPRINTF("%s: key->info.size: 0x%08x ; length: 0x%08x\n", __func__,
             key->info.size, length);
@@ -963,29 +938,25 @@ static uint8_t smc_key_gP11_read(AppleSMCState *s, SMCKey *key,
     // gP11 is actually for amfm (wifi/bluetooth-pcie bridge)
     default:
         DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
+        return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
 }
 
-static uint8_t smc_key_gP11_write(AppleSMCState *s, SMCKey *key,
-                                  SMCKeyData *data, void *payload,
-                                  uint8_t length)
+static SMCResult smc_key_gP11_write(SMCKey *key, SMCKeyData *data,
+                                    void *payload, uint8_t length)
 {
-    AppleRTKit *rtk;
     uint32_t value;
 
-    AppleBasebandState *baseband = APPLE_BASEBAND(object_property_get_link(
-        OBJECT(qdev_get_machine()), "baseband", &error_fatal));
+    AppleBasebandState *baseband = key->opaque;
     ApplePCIEPort *port = baseband->device->port;
     ApplePCIEHost *host = port->host;
     ApplePCIEState *pcie = host->pcie;
     PCIDevice *port_pci_dev = PCI_DEVICE(port);
 
     if (payload == NULL || length != key->info.size) {
-        return kSMCBadArgumentError;
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    rtk = APPLE_RTKIT(s);
     value = ldl_le_p(payload);
 
     // Do not use data->data here, as it only contains the data last written to
@@ -997,7 +968,7 @@ static uint8_t smc_key_gP11_write(AppleSMCState *s, SMCKey *key,
     // gP11 is actually for amfm (wifi/bluetooth-pcie bridge)
     default:
         DPRINTF("%s: UNKNOWN VALUE: 0x%08x\n", __func__, value);
-        return kSMCBadFuncParameter;
+        return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
 }
 
@@ -1037,18 +1008,15 @@ SysBusDevice *apple_baseband_create(AppleDTNode *node, PCIBus *pci_bus,
     // smc-pmu
     AppleSMCState *smc = APPLE_SMC_IOP(object_property_get_link(
         OBJECT(qdev_get_machine()), "smc", &error_fatal));
-    apple_smc_create_key_func(smc, 'gP07', 4, SMCKeyTypeUInt32,
-                              SMC_ATTR_FUNCTION | SMC_ATTR_WRITEABLE |
-                                  SMC_ATTR_READABLE | 0x20,
-                              &smc_key_gP07_read, &smc_key_gP07_write);
-    apple_smc_create_key_func(smc, 'gP09', 4, SMCKeyTypeUInt32,
-                              SMC_ATTR_FUNCTION | SMC_ATTR_WRITEABLE |
-                                  SMC_ATTR_READABLE | 0x20,
-                              &smc_key_gP09_read, &smc_key_gP09_write);
-    apple_smc_create_key_func(smc, 'gP11', 4, SMCKeyTypeUInt32,
-                              SMC_ATTR_FUNCTION | SMC_ATTR_WRITEABLE |
-                                  SMC_ATTR_READABLE | 0x20,
-                              &smc_key_gP11_read, &smc_key_gP11_write);
+    apple_smc_create_key_func(smc, 'gP07', 4, SMC_KEY_TYPE_UINT32,
+                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                              smc_key_gP07_read, smc_key_gP07_write);
+    apple_smc_create_key_func(smc, 'gP09', 4, SMC_KEY_TYPE_UINT32,
+                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                              smc_key_gP09_read, smc_key_gP09_write);
+    apple_smc_create_key_func(smc, 'gP11', 4, SMC_KEY_TYPE_UINT32,
+                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                              smc_key_gP11_read, smc_key_gP11_write);
     // TODO: gP09/gP11 are 0xf0, so gP07 should be as well.
     // TODO: missing, according to t8015, gP01/gp05/gp0e/gp0f/gp12/gp13/gp15
 

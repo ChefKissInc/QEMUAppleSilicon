@@ -1761,7 +1761,7 @@ static void t8030_create_smc(AppleT8030MachineState *t8030)
     }
 
     sysbus_mmio_map(
-        smc, APPLE_SMC_MMIO_SRAM,
+        smc, i,
         apple_dt_get_prop_u64(iop_nub, "region-base", &error_fatal));
 
     prop = apple_dt_get_prop(child, "interrupts");
@@ -2365,18 +2365,13 @@ static void t8030_create_speaker_bottom(AppleT8030MachineState *t8030)
 
 static void t8030_create_buttons(AppleT8030MachineState *t8030)
 {
-    int i;
-    uint32_t *ints;
-    AppleDTProp *prop;
-    uint64_t *reg;
     SysBusDevice *buttons;
-    AppleDTNode *child = apple_dt_get_node(t8030->device_tree, "buttons");
-    DeviceState *gpio = NULL;
-    int reset_det_pin;
+    AppleDTNode *child;
 
+    child = apple_dt_get_node(t8030->device_tree, "buttons");
     g_assert_nonnull(child);
+
     buttons = apple_buttons_create(child);
-    g_assert_nonnull(buttons);
     object_property_add_child(OBJECT(t8030), "buttons", OBJECT(buttons));
     sysbus_realize_and_unref(buttons, &error_fatal);
 }
