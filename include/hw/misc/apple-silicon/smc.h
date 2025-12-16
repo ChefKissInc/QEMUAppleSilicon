@@ -191,8 +191,6 @@ SMCKey *apple_smc_create_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
                                   SMCKeyType type, SMCKeyAttribute attr,
                                   void *opaque, SMCKeyFunc *reader,
                                   SMCKeyFunc *writer);
-SMCResult apple_smc_write_key(AppleSMCState *s, uint32_t key, uint8_t size,
-                              const void *data);
 void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
                                bool state);
 

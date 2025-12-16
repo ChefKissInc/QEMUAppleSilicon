@@ -143,34 +143,6 @@ static SMCResult apple_smc_key_read(const SMCKey *key_entry,
     return SMC_RESULT_SUCCESS;
 }
 
-static SMCResult apple_smc_key_write(SMCKey *key_entry, SMCKeyData *data_entry,
-                                     uint8_t size, const void *data)
-{
-    if (key_entry->info.size != size) {
-        return SMC_RESULT_BAD_ARGUMENT_ERROR;
-    }
-
-    memcpy(data_entry->data, data, size);
-
-    return SMC_RESULT_SUCCESS;
-}
-
-SMCResult apple_smc_write_key(AppleSMCState *s, uint32_t key, uint8_t size,
-                              const void *data)
-{
-    SMCKey *key_entry;
-    SMCKeyData *data_entry;
-
-    key_entry = apple_smc_get_key(s, key);
-    data_entry = apple_smc_get_key_data(s, key);
-
-    if (key_entry == NULL) {
-        return SMC_RESULT_KEY_NOT_FOUND;
-    }
-
-    return apple_smc_key_write(key_entry, data_entry, size, data);
-}
-
 void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
                                bool state)
 {
@@ -311,13 +283,14 @@ static void apple_smc_handle_key_endpoint(void *opaque, const uint32_t ep,
         if (key_entry == NULL) {
             resp.status = SMC_RESULT_KEY_NOT_FOUND;
         } else if (key_entry->info.attr & SMC_ATTR_W) {
-            if (key_entry->write != NULL) {
+            if (key_entry->info.size != kmsg->length) {
+                resp.status = SMC_RESULT_KEY_SIZE_MISMATCH;
+            } else if (key_entry->write != NULL) {
                 resp.status = key_entry->write(
                     key_entry, data_entry, kmsg->length == 0 ? NULL : s->sram,
                     kmsg->length);
             } else {
-                resp.status = apple_smc_key_write(key_entry, data_entry,
-                                                  kmsg->length, s->sram);
+                memcpy(data_entry->data, s->sram, kmsg->length);
             }
             if (resp.status == SMC_RESULT_SUCCESS) {
                 resp.length = key_entry->info.size;
