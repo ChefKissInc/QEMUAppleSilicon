@@ -192,7 +192,7 @@ void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
 }
 
 static SMCResult smc_key_count_read(SMCKey *key, SMCKeyData *data,
-                                    void *payload, uint8_t length)
+                                    const void *in, uint8_t in_length)
 {
     AppleSMCState *s = key->opaque;
     SMCKey *cur;
@@ -209,19 +209,19 @@ static SMCResult smc_key_count_read(SMCKey *key, SMCKeyData *data,
 }
 
 static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
-                                      void *payload, uint8_t length)
+                                      const void *in, uint8_t in_length)
 {
     AppleSMCState *s = key->opaque;
     AppleRTKit *rtk;
     uint32_t value;
     KeyResponse r = { 0 };
 
-    if (payload == NULL || length != key->info.size) {
+    if (in == NULL || in_length != key->info.size) {
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
     rtk = APPLE_RTKIT(s);
-    value = ldl_le_p(payload);
+    value = ldl_le_p(in);
 
     switch (value) {
     case 'offw':

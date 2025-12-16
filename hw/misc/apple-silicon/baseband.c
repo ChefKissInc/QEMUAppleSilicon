@@ -681,17 +681,17 @@ static const MemoryRegionOps bar2_ops = {
         },
 };
 
-static SMCResult smc_key_gP07_read(SMCKey *key, SMCKeyData *data, void *payload,
-                                   uint8_t length)
+static SMCResult smc_key_gP07_read(SMCKey *key, SMCKeyData *data,
+                                   const void *in, uint8_t in_length)
 {
     uint32_t value;
     uint32_t tmpval0;
 
-    if (payload == NULL || length != key->info.size) {
+    if (in == NULL) {
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    value = ldl_le_p(payload);
+    value = ldl_le_p(in);
 
     uint32_t *data0 = data->data;
     DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
@@ -709,7 +709,7 @@ static SMCResult smc_key_gP07_read(SMCKey *key, SMCKeyData *data, void *payload,
 }
 
 static SMCResult smc_key_gP07_write(SMCKey *key, SMCKeyData *data,
-                                    void *payload, uint8_t length)
+                                    const void *in, uint8_t in_length)
 {
     uint32_t value;
 
@@ -720,11 +720,11 @@ static SMCResult smc_key_gP07_write(SMCKey *key, SMCKeyData *data,
     ApplePCIEState *pcie = host->pcie;
     PCIDevice *port_pci_dev = PCI_DEVICE(port);
 
-    if (payload == NULL || length != key->info.size) {
+    if (in == NULL || in_length != key->info.size) {
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    value = ldl_le_p(payload);
+    value = ldl_le_p(in);
 
     // Do not use data->data here, as it only contains the data last written to
     // by the read function (smc_key_gP09_read)
@@ -757,17 +757,17 @@ static SMCResult smc_key_gP07_write(SMCKey *key, SMCKeyData *data,
     }
 }
 
-static SMCResult smc_key_gP09_read(SMCKey *key, SMCKeyData *data, void *payload,
-                                   uint8_t length)
+static SMCResult smc_key_gP09_read(SMCKey *key, SMCKeyData *data,
+                                   const void *in, uint8_t in_length)
 {
     uint32_t value;
     uint32_t tmpval0;
 
-    if (payload == NULL || length != key->info.size) {
+    if (in == NULL) {
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    value = ldl_le_p(payload);
+    value = ldl_le_p(in);
 
     uint32_t *data0 = data->data;
     DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
@@ -800,7 +800,7 @@ static SMCResult smc_key_gP09_read(SMCKey *key, SMCKeyData *data, void *payload,
 }
 
 static SMCResult smc_key_gP09_write(SMCKey *key, SMCKeyData *data,
-                                    void *payload, uint8_t length)
+                                    const void *in, uint8_t in_length)
 {
     uint32_t value;
     KeyResponse r = { 0 };
@@ -812,11 +812,11 @@ static SMCResult smc_key_gP09_write(SMCKey *key, SMCKeyData *data,
     ApplePCIEState *pcie = host->pcie;
     PCIDevice *port_pci_dev = PCI_DEVICE(port);
 
-    if (payload == NULL || length != key->info.size) {
+    if (in == NULL || in_length != key->info.size) {
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    value = ldl_le_p(payload);
+    value = ldl_le_p(in);
 
     // Do not use data->data here, as it only contains the data last written to
     // by the read function (smc_key_gP09_read)
@@ -914,17 +914,17 @@ static SMCResult smc_key_gP09_write(SMCKey *key, SMCKeyData *data,
     }
 }
 
-static SMCResult smc_key_gP11_read(SMCKey *key, SMCKeyData *data, void *payload,
-                                   uint8_t length)
+static SMCResult smc_key_gP11_read(SMCKey *key, SMCKeyData *data,
+                                   const void *in, uint8_t in_length)
 {
     uint32_t value;
     uint32_t tmpval0;
 
-    if (payload == NULL || length != key->info.size) {
+    if (in == NULL) {
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    value = ldl_le_p(payload);
+    value = ldl_le_p(in);
 
     uint32_t *data0 = data->data;
     DPRINTF("%s: data->data: %p ; data0[0]: 0x%08x\n", __func__, data->data,
@@ -943,7 +943,7 @@ static SMCResult smc_key_gP11_read(SMCKey *key, SMCKeyData *data, void *payload,
 }
 
 static SMCResult smc_key_gP11_write(SMCKey *key, SMCKeyData *data,
-                                    void *payload, uint8_t length)
+                                    const void *in, uint8_t in_length)
 {
     uint32_t value;
 
@@ -953,11 +953,11 @@ static SMCResult smc_key_gP11_write(SMCKey *key, SMCKeyData *data,
     ApplePCIEState *pcie = host->pcie;
     PCIDevice *port_pci_dev = PCI_DEVICE(port);
 
-    if (payload == NULL || length != key->info.size) {
+    if (in == NULL || in_length != key->info.size) {
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    value = ldl_le_p(payload);
+    value = ldl_le_p(in);
 
     // Do not use data->data here, as it only contains the data last written to
     // by the read function (smc_key_gP09_read)
