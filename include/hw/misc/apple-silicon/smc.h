@@ -184,13 +184,11 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
 
 SMCKey *apple_smc_get_key(AppleSMCState *s, uint32_t key);
 SMCKeyData *apple_smc_get_key_data(AppleSMCState *s, uint32_t key);
-SMCKey *apple_smc_create_key(AppleSMCState *s, uint32_t key, uint8_t size,
-                             SMCKeyType type, SMCKeyAttribute attr,
-                             const void *data);
-SMCKey *apple_smc_create_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
-                                  SMCKeyType type, SMCKeyAttribute attr,
-                                  void *opaque, SMCKeyFunc *reader,
-                                  SMCKeyFunc *writer);
+void apple_smc_add_key(AppleSMCState *s, uint32_t key, uint8_t size,
+                       SMCKeyType type, SMCKeyAttribute attr, const void *data);
+void apple_smc_add_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
+                            SMCKeyType type, SMCKeyAttribute attr, void *opaque,
+                            SMCKeyFunc *reader, SMCKeyFunc *writer);
 void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
                                bool state);
 

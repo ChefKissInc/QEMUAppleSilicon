@@ -1008,15 +1008,15 @@ SysBusDevice *apple_baseband_create(AppleDTNode *node, PCIBus *pci_bus,
     // smc-pmu
     AppleSMCState *smc = APPLE_SMC_IOP(object_property_get_link(
         OBJECT(qdev_get_machine()), "smc", &error_fatal));
-    apple_smc_create_key_func(smc, 'gP07', 4, SMC_KEY_TYPE_UINT32,
-                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
-                              smc_key_gP07_read, smc_key_gP07_write);
-    apple_smc_create_key_func(smc, 'gP09', 4, SMC_KEY_TYPE_UINT32,
-                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
-                              smc_key_gP09_read, smc_key_gP09_write);
-    apple_smc_create_key_func(smc, 'gP11', 4, SMC_KEY_TYPE_UINT32,
-                              SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
-                              smc_key_gP11_read, smc_key_gP11_write);
+    apple_smc_add_key_func(smc, 'gP07', 4, SMC_KEY_TYPE_UINT32,
+                           SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                           smc_key_gP07_read, smc_key_gP07_write);
+    apple_smc_add_key_func(smc, 'gP09', 4, SMC_KEY_TYPE_UINT32,
+                           SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                           smc_key_gP09_read, smc_key_gP09_write);
+    apple_smc_add_key_func(smc, 'gP11', 4, SMC_KEY_TYPE_UINT32,
+                           SMC_ATTR_LE | SMC_ATTR_UNK_0x20, s,
+                           smc_key_gP11_read, smc_key_gP11_write);
     // TODO: gP09/gP11 are 0xf0, so gP07 should be as well.
     // TODO: missing, according to t8015, gP01/gp05/gp0e/gp0f/gp12/gp13/gp15
 
