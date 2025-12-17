@@ -2644,7 +2644,6 @@ static void t8030_init(MachineState *machine)
     apple_dt_set_prop_str(child, "artwork-display-gamut", "sRGB");
     // TODO: PMP
     apple_dt_set_prop_str(t8030->device_tree, "target-type", "fastsim");
-    apple_dt_set_prop_u32(child, "device-color-policy", 0);
 
     t8030_cpu_setup(t8030);
     t8030_create_aic(t8030);
