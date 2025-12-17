@@ -223,9 +223,9 @@ static void gd_update_caption(GtkDisplayState *s)
     int i;
 
     if (qemu_name) {
-        prefix = g_strdup_printf("QEMU (%s)", qemu_name);
+        prefix = g_strdup_printf("QEMU Apple Silicon (%s)", qemu_name);
     } else {
-        prefix = g_strdup_printf("QEMU");
+        prefix = g_strdup_printf("QEMU Apple Silicon");
     }
 
     if (s->ptr_owner != NULL &&
