@@ -82,7 +82,7 @@ static const char *KEEP_COMP[] = {
 #ifdef ENABLE_BASEBAND
     "baseband,i19\0$",
 #endif
-    "biosensor,pearl\0$",
+    // "biosensor,pearl\0$", // not implemented
     "buttons\0$",
     "dart,s8000\0dart,s5l8960x\0$",
     "dart,t8020\0$",
