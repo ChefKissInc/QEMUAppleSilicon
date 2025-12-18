@@ -26,10 +26,10 @@
 #include "migration/vmstate.h"
 #include "qemu/cutils.h"
 #include "qemu/log.h"
+#include "system/dma.h"
 #include "ui/console.h"
 #include "framebuffer.h"
 #include "pixman.h"
-#include "system/dma.h"
 
 #ifdef CONFIG_PNG
 #include <png.h>
@@ -248,8 +248,7 @@ static void adp_v4_gp_read(ADPV4GenPipeState *s)
         return;
     }
 
-    ADP_INFO("gp%d: width and height is %dx%d.", s->index, s->buf_width,
-             s->buf_height);
+    ADP_INFO("gp%d: width and height is %dx%d.", s->index, s->width, s->height);
     ADP_INFO("gp%d: stride is %d.", s->index, s->stride);
 
     if (s->height == 0 || s->width == 0 || s->stride == 0) {
@@ -360,8 +359,7 @@ static uint32_t adp_v4_gp_reg_read(ADPV4GenPipeState *s, hwaddr addr)
         return s->stride;
     }
     case REG_GP_SIZE: {
-        ADP_INFO("gp%d: size -> 0x%x", s->index,
-                 (s->buf_width << 16) | s->buf_height);
+        ADP_INFO("gp%d: size -> 0x%x", s->index, (s->width << 16) | s->height);
         return (s->width << 16) | s->height;
     }
     case REG_GP_FRAME_SIZE: {
@@ -894,7 +892,9 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
 
     qemu_mutex_init(&s->lock);
 
-    s->update_disp_image_bh = aio_bh_new_guarded(qemu_get_aio_context(), adp_v4_update_disp_image_bh, s, &dev->mem_reentrancy_guard);
+    s->update_disp_image_bh =
+        aio_bh_new_guarded(qemu_get_aio_context(), adp_v4_update_disp_image_bh,
+                           s, &dev->mem_reentrancy_guard);
 
     apple_dt_set_prop_str(node, "display-target", "DisplayTarget5");
     apple_dt_set_prop(node, "display-timing-info", sizeof(adp_timing_info),
