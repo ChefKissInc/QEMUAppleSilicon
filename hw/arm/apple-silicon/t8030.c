@@ -1046,61 +1046,70 @@ static void t8030_pmgr_setup(AppleT8030MachineState *t8030)
                           (void *)0x3BC00000, name, 0x60000);
     memory_region_add_subregion(get_system_memory(),
                                 t8030->armio_base + 0x3BC00000, mem);
-    apple_dt_set_prop(child, "voltage-states5", sizeof(t8030_voltage_states5),
-                      t8030_voltage_states5);
-    apple_dt_set_prop(child, "voltage-states9-sram",
-                      sizeof(t8030_voltage_states9_sram),
-                      t8030_voltage_states9_sram);
+
     apple_dt_set_prop(child, "voltage-states0", sizeof(t8030_voltage_states0),
                       t8030_voltage_states0);
-    apple_dt_set_prop(child, "voltage-states9", sizeof(t8030_voltage_states9),
-                      t8030_voltage_states9);
+    apple_dt_set_prop(child, "voltage-states1", sizeof(t8030_voltage_states1),
+                      t8030_voltage_states1);
     apple_dt_set_prop(child, "voltage-states2", sizeof(t8030_voltage_states2),
                       t8030_voltage_states2);
-    apple_dt_set_prop(child, "voltage-states1-sram",
-                      sizeof(t8030_voltage_states1_sram),
-                      t8030_voltage_states1_sram);
+    apple_dt_set_prop(child, "voltage-states5", sizeof(t8030_voltage_states5),
+                      t8030_voltage_states5);
+    apple_dt_set_prop(child, "voltage-states8", sizeof(t8030_voltage_states8),
+                      t8030_voltage_states8);
+    apple_dt_set_prop(child, "voltage-states9", sizeof(t8030_voltage_states9),
+                      t8030_voltage_states9);
     apple_dt_set_prop(child, "voltage-states10", sizeof(t8030_voltage_states10),
                       t8030_voltage_states10);
     apple_dt_set_prop(child, "voltage-states11", sizeof(t8030_voltage_states11),
                       t8030_voltage_states11);
-    apple_dt_set_prop(child, "voltage-states8", sizeof(t8030_voltage_states8),
-                      t8030_voltage_states8);
+
+    apple_dt_set_prop(child, "voltage-states1-sram",
+                      sizeof(t8030_voltage_states1_sram),
+                      t8030_voltage_states1_sram);
+    apple_dt_set_prop(child, "voltage-states2-sram",
+                      sizeof(t8030_voltage_states2_sram),
+                      t8030_voltage_states2_sram);
     apple_dt_set_prop(child, "voltage-states5-sram",
                       sizeof(t8030_voltage_states5_sram),
                       t8030_voltage_states5_sram);
-    apple_dt_set_prop(child, "voltage-states1", sizeof(t8030_voltage_states1),
-                      t8030_voltage_states1);
-    apple_dt_set_prop(child, "bridge-settings-17",
-                      sizeof(t8030_bridge_settings17), t8030_bridge_settings17);
-    apple_dt_set_prop(child, "bridge-settings-15",
-                      sizeof(t8030_bridge_settings15), t8030_bridge_settings15);
-    apple_dt_set_prop(child, "bridge-settings-13",
-                      sizeof(t8030_bridge_settings13), t8030_bridge_settings13);
+    apple_dt_set_prop(child, "voltage-states8-sram",
+                      sizeof(t8030_voltage_states8_sram),
+                      t8030_voltage_states8_sram);
+    apple_dt_set_prop(child, "voltage-states9-sram",
+                      sizeof(t8030_voltage_states9_sram),
+                      t8030_voltage_states9_sram);
+
+    apple_dt_set_prop(child, "bridge-settings-0",
+                      sizeof(t8030_bridge_settings0), t8030_bridge_settings0);
     apple_dt_set_prop(child, "bridge-settings-1",
                       sizeof(t8030_bridge_settings1), t8030_bridge_settings1);
+    apple_dt_set_prop(child, "bridge-settings-2",
+                      sizeof(t8030_bridge_settings2), t8030_bridge_settings2);
+    apple_dt_set_prop(child, "bridge-settings-3",
+                      sizeof(t8030_bridge_settings3), t8030_bridge_settings3);
+    apple_dt_set_prop(child, "bridge-settings-4",
+                      sizeof(t8030_bridge_settings4), t8030_bridge_settings4);
     apple_dt_set_prop(child, "bridge-settings-5",
                       sizeof(t8030_bridge_settings5), t8030_bridge_settings5);
     apple_dt_set_prop(child, "bridge-settings-6",
                       sizeof(t8030_bridge_settings6), t8030_bridge_settings6);
-    apple_dt_set_prop(child, "bridge-settings-2",
-                      sizeof(t8030_bridge_settings2), t8030_bridge_settings2);
-    apple_dt_set_prop(child, "bridge-settings-16",
-                      sizeof(t8030_bridge_settings16), t8030_bridge_settings16);
-    apple_dt_set_prop(child, "bridge-settings-14",
-                      sizeof(t8030_bridge_settings14), t8030_bridge_settings14);
     apple_dt_set_prop(child, "bridge-settings-7",
                       sizeof(t8030_bridge_settings7), t8030_bridge_settings7);
-    apple_dt_set_prop(child, "bridge-settings-12",
-                      sizeof(t8030_bridge_settings12), t8030_bridge_settings12);
-    apple_dt_set_prop(child, "bridge-settings-3",
-                      sizeof(t8030_bridge_settings3), t8030_bridge_settings3);
     apple_dt_set_prop(child, "bridge-settings-8",
                       sizeof(t8030_bridge_settings8), t8030_bridge_settings8);
-    apple_dt_set_prop(child, "bridge-settings-4",
-                      sizeof(t8030_bridge_settings4), t8030_bridge_settings4);
-    apple_dt_set_prop(child, "bridge-settings-0",
-                      sizeof(t8030_bridge_settings0), t8030_bridge_settings0);
+    apple_dt_set_prop(child, "bridge-settings-12",
+                      sizeof(t8030_bridge_settings12), t8030_bridge_settings12);
+    apple_dt_set_prop(child, "bridge-settings-13",
+                      sizeof(t8030_bridge_settings13), t8030_bridge_settings13);
+    apple_dt_set_prop(child, "bridge-settings-14",
+                      sizeof(t8030_bridge_settings14), t8030_bridge_settings14);
+    apple_dt_set_prop(child, "bridge-settings-15",
+                      sizeof(t8030_bridge_settings15), t8030_bridge_settings15);
+    apple_dt_set_prop(child, "bridge-settings-16",
+                      sizeof(t8030_bridge_settings16), t8030_bridge_settings16);
+    apple_dt_set_prop(child, "bridge-settings-17",
+                      sizeof(t8030_bridge_settings17), t8030_bridge_settings17);
 }
 
 static void t8030_amcc_setup(AppleT8030MachineState *t8030)
@@ -1761,8 +1770,7 @@ static void t8030_create_smc(AppleT8030MachineState *t8030)
     }
 
     sysbus_mmio_map(
-        smc, i,
-        apple_dt_get_prop_u64(iop_nub, "region-base", &error_fatal));
+        smc, i, apple_dt_get_prop_u64(iop_nub, "region-base", &error_fatal));
 
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);
