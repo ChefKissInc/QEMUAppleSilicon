@@ -877,8 +877,11 @@ static void adp_v4_update_disp_image_bh(void *opaque)
     s->blend_unit.dirty = false;
 }
 
-static uint32_t adp_timing_info[] = { 0x33C, 0x90, 0x1, 0x1,
-                                      0x700, 0x1,  0x1, 0x1 };
+// `display-timing-info`
+// w_active, v_back_porch, v_front_porch, v_sync_pulse, h_active, h_back_porch,
+// h_front_porch, h_sync_pulse
+// FIXME: Unhardcode.
+static const uint32_t adp_v4_timing_info[] = { 828, 144, 1, 1, 1792, 1, 1, 1 };
 
 SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
 {
@@ -903,8 +906,8 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
                            s, &dev->mem_reentrancy_guard);
 
     apple_dt_set_prop_str(node, "display-target", "DisplayTarget5");
-    apple_dt_set_prop(node, "display-timing-info", sizeof(adp_timing_info),
-                      adp_timing_info);
+    apple_dt_set_prop(node, "display-timing-info", sizeof(adp_v4_timing_info),
+                      adp_v4_timing_info);
     apple_dt_set_prop_u32(node, "bics-param-set", 0xD);
     apple_dt_set_prop_u32(node, "dot-pitch", 326);
     apple_dt_set_prop_null(node, "function-brightness_update");
