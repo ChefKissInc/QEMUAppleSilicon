@@ -29,7 +29,12 @@
 #include "system/dma.h"
 #include "ui/console.h"
 #include "framebuffer.h"
+
+#ifdef CONFIG_PIXMAN
 #include "pixman.h"
+#else
+#error "Pixman support is required"
+#endif
 
 #ifdef CONFIG_PNG
 #include <png.h>
