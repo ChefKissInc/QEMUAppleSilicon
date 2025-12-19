@@ -101,6 +101,7 @@ typedef struct {
     uint16_t height;
     uint8_t *buf;
     uint32_t buf_len;
+    uint32_t max_buf_len;
     bool dirty;
 } ADPV4GenPipeState;
 
@@ -241,10 +242,13 @@ static pixman_format_code_t adp_v4_gp_fmt_to_pixman(ADPV4GenPipeState *s)
 
 static void adp_v4_gp_read(ADPV4GenPipeState *s)
 {
+    uint64_t buf_len;
+
     // TODO: Decompress the data and display it properly.
     if (s->pixel_format & GP_PIXEL_FORMAT_COMPRESSED) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "gp%d: dropping frame as it's compressed.\n", s->index);
+        s->buf_len = 0;
         return;
     }
 
@@ -256,6 +260,7 @@ static void adp_v4_gp_read(ADPV4GenPipeState *s)
             LOG_GUEST_ERROR,
             "gp%d: dropping frame as width, height or stride is zero.\n",
             s->index);
+        s->buf_len = 0;
         return;
     }
 
@@ -263,21 +268,22 @@ static void adp_v4_gp_read(ADPV4GenPipeState *s)
         qemu_log_mask(LOG_GUEST_ERROR,
                       "gp%d: dropping frame as it's larger than the screen.\n",
                       s->index);
+        s->buf_len = 0;
         return;
     }
 
-    uint64_t buf_len = MAX(s->height * s->width * s->stride, s->end - s->base);
-    if (s->buf_len != buf_len) {
+    buf_len = s->height * s->stride;
+    if (s->max_buf_len < buf_len) {
         g_free(s->buf);
-        s->buf = g_malloc0(buf_len);
-        s->buf_len = buf_len;
+        s->buf = g_malloc(buf_len);
+        s->max_buf_len = buf_len;
     }
-    if (dma_memory_read(s->dma_as, s->base, s->buf, s->end - s->base,
-                        MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
+    if (dma_memory_read(s->dma_as, s->base, s->buf, buf_len,
+                        MEMTXATTRS_UNSPECIFIED) == MEMTX_OK) {
+        s->buf_len = buf_len;
+    } else {
         qemu_log_mask(LOG_GUEST_ERROR, "gp%d: failed to read from DMA.\n",
                       s->index);
-        g_free(s->buf);
-        s->buf = NULL;
         s->buf_len = 0;
     }
 }
@@ -711,8 +717,9 @@ static const VMStateDescription vmstate_adp_v4_gp = {
             VMSTATE_UINT16(width, ADPV4GenPipeState),
             VMSTATE_UINT16(height, ADPV4GenPipeState),
             VMSTATE_UINT32(buf_len, ADPV4GenPipeState),
+            VMSTATE_UINT32(max_buf_len, ADPV4GenPipeState),
             VMSTATE_VBUFFER_ALLOC_UINT32(buf, ADPV4GenPipeState, 0, NULL,
-                                         buf_len),
+                                         max_buf_len),
             VMSTATE_BOOL(dirty, ADPV4GenPipeState),
             VMSTATE_END_OF_LIST(),
         },
@@ -821,22 +828,21 @@ static void adp_v4_update_disp_image_bh(void *opaque)
     layer_0_blend = BLEND_LAYER_CONFIG_MODE(s->blend_unit.layer_config[0]);
     layer_1_blend = BLEND_LAYER_CONFIG_MODE(s->blend_unit.layer_config[1]);
 
-    if ((layer_0_blend == BLEND_MODE_NONE &&
-         layer_1_blend == BLEND_MODE_NONE) ||
-        ((layer_0_gp->config_control & GP_CONFIG_CONTROL_ENABLED) == 0 &&
-         (layer_1_gp->config_control & GP_CONFIG_CONTROL_ENABLED) == 0) ||
-        (layer_0_gp->buf == NULL && layer_1_gp->buf == NULL)) {
+    if ((layer_0_blend | layer_1_blend) == BLEND_MODE_NONE ||
+        ((layer_0_gp->config_control | layer_1_gp->config_control) &
+         GP_CONFIG_CONTROL_ENABLED) == 0 ||
+        (layer_0_gp->buf_len | layer_1_gp->buf_len) == 0) {
         return;
     }
 
-    if (layer_0_blend == BLEND_MODE_BYPASS ||
-        (layer_0_blend != BLEND_MODE_NONE &&
-         layer_1_blend == BLEND_MODE_NONE)) {
-        adp_v4_blit_single_layer(s, layer_0_gp);
-    } else if (layer_1_blend == BLEND_MODE_BYPASS ||
-               (layer_1_blend != BLEND_MODE_NONE &&
-                layer_0_blend == BLEND_MODE_NONE)) {
+    if (layer_1_blend != BLEND_MODE_NONE &&
+        (layer_1_blend == BLEND_MODE_BYPASS ||
+         layer_0_blend == BLEND_MODE_NONE)) {
         adp_v4_blit_single_layer(s, layer_1_gp);
+    } else if (layer_0_blend != BLEND_MODE_NONE &&
+               (layer_0_blend == BLEND_MODE_BYPASS ||
+                layer_1_blend == BLEND_MODE_NONE)) {
+        adp_v4_blit_single_layer(s, layer_0_gp);
     } else {
         g_assert_false(layer_0_gp == layer_1_gp);
 
