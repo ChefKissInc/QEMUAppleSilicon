@@ -1886,8 +1886,7 @@ static void t8030_create_pcie(AppleT8030MachineState *t8030)
     prop = apple_dt_get_prop(apple_dt_get_node(t8030->device_tree, "chosen"),
                              "chip-id");
     g_assert_nonnull(prop);
-    ////uint32_t chip_id = *(uint32_t *)prop->data;
-    uint32_t chip_id = 0x8030; // needed because of the AGX workaround
+    uint32_t chip_id = *(uint32_t *)prop->data;
 
     AppleDTNode *child = apple_dt_get_node(t8030->device_tree, "arm-io");
     g_assert_nonnull(child);
@@ -2089,8 +2088,7 @@ static void t8030_create_sep(AppleT8030MachineState *t8030)
     prop = apple_dt_get_prop(apple_dt_get_node(t8030->device_tree, "chosen"),
                              "chip-id");
     g_assert_nonnull(prop);
-    ////uint32_t chip_id = *(uint32_t *)prop->data;
-    uint32_t chip_id = 0x8030; // needed because of the AGX workaround
+    uint32_t chip_id = *(uint32_t *)prop->data;
 
     armio = apple_dt_get_node(t8030->device_tree, "arm-io");
     g_assert_nonnull(armio);
@@ -2629,10 +2627,7 @@ static void t8030_init(MachineState *machine)
                            t8030->regulatory_model);
 
     child = apple_dt_get_node(t8030->device_tree, "chosen");
-    // TODO: Basic AGX emulation, as QuartzCore & co expect graphics
-    // acceleration on T8030. It also gives us AGX-compressed data in the
-    // Display Pipes, which we don't know how to decompress yet.
-    apple_dt_set_prop_u32(child, "chip-id", 0x8015);
+    apple_dt_set_prop_u32(child, "chip-id", 0x8030);
     t8030->board_id = 0x4;
     apple_dt_set_prop_u32(child, "board-id", t8030->board_id);
     apple_dt_set_prop_u32(child, "certificate-production-status", 1);
