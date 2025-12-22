@@ -6,8 +6,11 @@
 > The project is not funded/sponsored by anyone
 >
 > PayPal or credit/debit card: https://ko-fi.com/chefkiss
+>
 > BTC: bc1qgu56kptepex2csuzl5nhzc4vxuj8c6ggjzhcem
+>
 > SOL: 4PJU3iB5rimN9BNcpzduvmTnptJyedZiAd23so33SAdi
+>
 > ETH: 0x038A25849c23Bc5A736484351a8B6Ad71bC46676
 
 This is a fork of QEMU which provides Apple ARM device guest support.
