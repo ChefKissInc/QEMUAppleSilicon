@@ -32,8 +32,10 @@
 
 #define DWC3_SIZE 0x10000
 #define DWC3_MMIO_SIZE 0x10000
+// DWC3_NUM_INTRS: iOS says 4, while qemu's xhci code says 16
 #define DWC3_NUM_INTRS (16)
-#define DWC3_NUM_EPS (16)
+// DWC3_NUM_EPS: iOS says 32, not 16
+#define DWC3_NUM_EPS (32)
 
 typedef struct DWC3EventRing {
     uint32_t size;
@@ -90,6 +92,14 @@ typedef struct DWC3Endpoint {
     uint8_t dseqnum;
     bool stalled;
     bool not_ready;
+
+    union {
+        struct usb_control_packet setup_packet;
+        uint64_t setup_packet_u64;
+    };
+    uint32_t last_control_command;
+    bool send_not_ready_control_data;
+    uint32_t rsc_idx_counter;
 } DWC3Endpoint;
 
 typedef struct DWC3DeviceState {
@@ -119,9 +129,9 @@ typedef struct DWC3State {
             uint32_t gtxthrcfg; /* c108 */
             uint32_t grxthrcfg; /* c10c */
             uint32_t gctl; /* c110 */
-            uint32_t __padc104; /* c114 */
+            uint32_t gevten; /* c114 */
             uint32_t gsts; /* c118 */
-            uint32_t __padc11c; /* c11c */
+            uint32_t guctl1; /* c11c */
             uint32_t gsnpsid; /* c120 */
             uint32_t ggpio; /* c124 */
             uint32_t guid; /* c128 */
@@ -185,13 +195,6 @@ typedef struct DWC3State {
 #define depcmd(_ch) depcmdreg[((_ch) << 2) + 3] /* c80c, c81c, ... */
         };
     };
-
-    union {
-        struct usb_control_packet setup_packet;
-        uint64_t setup_packet_u64;
-    };
-    uint32_t last_control_command;
-    bool send_not_ready_control_data;
 } DWC3State;
 
 

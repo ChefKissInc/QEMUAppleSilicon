@@ -86,6 +86,7 @@
 #define GCTL          0xc110
 #define GEVTEN        0xc114
 #define GSTS          0xc118
+#define GUCTL1        0xc11c
 #define GSNPSID       0xc120
 #define GGPIO         0xc124
 #define GUID          0xc128

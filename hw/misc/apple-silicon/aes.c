@@ -238,6 +238,7 @@ static bool aes_process_command(AppleAESState *s, AESCommand *cmd)
     }
     case OPCODE_DSB: {
         // the first 16 byte input to dsb must be xor'ed with the key of the software encryption for reasons
+        // when using aes256 with dsb, ignore the second half of the key.
         // memcpy(, &cmd->data[1], 16);
         // memcpy(, &cmd->data[5], 16);
         // qemu_hexdump(stderr, "AP AES: OPCODE_DSB: data0", &cmd->data[0], 4);

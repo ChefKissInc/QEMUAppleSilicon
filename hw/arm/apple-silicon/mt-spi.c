@@ -22,6 +22,7 @@
 #include "block/aio.h"
 #include "hw/arm/apple-silicon/mt-spi.h"
 #include "hw/irq.h"
+#include "hw/qdev-properties.h"
 #include "hw/ssi/ssi.h"
 #include "migration/vmstate.h"
 #include "qemu/crc16.h"
@@ -67,6 +68,8 @@ struct AppleMTSPIState {
     uint32_t prev_ts;
     int32_t btn_state;
     int32_t prev_btn_state;
+    uint32_t display_width;
+    uint32_t display_height;
 };
 
 // HBPP Command:
@@ -135,6 +138,7 @@ struct AppleMTSPIState {
 #define HID_REPORT_POWER_STATS_DESC (0x73)
 #define HID_REPORT_STATUS (0x7F)
 
+// maybe 0xc2?
 #define MT_FAMILY_ID (0xC3)
 #define MT_LITTLE_ENDIAN (1)
 #define MT_ROWS (31)
@@ -571,6 +575,7 @@ static void apple_mt_spi_handle_get_feature(AppleMTSPIState *s)
             HID_PACKET_STATUS_SUCCESS, frame_number, 16);
         apple_mt_spi_buf_push_dword(&packet->buf, MT_SENSOR_SURFACE_WIDTH);
         apple_mt_spi_buf_push_dword(&packet->buf, MT_SENSOR_SURFACE_HEIGHT);
+        // these values might need to be different, especially considering the values/stuff inside HID_REPORT_SENSOR_REGION_DESC.
         apple_mt_spi_buf_push_word(&packet->buf, 0);
         apple_mt_spi_buf_push_word(&packet->buf, 0);
         apple_mt_spi_buf_push_word(&packet->buf, MT_SENSOR_SURFACE_WIDTH);
@@ -779,7 +784,7 @@ static void apple_mt_spi_send_path_update(AppleMTSPIState *s, uint32_t ts,
     packet->type = LL_PACKET_LOSSLESS_OUTPUT;
     apple_mt_spi_push_report_hdr(&packet->buf, HID_TRANSFER_PACKET_OUTPUT,
                                  HID_REPORT_BINARY_PATH_OR_IMAGE,
-                                 HID_PACKET_STATUS_SUCCESS, s->frame, 27 + 22);
+                                 HID_PACKET_STATUS_SUCCESS, s->frame, 27 + 20);
     apple_mt_spi_buf_push_byte(&packet->buf, s->frame);
     apple_mt_spi_buf_push_byte(&packet->buf, 28); // header len
     apple_mt_spi_buf_push_byte(&packet->buf, 0);
@@ -791,7 +796,7 @@ static void apple_mt_spi_send_path_update(AppleMTSPIState *s, uint32_t ts,
     apple_mt_spi_buf_push_word(&packet->buf, 0);
     apple_mt_spi_buf_push_word(&packet->buf, 0); // image len
     apple_mt_spi_buf_push_byte(&packet->buf, 1); // path count
-    apple_mt_spi_buf_push_byte(&packet->buf, 22); // path len
+    apple_mt_spi_buf_push_byte(&packet->buf, 20); // path len
     apple_mt_spi_buf_push_word(&packet->buf, 0);
     apple_mt_spi_buf_push_word(&packet->buf, 0);
     apple_mt_spi_buf_push_word(&packet->buf, 0);
@@ -801,23 +806,40 @@ static void apple_mt_spi_send_path_update(AppleMTSPIState *s, uint32_t ts,
     apple_mt_spi_buf_push_byte(&packet->buf, 0);
 
     // path 0
-    apple_mt_spi_buf_push_byte(&packet->buf, 1); // id
-    apple_mt_spi_buf_push_byte(&packet->buf, path_stage); // event
+    apple_mt_spi_buf_push_byte(&packet->buf, 1); // id/path id
+    apple_mt_spi_buf_push_byte(&packet->buf, path_stage); // event/path stage
     apple_mt_spi_buf_push_byte(&packet->buf, 1); // finger id
     apple_mt_spi_buf_push_byte(&packet->buf, 1); // hand id
-    apple_mt_spi_buf_push_word(&packet->buf, s->x);
-    apple_mt_spi_buf_push_word(&packet->buf, s->y);
+    apple_mt_spi_buf_push_word(&packet->buf, s->x); // posX
+    apple_mt_spi_buf_push_word(&packet->buf, s->y); // posY
+    // maybe do abs(x-prev_x), abs(y-prev_y)
     apple_mt_spi_buf_push_word(&packet->buf,
                                (s->x - s->prev_x) / (ts + 1 - s->prev_ts) *
                                    1000); // x vel
     apple_mt_spi_buf_push_word(&packet->buf,
                                (s->y - s->prev_y) / (ts + 1 - s->prev_ts) *
                                    1000); // y vel
-    apple_mt_spi_buf_push_word(&packet->buf, 660); // rad2
-    apple_mt_spi_buf_push_word(&packet->buf, 580); // rad3
-    apple_mt_spi_buf_push_word(&packet->buf, 19317); // angle
-    apple_mt_spi_buf_push_word(&packet->buf, 100); // rad1
-    apple_mt_spi_buf_push_word(&packet->buf, 150); // contact density
+    apple_mt_spi_buf_push_word(&packet->buf, 660); // rad0
+    apple_mt_spi_buf_push_word(&packet->buf, 580); // rad1
+    // no freaking idea if this is even remotely correct.
+    // int angle = 0;
+    // double deltaX = s->x - s->prev_x;
+    // double deltaY = s->y - s->prev_y;
+    // double rad = atan2(deltaY, deltaX);
+    // double deg = rad * (180 / PI);
+    // angle = deg;
+    // angle = lround(deg);
+    // angle = 19317;
+    // angle = 90;
+    apple_mt_spi_buf_push_word(&packet->buf, 19317); // angle/orientation
+    apple_mt_spi_buf_push_word(&packet->buf, 100); // rad multiplier (maybe force?)
+    // let iOS calculate the contact density by itself
+    // rad0 = max(maximum_radii, rad0)
+    // rad1 = max(maximum_radii, rad1)
+    // sqr = sqrt(rad0 * rad1)
+    // sqr = max(maximum_radii, sqr)
+    // contactDensityByRadii = (mult * 400) / (sqr - minimum_radii)
+    // apple_mt_spi_buf_push_word(&packet->buf, 150); // contact density
 
     apple_mt_spi_buf_push_crc16(&packet->buf);
 
@@ -910,9 +932,12 @@ static void apple_mt_spi_mouse_event(void *opaque, int dx, int dy, int dz,
     s->y =
         qemu_input_scale_axis(INPUT_EVENT_ABS_MAX - dy, INPUT_EVENT_ABS_MIN,
                               INPUT_EVENT_ABS_MAX, 0, MT_SENSOR_SURFACE_HEIGHT);
-    // Hardcoded calibration on y-axis for display_height 1792.
-    // Tested accuracy is +/- 1 pixel.
-    s->y -= qemu_input_scale_axis(16, 0, 1792, 0, MT_SENSOR_SURFACE_HEIGHT);
+    // Hardcoded calibration on y-axis.
+    // Tested accuracy for display_height 1792 is +/- 1 pixel.
+    // it might not be perfect, also there might be some calibration needed for "x".
+    // s->y -= qemu_input_scale_axis(16, 0, 1792, 0, MT_SENSOR_SURFACE_HEIGHT);
+    // fprintf(stderr, "%s: display_height: %u ; display_width: %u\n", __func__, s->display_height, s->display_width);
+    s->y -= qemu_input_scale_axis(16, 0, s->display_height, 0, MT_SENSOR_SURFACE_HEIGHT);
     s->prev_btn_state = s->btn_state;
     s->btn_state = buttons_state;
 
@@ -943,6 +968,11 @@ static void apple_mt_spi_realize(SSIPeripheral *dev, Error **errp)
                                          "Apple Multitouch HID SPI");
     qemu_activate_mouse_event_handler(entry);
 }
+
+static const Property apple_mt_spi_props[] = {
+    DEFINE_PROP_UINT32("display_width", AppleMTSPIState, display_width, 0),
+    DEFINE_PROP_UINT32("display_height", AppleMTSPIState, display_height, 0),
+};
 
 static const VMStateDescription vmstate_apple_mt_spi_buffer = {
     .name = "AppleMTSPIBuffer",
@@ -998,6 +1028,8 @@ static const VMStateDescription vmstate_apple_mt_spi = {
             VMSTATE_UINT32(prev_ts, AppleMTSPIState),
             VMSTATE_INT32(btn_state, AppleMTSPIState),
             VMSTATE_INT32(prev_btn_state, AppleMTSPIState),
+            VMSTATE_UINT32(display_width, AppleMTSPIState),
+            VMSTATE_UINT32(display_height, AppleMTSPIState),
             VMSTATE_END_OF_LIST(),
         },
 };
@@ -1012,6 +1044,7 @@ static void apple_mt_spi_class_init(ObjectClass *klass, const void *data)
 
     dc->user_creatable = false;
     dc->vmsd = &vmstate_apple_mt_spi;
+    device_class_set_props(dc, apple_mt_spi_props);
     set_bit(DEVICE_CATEGORY_INPUT, dc->categories);
 
     k->realize = apple_mt_spi_realize;

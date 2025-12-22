@@ -474,6 +474,7 @@ static void ck_kp_sep_mgr_patches(CKPatcherRange *range)
 
 static void ck_kp_img4_patches(CKPatcherRange *range)
 {
+    // caller of _Img4DecodePerformTrustEvaluationWithCallbacks
     static const uint8_t pattern[] = {
         0xE1, 0x03, 0x00, 0xAA, // mov x1, x?
         0x00, 0x00, 0x00, 0x94, // bl #?

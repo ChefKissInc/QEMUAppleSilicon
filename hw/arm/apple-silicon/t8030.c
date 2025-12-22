@@ -2229,7 +2229,11 @@ static void t8030_create_mt_spi(AppleT8030MachineState *t8030)
 
     spi = APPLE_SPI(
         object_property_get_link(OBJECT(t8030), "spi1", &error_fatal));
-    device = ssi_create_peripheral(apple_spi_get_bus(spi), TYPE_APPLE_MT_SPI);
+    // device = ssi_create_peripheral(apple_spi_get_bus(spi), TYPE_APPLE_MT_SPI);
+    device = qdev_new(TYPE_APPLE_MT_SPI);
+    qdev_prop_set_uint32(device, "display_width", t8030->disp_width);
+    qdev_prop_set_uint32(device, "display_height", t8030->disp_height);
+    ssi_realize_and_unref(device, apple_spi_get_bus(spi), &error_fatal);
 
     aop_gpio = DEVICE(
         object_property_get_link(OBJECT(t8030), "aop-gpio", &error_fatal));
