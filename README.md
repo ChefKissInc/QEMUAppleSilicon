@@ -15,6 +15,8 @@
 
 This is a fork of QEMU which provides Apple ARM device guest support.
 
+## Legal Disclaimer
+
 The “ChefKiss QEMU Apple Silicon fork” project is licensed under the GPLv2 license, see LICENSE for details.
 
 Distributions of the “ChefKiss QEMU Apple Silicon fork” project must retain original copyright notices, provide attributions, state and publish modifications (if any).
@@ -23,8 +25,6 @@ Copyright law still applies for non-distributions (e.g. SaaS); copyright notices
 
 Additional restrictions apply for the branding of the “ChefKiss QEMU Apple Silicon fork” project, see [here](ui/icons/CKBrandingNotice.md).
 
-Usage guide is located in the [wiki](https://github.com/ChefKissInc/QEMUAppleSilicon/wiki).
+## More info and usage
 
-## Implemented Devices
-
-iPhone 11 running iOS 14.0 beta 5.
+Please see the [wiki](https://github.com/ChefKissInc/QEMUAppleSilicon/wiki) for more information about the project and how to use it!
