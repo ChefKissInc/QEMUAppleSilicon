@@ -1,5 +1,15 @@
 # ChefKiss QEMU Apple Silicon fork ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ChefKissInc/QEMUAppleSilicon/build.yaml?style=for-the-badge) ![Written by humans, not AI](https://img.shields.io/badge/written_by_humans-not_ai-blue?style=for-the-badge)
 
+> [!CAUTION]
+> Please consider donating to help continue the project's development
+>
+> The project is not funded/sponsored by anyone
+>
+> PayPal or credit/debit card: https://ko-fi.com/chefkiss
+> BTC: bc1qgu56kptepex2csuzl5nhzc4vxuj8c6ggjzhcem
+> SOL: 4PJU3iB5rimN9BNcpzduvmTnptJyedZiAd23so33SAdi
+> ETH: 0x038A25849c23Bc5A736484351a8B6Ad71bC46676
+
 This is a fork of QEMU which provides Apple ARM device guest support.
 
 The “ChefKiss QEMU Apple Silicon fork” project is licensed under the GPLv2 license, see LICENSE for details.
@@ -10,11 +20,7 @@ Copyright law still applies for non-distributions (e.g. SaaS); copyright notices
 
 Additional restrictions apply for the branding of the “ChefKiss QEMU Apple Silicon fork” project, see [here](ui/icons/CKBrandingNotice.md).
 
-> [!CAUTION]
-> Please consider donating via [ko-fi](https://ko-fi.com/chefkiss) or BTC at `bc1qgu56kptepex2csuzl5nhzc4vxuj8c6ggjzhcem`.
-> We are just regular people, we need your funding to develop the project.
-
-Usage guide is located in the [wiki](https://github.com/ChefKissInc/QEMUAppleSilicon/wiki). 
+Usage guide is located in the [wiki](https://github.com/ChefKissInc/QEMUAppleSilicon/wiki).
 
 ## Implemented Devices
 
