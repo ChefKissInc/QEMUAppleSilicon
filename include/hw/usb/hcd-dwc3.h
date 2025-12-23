@@ -195,6 +195,7 @@ typedef struct DWC3State {
 #define depcmd(_ch) depcmdreg[((_ch) << 2) + 3] /* c80c, c81c, ... */
         };
     };
+    uint32_t global_rsc_idx_counter;
 } DWC3State;
 
 

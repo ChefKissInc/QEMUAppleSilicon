@@ -351,10 +351,18 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
 
         // bp and addr have been switched positions now. not sure how compatible this write would be with struct randomization.
         // unsure if "trb->bp += " is necessary outside of very special circumstances
+#if 1
         g_assert_cmphex(0x10, ==, sizeof(trb->bp) + sizeof(trb->status) + sizeof(trb->ctrl));
         if (dma_memory_write(&s->dma_as, trb->addr + 0x0, &trb->bp, 0x10, MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: dma_memory_write trb->bp/status/ctrl failed\n", __func__);
         }
+#endif
+#if 0
+        g_assert_cmphex(0x8, ==, sizeof(trb->status) + sizeof(trb->ctrl));
+        if (dma_memory_write(&s->dma_as, trb->addr + 0x8, &trb->status, 0x8, MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
+            qemu_log_mask(LOG_GUEST_ERROR, "%s: dma_memory_write trb->status/ctrl failed\n", __func__);
+        }
+#endif
         if (skipTrbs) {
             continue;
         }
@@ -381,6 +389,10 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
             }
             memcpy(&setup_ep->setup_packet, buffer, sizeof(setup_ep->setup_packet));
             HEXDUMP(__func__, buffer, sizeof(setup_ep->setup_packet));
+            // event.endpoint_event = DEPEVT_XFERCOMPLETE;
+            // dwc3_ep_trb_event(s, desc->epid, trb, event);
+            // p->status = USB_RET_SUCCESS;
+            // return true;
         } else if (controlType == TRBCTL_CONTROL_DATA) {
             DPRINTF("%s: TRBCTL_CONTROL_DATA: p->pid: 0x%x desc->epid: 0x%x length 0x%x trb->size 0x%x last_control_command %s\n", __func__, p->pid, desc->epid, length, trb->size, TRBControlType_names[setup_ep->last_control_command]);
             setup_ep->last_control_command = TRBCTL_CONTROL_DATA;
@@ -393,16 +405,31 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
                 setup_ep->send_not_ready_control_data = true;
                 // must use USB_RET_ASYNC
                 skipTrbs = true;
+                // p->status = USB_RET_ASYNC;
+                // return false;
             } else {
                 setup_ep->send_not_ready_control_data = false;
+                // event.endpoint_event = DEPEVT_XFERCOMPLETE;
+                // dwc3_ep_trb_event(s, desc->epid, trb, event);
+                // p->status = USB_RET_SUCCESS;
+                // return true;
             }
+            // g_assert_not_reached();
             // no return here, because control data can consist of multi trb's.
         } else if (controlType == TRBCTL_CONTROL_STATUS2) {
             DPRINTF("%s: TRBCTL_CONTROL_STATUS2: p->pid: 0x%x desc->epid: 0x%x length 0x%x trb->size 0x%x last_control_command %s\n", __func__, p->pid, desc->epid, length, trb->size, TRBControlType_names[setup_ep->last_control_command]);
             setup_ep->last_control_command = TRBCTL_CONTROL_STATUS2;
+            // event.endpoint_event = DEPEVT_XFERCOMPLETE;
+            // dwc3_ep_trb_event(s, desc->epid, trb, event);
+            // p->status = USB_RET_SUCCESS;
+            // return true;
         } else if (controlType == TRBCTL_CONTROL_STATUS3) {
             DPRINTF("%s: TRBCTL_CONTROL_STATUS3: p->pid: 0x%x desc->epid: 0x%x length 0x%x trb->size 0x%x last_control_command %s\n", __func__, p->pid, desc->epid, length, trb->size, TRBControlType_names[setup_ep->last_control_command]);
             setup_ep->last_control_command = TRBCTL_CONTROL_STATUS3;
+            // event.endpoint_event = DEPEVT_XFERCOMPLETE;
+            // dwc3_ep_trb_event(s, desc->epid, trb, event);
+            // p->status = USB_RET_SUCCESS;
+            // return true;
         }
         // no "else if" anymore because of TRBCTL_CONTROL_*.
         if (p->pid == USB_TOKEN_IN) {
@@ -499,6 +526,7 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
             p->status = USB_RET_ASYNC;
             return false;
         }
+        // sure to not let "ret" decide?
         p->status = USB_RET_SUCCESS;
         ret = true;
     } else if (firstControlType == TRBCTL_CONTROL_SETUP) {
@@ -780,7 +808,16 @@ static DWC3Transfer *dwc3_xfer_alloc(DWC3State *s, int epid, dma_addr_t tdaddr)
     // // // xfer->rsc_idx = tdaddr & 0x7f; // please no, trung. I even thought about doing a crc8, but it seems to require having 0x0 as a starting value.
     // (global_)rsc_idx_counter will not work if it's inside DWC3State (shared between all endpoints)
     // "rsc_idx"-handling is still incomplete, but better than having "tdaddr & 0x7f" randomly result in e.g. 0x10 instead of 0x0.
+    // doing that is surely not correct, since the value will always either be 0x0 or 0x2. dunno why it keeps working, though.
+    // ep->rsc_idx_counter = s->global_rsc_idx_counter;
     xfer->rsc_idx = ep->rsc_idx_counter++;
+    ep->rsc_idx_counter &= 0x7f;
+    if (ep->rsc_idx_counter == 0) {
+        DPRINTF("%s: wraparound reached. xfer->rsc_idx %d\n", __func__, xfer->rsc_idx);
+        // fprintf(stderr, "%s: wraparound reached. xfer->rsc_idx %d\n", __func__, xfer->rsc_idx);
+        // no idea what to do in case of a wraparound, but let's try to make it start at the global value.
+        ep->rsc_idx_counter = s->global_rsc_idx_counter;
+    }
     xfer->can_free = false;
 
     dwc3_td_fetch(s, xfer, tdaddr);
@@ -930,6 +967,7 @@ static void dwc3_dcore_reset(DWC3State *s)
     s->dgcmd = 0;
     s->dalepena = 0;
     memset(s->depcmdreg, 0, sizeof(s->depcmdreg));
+    s->global_rsc_idx_counter = 0;
 
     /* Terminate all USB transaction */
     for (int i = 0; i < DWC3_NUM_EPS; i++) {
@@ -1388,6 +1426,7 @@ static const char *DEPCMD_names[] = {
     [DEPCMD_CFG] = "DEPCFG",
     [DEPCMD_XFERCFG] = "DEPXFERCFG",
     [DEPCMD_GETSEQNUMBER] = "DEPGETDSEQ",
+    [DEPCMD_GETEPSTATE] = "DEPGETEPSTATE",
     [DEPCMD_SETSTALL] = "DEPSETSTALL",
     [DEPCMD_CLEARSTALL] = "DEPCSTALL",
     [DEPCMD_STARTXFER] = "DEPSTRTXFER",
@@ -1477,8 +1516,14 @@ static void usb_dwc3_depcmdreg_write(void *ptr, hwaddr addr, int index,
             break;
         }
         case DEPCMD_XFERCFG:
+            DPRINTF("%s: DEPCMD_XFERCFG: ep->epid: %d\n", __func__, ep->epid);
             ioc.status = DEPXFERCFG_NUMXFERRES(par0) != 1;
             val |= (ioc.status ? DEPCMD_STATUS : 0);
+            break;
+        case DEPCMD_GETSEQNUMBER:
+        // case DEPCMD_GETEPSTATE:
+            DPRINTF("%s: DEPCMD_GETSEQNUMBER/DEPCMD_GETEPSTATE: ep->epid: %d\n", __func__, ep->epid);
+            ioc.parameters = ep->dseqnum & 0xf;
             break;
         case DEPCMD_SETSTALL:
             ep->stalled = true;
@@ -1493,9 +1538,6 @@ static void usb_dwc3_depcmdreg_write(void *ptr, hwaddr addr, int index,
             ep->not_ready = false;
             ep->dseqnum = 0;
             dwc3_ep_run_schedule_update(s, ep);
-            break;
-        case DEPCMD_GETSEQNUMBER:
-            ioc.parameters = ep->dseqnum & 0xf;
             break;
         case DEPCMD_STARTXFER: {
             dma_addr_t tdaddr = dwc3_addr64(par1, par0);
@@ -1528,6 +1570,11 @@ static void usb_dwc3_depcmdreg_write(void *ptr, hwaddr addr, int index,
         case DEPCMD_UPDATEXFER: {
             if (!ep->xfer || (ep->xfer->rsc_idx) != DEPCFG_RSC_IDX_GET(val)) {
                 val |= DEPCMD_STATUS;
+                if (!ep->xfer) {
+                    DPRINTF("%s: UPDATEXFER: Unknown rsc_idx: ep->epid: %d !ep->xfer %d ep->xfer->rsc_idx N/A DEPCFG_RSC_IDX_GET(val) 0x%" PRIx64 "\n", __func__, ep->epid, !ep->xfer, DEPCFG_RSC_IDX_GET(val));
+                } else {
+                    DPRINTF("%s: UPDATEXFER: Unknown rsc_idx: ep->epid: %d !ep->xfer %d ep->xfer->rsc_idx 0x%x DEPCFG_RSC_IDX_GET(val) 0x%" PRIx64 "\n", __func__, ep->epid, !ep->xfer, ep->xfer->rsc_idx, DEPCFG_RSC_IDX_GET(val));
+                }
                 qemu_log_mask(LOG_GUEST_ERROR, "UPDATEXFER: Unknown rsc_idx\n");
 
                 break;
@@ -1561,6 +1608,24 @@ static void usb_dwc3_depcmdreg_write(void *ptr, hwaddr addr, int index,
                 val |= DEPCMD_STATUS;
             }
             break;
+        case DEPCMD_STARTCFG: {
+            int rsc_idx = DEPCFG_RSC_IDX_GET(val);
+            if (!ep->xfer) {
+                DPRINTF("%s: DEPCMD_STARTCFG: rsc_idx: ep->epid: %d !ep->xfer %d ep->xfer->rsc_idx N/A DEPCFG_RSC_IDX_GET(val) 0x%x\n", __func__, ep->epid, !ep->xfer, rsc_idx);
+            } else {
+                DPRINTF("%s: DEPCMD_STARTCFG: rsc_idx: ep->epid: %d !ep->xfer %d ep->xfer->rsc_idx 0x%x DEPCFG_RSC_IDX_GET(val) 0x%x\n", __func__, ep->epid, !ep->xfer, ep->xfer->rsc_idx, rsc_idx);
+            }
+            if (rsc_idx != 0 && rsc_idx != 2) {
+                val |= DEPCMD_STATUS;
+                qemu_log_mask(LOG_GUEST_ERROR, "DEPCMD_STARTCFG: invalid rsc_idx %d\n", rsc_idx);
+                break;
+            }
+            s->global_rsc_idx_counter = rsc_idx;
+            for (int i = 0; i < DWC3_NUM_EPS; i++) {
+                s->eps[i].rsc_idx_counter = s->global_rsc_idx_counter;
+            }
+            break;
+        }
         default:
             break;
         }
@@ -1727,7 +1792,8 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
             }
             // async, because we're waiting for data here.
             // Don't return "success" or "nak" here, must return "async"!!
-            p->status = USB_RET_ASYNC;
+            // p->status = USB_RET_ASYNC;
+            p->status = USB_RET_NAK;
             goto complete;
         } else if (setup_ep->last_control_command == TRBCTL_CONTROL_DATA) {
             DPRINTF("%s: ep->xfer == NULL: TRBCTL_CONTROL_DATA\n", __func__);
@@ -1742,7 +1808,8 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
             // needs DEPEVT_STATUS_TRANSFER_ACTIVE? does it really need that, though?
             dwc3_ep_event(s, ep->epid, event);
             // maybe don't use NAK here, or maybe do???
-            p->status = USB_RET_ASYNC;
+            // p->status = USB_RET_ASYNC;
+            p->status = USB_RET_NAK;
             goto complete;
         } else if (setup_ep->last_control_command == TRBCTL_CONTROL_STATUS2) {
             DPRINTF("%s: ep->xfer == NULL: TRBCTL_CONTROL_STATUS2\n", __func__);
@@ -1764,7 +1831,8 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
         struct dwc3_event_depevt event = { 0, ep->epid, DEPEVT_XFERNOTREADY, 0,
                                            0 };
         dwc3_ep_event(s, ep->epid, event);
-        p->status = USB_RET_ASYNC;
+        // p->status = USB_RET_ASYNC;
+        p->status = USB_RET_NAK;
         goto complete;
     } else {
         // else: xfer != NULL == URB_SUBMIT
@@ -1786,7 +1854,8 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
             // Probably don't set |= DEPEVT_STATUS_CONTROL_* here!!
             event.status |= DEPEVT_STATUS_TRANSFER_ACTIVE;
             dwc3_ep_event(s, ep->epid, event);
-            p->status = USB_RET_ASYNC;
+            // p->status = USB_RET_ASYNC;
+            p->status = USB_RET_NAK;
             // using "SUCCESS" will cause the "AppleUSBXDCI" to be used and its debug messages to show, but using "nak" or "async" will make the recovery process continue.
             // must return "success" here?
             // p->status = USB_RET_SUCCESS;
@@ -2130,6 +2199,7 @@ static const VMStateDescription vmstate_usb_dwc3 = {
                                  vmstate_dwc3_endpoint, DWC3Endpoint),
             VMSTATE_STRUCT_ARRAY(intrs, DWC3State, DWC3_NUM_INTRS, 1,
                                  vmstate_dwc3_event_ring, DWC3EventRing),
+            VMSTATE_UINT32(global_rsc_idx_counter, DWC3State),
             VMSTATE_END_OF_LIST(),
         }
 };
