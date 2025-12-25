@@ -401,19 +401,19 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     uint64_t *reg;
     uint8_t data[8] = { 0x40, 0x19, 0x01, 0x00, 0x80, 0x70, 0x00, 0x00 };
     uint8_t ac_adapter_count = 1;
-    uint8_t ac_w = 0x1; // should actually be a function
+    int8_t ac_w = 0x1; // should actually be a function
     uint8_t batt_feature_flags = 0x0;
     uint16_t batt_cycle_count = 0x7;
     uint16_t batt_avg_time_to_full = 0xffff; // not charging
-    uint32_t batt_max_capacity = 31337;
-    uint32_t batt_full_charge_capacity = batt_max_capacity * 0.98;
+    uint16_t batt_max_capacity = 31337;
+    uint16_t batt_full_charge_capacity = batt_max_capacity * 0.98;
     // *0.69 shows as 67%/68% (console debug output) with full_charge_capacity
     // of 98%
-    uint32_t batt_current_capacity = batt_full_charge_capacity * 0.69;
-    uint32_t batt_remaining_capacity =
+    uint16_t batt_current_capacity = batt_full_charge_capacity * 0.69;
+    uint16_t batt_remaining_capacity =
         batt_full_charge_capacity - batt_current_capacity;
     // b0fv might mean "battery full voltage"
-    uint16_t b0fv = 0x201;
+    uint32_t b0fv = 0x201;
     uint8_t battery_count = 0x1;
     uint16_t batt_cell_voltage = 4200;
     int16_t batt_actual_amperage = 0x0;
@@ -476,11 +476,12 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     // should actually be a function for event notifications
     apple_smc_add_key(s, 'NESN', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_W_LE, NULL);
 
-    apple_smc_add_key(s, 'AC-N', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R,
-                      &ac_adapter_count);
+    apple_smc_add_key(s, 'AC-N', sizeof(ac_adapter_count), SMC_KEY_TYPE_UINT8,
+                      SMC_ATTR_R, &ac_adapter_count);
 
     // all below should actually be a function
-    apple_smc_add_key(s, 'AC-W', 1, SMC_KEY_TYPE_SINT8, SMC_ATTR_R, &ac_w);
+    apple_smc_add_key(s, 'AC-W', sizeof(ac_w), SMC_KEY_TYPE_SINT8, SMC_ATTR_R,
+                      &ac_w);
     apple_smc_add_key(s, 'CHAI', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'TG0B', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'TG0V', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
@@ -527,49 +528,58 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     apple_smc_add_key(s, 'BHTL', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_RW_LE, NULL);
 
     // should actually be a function
-    apple_smc_add_key(s, 'BFS0', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE,
-                      &batt_feature_flags);
+    apple_smc_add_key(s, 'BFS0', sizeof(batt_feature_flags), SMC_KEY_TYPE_UINT8,
+                      SMC_ATTR_R_LE, &batt_feature_flags);
 
-    apple_smc_add_key(s, 'B0CT', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
-                      &batt_cycle_count);
-    apple_smc_add_key(s, 'B0TF', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+    apple_smc_add_key(s, 'B0CT', sizeof(batt_cycle_count), SMC_KEY_TYPE_UINT16,
+                      SMC_ATTR_R_LE, &batt_cycle_count);
+    apple_smc_add_key(s, 'B0TF', sizeof(batt_avg_time_to_full),
+                      SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
                       &batt_avg_time_to_full);
-    apple_smc_add_key(s, 'B0CM', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
-                      &batt_max_capacity);
-    apple_smc_add_key(s, 'B0FC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+    apple_smc_add_key(s, 'B0CM', sizeof(batt_max_capacity), SMC_KEY_TYPE_UINT16,
+                      SMC_ATTR_R_LE, &batt_max_capacity);
+    apple_smc_add_key(s, 'B0FC', sizeof(batt_full_charge_capacity),
+                      SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
                       &batt_full_charge_capacity);
-    apple_smc_add_key(s, 'B0UC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+    apple_smc_add_key(s, 'B0UC', sizeof(batt_current_capacity),
+                      SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
                       &batt_current_capacity);
-    apple_smc_add_key(s, 'B0RM', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
+    apple_smc_add_key(s, 'B0RM', sizeof(batt_remaining_capacity),
+                      SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
                       &batt_remaining_capacity);
     // should actually be a function
-    apple_smc_add_key(s, 'B0FV', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE, &b0fv);
+    apple_smc_add_key(s, 'B0FV', sizeof(b0fv), SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE,
+                      &b0fv);
     uint8_t bdd1 = 0x19;
-    apple_smc_add_key(s, 'BDD1', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE, &bdd1);
+    apple_smc_add_key(s, 'BDD1', sizeof(bdd1), SMC_KEY_TYPE_UINT8,
+                      SMC_ATTR_R_LE, &bdd1);
     // should actually be a function
     apple_smc_add_key(s, 'UB0C', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_W_LE, NULL);
-    apple_smc_add_key(s, 'BNCB', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE,
-                      &battery_count);
-    apple_smc_add_key(s, 'BC1V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
-                      &batt_cell_voltage);
-    apple_smc_add_key(s, 'BC2V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
-                      &batt_cell_voltage);
-    apple_smc_add_key(s, 'BC3V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
-                      &batt_cell_voltage);
-    apple_smc_add_key(s, 'BC4V', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
-                      &batt_cell_voltage);
+    apple_smc_add_key(s, 'BNCB', sizeof(battery_count), SMC_KEY_TYPE_UINT8,
+                      SMC_ATTR_R_LE, &battery_count);
+    apple_smc_add_key(s, 'BC1V', sizeof(batt_cell_voltage), SMC_KEY_TYPE_UINT16,
+                      SMC_ATTR_R_LE, &batt_cell_voltage);
+    apple_smc_add_key(s, 'BC2V', sizeof(batt_cell_voltage), SMC_KEY_TYPE_UINT16,
+                      SMC_ATTR_R_LE, &batt_cell_voltage);
+    apple_smc_add_key(s, 'BC3V', sizeof(batt_cell_voltage), SMC_KEY_TYPE_UINT16,
+                      SMC_ATTR_R_LE, &batt_cell_voltage);
+    apple_smc_add_key(s, 'BC4V', sizeof(batt_cell_voltage), SMC_KEY_TYPE_UINT16,
+                      SMC_ATTR_R_LE, &batt_cell_voltage);
     uint16_t b0dc = 0xEF13;
-    apple_smc_add_key(s, 'B0DC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, &b0dc);
+    apple_smc_add_key(s, 'B0DC', sizeof(b0dc), SMC_KEY_TYPE_UINT16,
+                      SMC_ATTR_R_LE, &b0dc);
     apple_smc_add_key(s, 'B0BL', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'B0CA', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'B0NC', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'B0IV', 2, SMC_KEY_TYPE_SINT16, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'B0AC', 2, SMC_KEY_TYPE_SINT16, SMC_ATTR_R_LE,
+    apple_smc_add_key(s, 'B0AC', sizeof(batt_actual_amperage),
+                      SMC_KEY_TYPE_SINT16, SMC_ATTR_R_LE,
                       &batt_actual_amperage);
-    apple_smc_add_key(s, 'B0AV', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE,
-                      &batt_actual_voltage);
+    apple_smc_add_key(s, 'B0AV', sizeof(batt_actual_voltage),
+                      SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, &batt_actual_voltage);
     uint64_t chnc = 0x1; // ???
-    apple_smc_add_key(s, 'CHNC', 8, SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE, &chnc);
+    apple_smc_add_key(s, 'CHNC', sizeof(chnc), SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE,
+                      &chnc);
     // should actually be a function
     apple_smc_add_key(s, 'CHAS', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R_LE, NULL);
     // settings (as a whole) won't open/will crash if cha1 is missing
