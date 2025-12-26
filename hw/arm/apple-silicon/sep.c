@@ -3053,7 +3053,7 @@ static uint64_t pka_base_reg_read(void *opaque, hwaddr addr, unsigned size)
     switch (addr) {
     case 0x8: // maybe status_in0/interrupt_status
 #if 1
-              // if (s->status0 == 0x1)
+        // if (s->status0 == 0x1)
         if (s->status_in0 == 0x1) {
             ret = 0x1; // this means mod_PKA_read output ready
         }
