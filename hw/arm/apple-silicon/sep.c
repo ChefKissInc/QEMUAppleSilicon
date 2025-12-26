@@ -114,7 +114,7 @@ typedef struct {
 #define SEP_AESS_CMD_MASK 0x3FF
 
 #define SEP_AESS_CMD_WITHOUT_KEYSIZE(cmd)                                    \
-    (cmd &                                                                   \
+    ((cmd) &                                                                 \
      ~(SEP_AESS_CMD_FLAG_KEYSIZE_AES256 | SEP_AESS_CMD_FLAG_KEYSIZE_AES192 | \
        SEP_AESS_CMD_FLAG_KEYSIZE_AES128))
 #define SEP_AESS_CMD_WITHOUT_FLAGS(cmd)                                      \
@@ -129,7 +129,7 @@ typedef struct {
 /// SEP_AESS_CMD_FLAG_UNKNOWN0 | SEP_AESS_CMD_FLAG_UNKNOWN1))
 
 #define SEP_AESS_CMD_FLAG_KEYSELECT_GID1_CUSTOM(cmd) \
-    (cmd &                                           \
+    ((cmd) &                                         \
      (SEP_AESS_CMD_FLAG_KEYSELECT_GID1 | SEP_AESS_CMD_FLAG_KEYSELECT_CUSTOM))
 
 // static keys: 0x00/0x40/0x80/0xc0
@@ -227,20 +227,20 @@ static uint32_t AESS_UID_SEED_INVALID[0x20 / 4] = { 0x1FF11FF1, 0x1FF11FF1,
 
 #define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT 16
 #define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK 0x7f
-#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_GET(n)      \
-    ((n >> SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT) & \
+#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_GET(n)        \
+    (((n) >> SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT) & \
      SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK)
-#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SET(n)  \
-    ((n & SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK) \
+#define SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SET(n)    \
+    (((n) & SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_MASK) \
      << SEP_KEY_BASE_KEY_STATUS_KM_VALID_INTERFACE_SHIFT)
 
 #define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT 24
 #define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK 0x7f
-#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_GET(n)      \
-    ((n >> SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT) & \
+#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_GET(n)        \
+    (((n) >> SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT) & \
      SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK)
-#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SET(n)  \
-    ((n & SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK) \
+#define SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SET(n)    \
+    (((n) & SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_MASK) \
      << SEP_KEY_BASE_KEY_STATUS_KS_VALID_INTERFACE_SHIFT)
 
 // for KEY_BASE register 0x4: load key
@@ -248,21 +248,21 @@ static uint32_t AESS_UID_SEED_INVALID[0x20 / 4] = { 0x1FF11FF1, 0x1FF11FF1,
 #define SEP_KEY_BASE_LOAD_KEY_OFFSET 0x4
 #define SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT 8
 #define SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK 0xff
-#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_GET(n)      \
-    ((n >> SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT) & \
+#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_GET(n)        \
+    (((n) >> SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT) & \
      SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK)
-#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_SET(n)  \
-    ((n & SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK) \
+#define SEP_KEY_BASE_LOAD_KEY_INTERFACE_SET(n)    \
+    (((n) & SEP_KEY_BASE_LOAD_KEY_INTERFACE_MASK) \
      << SEP_KEY_BASE_LOAD_KEY_INTERFACE_SHIFT)
 
 // unkn0 0x0==Lc128/DpkTx, 0x1/0x3==Km/Ks, 0x2==Km
 #define SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT 4
 #define SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK 0x3
-#define SEP_KEY_BASE_LOAD_KEY_UNKN0_GET(n)      \
-    ((n >> SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT) & \
+#define SEP_KEY_BASE_LOAD_KEY_UNKN0_GET(n)        \
+    (((n) >> SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT) & \
      SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK)
-#define SEP_KEY_BASE_LOAD_KEY_UNKN0_SET(n)  \
-    ((n & SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK) \
+#define SEP_KEY_BASE_LOAD_KEY_UNKN0_SET(n)    \
+    (((n) & SEP_KEY_BASE_LOAD_KEY_UNKN0_MASK) \
      << SEP_KEY_BASE_LOAD_KEY_UNKN0_SHIFT)
 
 #define SEP_KEY_BASE_LOAD_KEY_ACTIVE BIT(0)
@@ -276,11 +276,11 @@ static uint32_t AESS_UID_SEED_INVALID[0x20 / 4] = { 0x1FF11FF1, 0x1FF11FF1,
 #define SEP_KEY_BASE_SEND_KEY_AES2_OFFSET 0x14
 #define SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT 8
 #define SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK 0x7
-#define SEP_KEY_BASE_SEND_KEY_INTERFACE_GET(n)      \
-    ((n >> SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT) & \
+#define SEP_KEY_BASE_SEND_KEY_INTERFACE_GET(n)        \
+    (((n) >> SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT) & \
      SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK)
-#define SEP_KEY_BASE_SEND_KEY_INTERFACE_SET(n)  \
-    ((n & SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK) \
+#define SEP_KEY_BASE_SEND_KEY_INTERFACE_SET(n)    \
+    (((n) & SEP_KEY_BASE_SEND_KEY_INTERFACE_MASK) \
      << SEP_KEY_BASE_SEND_KEY_INTERFACE_SHIFT)
 #define SEP_KEY_BASE_SEND_KEY_ACTIVE BIT(0)
 
@@ -320,8 +320,9 @@ static void drbg_ctr_aes256_update(struct aes256_ctx *key,
     union nettle_block16 tmp[3];
     drbg_ctr_aes256_output(key, V, DRBG_CTR_AES256_SEED_SIZE, tmp[0].b);
 
-    if (provided_data)
+    if (provided_data) {
         memxor(tmp[0].b, provided_data, DRBG_CTR_AES256_SEED_SIZE);
+    }
 
     aes256_set_encrypt_key(key, tmp[0].b);
     block16_set(V, &tmp[2]);
@@ -341,8 +342,9 @@ static void enable_trace_buffer(AppleSEPState *s)
     DPRINTF("SEP_PROGRESS: Enable Trace Buffer: s->shmbuf_base: "
             "0x" HWADDR_FMT_plx "\n",
             s->shmbuf_base);
-    if (!s->shmbuf_base)
+    if (!s->shmbuf_base) {
         return;
+    }
     AddressSpace *nsas = &address_space_memory;
     typedef struct {
         uint32_t name;
@@ -2221,7 +2223,7 @@ static const MemoryRegionOps eisp_hmac_reg_ops = {
     .valid.unaligned = false,
 };
 
-static QCryptoCipherAlgo get_aes_cipher_alg(int flags)
+static QCryptoCipherAlgo get_aes_cipher_alg(uint32_t flags)
 {
     switch (flags & (SEP_AESS_CMD_FLAG_KEYSIZE_AES128 |
                      SEP_AESS_CMD_FLAG_KEYSIZE_AES192 |
@@ -2462,8 +2464,9 @@ static void aess_handle_cmd(AppleAESSState *s)
         HEXDUMP("s->in_full", s->in_full, sizeof(s->in_full));
         if (normalized_cmd ==
             SEP_AESS_COMMAND_ENCRYPT_CBC_ONLY_NONCUSTOM_FORCE_CUSTOM_AES256) {
-            if (keyselect_custom) // 0x80
+            if (keyselect_custom) { // 0x80
                 goto jump_return; // valid: 0x206, 0x246; invalid: 0x286, 0x2C6
+            }
             normalized_cmd = SEP_AESS_COMMAND_ENCRYPT_CBC_FORCE_CUSTOM_AES256;
         }
         if (normalized_cmd ==
@@ -3050,7 +3053,7 @@ static uint64_t pka_base_reg_read(void *opaque, hwaddr addr, unsigned size)
     switch (addr) {
     case 0x8: // maybe status_in0/interrupt_status
 #if 1
-        // if (s->status0 == 0x1)
+              // if (s->status0 == 0x1)
         if (s->status_in0 == 0x1) {
             ret = 0x1; // this means mod_PKA_read output ready
         }
@@ -3438,8 +3441,9 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
         if (data == 0xCAFE1334) {
             uint32_t i = 0;
             for (i = 0x10000; i < 0x10200; i++) {
-                if (i == 0x10008 || i == 0x1002C)
+                if (i == 0x10008 || i == 0x1002C) {
                     continue;
+                }
                 apple_a7iop_interrupt_status_push(APPLE_A7IOP(s)->iop_mailbox,
                                                   i);
             }
@@ -3447,8 +3451,9 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
         if (data == 0xCAFE1335) {
             uint32_t i = 0;
             for (i = 0x40000; i < 0x40100; i++) {
-                if (i == 0x40000)
+                if (i == 0x40000) {
                     continue;
+                }
                 apple_a7iop_interrupt_status_push(APPLE_A7IOP(s)->iop_mailbox,
                                                   i);
             }
@@ -3456,8 +3461,9 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
         if (data == 0xCAFE1336) {
             uint32_t i = 0;
             for (i = 0x70000; i < 0x70400; i++) {
-                // if (i == 0x70001)
+                // if (i == 0x70001) {
                 //     continue;
+                // }
                 apple_a7iop_interrupt_status_push(APPLE_A7IOP(s)->iop_mailbox,
                                                   i);
             }
@@ -3465,20 +3471,23 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
         if (data == 0xCAFE1337) {
             uint32_t i = 0;
             for (i = 0x10000; i < 0x10200; i++) {
-                if (i == 0x10008 || i == 0x1002C)
+                if (i == 0x10008 || i == 0x1002C) {
                     continue;
+                }
                 apple_a7iop_interrupt_status_push(APPLE_A7IOP(s)->iop_mailbox,
                                                   i);
             }
             for (i = 0x40000; i < 0x40100; i++) {
-                if (i == 0x40000)
+                if (i == 0x40000) {
                     continue;
+                }
                 apple_a7iop_interrupt_status_push(APPLE_A7IOP(s)->iop_mailbox,
                                                   i);
             }
             for (i = 0x70000; i < 0x70400; i++) {
-                // if (i == 0x70001)
+                // if (i == 0x70001) {
                 //     continue;
+                // }
                 apple_a7iop_interrupt_status_push(APPLE_A7IOP(s)->iop_mailbox,
                                                   i);
             }
@@ -3605,8 +3614,7 @@ static const AppleA7IOPOps apple_sep_iop_ops = {
 };
 
 AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
-                                   vaddr base, uint32_t cpu_id,
-                                   uint32_t build_version, bool modern,
+                                   vaddr base, uint32_t cpu_id, bool modern,
                                    uint32_t chip_id)
 {
     DeviceState *dev;

@@ -143,7 +143,7 @@ typedef struct {
                             // public_key ; status_in0 needs to be 0x1
     uint8_t attest_hash[32]; // 0x180 ; read_cmd_0x3 ; read attest_hash ;
                              // status_in0 needs to be 0x1
-    uint8_t input1[0x20a]; // 0x200 .. 0x40a (not inclusive) ; write_cmd_0x1 ;
+    uint8_t input1[0x20A]; // 0x200 .. 0x40A (not inclusive) ; write_cmd_0x1 ;
                            // 4176 bits, maybe rsa input?
     uint32_t chip_revision_locked; // 0x800
     uint32_t chip_revision; // 0x820 ; mod_PKA_read buffer_id 0xd asks for that
@@ -151,35 +151,35 @@ typedef struct {
     uint32_t ecid_chipid_misc[5]; // 0x860
 } ApplePKAState;
 
-#define KBKDF_CMAC_OUTPUT_LEN 0x48
-#define AES_CCM_NONCE_LENGTH 12
-#define AES_CCM_AUTH_LENGTH 8
-#define AES_CCM_TAG_LENGTH 0x10
-#define AES_CCM_COUNTER_LENGTH 4
-#define AES_CCM_MAX_DATA_LENGTH 0x54
-#define MSG_PREFIX_LENGTH 4
+#define KBKDF_CMAC_OUTPUT_LEN (0x48)
+#define AES_CCM_NONCE_LENGTH (12)
+#define AES_CCM_AUTH_LENGTH (8)
+#define AES_CCM_TAG_LENGTH (0x10)
+#define AES_CCM_COUNTER_LENGTH (4)
+#define AES_CCM_MAX_DATA_LENGTH (0x54)
+#define MSG_PREFIX_LENGTH (4)
 
-#define KBKDF_KEY_SEED_OFFSET 0x00
-#define KBKDF_KEY_REQUEST_KEY_OFFSET 0x08
-#define KBKDF_KEY_RESPONSE_KEY_OFFSET 0x28
-#define KBKDF_KEY_SEED_LENGTH 8
-#define KBKDF_KEY_KEY_LENGTH 0x20
-#define KBKDF_KEY_MAX_SLOTS 0x49
+#define KBKDF_KEY_SEED_OFFSET (0x00)
+#define KBKDF_KEY_REQUEST_KEY_OFFSET (0x08)
+#define KBKDF_KEY_RESPONSE_KEY_OFFSET (0x28)
+#define KBKDF_KEY_SEED_LENGTH (8)
+#define KBKDF_KEY_KEY_LENGTH (0x20)
+#define KBKDF_KEY_MAX_SLOTS (0x49)
 #define KBKDF_KEY_KEY_FILE_OFFSET \
-    0x100 // 0x100*4*0x40 // store mac_keys after that
+    (0x100) // 0x100*4*0x40 // store mac_keys after that
 
-#define KBKDF_CMAC_LENGTH_SIZE 2
-#define KBKDF_CMAC_LABEL_SIZE 0x10
+#define KBKDF_CMAC_LENGTH_SIZE (2)
+#define KBKDF_CMAC_LABEL_SIZE (0x10)
 #define KBKDF_CMAC_CONTEXT_SIZE MSG_PREFIX_LENGTH
 
-#define CMD_METADATA_READ_REQUEST_ENCRYPTED_LENGTH 0x10
-#define CMD_METADATA_PAYLOAD_LENGTH 0x20
-#define CMD_METADATA_DATA_PAYLOAD_LENGTH 0x40
+#define CMD_METADATA_READ_REQUEST_ENCRYPTED_LENGTH (0x10)
+#define CMD_METADATA_PAYLOAD_LENGTH (0x20)
+#define CMD_METADATA_DATA_PAYLOAD_LENGTH (0x40)
 
-#define SSC_MAX_REQUEST_SIZE 0x84
-#define SSC_MAX_RESPONSE_SIZE 0xc4
+#define SSC_MAX_REQUEST_SIZE (0x84)
+#define SSC_MAX_RESPONSE_SIZE (0xC4)
 
-#define BYTELEN_384 0x30
+#define BYTELEN_384 (0x30)
 
 #define SECP384_PUBLIC_XY_SIZE (BYTELEN_384 * 2)
 
@@ -310,8 +310,7 @@ struct AppleSEPState {
 };
 
 AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
-                                   vaddr base, uint32_t cpu_id,
-                                   uint32_t build_version, bool modern,
+                                   vaddr base, uint32_t cpu_id, bool modern,
                                    uint32_t chip_id);
 
 AppleSSCState *apple_ssc_create(MachineState *machine, uint8_t addr);

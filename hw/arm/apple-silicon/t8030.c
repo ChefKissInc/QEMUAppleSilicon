@@ -2109,7 +2109,7 @@ static void t8030_create_sep(AppleT8030MachineState *t8030)
     sep = apple_sep_from_node(
         child,
         MEMORY_REGION(apple_dart_iommu_mr(dart, *(uint32_t *)prop->data)),
-        SEPROM_BASE, A13_MAX_CPU, t8030->build_version, true, chip_id);
+        SEPROM_BASE, A13_MAX_CPU, true, chip_id);
     g_assert_nonnull(sep);
 
     object_property_add_child(OBJECT(t8030), "sep", OBJECT(sep));
