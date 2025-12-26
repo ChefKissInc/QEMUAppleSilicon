@@ -44,7 +44,7 @@ AppleDTNode *apple_dt_node_new(AppleDTNode *parent, const char *name);
 AppleDTNode *apple_dt_deserialise(void *blob);
 
 bool apple_dt_del_node_named(AppleDTNode *parent, const char *name);
-void apple_dt_del_node(AppleDTNode *node, AppleDTNode *child);
+void apple_dt_del_node(AppleDTNode *parent, AppleDTNode *node);
 bool apple_dt_del_prop_named(AppleDTNode *node, const char *name);
 
 AppleDTProp *apple_dt_set_prop(AppleDTNode *n, const char *name, uint32_t len,
