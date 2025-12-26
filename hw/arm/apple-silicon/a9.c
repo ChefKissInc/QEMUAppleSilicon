@@ -26,8 +26,8 @@
 #include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
-#include "arm-powerctl.h"
 #include "system/address-spaces.h"
+#include "arm-powerctl.h"
 #include "target/arm/cpregs.h"
 
 #define VMSTATE_A9_CPREG(name) \

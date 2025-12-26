@@ -22,7 +22,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleSPMIPMUState, APPLE_SPMI_PMU)
 
 #define RREG32(off) ldl_le_p(&s->reg[off])
 #define WREG32(off, val) stl_le_p(&s->reg[off], val)
-#define WREG32_OR(off, val) WREG32(off, RREG32(off) | val)
+#define WREG32_OR(off, val) WREG32(off, RREG32(off) | (val))
 
 struct AppleSPMIPMUState {
     /*< private >*/
@@ -118,7 +118,7 @@ static void apple_spmi_pmu_set_alarm(AppleSPMIPMUState *s)
         } else {
             int64_t now = qemu_clock_get_ns(rtc_clock);
             timer_mod_ns(s->timer,
-                         now + (int64_t)seconds * NANOSECONDS_PER_SECOND);
+                         now + ((int64_t)seconds * NANOSECONDS_PER_SECOND));
         }
     } else {
         timer_del(s->timer);

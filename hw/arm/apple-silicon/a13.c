@@ -32,9 +32,9 @@
 #include "qemu/log.h"
 #include "qemu/queue.h"
 #include "qemu/timer.h"
-#include "arm-powerctl.h"
 #include "system/address-spaces.h"
 #include "system/reset.h"
+#include "arm-powerctl.h"
 #include "target/arm/cpregs.h"
 
 #define VMSTATE_A13_CPREG(name) \
@@ -175,8 +175,9 @@ static AppleA13Cluster *apple_a13_find_cluster(int cluster_id)
 {
     AppleA13Cluster *cluster = NULL;
     QTAILQ_FOREACH (cluster, &clusters, next) {
-        if (CPU_CLUSTER(cluster)->cluster_id == cluster_id)
+        if (CPU_CLUSTER(cluster)->cluster_id == cluster_id) {
             return cluster;
+        }
     }
     return NULL;
 }
@@ -211,8 +212,9 @@ static void apple_a13_cluster_cpreg_write(CPUARMState *env,
 static void apple_a13_cluster_deliver_ipi(AppleA13Cluster *c, uint64_t cpu_id,
                                           uint64_t src_cpu, uint64_t flag)
 {
-    if (c->cpus[cpu_id]->ipi_sr)
+    if (c->cpus[cpu_id]->ipi_sr) {
         return;
+    }
 
     c->cpus[cpu_id]->ipi_sr = 1LL | (src_cpu << IPI_SR_SRC_CPU_SHIFT) | flag;
     qemu_irq_raise(c->cpus[cpu_id]->fast_ipi);
@@ -265,7 +267,8 @@ static void apple_a13_cluster_realize(DeviceState *dev, Error **errp)
 
 static void apple_a13_cluster_tick(AppleA13Cluster *c)
 {
-    int i, j;
+    int i;
+    int j;
 
     for (i = 0; i < A13_MAX_CPU; i++) { /* source */
         for (j = 0; j < A13_MAX_CPU; j++) { /* target */
@@ -292,6 +295,7 @@ static void apple_a13_cluster_tick(AppleA13Cluster *c)
 static void apple_a13_cluster_ipicr_tick(void *opaque)
 {
     AppleA13Cluster *cluster;
+
     QTAILQ_FOREACH (cluster, &clusters, next) {
         apple_a13_cluster_tick(cluster);
     }
@@ -328,7 +332,7 @@ static void apple_a13_ipi_rr_local(CPUARMState *env, const ARMCPRegInfo *ri,
 {
     AppleA13State *acpu = APPLE_A13(env_archcpu(env));
 
-    uint32_t phys_id = (value & 0xff) | (acpu->cluster_id << 8);
+    uint32_t phys_id = (value & 0xFF) | (acpu->cluster_id << 8);
     AppleA13Cluster *c = apple_a13_find_cluster(acpu->cluster_id);
     uint32_t cpu_id = -1;
     int i;
@@ -381,14 +385,14 @@ static void apple_a13_ipi_rr_global(CPUARMState *env, const ARMCPRegInfo *ri,
                                     uint64_t value)
 {
     AppleA13State *acpu = APPLE_A13(env_archcpu(env));
-    uint32_t cluster_id = (value >> IPI_RR_TARGET_CLUSTER_SHIFT) & 0xff;
+    uint32_t cluster_id = (value >> IPI_RR_TARGET_CLUSTER_SHIFT) & 0xFF;
     AppleA13Cluster *c = apple_a13_find_cluster(cluster_id);
 
     if (!c) {
         return;
     }
 
-    uint32_t phys_id = (value & 0xff) | (cluster_id << 8);
+    uint32_t phys_id = (value & 0xFF) | (cluster_id << 8);
     uint32_t cpu_id = -1;
     int i;
 
@@ -481,16 +485,16 @@ static void apple_a13_ipi_write_cr(CPUARMState *env, const ARMCPRegInfo *ri,
                                    uint64_t value)
 {
     uint64_t nanosec = 0;
+    uint64_t ct;
 
     absolutetime_to_nanoseconds(value, &nanosec);
 
-    uint64_t ct;
-
-    if (value == 0)
+    if (value == 0) {
         value = kDeferredIPITimerDefault;
+    }
 
     ct = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
-    timer_mod_ns(ipicr_timer, (ct / ipi_cr) * ipi_cr + nanosec);
+    timer_mod_ns(ipicr_timer, ((ct / ipi_cr) * ipi_cr) + nanosec);
     ipi_cr = nanosec;
 }
 

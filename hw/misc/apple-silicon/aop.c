@@ -184,14 +184,14 @@ static MemTxResult apple_aop_ep_get_rptr(AppleAOPEndpoint *s, uint32_t addr,
 static MemTxResult apple_aop_ep_set_wptr(AppleAOPEndpoint *s, uint32_t addr,
                                          uint32_t val)
 {
-    return stl_le_dma(&s->aop->dma_as, addr + s->aop->align * 2, val,
+    return stl_le_dma(&s->aop->dma_as, addr + (s->aop->align * 2), val,
                       MEMTXATTRS_UNSPECIFIED);
 }
 
 static MemTxResult apple_aop_ep_get_wptr(AppleAOPEndpoint *s, uint32_t addr,
                                          uint32_t *val)
 {
-    return ldl_le_dma(&s->aop->dma_as, addr + s->aop->align * 2, val,
+    return ldl_le_dma(&s->aop->dma_as, addr + (s->aop->align * 2), val,
                       MEMTXATTRS_UNSPECIFIED);
 }
 
@@ -309,7 +309,6 @@ static MemTxResult apple_aop_ep_read_packet(AppleAOPEndpoint *s, uint32_t addr,
 }
 
 static MemTxResult apple_aop_ep_write_packet(AppleAOPEndpoint *s, uint32_t addr,
-
                                              uint16_t seq, uint64_t timestamp)
 {
     TXOK_GUARD(

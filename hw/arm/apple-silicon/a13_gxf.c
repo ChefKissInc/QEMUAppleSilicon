@@ -18,9 +18,8 @@ static uint64_t tpidr_el1_read(CPUARMState *env, const ARMCPRegInfo *ri)
 {
     if (arm_is_guarded(env)) {
         return env->gxf.tpidr_gl[1];
-    } else {
-        return env->cp15.tpidr_el[1];
     }
+    return env->cp15.tpidr_el[1];
 }
 
 static void tpidr_el1_write(CPUARMState *env, const ARMCPRegInfo *ri,
@@ -37,9 +36,8 @@ static uint64_t vbar_el1_read(CPUARMState *env, const ARMCPRegInfo *ri)
 {
     if (arm_is_guarded(env)) {
         return env->gxf.vbar_gl[1];
-    } else {
-        return raw_read(env, ri);
     }
+    return raw_read(env, ri);
 }
 
 static void vbar_el1_write(CPUARMState *env, const ARMCPRegInfo *ri,
@@ -56,9 +54,8 @@ static uint64_t spsr_el1_read(CPUARMState *env, const ARMCPRegInfo *ri)
 {
     if (arm_is_guarded(env)) {
         return env->gxf.spsr_gl[1];
-    } else {
-        return env->banked_spsr[BANK_SVC];
     }
+    return env->banked_spsr[BANK_SVC];
 }
 
 static void spsr_el1_write(CPUARMState *env, const ARMCPRegInfo *ri,
@@ -75,9 +72,8 @@ static uint64_t elr_el1_read(CPUARMState *env, const ARMCPRegInfo *ri)
 {
     if (arm_is_guarded(env)) {
         return env->gxf.elr_gl[1];
-    } else {
-        return env->elr_el[1];
     }
+    return env->elr_el[1];
 }
 
 static void elr_el1_write(CPUARMState *env, const ARMCPRegInfo *ri,
@@ -94,9 +90,8 @@ static uint64_t esr_el1_read(CPUARMState *env, const ARMCPRegInfo *ri)
 {
     if (arm_is_guarded(env)) {
         return env->gxf.esr_gl[1];
-    } else {
-        return env->cp15.esr_el[1];
     }
+    return env->cp15.esr_el[1];
 }
 
 static void esr_el1_write(CPUARMState *env, const ARMCPRegInfo *ri,
@@ -113,9 +108,8 @@ static uint64_t far_el1_read(CPUARMState *env, const ARMCPRegInfo *ri)
 {
     if (arm_is_guarded(env)) {
         return env->gxf.far_gl[1];
-    } else {
-        return env->cp15.far_el[1];
     }
+    return env->cp15.far_el[1];
 }
 
 static void far_el1_write(CPUARMState *env, const ARMCPRegInfo *ri,

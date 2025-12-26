@@ -479,8 +479,8 @@ AppleDTNode *apple_boot_load_dt_file(const char *filename)
 
     extract_im4p_payload(filename, payload_type, &file_data, &fsize, NULL);
 
-    if (strncmp(payload_type, "dtre", 4) != 0 &&
-        strncmp(payload_type, "raw", 4) != 0) {
+    if (memcmp(payload_type, "dtre", 4) != 0 &&
+        memcmp(payload_type, "raw", 4) != 0) {
         error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `dtre`)",
                    filename, payload_type);
         return NULL;
@@ -639,7 +639,9 @@ uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size)
     unsigned long file_size;
     uint32_t length;
     char payload_type[4];
-    uint32_t trustcache_version, trustcache_entry_count, expected_file_size;
+    uint32_t trustcache_version;
+    uint32_t trustcache_entry_count;
+    uint32_t expected_file_size;
     uint32_t trustcache_entry_size;
 
     extract_im4p_payload(filename, payload_type, &file_data, &length, NULL);
@@ -706,8 +708,8 @@ void apple_boot_load_ramdisk(const char *filename, AddressSpace *as,
     char payload_type[4];
 
     extract_im4p_payload(filename, payload_type, &file_data, &length, NULL);
-    if (strncmp(payload_type, "rdsk", 4) != 0 &&
-        strncmp(payload_type, "raw", 4) != 0) {
+    if (memcmp(payload_type, "rdsk", 4) != 0 &&
+        memcmp(payload_type, "raw", 4) != 0) {
         error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `rdsk`)",
                    filename, payload_type);
         return;
@@ -751,9 +753,8 @@ bool apple_boot_contains_boot_arg(const char *boot_args, const char *arg,
     }
 
     while ((token = qemu_strsep(&pos, " ")) != NULL) {
-        if (match_prefix && strncmp(token, arg, arglen) == 0) {
-            return true;
-        } else if (strcmp(token, arg) == 0) {
+        if ((match_prefix && strncmp(token, arg, arglen) == 0) ||
+            strcmp(token, arg) == 0) {
             return true;
         }
     }
@@ -950,8 +951,8 @@ MachoHeader64 *apple_boot_load_kernel(const char *filename,
     extract_im4p_payload(filename, payload_type, &data, &len,
                          (uint8_t **)secure_monitor);
 
-    if (strncmp(payload_type, "krnl", 4) != 0 &&
-        strncmp(payload_type, "raw", 3) != 0) {
+    if (memcmp(payload_type, "krnl", 4) != 0 &&
+        memcmp(payload_type, "raw", 4) != 0) {
         error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `krnl`)",
                    filename, payload_type);
         return NULL;
@@ -967,7 +968,9 @@ MachoHeader64 *apple_boot_parse_macho(uint8_t *data, uint32_t len)
     uint8_t *phys_base;
     MachoHeader64 *header;
     MachoLoadCommand *cmd;
-    uint64_t text_base, kc_base, kc_end;
+    uint64_t text_base;
+    uint64_t kc_base;
+    uint64_t kc_end;
     int i;
 
     header = (MachoHeader64 *)data;
@@ -1165,7 +1168,9 @@ static void apple_boot_process_symbols(MachoHeader64 *header, uint64_t slide)
 {
     MachoLoadCommand *cmd;
     uint8_t *data;
-    uint64_t text_base, kernel_low, kernel_high;
+    uint64_t text_base;
+    uint64_t kernel_low;
+    uint64_t kernel_high;
     uint32_t index;
     void *base;
     MachoSegmentCommand64 *linkedit_seg;
@@ -1216,8 +1221,8 @@ static void apple_boot_process_symbols(MachoHeader64 *header, uint64_t slide)
             base = data + (linkedit_seg->vmaddr - kernel_low);
             off = linkedit_seg->fileoff;
             for (size_t i = 0; i < dysymtab->loc_rel_n; i++) {
-                int32_t r_address =
-                    *(int32_t *)(base + (dysymtab->loc_rel_off - off) + i * 8);
+                int32_t r_address = *(
+                    int32_t *)(base + (dysymtab->loc_rel_off - off) + (i * 8));
                 *(uint64_t *)(data + ((text_base - kernel_low) + r_address)) +=
                     slide;
             }
@@ -1265,7 +1270,8 @@ hwaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
     MachoLoadCommand *cmd;
     hwaddr pc = 0;
     data = apple_boot_get_macho_buffer(header);
-    uint64_t kc_base, kc_end;
+    uint64_t kc_base;
+    uint64_t kc_end;
     bool is_fileset = header->file_type == MH_FILESET;
     MachoHeader64 *header2 = NULL;
     void *load_from2 = NULL;

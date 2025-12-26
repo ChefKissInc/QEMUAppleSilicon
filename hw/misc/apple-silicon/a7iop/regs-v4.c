@@ -24,8 +24,8 @@
 #include "hw/sysbus.h"
 #include "qemu/lockable.h"
 #include "qemu/log.h"
-#include "private.h"
 #include "system/memory.h"
+#include "private.h"
 
 #define REG_AXI_BASE_LO (0x8)
 #define REG_AXI_BASE_HI (0x10)
@@ -247,5 +247,5 @@ void apple_a7iop_init_mmio_v4(AppleA7IOP *s, uint64_t mmio_size)
     memory_region_add_subregion_overlap(&s->mmio, AKF_STRIDE + AKF_MAILBOX_OFF,
                                         &s->iop_mailbox->mmio, 1);
     memory_region_add_subregion_overlap(
-        &s->mmio, AKF_STRIDE * 2 + AKF_MAILBOX_OFF, &s->ap_mailbox->mmio, 1);
+        &s->mmio, (AKF_STRIDE * 2) + AKF_MAILBOX_OFF, &s->ap_mailbox->mmio, 1);
 }

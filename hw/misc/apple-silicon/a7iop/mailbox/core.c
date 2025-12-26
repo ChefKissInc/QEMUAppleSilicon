@@ -48,8 +48,8 @@
 
 static bool is_interrupt_enabled(AppleA7IOPMailbox *s, uint32_t status)
 {
-    if ((status & 0xf0000) == 0x10000) {
-        uint32_t interrupt = status & 0x7f;
+    if ((status & 0xF0000) == 0x10000) {
+        uint32_t interrupt = status & 0x7F;
         uint32_t interrupt_enabled =
             s->interrupts_enabled[interrupt / 32] & (1 << (interrupt % 32));
         if (interrupt_enabled) {
@@ -463,8 +463,9 @@ static void apple_a7iop_gpio_timer0(void *opaque, int n, int level)
     AppleA7IOPMailbox *s = opaque;
     bool val = !!level;
     assert(n == 0);
-    if (!val)
+    if (!val) {
         return;
+    }
     QEMU_LOCK_GUARD(&s->lock);
     if ((s->timer0_enabled & REG_KIC_TMR_EN_MASK) == REG_KIC_TMR_EN_MASK &&
         (s->timer0_masked & REG_KIC_TMR_INT_MASK_MASK) == 0) {
@@ -477,8 +478,9 @@ static void apple_a7iop_gpio_timer1(void *opaque, int n, int level)
     AppleA7IOPMailbox *s = opaque;
     bool val = !!level;
     assert(n == 0);
-    if (!val)
+    if (!val) {
         return;
+    }
     QEMU_LOCK_GUARD(&s->lock);
     if ((s->timer1_enabled & REG_KIC_TMR_EN_MASK) == REG_KIC_TMR_EN_MASK &&
         (s->timer1_masked & REG_KIC_TMR_INT_MASK_MASK) == 0) {
@@ -497,7 +499,7 @@ AppleA7IOPMailbox *apple_a7iop_mailbox_new(const char *role,
     SysBusDevice *sbd;
     AppleA7IOPMailbox *s;
     int i;
-    char name[128];
+    char name[128] = { 0 };
 
     dev = qdev_new(TYPE_APPLE_A7IOP_MAILBOX);
     sbd = SYS_BUS_DEVICE(dev);

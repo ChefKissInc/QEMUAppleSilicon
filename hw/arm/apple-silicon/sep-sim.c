@@ -29,9 +29,9 @@
 #include "qemu/guest-random.h"
 #include "qemu/lockable.h"
 #include "qemu/log.h"
+#include "system/dma.h"
 #include "art.h"
 #include "libtasn1.h"
-#include "system/dma.h"
 
 typedef struct {
     uint8_t ep;

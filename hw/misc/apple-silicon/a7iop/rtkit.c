@@ -372,8 +372,6 @@ static void apple_rtkit_mgmt_handle_msg(void *opaque, uint32_t ep,
             apple_a7iop_send_ap(a7iop, m2);
         }
         break;
-    case MSG_TYPE_SET_EP_STATUS:
-        break;
     default:
         break;
     }

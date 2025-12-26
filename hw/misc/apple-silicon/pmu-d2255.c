@@ -174,7 +174,7 @@ struct PMUD2255State {
 
 #define RREG32(off) ldl_le_p(&s->reg[off])
 #define WREG32(off, val) stl_le_p(&s->reg[off], val)
-#define WREG32_OR(off, val) WREG32(off, RREG32(off) | val)
+#define WREG32_OR(off, val) WREG32(off, RREG32(off) | (val))
 
 static unsigned int frq_to_period_ns(unsigned int freq_hz)
 {
@@ -185,7 +185,7 @@ static unsigned int frq_to_period_ns(unsigned int freq_hz)
 static uint64_t G_GNUC_UNUSED tick_to_ns(PMUD2255State *s, uint64_t tick)
 {
     return (tick >> 15) * NANOSECONDS_PER_SECOND +
-           (tick & 0x7fff) * s->tick_period;
+           (tick & 0x7FFF) * s->tick_period;
 }
 
 static uint64_t rtc_get_tick(PMUD2255State *s, uint64_t *out_ns)
@@ -242,7 +242,7 @@ static void pmu_d2255_set_alarm(PMUD2255State *s)
         } else {
             int64_t now = qemu_clock_get_ns(rtc_clock);
             timer_mod_ns(s->timer,
-                         now + (int64_t)seconds * NANOSECONDS_PER_SECOND);
+                         now + ((int64_t)seconds * NANOSECONDS_PER_SECOND));
         }
     } else {
         timer_del(s->timer);

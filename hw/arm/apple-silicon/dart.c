@@ -34,8 +34,8 @@
 #include "qapi/error.h"
 #include "qemu/bitops.h"
 #include "qemu/module.h"
-#include "qobject/qdict.h"
 #include "system/dma.h"
+#include "qobject/qdict.h"
 
 #if 0
 #define DPRINTF(fmt, ...)                             \
@@ -383,7 +383,8 @@ static AppleDARTTLBEntry *apple_dart_ptw(AppleDARTInstance *o, uint32_t sid,
     AppleDARTState *s = o->s;
 
     uint64_t idx = (iova & (s->l_mask[0])) >> s->l_shift[0];
-    uint64_t pte, pa;
+    uint64_t pte;
+    uint64_t pa;
     int level;
     AppleDARTTLBEntry *tlb_entry = NULL;
     uint32_t err_status = 0;
@@ -448,7 +449,8 @@ static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
     AppleDARTState *s = o->s;
     AppleDARTTLBEntry *tlb_entry = NULL;
     uint32_t sid = iommu->sid;
-    uint64_t iova, key;
+    uint64_t iova;
+    uint64_t key;
 
     IOMMUTLBEntry entry = {
         .target_as = &address_space_memory,
@@ -460,7 +462,7 @@ static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
 
     g_assert_cmpuint(sid, <, DART_MAX_STREAMS);
     qemu_mutex_lock(&o->mutex);
-    sid = o->remap[sid] & 0xf;
+    sid = o->remap[sid] & 0xF;
 
     if (s->bypass & (1 << sid)) {
         goto end;
@@ -535,7 +537,8 @@ end:
 static void apple_dart_reset(DeviceState *dev)
 {
     AppleDARTState *s = APPLE_DART(dev);
-    int i, j;
+    int i;
+    int j;
 
     for (i = 0; i < s->num_instances; i++) {
         memset(s->instances[i].base_reg, 0, sizeof(s->instances[i].base_reg));
@@ -675,7 +678,7 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
         o->id = i;
         o->s = s;
         memory_region_init_io(&o->iomem, OBJECT(dev), &base_reg_ops, o,
-                              TYPE_APPLE_DART ".reg", reg[i * 2 + 1]);
+                              TYPE_APPLE_DART ".reg", reg[(i * 2) + 1]);
         sysbus_init_mmio(sbd, &o->iomem);
         qemu_mutex_init(&o->mutex);
 
@@ -774,13 +777,13 @@ void hmp_info_dart(Monitor *mon, const QDict *qdict)
                            dart->page_size, dart->num_instances);
         }
         return;
-    } else {
-        for (GSList *ele = device_list; ele; ele = ele->next) {
-            DeviceState *dev = ele->data;
-            if (!strcmp(dev->id, name)) {
-                dart = APPLE_DART(dev);
-                break;
-            }
+    }
+
+    for (GSList *ele = device_list; ele; ele = ele->next) {
+        DeviceState *dev = ele->data;
+        if (!strcmp(dev->id, name)) {
+            dart = APPLE_DART(dev);
+            break;
         }
     }
 
@@ -799,7 +802,7 @@ void hmp_info_dart(Monitor *mon, const QDict *qdict)
 
         for (int sid = 0; sid < DART_MAX_STREAMS; sid++) {
             if (dart->sids & (1 << sid)) {
-                uint32_t remap = o->remap[sid] & 0xf;
+                uint32_t remap = o->remap[sid] & 0xF;
                 if (sid != remap) {
                     monitor_printf(mon, "\t\tSID %d: Remapped to %d\n", sid,
                                    remap);
