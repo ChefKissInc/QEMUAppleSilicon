@@ -199,7 +199,7 @@ struct AppleDisplayPipeV4State {
 #define REG_GP_STATUS (0x184)
 #define GP_STATUS_DECOMPRESSION_FAIL BIT(0)
 
-#define GP_BLOCK_BASE_FOR(i) (GP_BLOCK_BASE + i * GP_BLOCK_SIZE)
+#define GP_BLOCK_BASE_FOR(i) (GP_BLOCK_BASE + ((i) * GP_BLOCK_SIZE))
 #define GP_BLOCK_END_FOR(i) (GP_BLOCK_BASE_FOR(i) + (GP_BLOCK_SIZE - 1))
 
 #define BLEND_BLOCK_BASE (0x60000)
@@ -211,7 +211,7 @@ struct AppleDisplayPipeV4State {
 #define REG_BLEND_LAYER_0_CONFIG (0x14)
 #define REG_BLEND_LAYER_1_CONFIG (0x18)
 #define BLEND_LAYER_CONFIG_PIPE(v) ((v) & 0xF)
-#define BLEND_LAYER_CONFIG_MODE(v) ((v >> 4) & 0xF)
+#define BLEND_LAYER_CONFIG_MODE(v) (((v) >> 4) & 0xF)
 #define BLEND_MODE_NONE 0
 #define BLEND_MODE_ALPHA 1
 #define BLEND_MODE_PREMULT 2
@@ -232,17 +232,15 @@ static pixman_format_code_t adp_v4_gp_fmt_to_pixman(ADPV4GenPipeState *s)
         ADP_INFO("gp%d: pixel format is BGRA (0x%X).", s->index,
                  s->pixel_format);
         return PIXMAN_b8g8r8a8;
-    } else if ((s->pixel_format & GP_PIXEL_FORMAT_ARGB) ==
-               GP_PIXEL_FORMAT_ARGB) {
+    }
+    if ((s->pixel_format & GP_PIXEL_FORMAT_ARGB) == GP_PIXEL_FORMAT_ARGB) {
         ADP_INFO("gp%d: pixel format is ARGB (0x%X).", s->index,
                  s->pixel_format);
         return PIXMAN_a8r8g8b8;
-    } else {
-        qemu_log_mask(LOG_GUEST_ERROR,
-                      "gp%d: pixel format is unknown (0x%X).\n", s->index,
-                      s->pixel_format);
-        return 0;
     }
+    qemu_log_mask(LOG_GUEST_ERROR, "gp%d: pixel format is unknown (0x%X).\n",
+                  s->index, s->pixel_format);
+    return 0;
 }
 
 static void adp_v4_gp_read(ADPV4GenPipeState *s)
@@ -277,7 +275,7 @@ static void adp_v4_gp_read(ADPV4GenPipeState *s)
         return;
     }
 
-    buf_len = s->height * s->stride;
+    buf_len = (uint64_t)s->height * (uint64_t)s->stride;
     if (s->max_buf_len < buf_len) {
         g_free(s->buf);
         s->buf = g_malloc(buf_len);
@@ -570,7 +568,8 @@ static void adp_v4_gfx_update(void *opaque)
     DisplaySurface *surface = qemu_console_surface(s->console);
 
     int stride = s->width * sizeof(uint32_t);
-    int first = 0, last = 0;
+    int first = 0;
+    int last = 0;
 
     if (s->invalidated) {
         framebuffer_update_memory_section(&s->vram_section, s->vram_mr,
@@ -628,7 +627,7 @@ static void adp_v4_update_disp_image_ptr(AppleDisplayPipeV4State *s)
     qemu_pixman_image_unref(s->boot_splash_image);
     s->boot_splash_image = pixman_image_create_bits(
         PIXMAN_a8b8g8r8, s->boot_splash_width, s->boot_splash_height,
-        (uint32_t *)s->boot_splash, s->boot_splash_width * 4);
+        s->boot_splash, s->boot_splash_width * 4);
     pixman_transform_t transform;
     pixman_transform_init_identity(&transform);
     double dest_width = (double)s->width / 1.5;
@@ -644,8 +643,8 @@ static void adp_v4_update_disp_image_ptr(AppleDisplayPipeV4State *s)
 static void adp_v4_draw_boot_splash(AppleDisplayPipeV4State *s)
 {
     uint32_t dest_width = (double)s->width / 1.5;
-    uint32_t dest_x = s->width / 2 - dest_width / 2;
-    uint32_t dest_y = s->height / 2 - dest_width / 2;
+    int16_t dest_x = (s->width / 2) - (dest_width / 2);
+    int16_t dest_y = (s->height / 2) - (dest_width / 2);
     pixman_image_composite(PIXMAN_OP_OVER, s->boot_splash_image, NULL,
                            s->disp_image, 0, 0, 0, 0, dest_x, dest_y,
                            dest_width, dest_width);
@@ -685,7 +684,7 @@ static void adp_v4_reset_hold(Object *obj, ResetType type)
 
     // Workaround for `-v` removing the boot_splash
     timer_mod(s->boot_splash_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
-                                        NANOSECONDS_PER_SECOND / 2);
+                                        (NANOSECONDS_PER_SECOND / 2));
 }
 
 static void adp_v4_realize(DeviceState *dev, Error **errp)
@@ -804,7 +803,7 @@ static void adp_v4_blit_single_layer(AppleDisplayPipeV4State *s,
 
     for (i = 0; i < gp->height; i += 1) {
         off = i * s->width * sizeof(uint32_t);
-        memcpy(adp_v4_get_ram_ptr(s) + off, gp->buf + i * gp->stride,
+        memcpy(adp_v4_get_ram_ptr(s) + off, gp->buf + (i * gp->stride),
                gp->width * sizeof(uint32_t));
         adp_v4_set_dirty(s, off, gp->width * sizeof(uint32_t));
     }
@@ -968,13 +967,14 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
     png_read_update_info(png_ptr, info_ptr);
 
     s->boot_splash =
-        g_new0(uint32_t, s->boot_splash_width * s->boot_splash_height);
+        g_new(uint32_t, s->boot_splash_width * s->boot_splash_height);
     s->boot_splash_size =
         s->boot_splash_width * s->boot_splash_height * sizeof(uint32_t);
 
-    png_bytep *row_ptrs = malloc(sizeof(png_bytep) * s->boot_splash_height);
-    for (uint32_t y = 0; y < s->boot_splash_height; y++)
-        row_ptrs[y] = (png_bytep)(s->boot_splash + y * s->boot_splash_width);
+    png_bytep *row_ptrs = g_new(png_bytep, s->boot_splash_height);
+    for (uint32_t y = 0; y < s->boot_splash_height; y++) {
+        row_ptrs[y] = (png_bytep)(s->boot_splash + (y * s->boot_splash_width));
+    }
 
     png_read_image(png_ptr, row_ptrs);
 
