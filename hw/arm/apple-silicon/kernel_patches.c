@@ -63,11 +63,13 @@ static CKPatcherRange *ck_kp_find_section_range(MachoHeader64 *hdr,
 static MachoHeader64 *ck_kp_find_image_header(MachoHeader64 *hdr,
                                               const char *bundle_id)
 {
-    uint64_t *info, *start;
+    uint64_t *info;
+    uint64_t *start;
     uint32_t count;
     uint32_t i;
-    char kname[256];
-    const char *prelinkinfo, *last_dict;
+    char kname[256] = { 0 };
+    const char *prelinkinfo;
+    const char *last_dict;
 
     if (hdr->file_type == MH_FILESET) {
         return apple_boot_get_fileset_header(hdr, bundle_id);
@@ -87,7 +89,8 @@ static MachoHeader64 *ck_kp_find_image_header(MachoHeader64 *hdr,
             strstr((const char *)kext_info_range->ptr, "PrelinkInfoDictionary");
         last_dict = strstr(prelinkinfo, "<array>") + 7;
         while (last_dict) {
-            const char *nested_dict, *ident;
+            const char *nested_dict;
+            const char *ident;
             const char *end_dict = strstr(last_dict, "</dict>");
             if (!end_dict) {
                 break;
@@ -497,10 +500,10 @@ static void ck_kp_img4_patches(CKPatcherRange *range)
         0xF5, 0x03, 0x00, 0xAA, // mov x21, x0
         0x00, 0x00, 0x00, 0x34, // cbz #?
     };
-    static const uint8_t mask_185[] = { 0xFF, 0xFF, 0xE0, 0xFF, 0xFF, 0xFF,
-                                        0xE0, 0xFF, 0x00, 0x00, 0x00, 0xFC,
-                                        0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x00,
-                                        0xF8, 0xFF };
+    static const uint8_t mask_185[] = { 0xFF, 0xFF, 0xE0, 0xFF, 0xFF,
+                                        0xFF, 0xE0, 0xFF, 0x00, 0x00,
+                                        0x00, 0xFC, 0xFF, 0xFF, 0xFF,
+                                        0xFF, 0x1F, 0x00, 0xF8, 0xFF };
     QEMU_BUILD_BUG_ON(sizeof(pattern_185) != sizeof(mask_185));
     static const uint8_t repl_185[] = { MOV_W0_0_BYTES }; // mov w0, #0
     ck_patcher_find_replace(
