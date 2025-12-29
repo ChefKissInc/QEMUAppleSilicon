@@ -171,7 +171,7 @@ void apple_a13_set_off(AppleA13State *acpu)
     }
 }
 
-static AppleA13Cluster *apple_a13_find_cluster(int cluster_id)
+static AppleA13Cluster *apple_a13_find_cluster(uint32_t cluster_id)
 {
     AppleA13Cluster *cluster = NULL;
     QTAILQ_FOREACH (cluster, &clusters, next) {
@@ -334,7 +334,7 @@ static void apple_a13_ipi_rr_local(CPUARMState *env, const ARMCPRegInfo *ri,
 
     uint32_t phys_id = (value & 0xFF) | (acpu->cluster_id << 8);
     AppleA13Cluster *c = apple_a13_find_cluster(acpu->cluster_id);
-    uint32_t cpu_id = -1;
+    uint32_t cpu_id = -1U;
     int i;
 
     for (i = 0; i < A13_MAX_CPU; i++) {
@@ -346,7 +346,7 @@ static void apple_a13_ipi_rr_local(CPUARMState *env, const ARMCPRegInfo *ri,
         }
     }
 
-    if (cpu_id == -1 || c->cpus[cpu_id] == NULL) {
+    if (cpu_id == -1U || c->cpus[cpu_id] == NULL) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "CPU %x failed to send fast IPI to local CPU %x: value: "
                       "0x" HWADDR_FMT_plx "\n",
@@ -406,7 +406,7 @@ static void apple_a13_ipi_rr_global(CPUARMState *env, const ARMCPRegInfo *ri,
         }
     }
 
-    if (cpu_id == -1 || c->cpus[cpu_id] == NULL) {
+    if (cpu_id == -1U || c->cpus[cpu_id] == NULL) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "CPU %x failed to send fast IPI to global CPU %x: value: "
                       "0x" HWADDR_FMT_plx "\n",
