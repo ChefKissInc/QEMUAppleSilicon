@@ -176,6 +176,7 @@ static const char *REM_PROPS[] = {
     "function-error_handler",
     "function-ldcm_bypass_en",
     "function-mcc_ctrl",
+    "function-mcc_dataset",
     "function-pmp_control",
     "function-spi0_mosi_config",
     "function-spi0_sclk_config",
