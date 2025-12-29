@@ -673,8 +673,9 @@ static void dwc3_bd_free(DWC3State *s, DWC3BufferDesc *desc)
 
 static void dwc3_td_free_buffers(DWC3State *s, DWC3Transfer *xfer)
 {
-    while (!QTAILQ_EMPTY(&xfer->buffers)) {
-        DWC3BufferDesc *desc = QTAILQ_FIRST(&xfer->buffers);
+    DWC3BufferDesc *desc;
+    DWC3BufferDesc *desc_next;
+    QTAILQ_FOREACH_SAFE (desc, &xfer->buffers, queue, desc_next) {
         QTAILQ_REMOVE(&xfer->buffers, desc, queue);
         xfer->count--;
         dwc3_bd_free(s, desc);
@@ -980,12 +981,9 @@ static void dwc3_dcore_reset(DWC3State *s)
         }
 
         if (ep->uep) {
-            // p = QTAILQ_FIRST(&ep->uep->queue);
             QTAILQ_FOREACH(p, &ep->uep->queue, queue) {
-                if (p) {
-                    p->status = USB_RET_IOERROR;
-                    usb_packet_complete(udev, p);
-                }
+                p->status = USB_RET_IOERROR;
+                usb_packet_complete(udev, p);
             }
         }
         memset(ep, 0, sizeof(*ep));
@@ -1596,12 +1594,9 @@ static void usb_dwc3_depcmdreg_write(void *ptr, hwaddr addr, int index,
                 ep->xfer = NULL;
                 if (ep->uep) {
                     USBPacket *p = NULL;
-                    // p = QTAILQ_FIRST(&ep->uep->queue);
                     QTAILQ_FOREACH(p, &ep->uep->queue, queue) {
-                        if (p) {
-                            p->status = USB_RET_IOERROR;
-                            usb_packet_complete(udev, p);
-                        }
+                        p->status = USB_RET_IOERROR;
+                        usb_packet_complete(udev, p);
                     }
                 }
             } else {
@@ -2025,13 +2020,10 @@ static void dwc3_ep_run(DWC3State *s, DWC3Endpoint *ep)
 
     // still have to test whether the _first or _foreach variant is better
     // this means both, correctness and speed. everywhere it's used
-    // p = QTAILQ_FIRST(&ep->uep->queue);
     QTAILQ_FOREACH(p, &ep->uep->queue, queue) {
-        if (p) {
-            DPRINTF("%s: pid: 0x%x ep: %d epid: %d id: 0x%" PRIx64 "\n",
-                    __func__, p->pid, p->ep->nr, ep->epid, p->id);
-            dwc3_process_packet(s, ep, p);
-        }
+        DPRINTF("%s: pid: 0x%x ep: %d epid: %d id: 0x%" PRIx64 "\n",
+                __func__, p->pid, p->ep->nr, ep->epid, p->id);
+        dwc3_process_packet(s, ep, p);
     }
 }
 
