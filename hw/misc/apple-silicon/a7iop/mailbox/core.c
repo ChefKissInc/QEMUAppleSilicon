@@ -548,6 +548,10 @@ static void apple_a7iop_mailbox_reset(DeviceState *dev)
 {
     AppleA7IOPMailbox *s;
     AppleA7IOPMessage *msg;
+    AppleA7IOPMessage *msg_next;
+    AppleA7IOPInterruptStatusMessage *intr_status_msg;
+    AppleA7IOPInterruptStatusMessage *intr_status_msg_next;
+    int i;
 
     s = APPLE_A7IOP_MAILBOX(dev);
 
@@ -564,20 +568,21 @@ static void apple_a7iop_mailbox_reset(DeviceState *dev)
     memset(s->iop_send_reg, 0, sizeof(s->iop_send_reg));
     memset(s->ap_send_reg, 0, sizeof(s->ap_send_reg));
 
-    while (!QTAILQ_EMPTY(&s->inbox)) {
-        msg = QTAILQ_FIRST(&s->inbox);
+    QTAILQ_FOREACH_SAFE (msg, &s->inbox, next, msg_next) {
         QTAILQ_REMOVE(&s->inbox, msg, next);
         g_free(msg);
     }
-    while (!QTAILQ_EMPTY(&s->interrupt_status)) {
-        AppleA7IOPInterruptStatusMessage *m =
-            QTAILQ_FIRST(&s->interrupt_status);
-        QTAILQ_REMOVE(&s->interrupt_status, m, entry);
-        g_free(m);
+
+    QTAILQ_FOREACH_SAFE (intr_status_msg, &s->interrupt_status, entry,
+                         intr_status_msg_next) {
+        QTAILQ_REMOVE(&s->interrupt_status, intr_status_msg, entry);
+        g_free(intr_status_msg);
     }
-    for (int i = 0; i < 4; i++) {
+
+    for (i = 0; i < ARRAY_SIZE(s->interrupts_enabled); i++) {
         s->interrupts_enabled[i] = 0;
     }
+
     s->iop_nonempty = 0;
     s->iop_empty = 0;
     s->ap_nonempty = 0;
