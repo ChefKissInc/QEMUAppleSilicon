@@ -50,9 +50,11 @@ struct QIONetListener {
     QIOChannelSocket **sioc;
     GSource **io_source;
     size_t nsioc;
+    GMainContext *context;
 
     bool connected;
 
+    QemuMutex lock; /* Protects remaining fields */
     QIONetListenerClientFunc io_func;
     gpointer io_data;
     GDestroyNotify io_notify;
