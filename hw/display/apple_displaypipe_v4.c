@@ -133,6 +133,7 @@ struct AppleDisplayPipeV4State {
     MemoryRegionSection vram_section;
     qemu_irq irqs[9];
     uint32_t int_status;
+    uint32_t int_enable;
     ADPV4GenPipeState generic_pipe[ADP_V4_GP_COUNT];
     ADPV4BlendUnitState blend_unit;
     QemuConsole *console;
@@ -146,17 +147,38 @@ struct AppleDisplayPipeV4State {
     QEMUTimer *boot_splash_timer;
 };
 
+// APIODMA
+#define REG_APIODMA_CFG (0x40000)
+#define REG_APIODMA_CFG_MEM_SRC (0x40010)
+#define REG_APIODMA_CFG_MEM_DAT (0x40014)
+#define REG_APIODMA_CFG_DMA_CFG_PIO_RD (0x4001C)
+#define REG_APIODMA_CFG_DMA_CFG_PIO_WR (0x40020)
+
+// shadow FIFO
+#define REG_SHADOW_FIFO_POWER_CONTROL (0x45010)
+
+// pipe control
 #define REG_CONTROL_INT_STATUS (0x45818)
-#define CONTROL_INT_STATUS_MODE_CHANGED BIT(1)
-#define CONTROL_INT_STATUS_DISP_UNDERRUN BIT(3)
-#define CONTROL_INT_STATUS_VBLANK BIT(10) // "Swap Done"
-#define CONTROL_INT_STATUS_SUB_FRAME_OVERFLOW BIT(11)
-#define CONTROL_INT_STATUS_M3 BIT(13)
-#define CONTROL_INT_STATUS_PCC BIT(17)
-// #define CONTROL_INT_STATUS_?? BIT(19) // "Start accumulating"
-// #define CONTROL_INT_STATUS_?? BIT(20) // "Frame Processed"
-#define CONTROL_INT_STATUS_AXI_READ_ERR BIT(30)
-#define CONTROL_INT_STATUS_AXI_WRITE_ERR BIT(31)
+#define CONTROL_INT_MODE_CHANGED BIT(1)
+#define CONTROL_INT_UNDERRUN BIT(3)
+#define CONTROL_INT_OUTPUT_READY BIT(10)
+#define CONTROL_INT_SUB_FRAME_OVERFLOW BIT(11)
+#define CONTROL_INT_M3 BIT(13)
+#define CONTROL_INT_PCC BIT(17)
+#define CONTROL_INT_CDFD BIT(19)
+#define CONTROL_INT_FRAME_PROCESSED BIT(20)
+#define CONTROL_INT_AXI_READ_ERR BIT(30)
+#define CONTROL_INT_AXI_WRITE_ERR BIT(31)
+#define REG_CONTROL_INT_ENABLE (0x4581C)
+#define REG_CONTROL_HILO (0x45830)
+#define REG_CONTROL_DISP_FIFO_POWER_CONTROL (0x45834)
+#define REG_CONTROL_POWER_GATE_TIMER_GP0 (0x4583C)
+#define REG_CONTROL_POWER_GATE_TIMER_GP1 (0x45840)
+#define REG_CONTROL_POWER_GATE_TIMER_PPP (0x45844)
+#define REG_CONTROL_POWER_GATE_TIMER_HILO (0x45848)
+
+// pipe config
+#define REG_CONTROL_PIPE_CONFIG_SPARE_0 (0x46000)
 #define REG_CONTROL_VERSION (0x46020)
 #define CONTROL_VERSION_A0 (0x70044)
 #define CONTROL_VERSION_A1 (0x70045)
@@ -176,7 +198,76 @@ struct AppleDisplayPipeV4State {
 #define REG_CONTROL_READ_LINK_GATE_METRIC (0x461D4)
 #define REG_CONTROL_READ_LTR_CONFIG (0x461D8)
 #define REG_CONTROL_LTR_TIMER (0x461DC)
-#define REG_CONTROL_WRITE_LTR_CONFIG (0x461E0)
+#define REG_CONTROL_WR_LTR_CONFIG (0x461E0)
+#define REG_CONTROL_RD_PIXEL_LTR_CONV_FACTOR (0x461E4)
+#define REG_CONTROL_WR_PIXEL_LTR_CONV_FACTOR (0x461E8)
+#define REG_CONTROL_LTR_OFFSET (0x461EC)
+#define REG_CONTROL_EVENT_ORDERING (0x46254)
+#define REG_CONTROL_MIN_TLTR (0x46258)
+#define REG_CONTROL_START_CLTR (0x4625C)
+#define REG_CONTROL_OPE_OFFSET0 (0x46268)
+#define REG_CONTROL_OPE_OFFSET1 (0x4626C)
+#define REG_CONTROL_GP_AGGR_OFFSET0 (0x4627C)
+#define REG_CONTROL_GP_AGGR_OFFSET1 (0x46280)
+#define REG_CONTROL_BIC_AGGR_OFFSET (0x46284)
+#define REG_CONTROL_SPUC_AGGR_OFFSET (0x46288)
+#define REG_CONTROL_PDC_RD_AGGR_OFFSET (0x4628C)
+#define REG_CONTROL_PREFETCH_BWR_CONFIG (0x46290)
+#define REG_CONTROL_PREFETCH_LTR_CONFIG (0x46294)
+#define REG_CONTROL_PREFETCH_LTR_PEG_CONFIG (0x46298)
+#define REG_CONTROL_COLUMN_REPEAT (0x462D0)
+#define REG_CONTROL_LINK_GATE_LB_CONFIG (0x462D4)
+#define REG_CONTROL_REPLAY_READ_HEADER_AF_CONFIG (0x462F0)
+#define REG_CONTROL_REPLAY_READ_TILE_AF_CONFIG (0x462F4)
+#define REG_CONTROL_REPLAY_WRITE_HEADER_AF_CONFIG (0x462F8)
+#define REG_CONTROL_REPLAY_WRITE_TILE_AF_CONFIG (0x462FC)
+#define REG_CONTROL_DART_AF_CONFIG (0x46300)
+#define REG_CONTROL_PIODMA_READ_AF_CONFIG (0x46304)
+#define REG_CONTROL_PIODMA_WRITE_AF_CONFIG (0x46308)
+#define REG_CONTROL_WRITE_LINK_GATE_METRIC (0x4630C)
+#define REG_CONTROL_BIS_WR_AGGR_CONFIGURATION (0x46314)
+#define REG_CONTROL_REPLAY_WR_AGGR_CONFIGURATION (0x46318)
+#define REG_CONTROL_PDC_WR_AGGR_CONFIGURATION (0x4631C)
+#define REG_CONTROL_WR_LINK_GATE_CONFIG (0x46320)
+#define REG_CONTROL_WR_LTR_OFFSET_RAMP_CONFIG (0x46324)
+
+#define VFTG_BLOCK_BASE (0x48000)
+#define REG_VFTG_DEBUG (0x0)
+#define REG_VFTG_CONTROL (0x24)
+#define VFTG_CONTROL_RUN BIT(30)
+#define REG_VFTG_ACTIVE_SIZE (0x2C)
+#define REG_VFTG_FRONT_PORCH (0x30)
+#define REG_VFTG_SYNC_PULSE (0x34)
+#define REG_VFTG_BACK_PORCH (0x38)
+#define REG_VFTG_VBLANK_POSITION (0x44)
+#define REG_VFTG_AUTO_IDLE_SUBFRAME_COUNT (0x50)
+// 0x200-0x280: IFP_CFG
+// 0x300-0x380: BSYNC1
+// 0x400-0x480: EB_BSYNC1
+// 0x500-0x580: BSYNC0
+// 0x600-0x680: EB_BSYNC0
+#define REG_VFTG_EB_OFFSET (0x700)
+#define REG_VFTG_IDLE_SUB_FRAME_CONFIG (0x708)
+#define REG_VFTG_IDLE_SUB_FRAME_TOP_CONFIG (0x70C)
+#define REG_VFTG_N1_PARAM (0x780)
+#define REG_VFTG_N1_PARAM_VBLANK (0x784)
+#define REG_VFTG_N5_A_PARAM (0x788)
+#define REG_VFTG_N5_A_PARAM_VBLANK (0x78C)
+#define REG_VFTG_N5_B_PARAM (0x790)
+#define REG_VFTG_N5_B_PARAM_VBLANK (0x794)
+#define REG_VFTG_N6_PARAM (0x798)
+#define REG_VFTG_N7_PARAM (0x79C)
+#define REG_VFTG_N7_PARAM_VBLANK (0x7A0)
+#define REG_VFTG_LINK_UP_TIME_CONFIG (0x7A4)
+#define REG_VFTG_AUX_WAKE_CONFIG (0x7A8)
+#define REG_VFTG_AUX_DISABLE_TIME (0x7AC)
+#define REG_VFTG_POL_OFFSET (0x7C4)
+#define REG_VFTG_SWIZZLE_CONFIG_EVEN_ROWS (0x7D0)
+#define REG_VFTG_SWIZZLE_CONFIG_EVEN_ROWS_LAST_PAIR (0x7D4)
+#define REG_VFTG_SWIZZLE_CONFIG_ODD_ROWS (0x7D8)
+#define REG_VFTG_SWIZZLE_CONFIG_ODD_ROWS_LAST_PAIR (0x7DC)
+#define REG_VFTG_CROP_CONTROL (0x81C)
+#define REG_VFTG_MIPI_MODE (0x828)
 
 #define GP_BLOCK_BASE (0x50000)
 #define GP_BLOCK_SIZE (0x8000)
@@ -185,6 +276,8 @@ struct AppleDisplayPipeV4State {
 #define GP_CONFIG_CONTROL_USE_DMA BIT(18)
 #define GP_CONFIG_CONTROL_HDR BIT(24)
 #define GP_CONFIG_CONTROL_ENABLED BIT(31)
+#define REG_GP_AF_CONFIG_0 (0x00014)
+#define REG_GP_AF_CONFIG_1 (0x00018)
 #define REG_GP_PIXEL_FORMAT (0x0001C)
 #define GP_PIXEL_FORMAT_BGRA ((BIT(4) << 22) | BIT(24) | (3 << 13))
 #define GP_PIXEL_FORMAT_ARGB ((BIT(4) << 22) | BIT(24))
@@ -195,7 +288,7 @@ struct AppleDisplayPipeV4State {
 #define REG_GP_SIZE (0x70)
 #define REG_GP_FRAME_SIZE (0x80)
 #define REG_GP_CRC_DATA (0x160)
-#define REG_GP_BANDWIDTH_RATE (0x170)
+#define REG_GP_DMA_BANDWIDTH_RATE (0x170)
 #define REG_GP_STATUS (0x184)
 #define GP_STATUS_DECOMPRESSION_FAIL BIT(0)
 
@@ -223,7 +316,7 @@ struct AppleDisplayPipeV4State {
 
 static void adp_v4_update_irqs(AppleDisplayPipeV4State *s)
 {
-    qemu_set_irq(s->irqs[0], (s->int_status & CONTROL_INT_STATUS_VBLANK) != 0);
+    qemu_set_irq(s->irqs[0], (s->int_enable & s->int_status) != 0);
 }
 
 static pixman_format_code_t adp_v4_gp_fmt_to_pixman(ADPV4GenPipeState *s)
@@ -348,31 +441,31 @@ static uint32_t adp_v4_gp_reg_read(ADPV4GenPipeState *s, hwaddr addr)
 {
     switch (addr) {
     case REG_GP_CONFIG_CONTROL: {
-        ADP_INFO("gp%d: control -> 0x%x", s->index, s->config_control);
+        ADP_INFO("gp%d: control -> 0x%X", s->index, s->config_control);
         return s->config_control;
     }
     case REG_GP_PIXEL_FORMAT: {
-        ADP_INFO("gp%d: pixel format -> 0x%x", s->index, s->pixel_format);
+        ADP_INFO("gp%d: pixel format -> 0x%X", s->index, s->pixel_format);
         return s->pixel_format;
     }
     case REG_GP_BASE: {
-        ADP_INFO("gp%d: base -> 0x%x", s->index, s->base);
+        ADP_INFO("gp%d: base -> 0x%X", s->index, s->base);
         return s->base;
     }
     case REG_GP_END: {
-        ADP_INFO("gp%d: end -> 0x%x", s->index, s->end);
+        ADP_INFO("gp%d: end -> 0x%X", s->index, s->end);
         return s->end;
     }
     case REG_GP_STRIDE: {
-        ADP_INFO("gp%d: stride -> 0x%x", s->index, s->stride);
+        ADP_INFO("gp%d: stride -> 0x%X", s->index, s->stride);
         return s->stride;
     }
     case REG_GP_SIZE: {
-        ADP_INFO("gp%d: size -> 0x%x", s->index, (s->width << 16) | s->height);
+        ADP_INFO("gp%d: size -> 0x%X", s->index, (s->width << 16) | s->height);
         return (s->width << 16) | s->height;
     }
     case REG_GP_FRAME_SIZE: {
-        ADP_INFO("gp%d: frame size -> 0x%x (width: %d height: %d)", s->index,
+        ADP_INFO("gp%d: frame size -> 0x%X (width: %d height: %d)", s->index,
                  (s->width << 16) | s->height, s->width, s->height);
         return (s->frame_width << 16) | s->frame_height;
     }
@@ -463,7 +556,14 @@ static void adp_v4_reg_write(void *opaque, hwaddr addr, uint64_t data,
 
     switch (addr >= 0x200000 ? addr - 0x200000 : addr) {
     case REG_CONTROL_INT_STATUS: {
+        ADP_INFO("disp: int status <- 0x%X", (uint32_t)data);
         s->int_status &= ~(uint32_t)data;
+        adp_v4_update_irqs(s);
+        break;
+    }
+    case REG_CONTROL_INT_ENABLE: {
+        ADP_INFO("disp: int enable <- 0x%X", (uint32_t)data);
+        s->int_enable = (uint32_t)data;
         adp_v4_update_irqs(s);
         break;
     }
@@ -501,15 +601,15 @@ static uint64_t adp_v4_reg_read(void *const opaque, const hwaddr addr,
 
     switch (addr >= 0x200000 ? addr - 0x200000 : addr) {
     case REG_CONTROL_VERSION: {
-        ADP_INFO("disp: version -> 0x%x", CONTROL_VERSION_A0);
-        return CONTROL_VERSION_A0;
+        ADP_INFO("disp: version -> 0x%X", CONTROL_VERSION_A1);
+        return CONTROL_VERSION_A1;
     }
     case REG_CONTROL_FRAME_SIZE: {
-        ADP_INFO("disp: frame size -> 0x%x", (s->width << 16) | s->height);
+        ADP_INFO("disp: frame size -> 0x%X", (s->width << 16) | s->height);
         return (s->width << 16) | s->height;
     }
     case REG_CONTROL_INT_STATUS: {
-        ADP_INFO("disp: int status -> 0x%x", s->int_status);
+        ADP_INFO("disp: int status -> 0x%X", s->int_status);
         return s->int_status;
     }
     case GP_BLOCK_BASE_FOR(0)... GP_BLOCK_END_FOR(0): {
@@ -545,12 +645,7 @@ static const MemoryRegionOps adp_v4_reg_ops = {
 static void adp_v4_draw_row(void *opaque, uint8_t *dest, const uint8_t *src,
                             int width, int dest_pitch)
 {
-    while (width--) {
-        uint32_t colour = ldl_le_p(src);
-        memcpy(dest, &colour, sizeof(colour));
-        src += sizeof(colour);
-        dest += sizeof(colour);
-    }
+    memcpy(dest, src, width * sizeof(uint32_t));
 }
 
 static void adp_v4_invalidate(void *opaque)
@@ -565,7 +660,12 @@ static void adp_v4_invalidate(void *opaque)
 static void adp_v4_gfx_update(void *opaque)
 {
     AppleDisplayPipeV4State *s = opaque;
-    DisplaySurface *surface = qemu_console_surface(s->console);
+    DisplaySurface *surface;
+
+    // deadlock
+    // QEMU_LOCK_GUARD(&s->lock);
+
+    surface = qemu_console_surface(s->console);
 
     int stride = s->width * sizeof(uint32_t);
     int first = 0;
@@ -582,15 +682,17 @@ static void adp_v4_gfx_update(void *opaque)
                                &last);
     if (first >= 0) {
         dpy_gfx_update(s->console, 0, first, s->width, last - first + 1);
+        graphic_hw_update_done(s->console);
     }
 
-    s->int_status |= CONTROL_INT_STATUS_VBLANK;
+    s->int_status |= CONTROL_INT_OUTPUT_READY;
     adp_v4_update_irqs(s);
 }
 
 static const GraphicHwOps adp_v4_ops = {
     .invalidate = adp_v4_invalidate,
     .gfx_update = adp_v4_gfx_update,
+    .gfx_update_async = true,
 };
 
 static void *adp_v4_get_ram_ptr(AppleDisplayPipeV4State *s)
@@ -670,6 +772,7 @@ static void adp_v4_reset_hold(Object *obj, ResetType type)
 
     s->invalidated = true;
     s->int_status = 0;
+    s->int_enable = 0;
 
     adp_v4_update_irqs(s);
 
@@ -751,6 +854,7 @@ static const VMStateDescription vmstate_adp_v4 = {
             VMSTATE_UINT32(width, AppleDisplayPipeV4State),
             VMSTATE_UINT32(height, AppleDisplayPipeV4State),
             VMSTATE_UINT32(int_status, AppleDisplayPipeV4State),
+            VMSTATE_UINT32(int_enable, AppleDisplayPipeV4State),
             VMSTATE_STRUCT_ARRAY(generic_pipe, AppleDisplayPipeV4State,
                                  ADP_V4_GP_COUNT, 0, vmstate_adp_v4_gp,
                                  ADPV4GenPipeState),
@@ -879,6 +983,8 @@ static void adp_v4_update_disp_image_bh(void *opaque)
     }
 
     s->blend_unit.dirty = false;
+    s->int_status |= CONTROL_INT_FRAME_PROCESSED;
+    adp_v4_update_irqs(s);
 }
 
 // `display-timing-info`
@@ -930,7 +1036,7 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
     sysbus_init_mmio(sbd, &s->up_regs);
     object_property_add_const_link(OBJECT(sbd), "up.regs", OBJECT(&s->up_regs));
 
-    for (i = 0; i < 9; i++) {
+    for (i = 0; i < ARRAY_SIZE(s->irqs); i++) {
         sysbus_init_irq(sbd, &s->irqs[i]);
     }
 
@@ -938,7 +1044,7 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
     // Please see `ui/icons/CKBrandingNotice.md`
     char *path = get_relocated_path(
         CONFIG_QEMU_ICONDIR "/hicolor/512x512/apps/CKQEMUBootSplash@2x.png");
-    g_assert(path != NULL);
+    g_assert_nonnull(path);
     FILE *fp = fopen(path, "rb");
     if (fp == NULL) {
         error_setg(&error_abort, "Missing emulator branding: %s.", path);
@@ -953,9 +1059,9 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
     g_free(path);
     png_structp png_ptr =
         png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    g_assert(png_ptr != NULL);
+    g_assert_nonnull(png_ptr);
     png_infop info_ptr = png_create_info_struct(png_ptr);
-    g_assert(info_ptr != NULL);
+    g_assert_nonnull(info_ptr);
     png_init_io(png_ptr, fp);
     png_set_sig_bytes(png_ptr, sizeof(sig));
 
@@ -972,7 +1078,7 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
         s->boot_splash_width * s->boot_splash_height * sizeof(uint32_t);
 
     png_bytep *row_ptrs = g_new(png_bytep, s->boot_splash_height);
-    for (uint32_t y = 0; y < s->boot_splash_height; y++) {
+    for (size_t y = 0; y < s->boot_splash_height; y++) {
         row_ptrs[y] = (png_bytep)(s->boot_splash + (y * s->boot_splash_width));
     }
 
