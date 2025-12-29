@@ -597,9 +597,14 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
         break;
     case EP_STATE_IDLE:
         if (MSG_OP_GET(msg) != OP_RX_SIGNAL) {
-            qemu_log_mask(LOG_GUEST_ERROR,
-                          "Unexpected msg 0x%X in `IDLE` state.",
-                          MSG_OP_GET(msg));
+            if (MSG_OP_GET(msg) != OP_STOP_QUEUE) {
+                qemu_log_mask(LOG_GUEST_ERROR,
+                              "Unexpected msg 0x%X in `IDLE` state.",
+                              MSG_OP_GET(msg));
+                break;
+            }
+
+            apple_rtkit_send_user_msg(rtk, s->num, MSG_OP(ACK_STOP_QUEUE));
             break;
         }
         while (!apple_aop_ep_rx_empty(s)) {
