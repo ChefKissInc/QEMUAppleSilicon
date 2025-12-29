@@ -577,7 +577,7 @@ static void set_memory_range(AppleDTNode *root, const char *name, uint64_t addr,
 }
 
 void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
-                            MemoryRegion *mem, AppleBootInfo *info)
+                            AppleBootInfo *info)
 {
     uint8_t *buf;
     QCryptoHashAlgo alg;
@@ -700,8 +700,8 @@ uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size)
     return (uint8_t *)trustcache_data;
 }
 
-void apple_boot_load_ramdisk(const char *filename, AddressSpace *as,
-                             MemoryRegion *mem, hwaddr pa, uint64_t *size)
+void apple_boot_load_ramdisk(const char *filename, AddressSpace *as, hwaddr pa,
+                             uint64_t *size)
 {
     uint8_t *file_data = NULL;
     unsigned long file_size = 0;
@@ -726,7 +726,7 @@ void apple_boot_load_ramdisk(const char *filename, AddressSpace *as,
 }
 
 void apple_boot_load_raw_file(const char *filename, AddressSpace *as,
-                              MemoryRegion *mem, hwaddr file_pa, uint64_t *size)
+                              hwaddr file_pa, uint64_t *size)
 {
     uint8_t *file_data;
     gsize sizef;
@@ -764,9 +764,9 @@ bool apple_boot_contains_boot_arg(const char *boot_args, const char *arg,
 }
 
 void apple_boot_setup_monitor_boot_args(
-    AddressSpace *as, MemoryRegion *mem, hwaddr addr, hwaddr virt_base,
-    hwaddr phys_base, hwaddr mem_size, hwaddr kern_args, hwaddr kern_entry,
-    hwaddr kern_phys_base, hwaddr kern_phys_slide, hwaddr kern_virt_slide,
+    AddressSpace *as, hwaddr addr, hwaddr virt_base, hwaddr phys_base,
+    hwaddr mem_size, hwaddr kern_args, hwaddr kern_entry, hwaddr kern_phys_base,
+    hwaddr kern_phys_slide, hwaddr kern_virt_slide,
     hwaddr kern_text_section_off)
 {
     AppleMonitorBootArgs args = { 0 };
@@ -788,10 +788,9 @@ void apple_boot_setup_monitor_boot_args(
 }
 
 static void apple_boot_setup_bootargs_rev2(
-    AddressSpace *as, MemoryRegion *mem, hwaddr addr, hwaddr virt_base,
-    hwaddr phys_base, hwaddr mem_size, hwaddr kernel_top, hwaddr dtb_va,
-    hwaddr dtb_size, AppleVideoArgs *video_args, const char *cmdline,
-    hwaddr mem_size_actual)
+    AddressSpace *as, hwaddr addr, hwaddr virt_base, hwaddr phys_base,
+    hwaddr mem_size, hwaddr kernel_top, hwaddr dtb_va, hwaddr dtb_size,
+    AppleVideoArgs *video_args, const char *cmdline, hwaddr mem_size_actual)
 {
     AppleKernelBootArgsRev2 args = { 0 };
 
@@ -818,10 +817,9 @@ static void apple_boot_setup_bootargs_rev2(
 }
 
 static void apple_boot_setup_bootargs_rev3(
-    AddressSpace *as, MemoryRegion *mem, hwaddr addr, hwaddr virt_base,
-    hwaddr phys_base, hwaddr mem_size, hwaddr kernel_top, hwaddr dtb_va,
-    hwaddr dtb_size, AppleVideoArgs *video_args, const char *cmdline,
-    hwaddr mem_size_actual)
+    AddressSpace *as, hwaddr addr, hwaddr virt_base, hwaddr phys_base,
+    hwaddr mem_size, hwaddr kernel_top, hwaddr dtb_va, hwaddr dtb_size,
+    AppleVideoArgs *video_args, const char *cmdline, hwaddr mem_size_actual)
 {
     AppleKernelBootArgsRev3 args = { 0 };
 
@@ -845,20 +843,20 @@ static void apple_boot_setup_bootargs_rev3(
 }
 
 void apple_boot_setup_bootargs(uint32_t build_version, AddressSpace *as,
-                               MemoryRegion *mem, hwaddr addr, hwaddr virt_base,
-                               hwaddr phys_base, hwaddr mem_size,
-                               hwaddr kernel_top, hwaddr dtb_va,
-                               hwaddr dtb_size, AppleVideoArgs *video_args,
-                               const char *cmdline, hwaddr mem_size_actual)
+                               hwaddr addr, hwaddr virt_base, hwaddr phys_base,
+                               hwaddr mem_size, hwaddr kernel_top,
+                               hwaddr dtb_va, hwaddr dtb_size,
+                               AppleVideoArgs *video_args, const char *cmdline,
+                               hwaddr mem_size_actual)
 {
     if (BUILD_VERSION_MAJOR(build_version) >= 18) {
-        apple_boot_setup_bootargs_rev3(as, mem, addr, virt_base, phys_base,
-                                       mem_size, kernel_top, dtb_va, dtb_size,
-                                       video_args, cmdline, mem_size_actual);
+        apple_boot_setup_bootargs_rev3(as, addr, virt_base, phys_base, mem_size,
+                                       kernel_top, dtb_va, dtb_size, video_args,
+                                       cmdline, mem_size_actual);
     } else {
-        apple_boot_setup_bootargs_rev2(as, mem, addr, virt_base, phys_base,
-                                       mem_size, kernel_top, dtb_va, dtb_size,
-                                       video_args, cmdline, mem_size_actual);
+        apple_boot_setup_bootargs_rev2(as, addr, virt_base, phys_base, mem_size,
+                                       kernel_top, dtb_va, dtb_size, video_args,
+                                       cmdline, mem_size_actual);
     }
 }
 
@@ -1263,8 +1261,8 @@ void apple_boot_allocate_segment_records(AppleDTNode *memory_map,
 }
 
 hwaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
-                             MemoryRegion *mem, AppleDTNode *memory_map,
-                             hwaddr phys_base, uint64_t virt_slide)
+                             AppleDTNode *memory_map, hwaddr phys_base,
+                             uint64_t virt_slide)
 {
     uint8_t *data = NULL;
     unsigned int i;

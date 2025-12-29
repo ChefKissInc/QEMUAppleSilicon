@@ -256,7 +256,6 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
                                    const char *cmdline)
 {
     MachineState *machine = MACHINE(s8000);
-    MemoryRegion *sysmem = s8000->sys_mem;
     hwaddr text_base;
     hwaddr kc_base;
     hwaddr kc_end;
@@ -290,9 +289,9 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
                      MEMTXATTRS_UNSPECIFIED, s8000->trustcache,
                      info->trustcache_size, true);
 
-    info->kern_entry = apple_boot_load_macho(
-        s8000->kernel, &address_space_memory, sysmem, memory_map,
-        g_phys_base + g_phys_slide, g_virt_slide);
+    info->kern_entry =
+        apple_boot_load_macho(s8000->kernel, &address_space_memory, memory_map,
+                              g_phys_base + g_phys_slide, g_virt_slide);
 
     info_report("Kernel virtual base: 0x" HWADDR_FMT_plx, g_virt_base);
     info_report("Kernel physical base: 0x" HWADDR_FMT_plx, g_phys_base);
@@ -312,8 +311,7 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
     if (machine->initrd_filename) {
         info->ramdisk_addr = phys_ptr;
         apple_boot_load_ramdisk(machine->initrd_filename, &address_space_memory,
-                                sysmem, info->ramdisk_addr,
-                                &info->ramdisk_size);
+                                info->ramdisk_addr, &info->ramdisk_size);
         info->ramdisk_size = ROUND_UP_16K(info->ramdisk_size);
         phys_ptr += info->ramdisk_size;
     }
@@ -331,17 +329,16 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
     info->kern_boot_args_size = 0x4000;
     phys_ptr += info->kern_boot_args_size;
 
-    apple_boot_finalise_dt(s8000->device_tree, &address_space_memory, sysmem,
-                           info);
+    apple_boot_finalise_dt(s8000->device_tree, &address_space_memory, info);
 
     top_of_kernel_data_pa = (ROUND_UP_16K(phys_ptr) + 0x3000ull) & ~0x3FFFull;
 
     info_report("Boot args: [%s]", cmdline);
     apple_boot_setup_bootargs(
-        s8000->build_version, &address_space_memory, sysmem,
-        info->kern_boot_args_addr, g_virt_base, g_phys_base, KERNEL_REGION_SIZE,
-        top_of_kernel_data_pa, apple_dt_va, info->device_tree_size,
-        &s8000->video_args, cmdline, machine->ram_size);
+        s8000->build_version, &address_space_memory, info->kern_boot_args_addr,
+        g_virt_base, g_phys_base, KERNEL_REGION_SIZE, top_of_kernel_data_pa,
+        apple_dt_va, info->device_tree_size, &s8000->video_args, cmdline,
+        machine->ram_size);
     g_virt_base = kc_base;
 
     apple_boot_get_kc_bounds(s8000->secure_monitor, NULL, &tz1_virt_low,
@@ -350,17 +347,16 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
                 tz1_virt_low);
     info_report("TrustZone 1 virtual address high: 0x" HWADDR_FMT_plx,
                 tz1_virt_high);
-    hwaddr tz1_entry =
-        apple_boot_load_macho(s8000->secure_monitor, &address_space_memory,
-                              s8000->sys_mem, NULL, TZ1_BASE, 0);
+    hwaddr tz1_entry = apple_boot_load_macho(
+        s8000->secure_monitor, &address_space_memory, NULL, TZ1_BASE, 0);
     info_report("TrustZone 1 entry: 0x" HWADDR_FMT_plx, tz1_entry);
     hwaddr tz1_boot_args_pa =
         TZ1_BASE + (TZ1_SIZE - sizeof(AppleMonitorBootArgs));
     info_report("TrustZone 1 boot args address: 0x" HWADDR_FMT_plx,
                 tz1_boot_args_pa);
     apple_boot_setup_monitor_boot_args(
-        &address_space_memory, s8000->sys_mem, tz1_boot_args_pa, tz1_virt_low,
-        TZ1_BASE, TZ1_SIZE, s8000->boot_info.kern_boot_args_addr,
+        &address_space_memory, tz1_boot_args_pa, tz1_virt_low, TZ1_BASE,
+        TZ1_SIZE, s8000->boot_info.kern_boot_args_addr,
         s8000->boot_info.kern_entry, g_phys_base, g_phys_slide, g_virt_slide,
         info->kern_text_off);
     s8000->boot_info.tz1_entry = tz1_entry;

@@ -327,7 +327,7 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
                      info->trustcache_size, true);
 
     info->kern_entry = apple_boot_load_macho(
-        t8030->kernel, &address_space_memory, get_system_memory(),
+        t8030->kernel, &address_space_memory,
         apple_dt_get_node(t8030->device_tree, "/chosen/memory-map"),
         g_phys_base + g_phys_slide, g_virt_slide);
 
@@ -343,8 +343,7 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
     if (machine->initrd_filename != NULL) {
         info->ramdisk_addr = phys_ptr;
         apple_boot_load_ramdisk(machine->initrd_filename, &address_space_memory,
-                                get_system_memory(), info->ramdisk_addr,
-                                &info->ramdisk_size);
+                                info->ramdisk_addr, &info->ramdisk_size);
         info->ramdisk_size = ROUND_UP_16K(info->ramdisk_size);
         phys_ptr += info->ramdisk_size;
     }
@@ -389,17 +388,16 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
     mem_size = carveout_alloc_finalise(ca);
     info_report("mem_size: 0x" HWADDR_FMT_plx, mem_size);
 
-    apple_boot_finalise_dt(t8030->device_tree, &address_space_memory,
-                           get_system_memory(), info);
+    apple_boot_finalise_dt(t8030->device_tree, &address_space_memory, info);
 
     info->top_of_kernel_data_pa = ROUND_UP_16K(phys_ptr);
 
     info_report("Boot args: [%s]", cmdline);
     apple_boot_setup_bootargs(
-        t8030->build_version, &address_space_memory, get_system_memory(),
-        info->kern_boot_args_addr, g_virt_base, g_phys_base, mem_size,
-        info->top_of_kernel_data_pa, apple_dt_va, info->device_tree_size,
-        &t8030->video_args, cmdline, machine->ram_size);
+        t8030->build_version, &address_space_memory, info->kern_boot_args_addr,
+        g_virt_base, g_phys_base, mem_size, info->top_of_kernel_data_pa,
+        apple_dt_va, info->device_tree_size, &t8030->video_args, cmdline,
+        machine->ram_size);
     g_virt_base = kc_base;
 }
 

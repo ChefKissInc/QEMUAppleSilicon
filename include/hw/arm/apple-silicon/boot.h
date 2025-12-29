@@ -381,38 +381,37 @@ bool apple_boot_contains_boot_arg(const char *boot_args, const char *arg,
                                   bool match_prefix);
 
 void apple_boot_setup_monitor_boot_args(
-    AddressSpace *as, MemoryRegion *mem, hwaddr bootargs_addr, hwaddr virt_base,
-    hwaddr phys_base, hwaddr mem_size, hwaddr kern_args, hwaddr kern_entry,
-    hwaddr kern_phys_base, hwaddr kern_phys_slide, hwaddr kern_virt_slide,
+    AddressSpace *as, hwaddr bootargs_addr, hwaddr virt_base, hwaddr phys_base,
+    hwaddr mem_size, hwaddr kern_args, hwaddr kern_entry, hwaddr kern_phys_base,
+    hwaddr kern_phys_slide, hwaddr kern_virt_slide,
     hwaddr kern_text_section_off);
 void apple_boot_setup_bootargs(uint32_t build_version, AddressSpace *as,
-                               MemoryRegion *mem, hwaddr addr, hwaddr virt_base,
-                               hwaddr phys_base, hwaddr mem_size,
-                               hwaddr kernel_top, hwaddr dtb_va,
-                               hwaddr dtb_size, AppleVideoArgs *video_args,
-                               const char *cmdline, hwaddr mem_size_actual);
+                               hwaddr addr, hwaddr virt_base, hwaddr phys_base,
+                               hwaddr mem_size, hwaddr kernel_top,
+                               hwaddr dtb_va, hwaddr dtb_size,
+                               AppleVideoArgs *video_args, const char *cmdline,
+                               hwaddr mem_size_actual);
 
 void apple_boot_allocate_segment_records(AppleDTNode *memory_map,
                                          MachoHeader64 *header);
 
 hwaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
-                             MemoryRegion *mem, AppleDTNode *memory_map,
-                             hwaddr phys_base, hwaddr virt_slide);
+                             AppleDTNode *memory_map, hwaddr phys_base,
+                             hwaddr virt_slide);
 
 void apple_boot_load_raw_file(const char *filename, AddressSpace *as,
-                              MemoryRegion *mem, hwaddr file_pa,
-                              uint64_t *size);
+                              hwaddr file_pa, uint64_t *size);
 
 AppleDTNode *apple_boot_load_dt_file(const char *filename);
 
 void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info);
 
 void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
-                            MemoryRegion *mem, AppleBootInfo *info);
+                            AppleBootInfo *info);
 
 uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size);
 
-void apple_boot_load_ramdisk(const char *filename, AddressSpace *as,
-                             MemoryRegion *mem, hwaddr pa, uint64_t *size);
+void apple_boot_load_ramdisk(const char *filename, AddressSpace *as, hwaddr pa,
+                             uint64_t *size);
 
 #endif /* HW_ARM_APPLE_SILICON_BOOT_H */
