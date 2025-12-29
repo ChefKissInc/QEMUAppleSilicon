@@ -51,12 +51,12 @@
                        offsetof(ARMCPU, env),                              \
     }
 
-inline bool apple_a9_cpu_is_asleep(AppleA9State *acpu)
+bool apple_a9_cpu_is_asleep(AppleA9State *acpu)
 {
     return CPU(acpu)->halted;
 }
 
-inline bool apple_a9_cpu_is_off(AppleA9State *acpu)
+bool apple_a9_cpu_is_off(AppleA9State *acpu)
 {
     return ARM_CPU(acpu)->power_state == PSCI_OFF;
 }
