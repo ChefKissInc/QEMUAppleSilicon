@@ -120,12 +120,12 @@ static QTAILQ_HEAD(, AppleA13Cluster) clusters =
 static uint64_t ipi_cr = kDeferredIPITimerDefault;
 static QEMUTimer *ipicr_timer = NULL;
 
-inline bool apple_a13_is_asleep(AppleA13State *acpu)
+bool apple_a13_is_asleep(AppleA13State *acpu)
 {
     return CPU(acpu)->halted;
 }
 
-inline bool apple_a13_is_off(AppleA13State *acpu)
+bool apple_a13_is_off(AppleA13State *acpu)
 {
     return ARM_CPU(acpu)->power_state == PSCI_OFF;
 }
