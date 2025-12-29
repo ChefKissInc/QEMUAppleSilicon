@@ -303,6 +303,7 @@ static inline uint32_t apple_mt_spi_buf_read_dword(const AppleMTSPIBuffer *buf,
 static void apple_mt_spi_reset_unlocked(AppleMTSPIState *s, ResetType type)
 {
     AppleMTSPILLPacket *packet;
+    AppleMTSPILLPacket *packet_next;
 
     qemu_irq_raise(s->irq);
 
@@ -322,8 +323,7 @@ static void apple_mt_spi_reset_unlocked(AppleMTSPIState *s, ResetType type)
     apple_mt_spi_buf_free(&s->rx);
     apple_mt_spi_buf_free(&s->pending_hbpp);
 
-    while (!QTAILQ_EMPTY(&s->pending_fw)) {
-        packet = QTAILQ_FIRST(&s->pending_fw);
+    QTAILQ_FOREACH_SAFE (packet, &s->pending_fw, next, packet_next) {
         QTAILQ_REMOVE(&s->pending_fw, packet, next);
         apple_mt_spi_buf_free(&packet->buf);
         g_free(packet);
