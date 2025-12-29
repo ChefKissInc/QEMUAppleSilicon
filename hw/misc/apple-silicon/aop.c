@@ -522,12 +522,13 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
 
     switch (s->state) {
     case EP_STATE_POWERED_OFF:
-        qemu_log_mask(LOG_GUEST_ERROR, "Unexpected msg in POWERED_OFF state.");
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "Unexpected msg in POWERED_OFF state.\n");
         break;
     case EP_STATE_AWAITING_HELLO:
         if (MSG_OP_GET(msg) != OP_ACK_HELLO) {
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "Unexpected msg 0x%X in `AWAITING_HELLO` state.",
+                          "Unexpected msg 0x%X in `AWAITING_HELLO` state.\n",
                           MSG_OP_GET(msg));
             break;
         }
@@ -539,7 +540,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
     case EP_STATE_AWAITING_RX_ACK:
         if (MSG_OP_GET(msg) != OP_ACK_REQUEST_REGION) {
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "Unexpected msg 0x%X in `AWAITING_RX_ACK` state.",
+                          "Unexpected msg 0x%X in `AWAITING_RX_ACK` state.\n",
                           MSG_OP_GET(msg));
             break;
         }
@@ -548,7 +549,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
         ret = apple_aop_ep_init_rb(s, s->rx_off, s->descr->rx_len);
         if (ret != MEMTX_OK) {
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "Failed to initialise RX ringbuffer for `%s`: %d.",
+                          "Failed to initialise RX ringbuffer for `%s`: %d.\n",
                           s->descr->service_name, ret);
             break;
         }
@@ -561,7 +562,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
     case EP_STATE_AWAITING_TX_ACK:
         if (MSG_OP_GET(msg) != OP_ACK_REQUEST_REGION) {
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "Unexpected msg 0x%X in `AWAITING_TX_ACK` state.",
+                          "Unexpected msg 0x%X in `AWAITING_TX_ACK` state.\n",
                           MSG_OP_GET(msg));
             break;
         }
@@ -570,7 +571,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
         ret = apple_aop_ep_init_rb(s, s->tx_off, s->descr->tx_len);
         if (ret != MEMTX_OK) {
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "Failed to initialise TX ringbuffer for `%s`: %d.",
+                          "Failed to initialise TX ringbuffer for `%s`: %d.\n",
                           s->descr->service_name, ret);
             break;
         }
@@ -581,7 +582,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
         ret = apple_aop_ep_write_ready_report(s, ready_report_buf);
         if (ret != MEMTX_OK) {
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "Failed to construct ready report for `%s`: %d.",
+                          "Failed to construct ready report for `%s`: %d.\n",
                           s->descr->service_name, ret);
             break;
         }
@@ -590,7 +591,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
                                               sizeof(ready_report_buf), 0);
         if (ret != MEMTX_OK) {
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "Failed to send ready report for `%s`: %d.",
+                          "Failed to send ready report for `%s`: %d.\n",
                           s->descr->service_name, ret);
             break;
         }
@@ -599,7 +600,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
         if (MSG_OP_GET(msg) != OP_RX_SIGNAL) {
             if (MSG_OP_GET(msg) != OP_STOP_QUEUE) {
                 qemu_log_mask(LOG_GUEST_ERROR,
-                              "Unexpected msg 0x%X in `IDLE` state.",
+                              "Unexpected msg 0x%X in `IDLE` state.\n",
                               MSG_OP_GET(msg));
                 break;
             }
@@ -611,7 +612,7 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
             if (apple_aop_ep_recv_packet_locked(s, &type, &category, &seq,
                                                 &payload, &len,
                                                 &out_len) != MEMTX_OK) {
-                qemu_log_mask(LOG_GUEST_ERROR, "Failed to receive message");
+                qemu_log_mask(LOG_GUEST_ERROR, "Failed to receive message\n");
                 break;
             }
 
@@ -648,8 +649,8 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
             if (apple_aop_ep_send_reply_locked(s, type, seq, payload_out,
                                                out_len + sizeof(uint32_t),
                                                0) != MEMTX_OK) {
-                qemu_log_mask(LOG_GUEST_ERROR, "Failed to reply to message %d",
-                              seq);
+                qemu_log_mask(LOG_GUEST_ERROR,
+                              "Failed to reply to message %d.\n", seq);
                 break;
             }
             g_free(payload_out);
