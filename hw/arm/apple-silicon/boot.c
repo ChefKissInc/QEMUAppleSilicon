@@ -368,7 +368,7 @@ static void extract_im4p_payload(const char *filename, char *payload_type,
         return;
     }
 
-    if (strncmp(magic, "IM4P", 4) != 0) {
+    if (memcmp(magic, "IM4P", 4) != 0) {
         error_setg(&error_fatal, "`%s` is not an img4 payload.", filename);
         return;
     }
@@ -647,9 +647,9 @@ uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size)
 
     extract_im4p_payload(filename, payload_type, &file_data, &length, NULL);
 
-    if (strncmp(payload_type, "trst", 4) != 0 &&
-        strncmp(payload_type, "rtsc", 4) != 0 &&
-        strncmp(payload_type, "raw", 4) != 0) {
+    if (memcmp(payload_type, "trst", 4) != 0 &&
+        memcmp(payload_type, "rtsc", 4) != 0 &&
+        memcmp(payload_type, "raw", 4) != 0) {
         error_setg(&error_fatal,
                    "`%s` is a `%.4s` object (expected `trst`/`rtsc`).",
                    filename, payload_type);
@@ -877,7 +877,7 @@ void apple_boot_get_kc_bounds(MachoHeader64 *header, uint64_t *text_base,
 
         MachoSegmentCommand64 *seg_cmd = (MachoSegmentCommand64 *)cmd;
 
-        if (strncmp(seg_cmd->segname, "__PAGEZERO", 11) == 0 ||
+        if (strncmp(seg_cmd->segname, "__PAGEZERO", 10) == 0 ||
             seg_cmd->vmsize == 0) {
             continue;
         }
@@ -895,7 +895,7 @@ void apple_boot_get_kc_bounds(MachoHeader64 *header, uint64_t *text_base,
         }
 
         if ((seg_cmd->maxprot & VM_PROT_WRITE) != 0 ||
-            strncmp(seg_cmd->segname, "__LINKEDIT", 11) == 0) {
+            strncmp(seg_cmd->segname, "__LINKEDIT", 10) == 0) {
             continue;
         }
 
@@ -988,7 +988,7 @@ MachoHeader64 *apple_boot_parse_macho(uint8_t *data, uint32_t len)
         }
 
         MachoSegmentCommand64 *segCmd = (MachoSegmentCommand64 *)cmd;
-        if (strncmp(segCmd->segname, "__PAGEZERO", 11) == 0 ||
+        if (strncmp(segCmd->segname, "__PAGEZERO", 10) == 0 ||
             segCmd->vmsize == 0) {
             continue;
         }
@@ -1287,7 +1287,7 @@ hwaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
         case LC_SEGMENT_64: {
             MachoSegmentCommand64 *segCmd = (MachoSegmentCommand64 *)cmd;
 
-            if (strncmp(segCmd->segname, "__PAGEZERO", 11) == 0) {
+            if (strncmp(segCmd->segname, "__PAGEZERO", 10) == 0) {
                 continue;
             }
 
@@ -1476,7 +1476,7 @@ MachoSegmentCommand64 *apple_boot_get_segment(MachoHeader64 *header,
     for (sgp = (MachoSegmentCommand64 *)(header + 1), i = 0; i < header->n_cmds;
          i++, sgp = (MachoSegmentCommand64 *)((char *)sgp + sgp->cmd_size)) {
         if (sgp->cmd == LC_SEGMENT_64 &&
-            strncmp(sgp->segname, name, sizeof(sgp->segname)) == 0) {
+            strncmp(sgp->segname, name, sizeof(sgp->segname) - 1) == 0) {
             return sgp;
         }
     }
@@ -1492,7 +1492,7 @@ MachoSection64 *apple_boot_get_section(MachoSegmentCommand64 *segment,
 
     for (sp = (MachoSection64 *)(segment + 1), i = 0; i < segment->nsects;
          i++, sp++) {
-        if (strncmp(sp->sect_name, name, sizeof(sp->sect_name)) == 0) {
+        if (strncmp(sp->sect_name, name, sizeof(sp->sect_name) - 1) == 0) {
             return sp;
         }
     }
