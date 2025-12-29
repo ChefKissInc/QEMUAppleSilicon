@@ -173,12 +173,14 @@ void apple_a13_set_off(AppleA13State *acpu)
 
 static AppleA13Cluster *apple_a13_find_cluster(uint32_t cluster_id)
 {
-    AppleA13Cluster *cluster = NULL;
+    AppleA13Cluster *cluster;
+
     QTAILQ_FOREACH (cluster, &clusters, next) {
         if (CPU_CLUSTER(cluster)->cluster_id == cluster_id) {
             return cluster;
         }
     }
+
     return NULL;
 }
 
