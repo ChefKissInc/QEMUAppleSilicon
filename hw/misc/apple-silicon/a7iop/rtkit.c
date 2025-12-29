@@ -476,6 +476,7 @@ static void apple_rtkit_reset_hold(Object *obj, ResetType type)
     AppleRTKit *s;
     AppleRTKitClass *rtkc;
     AppleA7IOPMessage *msg;
+    AppleA7IOPMessage *msg_next;
 
     s = APPLE_RTKIT(obj);
     rtkc = APPLE_RTKIT_GET_CLASS(obj);
@@ -489,8 +490,7 @@ static void apple_rtkit_reset_hold(Object *obj, ResetType type)
     s->ep0_status = EP0_IDLE;
     s->protocol_version = 0;
 
-    while (!QTAILQ_EMPTY(&s->rollcall)) {
-        msg = QTAILQ_FIRST(&s->rollcall);
+    QTAILQ_FOREACH_SAFE (msg, &s->rollcall, next, msg_next) {
         QTAILQ_REMOVE(&s->rollcall, msg, next);
         g_free(msg);
     }
