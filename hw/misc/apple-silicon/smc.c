@@ -216,17 +216,16 @@ static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
     value = ldl_le_p(in);
 
     switch (value) {
-    case 'offw':
-    case 'off1':
-        qemu_system_shutdown_request(SHUTDOWN_CAUSE_GUEST_SHUTDOWN);
-        return SMC_RESULT_SUCCESS;
     case 'susp':
-        qemu_system_suspend_request();
+        qemu_system_shutdown_request(SHUTDOWN_CAUSE_GUEST_SHUTDOWN);
         return SMC_RESULT_SUCCESS;
     case 'rest':
         qemu_system_reset_request(SHUTDOWN_CAUSE_GUEST_RESET);
         return SMC_RESULT_SUCCESS;
-    case 'slpw':
+    case 'waka': // FIXME: Are we supposed to do anything here?
+        return SMC_RESULT_ERROR;
+    case 'slpa':
+        qemu_system_suspend_request();
         return SMC_RESULT_SUCCESS;
     case 'panb': {
         r.status = SMC_NOTIFICATION;
