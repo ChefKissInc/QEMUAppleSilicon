@@ -22,7 +22,7 @@ typedef struct AESCommand {
     uint32_t command;
     uint32_t *data;
     uint32_t data_len;
-    QTAILQ_ENTRY(AESCommand) entry;
+    QTAILQ_ENTRY(AESCommand) next;
 } AESCommand;
 
 typedef struct {
@@ -138,13 +138,16 @@ static void aes_update_command_fifo_status(AppleAESState *s)
 
 static void aes_empty_fifo(AppleAESState *s)
 {
+    AESCommand *cmd;
+    AESCommand *cmd_next;
+
     QEMU_LOCK_GUARD(&s->queue_mutex);
 
-    while (!QTAILQ_EMPTY(&s->queue)) {
-        AESCommand *cmd = QTAILQ_FIRST(&s->queue);
-        QTAILQ_REMOVE(&s->queue, cmd, entry);
+    QTAILQ_FOREACH_SAFE (cmd, &s->queue, next, cmd_next) {
+        QTAILQ_REMOVE(&s->queue, cmd, next);
         g_free(cmd);
     }
+
     s->reg.command_fifo_status.level = 0;
     aes_update_command_fifo_status(s);
 }
@@ -342,9 +345,9 @@ static void *aes_thread(void *opaque)
         AESCommand *cmd = NULL;
         WITH_QEMU_LOCK_GUARD(&s->queue_mutex)
         {
-            if (!QTAILQ_EMPTY(&s->queue)) {
-                cmd = QTAILQ_FIRST(&s->queue);
-                QTAILQ_REMOVE(&s->queue, cmd, entry);
+            cmd = QTAILQ_FIRST(&s->queue);
+            if (cmd) {
+                QTAILQ_REMOVE(&s->queue, cmd, next);
             }
         }
         if (cmd) {
@@ -547,7 +550,7 @@ static void aes_reg_write(void *opaque, hwaddr addr, uint64_t data,
 
             WITH_QEMU_LOCK_GUARD(&s->queue_mutex)
             {
-                QTAILQ_INSERT_TAIL(&s->queue, cmd, entry);
+                QTAILQ_INSERT_TAIL(&s->queue, cmd, next);
             }
             qemu_cond_signal(&s->thread_cond);
         }
@@ -805,7 +808,7 @@ static const VMStateDescription vmstate_apple_aes = {
             VMSTATE_UINT32_ARRAY(reg.raw, AppleAESState,
                                  AES_BLK_REG_SIZE / sizeof(uint32_t)),
             VMSTATE_QTAILQ_V(queue, AppleAESState, 0, vmstate_apple_aes_command,
-                             AESCommand, entry),
+                             AESCommand, next),
             VMSTATE_UINT32(command, AppleAESState),
             VMSTATE_UINT32(data_len, AppleAESState),
             VMSTATE_UINT32(data_read, AppleAESState),
