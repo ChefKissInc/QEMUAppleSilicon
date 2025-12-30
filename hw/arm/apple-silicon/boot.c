@@ -182,6 +182,7 @@ static const char *REM_PROPS[] = {
     "function-spi0_sclk_config",
     "function-usb_500_100",
     "function-vbus_voltage",
+    "function-lcd_enable",
     "mcc-power-gating",
     "nand-debug",
     "nvme-coastguard",
