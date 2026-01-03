@@ -84,24 +84,26 @@ typedef struct {
 #define SEP_USE_VERSION_OVERRIDE 14
 // #define SEP_USE_VERSION_OVERRIDE 15
 // #define SEP_USE_VERSION_OVERRIDE 16
+// #define SEP_USE_VERSION_OVERRIDE 17
 // #define SEP_USE_VERSION_OVERRIDE 18
+// #define SEP_USE_VERSION_OVERRIDE 26
 
-#define SEP_AESS_CMD_FLAG_KEYSIZE_AES128 0x0
-#define SEP_AESS_CMD_FLAG_KEYSIZE_AES192 0x100
-#define SEP_AESS_CMD_FLAG_KEYSIZE_AES256 0x200
+#define SEP_AESS_CMD_FLAG_KEYSIZE_AES128 0x0U
+#define SEP_AESS_CMD_FLAG_KEYSIZE_AES192 0x100U
+#define SEP_AESS_CMD_FLAG_KEYSIZE_AES256 0x200U
 
-#define SEP_AESS_CMD_FLAG_KEYSELECT_GID0_T8010 0x00 // ???
-#define SEP_AESS_CMD_FLAG_KEYSELECT_GID1_T8010 0x10 // ???
-#define SEP_AESS_CMD_FLAG_KEYSELECT_CUSTOM_T8010 0x20 // ???
-#define SEP_AESS_CMD_FLAG_UNKNOWN0_T8010 0x00 // ???
+#define SEP_AESS_CMD_FLAG_KEYSELECT_GID0_T8010 0x00U // ???
+#define SEP_AESS_CMD_FLAG_KEYSELECT_GID1_T8010 0x10U // ???
+#define SEP_AESS_CMD_FLAG_KEYSELECT_CUSTOM_T8010 0x20U // ???
+#define SEP_AESS_CMD_FLAG_UNKNOWN0_T8010 0x00U // ???
 
-#define SEP_AESS_CMD_FLAG_KEYSELECT_GID0_T8020 0x00 // also for T8015
-#define SEP_AESS_CMD_FLAG_KEYSELECT_GID1_T8020 0x40 // also for T8015
+#define SEP_AESS_CMD_FLAG_KEYSELECT_GID0_T8020 0x00U // also for T8015
+#define SEP_AESS_CMD_FLAG_KEYSELECT_GID1_T8020 0x40U // also for T8015
 // Also for T8015, this (custom) takes precedence over the other
 // keyselect flags
-#define SEP_AESS_CMD_FLAG_KEYSELECT_CUSTOM_T8020 0x80
-#define SEP_AESS_CMD_FLAG_UNKNOWN0_T8020 0x10
-#define SEP_AESS_CMD_FLAG_UNKNOWN1_T8020 0x20
+#define SEP_AESS_CMD_FLAG_KEYSELECT_CUSTOM_T8020 0x80U
+#define SEP_AESS_CMD_FLAG_UNKNOWN0_T8020 0x10U
+#define SEP_AESS_CMD_FLAG_UNKNOWN1_T8020 0x20U
 
 #define SEP_AESS_CMD_FLAG_UNKNOWN0 SEP_AESS_CMD_FLAG_UNKNOWN0_T8020
 #define SEP_AESS_CMD_FLAG_UNKNOWN1 SEP_AESS_CMD_FLAG_UNKNOWN1_T8020
@@ -111,7 +113,7 @@ typedef struct {
 #define SEP_AESS_CMD_FLAG_KEYSELECT_CUSTOM \
     SEP_AESS_CMD_FLAG_KEYSELECT_CUSTOM_T8020
 
-#define SEP_AESS_CMD_MASK 0x3FF
+#define SEP_AESS_CMD_MASK 0x3FFU
 
 #define SEP_AESS_CMD_WITHOUT_KEYSIZE(cmd)                                    \
     ((cmd) &                                                                 \
@@ -178,7 +180,7 @@ typedef struct {
 
 #define SEP_AESS_SEED_BITS_BIT0 BIT(0)
 #define SEP_AESS_SEED_BITS_BIT27 BIT(27) // cmds 0x50 and 0x90
-#define SEP_AESS_SEED_BITS_BIT28 BIT(28) // invalid EKEY?
+#define SEP_AESS_SEED_BITS_BIT28 BIT(28) // invalid or missing EKEY tag?
 // DSEC tag present, demote SEP
 #define SEP_AESS_SEED_BITS_SEP_DSEC_DEMOTED BIT(29)
 // ap is prod-fused and demoted
@@ -3227,7 +3229,7 @@ static void boot_monitor_reg_write(void *opaque, hwaddr addr, uint64_t data,
 #endif
     switch (addr) {
     case 0x04: // some status flag, bit0
-        data &= ~(1 << 0); // reset bit0 for read
+        data &= ~BIT(0); // reset bit0 for read
         QEMU_FALLTHROUGH;
     case 0x08: // maybe some command0?
     case 0x10: // maybe some command1?

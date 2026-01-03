@@ -82,7 +82,7 @@
 #define PULL_DOWN (1 << 7)
 #define PULL_MASK (3 << 7)
 
-#define INPUT_ENABLE (1 << 9)
+#define INPUT_ENABLE BIT(9)
 
 #define INPUT_CMOS (0 << 14)
 #define INPUT_SCHMITT (1 << 14)

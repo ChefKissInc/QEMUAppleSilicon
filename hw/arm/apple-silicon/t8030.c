@@ -755,7 +755,7 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
         QEMU_FALLTHROUGH;
     case 0x3D2BC410: // Raw Board ID and Epoch, bit 30 should remain unset
         return ((t8030->board_id >> 5) & 0x7) | ((security_epoch & 0x7f) << 5) |
-               sep_bit30_current_value | (fuses_locked << 31);
+               sep_bit30_current_value | ((uint32_t)fuses_locked << 31);
     case 0x3D2BC020: // Fuses Sealed?
         return current_prod ? FUSE_ENABLED : FUSE_DISABLED;
     // case 0x3D2BC024: // ?
@@ -771,17 +771,21 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
         return t8030->ecid & 0xFFFFFFFF;
     case 0x3D2BC304: // ECID HIGH T8030
         return (t8030->ecid >> 32) & 0xFFFFFFFF;
-    case 0x3D2BC30C: // T8030 SEP Chip Revision
+    case 0x3D2BC30C: {
+        // T8030 SEP Chip Revision
         //  1 vs. not 1: TRNG/Monitor
         //  0 vs. not 0: Monitor
         //  2 vs. not 2: ARTM
         //  Production SARS doesn't like value (0 << 28) in combination with
         //  kbkdf_index being 0
-        // return (0 << 28); // 0 ; might be the production value
-        // return (2 << 28); // 1
-        // return (3 << 28); // 1
-        return (8 << 28); // 2 ; might be a development value, skips a few
-                          // checks (lynx and others)
+        uint32_t environment;
+        // environment = 0x0; // 0 ; might be the production value
+        // environment = 0x2; // 1
+        // environment = 0x3; // 1
+        environment = 0x8; // 2 ; might be a development value, skips a few
+                           // checks (lynx and others)
+        return (environment << 28);
+    }
     case 0x3D2E8000: // ????
         // return 0x32B3; // memory encryption AMK (Authentication Master Key)
         // disabled
@@ -832,9 +836,9 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
             TYPE_APPLE_SEP);
 
         if (sep != NULL) {
-            if (data & (1 << 31)) {
+            if (data & BIT(31)) {
                 apple_a13_reset(APPLE_A13(sep->cpu));
-            } else if (data & (1 << 10)) {
+            } else if (data & BIT(10)) {
                 apple_a13_set_off(APPLE_A13(sep->cpu));
             } else {
                 apple_a13_set_on(APPLE_A13(sep->cpu));

@@ -14,39 +14,39 @@
 /* XXX: Based on linux/drivers/spi/spi-apple.c */
 
 #define REG_CTRL 0x000
-#define REG_CTRL_RUN (1 << 0)
-#define REG_CTRL_TX_RESET (1 << 2)
-#define REG_CTRL_RX_RESET (1 << 3)
+#define REG_CTRL_RUN BIT(0)
+#define REG_CTRL_TX_RESET BIT(2)
+#define REG_CTRL_RX_RESET BIT(3)
 
 #define REG_CFG 0x004
-#define REG_CFG_AGD (1 << 0)
-#define REG_CFG_CPHA (1 << 1)
-#define REG_CFG_CPOL (1 << 2)
+#define REG_CFG_AGD BIT(0)
+#define REG_CFG_CPHA BIT(1)
+#define REG_CFG_CPOL BIT(2)
 #define REG_CFG_MODE(_x) (((_x) >> 5) & 0x3)
 #define REG_CFG_MODE_INVALID 0
 #define REG_CFG_MODE_IRQ 1
 #define REG_CFG_MODE_DMA 2
-#define REG_CFG_IE_RXREADY (1 << 7)
-#define REG_CFG_IE_TXEMPTY (1 << 8)
-#define REG_CFG_LSB_FIRST (1 << 13)
+#define REG_CFG_IE_RXREADY BIT(7)
+#define REG_CFG_IE_TXEMPTY BIT(8)
+#define REG_CFG_LSB_FIRST BIT(13)
 #define REG_CFG_WORD_SIZE(_x) (((_x) >> 15) & 0x3)
 #define REG_CFG_WORD_SIZE_8B 0
 #define REG_CFG_WORD_SIZE_16B 1
 #define REG_CFG_WORD_SIZE_32B 2
-#define REG_CFG_IE_COMPLETE (1 << 21)
+#define REG_CFG_IE_COMPLETE BIT(21)
 
 #define REG_STATUS 0x008
-#define REG_STATUS_RXREADY (1 << 0)
-#define REG_STATUS_TXEMPTY (1 << 1)
-#define REG_STATUS_RXOVERFLOW (1 << 3)
-#define REG_STATUS_COMPLETE (1 << 22)
+#define REG_STATUS_RXREADY BIT(0)
+#define REG_STATUS_TXEMPTY BIT(1)
+#define REG_STATUS_RXOVERFLOW BIT(3)
+#define REG_STATUS_COMPLETE BIT(22)
 #define REG_STATUS_TXFIFO_SHIFT (6)
 #define REG_STATUS_TXFIFO_MASK (31 << REG_STATUS_TXFIFO_SHIFT)
 #define REG_STATUS_RXFIFO_SHIFT (11)
 #define REG_STATUS_RXFIFO_MASK (31 << REG_STATUS_RXFIFO_SHIFT)
 
 #define REG_PIN 0x00c
-#define REG_PIN_CS (1 << 1)
+#define REG_PIN_CS BIT(1)
 
 #define REG_TXDATA 0x010
 #define REG_RXDATA 0x020
