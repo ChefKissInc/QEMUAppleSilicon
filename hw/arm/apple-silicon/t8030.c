@@ -706,9 +706,9 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     AppleT8030MachineState *t8030 = APPLE_T8030(qdev_get_machine());
     AppleSEPState *sep;
     hwaddr base = (hwaddr)opaque;
-    sep = (AppleSEPState *)object_dynamic_cast(
-        object_property_get_link(OBJECT(t8030), "sep", &error_fatal),
-        TYPE_APPLE_SEP);
+
+    sep =
+        APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", &error_fatal));
 
 #if 0
     if ((((base + addr) & 0xfffffffb) != 0x10E20020) &&
@@ -831,9 +831,8 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
         t8030_start_cpus(t8030, data);
         return;
     case 0x80C00:
-        sep = (AppleSEPState *)object_dynamic_cast(
-            object_property_get_link(OBJECT(t8030), "sep", &error_fatal),
-            TYPE_APPLE_SEP);
+        sep = APPLE_SEP(
+            object_property_get_link(OBJECT(t8030), "sep", &error_fatal));
 
         if (sep != NULL) {
             if (data & BIT(31)) {
@@ -2184,7 +2183,7 @@ static void t8030_create_sep_sim(AppleT8030MachineState *t8030)
     sep = apple_sep_sim_from_node(child, true);
     g_assert_nonnull(sep);
 
-    object_property_add_child(OBJECT(t8030), "sep", OBJECT(sep));
+    object_property_add_child(OBJECT(t8030), "sep-sim", OBJECT(sep));
 
     prop = apple_dt_get_prop(child, "reg");
     g_assert_nonnull(prop);
