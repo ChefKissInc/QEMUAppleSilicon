@@ -79,6 +79,8 @@ static SMCKey *apple_smc_new_key(uint32_t key, uint8_t size, SMCKeyType type,
     SMCKey *key_entry;
     SMCKeyData *data_entry;
 
+    g_assert_nonnull(out_data_entry);
+
     key_entry = g_new0(SMCKey, 1);
     data_entry = g_new0(SMCKeyData, 1);
 
