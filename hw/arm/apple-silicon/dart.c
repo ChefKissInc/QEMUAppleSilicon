@@ -456,7 +456,6 @@ static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
     IOMMUTLBEntry entry = {
         .target_as = &address_space_memory,
         .iova = addr,
-        .translated_addr = s->bypass_address + addr,
         .addr_mask = s->page_bits,
         .perm = IOMMU_NONE,
     };
@@ -465,18 +464,13 @@ static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
     qemu_mutex_lock(&o->mutex);
     sid = o->remap[sid] & 0xF;
 
-    if (s->bypass & (1 << sid)) {
-        goto end;
-    }
-
-    if ((o->tcr[sid] & DART_TCR_TXEN) == 0) {
-        /* Disabled translation goto bypass address, not error */
-        entry.perm = IOMMU_RW;
-        goto end;
-    }
-
-    if (o->tcr[sid] & DART_TCR_BYPASS_DART) {
-        entry.perm = IOMMU_RW;
+    // Disabled translation means bypass, not error
+    if (s->bypass & (1 << sid) || (o->tcr[sid] & DART_TCR_TXEN) == 0 ||
+        o->tcr[sid] & DART_TCR_BYPASS_DART) {
+        if (s->bypass_address != 0) {
+            entry.translated_addr = s->bypass_address + addr,
+            entry.perm = IOMMU_RW;
+        }
         goto end;
     }
 
