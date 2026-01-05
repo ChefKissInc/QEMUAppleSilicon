@@ -467,11 +467,9 @@ static MemTxResult apple_aop_ep_recv_packet_locked(
     uint32_t data_off;
     uint32_t entry_len;
 
-    *payload = NULL;
+    g_assert_false(apple_aop_ep_rx_empty(s));
 
-    if (apple_aop_ep_rx_empty(s)) {
-        return MEMTX_OK;
-    }
+    *payload = NULL;
 
     TXOK_GUARD(apple_aop_ep_get_rptr(s, s->rx_off, &rptr));
 
