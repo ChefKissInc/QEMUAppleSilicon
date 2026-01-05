@@ -51,10 +51,9 @@ typedef struct {
     uint32_t rx_len;
     uint32_t tx_len;
     AppleAOPResult (*get_property)(void *opaque, uint32_t property, void *data);
-    AppleAOPResult (*handle_command)(void *opaque, uint32_t type,
-                                     uint8_t category, uint16_t seq,
-                                     void *payload, uint32_t len,
-                                     void *payload_out, uint32_t out_len);
+    AppleAOPResult (*handle_command)(void *opaque, uint16_t seq, void *payload,
+                                     uint32_t len, void *payload_out,
+                                     uint32_t out_len);
 } AppleAOPEndpointDescription;
 
 SysBusDevice *apple_aop_create(AppleDTNode *node, AppleA7IOPVersion version);

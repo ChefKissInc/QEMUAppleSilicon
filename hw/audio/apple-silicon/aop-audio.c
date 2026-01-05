@@ -21,20 +21,17 @@
 #include "hw/misc/apple-silicon/aop.h"
 
 #if 0
-#define DPRINTF(v, ...) fprintf(stderr, v, ##__VA_ARGS__)
+#define AOP_DPRINTF(v, ...) fprintf(stderr, v, ##__VA_ARGS__)
 #else
-#define DPRINTF(v, ...) \
-    do {                \
+#define AOP_DPRINTF(v, ...) \
+    do {                    \
     } while (0)
 #endif
 
-// AOP Audio Devices
-// - mcaN | Multi-Channel Audio (cluster N)
-// - apac | AOP Audio Codec?
-// - acmm | Audio Codec Mclk Manager?
-// - lpai | Low Power Audio Input
-
-#define OP_COMMAND (0x20)
+#define PROPERTY_IDENTITY (0x64)
+#define PROPERTY_DEVICE_COUNT (0x65)
+#define PROPERTY_IO_HANDLER_COUNT (0x66)
+#define PROPERTY_VERSION (0x67)
 
 #define COMMAND_GET_DEVICE_ID (0xC3000001)
 #define COMMAND_ATTACH_DEVICE (0xC3000002)
@@ -53,6 +50,8 @@
 #define DEV_PROP_MCA_RX0_SHIM_OVERRUN (0xD7)
 #define DEV_PROP_MCA_RX0_SHIM_OVERRUN_LEN (4)
 
+#define DEV_PCM_MGR 'pcmM'
+// AppleAOPAudioAssetManagerProperties::kNumberOfSupportedAssets
 #define DEV_PROP_PCM_NUM_SUPPORTED_ASSETS (0xC8)
 #define DEV_PROP_PCM_NUM_SUPPORTED_ASSETS_LEN (4)
 
@@ -64,11 +63,6 @@
 #define DEV_PROP_CHANNEL_CTRL_LEN (0x10)
 #define DEV_PROP_STREAM_FORMAT (0x12E)
 #define DEV_PROP_STREAM_FORMAT_LEN (0x10)
-
-#define PROPERTY_IDENTITY (0x64)
-#define PROPERTY_DEVICE_COUNT (0x65)
-#define PROPERTY_IO_HANDLER_COUNT (0x66)
-#define PROPERTY_VERSION (0x67)
 
 struct AppleAOPAudioState {
     SysBusDevice parent_obj;
@@ -106,17 +100,35 @@ static void apple_aop_audio_register_types(void)
 
 type_init(apple_aop_audio_register_types);
 
+// AOP Audio Devices
+// - edtC | Embedded Device Tree Config
+// - acmm | AOP Audio Codec Mclk Manager
+// - aphc | AOP Audio Haptic Control
+// - lpfw | LEAP Firmware
+// - leap | Low Energy Actuator Processor?
+// - aph  | AOP Audio Haptics
+// - aphd | AOP Audio Haptics Debug?
+// - ahdc | AOP Audio Haptics Debug Control?
+// - pcmM | PCM Asset Manager
+// - lpai | Low Power Audio Input
+// - mcaN | Multi-Channel Audio (cluster N)
+// - apac | AOP Audio Controller?
+static const uint32_t apple_aop_devices[] = {
+    'edtC', 'acmm', 'aphc', 'lpfw', 'leap', 'aphd', 'aph ',
+    'ahdc', 'pcmM', 'lpai', 'mca0', 'mca1', 'apac',
+};
+
 static AppleAOPResult apple_aop_audio_get_prop(void *opaque, uint32_t prop,
                                                void *out)
 {
-    DPRINTF("AOPAudio GetProperty 0x%X\n", prop);
+    AOP_DPRINTF("AOPAudio GetProperty 0x%X\n", prop);
 
     switch (prop) {
-    case PROPERTY_IDENTITY:
+    case PROPERTY_IDENTITY: // ???
         stl_le_p(out, 'aop ');
         break;
     case PROPERTY_DEVICE_COUNT:
-        stl_le_p(out, 3);
+        stl_le_p(out, ARRAY_SIZE(apple_aop_devices));
         break;
     case PROPERTY_IO_HANDLER_COUNT:
         stl_le_p(out, 0);
@@ -128,38 +140,31 @@ static AppleAOPResult apple_aop_audio_get_prop(void *opaque, uint32_t prop,
     return AOP_RESULT_OK;
 }
 
-static AppleAOPResult
-apple_aop_audio_handle_command(void *opaque, uint32_t type, uint8_t category,
-                               uint16_t seq, void *payload, uint32_t len,
-                               void *payload_out, uint32_t out_len)
+static AppleAOPResult apple_aop_audio_handle_command(void *opaque, uint16_t seq,
+                                                     void *payload,
+                                                     uint32_t len,
+                                                     void *payload_out,
+                                                     uint32_t out_len)
 {
     AppleAOPAudioState *s = opaque;
 
-    if (type != OP_COMMAND || ldl_le_p(payload) != 0xFFFFFFFF) {
+    if (payload == NULL || len < COMMAND_HDR_LEN ||
+        ldl_le_p(payload) != 0xFFFFFFFF) {
         return AOP_RESULT_ERROR;
     }
 
     switch (ldl_le_p(payload + sizeof(uint32_t))) {
     case COMMAND_GET_DEVICE_ID:
-        DPRINTF("AOPAudio GetDeviceID %d\n",
-                ldl_le_p(payload + COMMAND_HDR_LEN));
+        AOP_DPRINTF("AOPAudio GetDeviceID %d\n",
+                    ldl_le_p(payload + COMMAND_HDR_LEN));
 
-        switch (ldl_le_p(payload + COMMAND_HDR_LEN)) {
-        case 0:
-            stl_le_p(payload_out, 'lpai');
-            break;
-        case 1:
-            stl_le_p(payload_out, 'apac');
-            break;
-        case 2:
-            stl_le_p(payload_out, 'edtC');
-            break;
-        }
+        stl_le_p(payload_out,
+                 apple_aop_devices[ldl_le_p(payload + COMMAND_HDR_LEN)]);
         break;
     case COMMAND_GET_DEVICE_PROP:
-        DPRINTF("AOPAudio GetDeviceProperty %X 0x%X\n",
-                ldl_le_p(payload + COMMAND_HDR_LEN),
-                ldl_le_p(payload + COMMAND_HDR_LEN + 4));
+        AOP_DPRINTF("AOPAudio GetDeviceProperty %X 0x%X\n",
+                    ldl_le_p(payload + COMMAND_HDR_LEN),
+                    ldl_le_p(payload + COMMAND_HDR_LEN + 4));
 
         switch (ldl_le_p(payload + COMMAND_HDR_LEN)) {
         case 'lpai':
@@ -223,7 +228,7 @@ apple_aop_audio_handle_command(void *opaque, uint32_t type, uint8_t category,
                 break;
             }
             break;
-        case 'pcmM':
+        case DEV_PCM_MGR:
             switch (ldl_le_p(payload + COMMAND_HDR_LEN + 4)) {
             case DEV_PROP_PCM_NUM_SUPPORTED_ASSETS:
                 stl_le_p(payload_out, DEV_PROP_PCM_NUM_SUPPORTED_ASSETS_LEN);
@@ -234,9 +239,9 @@ apple_aop_audio_handle_command(void *opaque, uint32_t type, uint8_t category,
         }
         break;
     case COMMAND_SET_DEVICE_PROP:
-        DPRINTF("AOPAudio SetDeviceProperty %X 0x%X\n",
-                ldl_le_p(payload + COMMAND_HDR_LEN),
-                ldl_le_p(payload + COMMAND_HDR_LEN + 4));
+        AOP_DPRINTF("AOPAudio SetDeviceProperty %X 0x%X\n",
+                    ldl_le_p(payload + COMMAND_HDR_LEN),
+                    ldl_le_p(payload + COMMAND_HDR_LEN + 4));
 
         switch (ldl_le_p(payload + COMMAND_HDR_LEN)) {
         case 'lpai':

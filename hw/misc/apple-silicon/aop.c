@@ -28,31 +28,28 @@
 #if 0
 #include "qemu/cutils.h"
 
-#define DHEXDUMP(a, b, c) qemu_hexdump(stderr, a, b, c)
-#define DPRINTF(v, ...) fprintf(stderr, v, ##__VA_ARGS__)
-#define AOP_LOG_MSG(ep, msg)                                                  \
-    do {                                                                      \
-        fprintf(stderr, "AOP: message: ep=%u msg=0x" HWADDR_FMT_plx "\n", ep, \
-                msg);                                                         \
-    } while (0)
+#define AOP_DHEXDUMP(a, b, c) qemu_hexdump(stderr, a, b, c)
+#define AOP_DPRINTF(v, ...)                                            \
+    fprintf(stderr, "%s:%s@%d: " v "\n", __func__, __FILE__, __LINE__, \
+            ##__VA_ARGS__)
 #else
-#define DHEXDUMP(a, b, c) \
-    do {                  \
+#define AOP_DHEXDUMP(a, b, c) \
+    do {                      \
     } while (0)
-#define DPRINTF(v, ...) \
-    do {                \
-    } while (0)
-#define AOP_LOG_MSG(ep, msg) \
-    do {                     \
+#define AOP_DPRINTF(v, ...) \
+    do {                    \
     } while (0)
 #endif
 
-#define TXOK_GUARD(v)          \
-    do {                       \
-        MemTxResult res = (v); \
-        if (res != MEMTX_OK) { \
-            return res;        \
-        }                      \
+#define AOP_LOG_MSG(ep, msg) AOP_DPRINTF("ep=%u msg=0x" HWADDR_FMT_plx, ep, msg)
+
+#define TXOK_GUARD(v)                                                 \
+    do {                                                              \
+        MemTxResult res = (v);                                        \
+        if (res != MEMTX_OK) {                                        \
+            AOP_DPRINTF("FAIL: " #v " == MEMTX_OK, actual: %d", res); \
+            return res;                                               \
+        }                                                             \
     } while (0)
 
 // IOP -> AP
@@ -93,18 +90,18 @@
 #define RB_V7_IOP_MAGIC ((uint32_t)'IOP ')
 #define RB_V7_AOP_MAGIC ((uint32_t)'AOP ')
 
+#define SUB_PACKET_FLAG_CAT_GET(_cat) (((_cat) >> 4) & 0xFF)
+#define SUB_PACKET_FLAG_CAT(_cat) (((_cat) & 0xFF) << 4)
 #define SUB_PACKET_FLAG_CAT_REPORT (0)
 #define SUB_PACKET_FLAG_CAT_COMMAND (1)
 #define SUB_PACKET_FLAG_CAT_RESPONSE (2)
 #define SUB_PACKET_FLAG_CAT_LONG_COMMAND (3)
 
-#define SUB_PACKET_FLAG_CAT_GET(_cat) (((_cat) >> 4) & 0xFF)
-#define SUB_PACKET_FLAG_CAT(_cat) (((_cat) & 0xFF) << 4)
-
 #define PACKET_TYPE_SET_PROPERTY (0x4)
 #define PACKET_TYPE_GET_PROPERTY (0xA)
 #define PACKET_TYPE_SET_NAMED_PROPERTY (0x10)
 #define PACKET_TYPE_GET_NAMED_PROPERTY (0x11)
+#define PACKET_TYPE_COMMAND (0x20)
 #define PACKET_TYPE_READY_REPORT (0xC0)
 #define PACKET_TYPE_MSG_REPORT (0xD0)
 
@@ -331,6 +328,8 @@ static MemTxResult apple_aop_ep_send_packet_full(AppleAOPEndpoint *s,
 {
     AppleRTKit *rtk;
     uint32_t wptr;
+    uint32_t total_size;
+    uint32_t end_wptr;
     uint32_t data_off;
     uint64_t timestamp;
 
@@ -345,10 +344,12 @@ static MemTxResult apple_aop_ep_send_packet_full(AppleAOPEndpoint *s,
 
     data_off = s->aop->align * 3;
 
-    if (ROUND_UP(data_off + wptr + RB_ENTRY_LEN + PACKET_LEN + SUB_PACKET_LEN +
-                     len,
-                 s->aop->align) > s->descr->tx_len) {
+    total_size = ROUND_UP(RB_ENTRY_LEN + PACKET_LEN + SUB_PACKET_LEN + len,
+                          s->aop->align);
+    end_wptr = wptr + total_size;
+    if (data_off + end_wptr > s->descr->tx_len) {
         wptr = 0;
+        end_wptr = total_size;
     }
 
     TXOK_GUARD(apple_aop_ep_write_rb_entry(s, s->tx_off + data_off + wptr,
@@ -363,9 +364,8 @@ static MemTxResult apple_aop_ep_send_packet_full(AppleAOPEndpoint *s,
     wptr += SUB_PACKET_LEN;
     TXOK_GUARD(dma_memory_write(&s->aop->dma_as, s->tx_off + data_off + wptr,
                                 payload, len, MEMTXATTRS_UNSPECIFIED));
-    wptr += len;
-    TXOK_GUARD(
-        apple_aop_ep_set_wptr(s, s->tx_off, ROUND_UP(wptr, s->aop->align)));
+    // wptr += len;
+    TXOK_GUARD(apple_aop_ep_set_wptr(s, s->tx_off, end_wptr));
 
     apple_rtkit_send_user_msg(rtk, s->num, MSG_TX_SIGNAL);
 
@@ -465,7 +465,9 @@ static MemTxResult apple_aop_ep_recv_packet_locked(
 {
     uint32_t rptr;
     uint32_t data_off;
-    uint32_t entry_len;
+    uint32_t rb_payload_len;
+    uint32_t total_rb_entry_len;
+    uint32_t final_rptr;
 
     g_assert_false(apple_aop_ep_rx_empty(s));
 
@@ -475,9 +477,27 @@ static MemTxResult apple_aop_ep_recv_packet_locked(
 
     data_off = s->aop->align * 3;
 
-    TXOK_GUARD(
-        apple_aop_ep_read_rb_entry(s, s->rx_off + data_off + rptr, &entry_len));
+    if (data_off + rptr + RB_ENTRY_LEN > s->descr->rx_len) {
+        rptr = 0;
+    }
+
+    TXOK_GUARD(apple_aop_ep_read_rb_entry(s, s->rx_off + data_off + rptr,
+                                          &rb_payload_len));
+
+    total_rb_entry_len = ROUND_UP(RB_ENTRY_LEN + rb_payload_len, s->aop->align);
+    final_rptr = rptr + total_rb_entry_len;
+    if (data_off + final_rptr > s->descr->rx_len) {
+        final_rptr = total_rb_entry_len;
+        rptr = 0;
+    } else if (data_off + final_rptr == s->descr->rx_len) {
+        final_rptr = 0;
+    }
+
+    TXOK_GUARD(apple_aop_ep_read_rb_entry(s, s->rx_off + data_off + rptr,
+                                          &rb_payload_len));
+
     rptr += RB_ENTRY_LEN;
+
     TXOK_GUARD(
         apple_aop_ep_read_packet(s, s->rx_off + data_off + rptr, NULL, NULL));
     rptr += PACKET_LEN;
@@ -488,12 +508,8 @@ static MemTxResult apple_aop_ep_recv_packet_locked(
     *payload = g_malloc0(*len);
     TXOK_GUARD(dma_memory_read(&s->aop->dma_as, s->rx_off + data_off + rptr,
                                *payload, *len, MEMTXATTRS_UNSPECIFIED));
-    rptr += *len;
-    rptr = ROUND_UP(rptr, s->aop->align);
-    if (rptr >= s->descr->rx_len) {
-        rptr = 0;
-    }
-    TXOK_GUARD(apple_aop_ep_set_rptr(s, s->rx_off, rptr));
+    // rptr += *len;
+    TXOK_GUARD(apple_aop_ep_set_rptr(s, s->rx_off, final_rptr));
 
     return MEMTX_OK;
 }
@@ -503,14 +519,21 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
     AppleAOPEndpoint *s = opaque;
     AppleRTKit *rtk;
     MemTxResult ret;
-    uint8_t ready_report_buf[READY_REPORT_LEN];
+    uint8_t ready_report_buf[READY_REPORT_LEN] = { 0 };
     uint16_t type;
     uint8_t category;
     uint16_t seq;
-    void *payload;
+    void *in_payload;
     uint32_t len;
     uint32_t out_len;
-    void *payload_out;
+    void *out_payload;
+    void *actual_in_payload;
+    void *actual_out_payload;
+    uint32_t actual_in_len;
+    uint32_t actual_out_len;
+    uint64_t in_ool_addr;
+    uint64_t out_ool_addr;
+    AppleAOPResult res;
 
     rtk = APPLE_RTKIT(s->aop);
 
@@ -608,50 +631,87 @@ static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
         }
         while (!apple_aop_ep_rx_empty(s)) {
             if (apple_aop_ep_recv_packet_locked(s, &type, &category, &seq,
-                                                &payload, &len,
+                                                &in_payload, &len,
                                                 &out_len) != MEMTX_OK) {
                 qemu_log_mask(LOG_GUEST_ERROR, "Failed to receive message\n");
                 break;
             }
 
-            DPRINTF("Packet type: 0x%X\n", type);
-            DHEXDUMP("RX", payload, len);
+            AOP_DPRINTF("Packet type: 0x%X", type);
+            AOP_DHEXDUMP("RX", in_payload, len);
 
-            payload_out = g_malloc0(out_len + sizeof(uint32_t));
+            actual_in_payload = in_payload + sizeof(uint32_t);
+            actual_in_len = len - sizeof(uint32_t);
+            actual_out_len = out_len + sizeof(uint32_t);
+            out_payload = g_malloc0(actual_out_len);
+            actual_out_payload = out_payload + sizeof(uint32_t);
             switch (type) {
             case PACKET_TYPE_GET_PROPERTY:
                 if (s->descr->get_property == NULL) {
                     break;
                 }
 
-                stl_le_p(payload_out,
-                         s->descr->get_property(
-                             s->opaque, ldl_le_p(payload + sizeof(uint32_t)),
-                             payload_out + sizeof(uint32_t)));
+                res = s->descr->get_property(
+                    s->opaque, ldl_le_p(actual_in_payload), actual_out_payload);
+                stl_le_p(out_payload, res);
                 break;
-            default:
+            case PACKET_TYPE_COMMAND:
                 if (s->descr->handle_command == NULL) {
                     break;
                 }
 
-                stl_le_p(payload_out,
-                         s->descr->handle_command(
-                             s->opaque, type, category, seq,
-                             payload + sizeof(uint32_t), len - sizeof(uint32_t),
-                             payload_out + sizeof(uint32_t),
-                             out_len - sizeof(uint32_t)));
+                if (category == SUB_PACKET_FLAG_CAT_LONG_COMMAND) {
+                    out_ool_addr = ldq_le_p(actual_in_payload);
+                    in_ool_addr = ldq_le_p(actual_in_payload + 8);
+                    actual_out_len = ldl_le_p(actual_in_payload + 0x10);
+                    actual_in_len = ldl_le_p(actual_in_payload + 0x14);
+
+                    if (actual_in_len == 0) {
+                        actual_in_payload = NULL;
+                    } else {
+                        actual_in_payload = g_malloc(actual_in_len);
+                        dma_memory_read(&s->aop->dma_as, in_ool_addr,
+                                        actual_in_payload, actual_in_len,
+                                        MEMTXATTRS_UNSPECIFIED);
+                    }
+
+                    if (actual_out_len == 0) {
+                        actual_out_payload = NULL;
+                    } else {
+                        actual_out_payload = g_malloc0(actual_out_len);
+                    }
+
+                    res = s->descr->handle_command(
+                        s->opaque, seq, actual_in_payload, actual_in_len,
+                        actual_out_payload, actual_out_len);
+                    g_free(actual_in_payload);
+
+                    dma_memory_write(&s->aop->dma_as, out_ool_addr,
+                                     actual_out_payload, actual_out_len,
+                                     MEMTXATTRS_UNSPECIFIED);
+                    g_free(actual_out_payload);
+                } else {
+                    res = s->descr->handle_command(
+                        s->opaque, seq, actual_in_payload, actual_in_len,
+                        actual_out_payload, actual_out_len);
+                }
+
+                stl_le_p(out_payload, res);
                 break;
             }
-            g_free(payload);
-            DHEXDUMP("TX", payload_out, out_len + sizeof(uint32_t));
-            if (apple_aop_ep_send_reply_locked(s, type, seq, payload_out,
+            g_free(in_payload);
+            if (out_payload != NULL) {
+                AOP_DHEXDUMP("TX", out_payload, out_len + sizeof(uint32_t));
+            }
+            if (apple_aop_ep_send_reply_locked(s, type, seq, out_payload,
                                                out_len + sizeof(uint32_t),
                                                0) != MEMTX_OK) {
                 qemu_log_mask(LOG_GUEST_ERROR,
                               "Failed to reply to message %d.\n", seq);
+                g_free(out_payload);
                 break;
             }
-            g_free(payload_out);
+            g_free(out_payload);
         }
         break;
     default:
