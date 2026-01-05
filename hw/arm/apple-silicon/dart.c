@@ -292,6 +292,9 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
     AppleDARTInstance *o = opaque;
     AppleDARTState *s = o->s;
     uint32_t val = data;
+    IOMMUTLBEvent event = { 0 };
+    int i;
+
     DPRINTF("%s[%d]: (%s) %s @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx
             "\n",
             s->name, o->id, dart_instance_name[o->type], __func__, addr, data);
@@ -300,9 +303,7 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
         switch (addr) {
         case REG_DART_TLB_OP:
             if (val & DART_TLB_OP_INVALIDATE) {
-                IOMMUTLBEvent event;
                 uint64_t sid_mask = o->sid_mask;
-                int i;
 
                 if (qatomic_read(&o->tlb_op) & DART_TLB_OP_BUSY) {
                     return;
