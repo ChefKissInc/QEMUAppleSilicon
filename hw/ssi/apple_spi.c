@@ -363,14 +363,26 @@ static void apple_spi_reg_write(void *opaque, hwaddr addr, uint64_t data,
         cs_flg = true;
         break;
     case REG_TXDATA: {
-        int word_size = apple_spi_word_size(s);
         if (fifo32_is_full(&s->tx_fifo)) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: tx overflow\n", __func__);
             r = 0;
             break;
         }
-        r &= (1U << (word_size * 8)) - 1;
-        fifo32_push(&s->tx_fifo, r);
+
+        switch (apple_spi_word_size(s)) {
+        case sizeof(uint8_t):
+            fifo32_push(&s->tx_fifo, r & 0xFF);
+            break;
+        case sizeof(uint16_t):
+            fifo32_push(&s->tx_fifo, r & 0xFFFF);
+            break;
+        case sizeof(uint32_t):
+            fifo32_push(&s->tx_fifo, r);
+            break;
+        default:
+            g_assert_not_reached();
+        }
+
         run = true;
         break;
     case REG_TXCNT:
@@ -413,6 +425,7 @@ static uint64_t apple_spi_reg_read(void *opaque, hwaddr addr, unsigned size)
             r = 0;
             break;
         }
+
         r = fifo32_pop(&s->rx_fifo);
         if (fifo32_is_empty(&s->rx_fifo)) {
             run = true;
