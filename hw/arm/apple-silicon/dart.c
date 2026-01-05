@@ -496,13 +496,12 @@ static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
                 deposit32(o->error_status, DART_ERROR_STREAM_SHIFT,
                           DART_ERROR_STREAM_LENGTH, iommu->sid);
             o->error_address = addr;
+            goto end;
         }
     }
-    if (tlb_entry) {
-        entry.translated_addr =
-            tlb_entry->block_addr | (addr & entry.addr_mask);
-        entry.perm = tlb_entry->perm;
-    }
+
+    entry.translated_addr = tlb_entry->block_addr | (addr & entry.addr_mask);
+    entry.perm = tlb_entry->perm;
 
     if ((flag & IOMMU_WO) && !(entry.perm & IOMMU_WO)) {
         o->error_address = addr;
