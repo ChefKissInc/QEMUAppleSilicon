@@ -215,7 +215,7 @@ static void coroutine_fn usb_tcp_host_msg_loop_co(void *opaque)
 
         switch (hdr.type) {
         case TCP_USB_REQUEST: {
-            tcp_usb_request_header pkt_hdr = { 0 };
+            tcp_usb_request_header pkt_hdr;
             g_autofree void *buffer = NULL;
             g_autofree USBTCPPacket *pkt = g_new0(USBTCPPacket, 1);
             USBEndpoint *ep = NULL;
