@@ -91,7 +91,7 @@ static uint64_t ascv2_core_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps ascv2_core_reg_ops = {
     .write = ascv2_core_reg_write,
     .read = ascv2_core_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 8,
     .valid.min_access_size = 4,
@@ -157,7 +157,7 @@ static uint64_t apple_ans_vendor_reg_read(void *opaque, hwaddr addr,
 static const MemoryRegionOps apple_ans_vendor_reg_ops = {
     .write = apple_ans_vendor_reg_write,
     .read = apple_ans_vendor_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,

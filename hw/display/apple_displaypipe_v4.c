@@ -634,7 +634,7 @@ static uint64_t adp_v4_reg_read(void *const opaque, const hwaddr addr,
 static const MemoryRegionOps adp_v4_reg_ops = {
     .write = adp_v4_reg_write,
     .read = adp_v4_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,

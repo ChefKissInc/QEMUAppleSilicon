@@ -335,7 +335,7 @@ static uint64_t apple_spmi_queue_reg_read(void *opaque, hwaddr addr,
 static const MemoryRegionOps apple_spmi_queue_reg_ops = {
     .write = apple_spmi_queue_reg_write,
     .read = apple_spmi_queue_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,
@@ -413,7 +413,7 @@ static const MemoryRegionOps apple_spmi_control_ops = {
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
 static uint64_t apple_spmi_fault_read(void *opaque, hwaddr addr, unsigned size)
@@ -482,7 +482,7 @@ static const MemoryRegionOps apple_spmi_fault_ops = {
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
 static void apple_spmi_reset_enter(Object *obj, ResetType type)

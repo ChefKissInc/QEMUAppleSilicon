@@ -103,7 +103,7 @@ static uint64_t apple_a7iop_v2_reg_read(void *opaque, hwaddr addr,
 static const MemoryRegionOps apple_a7iop_v2_reg_ops = {
     .write = apple_a7iop_v2_reg_write,
     .read = apple_a7iop_v2_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 8,
     .impl.min_access_size = 4,

@@ -457,7 +457,7 @@ static const MemoryRegionOps apple_spi_reg_ops = {
     .read = apple_spi_reg_read,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
 static void apple_spi_reset(DeviceState *dev)

@@ -137,7 +137,7 @@ static uint64_t apple_nvme_mmu_common_reg_read(void *opaque, hwaddr addr,
 static const MemoryRegionOps apple_nvme_mmu_common_reg_ops = {
     .write = apple_nvme_mmu_common_reg_write,
     .read = apple_nvme_mmu_common_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,

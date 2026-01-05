@@ -219,7 +219,7 @@ static void apple_wdt_reset(DeviceState *dev)
 static const MemoryRegionOps wdt_reg_ops = {
     .write = wdt_reg_write,
     .read = wdt_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,

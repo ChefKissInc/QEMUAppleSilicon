@@ -492,7 +492,7 @@ static uint64_t apple_aic_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps apple_aic_ops = {
     .read = apple_aic_read,
     .write = apple_aic_write,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,

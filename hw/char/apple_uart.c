@@ -470,7 +470,7 @@ static uint64_t apple_uart_read(void *opaque, hwaddr offset, unsigned size)
 static const MemoryRegionOps apple_uart_ops = {
     .read = apple_uart_read,
     .write = apple_uart_write,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid = { .max_access_size = 4, .unaligned = false },
 };
 

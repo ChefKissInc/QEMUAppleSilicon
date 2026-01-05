@@ -617,7 +617,7 @@ static uint64_t aes_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps aes_reg_ops = {
     .write = aes_reg_write,
     .read = aes_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,
@@ -628,7 +628,7 @@ static const MemoryRegionOps aes_reg_ops = {
 static const MemoryRegionOps aes_security_reg_ops = {
     .write = aes_security_reg_write,
     .read = aes_security_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,

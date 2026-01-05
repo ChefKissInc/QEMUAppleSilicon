@@ -1357,7 +1357,7 @@ static uint64_t debug_trace_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps debug_trace_reg_ops = {
     .write = debug_trace_reg_write,
     .read = debug_trace_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 1,
     .valid.max_access_size = 8,
     .impl.min_access_size = 1,
@@ -1586,7 +1586,7 @@ static uint64_t trng_regs_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps trng_regs_reg_ops = {
     .write = trng_regs_reg_write,
     .read = trng_regs_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -1763,7 +1763,7 @@ static uint64_t pmgr_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps pmgr_base_reg_ops = {
     .write = pmgr_base_reg_write,
     .read = pmgr_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -1854,7 +1854,7 @@ static uint64_t key_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps key_base_reg_ops = {
     .write = key_base_reg_write,
     .read = key_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -1908,7 +1908,7 @@ static uint64_t key_fkey_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps key_fkey_reg_ops = {
     .write = key_fkey_reg_write,
     .read = key_fkey_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2025,7 +2025,7 @@ static uint64_t key_fcfg_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps key_fcfg_reg_ops = {
     .write = key_fcfg_reg_write,
     .read = key_fcfg_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2073,7 +2073,7 @@ static uint64_t moni_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps moni_base_reg_ops = {
     .write = moni_base_reg_write,
     .read = moni_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2121,7 +2121,7 @@ static uint64_t moni_thrm_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps moni_thrm_reg_ops = {
     .write = moni_thrm_reg_write,
     .read = moni_thrm_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2169,7 +2169,7 @@ static uint64_t eisp_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps eisp_base_reg_ops = {
     .write = eisp_base_reg_write,
     .read = eisp_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2217,7 +2217,7 @@ static uint64_t eisp_hmac_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps eisp_hmac_reg_ops = {
     .write = eisp_hmac_reg_write,
     .read = eisp_hmac_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2824,7 +2824,7 @@ static uint64_t aess_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps aess_base_reg_ops = {
     .write = aess_base_reg_write,
     .read = aess_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2884,7 +2884,7 @@ static uint64_t aesh_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps aesh_base_reg_ops = {
     .write = aesh_base_reg_write,
     .read = aesh_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -2933,7 +2933,7 @@ static uint64_t aesc_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps aesc_base_reg_ops = {
     .write = aesc_base_reg_write,
     .read = aesc_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -3102,7 +3102,7 @@ static uint64_t pka_base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps pka_base_reg_ops = {
     .write = pka_base_reg_write,
     .read = pka_base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -3161,7 +3161,7 @@ static uint64_t pka_tmm_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps pka_tmm_reg_ops = {
     .write = pka_tmm_reg_write,
     .read = pka_tmm_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -3211,7 +3211,7 @@ static uint64_t misc2_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps misc2_reg_ops = {
     .write = misc2_reg_write,
     .read = misc2_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -3283,7 +3283,7 @@ static uint64_t boot_monitor_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps boot_monitor_reg_ops = {
     .write = boot_monitor_reg_write,
     .read = boot_monitor_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,
@@ -3552,7 +3552,7 @@ static uint64_t progress_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps progress_reg_ops = {
     .write = progress_reg_write,
     .read = progress_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
     .impl.min_access_size = 4,

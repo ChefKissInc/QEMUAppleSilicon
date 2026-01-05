@@ -242,7 +242,7 @@ static const MemoryRegionOps i2c_reg_ops = {
     .read = apple_i2c_reg_read,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
 };
 
 static void apple_i2c_reset_enter(Object *obj, ResetType type)

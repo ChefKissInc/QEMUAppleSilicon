@@ -92,7 +92,7 @@ static uint64_t frontend_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps frontend_reg_ops = {
     .write = frontend_write,
     .read = frontend_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,
@@ -179,7 +179,7 @@ static uint64_t backend_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps backend_reg_ops = {
     .write = backend_write,
     .read = backend_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,
@@ -211,7 +211,7 @@ static uint64_t dummy_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps dummy_reg_ops = {
     .write = dummy_write,
     .read = dummy_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,

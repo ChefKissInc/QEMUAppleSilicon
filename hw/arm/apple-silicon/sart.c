@@ -139,7 +139,7 @@ static uint64_t base_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps base_reg_ops = {
     .write = base_reg_write,
     .read = base_reg_read,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .endianness = DEVICE_LITTLE_ENDIAN,
     .impl.min_access_size = 4,
     .impl.max_access_size = 4,
     .valid.min_access_size = 4,
