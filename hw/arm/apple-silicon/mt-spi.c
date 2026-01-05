@@ -188,20 +188,20 @@ static void apple_mt_spi_buf_set_len(AppleMTSPIBuffer *buf, uint8_t val,
     buf->len = len;
 }
 
-static size_t apple_mt_spi_buf_get_pos(const AppleMTSPIBuffer *buf)
-{
-    g_assert_cmphex(buf->len, !=, 0);
-    return buf->len - 1;
-}
-
 static bool apple_mt_spi_buf_is_empty(const AppleMTSPIBuffer *buf)
 {
     return buf->len == 0;
 }
 
+static size_t apple_mt_spi_buf_get_pos(const AppleMTSPIBuffer *buf)
+{
+    g_assert_false(apple_mt_spi_buf_is_empty(buf));
+    return buf->len - 1;
+}
+
 static bool apple_mt_spi_buf_is_full(const AppleMTSPIBuffer *buf)
 {
-    return buf->len == buf->capacity;
+    return !apple_mt_spi_buf_is_empty(buf) && buf->len == buf->capacity;
 }
 
 static bool apple_mt_spi_buf_pos_at_start(const AppleMTSPIBuffer *buf)
