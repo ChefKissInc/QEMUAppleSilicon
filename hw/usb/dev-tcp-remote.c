@@ -573,6 +573,10 @@ static void usb_tcp_remote_realize(USBDevice *dev, Error **errp)
         g_assert_not_reached();
     }
 
+    if (s->socket < 0) {
+        return;
+    }
+
     if (listen(s->socket, 1) < 0) {
         error_setg(errp, "Cannot listen on socket");
         return;
