@@ -105,7 +105,7 @@ static void apple_spi_update_xfer_tx(AppleSPIState *s)
         if ((REG_CFG_MODE(REG(s, REG_CFG))) == REG_CFG_MODE_DMA) {
             uint8_t buffer[REG_FIFO_MAX_DEPTH] = { 0 };
             int word_size = apple_spi_word_size(s);
-            int dma_len = apple_sio_dma_remaining(s->tx_chan);
+            uint64_t dma_len = apple_sio_dma_remaining(s->tx_chan);
             int xfer_len = REG(s, REG_TXCNT) * word_size;
             int fifo_len = fifo32_num_free(&s->tx_fifo) * word_size;
             if (dma_len > xfer_len) {
@@ -118,10 +118,24 @@ static void apple_spi_update_xfer_tx(AppleSPIState *s)
             if (dma_len == 0) {
                 REG(s, REG_STATUS) |= REG_STATUS_TXEMPTY;
             } else {
-                for (int i = 0; i < dma_len; i += word_size) {
-                    uint32_t v = *(uint32_t *)&buffer[i];
-                    v &= (1U << (word_size * 8)) - 1;
-                    fifo32_push(&s->tx_fifo, v);
+                switch (word_size) {
+                case sizeof(uint8_t):
+                    for (uint64_t i = 0; i < dma_len; ++i) {
+                        fifo32_push(&s->tx_fifo, buffer[i]);
+                    }
+                    break;
+                case sizeof(uint16_t):
+                    for (uint64_t i = 0; i < dma_len; i += sizeof(uint16_t)) {
+                        fifo32_push(&s->tx_fifo, lduw_le_p(&buffer[i]));
+                    }
+                    break;
+                case sizeof(uint32_t):
+                    for (uint64_t i = 0; i < dma_len; i += sizeof(uint32_t)) {
+                        fifo32_push(&s->tx_fifo, ldl_le_p(&buffer[i]));
+                    }
+                    break;
+                default:
+                    g_assert_not_reached();
                 }
             }
         } else {
@@ -133,22 +147,39 @@ static void apple_spi_update_xfer_tx(AppleSPIState *s)
 static void apple_spi_flush_rx(AppleSPIState *s)
 {
     uint8_t buffer[REG_FIFO_MAX_DEPTH] = { 0 };
-    int word_size = apple_spi_word_size(s);
+
     if ((REG_CFG_MODE(REG(s, REG_CFG))) != REG_CFG_MODE_DMA) {
         return;
     }
-    int dma_len = apple_sio_dma_remaining(s->rx_chan);
 
-    if (dma_len > fifo32_num_used(&s->rx_fifo)) {
-        dma_len = fifo32_num_used(&s->rx_fifo);
+    int word_size = apple_spi_word_size(s);
+    uint64_t dma_len = apple_sio_dma_remaining(s->rx_chan);
+
+    if (dma_len / word_size > fifo32_num_used(&s->rx_fifo)) {
+        dma_len = fifo32_num_used(&s->rx_fifo) * word_size;
     }
     if (dma_len == 0) {
         return;
     }
 
-    for (int i = 0; i < dma_len; i += word_size) {
-        uint32_t v = fifo32_pop(&s->rx_fifo);
-        memcpy(buffer + i, &v, word_size);
+    switch (word_size) {
+    case sizeof(uint8_t):
+        for (uint64_t i = 0; i < dma_len; ++i) {
+            buffer[i] = fifo32_pop(&s->rx_fifo);
+        }
+        break;
+    case sizeof(uint16_t):
+        for (uint64_t i = 0; i < dma_len; i += sizeof(uint16_t)) {
+            stw_le_p(buffer + i, fifo32_pop(&s->rx_fifo));
+        }
+        break;
+    case sizeof(uint32_t):
+        for (uint64_t i = 0; i < dma_len; i += sizeof(uint32_t)) {
+            stl_le_p(buffer + i, fifo32_pop(&s->rx_fifo));
+        }
+        break;
+    default:
+        g_assert_not_reached();
     }
 
     dma_len = apple_sio_dma_write(s->rx_chan, buffer, dma_len);
