@@ -98,7 +98,7 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
                            unsigned size)
 {
     AppleSARTState *s = opaque;
-    IOMMUTLBEvent event;
+    IOMMUTLBEvent event = { 0 };
 
     DPRINTF("%s: %s @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx "\n",
             DEVICE(s)->id, __func__, addr, data);
