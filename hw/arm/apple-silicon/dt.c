@@ -178,20 +178,12 @@ AppleDTNode *apple_dt_deserialise(void *blob)
 
 void apple_dt_del_node(AppleDTNode *parent, AppleDTNode *node)
 {
-    GList *iter;
-
+    g_assert_false(parent == node);
     g_assert_false(parent->finalised);
     g_assert_false(node->finalised);
 
-    for (iter = parent->children; iter != NULL; iter = iter->next) {
-        if (node == iter->data) {
-            apple_dt_destroy_node(node);
-            parent->children = g_list_delete_link(parent->children, iter);
-            return;
-        }
-    }
-
-    g_assert_not_reached();
+    parent->children = g_list_remove(parent->children, node);
+    apple_dt_destroy_node(node);
 }
 
 bool apple_dt_del_node_named(AppleDTNode *parent, const char *name)
