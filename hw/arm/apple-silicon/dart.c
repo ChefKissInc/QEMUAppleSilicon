@@ -186,7 +186,7 @@ struct AppleDARTState {
     uint32_t l_shift[3];
     uint32_t sids;
     uint32_t bypass;
-    uint64_t bypass_address;
+    // uint64_t bypass_address;
     uint32_t dart_options;
     bool dart_force_active_val;
     bool dart_request_sid_val;
@@ -468,10 +468,10 @@ static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
     // Disabled translation means bypass, not error
     if (s->bypass & (1 << sid) || (o->tcr[sid] & DART_TCR_TXEN) == 0 ||
         o->tcr[sid] & DART_TCR_BYPASS_DART) {
-        if (s->bypass_address != 0) {
-            entry.translated_addr = s->bypass_address + addr,
-            entry.perm = IOMMU_RW;
-        }
+        // if (s->bypass_address != 0) {
+        //     entry.translated_addr = s->bypass_address + addr,
+        //     entry.perm = IOMMU_RW;
+        // }
         goto end;
     }
 
@@ -643,8 +643,8 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
 
     s->sids = apple_dt_get_prop_u32_or(node, "sids", 0xFFFF, &error_fatal);
     s->bypass = apple_dt_get_prop_u32_or(node, "bypass", 0, &error_fatal);
-    s->bypass_address =
-        apple_dt_get_prop_u64_or(node, "bypass-address", 0, &error_warn);
+    // s->bypass_address =
+    //     apple_dt_get_prop_u64_or(node, "bypass-address", 0, &error_warn);
     s->dart_options =
         apple_dt_get_prop_u32_or(node, "dart-options", 0, &error_fatal);
 
