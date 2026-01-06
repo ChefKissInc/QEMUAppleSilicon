@@ -164,8 +164,7 @@ typedef struct QEMU_PACKED {
     };
 } SIOMessage;
 
-static bool apple_sio_map_dma(AppleSIOState *s, AppleSIODMAEndpoint *ep,
-                              SIODMAMapRequest *req)
+static bool apple_sio_map_dma(AppleSIODMAEndpoint *ep, SIODMAMapRequest *req)
 {
     if (req->mapped) {
         return true;
@@ -179,7 +178,7 @@ static bool apple_sio_map_dma(AppleSIOState *s, AppleSIODMAEndpoint *ep,
 
         while (len) {
             dma_addr_t xlen = len;
-            void *mem = dma_memory_map(&s->dma_as, base, &xlen, ep->direction,
+            void *mem = dma_memory_map(req->sgl.as, base, &xlen, ep->direction,
                                        MEMTXATTRS_UNSPECIFIED);
             if (mem == NULL) {
                 qemu_log_mask(LOG_GUEST_ERROR,
@@ -204,7 +203,7 @@ static bool apple_sio_map_dma(AppleSIOState *s, AppleSIODMAEndpoint *ep,
     return true;
 }
 
-static void apple_sio_destroy_req(AppleSIOState *s, AppleSIODMAEndpoint *ep,
+static void apple_sio_destroy_req(AppleSIODMAEndpoint *ep,
                                   SIODMAMapRequest *req)
 {
     int i;
@@ -219,7 +218,7 @@ static void apple_sio_destroy_req(AppleSIOState *s, AppleSIODMAEndpoint *ep,
                 access_len = unmap_length;
             }
 
-            dma_memory_unmap(&s->dma_as, req->iov.iov[i].iov_base,
+            dma_memory_unmap(req->sgl.as, req->iov.iov[i].iov_base,
                              req->iov.iov[i].iov_len, ep->direction,
                              access_len);
             unmap_length -= access_len;
@@ -233,13 +232,13 @@ static void apple_sio_destroy_req(AppleSIOState *s, AppleSIODMAEndpoint *ep,
     g_free(req);
 }
 
-static void apple_sio_stop(AppleSIOState *s, AppleSIODMAEndpoint *ep)
+static void apple_sio_stop(AppleSIODMAEndpoint *ep)
 {
     SIODMAMapRequest *req;
     SIODMAMapRequest *next;
 
     QTAILQ_FOREACH_SAFE (req, &ep->requests, next, next) {
-        apple_sio_destroy_req(s, ep, req);
+        apple_sio_destroy_req(ep, req);
     }
 }
 
@@ -257,7 +256,7 @@ static void apple_sio_dma_writeback(AppleSIOState *s, AppleSIODMAEndpoint *ep,
     m.tag = req->tag;
     m.data = req->bytes_accessed;
 
-    apple_sio_destroy_req(s, ep, req);
+    apple_sio_destroy_req(ep, req);
 
     apple_rtkit_send_user_msg(rtk, EP_CONTROL, m.raw);
 }
@@ -277,7 +276,7 @@ uint64_t apple_sio_dma_read(AppleSIODMAEndpoint *ep, void *buffer, uint64_t len)
 
     while (len > actual_len) {
         req = QTAILQ_FIRST(&ep->requests);
-        if (req == NULL || !apple_sio_map_dma(s, ep, req)) {
+        if (req == NULL || !apple_sio_map_dma(ep, req)) {
             break;
         }
         iovec_len =
@@ -308,7 +307,7 @@ uint64_t apple_sio_dma_write(AppleSIODMAEndpoint *ep, void *buffer,
 
     while (len > actual_len) {
         req = QTAILQ_FIRST(&ep->requests);
-        if (req == NULL || !apple_sio_map_dma(s, ep, req)) {
+        if (req == NULL || !apple_sio_map_dma(ep, req)) {
             break;
         }
         iovec_len =
@@ -468,7 +467,7 @@ static void apple_sio_dma(AppleSIOState *s, AppleSIODMAEndpoint *ep,
         reply.data = bytes_accessed;
         break;
     case OP_STOP:
-        apple_sio_stop(s, ep);
+        apple_sio_stop(ep);
         reply.op = OP_ACK;
         break;
     default:
@@ -599,7 +598,7 @@ static void apple_sio_reset_hold(Object *obj, ResetType type)
     s->segment_size = 0;
 
     for (size_t i = 0; i < SIO_NUM_EPS; ++i) {
-        apple_sio_stop(s, &s->eps[i]);
+        apple_sio_stop(&s->eps[i]);
 
         memset(&s->eps[i].config, 0, sizeof(s->eps[i].config));
     }
@@ -637,11 +636,8 @@ static const VMStateDescription vmstate_sio_dma_segment = {
 static int vmstate_apple_sio_dma_endpoint_pre_load(void *opaque)
 {
     AppleSIODMAEndpoint *ep = opaque;
-    AppleSIOState *s;
 
-    s = container_of(ep, AppleSIOState, eps[ep->id]);
-
-    apple_sio_stop(s, ep);
+    apple_sio_stop(ep);
 
     return 0;
 }
@@ -666,7 +662,7 @@ static int vmstate_apple_sio_dma_endpoint_post_load(void *opaque,
         if (req->mapped) {
             req->mapped = false;
             bytes_accessed = req->bytes_accessed;
-            apple_sio_map_dma(s, ep, req);
+            apple_sio_map_dma(ep, req);
             req->bytes_accessed = bytes_accessed;
         }
     }
