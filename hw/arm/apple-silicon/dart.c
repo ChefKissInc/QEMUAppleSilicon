@@ -334,9 +334,9 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
             }
             break;
         case REG_DART_ERROR_STATUS:
-            val = o->error_status & (~val);
+            o->error_status &= ~val;
             apple_dart_update_irq(s);
-            break;
+            return;
         }
     }
     o->base_reg[addr >> 2] = val;
