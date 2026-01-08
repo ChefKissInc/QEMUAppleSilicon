@@ -2,7 +2,7 @@
  * Apple T8030 SoC (iPhone 11).
  *
  * Copyright (c) 2023-2026 Visual Ehrmanntraut (VisualEhrmanntraut).
- * Copyright (c) 2023-2025 Christian Inci (chris-pcguy).
+ * Copyright (c) 2023-2026 Christian Inci (chris-pcguy).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
