@@ -3,7 +3,7 @@ The “ChefKiss Inferno” project is derived from QEMU, see its original notice
 1) This derivative project (“ChefKiss Inferno”) is licensed under the GNU General Public License version 3,
 upgrade to which was explicitly allowed under Section 9 of the GNU General Public License version 2 for
 code licensed under the GNU General Public License version 2 or later clause, with our own parts licensed
-under the GNU Affero General Public License version 3, which is explicitly allowed under Section 11 of the GNU General Public License, version 3.
+under the GNU Affero General Public License version 3, which is explicitly allowed under Section 13 of the GNU General Public License, version 3.
 
 This was done due to other entities shadowing the project with proprietary, paid solutions based mostly verbatim on the “ChefKiss Inferno” project.
 
