@@ -889,7 +889,7 @@ static void amcc_reg_write(void *opaque, hwaddr addr, uint64_t data,
           addr % AMCC_PLANE_STRIDE == AMCC_PLANE_TZ0_END(0) ||
           addr % AMCC_PLANE_STRIDE == AMCC_PLANE_TZ0_LOCK(0)))) {
         qemu_log_mask(LOG_GUEST_ERROR,
-                      "%s: 0x" HWADDR_FMT_plx "<- 0x" HWADDR_FMT_plx
+                      "%s: 0x" HWADDR_FMT_plx " <- 0x" HWADDR_FMT_plx
                       ", this register is LOCKED, merdOS.\n",
                       __func__, addr, data);
         return;
