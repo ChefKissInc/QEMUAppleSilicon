@@ -2896,13 +2896,13 @@ config_host_data.set('CONFIG_PTHREAD_SETNAME_NP_W_TID', cc.links(osdep_prefix + 
   {
     pthread_t thread;
     pthread_create(&thread, 0, f, 0);
-    pthread_setname_np(thread, "QEMU Apple Silicon");
+    pthread_setname_np(thread, "ChefKiss Inferno");
     return 0;
   }''', dependencies: threads))
 config_host_data.set('CONFIG_PTHREAD_SETNAME_NP_WO_TID', cc.links(osdep_prefix + '''
   #include <pthread.h>
 
-  static void *f(void *p) { pthread_setname_np("QEMU Apple Silicon"); return NULL; }
+  static void *f(void *p) { pthread_setname_np("ChefKiss Inferno"); return NULL; }
   int main(void)
   {
     pthread_t thread;
@@ -2918,7 +2918,7 @@ config_host_data.set('CONFIG_PTHREAD_SET_NAME_NP', cc.links(osdep_prefix + '''
   {
     pthread_t thread;
     pthread_create(&thread, 0, f, 0);
-    pthread_set_name_np(thread, "QEMU Apple Silicon");
+    pthread_set_name_np(thread, "ChefKiss Inferno");
     return 0;
   }''', dependencies: threads))
 config_host_data.set('CONFIG_PTHREAD_CONDATTR_SETCLOCK', cc.links(osdep_prefix + '''

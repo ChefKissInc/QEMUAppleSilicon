@@ -249,7 +249,7 @@ dbus_display_complete(UserCreatable *uc, Error **errp)
         (GDestroyNotify)g_array_unref, consoles);
     g_steal_pointer(&consoles);
     g_object_set(dd->iface,
-                 "name", qemu_name ?: "QEMU Apple Silicon " QEMU_VERSION,
+                 "name", qemu_name ?: "ChefKiss Inferno " QEMU_VERSION,
                  "uuid", uuid,
                  "console-ids", console_ids,
                  NULL);

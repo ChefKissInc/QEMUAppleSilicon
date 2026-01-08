@@ -14,11 +14,11 @@ FILESUBTYPE VFT2_UNKNOWN
     BLOCK "040904E4"
     {
       VALUE "CompanyName", "https://chefkiss.dev/applehax/qemu-as/"
-      VALUE "FileDescription", "ChefKiss QEMU Apple Silicon, fork of QEMU with Apple Silicon guest support"
+      VALUE "FileDescription", "ChefKiss Inferno, fork of the QEMU project with Apple Silicon guest support"
       VALUE "FileVersion", QEMU_VERSION
-      VALUE "LegalCopyright", "Copyright ChefKiss and various authors. Released under the GNU General Public License."
+      VALUE "LegalCopyright", "Copyright ChefKiss and the Inferno team. Released under the GNU General Public License, version 3."
       VALUE "LegalTrademarks", "QEMU is a trademark of Fabrice Bellard."
-      VALUE "ProductName", "ChefKiss QEMU Apple Silicon"
+      VALUE "ProductName", "ChefKiss Inferno"
     }
   }
   BLOCK "VarFileInfo"

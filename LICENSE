@@ -1,3 +1,22 @@
+The “ChefKiss Inferno” project is derived from QEMU, see its original notice below.
+
+1) This derivative project (“ChefKiss Inferno”) is licensed under the GNU General Public License version 3,
+upgrade to which was explicitly allowed under Section 9 of the GNU General Public License version 2 for
+code licensed under the GNU General Public License version 2 or later clause, with our own parts licensed
+under the GNU Affero General Public License version 3, which is explicitly allowed under Section 11 of the GNU General Public License, version 3.
+
+This was done due to other entities shadowing the project with proprietary, paid solutions based mostly verbatim on the “ChefKiss Inferno” project.
+
+2) Some parts may have different licenses, specific licensing information may be observed in each source file.
+The parts that are licensed only under the GNU General Public License version 2, without the "or later" clause, will be removed in subsequent commits.
+You may explicitly contact us for early/faster removal of your code if desired.
+
+3) Restrictions apply for the branding of the “ChefKiss Inferno” project, see here: ui/icons/CKBrandingNotice.md.
+
+ChefKiss and the Inferno team.
+
+======== Original QEMU License Notice Follows ======== 
+
 The QEMU distribution includes both the QEMU emulator and
 various firmware files.  These are separate programs that are
 distributed together for our users' convenience, and they have

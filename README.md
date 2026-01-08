@@ -1,9 +1,10 @@
-# ChefKiss QEMU Apple Silicon fork ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ChefKissInc/QEMUAppleSilicon/build.yaml?style=for-the-badge) ![Written by humans, not AI](https://img.shields.io/badge/written_by_humans-not_ai-blue?style=for-the-badge)
+# ChefKiss Inferno ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ChefKissInc/Inferno/build.yaml?style=for-the-badge) ![Written by humans, not AI](https://img.shields.io/badge/written_by_humans-not_ai-blue?style=for-the-badge)
+
+ChefKiss Inferno is derivative of the QEMU project which provides Apple ARM device guest support.
 
 > [!CAUTION]
-> Please consider donating to help continue the project's development
->
-> The project is not funded/sponsored by anyone
+> Please consider donating/tipping to help continue the project's development,
+> keeping it free and open-source.
 >
 > PayPal or credit/debit card: https://ko-fi.com/chefkiss
 >
@@ -13,18 +14,24 @@
 >
 > ETH: `0x038A25849c23Bc5A736484351a8B6Ad71bC46676`
 
-This is a fork of QEMU which provides Apple ARM device guest support.
+## More info and usage
+
+Please see the click [here](https://github.com/ChefKissInc/Inferno/wiki) for more information about the project and how to use it.
 
 ## Legal Disclaimer
 
-The “ChefKiss QEMU Apple Silicon fork” project is licensed under the GPLv2 license, see LICENSE for details.
+This derivative project (“ChefKiss Inferno”) is licensed under the GNU General Public License, version 3, with our own code licensed under the GNU Affero General Public License, version 3. See `LICENSE` for details.
 
-Distributions of the “ChefKiss QEMU Apple Silicon fork” project must retain original copyright notices, provide attributions, state and publish modifications (if any).
+This was done due to other entities shadowing the project with proprietary, paid solutions based mostly verbatim on this project.
 
-Copyright law still applies for non-distributions (e.g. SaaS); copyright notices and attributions must be retained, authorship and/or origin of the code or the “ChefKiss QEMU Apple Silicon fork” project may not be claimed or misrepresented, the “ChefKiss QEMU Apple Silicon fork” project must not be claimed as proprietary or closed-source.
+The parts of QEMU which are licensed under the "version 2 or later" clause retain their original license restrictions and copyright holders.
+The parts that are only GNU General Public License, version 2, with no "or later" clause, will be removed in subsequent commits.
+You may explicitly contact us for early/faster removal of your code if desired.
 
-Additional restrictions apply for the branding of the “ChefKiss QEMU Apple Silicon fork” project, see [here](ui/icons/CKBrandingNotice.md).
+Restrictions apply for the branding of the “ChefKiss Inferno” project, see [here](ui/icons/CKBrandingNotice.md).
 
-## More info and usage
+QEMU is a copyright and trademark of Fabrice Bellard.
 
-Please see the [wiki](https://github.com/ChefKissInc/QEMUAppleSilicon/wiki) for more information about the project and how to use it!
+QEMU is unaffiliated with this project.
+
+Apple, Inc. is unaffiliated with this project.

@@ -1,5 +1,5 @@
-#ifndef HW_ARM_LZSS_H
-#define HW_ARM_LZSS_H
+#ifndef HW_ARM_APPLE_SILICON_LZSS_H
+#define HW_ARM_APPLE_SILICON_LZSS_H
 #include "qemu/compiler.h"
 #include <stdint.h>
 
@@ -75,4 +75,4 @@ int decompress_lzss(uint8_t *dst, uint8_t *src, uint32_t srclen)
     return dst - dststart;
 }
 
-#endif
+#endif /* HW_ARM_APPLE_SILICON_LZSS_H */
