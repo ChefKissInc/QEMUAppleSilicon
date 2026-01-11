@@ -46,19 +46,19 @@ typedef bool (*CKPatcherCallback)(void *ctx, uint8_t *buffer);
 /// If `align` is set to a non-zero value, the searching will be aligned
 /// to its value amount of bytes, otherwise it will align the search by
 /// a single byte.
-void ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
+bool ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
                                   const uint8_t *pattern, const uint8_t *mask,
                                   size_t len, size_t align, void *ctx,
                                   CKPatcherCallback callback);
 /// See `ck_patcher_find_callback_ctx`.
-void ck_patcher_find_callback(CKPatcherRange *range, const char *name,
+bool ck_patcher_find_callback(CKPatcherRange *range, const char *name,
                               const uint8_t *pattern, const uint8_t *mask,
                               size_t len, size_t align,
                               CKPatcherCallback callback);
 /// See `ck_patcher_find_callback`.
 /// `replace_off` is the byte offset in the matched pattern
 /// which the `replacement` will be applied on.
-void ck_patcher_find_replace(CKPatcherRange *range, const char *name,
+bool ck_patcher_find_replace(CKPatcherRange *range, const char *name,
                              const uint8_t *pattern, const uint8_t *mask,
                              size_t len, size_t align,
                              const uint8_t *replacement,

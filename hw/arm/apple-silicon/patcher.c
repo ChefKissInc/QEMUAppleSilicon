@@ -21,7 +21,7 @@
 #include "qemu/bswap.h"
 #include "qemu/error-report.h"
 
-void ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
+bool ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
                                   const uint8_t *pattern, const uint8_t *mask,
                                   size_t len, size_t align, void *ctx,
                                   CKPatcherCallback callback)
@@ -39,7 +39,7 @@ void ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
 
     if (range->length < len) {
         error_report("`%s` patch is bigger than `%s`.", name, range->name);
-        return;
+        return false;
     }
 
     if (mask == NULL) {
@@ -54,7 +54,7 @@ void ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
             }
             if (found && callback(ctx, match)) {
                 info_report("`%s` patch applied in `%s`.", name, range->name);
-                return;
+                return true;
             }
         }
     } else {
@@ -73,20 +73,22 @@ void ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
             }
             if (found && callback(ctx, match)) {
                 info_report("`%s` patch applied in `%s`.", name, range->name);
-                return;
+                return true;
             }
         }
     }
     error_report("`%s` patch did not apply in `%s`.", name, range->name);
+
+    return false;
 }
 
-void ck_patcher_find_callback(CKPatcherRange *range, const char *name,
+bool ck_patcher_find_callback(CKPatcherRange *range, const char *name,
                               const uint8_t *pattern, const uint8_t *mask,
                               size_t len, size_t align,
                               CKPatcherCallback callback)
 {
-    ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align, NULL,
-                                 callback);
+    return ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align,
+                                        NULL, callback);
 }
 
 typedef struct {
@@ -114,7 +116,7 @@ static bool ck_patcher_find_replace_callback(void *ctx, uint8_t *buffer)
     return true;
 }
 
-void ck_patcher_find_replace(CKPatcherRange *range, const char *name,
+bool ck_patcher_find_replace(CKPatcherRange *range, const char *name,
                              const uint8_t *pattern, const uint8_t *mask,
                              size_t len, size_t align,
                              const uint8_t *replacement,
@@ -130,8 +132,8 @@ void ck_patcher_find_replace(CKPatcherRange *range, const char *name,
     ctx.offset = replace_off;
     ctx.len = replace_len;
 
-    ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align, &ctx,
-                                 ck_patcher_find_replace_callback);
+    return ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align,
+                                        &ctx, ck_patcher_find_replace_callback);
 }
 
 void *ck_patcher_find_next_insn(void *buffer, uint32_t num, uint32_t insn,
