@@ -569,11 +569,18 @@ static void set_memory_range(AppleDTNode *root, const char *name, uint64_t addr,
 
     child = apple_dt_get_node(root, "chosen/memory-map");
     g_assert_nonnull(child);
+
+    if (addr == 0) {
+        g_assert_cmphex(size, ==, 0);
+        apple_dt_del_prop_named(child, name);
+        return;
+    }
+
     prop = apple_dt_get_prop(child, name);
     g_assert_nonnull(prop);
 
     stq_le_p(prop->data, addr);
-    stq_le_p(prop->data + sizeof(addr), size);
+    stq_le_p(prop->data + sizeof(uint64_t), size);
 }
 
 void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
