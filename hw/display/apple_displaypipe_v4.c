@@ -43,7 +43,7 @@
 #endif
 
 #if 0
-#define ADP_INFO(fmt, ...) fprintf(stderr, fmt "\n", __VA_ARGS__)
+#define ADP_INFO(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 #else
 #define ADP_INFO(fmt, ...) \
     do {                   \
