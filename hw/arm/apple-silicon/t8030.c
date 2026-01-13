@@ -2638,7 +2638,7 @@ static void t8030_init(MachineState *machine)
     apple_dt_set_prop_u32(child, "board-id", t8030->board_id);
     apple_dt_set_prop_u32(child, "certificate-production-status", 1);
     apple_dt_set_prop_u32(child, "certificate-security-mode", 1);
-    apple_dt_set_prop_u32(child, "mix-n-match-prevention-status", 0);
+    apple_dt_set_prop_u32(child, "mix-n-match-prevention-status", 1);
     apple_dt_set_prop_u64(child, "unique-chip-id", t8030->ecid);
 
     // Update the display parameters
