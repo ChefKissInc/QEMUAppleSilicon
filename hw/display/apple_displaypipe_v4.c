@@ -955,11 +955,13 @@ static void adp_v4_update_disp_image_bh(void *opaque)
         g_assert_false(layer_0_gp == layer_1_gp);
 
         layer_0_fmt = adp_v4_gp_fmt_to_pixman(layer_0_gp);
+        g_assert_cmphex(layer_0_fmt, !=, 0);
         layer_0_img = pixman_image_create_bits(
             layer_0_fmt, layer_0_gp->width, layer_0_gp->height,
             (uint32_t *)layer_0_gp->buf, layer_0_gp->stride);
 
         layer_1_fmt = adp_v4_gp_fmt_to_pixman(layer_1_gp);
+        g_assert_cmphex(layer_1_fmt, !=, 0);
         layer_1_img = pixman_image_create_bits(
             layer_1_fmt, layer_1_gp->width, layer_1_gp->height,
             (uint32_t *)layer_1_gp->buf, layer_1_gp->stride);
