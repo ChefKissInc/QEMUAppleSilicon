@@ -23,7 +23,7 @@
 #include "qemu/osdep.h"
 #include "qapi/util.h"
 
-#define USB_TCP_REMOTE_UNIX_DEFAULT ("/tmp/QEMUASUSBRemote")
+#define USB_TCP_REMOTE_UNIX_DEFAULT ("/tmp/InfernoUSBRemote")
 
 typedef enum {
     TCP_REMOTE_CONN_TYPE_UNIX,
