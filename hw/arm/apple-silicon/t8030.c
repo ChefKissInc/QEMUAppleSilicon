@@ -2858,7 +2858,7 @@ static void t8030_class_init(ObjectClass *klass, const void *data)
                                           "USB Connection Port");
     oprop = object_class_property_add_str(
         klass, "model", t8030_get_model_number, t8030_set_model_number);
-    object_property_set_default_str(oprop, "CKQ12");
+    object_property_set_default_str(oprop, "CKI12");
     object_class_property_set_description(klass, "model", "Model Number");
     oprop = object_class_property_add_str(
         klass, "region-info", t8030_get_region_info, t8030_set_region_info);
