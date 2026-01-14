@@ -2873,17 +2873,17 @@ static void t8030_class_init(ObjectClass *klass, const void *data)
     oprop = object_class_property_add_str(klass, "serial-number",
                                           t8030_get_serial_number,
                                           t8030_set_serial_number);
-    object_property_set_default_str(oprop, "CKQEMUAS1122");
+    object_property_set_default_str(oprop, "INFERNO_1122");
     object_class_property_set_description(klass, "serial-number",
                                           "Serial Number");
     oprop = object_class_property_add_str(
         klass, "mlb", t8030_get_mlb_serial_number, t8030_set_mlb_serial_number);
-    object_property_set_default_str(oprop, "CKQEMUASMLB1122");
+    object_property_set_default_str(oprop, "INFERNO_MLB1122");
     object_class_property_set_description(klass, "mlb", "MLB Serial Number");
     oprop = object_class_property_add_str(klass, "regulatory-model",
                                           t8030_get_regulatory_model,
                                           t8030_set_regulatory_model);
-    object_property_set_default_str(oprop, "CKQEMU8030");
+    object_property_set_default_str(oprop, "INFERN8030");
     object_class_property_set_description(klass, "regulatory-model",
                                           "Regulatory Model Number");
     oprop = object_class_property_add(klass, "disp-width", "uint32",
