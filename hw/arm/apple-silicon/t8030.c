@@ -2642,7 +2642,6 @@ static void t8030_init(MachineState *machine)
     apple_dt_set_prop_u64(child, "unique-chip-id", t8030->ecid);
 
     // Update the display parameters
-    apple_dt_set_prop_u32(child, "display-rotation", 0);
     apple_dt_set_prop_u32(child, "display-scale", 2);
 
     child = apple_dt_get_node(t8030->device_tree, "product");
