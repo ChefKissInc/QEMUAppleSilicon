@@ -655,7 +655,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     default:
         error_setg(&error_abort, "Unsupported kernelcache type: 0x%x\n",
                    hdr->file_type);
-        break;
+        g_assert_not_reached();
     }
 
     g_free(cmdline);
@@ -2732,6 +2732,7 @@ static ram_addr_t t8030_fixup_ram_size(ram_addr_t size)
     if (ret > 4 * GiB) {
         error_setg(&error_abort,
                    "Specified RAM size exceeds supported SoC maximum (4 GiB)");
+        g_assert_not_reached();
     }
     return ret;
 }

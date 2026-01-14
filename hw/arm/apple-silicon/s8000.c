@@ -495,7 +495,7 @@ static void s8000_memory_setup(MachineState *machine)
     default:
         error_setg(&error_abort, "Unsupported kernelcache type: 0x%x\n",
                    header->file_type);
-        break;
+        g_assert_not_reached();
     }
 
     g_free(cmdline);
