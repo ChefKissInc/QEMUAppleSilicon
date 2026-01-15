@@ -395,7 +395,7 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
             g_assert_cmpuint(setup_ep->setup_packet.wLength, !=, 0x0);
             // only do a xfercomplete here if returning here
             if (usb_packet_size(p) > setup_ep->setup_packet.wLength || usb_packet_size(p) == 0x0 || desc->actual_length == 0) {
-                fprintf(stderr, "%s: TRBCTL_CONTROL_DATA: edge_case_0: set send_not_ready_control_data=true: setup_ep->setup_packet.wLength == 0x%x usb_packet_size(p) == 0x%" PRIx64 " desc->actual_length == 0x%x\n", __func__, setup_ep->setup_packet.wLength, usb_packet_size(p), desc->actual_length);
+                fprintf(stderr, "%s: TRBCTL_CONTROL_DATA: edge_case_0: set send_not_ready_control_data=true: setup_ep->setup_packet.wLength == 0x%x usb_packet_size(p) == 0x%zu desc->actual_length == 0x%x\n", __func__, setup_ep->setup_packet.wLength, usb_packet_size(p), desc->actual_length);
                 // don't use DEPEVT_STATUS_TRANSFER_ACTIVE
                 setup_ep->send_not_ready_control_data = true;
                 // must use USB_RET_ASYNC
