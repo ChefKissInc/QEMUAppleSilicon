@@ -30,9 +30,8 @@
 #define RETAB (0xD65F0FFF)
 #define PACIBSP (0xD503237F)
 
-// why is there a vaddr/hwaddr mismatch?
-static CKPatcherRange *ck_kp_range_from_va(const char *name, hwaddr base,
-                                           hwaddr size)
+static CKPatcherRange *ck_kp_range_from_va(const char *name, vaddr base,
+                                           vaddr size)
 {
     CKPatcherRange *range = g_new0(CKPatcherRange, 1);
     range->addr = base;
