@@ -23,6 +23,8 @@
 #include "qemu/osdep.h"
 #include "exec/vaddr.h"
 
+#define MOV_W0_0_BYTES 0x00, 0x00, 0x80, 0x52
+
 typedef struct {
     /// Physical or virtual address.
     vaddr addr;
@@ -31,6 +33,9 @@ typedef struct {
     void *ptr;
     const char *name;
 } CKPatcherRange;
+
+CKPatcherRange *ck_patcher_range_from_ptr(const char *name, void *ptr,
+                                          vaddr size);
 
 /// Precondition: `insn` must be masked.
 void *ck_patcher_find_next_insn(void *buffer, uint32_t num, uint32_t insn,

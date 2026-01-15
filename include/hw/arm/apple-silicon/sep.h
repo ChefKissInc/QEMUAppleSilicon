@@ -23,6 +23,7 @@
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/apple-silicon/patcher.h"
 #include "hw/i2c/i2c.h"
 #include "hw/misc/apple-silicon/a7iop/core.h"
 #include "hw/sysbus.h"
@@ -63,9 +64,10 @@ DECLARE_INSTANCE_CHECKER(AppleSSCState, APPLE_SSC, TYPE_APPLE_SSC)
 #define SEP_MMIO_INDEX_AESC (12)
 #define SEP_MMIO_INDEX_PKA (13)
 #define SEP_MMIO_INDEX_PKA_TMM (14)
-#define SEP_MMIO_INDEX_MISC2 (15)
-#define SEP_MMIO_INDEX_PROGRESS (16)
-#define SEP_MMIO_INDEX_BOOT_MONITOR (17)
+#define SEP_MMIO_INDEX_MISC0 (15)
+#define SEP_MMIO_INDEX_MISC2 (16)
+#define SEP_MMIO_INDEX_PROGRESS (17)
+#define SEP_MMIO_INDEX_BOOT_MONITOR (18)
 
 typedef struct {
     AppleSEPState *sep;
@@ -131,6 +133,54 @@ typedef struct {
     AppleSEPState *sep;
     QEMUBH *command_bh;
     QemuMutex lock;
+    uint32_t chip_id;
+    uint32_t status; // 0x4
+    uint32_t command; // 0x8
+    uint32_t interrupt_status; // 0xc
+    uint32_t interrupt_enabled; // 0x10
+    // uint32_t reg_0x14_keywrap_iterations_counter; // 0x14
+    // uint32_t reg_0x18_keydisable; // 0x18
+    // uint32_t seed_bits; // 0x1c
+    // uint32_t seed_bits_lock; // 0x20
+    // union {
+    //     struct {
+    //         uint8_t iv[16]; // 0x40 // IV for enc, IN for dec?
+    //         uint8_t in[16]; // 0x50 // IN for enc, IV for dec?
+    //     };
+    //     struct {
+    //         uint8_t in_dec[16]; // 0x40 // IV for enc, IN for dec?
+    //         uint8_t iv_dec[16]; // 0x50 // IN for enc, IV for dec?
+    //     };
+    //     uint8_t in_full[32]; // 0x40
+    // };
+    // // uint8_t in_t8015[16];      // 0x100
+    // // uint8_t iv_t8015[16];      // 0x110
+    // union {
+    //     struct {
+    //         uint8_t tag_out[16]; // 0x60
+    //         uint8_t out[16]; // 0x70
+    //     };
+    //     uint8_t out_full[32]; // 0x60
+    // };
+    // uint8_t key_256_in[32]; // 0x40 ; for custom key
+    // uint8_t key_t8015_in[16]; // 0x100 ; for custom key
+    // uint8_t key_256_out[32]; // 0x60 ; for custom key
+    // uint8_t key_128_out[16]; // 0x60 ; for custom key
+    // //
+    // uint8_t keywrap_key_uid0[32];
+    // uint8_t keywrap_key_uid1[32];
+    // uint8_t custom_key_index[4][32];
+    // bool custom_key_index_enabled[4];
+    // // put keywrap_uid[01]_enabled here, or else ASAN will complain about
+    // // misalignment.
+    // bool keywrap_uid0_enabled;
+    // bool keywrap_uid1_enabled;
+} AppleAESHState;
+
+typedef struct {
+    AppleSEPState *sep;
+    QEMUBH *command_bh;
+    QemuMutex lock;
     uint32_t command; // 0x0
     uint32_t status0; // 0x4
     uint32_t status_in0; // 0x8
@@ -165,6 +215,8 @@ typedef struct {
 #define KBKDF_KEY_SEED_LENGTH (8)
 #define KBKDF_KEY_KEY_LENGTH (0x20)
 #define KBKDF_KEY_MAX_SLOTS (0x49)
+// 0x100 (0x00 .. 0xff) might be needed for >= iOS 17
+// #define KBKDF_KEY_MAX_SLOTS (0x100)
 #define KBKDF_KEY_KEY_FILE_OFFSET \
     (0x100) // 0x100*4*0x40 // store mac_keys after that
 
@@ -200,8 +252,8 @@ struct AppleSSCState {
     /*< public >*/
     uint32_t req_cur;
     uint32_t resp_cur;
-    uint8_t req_cmd[1024];
-    uint8_t resp_cmd[1024];
+    uint8_t req_cmd[0x100];
+    uint8_t resp_cmd[0x100];
 
     AppleAESSState *aess_state;
     struct ecc_scalar ecc_key_main, ecc_keys[KBKDF_KEY_MAX_SLOTS];
@@ -221,7 +273,8 @@ struct AppleSSCState {
 #define KEY_FCFG_REG_SIZE_S8000 (0x4000) // S8000
 #define KEY_FCFG_REG_SIZE_T8015 (0x10000) // T8015
 #define KEY_FCFG_REG_SIZE_T8020 (0x18000) // T8020
-#define KEY_FCFG_REG_SIZE_T8030 (0x14000) // T8030
+// #define KEY_FCFG_REG_SIZE_T8030 (0x14000) // T8030 ; sepfw module
+#define KEY_FCFG_REG_SIZE_T8030 (0x40000) // T8030 26.2beta2 ; sepfw kernel
 #define MONI_BASE_REG_SIZE (0x40000)
 #define MONI_THRM_REG_SIZE (0x10000)
 #define EISP_BASE_REG_SIZE (0x240000)
@@ -229,11 +282,15 @@ struct AppleSSCState {
 #define AESC_BASE_REG_SIZE (0x4000) // S8000
 #define AESS_BASE_REG_SIZE (0x10000) // T8015/T8030
 #define AESH_BASE_REG_SIZE (0x10000)
+// T8030, but there's no overlap when the size is bigger
+// #define PKA_BASE_REG_SIZE (0x4000)
 #define PKA_BASE_REG_SIZE (0x10000) // T8015/T8030
 #define PKA_TMM_REG_SIZE (0x4000)
+#define MISC0_REG_SIZE (0x4000) // ?
 #define MISC2_REG_SIZE (0x4000) // ?
 #define PROGRESS_REG_SIZE (0x4000) // ?
 #define BOOT_MONITOR_REG_SIZE (0x4000) // ?
+// apple-aes.security.mmio is also called PKA_SECU, but with size 0x8000 instead of 0x4000
 
 struct AppleSEPClass {
     /*< private >*/
@@ -268,6 +325,7 @@ struct AppleSEPState {
     MemoryRegion aesc_base_mr;
     MemoryRegion pka_base_mr;
     MemoryRegion pka_tmm_mr;
+    MemoryRegion misc0_mr;
     MemoryRegion misc2_mr;
     MemoryRegion progress_mr;
     MemoryRegion boot_monitor_mr;
@@ -286,13 +344,15 @@ struct AppleSEPState {
     uint8_t aesc_base_regs[AESC_BASE_REG_SIZE];
     uint8_t pka_base_regs[PKA_BASE_REG_SIZE];
     uint8_t pka_tmm_regs[PKA_TMM_REG_SIZE];
+    uint8_t misc0_regs[MISC0_REG_SIZE];
     uint8_t misc2_regs[MISC2_REG_SIZE];
     uint8_t progress_regs[PROGRESS_REG_SIZE];
-    uint8_t boot_monitor_regs[PROGRESS_REG_SIZE];
+    uint8_t boot_monitor_regs[BOOT_MONITOR_REG_SIZE];
     uint8_t debug_trace_regs[DEBUG_TRACE_SIZE]; // 0x10000
     QEMUTimer *timer;
     AppleTRNGState trng_state;
     AppleAESSState aess_state;
+    AppleAESHState aesh_state;
     ApplePKAState pka_state;
     I2CSlave *nvram;
     AppleSSCState *ssc_state;
@@ -307,8 +367,13 @@ struct AppleSEPState {
     bool pmgr_fuse_changer_bit1_was_set;
     uint8_t key_fcfg_offset_0x14_index;
     uint16_t key_fcfg_offset_0x14_values[5];
+    QEMUTimer *manual_timer;
+    QemuMutex manual_timer_lock;
+    uint32_t manual_timer_hertz;
+    bool manual_timer_enabled;
 };
 
+void ck_sep_seprom_patches(CKPatcherRange *range);
 AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
                                    vaddr base, uint32_t cpu_id, bool modern,
                                    uint32_t chip_id);

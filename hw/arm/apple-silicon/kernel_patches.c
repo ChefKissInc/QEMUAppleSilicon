@@ -25,12 +25,12 @@
 
 #define NOP (0xD503201F)
 #define MOV_W0_0 (0x52800000)
-#define MOV_W0_0_BYTES 0x00, 0x00, 0x80, 0x52
 #define NOP_BYTES 0x1F, 0x20, 0x03, 0xD5
 #define RET (0xD65F03C0)
 #define RETAB (0xD65F0FFF)
 #define PACIBSP (0xD503237F)
 
+// why is there a vaddr/hwaddr mismatch?
 static CKPatcherRange *ck_kp_range_from_va(const char *name, hwaddr base,
                                            hwaddr size)
 {
@@ -190,8 +190,7 @@ static void ck_kp_apfs_patches(CKPatcherRange *range)
         0X00, 0x0A, 0x80, 0x52, // mov w0, 0x50
         0xC0, 0x03, 0x5F, 0xD6, // ret
     };
-    static const uint8_t root_auth_repl[] = { NOP_BYTES, 0x00, 0x00, 0x80,
-                                              0x52 }; // mov w0, #0
+    static const uint8_t root_auth_repl[] = { NOP_BYTES, MOV_W0_0_BYTES };
     ck_patcher_find_replace(range, "bypass root authentication", root_auth,
                             NULL, sizeof(root_auth), sizeof(uint32_t),
                             root_auth_repl, NULL, 0, sizeof(root_auth_repl));

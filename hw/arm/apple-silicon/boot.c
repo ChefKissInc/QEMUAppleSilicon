@@ -154,6 +154,9 @@ static const char *REM_NAMES[] = {
     "baseband\0$",     "baseband-spmi\0$",
     "baseband-vol\0$",
 #endif
+    // doing this won't^H^H^Hwill fix sepfw 17
+    // should also work with 14beta5
+    "Lynx\0$",
 };
 
 static const char *REM_DEV_TYPES[] = {
@@ -538,6 +541,15 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
     apple_dt_set_prop_u32(child, "security-domain", 1);
     apple_dt_set_prop_u32(child, "chip-epoch", 1);
     // apple_dt_set_prop_u32(child, "debug-enabled", 1);
+    // fstab os_env_type:
+    // 0x01: fstab
+    // 0x02: fstab-ephemeral-recovery-data
+    // 0x03: fstab-ephemeral-diag-data
+    // darwinos-security-environment:
+    // 0x04: macos-darwinos-environment
+    // 0x05: embedded-darwinos-environment
+    // 0x06: trusted-darwinos-environment/"PrivateCloudOS detected"
+    apple_dt_set_prop_u32(child, "darwinos-security-environment", 1);
 
     child = apple_dt_get_node(root, "defaults");
     g_assert_nonnull(child);
@@ -588,8 +600,8 @@ void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
 {
     uint8_t *buf;
     QCryptoHashAlgo alg;
-    uint8_t *hash;
-    size_t hash_len;
+    uint8_t *hash = NULL;
+    size_t hash_len = 0;
     AppleDTNode *child;
     const char *crypto_hash_method;
     AppleDTProp *prop;

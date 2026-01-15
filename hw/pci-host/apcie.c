@@ -358,9 +358,10 @@ static uint64_t apple_pcie_root_conf_access(void *opaque, hwaddr addr,
     hwaddr orig_addr = addr;
 
     uint8_t busnum, device, function, devfn;
-    function = addr % 0x8000;
-    function /= 0x1000;
+    function = (addr % 0x8000) / 0x1000;
     device = addr / 0x8000;
+    // function = (addr & 0x7FFF) >> 12;
+    // device = addr >> 15;
     busnum = device / PCI_SLOT_MAX;
     device %= PCI_SLOT_MAX;
     devfn = PCI_DEVFN(device, function);

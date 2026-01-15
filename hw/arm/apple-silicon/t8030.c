@@ -458,6 +458,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     char *seprom;
     gsize fsize;
     CarveoutAllocator *ca;
+    CKPatcherRange *seprom_range;
 
     apple_dt_unfinalise(t8030->device_tree);
 
@@ -498,6 +499,10 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
                        t8030->sep_rom_filename);
             return;
         }
+
+        seprom_range = ck_patcher_range_from_ptr("seprom", seprom, fsize);
+        ck_sep_seprom_patches(seprom_range);
+
         // Apparently needed because of a bug occurring on XNU
         address_space_set(&address_space_memory, 0x300000000ULL, 0,
                           0x8000000ULL, MEMTXATTRS_UNSPECIFIED);
@@ -508,33 +513,6 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
                          true);
 
         g_free(seprom);
-
-#if 1 // for T8030 SEPROM
-        uint64_t value = BIT_ULL(63);
-        uint32_t value32_mov_x0_0 = 0xD2800000; // mov x0, #0x0
-        // _entry: prevent busy-loop (data section):
-        // 240000024: data_242140108 = 0x4 should set
-        // (data_242140108 & 0x8000000000000000) != 0
-        address_space_write(&address_space_memory,
-                            t8030->armio_base + 0x42140108,
-                            MEMTXATTRS_UNSPECIFIED, &value, sizeof(value));
-
-        // memcmp_validstrs30: fake success
-        address_space_write(&address_space_memory, SEPROM_BASE + 0x0963c,
-                            MEMTXATTRS_UNSPECIFIED, &value32_mov_x0_0,
-                            sizeof(value32_mov_x0_0));
-
-        // memcmp_validstrs14: fake success; for nvram bypass?
-        address_space_write(&address_space_memory, SEPROM_BASE + 0x0b574,
-                            MEMTXATTRS_UNSPECIFIED, &value32_mov_x0_0,
-                            sizeof(value32_mov_x0_0));
-
-        // maybe_verify_rsa_signature: return
-        // fake return value
-        address_space_write(&address_space_memory, SEPROM_BASE + 0x11630,
-                            MEMTXATTRS_UNSPECIFIED, &value32_mov_x0_0,
-                            sizeof(value32_mov_x0_0));
-#endif // for T8030 SEPROM
     }
 
     nvram =
@@ -2144,6 +2122,8 @@ static void t8030_create_sep(AppleT8030MachineState *t8030)
                     t8030->armio_base + 0x41100000);
     sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_PKA_TMM,
                     t8030->armio_base + 0x41504000);
+    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC0,
+                    t8030->armio_base + 0x42140000);
     sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC2,
                     t8030->armio_base + 0x410C4000);
     sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_PROGRESS,
@@ -2246,6 +2226,8 @@ static void t8030_create_mt_spi(AppleT8030MachineState *t8030)
     apple_dt_set_prop_null(child, "function-power_ana");
     // is deleting auth-required really necessary for iOS 18.5?
     apple_dt_del_prop_named(child, "auth-required");
+    apple_dt_set_prop_null(child, "force-supported");
+    apple_dt_set_prop_null(child, "maintain-power");
 
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);
@@ -2509,8 +2491,9 @@ static void t8030_init(MachineState *machine)
         // 0x1000000 is too low
         allocate_ram(get_system_memory(), "DRAM_34", 0x340000000ULL,
                      0x2000000ULL, 0);
-        allocate_ram(get_system_memory(), "SEP_UNKN0", 0x242140000ULL, 0x4000,
-                     0);
+        // SEP_UNKN0 is now MISC0
+        // allocate_ram(get_system_memory(), "SEP_UNKN0", 0x242140000ULL, 0x4000,
+        //              0);
         allocate_ram(get_system_memory(), "SEP_UNKN1", 0x242200000ULL, 0x24000,
                      0);
         // for last_jump
@@ -2521,6 +2504,7 @@ static void t8030_init(MachineState *machine)
         allocate_ram(get_system_memory(), "SEP_UNKN12", 0x241240000ULL, 0x40000,
                      0);
         // 0x242400000 is apple-a7iop.SEP.regs
+        // sepfw 26.2beta2 says it's (a7iop) size would be 0x64000
         // stack for 0x340005BF4/SEPFW
         allocate_ram(get_system_memory(), "SEP_UNKN13", 0x24020C000ULL, 0x4000,
                      0);
@@ -2529,6 +2513,15 @@ static void t8030_init(MachineState *machine)
                      0);
         allocate_ram(get_system_memory(), "SEP_UNKN15", 0x240A90000ULL, 0x4000,
                      0);
+        // for sepfw 26.2beta2
+        allocate_ram(get_system_memory(), "SEP_UNKN16", 0x242000000ULL,
+                     0x400000, 0);
+        allocate_ram(get_system_memory(), "SEP_dram_nubs", 0x23df00000ULL,
+                     0x20000, 0);
+        allocate_ram(get_system_memory(), "SEP_dram_nubg", 0x23d000000ULL,
+                     0x4000, 0);
+        // dram_scr address 0x23d2c0000 size 0x8000 inside pmgr-unk-reg-2
+        // dram_pln0 address 0x200000000 size 0x8000, inside amcc
     }
 
     if (t8030->sep_fw_filename != NULL) {

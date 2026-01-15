@@ -349,7 +349,7 @@ static uint64_t base_reg_read(void *opaque, hwaddr addr, unsigned size)
         case REG_DART_PARAMS1: {
             // TODO: added hack against panic
             bool access_region_protection = (s->dart_options & 0x2) != 0;
-            return o->base_reg[addr >> 2] | (access_region_protection << 31);
+            return o->base_reg[addr >> 2] | ((uint32_t)access_region_protection << 31);
         }
         case REG_DART_TLB_OP:
             return qatomic_read(&o->tlb_op);

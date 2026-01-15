@@ -48,10 +48,12 @@
 
 static bool is_interrupt_enabled(AppleA7IOPMailbox *s, uint32_t status)
 {
-    if ((status & 0xF0000) == 0x10000) {
+    if ((status & 0xF0000) == 0x10000 && (s->glb_cfg & KIC_GLB_CFG_EXT_INT_EN) != 0) {
         uint32_t interrupt = status & 0x7F;
+        int interrupt_group = interrupt / 32;
+        // g_assert_cmpuint(interrupt_group, <, 4);
         uint32_t interrupt_enabled =
-            s->interrupts_enabled[interrupt / 32] & (1 << (interrupt % 32));
+            s->interrupts_enabled[interrupt_group] & BIT(interrupt % 32);
         if (interrupt_enabled) {
             return true;
         }
@@ -72,6 +74,7 @@ static bool is_interrupt_enabled(AppleA7IOPMailbox *s, uint32_t status)
             return true;
         }
     } else if (status == IRQ_SEP_TIMER0) {
+        // fprintf(stderr, "%s: IRQ_SEP_TIMER0: status: 0x%x timer0_enabled: 0x%x timer0_masked: 0x%x\n", __func__, status, s->timer0_enabled, s->timer0_masked);
         if ((s->timer0_enabled & REG_KIC_TMR_EN_MASK) == REG_KIC_TMR_EN_MASK &&
             (s->timer0_masked & REG_KIC_TMR_INT_MASK_MASK) == 0) {
             return true;
@@ -144,6 +147,13 @@ void apple_a7iop_mailbox_update_irq_status(AppleA7IOPMailbox *s)
     trace_apple_a7iop_mailbox_update_irq(
         s->role, iop_empty, ap_empty, !iop_nonempty_unmasked,
         !iop_empty_unmasked, !ap_nonempty_unmasked, !ap_empty_unmasked);
+
+
+    // SEP:
+    // 0x65: inbox/IOP overflow
+    // 0x66: inbox/IOP underflow
+    // 0x67: outbox/AP overflow
+    // 0x68: outbox/AP underflow
 
     qemu_set_irq(s->irqs[APPLE_A7IOP_IRQ_IOP_NONEMPTY],
                  (iop_nonempty_unmasked && !iop_empty) || iop_underflow);
@@ -361,6 +371,16 @@ void apple_a7iop_interrupt_status_push(AppleA7IOPMailbox *s, uint32_t status)
 {
     AppleA7IOPInterruptStatusMessage *msg;
 
+#if 1
+    QTAILQ_FOREACH (msg, &s->interrupt_status, entry) {
+        if (msg->status == status) {
+            apple_a7iop_mailbox_update_irq(s);
+            return;
+        }
+    }
+#endif
+    // DON'T TEST FOR interrupts_enabled DURING PUSH!!
+    // and maybe don't push when the status is already in the list
     msg = g_new0(struct AppleA7IOPInterruptStatusMessage, 1);
     msg->status = status;
     QTAILQ_INSERT_TAIL(&s->interrupt_status, msg, entry);
@@ -373,7 +393,7 @@ uint32_t apple_a7iop_interrupt_status_pop(AppleA7IOPMailbox *s)
     AppleA7IOPInterruptStatusMessage *msg, *preferred_msg = NULL;
     uint32_t interrupt_group_msg = 0, interrupt_group_preferred_msg = 0;
 
-    // order should be 0x4, 0x7, 0x1, but 0x4 shouldn't be here at all.
+    // order should be 0x4, 0x7, 0x1, but 0x4 shouldn't be handled here at all.
 
     QTAILQ_FOREACH (msg, &s->interrupt_status, entry) {
         interrupt_group_msg = (msg->status >> 16) & 0x7;
@@ -420,10 +440,11 @@ uint32_t apple_a7iop_mailbox_read_interrupt_status(AppleA7IOPMailbox *s)
         a7iop_mbox->int_mask |= AP_EMPTY;
     } else if ((interrupt_status = apple_a7iop_interrupt_status_pop(s)) != 0) {
         if ((interrupt_status & 0xf0000) == 0x10000) {
-            int interrupt_group = (interrupt_status >> 6) & 0x3ff;
-            g_assert_cmpuint(interrupt_group, <, 4);
-            s->iop_mailbox->interrupts_enabled[interrupt_group] |=
-                (interrupt_status & 0xf);
+            uint32_t interrupt = interrupt_status & 0x7F;
+            int interrupt_group = interrupt / 32;
+            // g_assert_cmpuint(interrupt_group, <, 4);
+            a7iop_mbox->interrupts_enabled[interrupt_group] &=
+                ~(BIT(interrupt % 32));
         } else if (interrupt_status == IRQ_IOP_NONEMPTY) {
             a7iop_mbox->int_mask |= IOP_NONEMPTY;
         } else if (interrupt_status == IRQ_IOP_EMPTY) {
@@ -463,14 +484,16 @@ static void apple_a7iop_gpio_timer0(void *opaque, int n, int level)
     AppleA7IOPMailbox *s = opaque;
     bool val = !!level;
     assert(n == 0);
+    // fprintf(stderr, "%s: level: %d\n", __func__, level);
+    // val can and will be false, keep that in mind. no idea what to do then.
+    // maybe that's qemu's way of saying that the hardware can't keep up, that
+    // it's not confirming the interrupts fast enough.
     if (!val) {
         return;
     }
     QEMU_LOCK_GUARD(&s->lock);
-    if ((s->timer0_enabled & REG_KIC_TMR_EN_MASK) == REG_KIC_TMR_EN_MASK &&
-        (s->timer0_masked & REG_KIC_TMR_INT_MASK_MASK) == 0) {
-        apple_a7iop_interrupt_status_push(s, IRQ_SEP_TIMER0);
-    }
+    // DON'T also do the checks here, only do them in interrupt_status_pop
+    apple_a7iop_interrupt_status_push(s, IRQ_SEP_TIMER0);
 }
 
 static void apple_a7iop_gpio_timer1(void *opaque, int n, int level)
@@ -478,14 +501,16 @@ static void apple_a7iop_gpio_timer1(void *opaque, int n, int level)
     AppleA7IOPMailbox *s = opaque;
     bool val = !!level;
     assert(n == 0);
+    // fprintf(stderr, "%s: level: %d\n", __func__, level);
+    // val can and will be false, keep that in mind. no idea what to do then.
+    // maybe that's qemu's way of saying that the hardware can't keep up, that
+    // it's not confirming the interrupts fast enough.
     if (!val) {
         return;
     }
     QEMU_LOCK_GUARD(&s->lock);
-    if ((s->timer1_enabled & REG_KIC_TMR_EN_MASK) == REG_KIC_TMR_EN_MASK &&
-        (s->timer1_masked & REG_KIC_TMR_INT_MASK_MASK) == 0) {
-        apple_a7iop_interrupt_status_push(s, IRQ_SEP_TIMER1);
-    }
+    // DON'T also do the checks here, only do them in interrupt_status_pop
+    apple_a7iop_interrupt_status_push(s, IRQ_SEP_TIMER1);
 }
 
 AppleA7IOPMailbox *apple_a7iop_mailbox_new(const char *role,
@@ -587,6 +612,7 @@ static void apple_a7iop_mailbox_reset(DeviceState *dev)
     s->iop_empty = 0;
     s->ap_nonempty = 0;
     s->ap_empty = 0;
+    s->glb_cfg = 0;
     s->timer0_enabled = 0;
     s->timer1_enabled = 0;
     s->timer0_masked = 0;
@@ -640,6 +666,7 @@ static const VMStateDescription vmstate_apple_a7iop_mailbox = {
             VMSTATE_BOOL(iop_empty, AppleA7IOPMailbox),
             VMSTATE_BOOL(ap_nonempty, AppleA7IOPMailbox),
             VMSTATE_BOOL(ap_empty, AppleA7IOPMailbox),
+            VMSTATE_UINT32(glb_cfg, AppleA7IOPMailbox),
             VMSTATE_UINT32(timer0_enabled, AppleA7IOPMailbox),
             VMSTATE_UINT32(timer1_enabled, AppleA7IOPMailbox),
             VMSTATE_UINT32(timer0_masked, AppleA7IOPMailbox),

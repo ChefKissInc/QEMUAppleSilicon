@@ -21,6 +21,17 @@
 #include "qemu/bswap.h"
 #include "qemu/error-report.h"
 
+CKPatcherRange *ck_patcher_range_from_ptr(const char *name, void *ptr,
+                                          vaddr size)
+{
+    CKPatcherRange *range = g_new0(CKPatcherRange, 1);
+    range->addr = 0x0;
+    range->length = size;
+    range->ptr = ptr;
+    range->name = name;
+    return range;
+}
+
 bool ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
                                   const uint8_t *pattern, const uint8_t *mask,
                                   size_t len, size_t align, void *ctx,

@@ -40,7 +40,6 @@
 #define REG_CPU_STATUS (0x48)
 #define REG_UNKNOWN_4C (0x4C)
 #define REG_KIC_GLB_CFG (0x80C)
-#define KIC_GLB_CFG_TIMER_EN (1 << 1)
 #define REG_INTERRUPT_STATUS (0x81C) // "akf: READ IRQ %x"
 #define REG_SEP_AKF_DISABLE_INTERRUPT_BASE (0xA00)
 #define REG_SEP_AKF_ENABLE_INTERRUPT_BASE (0xA80)
@@ -57,16 +56,17 @@
 #define KIC_TMR_CFG_FSL_EXTERNAL (2 << 4)
 #define KIC_TMR_CFG_SMD_FIQ (0 << 3)
 #define KIC_TMR_CFG_SMD_IRQ (1 << 3)
+#define KIC_TMR_CFG_EMD_FIQ (0 << 2)
 #define KIC_TMR_CFG_EMD_IRQ (1 << 2)
 #define KIC_TMR_CFG_IMD_FIQ (0 << 1)
 #define KIC_TMR_CFG_IMD_IRQ (1 << 1)
-#define KIC_TMR_CFG_EN (1 << 0)
+#define KIC_TMR_CFG_EN BIT(0)
 #define KIC_TMR_CFG_NMI                                               \
     (KIC_TMR_CFG_FSL_SW | KIC_TMR_CFG_SMD_FIQ | KIC_TMR_CFG_IMD_FIQ | \
      KIC_TMR_CFG_EN)
 #define REG_KIC_TMR_CFG2 (0x10004)
 #define REG_KIC_TMR_STATE_SET1 (0x10020)
-#define KIC_TMR_STATE_SET_SGT (1 << 0)
+#define KIC_TMR_STATE_SET_SGT BIT(0)
 #define REG_KIC_TMR_STATE_SET2 (0x10024)
 #define REG_KIC_GLB_TIME_BASE_LO (0x10030)
 #define REG_KIC_GLB_TIME_BASE_HI (0x10038)
@@ -77,6 +77,11 @@ static void apple_a7iop_v4_reg_write(void *opaque, hwaddr addr,
                                      const uint64_t data, unsigned size)
 {
     AppleA7IOP *s = opaque;
+
+    // qemu_log_mask(LOG_UNIMP,
+    //               "A7IOP(%s): Write to 0x" HWADDR_FMT_plx
+    //               " of value 0x" HWADDR_FMT_plx "\n",
+    //               s->role, addr, data);
 
     switch (addr) {
     case REG_CPU_CTRL:
@@ -101,6 +106,13 @@ static void apple_a7iop_v4_reg_write(void *opaque, hwaddr addr,
         {
             s->iop_mailbox->interrupts_enabled
                 [(addr - REG_SEP_AKF_ENABLE_INTERRUPT_BASE) >> 2] |= data;
+            apple_a7iop_mailbox_update_irq(s->iop_mailbox);
+        }
+        break;
+    case REG_KIC_GLB_CFG:
+        WITH_QEMU_LOCK_GUARD(&s->iop_mailbox->lock)
+        {
+            s->iop_mailbox->glb_cfg = data;
             apple_a7iop_mailbox_update_irq(s->iop_mailbox);
         }
         break;
@@ -178,15 +190,20 @@ static uint64_t apple_a7iop_v4_reg_read(void *opaque, hwaddr addr,
     case REG_SEP_AKF_DISABLE_INTERRUPT_BASE + 0x04: // group 1
     case REG_SEP_AKF_DISABLE_INTERRUPT_BASE + 0x08: // group 2
     case REG_SEP_AKF_DISABLE_INTERRUPT_BASE + 0x0C: // group 3
-        ret = s->iop_mailbox->interrupts_enabled
-                  [(addr - REG_SEP_AKF_DISABLE_INTERRUPT_BASE) >> 2];
+        // shows disabled as 0b1, not enabled!
+        ret = ~(s->iop_mailbox->interrupts_enabled
+                  [(addr - REG_SEP_AKF_DISABLE_INTERRUPT_BASE) >> 2]);
         break;
     case REG_SEP_AKF_ENABLE_INTERRUPT_BASE + 0x00: // group 0
     case REG_SEP_AKF_ENABLE_INTERRUPT_BASE + 0x04: // group 1
     case REG_SEP_AKF_ENABLE_INTERRUPT_BASE + 0x08: // group 2
     case REG_SEP_AKF_ENABLE_INTERRUPT_BASE + 0x0C: // group 3
-        ret = s->iop_mailbox->interrupts_enabled
-                  [(addr - REG_SEP_AKF_ENABLE_INTERRUPT_BASE) >> 2];
+        // shows disabled as 0b1, not enabled!
+        ret = ~(s->iop_mailbox->interrupts_enabled
+                  [(addr - REG_SEP_AKF_ENABLE_INTERRUPT_BASE) >> 2]);
+        break;
+    case REG_KIC_GLB_CFG:
+        ret = s->iop_mailbox->glb_cfg;
         break;
     case REG_INTERRUPT_STATUS: {
         WITH_QEMU_LOCK_GUARD(&s->lock)
@@ -218,6 +235,10 @@ static uint64_t apple_a7iop_v4_reg_read(void *opaque, hwaddr addr,
         break;
     }
     }
+    // qemu_log_mask(LOG_UNIMP,
+    //               "A7IOP(%s): Read from 0x" HWADDR_FMT_plx
+    //               " of value 0x" HWADDR_FMT_plx "\n",
+    //               s->role, addr, ret);
     return ret;
 }
 

@@ -2,6 +2,7 @@
  * Apple A7IOP Mailbox.
  *
  * Copyright (c) 2023-2026 Visual Ehrmanntraut (VisualEhrmanntraut).
+ * Copyright (c) 2023-2026 Christian Inci (chris-pcguy).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -62,6 +63,10 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleA7IOPMailbox, APPLE_A7IOP_MAILBOX)
 // Timer0: phys, Timer1: virt (sepOS >= 16).
 #define IRQ_SEP_TIMER0 0x70001
 #define IRQ_SEP_TIMER1 0x70009
+#define INTERRUPT_SEP_MANUAL_TIMER 0x10008
+
+#define KIC_GLB_CFG_EXT_INT_EN BIT(0)
+#define KIC_GLB_CFG_TIMEBASE_EN BIT(1)
 
 #define REG_KIC_TMR_EN_MASK (BIT(3) | BIT(2) | BIT(1))
 #define REG_KIC_TMR_INT_MASK_MASK BIT(1)
@@ -111,6 +116,7 @@ struct AppleA7IOPMailbox {
     bool iop_empty;
     bool ap_nonempty;
     bool ap_empty;
+    uint32_t glb_cfg;
     uint32_t timer0_enabled;
     uint32_t timer1_enabled;
     uint32_t timer0_masked;

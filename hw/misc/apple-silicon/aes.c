@@ -307,6 +307,9 @@ static bool aes_process_command(AppleAESState *s, AESCommand *cmd)
         }
         qcrypto_cipher_setiv(s->keys[key_ctx].cipher, s->iv[iv_ctx], 16, &errp);
 
+        // qemu_hexdump(stderr, "AP AES: OPCODE_DATA: key", s->keys[key_ctx].key, s->keys[key_ctx].len);
+        // qemu_hexdump(stderr, "AP AES: OPCODE_DATA: iv_in", s->iv[iv_ctx], 16);
+        // qemu_hexdump(stderr, "AP AES: OPCODE_DATA: data_in", buffer, len);
         int res;
         if (s->keys[key_ctx].encrypt) {
             res = qcrypto_cipher_encrypt(s->keys[key_ctx].cipher, buffer,
@@ -318,8 +321,13 @@ static bool aes_process_command(AppleAESState *s, AESCommand *cmd)
         if (res != 0) {
             fprintf(stderr, "AES %scryption failed, res = %s\n",
                     s->keys[key_ctx].encrypt ? "en" : "de", strerror(-res));
+        // } else {
+        //     fprintf(stderr, "AES %scryption success, res = %s\n",
+        //             s->keys[key_ctx].encrypt ? "en" : "de", strerror(-res));
         }
         qcrypto_cipher_getiv(s->keys[key_ctx].cipher, s->iv[iv_ctx], 16, &errp);
+        // qemu_hexdump(stderr, "AP AES: OPCODE_DATA: iv_out", s->iv[iv_ctx], 16);
+        // qemu_hexdump(stderr, "AP AES: OPCODE_DATA: data_out", buffer, len);
         dma_memory_write(&s->dma_as, dest_addr, buffer, len,
                          MEMTXATTRS_UNSPECIFIED);
         break;
