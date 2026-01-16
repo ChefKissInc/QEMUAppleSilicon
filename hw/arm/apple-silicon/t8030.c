@@ -1634,7 +1634,7 @@ static void t8030_create_spmi(AppleT8030MachineState *t8030, const char *name)
 
     sysbus_mmio_map(SYS_BUS_DEVICE(spmi), 0,
                     (t8030->armio_base + reg[2]) &
-                        ~(APPLE_SPMI_MMIO_SIZE - 1U));
+                        ~(APPLE_SPMI_MMIO_SIZE - 1));
 
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);

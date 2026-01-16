@@ -30,7 +30,7 @@
 
 #define TYPE_APPLE_SPMI "apple-spmi"
 OBJECT_DECLARE_TYPE(AppleSPMIState, AppleSPMIClass, APPLE_SPMI)
-#define APPLE_SPMI_MMIO_SIZE (0x4000)
+#define APPLE_SPMI_MMIO_SIZE (0x4000ULL)
 
 typedef struct AppleSPMIClass {
     /*< private >*/
