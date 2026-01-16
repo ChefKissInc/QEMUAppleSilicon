@@ -680,8 +680,7 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     AppleSEPState *sep;
     hwaddr base = (hwaddr)opaque;
 
-    sep =
-        APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
+    sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
 #if 0
     if ((((base + addr) & 0xfffffffb) != 0x10E20020) &&
@@ -806,8 +805,7 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
         t8030_start_cpus(t8030, data);
         return;
     case 0x80C00:
-        sep = APPLE_SEP(
-            object_property_get_link(OBJECT(t8030), "sep", NULL));
+        sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
         if (sep != NULL) {
             if (data & BIT(31)) {
@@ -1634,8 +1632,7 @@ static void t8030_create_spmi(AppleT8030MachineState *t8030, const char *name)
     reg = (uint64_t *)prop->data;
 
     sysbus_mmio_map(SYS_BUS_DEVICE(spmi), 0,
-                    (t8030->armio_base + reg[2]) &
-                        ~(APPLE_SPMI_MMIO_SIZE - 1));
+                    (t8030->armio_base + reg[2]) & ~(APPLE_SPMI_MMIO_SIZE - 1));
 
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);
