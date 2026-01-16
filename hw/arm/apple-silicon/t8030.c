@@ -680,7 +680,7 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     hwaddr base = (hwaddr)opaque;
 
     sep =
-        APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", &error_fatal));
+        APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
 #if 0
     if ((((base + addr) & 0xfffffffb) != 0x10E20020) &&
@@ -806,7 +806,7 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
         return;
     case 0x80C00:
         sep = APPLE_SEP(
-            object_property_get_link(OBJECT(t8030), "sep", &error_fatal));
+            object_property_get_link(OBJECT(t8030), "sep", NULL));
 
         if (sep != NULL) {
             if (data & BIT(31)) {
