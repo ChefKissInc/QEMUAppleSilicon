@@ -473,7 +473,7 @@ static void apple_sio_dma(AppleSIOState *s, AppleSIODMAEndpoint *ep,
     apple_rtkit_send_user_msg(rtk, EP_CONTROL, reply.raw);
 };
 
-static void apple_sio_handle_endpoint(void *opaque, uint32_t ep, uint64_t msg)
+static void apple_sio_handle_endpoint(void *opaque, uint8_t ep, uint64_t msg)
 {
     AppleSIOState *sio = opaque;
     SIOMessage m = { 0 };

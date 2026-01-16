@@ -514,7 +514,7 @@ static MemTxResult apple_aop_ep_recv_packet_locked(
     return MEMTX_OK;
 }
 
-static void apple_aop_ep_handle_message(void *opaque, uint32_t ep, uint64_t msg)
+static void apple_aop_ep_handle_message(void *opaque, uint8_t ep, uint64_t msg)
 {
     AppleAOPEndpoint *s = opaque;
     AppleRTKit *rtk;

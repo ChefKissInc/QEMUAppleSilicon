@@ -268,12 +268,12 @@ static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
     }
 }
 
-static void apple_smc_handle_key_endpoint(void *opaque, const uint32_t ep,
-                                          const uint64_t msg)
+static void apple_smc_handle_key_endpoint(void *opaque, uint8_t ep,
+                                          uint64_t msg)
 {
     AppleRTKit *rtk = opaque;
     AppleSMCState *s = opaque;
-    KeyMessage *kmsg;
+    const KeyMessage *kmsg;
     uint32_t key;
     KeyResponse resp = { 0 };
     SMCKey *key_entry;
@@ -457,7 +457,7 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
 
     apple_rtkit_init(rtk, NULL, "SMC", reg[1], version, &apple_smc_rtkit_ops);
     apple_rtkit_register_user_ep(rtk, kSMCKeyEndpoint, s,
-                                 &apple_smc_handle_key_endpoint);
+                                 apple_smc_handle_key_endpoint);
 
     memory_region_init_io(&s->iomems[APPLE_SMC_MMIO_ASC], OBJECT(dev),
                           &ascv2_core_reg_ops, s,

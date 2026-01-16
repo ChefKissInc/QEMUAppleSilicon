@@ -202,7 +202,7 @@ static void apple_ans_start(void *opaque)
     s->started = true;
 }
 
-static void apple_ans_ep_handler(void *opaque, uint32_t ep, uint64_t msg)
+static void apple_ans_ep_handler(void *opaque, uint8_t ep, uint64_t msg)
 {
     ANS_LOG_MSG(ep, msg);
 }

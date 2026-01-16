@@ -286,7 +286,7 @@ static void apple_rtkit_mgmt_rollcall_v11(AppleRTKit *s)
     apple_a7iop_send_ap(a7iop, msg);
 }
 
-static void apple_rtkit_mgmt_handle_msg(void *opaque, uint32_t ep,
+static void apple_rtkit_mgmt_handle_msg(void *opaque, uint8_t ep,
                                         uint64_t message)
 {
     AppleRTKit *s = opaque;

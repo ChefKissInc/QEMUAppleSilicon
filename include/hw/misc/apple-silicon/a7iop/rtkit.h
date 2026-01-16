@@ -26,7 +26,7 @@
 #define TYPE_APPLE_RTKIT "apple-rtkit"
 OBJECT_DECLARE_TYPE(AppleRTKit, AppleRTKitClass, APPLE_RTKIT)
 
-typedef void AppleRTKitEPHandler(void *opaque, uint32_t ep, uint64_t msg);
+typedef void AppleRTKitEPHandler(void *opaque, uint8_t ep, uint64_t msg);
 
 typedef struct {
     void *opaque;
