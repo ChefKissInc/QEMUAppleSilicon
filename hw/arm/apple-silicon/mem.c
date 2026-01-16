@@ -24,7 +24,10 @@
 #include "qapi/error.h"
 #include "system/memory.h"
 
-hwaddr g_virt_base, g_phys_base, g_virt_slide, g_phys_slide;
+vaddr g_virt_base;
+hwaddr g_phys_base;
+vaddr g_virt_slide;
+hwaddr g_phys_slide;
 
 hwaddr vtop_bases(vaddr va, hwaddr phys_base, vaddr virt_base)
 {

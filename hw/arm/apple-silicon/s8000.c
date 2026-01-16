@@ -228,13 +228,14 @@ static uint64_t get_kaslr_random(void)
 #define L2_GRANULE_MASK (L2_GRANULE - 1)
 
 static void get_kaslr_slides(AppleS8000MachineState *s8000,
-                             hwaddr *phys_slide_out, hwaddr *virt_slide_out)
+                             hwaddr *phys_slide_out, vaddr *virt_slide_out)
 {
     static const size_t slide_granular = (1 << 21);
     static const size_t slide_granular_mask = slide_granular - 1;
     static const size_t slide_virt_max = 0x100 * (2 * 1024 * 1024);
 
-    hwaddr slide_phys, slide_virt;
+    hwaddr slide_phys;
+    vaddr slide_virt;
     size_t random_value = get_kaslr_random();
 
     if (s8000->kaslr_off) {
@@ -294,10 +295,10 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
         apple_boot_load_macho(s8000->kernel, &address_space_memory, memory_map,
                               g_phys_base + g_phys_slide, g_virt_slide);
 
-    info_report("Kernel virtual base: 0x" HWADDR_FMT_plx, g_virt_base);
+    info_report("Kernel virtual base: 0x%016" VADDR_PRIx, g_virt_base);
     info_report("Kernel physical base: 0x" HWADDR_FMT_plx, g_phys_base);
     info_report("Kernel text off: 0x" HWADDR_FMT_plx, info->kern_text_off);
-    info_report("Kernel virtual slide: 0x" HWADDR_FMT_plx, g_virt_slide);
+    info_report("Kernel virtual slide: 0x%016" VADDR_PRIx, g_virt_slide);
     info_report("Kernel physical slide: 0x" HWADDR_FMT_plx, g_phys_slide);
     info_report("Kernel entry point: 0x%016" VADDR_PRIx, info->kern_entry);
 

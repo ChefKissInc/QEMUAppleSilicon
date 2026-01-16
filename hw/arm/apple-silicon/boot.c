@@ -995,9 +995,9 @@ MachoHeader64 *apple_boot_parse_macho(uint8_t *data, uint32_t len)
     uint8_t *phys_base;
     MachoHeader64 *header;
     MachoLoadCommand *cmd;
-    uint64_t text_base;
-    uint64_t kc_base;
-    uint64_t kc_end;
+    vaddr text_base;
+    vaddr kc_base;
+    vaddr kc_end;
     int i;
 
     header = (MachoHeader64 *)data;
@@ -1195,9 +1195,9 @@ static void apple_boot_process_symbols(MachoHeader64 *header, uint64_t slide)
 {
     MachoLoadCommand *cmd;
     uint8_t *data;
-    uint64_t text_base;
-    uint64_t kernel_low;
-    uint64_t kernel_high;
+    vaddr text_base;
+    vaddr kernel_low;
+    vaddr kernel_high;
     uint32_t index;
     void *base;
     MachoSegmentCommand64 *linkedit_seg;
@@ -1297,8 +1297,8 @@ vaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
     MachoLoadCommand *cmd;
     hwaddr pc = 0;
     data = apple_boot_get_macho_buffer(header);
-    uint64_t kc_base;
-    uint64_t kc_end;
+    vaddr kc_base;
+    vaddr kc_end;
     bool is_fileset = header->file_type == MH_FILESET;
     MachoHeader64 *header2 = NULL;
     void *load_from2 = NULL;
@@ -1448,7 +1448,7 @@ vaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
 
 uint8_t *apple_boot_get_macho_buffer(MachoHeader64 *header)
 {
-    uint64_t text_base, kc_base;
+    vaddr text_base, kc_base;
 
     apple_boot_get_kc_bounds(header, &text_base, &kc_base, NULL, NULL, NULL);
 

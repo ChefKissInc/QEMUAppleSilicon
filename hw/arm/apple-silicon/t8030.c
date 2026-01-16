@@ -276,13 +276,14 @@ static uint64_t get_kaslr_random(void)
 #define L2_GRANULE_MASK (L2_GRANULE - 1)
 
 static void get_kaslr_slides(AppleT8030MachineState *t8030,
-                             hwaddr *phys_slide_out, hwaddr *virt_slide_out)
+                             hwaddr *phys_slide_out, vaddr *virt_slide_out)
 {
     static const size_t slide_granular = (1 << 21);
     static const size_t slide_granular_mask = slide_granular - 1;
     static const size_t slide_virt_max = 0x100 * (2 * 1024 * 1024);
 
-    hwaddr slide_phys, slide_virt;
+    hwaddr slide_phys;
+    vaddr slide_virt;
     size_t random_value = get_kaslr_random();
 
     if (t8030->kaslr_off) {
@@ -331,9 +332,9 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
         apple_dt_get_node(t8030->device_tree, "/chosen/memory-map"),
         g_phys_base + g_phys_slide, g_virt_slide);
 
-    info_report("Kernel virtual base: 0x" HWADDR_FMT_plx, g_virt_base);
+    info_report("Kernel virtual base: 0x%016" VADDR_PRIx, g_virt_base);
     info_report("Kernel physical base: 0x" HWADDR_FMT_plx, g_phys_base);
-    info_report("Kernel virtual slide: 0x" HWADDR_FMT_plx, g_virt_slide);
+    info_report("Kernel virtual slide: 0x%016" VADDR_PRIx, g_virt_slide);
     info_report("Kernel physical slide: 0x" HWADDR_FMT_plx, g_phys_slide);
     info_report("Kernel entry point: 0x%016" VADDR_PRIx, info->kern_entry);
 
@@ -2450,7 +2451,7 @@ static void t8030_init_done(Notifier *notifier, void *data)
 static void t8030_init(MachineState *machine)
 {
     AppleT8030MachineState *t8030;
-    uint64_t kc_end;
+    vaddr kc_end;
     uint32_t build_version;
     AppleDTNode *child;
     AppleDTProp *prop;
@@ -2562,8 +2563,8 @@ static void t8030_init(MachineState *machine)
     if (t8030->securerom_filename == NULL) {
         apple_boot_get_kc_bounds(t8030->kernel, NULL, &g_virt_base, &kc_end,
                                  NULL, NULL);
-        info_report("Kernel virtual low: 0x" HWADDR_FMT_plx, g_virt_base);
-        info_report("Kernel virtual high: 0x" HWADDR_FMT_plx, kc_end);
+        info_report("Kernel virtual low: 0x%016" VADDR_PRIx, g_virt_base);
+        info_report("Kernel virtual high: 0x%016" VADDR_PRIx, kc_end);
 
         g_phys_base = (hwaddr)apple_boot_get_macho_buffer(t8030->kernel);
 

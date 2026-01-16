@@ -24,9 +24,9 @@
 #include "exec/vaddr.h"
 #include "hw/arm/apple-silicon/dt.h"
 
-extern hwaddr g_virt_base;
+extern vaddr g_virt_base;
 extern hwaddr g_phys_base;
-extern hwaddr g_virt_slide;
+extern vaddr g_virt_slide;
 extern hwaddr g_phys_slide;
 
 #define ROUND_UP_16K(v) ROUND_UP(v, 0x4000)
