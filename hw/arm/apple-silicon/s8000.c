@@ -102,54 +102,55 @@
 #define GPIO_SPI0_CS 106
 #define GPIO_FORCE_DFU 123
 
-#define SPI0_BASE (0xA080000ull)
+#define SPI0_BASE (0xA080000ULL)
 
 #define SROM_BASE (0x100000000)
 #define SROM_SIZE (512 * KiB)
 
-#define DRAM_BASE (0x800000000ull)
+#define DRAM_BASE (0x800000000ULL)
 #define DRAM_SIZE (2 * GiB)
 
-#define SRAM_BASE (0x180000000ull)
-#define SRAM_SIZE (0x400000ull)
+#define SRAM_BASE (0x180000000ULL)
+#define SRAM_SIZE (0x400000ULL)
 
-#define SEPROM_BASE (0x20D000000ull)
-#define SEPROM_SIZE (0x1000000ull)
+#define SEPROM_BASE (0x20D000000ULL)
+#define SEPROM_SIZE (0x1000000ULL)
 
 // Carveout region 0x2 ; this is the first region
-#define NVME_SART_BASE (DRAM_BASE + 0x7F400000ull)
-#define NVME_SART_SIZE (0xC00000ull)
+#define NVME_SART_BASE (DRAM_BASE + 0x7F400000ULL)
+#define NVME_SART_SIZE (0xC00000ULL)
 
 // regions 0x1/0x7/0xa are in-between, each with a size of 0x4000 bytes.
 
 // Carveout region 0xC
-#define PANIC_SIZE (0x80000ull)
-#define PANIC_BASE (NVME_SART_BASE - PANIC_SIZE - 0xC000ull)
+#define PANIC_SIZE (0x80000ULL)
+#define PANIC_BASE (NVME_SART_BASE - PANIC_SIZE - 0xC000ULL)
 
 // Carveout region 0x50
-#define REGION_50_SIZE (0x18000ull)
+#define REGION_50_SIZE (0x18000ULL)
 #define REGION_50_BASE (PANIC_BASE - REGION_50_SIZE)
 
 // Carveout region 0xE
-#define DISPLAY_SIZE (0x854000ull)
+#define DISPLAY_SIZE (0x854000ULL)
 #define DISPLAY_BASE (REGION_50_BASE - DISPLAY_SIZE)
 
 // Carveout region 0x4
-#define TZ0_SIZE (0x1E00000ull)
+#define TZ0_SIZE (0x1E00000ULL)
 #define TZ0_BASE (DISPLAY_BASE - TZ0_SIZE)
 
 // Carveout region 0x6
-#define TZ1_SIZE (0x80000ull)
+#define TZ1_SIZE (0x80000ULL)
 #define TZ1_BASE (TZ0_BASE - TZ1_SIZE)
 
 // Carveout region 0x18
 #define KERNEL_REGION_BASE DRAM_BASE
-#define KERNEL_REGION_SIZE ((TZ1_BASE + ~KERNEL_REGION_BASE + 0x4000) & -0x4000)
+#define KERNEL_REGION_SIZE \
+    ((TZ1_BASE + ~KERNEL_REGION_BASE + 0x4000ULL) & -0x4000ULL)
 
 static void s8000_start_cpus(MachineState *machine, uint64_t cpu_mask)
 {
     AppleS8000MachineState *s8000 = APPLE_S8000(machine);
-    int i;
+    uint32_t i;
 
     for (i = 0; i < machine->smp.cpus; i++) {
         if ((cpu_mask & BIT_ULL(i)) != 0 &&
@@ -164,7 +165,7 @@ static void s8000_create_s3c_uart(const AppleS8000MachineState *s8000,
 {
     DeviceState *dev;
     hwaddr base;
-    int vector;
+    uint32_t vector;
     AppleDTProp *prop;
     hwaddr *uart_offset;
     AppleDTNode *child;
@@ -256,18 +257,18 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
                                    const char *cmdline)
 {
     MachineState *machine = MACHINE(s8000);
-    hwaddr text_base;
-    hwaddr kc_base;
-    hwaddr kc_end;
-    hwaddr apple_dt_va;
+    vaddr text_base;
+    vaddr kc_base;
+    vaddr kc_end;
+    vaddr apple_dt_va;
     hwaddr top_of_kernel_data_pa;
     hwaddr phys_ptr;
     AppleBootInfo *info = &s8000->boot_info;
     hwaddr prelink_text_base;
     AppleDTNode *memory_map =
         apple_dt_get_node(s8000->device_tree, "/chosen/memory-map");
-    hwaddr tz1_virt_low;
-    hwaddr tz1_virt_high;
+    vaddr tz1_virt_low;
+    vaddr tz1_virt_high;
 
     apple_boot_get_kc_bounds(s8000->kernel, &text_base, &kc_base, &kc_end, NULL,
                              NULL);
@@ -298,7 +299,7 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
     info_report("Kernel text off: 0x" HWADDR_FMT_plx, info->kern_text_off);
     info_report("Kernel virtual slide: 0x" HWADDR_FMT_plx, g_virt_slide);
     info_report("Kernel physical slide: 0x" HWADDR_FMT_plx, g_phys_slide);
-    info_report("Kernel entry point: 0x" HWADDR_FMT_plx, info->kern_entry);
+    info_report("Kernel entry point: 0x%016" VADDR_PRIx, info->kern_entry);
 
     phys_ptr = vtop_static(ROUND_UP_16K(kc_end + g_virt_slide));
 
@@ -343,13 +344,13 @@ static void s8000_load_kernelcache(AppleS8000MachineState *s8000,
 
     apple_boot_get_kc_bounds(s8000->secure_monitor, NULL, &tz1_virt_low,
                              &tz1_virt_high, NULL, NULL);
-    info_report("TrustZone 1 virtual address low: 0x" HWADDR_FMT_plx,
+    info_report("TrustZone 1 virtual address low: 0x%016" VADDR_PRIx,
                 tz1_virt_low);
-    info_report("TrustZone 1 virtual address high: 0x" HWADDR_FMT_plx,
+    info_report("TrustZone 1 virtual address high: 0x%016" VADDR_PRIx,
                 tz1_virt_high);
-    hwaddr tz1_entry = apple_boot_load_macho(
+    vaddr tz1_entry = apple_boot_load_macho(
         s8000->secure_monitor, &address_space_memory, NULL, TZ1_BASE, 0);
-    info_report("TrustZone 1 entry: 0x" HWADDR_FMT_plx, tz1_entry);
+    info_report("TrustZone 1 entry: 0x%016" VADDR_PRIx, tz1_entry);
     hwaddr tz1_boot_args_pa =
         TZ1_BASE + (TZ1_SIZE - sizeof(AppleMonitorBootArgs));
     info_report("TrustZone 1 boot args address: 0x" HWADDR_FMT_plx,
@@ -535,16 +536,16 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
         //     // handle SEP DSEC demotion
         //     if (sep != NULL && sep->pmgr_fuse_changer_bit1_was_set)
         //         current_secure_mode = 0; // SEP DSEC img4 tag demotion active
-        ret |= (current_prod << 0);
-        ret |= (current_secure_mode << 1);
+        ret |= ((uint32_t)current_prod << 0);
+        ret |= ((uint32_t)current_secure_mode << 1);
         ret |= ((security_domain & 3) << 2);
         ret |= ((s8000->board_id & 7) << 4);
         ret |= ((security_epoch & 0x7f) << 9);
         // ret |= (( & ) << );
         return ret;
     case 0x102BC200: // CFG_FUSE0_RAW
-        ret |= (raw_prod << 0);
-        ret |= (raw_secure_mode << 1);
+        ret |= ((uint32_t)raw_prod << 0);
+        ret |= ((uint32_t)raw_secure_mode << 1);
         return ret;
     case 0x102BC080: // ECID_LO
         return s8000->ecid & 0xffffffff; // ECID lower
@@ -576,7 +577,7 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
 {
     MachineState *machine = opaque;
     AppleS8000MachineState *s8000 = opaque;
-    uint32_t value = data;
+    uint32_t value = (uint32_t)data;
 
 #if 0
     qemu_log_mask(LOG_UNIMP,
@@ -623,7 +624,7 @@ static const MemoryRegionOps pmgr_reg_ops = {
 
 static void s8000_cpu_setup(AppleS8000MachineState *s8000)
 {
-    unsigned int i;
+    uint32_t i;
     AppleDTNode *root;
     MachineState *machine = MACHINE(s8000);
     GList *iter;
@@ -658,7 +659,7 @@ static void s8000_cpu_setup(AppleS8000MachineState *s8000)
 
 static void s8000_create_aic(AppleS8000MachineState *s8000)
 {
-    unsigned int i;
+    uint32_t i;
     hwaddr *reg;
     AppleDTProp *prop;
     MachineState *machine = MACHINE(s8000);
@@ -695,7 +696,7 @@ static void s8000_create_aic(AppleS8000MachineState *s8000)
 static void s8000_pmgr_setup(AppleS8000MachineState *s8000)
 {
     uint64_t *reg;
-    int i;
+    uint32_t i;
     char name[32];
     AppleDTProp *prop;
     AppleDTNode *child;
@@ -736,7 +737,7 @@ static void s8000_create_dart(AppleS8000MachineState *s8000, const char *name,
     AppleDARTState *dart = NULL;
     AppleDTProp *prop;
     uint64_t *reg;
-    int i;
+    uint32_t i;
     AppleDTNode *child;
 
     child = apple_dt_get_node(s8000->device_tree, "arm-io");
@@ -789,12 +790,12 @@ static void s8000_create_chestnut(AppleS8000MachineState *s8000)
     i2c = APPLE_I2C(
         object_property_get_link(OBJECT(s8000), "i2c0", &error_fatal));
     i2c_slave_create_simple(i2c->bus, TYPE_APPLE_CHESTNUT,
-                            *(uint32_t *)prop->data);
+                            *(uint8_t *)prop->data);
 }
 
 static void s8000_create_pcie(AppleS8000MachineState *s8000)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -825,7 +826,7 @@ static void s8000_create_pcie(AppleS8000MachineState *s8000)
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);
     ints = (uint32_t *)prop->data;
-    int interrupts_count = prop->len / sizeof(uint32_t);
+    uint32_t interrupts_count = prop->len / sizeof(uint32_t);
 
     for (i = 0; i < interrupts_count; i++) {
         sysbus_connect_irq(pcie, i,
@@ -848,7 +849,7 @@ static void s8000_create_pcie(AppleS8000MachineState *s8000)
 
 static void s8000_create_nvme(AppleS8000MachineState *s8000)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -938,7 +939,7 @@ static void s8000_create_gpio(AppleS8000MachineState *s8000, const char *name)
     AppleDTProp *prop;
     uint64_t *reg;
     uint32_t *ints;
-    int i;
+    uint32_t i;
     AppleDTNode *child = apple_dt_get_node(s8000->device_tree, "arm-io");
 
     child = apple_dt_get_node(child, name);
@@ -970,7 +971,7 @@ static void s8000_create_i2c(AppleS8000MachineState *s8000, const char *name)
     AppleDTProp *prop;
     uint64_t *reg;
     uint32_t *ints;
-    int i;
+    uint32_t i;
     AppleDTNode *child = apple_dt_get_node(s8000->device_tree, "arm-io");
 
     child = apple_dt_get_node(child, name);
@@ -1040,7 +1041,7 @@ static void s8000_create_spi(AppleS8000MachineState *s8000, uint32_t port)
     uint32_t irq;
     uint32_t cs_pin;
 
-    snprintf(name, sizeof(name), "spi%d", port);
+    snprintf(name, sizeof(name), "spi%u", port);
     child = apple_dt_get_node(child, name);
     g_assert_nonnull(child);
 
@@ -1143,7 +1144,7 @@ static void s8000_create_usb(AppleS8000MachineState *s8000)
 
 static void s8000_create_wdt(AppleS8000MachineState *s8000)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -1226,7 +1227,7 @@ static void s8000_create_sep(AppleS8000MachineState *s8000)
     AppleDTProp *prop;
     uint64_t *reg;
     uint32_t *ints;
-    int i;
+    uint32_t i;
 
     child = apple_dt_get_node(s8000->device_tree, "arm-io");
     g_assert_nonnull(child);
@@ -1278,7 +1279,7 @@ static void s8000_create_pmu(AppleS8000MachineState *s8000)
     g_assert_nonnull(prop);
 
     dev = DEVICE(i2c_slave_create_simple(i2c->bus, TYPE_PMU_D2255,
-                                         *(uint32_t *)prop->data));
+                                         *(uint8_t *)prop->data));
 
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);
@@ -1335,7 +1336,7 @@ static void s8000_display_create(AppleS8000MachineState *s8000)
     g_assert_nonnull(prop);
     uint32_t *ints = (uint32_t *)prop->data;
 
-    for (size_t i = 0; i < prop->len / sizeof(uint32_t); i++) {
+    for (uint32_t i = 0; i < prop->len / sizeof(uint32_t); i++) {
         sysbus_connect_irq(sbd, i,
                            qdev_get_gpio_in(DEVICE(s8000->aic), ints[i]));
     }
@@ -1361,7 +1362,7 @@ static void s8000_create_backlight(AppleS8000MachineState *s8000)
     i2c = APPLE_I2C(
         object_property_get_link(OBJECT(s8000), "i2c0", &error_fatal));
     i2c_slave_create_simple(i2c->bus, TYPE_APPLE_LM_BACKLIGHT,
-                            *(uint32_t *)prop->data);
+                            *(uint8_t *)prop->data);
 
     child = apple_dt_get_node(s8000->device_tree, "arm-io/i2c2/lm3539-1");
     g_assert_nonnull(child);
@@ -1371,7 +1372,7 @@ static void s8000_create_backlight(AppleS8000MachineState *s8000)
     i2c = APPLE_I2C(
         object_property_get_link(OBJECT(s8000), "i2c2", &error_fatal));
     i2c_slave_create_simple(i2c->bus, TYPE_APPLE_LM_BACKLIGHT,
-                            *(uint32_t *)prop->data);
+                            *(uint8_t *)prop->data);
 }
 
 static void s8000_cpu_reset(AppleS8000MachineState *s8000)
@@ -1437,7 +1438,8 @@ static void s8000_init(MachineState *machine)
     AppleDTProp *prop;
     hwaddr *ranges;
     uint32_t build_version;
-    uint64_t kc_base, kc_end;
+    vaddr kc_base;
+    vaddr kc_end;
 
     s8000->sys_mem = get_system_memory();
     allocate_ram(s8000->sys_mem, "SROM", SROM_BASE, SROM_SIZE, 0);
@@ -1469,8 +1471,8 @@ static void s8000_init(MachineState *machine)
 
         apple_boot_get_kc_bounds(s8000->kernel, NULL, &kc_base, &kc_end, NULL,
                                  NULL);
-        info_report("Kernel virtual low: 0x" HWADDR_FMT_plx, kc_base);
-        info_report("Kernel virtual high: 0x" HWADDR_FMT_plx, kc_end);
+        info_report("Kernel virtual low: 0x%016" VADDR_PRIx, kc_base);
+        info_report("Kernel virtual high: 0x%016" VADDR_PRIx, kc_end);
 
         g_virt_base = kc_base;
         g_phys_base = (hwaddr)apple_boot_get_macho_buffer(s8000->kernel);
@@ -1616,8 +1618,6 @@ static char *s8000_get_boot_mode(Object *obj, Error **errp)
     case kBootModeExitRecovery:
         return g_strdup("exit_recovery");
     case kBootModeAuto:
-        QEMU_FALLTHROUGH;
-    default:
         return g_strdup("auto");
     }
 }

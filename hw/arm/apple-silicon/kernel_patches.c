@@ -62,6 +62,9 @@ static CKPatcherRange *ck_kp_find_section_range(MachoHeader64 *hdr,
 static MachoHeader64 *ck_kp_find_image_header(MachoHeader64 *hdr,
                                               const char *bundle_id)
 {
+    g_autofree CKPatcherRange *kmod_info_range = NULL;
+    g_autofree CKPatcherRange *kext_info_range = NULL;
+    g_autofree CKPatcherRange *kmod_start_range = NULL;
     uint64_t *info;
     uint64_t *start;
     uint32_t count;
@@ -74,10 +77,10 @@ static MachoHeader64 *ck_kp_find_image_header(MachoHeader64 *hdr,
         return apple_boot_get_fileset_header(hdr, bundle_id);
     }
 
-    g_autofree CKPatcherRange *kmod_info_range =
+    kmod_info_range =
         ck_kp_find_section_range(hdr, "__PRELINK_INFO", "__kmod_info");
     if (kmod_info_range == NULL) {
-        g_autofree CKPatcherRange *kext_info_range =
+        kext_info_range =
             ck_kp_find_section_range(hdr, "__PRELINK_INFO", "__info");
         if (kext_info_range == NULL) {
             error_report("Unsupported XNU.");
@@ -141,7 +144,7 @@ static MachoHeader64 *ck_kp_find_image_header(MachoHeader64 *hdr,
 
         return NULL;
     }
-    g_autofree CKPatcherRange *kmod_start_range =
+    kmod_start_range =
         ck_kp_find_section_range(hdr, "__PRELINK_INFO", "__kmod_start");
     if (kmod_start_range != NULL) {
         info = (uint64_t *)kmod_info_range->ptr;
@@ -263,7 +266,7 @@ static bool ck_kp_tc_callback(void *ctx, uint8_t *buffer)
         stl_le_p(start + 20, (pac ? RETAB : RET));
         return true;
     default:
-        error_report("%s: found unexpected AMFI prototype: %d", __func__,
+        error_report("%s: found unexpected AMFI prototype: %u", __func__,
                      cdhash_param);
         break;
     }

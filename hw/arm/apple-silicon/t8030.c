@@ -191,14 +191,14 @@
 #define FUSE_ENABLED (0xA55AC33C)
 #define FUSE_DISABLED (0xA050C030)
 
-static size_t t8030_real_cpu_count(AppleT8030MachineState *t8030)
+static uint32_t t8030_real_cpu_count(AppleT8030MachineState *t8030)
 {
     return MACHINE(t8030)->smp.cpus - (t8030->sep_fw_filename != NULL);
 }
 
 static void t8030_start_cpus(AppleT8030MachineState *t8030, uint64_t cpu_mask)
 {
-    int i;
+    uint32_t i;
 
     for (i = 0; i < t8030_real_cpu_count(t8030); ++i) {
         if ((cpu_mask & BIT_ULL(i)) != 0) {
@@ -220,7 +220,7 @@ static void t8030_create_s3c_uart(const AppleT8030MachineState *t8030,
     g_assert_cmpuint(port, <, NUM_UARTS);
 
     g_assert_nonnull(child);
-    snprintf(name, sizeof(name), "uart%d", port);
+    snprintf(name, sizeof(name), "uart%u", port);
 
     prop = apple_dt_get_prop(child, "reg");
     g_assert_nonnull(prop);
@@ -305,9 +305,9 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
                                    const char *cmdline, CarveoutAllocator *ca)
 {
     MachineState *machine = MACHINE(t8030);
-    hwaddr kc_base;
-    hwaddr kc_end;
-    hwaddr apple_dt_va;
+    vaddr kc_base;
+    vaddr kc_end;
+    vaddr apple_dt_va;
     hwaddr mem_size;
     hwaddr phys_ptr;
     AppleBootInfo *info = &t8030->boot_info;
@@ -335,7 +335,7 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
     info_report("Kernel physical base: 0x" HWADDR_FMT_plx, g_phys_base);
     info_report("Kernel virtual slide: 0x" HWADDR_FMT_plx, g_virt_slide);
     info_report("Kernel physical slide: 0x" HWADDR_FMT_plx, g_phys_slide);
-    info_report("Kernel entry point: 0x" HWADDR_FMT_plx, info->kern_entry);
+    info_report("Kernel entry point: 0x%016" VADDR_PRIx, info->kern_entry);
 
     phys_ptr = vtop_static(ROUND_UP_16K(kc_end + g_virt_slide));
 
@@ -382,7 +382,7 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
     phys_ptr += info->device_tree_size;
     info_report("Device tree physical base: 0x" HWADDR_FMT_plx,
                 info->device_tree_addr);
-    info_report("Device tree virtual base: 0x" HWADDR_FMT_plx, apple_dt_va);
+    info_report("Device tree virtual base: 0x%016" VADDR_PRIx, apple_dt_va);
     info_report("Device tree size: 0x" HWADDR_FMT_plx, info->device_tree_size);
 
     mem_size = carveout_alloc_finalise(ca);
@@ -402,8 +402,8 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
 }
 
 static void t8030_rtkit_seg_prop_setup(AppleDTNode *child, AppleDTNode *iop_nub,
-                                       hwaddr base, hwaddr text_size,
-                                       hwaddr data_size, bool segr_on_child)
+                                       hwaddr base, uint32_t text_size,
+                                       uint32_t data_size, bool segr_on_child)
 {
     AppleIOPSegmentRange segranges[2] = { 0 };
 
@@ -429,8 +429,8 @@ static void t8030_rtkit_seg_prop_setup(AppleDTNode *child, AppleDTNode *iop_nub,
 
 static void t8030_rtkit_mem_setup(AppleT8030MachineState *t8030,
                                   CarveoutAllocator *ca, const char *name,
-                                  const char *nub_name, hwaddr text_size,
-                                  hwaddr data_size, bool segr_on_child)
+                                  const char *nub_name, uint32_t text_size,
+                                  uint32_t data_size, bool segr_on_child)
 {
     AppleDTNode *child;
     AppleDTNode *iop_nub;
@@ -449,6 +449,7 @@ static void t8030_rtkit_mem_setup(AppleT8030MachineState *t8030,
 
 static void t8030_memory_setup(AppleT8030MachineState *t8030)
 {
+    AppleDTNode *carveout_memory_map;
     MachineState *machine;
     MachoHeader64 *hdr;
     AppleNvramState *nvram;
@@ -462,15 +463,8 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
 
     apple_dt_unfinalise(t8030->device_tree);
 
-    AppleDTNode *carveout_memory_map =
+    carveout_memory_map =
         apple_dt_get_node(t8030->device_tree, "/chosen/carveout-memory-map");
-    if (carveout_memory_map == NULL) {
-        fprintf(stderr,
-                "%s: warning: carveout-memory-map unavailable? iOS 13?\n",
-                __func__);
-        AppleDTNode *chosen = apple_dt_get_node(t8030->device_tree, "chosen");
-        carveout_memory_map = apple_dt_node_new(chosen, "carveout-memory-map");
-    }
 
     machine = MACHINE(t8030);
     info = &t8030->boot_info;
@@ -600,7 +594,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     }
 
     AppleDTNode *pram = apple_dt_get_node(t8030->device_tree, "pram");
-    if (pram) {
+    if (pram != NULL) {
         uint64_t panic_reg[2];
         panic_reg[0] = carveout_alloc_mem(ca, PANIC_SIZE);
         panic_reg[1] = PANIC_SIZE;
@@ -611,7 +605,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     }
 
     AppleDTNode *vram = apple_dt_get_node(t8030->device_tree, "vram");
-    if (vram) {
+    if (vram != NULL) {
         uint64_t vram_reg[2];
         vram_reg[0] = t8030->video_args.base_addr;
         vram_reg[1] = DISPLAY_SIZE;
@@ -729,7 +723,9 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
         return (security_domain & BIT(1)) == 0 ? FUSE_DISABLED : FUSE_ENABLED;
     case 0x3D2BC010: // Current Board ID and Epoch
         sep_bit30_current_value =
-            ((sep == NULL) ? 0 : (sep->pmgr_fuse_changer_bit0_was_set << 30));
+            (sep == NULL ?
+                 0 :
+                 ((uint32_t)sep->pmgr_fuse_changer_bit0_was_set << 30));
         QEMU_FALLTHROUGH;
     case 0x3D2BC410: // Raw Board ID and Epoch, bit 30 should remain unset
         return ((t8030->board_id >> 5) & 0x7) | ((security_epoch & 0x7f) << 5) |
@@ -793,7 +789,7 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
 {
     AppleT8030MachineState *t8030 = opaque;
     AppleSEPState *sep;
-    uint32_t value = data;
+    uint32_t value = (uint32_t)data;
 
     if (addr >= 0x80000 && addr <= 0x8C000) {
         value = (value & 0xF) << 4 | (value & 0xF);
@@ -821,6 +817,8 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
                 apple_a13_set_on(APPLE_A13(sep->cpu));
             }
         }
+        break;
+    default:
         break;
     }
     memcpy(t8030->pmgr_reg + addr, &value, size);
@@ -897,10 +895,10 @@ static const MemoryRegionOps amcc_reg_ops = {
 
 static void t8030_cluster_setup(AppleT8030MachineState *t8030)
 {
-    for (int i = 0; i < A13_MAX_CLUSTER; ++i) {
+    for (uint32_t i = 0; i < A13_MAX_CLUSTER; ++i) {
         char *name = NULL;
 
-        name = g_strdup_printf("cluster%d", i);
+        name = g_strdup_printf("cluster%u", i);
         object_initialize_child(OBJECT(t8030), name, &t8030->clusters[i],
                                 TYPE_APPLE_A13_CLUSTER);
         g_free(name);
@@ -951,7 +949,7 @@ static void t8030_cpu_setup(AppleT8030MachineState *t8030)
 
 static void t8030_create_aic(AppleT8030MachineState *t8030)
 {
-    unsigned int i;
+    uint32_t i;
     hwaddr *reg;
     AppleDTProp *prop;
     AppleDTNode *soc = apple_dt_get_node(t8030->device_tree, "arm-io");
@@ -987,7 +985,7 @@ static void t8030_create_aic(AppleT8030MachineState *t8030)
 static void t8030_pmgr_setup(AppleT8030MachineState *t8030)
 {
     uint64_t *reg;
-    int i;
+    uint32_t i;
     char name[32];
     AppleDTProp *prop;
     AppleDTNode *child = apple_dt_get_node(t8030->device_tree, "arm-io");
@@ -1004,7 +1002,7 @@ static void t8030_pmgr_setup(AppleT8030MachineState *t8030)
     for (i = 0; i < prop->len / 8; i += 2) {
         MemoryRegion *mem = g_new(MemoryRegion, 1);
         if (i > 0) {
-            snprintf(name, 32, "pmgr-unk-reg-%d", i);
+            snprintf(name, 32, "pmgr-unk-reg-%u", i);
             memory_region_init_io(mem, OBJECT(t8030), &pmgr_unk_reg_ops,
                                   (void *)reg[i], name, reg[i + 1]);
         } else {
@@ -1141,7 +1139,7 @@ static void t8030_create_dart(AppleT8030MachineState *t8030, const char *name,
     AppleDTProp *prop;
     uint64_t *reg;
     uint32_t *ints;
-    int i;
+    uint32_t i;
     AppleDTNode *child;
 
     child = apple_dt_get_node(t8030->device_tree, "arm-io");
@@ -1200,7 +1198,7 @@ static void t8030_create_sart(AppleT8030MachineState *t8030)
 
 static void t8030_create_ans(AppleT8030MachineState *t8030)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -1315,7 +1313,7 @@ static void t8030_create_gpio(AppleT8030MachineState *t8030, const char *name)
     AppleDTProp *prop;
     uint64_t *reg;
     uint32_t *ints;
-    int i;
+    uint32_t i;
     AppleDTNode *child = apple_dt_get_node(t8030->device_tree, "arm-io");
 
     child = apple_dt_get_node(child, name);
@@ -1413,7 +1411,7 @@ static void t8030_create_spi(AppleT8030MachineState *t8030, uint32_t port)
     uint32_t irq;
     uint32_t cs_pin;
 
-    snprintf(name, sizeof(name), "spi%d", port);
+    snprintf(name, sizeof(name), "spi%u", port);
     child = apple_dt_get_node(child, name);
     g_assert_nonnull(child);
 
@@ -1523,7 +1521,7 @@ static void t8030_create_usb(AppleT8030MachineState *t8030)
 
 static void t8030_create_wdt(AppleT8030MachineState *t8030)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -1635,7 +1633,8 @@ static void t8030_create_spmi(AppleT8030MachineState *t8030, const char *name)
     reg = (uint64_t *)prop->data;
 
     sysbus_mmio_map(SYS_BUS_DEVICE(spmi), 0,
-                    (t8030->armio_base + reg[2]) & ~(APPLE_SPMI_MMIO_SIZE - 1));
+                    (t8030->armio_base + reg[2]) &
+                        ~(APPLE_SPMI_MMIO_SIZE - 1U));
 
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);
@@ -1721,7 +1720,7 @@ static void t8030_create_baseband_spmi(AppleT8030MachineState *t8030,
 
 static void t8030_create_smc(AppleT8030MachineState *t8030)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -1765,7 +1764,7 @@ static void t8030_create_smc(AppleT8030MachineState *t8030)
 
 static void t8030_create_sio(AppleT8030MachineState *t8030)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -1832,7 +1831,7 @@ static void t8030_create_roswell(AppleT8030MachineState *t8030)
     i2c = APPLE_I2C(
         object_property_get_link(OBJECT(t8030), "i2c3", &error_fatal));
     i2c_slave_create_simple(i2c->bus, TYPE_APPLE_ROSWELL,
-                            *(uint32_t *)prop->data);
+                            *(uint8_t *)prop->data);
 }
 
 static void t8030_create_chestnut(AppleT8030MachineState *t8030)
@@ -1849,12 +1848,12 @@ static void t8030_create_chestnut(AppleT8030MachineState *t8030)
     i2c = APPLE_I2C(
         object_property_get_link(OBJECT(t8030), "i2c2", &error_fatal));
     i2c_slave_create_simple(i2c->bus, TYPE_APPLE_CHESTNUT,
-                            *(uint32_t *)prop->data);
+                            *(uint8_t *)prop->data);
 }
 
 static void t8030_create_pcie(AppleT8030MachineState *t8030)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     // uint64_t *reg;
@@ -2045,7 +2044,7 @@ static void t8030_create_display(AppleT8030MachineState *t8030)
     g_assert_nonnull(prop);
     uint32_t *ints = (uint32_t *)prop->data;
 
-    for (size_t i = 0; i < prop->len / sizeof(uint32_t); ++i) {
+    for (uint32_t i = 0; i < prop->len / sizeof(uint32_t); ++i) {
         sysbus_connect_irq(sbd, i,
                            qdev_get_gpio_in(DEVICE(t8030->aic), ints[i]));
     }
@@ -2135,7 +2134,7 @@ static void t8030_create_sep(AppleT8030MachineState *t8030)
     g_assert_nonnull(prop);
     ints = (uint32_t *)prop->data;
 
-    for (int i = 0; i < prop->len / sizeof(uint32_t); ++i) {
+    for (uint32_t i = 0; i < prop->len / sizeof(uint32_t); ++i) {
         sysbus_connect_irq(SYS_BUS_DEVICE(sep), i,
                            qdev_get_gpio_in(DEVICE(t8030->aic), ints[i]));
     }
@@ -2174,7 +2173,7 @@ static void t8030_create_sep_sim(AppleT8030MachineState *t8030)
     g_assert_nonnull(prop);
     ints = (uint32_t *)prop->data;
 
-    for (int i = 0; i < prop->len / sizeof(uint32_t); ++i) {
+    for (uint32_t i = 0; i < prop->len / sizeof(uint32_t); ++i) {
         sysbus_connect_irq(SYS_BUS_DEVICE(sep), i,
                            qdev_get_gpio_in(DEVICE(t8030->aic), ints[i]));
     }
@@ -2239,7 +2238,7 @@ static void t8030_create_mt_spi(AppleT8030MachineState *t8030)
 
 static void t8030_create_aop(AppleT8030MachineState *t8030)
 {
-    int i;
+    uint32_t i;
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
@@ -2344,7 +2343,7 @@ static void t8030_create_speaker_top(AppleT8030MachineState *t8030)
     i2c = APPLE_I2C(
         object_property_get_link(OBJECT(t8030), "i2c2", &error_fatal));
     i2c_slave_create_simple(i2c->bus, TYPE_APPLE_CS35L27,
-                            *(uint32_t *)prop->data);
+                            *(uint8_t *)prop->data);
 }
 
 static void t8030_create_speaker_bottom(AppleT8030MachineState *t8030)
@@ -2388,9 +2387,9 @@ static void t8030_cpu_reset(AppleT8030MachineState *t8030)
 
         if (t8030->securerom_filename == NULL) {
             if (acpu->cpu_id != A13_MAX_CPU) {
-                object_property_set_uint(OBJECT(cpu), "rvbar",
-                                         t8030->boot_info.kern_entry & ~0xFFF,
-                                         &error_abort);
+                object_property_set_uint(
+                    OBJECT(cpu), "rvbar",
+                    t8030->boot_info.kern_entry & ~0xFFFULL, &error_abort);
                 cpu_reset(cpu);
             }
             if (acpu->cpu_id == 0) {
@@ -2649,7 +2648,7 @@ static void t8030_init(MachineState *machine)
     t8030_cpu_setup(t8030);
     t8030_create_aic(t8030);
 
-    for (int i = 0; i < NUM_UARTS; ++i) {
+    for (uint32_t i = 0; i < NUM_UARTS; ++i) {
         t8030_create_s3c_uart(t8030, i, serial_hd(i));
     }
 
@@ -2698,8 +2697,9 @@ static void t8030_init(MachineState *machine)
         error_setg(&error_abort, "Simulated SEP cannot be used with data "
                                  "encryption at the moment.");
         return;
-#endif
+#else
         t8030_create_sep_sim(t8030);
+#endif
     }
 
     t8030_create_roswell(t8030);

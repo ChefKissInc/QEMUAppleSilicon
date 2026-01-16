@@ -71,7 +71,7 @@ static void dwc3_ep_event(DWC3State *s, int epid,
                           struct dwc3_event_depevt depevt);
 static void dwc3_ep_trb_event(DWC3State *s, int epid, DWC3TRB *trb,
                           struct dwc3_event_depevt depevt);
-static void dwc3_event(DWC3State *s, union dwc3_event event, int v);
+static void dwc3_event(DWC3State *s, union dwc3_event event, uint32_t v);
 static void dwc3_ep_run(DWC3State *s, DWC3Endpoint *ep);
 static void dwc3_ep_run_schedule_update(DWC3State *s, DWC3Endpoint *ep);
 
@@ -91,10 +91,8 @@ static int dwc3_packet_find_epid(DWC3State *s, USBPacket *p)
         case USB_TOKEN_SETUP:
         case USB_TOKEN_OUT:
             return 0;
-            break;
         case USB_TOKEN_IN:
             return 1;
-            break;
         default:
             g_assert_not_reached();
             break;
@@ -113,7 +111,7 @@ static int dwc3_packet_find_epid(DWC3State *s, USBPacket *p)
 static void dwc3_update_irq(DWC3State *s)
 {
     int ip = 0;
-    for (int i = 0; i < s->numintrs; i++) {
+    for (uint32_t i = 0; i < s->numintrs; i++) {
         int level = 1;
         level &= !(s->gevntsiz(i) & GEVNTSIZ_EVNTINTRPTMASK);
         level &= (s->intrs[i].count > 0);
@@ -278,10 +276,10 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
                               bool buserr, int packet_left, int xfer_size,
                               void *buffer)
 {
-    int i = 0;
-    int j = 0;
-    int length = desc->actual_length;
-    int unmap_length = desc->actual_length;
+    uint32_t i = 0;
+    uint32_t j = 0;
+    uint32_t length = desc->actual_length;
+    uint32_t unmap_length = desc->actual_length;
     struct dwc3_event_depevt event = { .endpoint_number = desc->epid };
     USBPacket *next_p = QTAILQ_NEXT(p, queue);
     bool setupPending = (next_p && next_p->pid == USB_TOKEN_SETUP);
@@ -292,7 +290,7 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
     DWC3Endpoint *setup_ep = &s->eps[desc->epid & ~1];
 
     while (j < desc->iov.niov && unmap_length > 0) {
-        int access_len = desc->iov.iov[j].iov_len;
+        size_t access_len = desc->iov.iov[j].iov_len;
         if (access_len > unmap_length) {
             access_len = unmap_length;
         }
@@ -455,7 +453,6 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
                     switch (trb->ctrl & (TRB_CTRL_CHN | TRB_CTRL_LST)) {
                     case TRB_CTRL_LST:
                         goto short_complete;
-                        break;
                     case TRB_CTRL_CHN: {
                         for (j = 0; j < desc->count; j++) {
                             ioc |= (desc->trbs[j].ctrl & TRB_CTRL_IOC) != 0;
@@ -569,10 +566,10 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
 static int dwc3_bd_copy(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p)
 {
     g_autofree void *buffer = NULL;
-    int packet_left = usb_packet_size(p) - p->actual_length;
-    int desc_left = desc->length - desc->actual_length;
-    int actual_xfer = 0;
-    int xfer_size;
+    uint32_t packet_left = usb_packet_size(p) - p->actual_length;
+    uint32_t desc_left = desc->length - desc->actual_length;
+    uint32_t actual_xfer = 0;
+    uint32_t xfer_size;
 
     xfer_size = MIN(packet_left, desc_left);
     // Don't override xfer_size for USB_TOKEN_SETUP here!
@@ -820,7 +817,7 @@ static DWC3Transfer *dwc3_xfer_alloc(DWC3State *s, int epid, dma_addr_t tdaddr)
     return xfer;
 }
 
-static void dwc3_write_event(DWC3State *s, union dwc3_event event, int v)
+static void dwc3_write_event(DWC3State *s, union dwc3_event event, uint32_t v)
 {
     DWC3EventRing *intr = &s->intrs[v];
     dma_addr_t ring_base;
@@ -838,12 +835,12 @@ static void dwc3_write_event(DWC3State *s, union dwc3_event event, int v)
     smp_wmb();
 }
 
-static void dwc3_event(DWC3State *s, union dwc3_event event, int v)
+static void dwc3_event(DWC3State *s, union dwc3_event event, uint32_t v)
 {
     DWC3EventRing *intr;
 
     if (v >= s->numintrs) {
-        qemu_log_mask(LOG_GUEST_ERROR, "%s: ring nr out of range (%d >= %d)\n",
+        qemu_log_mask(LOG_GUEST_ERROR, "%s: ring nr out of range (%u >= %u)\n",
                       __func__, v, s->numintrs);
         return;
     }
@@ -851,7 +848,7 @@ static void dwc3_event(DWC3State *s, union dwc3_event event, int v)
 
     if (intr->count + 1 >= intr->size) {
         qemu_log_mask(LOG_GUEST_ERROR,
-                      "%s: ring nr %d is full. "
+                      "%s: ring nr %u is full. "
                       "Dropping event.\n",
                       __func__, v);
         return;
@@ -860,7 +857,7 @@ static void dwc3_event(DWC3State *s, union dwc3_event event, int v)
         if (event.raw != overflow.raw) {
             dwc3_device_event(s, overflow.devt);
             qemu_log_mask(LOG_GUEST_ERROR,
-                          "%s: ring nr %d is full."
+                          "%s: ring nr %u is full."
                           "Sending event overflow.\n",
                           __func__, v);
         }

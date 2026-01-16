@@ -139,19 +139,30 @@ static const char *KEEP_COMP[] = {
 };
 
 static const char *REM_NAMES[] = {
-    "gfx-asc\0$",      "amfm\0$",
-    "dart-ane\0$",     "dart-avd\0$",
-    "dart-ave\0$",     "dart-isp\0$",
-    "dart-jpeg0\0$",   "dart-jpeg1\0$",
-    "dart-pmp\0$",     "dart-rsm\0$",
-    "dart-scaler\0$",  "dockchannel-uart\0$",
-    "dotara\0$",       "pmp\0$",
-    "stockholm\0$",    "stockholm-spmi\0$",
-    "bluetooth\0$",    "bluetooth-pcie\0$",
-    "wlan\0$",         "smc-ext-charger\0$",
+    "gfx-asc\0$",
+    "amfm\0$",
+    "dart-ane\0$",
+    "dart-avd\0$",
+    "dart-ave\0$",
+    "dart-isp\0$",
+    "dart-jpeg0\0$",
+    "dart-jpeg1\0$",
+    "dart-pmp\0$",
+    "dart-rsm\0$",
+    "dart-scaler\0$",
+    "dockchannel-uart\0$",
+    "dotara\0$",
+    "pmp\0$",
+    "stockholm\0$",
+    "stockholm-spmi\0$",
+    "bluetooth\0$",
+    "bluetooth-pcie\0$",
+    "wlan\0$",
+    "smc-ext-charger\0$",
     "smc-charger\0$",
 #ifndef ENABLE_BASEBAND
-    "baseband\0$",     "baseband-spmi\0$",
+    "baseband\0$",
+    "baseband-spmi\0$",
     "baseband-vol\0$",
 #endif
     // doing this won't^H^H^Hwill fix sepfw 17
@@ -783,10 +794,9 @@ bool apple_boot_contains_boot_arg(const char *boot_args, const char *arg,
 }
 
 void apple_boot_setup_monitor_boot_args(
-    AddressSpace *as, hwaddr addr, hwaddr virt_base, hwaddr phys_base,
-    hwaddr mem_size, hwaddr kern_args, hwaddr kern_entry, hwaddr kern_phys_base,
-    hwaddr kern_phys_slide, hwaddr kern_virt_slide,
-    hwaddr kern_text_section_off)
+    AddressSpace *as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
+    hwaddr mem_size, hwaddr kern_args, vaddr kern_entry, hwaddr kern_phys_base,
+    hwaddr kern_phys_slide, vaddr kern_virt_slide, vaddr kern_text_section_off)
 {
     AppleMonitorBootArgs args = { 0 };
 
@@ -807,8 +817,8 @@ void apple_boot_setup_monitor_boot_args(
 }
 
 static void apple_boot_setup_bootargs_rev2(
-    AddressSpace *as, hwaddr addr, hwaddr virt_base, hwaddr phys_base,
-    hwaddr mem_size, hwaddr kernel_top, hwaddr dtb_va, hwaddr dtb_size,
+    AddressSpace *as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
+    hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va, vaddr dtb_size,
     AppleVideoArgs *video_args, const char *cmdline, hwaddr mem_size_actual)
 {
     AppleKernelBootArgsRev2 args = { 0 };
@@ -836,8 +846,8 @@ static void apple_boot_setup_bootargs_rev2(
 }
 
 static void apple_boot_setup_bootargs_rev3(
-    AddressSpace *as, hwaddr addr, hwaddr virt_base, hwaddr phys_base,
-    hwaddr mem_size, hwaddr kernel_top, hwaddr dtb_va, hwaddr dtb_size,
+    AddressSpace *as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
+    hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va, vaddr dtb_size,
     AppleVideoArgs *video_args, const char *cmdline, hwaddr mem_size_actual)
 {
     AppleKernelBootArgsRev3 args = { 0 };
@@ -862,11 +872,10 @@ static void apple_boot_setup_bootargs_rev3(
 }
 
 void apple_boot_setup_bootargs(uint32_t build_version, AddressSpace *as,
-                               hwaddr addr, hwaddr virt_base, hwaddr phys_base,
-                               hwaddr mem_size, hwaddr kernel_top,
-                               hwaddr dtb_va, hwaddr dtb_size,
-                               AppleVideoArgs *video_args, const char *cmdline,
-                               hwaddr mem_size_actual)
+                               hwaddr addr, vaddr virt_base, hwaddr phys_base,
+                               hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va,
+                               vaddr dtb_size, AppleVideoArgs *video_args,
+                               const char *cmdline, hwaddr mem_size_actual)
 {
     if (BUILD_VERSION_MAJOR(build_version) >= 18) {
         apple_boot_setup_bootargs_rev3(as, addr, virt_base, phys_base, mem_size,
@@ -879,13 +888,13 @@ void apple_boot_setup_bootargs(uint32_t build_version, AddressSpace *as,
     }
 }
 
-void apple_boot_get_kc_bounds(MachoHeader64 *header, uint64_t *text_base,
-                              uint64_t *kc_base, uint64_t *kc_end,
-                              uint64_t *ro_lower, uint64_t *ro_upper)
+void apple_boot_get_kc_bounds(MachoHeader64 *header, vaddr *text_base,
+                              vaddr *kc_base, vaddr *kc_end, vaddr *ro_lower,
+                              vaddr *ro_upper)
 {
     MachoLoadCommand *cmd = (MachoLoadCommand *)(header + 1);
-    uint64_t text_base_cur = -1ULL, kc_base_cur = -1ULL, kc_end_cur = 0,
-             ro_lower_cur = -1ULL, ro_upper_cur = 0;
+    vaddr text_base_cur = -1ULL, kc_base_cur = -1ULL, kc_end_cur = 0,
+          ro_lower_cur = -1ULL, ro_upper_cur = 0;
     unsigned int i;
 
     for (i = 0; i < header->n_cmds;
@@ -1279,9 +1288,9 @@ void apple_boot_allocate_segment_records(AppleDTNode *memory_map,
     }
 }
 
-hwaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
-                             AppleDTNode *memory_map, hwaddr phys_base,
-                             uint64_t virt_slide)
+vaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
+                            AppleDTNode *memory_map, hwaddr phys_base,
+                            vaddr virt_slide)
 {
     uint8_t *data = NULL;
     unsigned int i;
@@ -1519,12 +1528,12 @@ MachoSection64 *apple_boot_get_section(MachoSegmentCommand64 *segment,
     return NULL;
 }
 
-hwaddr apple_boot_fixup_slide_va(hwaddr va)
+vaddr apple_boot_fixup_slide_va(vaddr va)
 {
     return (0xFFFF000000000000 | va) + g_virt_slide;
 }
 
-void *apple_boot_va_to_ptr(hwaddr va)
+void *apple_boot_va_to_ptr(vaddr va)
 {
     return (void *)(apple_boot_fixup_slide_va(va) - g_virt_base + g_phys_base);
 }

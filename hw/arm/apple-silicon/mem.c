@@ -26,7 +26,7 @@
 
 hwaddr g_virt_base, g_phys_base, g_virt_slide, g_phys_slide;
 
-hwaddr vtop_bases(hwaddr va, hwaddr phys_base, hwaddr virt_base)
+hwaddr vtop_bases(vaddr va, hwaddr phys_base, vaddr virt_base)
 {
     g_assert_cmphex(phys_base, !=, 0);
     g_assert_cmphex(virt_base, !=, 0);
@@ -34,7 +34,7 @@ hwaddr vtop_bases(hwaddr va, hwaddr phys_base, hwaddr virt_base)
     return va - virt_base + phys_base;
 }
 
-hwaddr ptov_bases(hwaddr pa, hwaddr phys_base, hwaddr virt_base)
+vaddr ptov_bases(hwaddr pa, hwaddr phys_base, vaddr virt_base)
 {
     g_assert_cmphex(phys_base, !=, 0);
     g_assert_cmphex(virt_base, !=, 0);
@@ -42,17 +42,17 @@ hwaddr ptov_bases(hwaddr pa, hwaddr phys_base, hwaddr virt_base)
     return pa - phys_base + virt_base;
 }
 
-hwaddr vtop_static(hwaddr va)
+hwaddr vtop_static(vaddr va)
 {
     return vtop_bases(va, g_phys_base, g_virt_base);
 }
 
-hwaddr ptov_static(hwaddr pa)
+vaddr ptov_static(hwaddr pa)
 {
     return ptov_bases(pa, g_phys_base, g_virt_base);
 }
 
-hwaddr vtop_slid(hwaddr va)
+hwaddr vtop_slid(vaddr va)
 {
     return vtop_static(va + g_virt_slide);
 }
@@ -79,7 +79,6 @@ CarveoutAllocator *carveout_alloc_new(AppleDTNode *carveout_mmap,
 {
     CarveoutAllocator *ca;
 
-    g_assert_nonnull(carveout_mmap);
     g_assert_cmphex(dram_size, !=, 0);
     g_assert_cmphex(alignment, !=, 0);
 
@@ -94,8 +93,8 @@ CarveoutAllocator *carveout_alloc_new(AppleDTNode *carveout_mmap,
 
 hwaddr carveout_alloc_mem(CarveoutAllocator *ca, hwaddr size)
 {
-    hwaddr data[2];
-    char region_name[32];
+    hwaddr data[2] = { 0 };
+    char region_name[32] = { 0 };
 
     g_assert_cmphex(size, !=, 0);
 
@@ -104,12 +103,14 @@ hwaddr carveout_alloc_mem(CarveoutAllocator *ca, hwaddr size)
     data[0] = ca->end;
     data[1] = size;
 
-    snprintf(region_name, sizeof(region_name), "region-id-%d", ca->cur_id);
-    apple_dt_set_prop(ca->node, region_name, sizeof(data), data);
+    if (ca->node != NULL) {
+        snprintf(region_name, sizeof(region_name), "region-id-%u", ca->cur_id);
+        apple_dt_set_prop(ca->node, region_name, sizeof(data), data);
 
-    ca->cur_id += 1;
-    if (ca->cur_id == 55) { // This is an iBoot profiler region. SKIP!
         ca->cur_id += 1;
+        if (ca->cur_id == 55) { // This is an iBoot profiler region. SKIP!
+            ca->cur_id += 1;
+        }
     }
 
     return ca->end;
