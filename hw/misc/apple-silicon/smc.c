@@ -239,6 +239,7 @@ static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
 
     switch (value) {
     case 'susp':
+    case 'offw':
         qemu_system_shutdown_request(SHUTDOWN_CAUSE_GUEST_SHUTDOWN);
         return SMC_RESULT_SUCCESS;
     case 'rest':
