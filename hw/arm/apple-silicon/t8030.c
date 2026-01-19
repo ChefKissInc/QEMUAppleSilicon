@@ -2372,6 +2372,7 @@ static void t8030_create_buttons(AppleT8030MachineState *t8030)
 static void t8030_cpu_reset(AppleT8030MachineState *t8030)
 {
     CPUState *cpu;
+    ARMCPU *arm_cpu;
     AppleA13State *acpu;
     uint64_t m_lo;
     uint64_t m_hi;
@@ -2380,10 +2381,11 @@ static void t8030_cpu_reset(AppleT8030MachineState *t8030)
     qemu_guest_getrandom(&m_hi, sizeof(m_hi), NULL);
 
     CPU_FOREACH (cpu) {
-        acpu = APPLE_A13(cpu);
+        arm_cpu = container_of(cpu, ARMCPU, parent_obj);
+        acpu = container_of(arm_cpu, AppleA13State, parent_obj);
 
-        qdev_prop_set_uint64(DEVICE(cpu), "pauth-mlo", m_lo);
-        qdev_prop_set_uint64(DEVICE(cpu), "pauth-mhi", m_hi);
+        arm_cpu->m_key_lo = m_lo;
+        arm_cpu->m_key_hi = m_hi;
 
         if (t8030->securerom_filename == NULL) {
             if (acpu->cpu_id != A13_MAX_CPU) {

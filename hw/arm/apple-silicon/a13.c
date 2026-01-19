@@ -127,7 +127,7 @@ bool apple_a13_is_asleep(AppleA13State *acpu)
 
 bool apple_a13_is_off(AppleA13State *acpu)
 {
-    return ARM_CPU(acpu)->power_state == PSCI_OFF;
+    return acpu->parent_obj.power_state == PSCI_OFF;
 }
 
 void apple_a13_set_on(AppleA13State *acpu)
@@ -135,7 +135,7 @@ void apple_a13_set_on(AppleA13State *acpu)
     int ret = QEMU_ARM_POWERCTL_RET_SUCCESS;
 
     if (apple_a13_is_off(acpu)) {
-        ret = arm_set_cpu_on_and_reset(ARM_CPU(acpu)->mp_affinity);
+        ret = arm_set_cpu_on_and_reset(acpu->parent_obj.mp_affinity);
     }
 
     if (ret != QEMU_ARM_POWERCTL_RET_SUCCESS) {
@@ -148,7 +148,7 @@ void apple_a13_reset(AppleA13State *acpu)
     int ret = QEMU_ARM_POWERCTL_RET_SUCCESS;
 
     if (!apple_a13_is_off(acpu)) {
-        ret = arm_reset_cpu(ARM_CPU(acpu)->mp_affinity);
+        ret = arm_reset_cpu(acpu->parent_obj.mp_affinity);
     }
 
     if (ret != QEMU_ARM_POWERCTL_RET_SUCCESS) {
@@ -161,8 +161,8 @@ void apple_a13_set_off(AppleA13State *acpu)
 {
     int ret = QEMU_ARM_POWERCTL_RET_SUCCESS;
 
-    if (ARM_CPU(acpu)->power_state != PSCI_OFF) {
-        ret = arm_set_cpu_off(ARM_CPU(acpu)->mp_affinity);
+    if (acpu->parent_obj.power_state != PSCI_OFF) {
+        ret = arm_set_cpu_off(acpu->parent_obj.mp_affinity);
     }
 
     if (ret != QEMU_ARM_POWERCTL_RET_SUCCESS) {
@@ -187,7 +187,8 @@ static AppleA13Cluster *apple_a13_find_cluster(uint32_t cluster_id)
 static uint64_t apple_a13_cluster_cpreg_read(CPUARMState *env,
                                              const ARMCPRegInfo *ri)
 {
-    AppleA13State *acpu = APPLE_A13(env_archcpu(env));
+    AppleA13State *acpu =
+        container_of(env_archcpu(env), AppleA13State, parent_obj);
     AppleA13Cluster *c = apple_a13_find_cluster(acpu->cluster_id);
 
     if (unlikely(!c)) {
@@ -201,7 +202,8 @@ static void apple_a13_cluster_cpreg_write(CPUARMState *env,
                                           const ARMCPRegInfo *ri,
                                           uint64_t value)
 {
-    AppleA13State *acpu = APPLE_A13(env_archcpu(env));
+    AppleA13State *acpu =
+        container_of(env_archcpu(env), AppleA13State, parent_obj);
     AppleA13Cluster *c = apple_a13_find_cluster(acpu->cluster_id);
 
     if (unlikely(!c)) {
@@ -332,7 +334,8 @@ static void apple_a13_cluster_instance_init(Object *obj)
 static void apple_a13_ipi_rr_local(CPUARMState *env, const ARMCPRegInfo *ri,
                                    uint64_t value)
 {
-    AppleA13State *acpu = APPLE_A13(env_archcpu(env));
+    AppleA13State *acpu =
+        container_of(env_archcpu(env), AppleA13State, parent_obj);
 
     uint32_t phys_id = (value & 0xFF) | (acpu->cluster_id << 8);
     AppleA13Cluster *c = apple_a13_find_cluster(acpu->cluster_id);
@@ -386,7 +389,8 @@ static void apple_a13_ipi_rr_local(CPUARMState *env, const ARMCPRegInfo *ri,
 static void apple_a13_ipi_rr_global(CPUARMState *env, const ARMCPRegInfo *ri,
                                     uint64_t value)
 {
-    AppleA13State *acpu = APPLE_A13(env_archcpu(env));
+    AppleA13State *acpu =
+        container_of(env_archcpu(env), AppleA13State, parent_obj);
     uint32_t cluster_id = (value >> IPI_RR_TARGET_CLUSTER_SHIFT) & 0xFF;
     AppleA13Cluster *c = apple_a13_find_cluster(cluster_id);
 
@@ -445,7 +449,8 @@ static void apple_a13_ipi_rr_global(CPUARMState *env, const ARMCPRegInfo *ri,
 /* Receiving IPI */
 static uint64_t apple_a13_ipi_read_sr(CPUARMState *env, const ARMCPRegInfo *ri)
 {
-    AppleA13State *acpu = APPLE_A13(env_archcpu(env));
+    AppleA13State *acpu =
+        container_of(env_archcpu(env), AppleA13State, parent_obj);
 
     return acpu->ipi_sr;
 }
@@ -454,7 +459,8 @@ static uint64_t apple_a13_ipi_read_sr(CPUARMState *env, const ARMCPRegInfo *ri)
 static void apple_a13_ipi_write_sr(CPUARMState *env, const ARMCPRegInfo *ri,
                                    uint64_t value)
 {
-    AppleA13State *acpu = APPLE_A13(env_archcpu(env));
+    AppleA13State *acpu =
+        container_of(env_archcpu(env), AppleA13State, parent_obj);
     AppleA13Cluster *c = apple_a13_find_cluster(acpu->cluster_id);
     uint64_t src_cpu = IPI_SR_SRC_CPU(value);
 
@@ -609,7 +615,7 @@ static const ARMCPRegInfo apple_a13_cp_reginfo_tcg[] = {
 
 static void apple_a13_add_cpregs(AppleA13State *acpu)
 {
-    ARMCPU *cpu = ARM_CPU(acpu);
+    ARMCPU *cpu = &acpu->parent_obj;
     define_arm_cp_regs(cpu, apple_a13_cp_reginfo_tcg);
     apple_a13_init_gxf(acpu);
 }
@@ -655,13 +661,7 @@ static void apple_a13_reset_hold(Object *obj, ResetType type)
 
 static void apple_a13_instance_init(Object *obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
-
     object_property_set_uint(obj, "cntfrq", 24000000, &error_fatal);
-    object_property_add_uint64_ptr(obj, "pauth-mlo", &cpu->m_key_lo,
-                                   OBJ_PROP_FLAG_READWRITE);
-    object_property_add_uint64_ptr(obj, "pauth-mhi", &cpu->m_key_hi,
-                                   OBJ_PROP_FLAG_READWRITE);
 }
 
 AppleA13State *apple_a13_create(const char *name, uint32_t cpu_id,
@@ -677,7 +677,7 @@ AppleA13State *apple_a13_create(const char *name, uint32_t cpu_id,
     obj = object_new(TYPE_APPLE_A13);
     dev = DEVICE(obj);
     acpu = APPLE_A13(dev);
-    cpu = ARM_CPU(acpu);
+    cpu = &acpu->parent_obj;
 
     dev->id = g_strdup(name);
     acpu->cpu_id = cpu_id;
