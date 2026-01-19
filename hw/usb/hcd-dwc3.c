@@ -1787,8 +1787,8 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
             }
             // async, because we're waiting for data here.
             // Don't return "success" or "nak" here, must return "async"!!
-            // p->status = USB_RET_ASYNC;
-            p->status = USB_RET_NAK;
+            p->status = USB_RET_ASYNC;
+            // p->status = USB_RET_NAK;
             goto complete;
         } else if (setup_ep->last_control_command == TRBCTL_CONTROL_DATA) {
             DPRINTF("%s: ep->xfer == NULL: TRBCTL_CONTROL_DATA\n", __func__);
@@ -1803,18 +1803,20 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
             // needs DEPEVT_STATUS_TRANSFER_ACTIVE? does it really need that, though?
             dwc3_ep_event(s, ep->epid, event);
             // maybe don't use NAK here, or maybe do???
-            // p->status = USB_RET_ASYNC;
-            p->status = USB_RET_NAK;
+            p->status = USB_RET_ASYNC;
+            // p->status = USB_RET_NAK;
             goto complete;
         } else if (setup_ep->last_control_command == TRBCTL_CONTROL_STATUS2) {
             DPRINTF("%s: ep->xfer == NULL: TRBCTL_CONTROL_STATUS2\n", __func__);
             // must set USB_RET_ASYNC ???^H^H^H must use NAK, since ASYNC causes DART faults.
-            p->status = USB_RET_NAK;
+            // p->status = USB_RET_NAK;
+            p->status = USB_RET_SUCCESS;
             goto complete;
         } else if (setup_ep->last_control_command == TRBCTL_CONTROL_STATUS3) {
             DPRINTF("%s: ep->xfer == NULL: TRBCTL_CONTROL_STATUS3\n", __func__);
             // must set USB_RET_ASYNC ???^H^H^H must use NAK, since ASYNC causes DART faults.
-            p->status = USB_RET_NAK;
+            // p->status = USB_RET_NAK;
+            p->status = USB_RET_SUCCESS;
             goto complete;
         }
         DPRINTF("%s: ep->xfer == NULL: ELSE: last_control_command: %d\n", __func__, setup_ep->last_control_command);
@@ -1826,8 +1828,8 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
         struct dwc3_event_depevt event = { 0, ep->epid, DEPEVT_XFERNOTREADY, 0,
                                            0 };
         dwc3_ep_event(s, ep->epid, event);
-        // p->status = USB_RET_ASYNC;
-        p->status = USB_RET_NAK;
+        p->status = USB_RET_ASYNC;
+        // p->status = USB_RET_NAK;
         goto complete;
     } else {
         // else: xfer != NULL == URB_SUBMIT
@@ -1849,8 +1851,8 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
             // Probably don't set |= DEPEVT_STATUS_CONTROL_* here!!
             event.status |= DEPEVT_STATUS_TRANSFER_ACTIVE;
             dwc3_ep_event(s, ep->epid, event);
-            // p->status = USB_RET_ASYNC;
-            p->status = USB_RET_NAK;
+            p->status = USB_RET_ASYNC;
+            // p->status = USB_RET_NAK;
             // using "SUCCESS" will cause the "AppleUSBXDCI" to be used and its debug messages to show, but using "nak" or "async" will make the recovery process continue.
             // must return "success" here?
             // p->status = USB_RET_SUCCESS;
@@ -1965,7 +1967,8 @@ static void dwc3_usb_device_handle_packet(USBDevice *dev, USBPacket *p)
         // qemu_log_mask(LOG_GUEST_ERROR,
         //               "%s: Unable to find ep for nr: %d pid: 0x%x\n",
         //               __func__, p->ep->nr, p->pid);
-        p->status = USB_RET_NAK;
+        // p->status = USB_RET_NAK;
+        p->status = USB_RET_ASYNC;
         goto status_update;
     }
 
@@ -1989,7 +1992,8 @@ static void dwc3_usb_device_handle_packet(USBDevice *dev, USBPacket *p)
 
     if (!(s->dalepena & (1 << epid))) {
         // dwc2 would do ASYNC instead of NAK in this case.
-        p->status = USB_RET_NAK;
+        // p->status = USB_RET_NAK;
+        p->status = USB_RET_ASYNC;
         goto status_update;
     }
 
