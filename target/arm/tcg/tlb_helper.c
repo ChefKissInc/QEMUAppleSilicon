@@ -271,7 +271,7 @@ void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
                                  MMUAccessType access_type,
                                  int mmu_idx, uintptr_t retaddr)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     ARMMMUFaultInfo fi = {};
 
     /* now we have a real cpu fault */
@@ -311,7 +311,7 @@ void arm_cpu_do_transaction_failed(CPUState *cs, hwaddr physaddr,
                                    int mmu_idx, MemTxAttrs attrs,
                                    MemTxResult response, uintptr_t retaddr)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     ARMMMUFaultInfo fi = {};
 
     /* now we have a real cpu fault */
@@ -326,7 +326,7 @@ bool arm_cpu_tlb_fill_align(CPUState *cs, CPUTLBEntryFull *out, vaddr address,
                             MMUAccessType access_type, int mmu_idx,
                             MemOp memop, int size, bool probe, uintptr_t ra)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     GetPhysAddrResult res = {};
     ARMMMUFaultInfo local_fi, *fi;
 
@@ -373,7 +373,7 @@ void arm_cpu_record_sigsegv(CPUState *cs, vaddr addr,
         .type = maperr ? ARMFault_Translation : ARMFault_Permission,
         .level = 3,
     };
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
 
     /*
      * We report both ESR and FAR to signal handlers.
