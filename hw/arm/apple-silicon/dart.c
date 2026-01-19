@@ -127,7 +127,7 @@ typedef struct AppleDARTTLBEntry {
 typedef struct AppleDARTInstance AppleDARTInstance;
 
 typedef struct AppleDARTIOMMUMemoryRegion {
-    IOMMUMemoryRegion parent_obj;
+    IOMMUMemoryRegion iommu;
     AppleDARTInstance *o;
     uint32_t sid;
 } AppleDARTIOMMUMemoryRegion;
@@ -314,8 +314,8 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
                         event.entry.perm = IOMMU_NONE;
                         event.entry.addr_mask = ~(hwaddr)0;
 
-                        memory_region_notify_iommu(
-                            IOMMU_MEMORY_REGION(o->iommus[i]), 0, event);
+                        memory_region_notify_iommu(&o->iommus[i]->iommu, 0,
+                                                   event);
                     }
                 }
 
@@ -349,7 +349,8 @@ static uint64_t base_reg_read(void *opaque, hwaddr addr, unsigned size)
         case REG_DART_PARAMS1: {
             // TODO: added hack against panic
             bool access_region_protection = (s->dart_options & 0x2) != 0;
-            return o->base_reg[addr >> 2] | ((uint32_t)access_region_protection << 31);
+            return o->base_reg[addr >> 2] |
+                   ((uint32_t)access_region_protection << 31);
         }
         case REG_DART_TLB_OP:
             return qatomic_read(&o->tlb_op);
@@ -441,7 +442,8 @@ static int apple_dart_attrs_to_index(IOMMUMemoryRegion *iommu, MemTxAttrs attrs)
 static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
                                           IOMMUAccessFlags flag, int iommu_idx)
 {
-    AppleDARTIOMMUMemoryRegion *iommu = APPLE_DART_IOMMU_MEMORY_REGION(mr);
+    AppleDARTIOMMUMemoryRegion *iommu =
+        container_of(mr, AppleDARTIOMMUMemoryRegion, iommu);
     AppleDARTInstance *o = iommu->o;
     AppleDARTState *s = o->s;
     AppleDARTTLBEntry *tlb_entry = NULL;
@@ -575,12 +577,12 @@ IOMMUMemoryRegion *apple_dart_iommu_mr(AppleDARTState *s, uint32_t sid)
 {
     int i;
 
-    if (sid >= DART_MAX_STREAMS) {
-        return NULL;
-    }
-    for (i = 0; i < s->num_instances; i++) {
-        if (s->instances[i].type == DART_DART) {
-            return IOMMU_MEMORY_REGION(s->instances[i].iommus[sid]);
+    if (sid < DART_MAX_STREAMS) {
+        for (i = 0; i < s->num_instances; i++) {
+            if (s->instances[i].type != DART_DART) {
+                continue;
+            }
+            return &s->instances[i].iommus[sid]->iommu;
         }
     }
     return NULL;
@@ -596,7 +598,7 @@ IOMMUMemoryRegion *apple_dart_instance_iommu_mr(AppleDARTState *s,
         return NULL;
     }
     if (s->instances[instance].type == DART_DART) {
-        return IOMMU_MEMORY_REGION(s->instances[instance].iommus[sid]);
+        return &s->instances[instance].iommus[sid]->iommu;
     }
     return NULL;
 }
