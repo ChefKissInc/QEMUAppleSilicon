@@ -2395,7 +2395,7 @@ static void t8030_cpu_reset(AppleT8030MachineState *t8030)
                 cpu_reset(cpu);
             }
             if (acpu->cpu_id == 0) {
-                arm_set_cpu_on(ARM_CPU(acpu)->mp_affinity,
+                arm_set_cpu_on(arm_cpu->mp_affinity,
                                t8030->boot_info.kern_entry,
                                t8030->boot_info.kern_boot_args_addr, 1, true);
             }
@@ -2406,8 +2406,7 @@ static void t8030_cpu_reset(AppleT8030MachineState *t8030)
                 cpu_reset(cpu);
             }
             if (acpu->cpu_id == 0) {
-                arm_set_cpu_on(ARM_CPU(acpu)->mp_affinity, SROM_BASE, 0, 1,
-                               true);
+                arm_set_cpu_on(arm_cpu->mp_affinity, SROM_BASE, 0, 1, true);
             }
         }
     }
