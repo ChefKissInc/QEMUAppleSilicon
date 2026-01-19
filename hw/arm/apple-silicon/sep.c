@@ -422,6 +422,7 @@ static void enable_trace_buffer(AppleSEPState *s)
         uint32_t phys_module_name; // phys module name like EISP
         uint32_t phys_region_name; // phys region name like BASE
         uint64_t virt_mapping_next; // sepos_virt_mapping_t
+        uint64_t virt_mapping_previous; // sepos_virt_mapping_t.next or
                                         // object_mappings_ios14_t.virt_mapping_next
         uint64_t acl_next; // sepos_acl_t
         uint64_t acl_previous; // sepos_acl_t.next or
