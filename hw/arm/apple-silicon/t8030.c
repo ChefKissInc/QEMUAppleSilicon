@@ -2642,8 +2642,8 @@ static void t8030_init(MachineState *machine)
     child = apple_dt_get_node(t8030->device_tree, "product");
     apple_dt_set_prop_u64(child, "display-corner-radius", 0x100000027);
     apple_dt_set_prop_u32(child, "oled-display", 1);
-    apple_dt_set_prop_str(child, "graphics-featureset-class", "GLES2,0");
-    apple_dt_set_prop_str(child, "graphics-featureset-fallbacks", "GLES2,0");
+    apple_dt_set_prop_str(child, "graphics-featureset-class", "");
+    apple_dt_set_prop_str(child, "graphics-featureset-fallbacks", "");
     apple_dt_set_prop_str(child, "artwork-display-gamut", "sRGB");
     // TODO: PMP
     apple_dt_set_prop_str(t8030->device_tree, "target-type", "fastsim");
