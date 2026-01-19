@@ -8551,7 +8551,7 @@ static void arm_cpu_do_interrupt_aarch32_hyp(CPUState *cs)
      * PSTATE A/I/F masks are set based only on the SCR.EA/IRQ/FIQ values.
      */
     uint32_t addr, mask;
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
 
     switch (cs->exception_index) {
@@ -8630,7 +8630,7 @@ static void arm_cpu_do_interrupt_aarch32_hyp(CPUState *cs)
 
 static void arm_cpu_do_interrupt_aarch32(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
     uint32_t addr;
     uint32_t mask;
@@ -8935,7 +8935,7 @@ static bool syndrome_is_sync_extabt(uint32_t syndrome)
 /* Handle exception entry to a target EL which is using AArch64 */
 static void arm_cpu_do_interrupt_aarch64(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
     unsigned int new_el = env->exception.target_el;
     vaddr addr = env->cp15.vbar_el[new_el];
@@ -9215,7 +9215,7 @@ static void arm_cpu_do_interrupt_aarch64(CPUState *cs)
 #ifdef CONFIG_TCG
 static void tcg_handle_semihosting(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
 
     if (is_a64(env)) {
@@ -9246,7 +9246,7 @@ static void tcg_handle_semihosting(CPUState *cs)
  */
 void arm_cpu_do_interrupt(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
     unsigned int new_el = env->exception.target_el;
 
