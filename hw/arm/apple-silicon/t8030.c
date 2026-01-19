@@ -682,8 +682,6 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     AppleSEPState *sep;
     hwaddr base = (hwaddr)opaque;
 
-    sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
-
 #if 0
     if ((((base + addr) & 0xfffffffb) != 0x10E20020) &&
         (((base + addr) & 0xfffffffb) != 0x11E20020)) {
@@ -712,6 +710,8 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     case 0x3D2BC400: // Raw Production Mode
         return raw_prod ? FUSE_ENABLED : FUSE_DISABLED;
     case 0x3D2BC004: // Current Secure Mode
+        sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
+
         if (sep != NULL && sep->pmgr_fuse_changer_bit1_was_set)
             current_secure_mode = 0; // SEP DSEC img4 tag demotion active
         return current_secure_mode ? FUSE_ENABLED : FUSE_DISABLED;
@@ -724,6 +724,8 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     case 0x3D2BC40C: // Raw Security Domain Bit 1
         return (security_domain & BIT(1)) == 0 ? FUSE_DISABLED : FUSE_ENABLED;
     case 0x3D2BC010: // Current Board ID and Epoch
+        sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
+
         sep_bit30_current_value =
             (sep == NULL ?
                  0 :
