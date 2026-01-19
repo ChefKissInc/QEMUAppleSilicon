@@ -211,20 +211,23 @@ static int dwc3_bd_length(DWC3State *s, dma_addr_t tdaddr)
     }
 }
 
-static void dwc3_bd_map(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p)
+// looks/looked like a bad copy of libhw.c, just with in/out from/to being in reverse.
+int dwc3_bd_map(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p)
 {
     DMADirection dir = (p->pid == USB_TOKEN_IN ? DMA_DIRECTION_TO_DEVICE :
                                                  DMA_DIRECTION_FROM_DEVICE);
     void *mem;
     int i;
-    bool faulted = false;
 
     if (desc->mapped) {
-        return;
+        // this will/would be printed several times
+        // DPRINTF("%s: desc is already mapped: desc->mapped %d\n",
+        //         __func__, desc->mapped);
+        return 0;
     }
     g_assert(!desc->ended);
     desc->dir = dir;
-    for (i = 0; i < desc->sgl.nsg && !faulted; i++) {
+    for (i = 0; i < desc->sgl.nsg; i++) {
         dma_addr_t base = desc->sgl.sg[i].base;
         dma_addr_t len = desc->sgl.sg[i].len;
 
@@ -238,10 +241,9 @@ static void dwc3_bd_map(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p)
                               "%s: !mem: base: 0x%" HWADDR_PRIx
                               " len: 0x%" HWADDR_PRIx "\n",
                               __func__, base, len);
-                faulted = true;
                 s->gbuserraddrlo = base;
                 s->gbuserraddrhi = base >> 32;
-                break;
+                goto err;
             }
             if (xlen > len) {
                 xlen = len;
@@ -253,20 +255,26 @@ static void dwc3_bd_map(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p)
     }
     desc->mapped = true;
     desc->actual_length = 0;
+    return 0;
+
+err:
+    // dwc3_bd_unmap will also get called via dwc3_bd_free in this case.
+    dwc3_bd_unmap(s, desc);
+    return -1;
 }
 
-static void dwc3_bd_unmap(DWC3State *s, DWC3BufferDesc *desc)
+void dwc3_bd_unmap(DWC3State *s, DWC3BufferDesc *desc)
 {
+    // usb_packet_unmap wouldn't do a early return here, but let's do it anyway.
     if (!desc->mapped) {
         return;
     }
     // don't do "ended" assert, because it can be triggered by DEPENDXFER
-    // g_assert(desc->ended);
     desc->mapped = false;
     for (int i = 0; i < desc->iov.niov; i++) {
         if (desc->iov.iov[i].iov_base) {
-            dma_memory_unmap(&s->dma_as, desc->iov.iov[i].iov_base,
-                             desc->iov.iov[i].iov_len, desc->dir, 0);
+            dma_memory_unmap(desc->sgl.as, desc->iov.iov[i].iov_base,
+                             desc->iov.iov[i].iov_len, desc->dir, desc->iov.iov[i].iov_len);
             desc->iov.iov[i].iov_base = 0;
         }
     }
@@ -296,7 +304,7 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
         }
 
         if (desc->iov.iov[j].iov_base) {
-            dma_memory_unmap(&s->dma_as, desc->iov.iov[j].iov_base,
+            dma_memory_unmap(desc->sgl.as, desc->iov.iov[j].iov_base,
                              desc->iov.iov[j].iov_len, desc->dir, access_len);
             desc->iov.iov[j].iov_base = 0;
         }
@@ -346,13 +354,13 @@ static bool dwc3_bd_writeback(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p,
         // unsure if "trb->bp += " is necessary outside of very special circumstances
 #if 1
         g_assert_cmphex(0x10, ==, sizeof(trb->bp) + sizeof(trb->status) + sizeof(trb->ctrl));
-        if (dma_memory_write(&s->dma_as, trb->addr + 0x0, &trb->bp, 0x10, MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
+        if (dma_memory_write(desc->sgl.as, trb->addr + 0x0, &trb->bp, 0x10, MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: dma_memory_write trb->bp/status/ctrl failed\n", __func__);
         }
 #endif
 #if 0
         g_assert_cmphex(0x8, ==, sizeof(trb->status) + sizeof(trb->ctrl));
-        if (dma_memory_write(&s->dma_as, trb->addr + 0x8, &trb->status, 0x8, MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
+        if (dma_memory_write(desc->sgl.as, trb->addr + 0x8, &trb->status, 0x8, MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: dma_memory_write trb->status/ctrl failed\n", __func__);
         }
 #endif
@@ -578,13 +586,15 @@ static int dwc3_bd_copy(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p)
     // desc_left (dwc3) == amtDone before (dwc2)
     // xfer_size (dwc3) == amtDone after (dwc2)
 
-    if (xfer_size) {
-        // maybe do map/unmap even when xfer_size is zero. is this only about speed, or also about correctness?
-        dwc3_bd_map(s, desc, p);
-
-        buffer = g_malloc0(xfer_size);
-        g_assert_nonnull(buffer);
+    // maybe do map/unmap even when xfer_size is zero. is this only about speed, or also about correctness?
+    if (dwc3_bd_map(s, desc, p)) {
+        // do dwc3_bd_free at the caller instead
+        return -1;
     }
+
+    // depend on a non-null pointer, even if xfer_size is zero.
+    buffer = g_malloc0(MAX(xfer_size, 1));
+    g_assert_nonnull(buffer);
     if (p->pid == USB_TOKEN_IN) {
 #if 1
         DPRINTF("%s IN Transfer 0x%x on EP %d to 0x" HWADDR_FMT_plx "\n",
@@ -646,14 +656,12 @@ static int dwc3_bd_copy(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p)
         buserr = actual_xfer < xfer_size;
     }
     dwc3_bd_writeback(s, desc, p, buserr, packet_left, xfer_size, buffer);
-    if (xfer_size) {
-        // Don't do dwc3_bd_unmap for the if_0 case.
-        dwc3_bd_unmap(s, desc);
-    }
+    // Don't do dwc3_bd_unmap for the if_0 case.
+    dwc3_bd_unmap(s, desc);
     return xfer_size;
 }
 
-static void dwc3_bd_free(DWC3State *s, DWC3BufferDesc *desc)
+void dwc3_bd_free(DWC3State *s, DWC3BufferDesc *desc)
 {
     dwc3_bd_unmap(s, desc);
     g_free(desc->trbs);
@@ -710,7 +718,7 @@ static void dwc3_td_fetch(DWC3State *s, DWC3Transfer *xfer, dma_addr_t tdaddr)
         // having the insert before the loop doesn't seem to trigger the multi-buffer-assert, but it'll cause entering the multi-buffer-loop even for single-buffer tranfers.
 
         do {
-            if (dma_memory_read(&s->dma_as, tdaddr, &trb, sizeof(trb),
+            if (dma_memory_read(desc->sgl.as, tdaddr, &trb, sizeof(trb),
                                 MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
                 qemu_log_mask(LOG_GUEST_ERROR, "%s: failed to read trb\n",
                             __func__);
@@ -1854,8 +1862,9 @@ static void dwc3_process_packet(DWC3State *s, DWC3Endpoint *ep, USBPacket *p)
             DPRINTF("%s: xfer != NULL: desc != NULL\n", __func__);
         }
 
-        dwc3_bd_copy(s, desc, p);
-        if (desc->ended) {
+        // can either return xfer_size, which also can be zero, or return -1
+        int xfer_size = dwc3_bd_copy(s, desc, p);
+        if (desc->ended || xfer_size == -1) {
             QTAILQ_REMOVE(&xfer->buffers, desc, queue);
             xfer->count--;
             dwc3_bd_free(s, desc);

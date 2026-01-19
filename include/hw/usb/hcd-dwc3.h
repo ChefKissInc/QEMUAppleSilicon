@@ -208,4 +208,8 @@ OBJECT_DECLARE_TYPE(DWC3DeviceState, USBDeviceClass, DWC3_USB_DEVICE)
 #define TYPE_DWC3_USB "dwc3-usb"
 OBJECT_DECLARE_TYPE(DWC3State, DWC3Class, DWC3_USB)
 
+int dwc3_bd_map(DWC3State *s, DWC3BufferDesc *desc, USBPacket *p);
+void dwc3_bd_unmap(DWC3State *s, DWC3BufferDesc *desc);
+void dwc3_bd_free(DWC3State *s, DWC3BufferDesc *desc);
+
 #endif
