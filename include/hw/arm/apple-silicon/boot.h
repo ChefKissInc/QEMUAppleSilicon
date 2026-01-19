@@ -339,7 +339,6 @@ typedef struct {
     uint32_t nvram_size;
     char *ticket_data;
     gsize ticket_length;
-    uint8_t boot_nonce_hash[XNU_BNCH_SIZE];
 } AppleBootInfo;
 
 MachoHeader64 *apple_boot_load_kernel(const char *filename,

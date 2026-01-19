@@ -525,6 +525,10 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
 {
     AppleDTNode *child;
     AppleDTProp *prop;
+    uint8_t *boot_nonce_data;
+    size_t boot_nonce_len;
+    uint8_t *hash = NULL;
+    size_t hash_len = 0;
 
     g_assert_cmphex(info->nvram_size, <=, XNU_MAX_NVRAM_SIZE);
 
@@ -536,6 +540,12 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
     prop = apple_dt_get_prop(child, "random-seed");
     g_assert_nonnull(prop);
     qemu_guest_getrandom_nofail(prop->data, prop->len);
+
+    prop = apple_dt_get_prop(child, "boot-nonce");
+    g_assert_nonnull(prop);
+    boot_nonce_data = prop->data;
+    boot_nonce_len = prop->len;
+    qemu_guest_getrandom_nofail(boot_nonce_data, boot_nonce_len);
 
     apple_dt_set_prop_u64(child, "dram-base", info->dram_base);
     apple_dt_set_prop_u64(child, "dram-size", info->dram_size);
@@ -552,6 +562,7 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
     apple_dt_set_prop_u32(child, "security-domain", 1);
     apple_dt_set_prop_u32(child, "chip-epoch", 1);
     // apple_dt_set_prop_u32(child, "debug-enabled", 1);
+
     // fstab os_env_type:
     // 0x01: fstab
     // 0x02: fstab-ephemeral-recovery-data
@@ -569,8 +580,15 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
     apple_dt_set_prop_u32(child, "insecure_hpr", 1);
 
     child = apple_dt_get_node(root, "chosen/manifest-properties");
-    apple_dt_set_prop(child, "BNCH", sizeof(info->boot_nonce_hash),
-                      info->boot_nonce_hash);
+    if (qcrypto_hash_bytes(QCRYPTO_HASH_ALGO_SHA256, prop->data, prop->len,
+                           &hash, &hash_len, &error_fatal) >= 0) {
+        apple_dt_set_prop(child, "BNCH", hash_len, hash);
+        g_free(hash);
+        hash = NULL;
+        hash_len = 0;
+    } else {
+        return;
+    }
 
     child = apple_dt_get_node(root, "product");
     g_assert_nonnull(child);
@@ -616,7 +634,6 @@ void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
     AppleDTNode *child;
     const char *crypto_hash_method;
     AppleDTProp *prop;
-    Error *err;
 
     set_memory_range(root, "RAMDisk", info->ramdisk_addr, info->ramdisk_size);
     set_memory_range(root, "TrustCache", info->trustcache_addr,
@@ -627,6 +644,7 @@ void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
 
     if (info->ticket_data != NULL && info->ticket_length != 0) {
         child = apple_dt_get_node(root, "chosen");
+        g_assert_nonnull(child);
 
         crypto_hash_method = apple_dt_get_prop_str_or(
             child, "crypto-hash-method", "sha1", &error_fatal);
@@ -642,12 +660,14 @@ void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
         g_assert_nonnull(prop);
 
         if (qcrypto_hash_bytes(alg, info->ticket_data, info->ticket_length,
-                               &hash, &hash_len, &err) >= 0) {
+                               &hash, &hash_len, &error_fatal) >= 0) {
             g_assert_cmpuint(hash_len, ==, prop->len);
             memcpy(prop->data, hash, hash_len);
             g_free(hash);
+            hash = NULL;
+            hash_len = 0;
         } else {
-            error_report_err(err);
+            return;
         }
     }
 
