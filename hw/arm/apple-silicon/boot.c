@@ -535,8 +535,6 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
     child = apple_dt_get_node(root, "chosen");
     g_assert_nonnull(child);
 
-    apple_dt_set_prop_u32(child, "image4-allow-magazine-updates", 1);
-
     prop = apple_dt_get_prop(child, "random-seed");
     g_assert_nonnull(prop);
     qemu_guest_getrandom_nofail(prop->data, prop->len);
