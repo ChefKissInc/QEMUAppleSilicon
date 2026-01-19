@@ -595,7 +595,7 @@ static int nvme_addr_read(NvmeCtrl *n, hwaddr addr, void *buf, int size)
         return 0;
     }
 
-    return pci_dma_read(PCI_DEVICE(n), addr, buf, size);
+    return pci_dma_read(&n->parent_obj, addr, buf, size);
 }
 
 static int nvme_addr_write(NvmeCtrl *n, hwaddr addr, const void *buf, int size)
@@ -615,7 +615,7 @@ static int nvme_addr_write(NvmeCtrl *n, hwaddr addr, const void *buf, int size)
         return 0;
     }
 
-    return pci_dma_write(PCI_DEVICE(n), addr, buf, size);
+    return pci_dma_write(&n->parent_obj, addr, buf, size);
 }
 
 static bool nvme_nsid_valid(NvmeCtrl *n, uint32_t nsid)
@@ -660,7 +660,7 @@ static uint8_t nvme_sq_empty(NvmeSQueue *sq)
 
 static void nvme_irq_check(NvmeCtrl *n)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
     uint32_t intms = ldl_le_p(&n->bar.intms);
 
     if (msix_enabled(pci)) {
@@ -681,7 +681,7 @@ static void nvme_irq_check(NvmeCtrl *n)
 
 static void nvme_irq_assert(NvmeCtrl *n, NvmeCQueue *cq)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
 
     if (cq->irq_enabled) {
         if (msix_enabled(pci)) {
@@ -701,7 +701,7 @@ static void nvme_irq_assert(NvmeCtrl *n, NvmeCQueue *cq)
 static void nvme_irq_deassert(NvmeCtrl *n, NvmeCQueue *cq)
 {
     if (cq->irq_enabled) {
-        if (msix_enabled(PCI_DEVICE(n))) {
+        if (msix_enabled(&n->parent_obj)) {
             return;
         } else {
             assert(cq->vector < 32);
@@ -725,7 +725,7 @@ static void nvme_req_clear(NvmeRequest *req)
 static inline void nvme_sg_init(NvmeCtrl *n, NvmeSg *sg, bool dma)
 {
     if (dma) {
-        pci_dma_sglist_init(&sg->qsg, PCI_DEVICE(n), 0);
+        pci_dma_sglist_init(&sg->qsg, &n->parent_obj, 0);
         sg->flags = NVME_SG_DMA;
     } else {
         qemu_iovec_init(&sg->iov, 0);
@@ -1491,13 +1491,13 @@ static void nvme_update_cq_eventidx(const NvmeCQueue *cq)
 {
     trace_pci_nvme_update_cq_eventidx(cq->cqid, cq->head);
 
-    stl_le_pci_dma(PCI_DEVICE(cq->ctrl), cq->ei_addr, cq->head,
+    stl_le_pci_dma(&cq->ctrl->parent_obj, cq->ei_addr, cq->head,
                    MEMTXATTRS_UNSPECIFIED);
 }
 
 static void nvme_update_cq_head(NvmeCQueue *cq)
 {
-    ldl_le_pci_dma(PCI_DEVICE(cq->ctrl), cq->db_addr, &cq->head,
+    ldl_le_pci_dma(&cq->ctrl->parent_obj, cq->db_addr, &cq->head,
                    MEMTXATTRS_UNSPECIFIED);
 
     trace_pci_nvme_update_cq_head(cq->cqid, cq->head);
@@ -1529,7 +1529,7 @@ static void nvme_post_cqes(void *opaque)
         req->cqe.sq_id = cpu_to_le16(sq->sqid);
         req->cqe.sq_head = cpu_to_le16(sq->head);
         addr = cq->dma_addr + (cq->tail << NVME_CQES);
-        ret = pci_dma_write(PCI_DEVICE(n), addr, (void *)&req->cqe,
+        ret = pci_dma_write(&n->parent_obj, addr, (void *)&req->cqe,
                             sizeof(req->cqe));
         if (ret) {
             trace_pci_nvme_err_addr_write(addr);
@@ -5517,7 +5517,7 @@ static uint16_t nvme_get_log(NvmeCtrl *n, NvmeRequest *req)
 
 static void nvme_free_cq(NvmeCQueue *cq, NvmeCtrl *n)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
     uint16_t offset = (cq->cqid << 3) + (1 << 2);
 
     n->cq[cq->cqid] = NULL;
@@ -5567,7 +5567,7 @@ static void nvme_init_cq(NvmeCQueue *cq, NvmeCtrl *n, uint64_t dma_addr,
                          uint16_t cqid, uint16_t vector, uint16_t size,
                          uint16_t irq_enabled)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
 
     if (msix_enabled(pci) && irq_enabled) {
         msix_vector_use(pci, vector);
@@ -5631,7 +5631,7 @@ static uint16_t nvme_create_cq(NvmeCtrl *n, NvmeRequest *req)
         trace_pci_nvme_err_invalid_create_cq_addr(prp1);
         return NVME_INVALID_PRP_OFFSET | NVME_DNR;
     }
-    if (unlikely(!msix_enabled(PCI_DEVICE(n)) && vector)) {
+    if (unlikely(!msix_enabled(&n->parent_obj) && vector)) {
         trace_pci_nvme_err_invalid_create_cq_vector(vector);
         return NVME_INVALID_IRQ_VECTOR | NVME_DNR;
     }
@@ -7311,7 +7311,7 @@ static uint16_t nvme_assign_virt_res_to_sec(NvmeCtrl *n, NvmeRequest *req,
 
 static uint16_t nvme_virt_set_state(NvmeCtrl *n, uint16_t cntlid, bool online)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
     NvmeCtrl *sn = NULL;
     NvmeSecCtrlEntry *sctrl;
     int vf_index;
@@ -7381,7 +7381,7 @@ static uint16_t nvme_virt_mngmt(NvmeCtrl *n, NvmeRequest *req)
 
 static uint16_t nvme_dbbuf_config(NvmeCtrl *n, const NvmeRequest *req)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
     uint64_t dbs_addr = le64_to_cpu(req->cmd.dptr.prp1);
     uint64_t eis_addr = le64_to_cpu(req->cmd.dptr.prp2);
     int i;
@@ -7564,13 +7564,13 @@ static void nvme_update_sq_eventidx(const NvmeSQueue *sq)
 {
     trace_pci_nvme_update_sq_eventidx(sq->sqid, sq->tail);
 
-    stl_le_pci_dma(PCI_DEVICE(sq->ctrl), sq->ei_addr, sq->tail,
+    stl_le_pci_dma(&sq->ctrl->parent_obj, sq->ei_addr, sq->tail,
                    MEMTXATTRS_UNSPECIFIED);
 }
 
 static void nvme_update_sq_tail(NvmeSQueue *sq)
 {
-    ldl_le_pci_dma(PCI_DEVICE(sq->ctrl), sq->db_addr, &sq->tail,
+    ldl_le_pci_dma(&sq->ctrl->parent_obj, sq->db_addr, &sq->tail,
                    MEMTXATTRS_UNSPECIFIED);
 
     trace_pci_nvme_update_sq_tail(sq->sqid, sq->tail);
@@ -7741,7 +7741,7 @@ static void nvme_update_msixcap_ts(PCIDevice *pci_dev, uint32_t table_size)
 
 static void nvme_activate_virt_res(NvmeCtrl *n)
 {
-    PCIDevice *pci_dev = PCI_DEVICE(n);
+    PCIDevice *pci_dev = &n->parent_obj;
     NvmePriCtrlCap *cap = &n->pri_ctrl_cap;
     NvmeSecCtrlEntry *sctrl;
 
@@ -7764,7 +7764,7 @@ static void nvme_activate_virt_res(NvmeCtrl *n)
 
 static void nvme_ctrl_reset(NvmeCtrl *n, NvmeResetType rst)
 {
-    PCIDevice *pci_dev = PCI_DEVICE(n);
+    PCIDevice *pci_dev = &n->parent_obj;
     NvmeSecCtrlEntry *sctrl;
     NvmeNamespace *ns;
     int i;
@@ -7864,7 +7864,7 @@ static int nvme_start_ctrl(NvmeCtrl *n)
     uint32_t page_size = 1 << page_bits;
     NvmeSecCtrlEntry *sctrl = nvme_sctrl(n);
 
-    if (pci_is_vf(PCI_DEVICE(n)) && !sctrl->scs) {
+    if (pci_is_vf(&n->parent_obj) && !sctrl->scs) {
         trace_pci_nvme_err_startfail_virt_state(le16_to_cpu(sctrl->nvi),
                                                 le16_to_cpu(sctrl->nvq));
         return -1;
@@ -7962,7 +7962,7 @@ static void nvme_cmb_enable_regs(NvmeCtrl *n)
 static void nvme_write_bar(NvmeCtrl *n, hwaddr offset, uint64_t data,
                            unsigned size)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
     uint64_t cap = ldq_le_p(&n->bar.cap);
     uint32_t cc = ldl_le_p(&n->bar.cc);
     uint32_t intms = ldl_le_p(&n->bar.intms);
@@ -8224,7 +8224,7 @@ static uint64_t nvme_mmio_read(void *opaque, hwaddr addr, unsigned size)
         return 0;
     }
 
-    if (pci_is_vf(PCI_DEVICE(n)) && !nvme_sctrl(n)->scs &&
+    if (pci_is_vf(&n->parent_obj) && !nvme_sctrl(n)->scs &&
         addr != NVME_REG_CSTS) {
         trace_pci_nvme_err_ignored_mmio_vf_offline(addr, size);
         return 0;
@@ -8245,7 +8245,7 @@ static uint64_t nvme_mmio_read(void *opaque, hwaddr addr, unsigned size)
 
 static void nvme_process_db(NvmeCtrl *n, hwaddr addr, int val)
 {
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
     uint32_t qid;
 
     if (unlikely(addr & ((1 << 2) - 1))) {
@@ -8396,7 +8396,7 @@ static void nvme_mmio_write(void *opaque, hwaddr addr, uint64_t data,
 
     trace_pci_nvme_mmio_write(addr, data, size);
 
-    if (pci_is_vf(PCI_DEVICE(n)) && !nvme_sctrl(n)->scs &&
+    if (pci_is_vf(&n->parent_obj) && !nvme_sctrl(n)->scs &&
         addr != NVME_REG_CSTS) {
         trace_pci_nvme_err_ignored_mmio_vf_offline(addr, size);
         return;
@@ -8591,7 +8591,7 @@ static void nvme_init_state(NvmeCtrl *n)
     NvmePriCtrlCap *cap = &n->pri_ctrl_cap;
     NvmeSecCtrlEntry *list = n->sec_ctrl_list;
     NvmeSecCtrlEntry *sctrl;
-    PCIDevice *pci = PCI_DEVICE(n);
+    PCIDevice *pci = &n->parent_obj;
     NvmeAtomic *atomic = &n->atomic;
     NvmeIdCtrl *id = &n->id_ctrl;
     uint8_t max_vfs;
@@ -9309,8 +9309,7 @@ static void nvme_set_smart_warning(Object *obj, Visitor *v, const char *name,
 
 static void nvme_pci_reset(DeviceState *qdev)
 {
-    PCIDevice *pci_dev = PCI_DEVICE(qdev);
-    NvmeCtrl *n = NVME(pci_dev);
+    NvmeCtrl *n = NVME(qdev);
 
     trace_pci_nvme_pci_reset();
     nvme_ctrl_reset(n, NVME_RESET_FUNCTION);
