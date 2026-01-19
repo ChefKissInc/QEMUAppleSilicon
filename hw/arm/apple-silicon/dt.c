@@ -221,12 +221,13 @@ AppleDTProp *apple_dt_set_prop(AppleDTNode *node, const char *name,
         memset(prop, 0, sizeof(*prop));
     }
 
-    prop->data = g_malloc0(len);
-    prop->len = len;
-
-    if (val != NULL) {
+    if (val == NULL) {
+        prop->data = g_malloc0(len);
+    } else {
+        prop->data = g_malloc(len);
         memcpy(prop->data, val, len);
     }
+    prop->len = len;
 
     return prop;
 }
