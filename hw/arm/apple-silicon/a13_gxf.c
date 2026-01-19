@@ -613,14 +613,14 @@ static const ARMCPRegInfo apple_a13_gxf_cp_reginfo[] = {
 
 void apple_a13_init_gxf_override(AppleA13State *cpu)
 {
-    if (arm_feature(&ARM_CPU(cpu)->env, ARM_FEATURE_GXF)) {
-        define_arm_cp_regs(ARM_CPU(cpu), apple_a13_gxf_cp_override_reginfo);
+    if (arm_feature(&cpu->parent_obj.env, ARM_FEATURE_GXF)) {
+        define_arm_cp_regs(&cpu->parent_obj, apple_a13_gxf_cp_override_reginfo);
     }
 }
 
 void apple_a13_init_gxf(AppleA13State *cpu)
 {
-    if (arm_feature(&ARM_CPU(cpu)->env, ARM_FEATURE_GXF)) {
-        define_arm_cp_regs(ARM_CPU(cpu), apple_a13_gxf_cp_reginfo);
+    if (arm_feature(&cpu->parent_obj.env, ARM_FEATURE_GXF)) {
+        define_arm_cp_regs(&cpu->parent_obj, apple_a13_gxf_cp_reginfo);
     }
 }
