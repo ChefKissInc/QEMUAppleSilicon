@@ -308,20 +308,22 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
     MachineState *machine = MACHINE(t8030);
     vaddr kc_base;
     vaddr kc_end;
+    vaddr ro_lower;
+    vaddr ro_upper;
     vaddr apple_dt_va;
     hwaddr mem_size;
     hwaddr phys_ptr;
     AppleBootInfo *info = &t8030->boot_info;
 
-    apple_boot_get_kc_bounds(t8030->kernel, NULL, &kc_base, &kc_end,
-                             &info->ro_lower, &info->ro_upper);
+    apple_boot_get_kc_bounds(t8030->kernel, NULL, &kc_base, &kc_end, &ro_lower,
+                             &ro_upper);
 
     get_kaslr_slides(t8030, &g_phys_slide, &g_virt_slide);
 
     g_phys_base = DRAM_BASE;
     g_virt_base = kc_base + (g_virt_slide - g_phys_slide);
 
-    info->trustcache_addr = vtop_slid(info->ro_lower) - info->trustcache_size;
+    info->trustcache_addr = vtop_slid(ro_lower) - info->trustcache_size;
 
     address_space_rw(&address_space_memory, info->trustcache_addr,
                      MEMTXATTRS_UNSPECIFIED, t8030->trustcache,
@@ -400,6 +402,21 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
         apple_dt_va, info->device_tree_size, &t8030->video_args, cmdline,
         machine->ram_size);
     g_virt_base = kc_base;
+
+    for (int i = 0; i < AMCC_PLANE_COUNT; ++i) {
+        AMCC_WREG32(t8030, AMCC_PLANE_LOWER_LIMIT(i),
+                    (info->trustcache_addr - info->dram_base) >> 14);
+        AMCC_WREG32(t8030, AMCC_PLANE_UPPER_LIMIT(i),
+                    (vtop_slid(ro_upper) - info->dram_base - 1) >> 14);
+        AMCC_WREG32(t8030, AMCC_PLANE_LOCK(i), 1);
+        AMCC_WREG32(t8030, AMCC_PLANE_TZ0_BASE(i),
+                    (info->tz0_addr - info->dram_base) >> 12);
+        AMCC_WREG32(t8030, AMCC_PLANE_TZ0_END(i),
+                    ((info->tz0_addr + info->tz0_size - 1) - info->dram_base) >>
+                        12);
+        AMCC_WREG32(t8030, AMCC_PLANE_TZ0_LOCK(i), 1);
+        AMCC_WREG32(t8030, AMCC_PLANE_BLK_MCC_CHANNEL_DEC(i), 0x2F);
+    }
 }
 
 static void t8030_rtkit_seg_prop_setup(AppleDTNode *child, AppleDTNode *iop_nub,
@@ -632,21 +649,6 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     }
 
     g_free(cmdline);
-
-    for (int i = 0; i < AMCC_PLANE_COUNT; ++i) {
-        AMCC_WREG32(t8030, AMCC_PLANE_LOWER_LIMIT(i),
-                    (info->trustcache_addr - info->dram_base) >> 14);
-        AMCC_WREG32(t8030, AMCC_PLANE_UPPER_LIMIT(i),
-                    (vtop_slid(info->ro_upper) - info->dram_base - 1) >> 14);
-        AMCC_WREG32(t8030, AMCC_PLANE_LOCK(i), 1);
-        AMCC_WREG32(t8030, AMCC_PLANE_TZ0_BASE(i),
-                    (info->tz0_addr - info->dram_base) >> 12);
-        AMCC_WREG32(t8030, AMCC_PLANE_TZ0_END(i),
-                    ((info->tz0_addr + info->tz0_size - 1) - info->dram_base) >>
-                        12);
-        AMCC_WREG32(t8030, AMCC_PLANE_TZ0_LOCK(i), 1);
-        AMCC_WREG32(t8030, AMCC_PLANE_BLK_MCC_CHANNEL_DEC(i), 0x2F);
-    }
 }
 
 static uint64_t pmgr_unk_e4800 = 0;

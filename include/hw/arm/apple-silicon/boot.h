@@ -325,8 +325,6 @@ typedef struct {
     uint64_t ramdisk_size;
     hwaddr trustcache_addr;
     uint64_t trustcache_size;
-    vaddr ro_lower;
-    vaddr ro_upper;
     hwaddr sep_fw_addr;
     uint64_t sep_fw_size;
     hwaddr tz0_addr;
