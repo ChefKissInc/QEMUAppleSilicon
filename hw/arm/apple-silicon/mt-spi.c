@@ -974,7 +974,7 @@ static void apple_mt_spi_realize(SSIPeripheral *dev, Error **errp)
     AppleMTSPIState *s;
     QEMUPutMouseEntry *entry;
 
-    s = APPLE_MT_SPI(dev);
+    s = container_of(dev, AppleMTSPIState, parent_obj);
 
     entry = qemu_add_mouse_event_handler(apple_mt_spi_mouse_event, s, 1,
                                          "Apple Multitouch HID SPI");
