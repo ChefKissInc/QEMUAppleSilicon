@@ -31,7 +31,7 @@
 
 static void or_irq_handler(void *opaque, int n, int level)
 {
-    OrIRQState *s = OR_IRQ(opaque);
+    OrIRQState *s = opaque;
     int or_level = 0;
     int i;
 
@@ -84,7 +84,7 @@ static void or_irq_init(Object *obj)
 
 static bool vmstate_extras_needed(void *opaque)
 {
-    OrIRQState *s = OR_IRQ(opaque);
+    OrIRQState *s = opaque;
 
     return s->num_lines >= OLD_MAX_OR_LINES;
 }
