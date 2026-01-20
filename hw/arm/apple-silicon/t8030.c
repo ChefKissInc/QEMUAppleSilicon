@@ -594,14 +594,13 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     }
 
     AppleDTNode *chosen = apple_dt_get_node(t8030->device_tree, "chosen");
-    if (apple_boot_contains_boot_arg(cmdline, "-restore", false)) {
-        // HACK: Use DEV model to restore without FDR errors
-        apple_dt_set_prop(t8030->device_tree, "compatible", 28,
-                          "N104DEV\0iPhone12,1\0AppleARM");
-    } else {
-        apple_dt_set_prop(t8030->device_tree, "compatible", 27,
-                          "N104AP\0iPhone12,1\0AppleARM");
-    }
+    // HACK: Use DEV model to restore without FDR errors
+    // NOTE: Previously restored back to AP, however,
+    // iOS 16+ kernel panics because of the AP ticket,
+    // as it names it "n104dev" and then tries to read
+    // "n104ap" after restore.
+    apple_dt_set_prop(t8030->device_tree, "compatible", 28,
+                      "N104DEV\0iPhone12,1\0AppleARM");
 
     if (!apple_boot_contains_boot_arg(cmdline, "rd=", true)) {
         apple_dt_set_prop_strn(
