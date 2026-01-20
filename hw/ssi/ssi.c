@@ -155,7 +155,7 @@ SSIBus *ssi_create_bus(DeviceState *parent, const char *name)
 
 uint32_t ssi_transfer(SSIBus *bus, uint32_t val)
 {
-    BusState *b = BUS(bus);
+    BusState *b = &bus->parent_obj;
     BusChild *kid;
     uint32_t r = 0;
 
