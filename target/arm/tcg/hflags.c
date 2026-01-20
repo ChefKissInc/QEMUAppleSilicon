@@ -314,7 +314,8 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
         DP_TBFLAG_ANY(flags, BE_DATA, 1);
     }
 
-    if (cpu_isar_feature(aa64_pauth, env_archcpu(env))) {
+    if (cpu_isar_feature(aa64_pauth, env_archcpu(env)) &&
+        !cpu_isar_feature(aa64_pauth_noop, env_archcpu(env))) {
         /*
          * In order to save space in flags, we record only whether
          * pauth is "inactive", meaning all insns are implemented as

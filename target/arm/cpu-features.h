@@ -493,6 +493,7 @@ typedef enum {
     PauthFeat_2            = 3,
     PauthFeat_FPAC         = 4,
     PauthFeat_FPACCOMBINED = 5,
+    PauthFeat_NOOP         = 0xF,
 } ARMPauthFeature;
 
 static inline ARMPauthFeature
@@ -532,6 +533,15 @@ static inline bool isar_feature_aa64_pauth_qarma3(const ARMISARegisters *id)
      * QEMU will always enable or disable both APA3 and GPA3.
      */
     return FIELD_EX64_IDREG(id, ID_AA64ISAR2, APA3) != 0;
+}
+
+static inline bool isar_feature_aa64_pauth_noop(const ARMISARegisters *id)
+{
+    /*
+     * Return true if pauth is enabled with the no-op algorithm.
+     * QEMU will always enable or disable both API and GPI.
+     */
+    return FIELD_EX64_IDREG(id, ID_AA64ISAR1, API) == PauthFeat_NOOP;
 }
 
 static inline bool isar_feature_aa64_sb(const ARMISARegisters *id)

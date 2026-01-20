@@ -555,7 +555,14 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
                                !cpu->prop_pauth_qarma3 &&
                                !cpu->prop_pauth_impdef;
 
-            if (cpu->prop_pauth_qarma5 ||
+            if (cpu->prop_pauth_noop) { /* NOOP PAC */
+                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
+                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, PauthFeat_NOOP);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
+            } else if (cpu->prop_pauth_qarma5 ||
                 (use_default &&
                  cpu->backcompat_pauth_default_use_qarma5)) {
                 isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
@@ -604,6 +611,8 @@ static const Property arm_cpu_pauth_qarma3_property =
     DEFINE_PROP_BOOL("pauth-qarma3", ARMCPU, prop_pauth_qarma3, false);
 static Property arm_cpu_pauth_qarma5_property =
     DEFINE_PROP_BOOL("pauth-qarma5", ARMCPU, prop_pauth_qarma5, false);
+static Property arm_cpu_pauth_noop_property =
+    DEFINE_PROP_BOOL("pauth-noop", ARMCPU, prop_pauth_noop, true);
 
 void aarch64_add_pauth_properties(Object *obj)
 {
@@ -625,6 +634,7 @@ void aarch64_add_pauth_properties(Object *obj)
         qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_impdef_property);
         qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_qarma3_property);
         qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_qarma5_property);
+        qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_noop_property);
     }
 }
 

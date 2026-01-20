@@ -1163,6 +1163,7 @@ struct ArchCPU {
     bool prop_pauth_impdef;
     bool prop_pauth_qarma3;
     bool prop_pauth_qarma5;
+    bool prop_pauth_noop;
     bool prop_lpa2;
 
     /* DCZ blocksize, in log_2(words), ie low 4 bits of DCZID_EL0 */
