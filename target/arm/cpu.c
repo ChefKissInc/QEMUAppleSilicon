@@ -54,7 +54,7 @@
 
 static void arm_cpu_set_pc(CPUState *cs, vaddr value)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
 
     if (is_a64(env)) {
@@ -68,7 +68,7 @@ static void arm_cpu_set_pc(CPUState *cs, vaddr value)
 
 static vaddr arm_cpu_get_pc(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
 
     if (is_a64(env)) {
@@ -139,7 +139,7 @@ int arm_cpu_mmu_index(CPUState *cs, bool ifetch)
  */
 static bool arm_cpu_has_work(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
 
     return (cpu->power_state != PSCI_OFF)
         && cs->interrupt_request &
@@ -227,7 +227,7 @@ static void cp_reg_check_reset(gpointer key, gpointer value,  gpointer opaque)
 static void arm_cpu_reset_hold(Object *obj, ResetType type)
 {
     CPUState *cs = CPU(obj);
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     ARMCPUClass *acc = ARM_CPU_GET_CLASS(obj);
     CPUARMState *env = &cpu->env;
 
@@ -589,7 +589,7 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
 
 void arm_emulate_firmware_reset(CPUState *cpustate, int target_el)
 {
-    ARMCPU *cpu = ARM_CPU(cpustate);
+    ARMCPU *cpu = container_of(cpustate, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
     bool have_el3 = arm_feature(env, ARM_FEATURE_EL3);
     bool have_el2 = arm_feature(env, ARM_FEATURE_EL2);
@@ -1112,7 +1112,7 @@ static void arm_cpu_set_irq(void *opaque, int irq, int level)
 
 static bool arm_cpu_virtio_is_big_endian(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
 
     cpu_synchronize_state(cs);
@@ -1126,7 +1126,7 @@ bool arm_cpu_exec_halt(CPUState *cs)
 
     if (leave_halt) {
         /* We're about to come out of WFI/WFE: disable the WFxT timer */
-        ARMCPU *cpu = ARM_CPU(cs);
+        ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
         if (cpu->wfxt_timer) {
             timer_del(cpu->wfxt_timer);
         }
@@ -1152,7 +1152,7 @@ static void arm_wfxt_timer_cb(void *opaque)
 
 static void arm_disas_set_info(CPUState *cpu, disassemble_info *info)
 {
-    ARMCPU *ac = ARM_CPU(cpu);
+    ARMCPU *ac = container_of(cpu, ARMCPU, parent_obj);
     CPUARMState *env = &ac->env;
     bool sctlr_b = arm_sctlr_b(env);
 
@@ -1195,7 +1195,7 @@ static void arm_disas_set_info(CPUState *cpu, disassemble_info *info)
 
 static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
     uint32_t psr = pstate_read(env);
     int i, j;
@@ -1353,7 +1353,7 @@ static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
 
 static void arm_cpu_dump_state(CPUState *cs, FILE *f, int flags)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
     int i;
 
@@ -2622,7 +2622,7 @@ static const Property arm_cpu_properties[] = {
 
 static const gchar *arm_gdb_arch_name(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
 
     if (arm_gdbstub_is_aarch64(cpu)) {
@@ -2636,7 +2636,7 @@ static const gchar *arm_gdb_arch_name(CPUState *cs)
 
 static const char *arm_gdb_get_core_xml_file(CPUState *cs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
 
     if (arm_gdbstub_is_aarch64(cpu)) {
