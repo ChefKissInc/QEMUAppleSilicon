@@ -176,7 +176,7 @@ static AppleA13Cluster *apple_a13_find_cluster(uint32_t cluster_id)
     AppleA13Cluster *cluster;
 
     QTAILQ_FOREACH (cluster, &clusters, next) {
-        if (CPU_CLUSTER(cluster)->cluster_id == cluster_id) {
+        if (cluster->parent_obj.cluster_id == cluster_id) {
             return cluster;
         }
     }
@@ -255,7 +255,7 @@ static int add_cpu_to_cluster(Object *obj, void *opaque)
     if (!cpu) {
         return 0;
     }
-    cpu->cluster_index = CPU_CLUSTER(cluster)->cluster_id;
+    cpu->cluster_index = cluster->parent_obj.cluster_id;
     if (!acpu) {
         return 0;
     }
