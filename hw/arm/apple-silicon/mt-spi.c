@@ -748,7 +748,7 @@ static uint32_t apple_mt_spi_transfer(SSIPeripheral *dev, uint32_t val)
     AppleMTSPIState *s;
     uint8_t ret;
 
-    s = APPLE_MT_SPI(dev);
+    s = container_of(dev, AppleMTSPIState, parent_obj);
 
     QEMU_LOCK_GUARD(&s->lock);
 
