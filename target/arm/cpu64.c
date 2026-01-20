@@ -567,8 +567,8 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
             } else if (cpu->prop_pauth_qarma3) {
                 isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, features);
                 isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 1);
-                isar2 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
-                isar2 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
                 isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
                 isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
             } else if (cpu->prop_pauth_impdef ||
@@ -576,8 +576,8 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
                         !cpu->backcompat_pauth_default_use_qarma5)) {
                 isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
                 isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
-                isar2 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
-                isar2 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
+                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
                 isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, features);
                 isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
             } else {
