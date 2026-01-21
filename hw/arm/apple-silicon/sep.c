@@ -3435,7 +3435,7 @@ static void misc0_reg_write(void *opaque, hwaddr addr, uint64_t data,
         // initial busy-loop on T8020/T8030 SEPROM
         // same addresses and offsets on both
         if ((data & BIT(2)) != 0) {
-            data |= BIT(63);
+            data |= BIT_ULL(63);
         }
         goto jump_default;
     default:
