@@ -134,7 +134,7 @@ static AppleA7IOPMessage *apple_rtkit_construct_msg(uint8_t ep, uint64_t data)
 
 static void apple_rtkit_send_msg(AppleRTKit *s, uint8_t ep, uint64_t data)
 {
-    apple_a7iop_send_ap(APPLE_A7IOP(s), apple_rtkit_construct_msg(ep, data));
+    apple_a7iop_send_ap(&s->parent_obj, apple_rtkit_construct_msg(ep, data));
 }
 
 void apple_rtkit_send_control_msg(AppleRTKit *s, uint8_t ep, uint64_t data)
@@ -199,7 +199,7 @@ static void apple_rtkit_mgmt_send_hello_msg(AppleRTKit *s, uint16_t min_version,
 {
     AppleRTKitManagementMessage msg = { 0 };
 
-    trace_apple_rtkit_mgmt_send_hello(APPLE_A7IOP(s)->role);
+    trace_apple_rtkit_mgmt_send_hello(s->parent_obj.role);
 
     msg.type = MSG_HELLO;
     msg.hello.min_version = min_version;
@@ -262,12 +262,10 @@ static void apple_rtkit_mgmt_rollcall_v11_foreach(gpointer key, gpointer value,
 
 static void apple_rtkit_mgmt_rollcall_v11(AppleRTKit *s)
 {
-    AppleA7IOP *a7iop;
+    AppleA7IOP *a7iop = &s->parent_obj;
     AppleA7IOPMessage *msg;
     AppleRTKitManagementRollcallV11 data = { 0 };
     AppleRTKitManagementMessage mgmt_msg = { 0 };
-
-    a7iop = APPLE_A7IOP(s);
 
     g_assert_true(QTAILQ_EMPTY(&s->rollcall));
 
@@ -441,9 +439,8 @@ void apple_rtkit_init(AppleRTKit *s, void *opaque, const char *role,
                       uint64_t mmio_size, AppleA7IOPVersion version,
                       const AppleRTKitOps *ops)
 {
-    AppleA7IOP *a7iop;
+    AppleA7IOP *a7iop = &s->parent_obj;
 
-    a7iop = APPLE_A7IOP(s);
     apple_a7iop_init(a7iop, role, mmio_size, version, &apple_rtkit_iop_ops,
                      apple_rtkit_handle_messages_bh);
 
