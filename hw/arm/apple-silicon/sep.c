@@ -3623,7 +3623,8 @@ static void apple_sep_send_message(AppleSEPState *s, uint8_t ep, uint8_t tag,
     AppleA7IOPMessage *sent_msg;
     SEPMessage *sent_sep_msg;
 
-    a7iop = APPLE_A7IOP(s);
+    //a7iop = APPLE_A7IOP(s);
+    a7iop = &s->parent_obj;
 
     sent_msg = g_new0(AppleA7IOPMessage, 1);
     sent_sep_msg = (SEPMessage *)sent_msg->data;
@@ -3996,8 +3997,9 @@ AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
     uint32_t i;
 
     dev = qdev_new(TYPE_APPLE_SEP);
-    a7iop = APPLE_A7IOP(dev);
+    // a7iop = APPLE_A7IOP(dev);
     s = APPLE_SEP(dev);
+    a7iop = &s->parent_obj;
     sbd = SYS_BUS_DEVICE(dev);
 
     prop = apple_dt_get_prop(node, "reg");
@@ -4223,7 +4225,8 @@ AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
     qemu_mutex_init(&s->manual_timer_lock);
 
     // possible performance improvements by avoiding most of these dynamic casts
-    s->mailbox = APPLE_A7IOP(s)->iop_mailbox;
+    // s->mailbox = APPLE_A7IOP(s)->iop_mailbox;
+    s->mailbox = s->parent_obj.iop_mailbox;
 
     // No async necessary for TRNG?
     s->aess_state.command_bh =
