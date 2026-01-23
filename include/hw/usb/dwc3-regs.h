@@ -65,6 +65,7 @@
 #define DEVICE_EVENT_ERRATIC_ERROR      9
 #define DEVICE_EVENT_CMD_CMPL           10
 #define DEVICE_EVENT_OVERFLOW           11
+#define DEVT_VNDRDEVTSTRCVED 0x0c
 
 /* DWC3 registers memory space boundries */
 #define XHCI_REGS_START    0x0
@@ -170,6 +171,7 @@
 #define GCTL_SCALEDOWN(n)     ((n) << 4)
 #define GCTL_SCALEDOWN_MASK   GCTL_SCALEDOWN(3)
 #define GCTL_DISSCRAMBLE      BIT(3)
+#define GCTL_U2EXIT_LFPS      BIT(2)
 #define GCTL_GBLHIBERNATIONEN BIT(1)
 #define GCTL_DSBLCLKGTNG      BIT(0)
 
@@ -270,6 +272,7 @@
 #define GEVNTSIZ_EVNTINTRPTMASK    BIT(31)
 
 /* Device Configuration Register */
+#define DCFG_BIT11                  BIT(11)
 #define DCFG_LPM_CAP                BIT(22)
 #define DCFG_IGNSTRMPP	            BIT(23)
 
@@ -616,18 +619,6 @@ struct dwc3_event_depevt {
     uint32_t parameters : 16;
 } QEMU_PACKED;
 
-#define DEVT_DISCONN         0x00
-#define DEVT_USBRST          0x01
-#define DEVT_CONNECTDONE     0x02
-#define DEVT_ULSTCHNG        0x03
-#define DEVT_WKUPEVT         0x04
-#define DEVT_EOPF            0x06
-#define DEVT_SOF             0x07
-#define DEVT_ERRTICERR       0x09
-#define DEVT_CMDCMPLT        0x0a
-#define DEVT_EVNTOVERFLOW    0x0b
-#define DEVT_VNDRDEVTSTRCVED 0x0c
-
 /**
  * struct dwc3_event_devt - Device Events
  * @one_bit: indicates this is a non-endpoint event (not used)
@@ -689,17 +680,24 @@ union dwc3_event {
 #define DEPCFG_FIFO_NUMBER(n)     (((n) >> 17) & 0xf)
 #define DEPCFG_MAX_PACKET_SIZE(n) (((n) >> 3) & 0x7ff)
 #define DEPCFG_ACTION(n)          (((n) >> 30) & 0x3)
+#define DEPCFG_BURST_SIZE(n)      (((n) >> 22) & 0xf)
 #define DEPCFG_ACTION_INIT        (0)
 #define DEPCFG_ACTION_RESTORE     (1)
 #define DEPCFG_ACTION_MODIFY      (2)
 
 #define DEPCFG_INT_NUM(n)          (((n) >> 0) & 0x1f)
+#define DEPCFG_PAR1_BIT5           BIT(5)
+#define DEPCFG_PAR1_BIT6           BIT(6)
+#define DEPCFG_PAR1_BIT7           BIT(7)
 #define DEPCFG_EVENT_EN(_v)        (((_v) >> 7) & 0x7f)
 #define DEPCFG_XFER_COMPLETE_EN    BIT(8)
 #define DEPCFG_XFER_IN_PROGRESS_EN BIT(9)
 #define DEPCFG_XFER_NOT_READY_EN   BIT(10)
 #define DEPCFG_FIFO_ERROR_EN       BIT(11)
+#define DEPCFG_PAR1_BIT12          BIT(12)
 #define DEPCFG_STREAM_EVENT_EN     BIT(13)
+#define DEPCFG_PAR1_BIT14          BIT(14)
+#define DEPCFG_PAR1_BIT15          BIT(15)
 #define DEPCFG_BINTERVAL_M1(n)     (((n) >> 16) & 0xff)
 #define DEPCFG_STREAM_CAPABLE      BIT(24)
 #define DEPCFG_EP_NUMBER(n)        (((n) >> 25) & 0x1f)

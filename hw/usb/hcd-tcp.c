@@ -552,7 +552,7 @@ static void usb_tcp_host_realize(DeviceState *dev, Error **errp)
     for (i = 0; i < G_N_ELEMENTS(s->ports); i++) {
         usb_register_port(&s->bus, &s->ports[i], s, i, &usb_tcp_host_port_ops,
                           USB_SPEED_MASK_LOW | USB_SPEED_MASK_FULL |
-                              USB_SPEED_MASK_HIGH);
+                              USB_SPEED_MASK_HIGH | USB_SPEED_MASK_SUPER);
     }
 
     s->closed = true;
