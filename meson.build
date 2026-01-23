@@ -4616,7 +4616,7 @@ subdir('pc-bios')
 subdir('docs')
 # Tests are disabled on emscripten because they rely on host features that aren't
 # supported by emscripten (e.g. fork and unix socket).
-if host_os != 'emscripten'
+if host_os != 'emscripten' and get_option('tests').allowed()
   subdir('tests')
 endif
 if gtk.found()
