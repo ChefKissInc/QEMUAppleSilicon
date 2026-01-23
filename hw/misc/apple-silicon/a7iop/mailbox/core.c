@@ -48,6 +48,10 @@
 
 static bool is_interrupt_enabled(AppleA7IOPMailbox *s, uint32_t status)
 {
+    if (!s->sepd_enabled) {
+        // this workaround, just like the others, also seems to have the side-effect of reducing the amount of timer0 interrupts, at least under 18.5.
+        return false;
+    }
     if ((status & 0xF0000) == 0x10000 && (s->glb_cfg & KIC_GLB_CFG_EXT_INT_EN) != 0) {
         uint32_t interrupt = status & 0x7F;
         int interrupt_group = interrupt / 32;
@@ -55,6 +59,12 @@ static bool is_interrupt_enabled(AppleA7IOPMailbox *s, uint32_t status)
         uint32_t interrupt_enabled =
             s->interrupts_enabled[interrupt_group] & BIT(interrupt % 32);
         if (interrupt_enabled) {
+            // if (status == INTERRUPT_SEP_MANUAL_TIMER) {
+            //     // if timer0 or timer1 (maybe only timer0) unmasked, possible workaround for sepfw 18.5 exception.c:69, and it might not massively change the timer0 [sic] behavior, but only slightly
+            //     // this approach doesn't fix 18.5
+            //     if (!s->timer0_masked || !s->timer1_masked)
+            //         return false;
+            // }
             return true;
         }
     } else if (status == IRQ_IOP_NONEMPTY) {
@@ -75,11 +85,22 @@ static bool is_interrupt_enabled(AppleA7IOPMailbox *s, uint32_t status)
         }
     } else if (status == IRQ_SEP_TIMER0) {
         // fprintf(stderr, "%s: IRQ_SEP_TIMER0: status: 0x%x timer0_enabled: 0x%x timer0_masked: 0x%x\n", __func__, status, s->timer0_enabled, s->timer0_masked);
+        // if (s->interrupts_enabled[0] & BIT(8)) {
+        //     // if manual_timer unmasked, possible workaround for sepfw 18.5 exception.c:69, but it changes the timer0 [sic] behavior massively
+        //     // this approach breaks 14beta5
+        //     return false;
+        // } else
         if ((s->timer0_enabled & REG_KIC_TMR_EN_MASK) == REG_KIC_TMR_EN_MASK &&
             (s->timer0_masked & REG_KIC_TMR_INT_MASK_MASK) == 0) {
             return true;
         }
     } else if (status == IRQ_SEP_TIMER1) {
+        // if (s->interrupts_enabled[0] & BIT(8)) {
+        //     // if manual_timer unmasked, possible workaround for sepfw 18.5 exception.c:69, but it changes the timer0 [sic] behavior massively
+        //     // also doing it for timer1 just to make sure
+        //     // this approach breaks 14beta5
+        //     return false;
+        // } else
         if ((s->timer1_enabled & REG_KIC_TMR_EN_MASK) == REG_KIC_TMR_EN_MASK &&
             (s->timer1_masked & REG_KIC_TMR_INT_MASK_MASK) == 0) {
             return true;
@@ -617,6 +638,7 @@ static void apple_a7iop_mailbox_reset(DeviceState *dev)
     s->timer1_enabled = 0;
     s->timer0_masked = 0;
     s->timer1_masked = 0;
+    s->sepd_enabled = 0;
     apple_a7iop_mailbox_update_irq_status(s);
 }
 
@@ -671,6 +693,7 @@ static const VMStateDescription vmstate_apple_a7iop_mailbox = {
             VMSTATE_UINT32(timer1_enabled, AppleA7IOPMailbox),
             VMSTATE_UINT32(timer0_masked, AppleA7IOPMailbox),
             VMSTATE_UINT32(timer1_masked, AppleA7IOPMailbox),
+            VMSTATE_UINT32(sepd_enabled, AppleA7IOPMailbox),
             VMSTATE_END_OF_LIST(),
         }
 };

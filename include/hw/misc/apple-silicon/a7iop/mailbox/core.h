@@ -121,6 +121,7 @@ struct AppleA7IOPMailbox {
     uint32_t timer1_enabled;
     uint32_t timer0_masked;
     uint32_t timer1_masked;
+    uint32_t sepd_enabled;
 };
 
 void apple_a7iop_mailbox_update_irq_status(AppleA7IOPMailbox *s);

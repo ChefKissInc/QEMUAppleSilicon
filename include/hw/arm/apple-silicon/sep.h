@@ -371,6 +371,7 @@ struct AppleSEPState {
     QemuMutex manual_timer_lock;
     uint32_t manual_timer_hertz;
     bool manual_timer_enabled;
+    AppleA7IOPMailbox *mailbox;
 };
 
 void ck_sep_seprom_patches(CKPatcherRange *range);
