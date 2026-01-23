@@ -141,31 +141,31 @@ void apple_a7iop_init(AppleA7IOP *s, const char *role, uint64_t mmio_size,
     // qdev_init_gpio_out_named(dev, &s->iop_irq, APPLE_A7IOP_IOP_IRQ, 1);
 }
 
-static void apple_a7iop_reset(DeviceState *opaque)
+static void apple_a7iop_reset(DeviceState *dev)
 {
     AppleA7IOP *s;
 
-    s = APPLE_A7IOP(opaque);
+    s = APPLE_A7IOP(dev);
 
     QEMU_LOCK_GUARD(&s->lock);
     s->cpu_status = CPU_STATUS_IDLE;
 }
 
-static void apple_a7iop_realize(DeviceState *opaque, Error **errp)
+static void apple_a7iop_realize(DeviceState *dev, Error **errp)
 {
     AppleA7IOP *s;
 
-    s = APPLE_A7IOP(opaque);
+    s = APPLE_A7IOP(dev);
 
     sysbus_realize(SYS_BUS_DEVICE(s->iop_mailbox), errp);
     sysbus_realize(SYS_BUS_DEVICE(s->ap_mailbox), errp);
 }
 
-static void apple_a7iop_unrealize(DeviceState *opaque)
+static void apple_a7iop_unrealize(DeviceState *dev)
 {
     AppleA7IOP *s;
 
-    s = APPLE_A7IOP(opaque);
+    s = APPLE_A7IOP(dev);
 
     qdev_unrealize(DEVICE(s->iop_mailbox));
     qdev_unrealize(DEVICE(s->ap_mailbox));
