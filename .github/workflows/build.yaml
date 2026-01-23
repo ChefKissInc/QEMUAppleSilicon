@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig ../configure --target-list=aarch64-softmmu,x86_64-softmmu --enable-capstone --enable-slirp --enable-lzfse --enable-nettle --enable-gnutls --disable-werror
+          PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig ../configure --target-list=aarch64-softmmu,x86_64-softmmu --enable-capstone --enable-slirp --enable-lzfse --enable-nettle --enable-gnutls --disable-werror --disable-tests
           make -j$(nproc)
       - name: Install
         run: |
@@ -54,7 +54,7 @@ jobs:
       - name: Build
         run: |
           mkdir build && cd build
-          LIBTOOL="glibtool" ../configure --target-list=aarch64-softmmu,x86_64-softmmu --disable-bsd-user --disable-guest-agent --enable-lzfse --enable-slirp --enable-capstone --enable-curses --enable-libssh --enable-virtfs --enable-zstd --extra-cflags=-DNCURSES_WIDECHAR=1 --disable-sdl --disable-gtk --enable-cocoa --enable-lzfse --enable-nettle --enable-gnutls --disable-werror --extra-cflags="-I/opt/homebrew/include" --extra-ldflags="-L/opt/homebrew/lib"
+          LIBTOOL="glibtool" ../configure --target-list=aarch64-softmmu,x86_64-softmmu --disable-bsd-user --disable-guest-agent --enable-lzfse --enable-slirp --enable-capstone --enable-curses --enable-libssh --enable-virtfs --enable-zstd --extra-cflags=-DNCURSES_WIDECHAR=1 --disable-sdl --disable-gtk --enable-cocoa --enable-lzfse --enable-nettle --enable-gnutls --disable-werror --extra-cflags="-I/opt/homebrew/include" --extra-ldflags="-L/opt/homebrew/lib" --disable-tests
           make -j$(sysctl -n hw.logicalcpu)
       - name: Install
         run: |
@@ -78,7 +78,7 @@ jobs:
       - name: Build
         run: |
           mkdir build && cd build
-          LIBTOOL="glibtool" ../configure --target-list=aarch64-softmmu,x86_64-softmmu --disable-bsd-user --disable-guest-agent --enable-lzfse --enable-slirp --enable-capstone --enable-curses --enable-libssh --enable-virtfs --enable-zstd --extra-cflags=-DNCURSES_WIDECHAR=1 --disable-sdl --disable-gtk --enable-cocoa --enable-lzfse --enable-nettle --enable-gnutls --disable-werror --extra-cflags="-I/opt/homebrew/include" --extra-ldflags="-L/opt/homebrew/lib"
+          LIBTOOL="glibtool" ../configure --target-list=aarch64-softmmu,x86_64-softmmu --disable-bsd-user --disable-guest-agent --enable-lzfse --enable-slirp --enable-capstone --enable-curses --enable-libssh --enable-virtfs --enable-zstd --extra-cflags=-DNCURSES_WIDECHAR=1 --disable-sdl --disable-gtk --enable-cocoa --enable-lzfse --enable-nettle --enable-gnutls --disable-werror --extra-cflags="-I/opt/homebrew/include" --extra-ldflags="-L/opt/homebrew/lib" --disable-tests
           make -j$(sysctl -n hw.logicalcpu)
       - name: Install
         run: |
