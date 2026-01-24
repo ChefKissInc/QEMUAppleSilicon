@@ -322,7 +322,6 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
 
                 g_hash_table_foreach_remove(
                     o->tlb, apple_dart_tlb_remove_by_sid_mask, &sid_mask);
-                val &= ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY);
                 qatomic_and(&o->tlb_op,
                             ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY));
                 return;
