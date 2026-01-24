@@ -166,6 +166,7 @@ struct AppleDARTInstance {
 
     GHashTable *tlb;
     QemuMutex mutex;
+    QEMUBH *invalidate_bh;
 };
 
 struct AppleDARTState {
@@ -261,12 +262,8 @@ static gboolean apple_dart_tlb_remove_by_sid_mask(gpointer key, gpointer value,
                                                   gpointer user_data)
 {
     hwaddr va = (hwaddr)key;
-    uint64_t sid_mask = *(uint64_t *)user_data;
 
-    if ((1ULL << GET_DART_IOTLB_SID(va)) & sid_mask) {
-        return true;
-    }
-    return false;
+    return (1ULL << GET_DART_IOTLB_SID(va)) & GPOINTER_TO_UINT(user_data);
 }
 
 static void apple_dart_update_irq(AppleDARTState *s)
@@ -281,14 +278,40 @@ static void apple_dart_update_irq(AppleDARTState *s)
     qemu_set_irq(s->irq, level);
 }
 
+static void apple_dart_invalidate_bh(void *opaque)
+{
+    AppleDARTInstance *o = opaque;
+    uint64_t sid_mask;
+    IOMMUTLBEvent event = { 0 };
+    int i;
+
+    sid_mask = o->sid_mask;
+
+    for (i = 0; i < DART_MAX_STREAMS; i++) {
+        if ((sid_mask & (1ULL << i)) && o->iommus[i]) {
+            event.type = IOMMU_NOTIFIER_UNMAP;
+            event.entry.target_as = &address_space_memory;
+            event.entry.iova = 0;
+            event.entry.perm = IOMMU_NONE;
+            event.entry.addr_mask = ~(hwaddr)0;
+
+            memory_region_notify_iommu(&o->iommus[i]->iommu, 0, event);
+        }
+    }
+
+    WITH_QEMU_LOCK_GUARD(&o->mutex)
+    {
+        g_hash_table_foreach_remove(o->tlb, apple_dart_tlb_remove_by_sid_mask,
+                                    GUINT_TO_POINTER(sid_mask));
+        o->tlb_op &= ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY);
+    }
+}
+
 static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
                            unsigned size)
 {
     AppleDARTInstance *o = opaque;
-    AppleDARTState *s = o->s;
     uint32_t val = data;
-    IOMMUTLBEvent event = { 0 };
-    int i;
 
     QEMU_LOCK_GUARD(&o->mutex);
 
@@ -299,36 +322,20 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
     if (o->type == DART_DART) {
         switch (addr) {
         case REG_DART_TLB_OP:
-            if (val & DART_TLB_OP_INVALIDATE) {
-                uint64_t sid_mask = o->sid_mask;
+            if (!(val & DART_TLB_OP_INVALIDATE)) {
+                break;
+            }
 
-                if (o->tlb_op & DART_TLB_OP_BUSY) {
-                    return;
-                }
-                o->tlb_op |= DART_TLB_OP_BUSY;
-
-                for (i = 0; i < DART_MAX_STREAMS; i++) {
-                    if ((sid_mask & (1ULL << i)) && o->iommus[i]) {
-                        event.type = IOMMU_NOTIFIER_UNMAP;
-                        event.entry.target_as = &address_space_memory;
-                        event.entry.iova = 0;
-                        event.entry.perm = IOMMU_NONE;
-                        event.entry.addr_mask = ~(hwaddr)0;
-
-                        memory_region_notify_iommu(&o->iommus[i]->iommu, 0,
-                                                   event);
-                    }
-                }
-
-                g_hash_table_foreach_remove(
-                    o->tlb, apple_dart_tlb_remove_by_sid_mask, &sid_mask);
-                o->tlb_op &= ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY);
+            if (o->tlb_op & DART_TLB_OP_BUSY) {
                 return;
             }
-            break;
+            o->tlb_op |= DART_TLB_OP_BUSY;
+
+            qemu_bh_schedule(o->invalidate_bh);
+            return;
         case REG_DART_ERROR_STATUS:
             o->error_status &= ~val;
-            apple_dart_update_irq(s);
+            apple_dart_update_irq(o->s);
             return;
         }
     }
@@ -679,6 +686,9 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
                         1ULL << DART_MAX_VA_BITS);
                 }
             }
+
+            o->invalidate_bh =
+                aio_bh_new(qemu_get_aio_context(), apple_dart_invalidate_bh, o);
             break;
         }
         case 'SMMU':
