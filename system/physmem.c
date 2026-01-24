@@ -433,11 +433,13 @@ static MemoryRegionSection address_space_translate_iommu(IOMMUMemoryRegion *iomm
     do {
         hwaddr addr = *xlat;
         IOMMUMemoryRegionClass *imrc = memory_region_get_iommu_class_nocheck(iommu_mr);
-        int iommu_idx = 0;
+        int iommu_idx;
         IOMMUTLBEntry iotlb;
 
         if (imrc->attrs_to_index) {
             iommu_idx = imrc->attrs_to_index(iommu_mr, attrs);
+        } else {
+            iommu_idx = 0;
         }
 
         iotlb = imrc->translate(iommu_mr, addr, is_write ?
@@ -702,7 +704,11 @@ address_space_translate_for_iotlb(CPUState *cpu, int asidx, hwaddr orig_addr,
 
         imrc = memory_region_get_iommu_class_nocheck(iommu_mr);
 
-        iommu_idx = imrc->attrs_to_index(iommu_mr, attrs);
+        if (imrc->attrs_to_index) {
+            iommu_idx = imrc->attrs_to_index(iommu_mr, attrs);
+        } else {
+            iommu_idx = 0;
+        }
         tcg_register_iommu_notifier(cpu, iommu_mr, iommu_idx);
         /* We need all the permissions, so pass IOMMU_NONE so the IOMMU
          * doesn't short-cut its translation table walk.
