@@ -78,9 +78,9 @@
 #define REG_DART_ERROR_ADDRESS_LO (0x50)
 #define REG_DART_ERROR_ADDRESS_HI (0x54)
 #define REG_DART_CONFIG (0x60)
-#define DART_CONFIG_LOCK (1 << 15)
+#define DART_CONFIG_LOCK BIT32(15)
 
-#define DART_SID_REMAP(sid4) (0x80 + 4 * (sid4))
+#define REG_DART_SID_REMAP(sid) (0x80 + 4 * (sid))
 
 #define REG_DART_TCR(sid) (0x100 + 4 * (sid))
 #define DART_TCR_TXEN BIT32(7)
@@ -89,8 +89,8 @@
 
 #define REG_DART_TTBR(sid, idx) (0x200 + 16 * (sid) + 4 * (idx))
 #define DART_TTBR_VALID BIT32(31)
-#define DART_TTBR_SHIFT 12
-#define DART_TTBR_MASK 0xFFFFFFF
+#define DART_TTBR_SHIFT (12)
+#define DART_TTBR_MASK (0xFFFFFFF)
 
 #define DART_PTE_NO_WRITE (1 << 7)
 #define DART_PTE_NO_READ (1 << 8)
@@ -290,6 +290,8 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
     IOMMUTLBEvent event = { 0 };
     int i;
 
+    QEMU_LOCK_GUARD(&o->mutex);
+
     DPRINTF("%s[%d]: (%s) %s @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx
             "\n",
             s->name, o->id, dart_instance_name[o->type], __func__, addr, data);
@@ -304,7 +306,6 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
                     return;
                 }
                 qatomic_or(&o->tlb_op, DART_TLB_OP_BUSY);
-                qemu_mutex_lock(&o->mutex);
 
                 for (i = 0; i < DART_MAX_STREAMS; i++) {
                     if ((sid_mask & (1ULL << i)) && o->iommus[i]) {
@@ -324,7 +325,6 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
                 val &= ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY);
                 qatomic_and(&o->tlb_op,
                             ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY));
-                qemu_mutex_unlock(&o->mutex);
                 return;
             }
             break;
@@ -340,27 +340,22 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
 static uint64_t base_reg_read(void *opaque, hwaddr addr, unsigned size)
 {
     AppleDARTInstance *o = opaque;
-    AppleDARTState *s = o->s;
+
+    QEMU_LOCK_GUARD(&o->mutex);
+
     DPRINTF("%s[%d]: (%s) %s @ 0x" HWADDR_FMT_plx "\n", o->s->name, o->id,
             dart_instance_name[o->type], __func__, addr);
 
     if (o->type == DART_DART) {
         switch (addr) {
-        case REG_DART_PARAMS1: {
-            // TODO: added hack against panic
-            bool access_region_protection = (s->dart_options & 0x2) != 0;
-            return o->base_reg[addr >> 2] |
-                   ((uint32_t)access_region_protection << 31);
-        }
         case REG_DART_TLB_OP:
             return qatomic_read(&o->tlb_op);
-        case REG_DART_ERROR_STATUS:
-            return o->error_status;
         default:
-            return o->base_reg[addr >> 2];
+            break;
         }
     }
-    return 0;
+
+    return o->base_reg[addr >> 2];
 }
 
 static const MemoryRegionOps base_reg_ops = {
@@ -459,11 +454,13 @@ static IOMMUTLBEntry apple_dart_translate(IOMMUMemoryRegion *mr, hwaddr addr,
     };
 
     g_assert_cmpuint(sid, <, DART_MAX_STREAMS);
-    qemu_mutex_lock(&o->mutex);
+
+    QEMU_LOCK_GUARD(&o->mutex);
+
     sid = o->remap[sid] & 0xF;
 
     // Disabled translation means bypass, not error
-    if (s->bypass & (1 << sid) || (o->tcr[sid] & DART_TCR_TXEN) == 0 ||
+    if (s->bypass & BIT32(sid) || (o->tcr[sid] & DART_TCR_TXEN) == 0 ||
         o->tcr[sid] & DART_TCR_BYPASS_DART) {
         // if (s->bypass_address != 0) {
         //     entry.translated_addr = s->bypass_address + addr,
@@ -520,7 +517,6 @@ end:
             s->name, o->id, dart_instance_name[o->type], iommu->sid, entry.iova,
             entry.translated_addr, (entry.perm & IOMMU_RO) ? 'r' : '-',
             (entry.perm & IOMMU_WO) ? 'w' : '-');
-    qemu_mutex_unlock(&o->mutex);
     apple_dart_update_irq(s);
     return entry;
 }
@@ -535,7 +531,11 @@ static void apple_dart_reset(DeviceState *dev)
         memset(s->instances[i].base_reg, 0, sizeof(s->instances[i].base_reg));
         switch (s->instances[i].type) {
         case DART_DART: {
-            s->instances[i].params1 = DART_PARAMS1_PAGE_SHIFT(s->page_shift);
+            // TODO: added hack against panic
+            bool access_region_protection = (s->dart_options & BIT(1)) != 0;
+            s->instances[i].params1 =
+                DART_PARAMS1_PAGE_SHIFT(s->page_shift) |
+                ((uint32_t)access_region_protection << 31);
             for (j = 0; j < DART_MAX_STREAMS; j++) {
                 s->instances[i].remap[j] = j;
             }
