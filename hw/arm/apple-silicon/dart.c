@@ -259,14 +259,6 @@ static GSList *apple_dart_get_device_list(void)
     return list;
 }
 
-static gboolean apple_dart_tlb_remove_by_sid_mask(gpointer key, gpointer value,
-                                                  gpointer user_data)
-{
-    hwaddr va = (hwaddr)key;
-
-    return (1ULL << GET_DART_IOTLB_SID(va)) & GPOINTER_TO_UINT(user_data);
-}
-
 static void apple_dart_update_irq(AppleDARTState *s)
 {
     int level = 0;
@@ -279,6 +271,14 @@ static void apple_dart_update_irq(AppleDARTState *s)
     qemu_set_irq(s->irq, level);
 }
 
+static gboolean apple_dart_tlb_remove_by_sid_mask(gpointer key, gpointer value,
+                                                  gpointer user_data)
+{
+    hwaddr va = (hwaddr)key;
+
+    return (1ULL << GET_DART_IOTLB_SID(va)) & GPOINTER_TO_UINT(user_data);
+}
+
 static void apple_dart_invalidate_bh(void *opaque)
 {
     AppleDARTInstance *o = opaque;
@@ -286,7 +286,12 @@ static void apple_dart_invalidate_bh(void *opaque)
     IOMMUTLBEvent event = { 0 };
     int i;
 
-    sid_mask = o->sid_mask;
+    WITH_QEMU_LOCK_GUARD(&o->mutex)
+    {
+        sid_mask = o->sid_mask;
+        g_hash_table_foreach_remove(o->tlb, apple_dart_tlb_remove_by_sid_mask,
+                                    GUINT_TO_POINTER(sid_mask));
+    }
 
     for (i = 0; i < DART_MAX_STREAMS; i++) {
         if ((sid_mask & (1ULL << i)) && o->iommus[i]) {
@@ -302,8 +307,6 @@ static void apple_dart_invalidate_bh(void *opaque)
 
     WITH_QEMU_LOCK_GUARD(&o->mutex)
     {
-        g_hash_table_foreach_remove(o->tlb, apple_dart_tlb_remove_by_sid_mask,
-                                    GUINT_TO_POINTER(sid_mask));
         o->tlb_op &= ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY);
     }
 }
@@ -526,8 +529,11 @@ static void apple_dart_reset(DeviceState *dev)
 
     for (i = 0; i < s->num_instances; i++) {
         memset(s->instances[i].base_reg, 0, sizeof(s->instances[i].base_reg));
+
         switch (s->instances[i].type) {
         case DART_DART: {
+            QEMU_LOCK_GUARD(&s->instances[i].mutex);
+
             // TODO: added hack against panic
             bool access_region_protection = (s->dart_options & BIT(1)) != 0;
             s->instances[i].params1 =
@@ -537,15 +543,12 @@ static void apple_dart_reset(DeviceState *dev)
                 s->instances[i].remap[j] = j;
             }
 
-            WITH_QEMU_LOCK_GUARD(&s->instances[i].mutex)
-            {
-                if (s->instances[i].tlb) {
-                    g_hash_table_destroy(s->instances[i].tlb);
-                    s->instances[i].tlb = NULL;
-                }
-                s->instances[i].tlb = g_hash_table_new_full(
-                    g_direct_hash, g_direct_equal, NULL, g_free);
+            if (s->instances[i].tlb) {
+                g_hash_table_destroy(s->instances[i].tlb);
             }
+            s->instances[i].tlb = g_hash_table_new_full(
+                g_direct_hash, g_direct_equal, NULL, g_free);
+            break;
         }
         default:
             break;
