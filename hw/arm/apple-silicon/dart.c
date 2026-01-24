@@ -302,10 +302,10 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
             if (val & DART_TLB_OP_INVALIDATE) {
                 uint64_t sid_mask = o->sid_mask;
 
-                if (qatomic_read(&o->tlb_op) & DART_TLB_OP_BUSY) {
+                if (o->tlb_op & DART_TLB_OP_BUSY) {
                     return;
                 }
-                qatomic_or(&o->tlb_op, DART_TLB_OP_BUSY);
+                o->tlb_op |= DART_TLB_OP_BUSY;
 
                 for (i = 0; i < DART_MAX_STREAMS; i++) {
                     if ((sid_mask & (1ULL << i)) && o->iommus[i]) {
@@ -322,8 +322,7 @@ static void base_reg_write(void *opaque, hwaddr addr, uint64_t data,
 
                 g_hash_table_foreach_remove(
                     o->tlb, apple_dart_tlb_remove_by_sid_mask, &sid_mask);
-                qatomic_and(&o->tlb_op,
-                            ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY));
+                o->tlb_op &= ~(DART_TLB_OP_INVALIDATE | DART_TLB_OP_BUSY);
                 return;
             }
             break;
@@ -344,15 +343,6 @@ static uint64_t base_reg_read(void *opaque, hwaddr addr, unsigned size)
 
     DPRINTF("%s[%d]: (%s) %s @ 0x" HWADDR_FMT_plx "\n", o->s->name, o->id,
             dart_instance_name[o->type], __func__, addr);
-
-    if (o->type == DART_DART) {
-        switch (addr) {
-        case REG_DART_TLB_OP:
-            return qatomic_read(&o->tlb_op);
-        default:
-            break;
-        }
-    }
 
     return o->base_reg[addr >> 2];
 }
