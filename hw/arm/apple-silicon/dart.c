@@ -18,6 +18,7 @@
  */
 
 #include "qemu/osdep.h"
+#include "block/aio.h"
 #include "hw/arm/apple-silicon/dart.h"
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/irq.h"
@@ -840,7 +841,6 @@ static const VMStateDescription vmstate_apple_dart = {
             VMSTATE_STRUCT_ARRAY(instances, AppleDARTState, DART_MAX_INSTANCE,
                                  1, vmstate_apple_dart_instance,
                                  AppleDARTInstance),
-
             VMSTATE_END_OF_LIST(),
         }
 };
