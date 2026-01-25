@@ -404,9 +404,9 @@ static const MemoryRegionOps apple_dart_mapper_reg_ops = {
 static void apple_dart_dummy_reg_write(void *opaque, hwaddr addr, uint64_t data,
                                        unsigned size)
 {
-    AppleDARTInstance *o = opaque;
+    AppleDARTInstance *instance = opaque;
 
-    QEMU_LOCK_GUARD(&o->mutex);
+    QEMU_LOCK_GUARD(&instance->mutex);
 
     DPRINTF("%s[%d]: (%s) 0x" HWADDR_FMT_plx " <- 0x" HWADDR_FMT_plx "\n",
             o->dart->parent_obj.parent_obj.id, o->id,
@@ -416,9 +416,9 @@ static void apple_dart_dummy_reg_write(void *opaque, hwaddr addr, uint64_t data,
 static uint64_t apple_dart_dummy_reg_read(void *opaque, hwaddr addr,
                                           unsigned size)
 {
-    AppleDARTInstance *o = opaque;
+    AppleDARTInstance *instance = opaque;
 
-    QEMU_LOCK_GUARD(&o->mutex);
+    QEMU_LOCK_GUARD(&instance->mutex);
 
     DPRINTF("%s[%d]: (%s) 0x" HWADDR_FMT_plx "\n",
             o->dart->parent_obj.parent_obj.id, o->id,
@@ -438,11 +438,11 @@ static const MemoryRegionOps apple_dart_dummy_reg_ops = {
     .valid.unaligned = false,
 };
 
-static AppleDARTTLBEntry *apple_dart_mapper_ptw(AppleDARTMapperInstance *o,
+static AppleDARTTLBEntry *apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
                                                 uint32_t sid, hwaddr iova,
                                                 uint32_t *out_error_status)
 {
-    AppleDARTState *dart = o->common.dart;
+    AppleDARTState *dart = mapper->common.dart;
 
     uint64_t idx = (iova & (dart->l_mask[0])) >> dart->l_shift[0];
     uint64_t pte;
@@ -453,12 +453,12 @@ static AppleDARTTLBEntry *apple_dart_mapper_ptw(AppleDARTMapperInstance *o,
 
     if (sid >= DART_MAX_STREAMS || (dart->sid_mask & BIT_ULL(sid)) == 0 ||
         idx >= DART_MAX_TTBR ||
-        (o->regs.ttbr[sid][idx] & DART_TTBR_VALID) == 0) {
+        (mapper->regs.ttbr[sid][idx] & DART_TTBR_VALID) == 0) {
         error_status = DART_ERROR_FLAG | DART_ERROR_TTBR_INVLD;
         goto end;
     }
 
-    pte = o->regs.ttbr[sid][idx];
+    pte = mapper->regs.ttbr[sid][idx];
     pa = (pte & DART_TTBR_MASK) << DART_TTBR_SHIFT;
 
     for (level = 1; level < 3; level++) {
@@ -802,10 +802,11 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
     return dart;
 }
 
-static void apple_dart_dump_pt(Monitor *mon, AppleDARTInstance *o, hwaddr iova,
-                               const uint64_t *entries, int level, uint64_t pte)
+static void apple_dart_dump_pt(Monitor *mon, AppleDARTInstance *instance,
+                               hwaddr iova, const uint64_t *entries, int level,
+                               uint64_t pte)
 {
-    AppleDARTState *dart = o->dart;
+    AppleDARTState *dart = instance->dart;
     if (level == 3) {
         monitor_printf(mon,
                        "\t\t\t0x" HWADDR_FMT_plx " ... 0x" HWADDR_FMT_plx
@@ -839,7 +840,8 @@ static void apple_dart_dump_pt(Monitor *mon, AppleDARTInstance *o, hwaddr iova,
                 continue;
             }
 
-            apple_dart_dump_pt(mon, o, iova | (i << dart->l_shift[level]), next,
+            apple_dart_dump_pt(mon, instance,
+                               iova | (i << dart->l_shift[level]), next,
                                level + 1, pte2);
         }
     }
