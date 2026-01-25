@@ -132,7 +132,7 @@ static const char *dart_instance_name[] = {
 
 typedef struct AppleDARTTLBEntry {
     hwaddr block_addr;
-    IOMMUAccessFlags access_flags;
+    IOMMUAccessFlags perm;
 } AppleDARTTLBEntry;
 
 typedef struct AppleDARTMapperInstance AppleDARTMapperInstance;
@@ -482,8 +482,8 @@ static AppleDARTTLBEntry *apple_dart_mapper_ptw(AppleDARTMapperInstance *o,
 
     tlb_entry = g_new(AppleDARTTLBEntry, 1);
     tlb_entry->block_addr = (pte & dart->page_mask & DART_PTE_ADDR_MASK);
-    tlb_entry->access_flags = IOMMU_ACCESS_FLAG((pte & DART_PTE_NO_READ) == 0,
-                                                (pte & DART_PTE_NO_WRITE) == 0);
+    tlb_entry->perm = IOMMU_ACCESS_FLAG((pte & DART_PTE_NO_READ) == 0,
+                                        (pte & DART_PTE_NO_WRITE) == 0);
     error_status = 0;
 
 end:
@@ -559,7 +559,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
     }
 
     entry.translated_addr = tlb_entry->block_addr | (addr & entry.addr_mask);
-    entry.perm = tlb_entry->access_flags;
+    entry.perm = tlb_entry->perm;
 
     if ((flag & IOMMU_WO) != 0 && (entry.perm & IOMMU_WO) == 0) {
         mapper->regs.error_address = addr;
@@ -591,8 +591,8 @@ static void apple_dart_reset(DeviceState *dev)
     AppleDARTState *dart = APPLE_DART(dev);
     AppleDARTInstance *instance;
     AppleDARTMapperInstance *mapper;
-    int i;
-    int j;
+    uint32_t i;
+    uint32_t j;
 
     for (i = 0; i < dart->num_instances; i++) {
         switch (dart->instances[i]->type) {
