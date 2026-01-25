@@ -286,7 +286,7 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
     hwaddr i;
 
     DPRINTF("%s[%d]: (DART) 0x" HWADDR_FMT_plx " <- 0x" HWADDR_FMT_plx "\n",
-            s->name, o->id, addr, data);
+            DEVICE(mapper->common.dart)->id, mapper->common.id, addr, data);
 
     QEMU_LOCK_GUARD(&mapper->common.mutex);
 
@@ -354,7 +354,8 @@ static uint64_t apple_dart_mapper_reg_read(void *opaque, hwaddr addr,
 
     QEMU_LOCK_GUARD(&mapper->common.mutex);
 
-    DPRINTF("%s[%d]: (DART) 0x" HWADDR_FMT_plx "\n", o->s->name, o->id, addr);
+    DPRINTF("%s[%d]: (DART) 0x" HWADDR_FMT_plx "\n",
+            DEVICE(mapper->common.dart)->id, mapper->common.id, addr);
 
     switch (addr) {
     case REG_DART_PARAMS1:
@@ -409,8 +410,8 @@ static void apple_dart_dummy_reg_write(void *opaque, hwaddr addr, uint64_t data,
     QEMU_LOCK_GUARD(&instance->mutex);
 
     DPRINTF("%s[%d]: (%s) 0x" HWADDR_FMT_plx " <- 0x" HWADDR_FMT_plx "\n",
-            o->dart->parent_obj.parent_obj.id, o->id,
-            dart_instance_name[o->type], addr, data);
+            DEVICE(instance->dart)->id, instance->id,
+            dart_instance_name[instance->type], addr, data);
 }
 
 static uint64_t apple_dart_dummy_reg_read(void *opaque, hwaddr addr,
@@ -420,9 +421,8 @@ static uint64_t apple_dart_dummy_reg_read(void *opaque, hwaddr addr,
 
     QEMU_LOCK_GUARD(&instance->mutex);
 
-    DPRINTF("%s[%d]: (%s) 0x" HWADDR_FMT_plx "\n",
-            o->dart->parent_obj.parent_obj.id, o->id,
-            dart_instance_name[o->type], addr);
+    DPRINTF("%s[%d]: (%s) 0x" HWADDR_FMT_plx "\n", DEVICE(instance->dart)->id,
+            instance->id, dart_instance_name[instance->type], addr);
 
     return 0;
 }
@@ -544,7 +544,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
             g_hash_table_insert(mapper->tlb, GUINT_TO_POINTER(key), tlb_entry);
             DPRINTF("%s[%d]: (%s) SID %u: 0x" HWADDR_FMT_plx
                     " -> 0x" HWADDR_FMT_plx " (%c%c)\n",
-                    mapper->common.name, mapper->common.id,
+                    DEVICE(mapper->common.dart)->id, mapper->common.id,
                     dart_instance_name[mapper->common.type], iommu->sid, addr,
                     tlb_entry->block_addr | (addr & dart->page_bits),
                     (tlb_entry->perm & IOMMU_RO) ? 'r' : '-',
@@ -578,7 +578,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
 end:
     DPRINTF("%s[%d]: (%s) SID %u: 0x" HWADDR_FMT_plx " -> 0x" HWADDR_FMT_plx
             " (%c%c)\n",
-            mapper->common.name, mapper->common.id,
+            DEVICE(mapper->common.dart)->id, mapper->common.id,
             dart_instance_name[mapper->common.type], iommu->sid, entry.iova,
             entry.translated_addr, (entry.perm & IOMMU_RO) ? 'r' : '-',
             (entry.perm & IOMMU_WO) ? 'w' : '-');
@@ -792,7 +792,8 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
         instance->dart = dart;
         dart->instances[i] = instance;
         sysbus_init_mmio(sbd, &instance->iomem);
-        DPRINTF("%s: DART %s instance %d: %s\n", __func__, instance->name, i,
+        DPRINTF("%s: DART %s instance %d: %s\n", __func__,
+                DEVICE(instance->dart)->id, i,
                 dart_instance_name[instance->type]);
         instance_data += 3;
     }
