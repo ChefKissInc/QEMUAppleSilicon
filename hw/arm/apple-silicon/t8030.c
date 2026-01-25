@@ -548,22 +548,22 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     apple_nvram_load(nvram);
 
     if (machine->initrd_filename == NULL &&
-        t8030->boot_mode != kBootModeExitRecovery &&
+        t8030->boot_info.boot_mode != kAppleBootModeExitRecovery &&
         !env_get_bool(nvram, "auto-boot", false)) {
-        t8030->boot_mode = kBootModeExitRecovery;
+        t8030->boot_info.boot_mode = kAppleBootModeExitRecovery;
         warn_report(
             "No RAM Disk specified but auto boot disabled, exiting recovery.");
     }
 
-    info_report("boot_mode: %u", t8030->boot_mode);
-    switch (t8030->boot_mode) {
-    case kBootModeEnterRecovery:
+    info_report("boot_mode: %u", t8030->boot_info.boot_mode);
+    switch (t8030->boot_info.boot_mode) {
+    case kAppleBootModeEnterRecovery:
         env_set(nvram, "auto-boot", "false", 0);
-        t8030->boot_mode = kBootModeAuto;
+        t8030->boot_info.boot_mode = kAppleBootModeAuto;
         break;
-    case kBootModeExitRecovery:
+    case kAppleBootModeExitRecovery:
         env_set(nvram, "auto-boot", "true", 0);
-        t8030->boot_mode = kBootModeAuto;
+        t8030->boot_info.boot_mode = kAppleBootModeAuto;
         break;
     default:
         break;
@@ -572,7 +572,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     info_report("auto-boot=%s",
                 env_get_bool(nvram, "auto-boot", false) ? "true" : "false");
 
-    if (t8030->boot_mode == kBootModeAuto &&
+    if (t8030->boot_info.boot_mode == kAppleBootModeAuto &&
         !env_get_bool(nvram, "auto-boot", false)) {
         cmdline = g_strconcat("-restore rd=md0 nand-enable-reformat=1 ",
                               machine->kernel_cmdline, NULL);
@@ -2749,29 +2749,29 @@ static void t8030_set_boot_mode(Object *obj, const char *value, Error **errp)
     AppleBootMode boot_mode;
 
     if (g_str_equal(value, "auto")) {
-        boot_mode = kBootModeAuto;
+        boot_mode = kAppleBootModeAuto;
     } else if (g_str_equal(value, "manual")) {
-        boot_mode = kBootModeManual;
+        boot_mode = kAppleBootModeManual;
     } else if (g_str_equal(value, "enter_recovery")) {
-        boot_mode = kBootModeEnterRecovery;
+        boot_mode = kAppleBootModeEnterRecovery;
     } else if (g_str_equal(value, "exit_recovery")) {
-        boot_mode = kBootModeExitRecovery;
+        boot_mode = kAppleBootModeExitRecovery;
     } else {
         error_setg(errp, "Invalid boot mode: %s", value);
         return;
     }
 
-    APPLE_T8030(obj)->boot_mode = boot_mode;
+    APPLE_T8030(obj)->boot_info.boot_mode = boot_mode;
 }
 
 static char *t8030_get_boot_mode(Object *obj, Error **errp)
 {
-    switch (APPLE_T8030(obj)->boot_mode) {
-    case kBootModeManual:
+    switch (APPLE_T8030(obj)->boot_info.boot_mode) {
+    case kAppleBootModeManual:
         return g_strdup("manual");
-    case kBootModeEnterRecovery:
+    case kAppleBootModeEnterRecovery:
         return g_strdup("enter_recovery");
-    case kBootModeExitRecovery:
+    case kAppleBootModeExitRecovery:
         return g_strdup("exit_recovery");
     default:
         return g_strdup("auto");

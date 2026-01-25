@@ -39,13 +39,6 @@ typedef struct {
     MachineClass parent;
 } AppleT8030MachineClass;
 
-typedef enum {
-    kBootModeAuto = 0,
-    kBootModeManual,
-    kBootModeEnterRecovery,
-    kBootModeExitRecovery,
-} AppleBootMode;
-
 typedef struct {
     MachineState parent;
 
@@ -67,7 +60,6 @@ typedef struct {
     char *sep_rom_filename;
     char *sep_fw_filename;
     char *securerom_filename;
-    AppleBootMode boot_mode;
     uint32_t sio_protocol;
     uint32_t build_version;
     uint64_t ecid;

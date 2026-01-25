@@ -315,6 +315,13 @@ typedef struct {
 #define XNU_MAX_NVRAM_SIZE (0xFFFF * 0x10)
 #define XNU_BNCH_SIZE (32)
 
+typedef enum {
+    kAppleBootModeAuto = 0,
+    kAppleBootModeManual,
+    kAppleBootModeEnterRecovery,
+    kAppleBootModeExitRecovery,
+} AppleBootMode;
+
 typedef struct {
     vaddr kern_entry;
     hwaddr kern_text_off;
@@ -339,6 +346,7 @@ typedef struct {
     uint32_t nvram_size;
     char *ticket_data;
     gsize ticket_length;
+    AppleBootMode boot_mode;
 } AppleBootInfo;
 
 MachoHeader64 *apple_boot_load_kernel(const char *filename,

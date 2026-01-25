@@ -394,15 +394,15 @@ static void s8000_memory_setup(MachineState *machine)
     }
     apple_nvram_load(nvram);
 
-    info_report("Boot mode: %u", s8000->boot_mode);
-    switch (s8000->boot_mode) {
-    case kBootModeEnterRecovery:
+    info_report("Boot mode: %u", s8000->boot_info.boot_mode);
+    switch (s8000->boot_info.boot_mode) {
+    case kAppleBootModeEnterRecovery:
         env_set(nvram, "auto-boot", "false", 0);
-        s8000->boot_mode = kBootModeAuto;
+        s8000->boot_info.boot_mode = kAppleBootModeAuto;
         break;
-    case kBootModeExitRecovery:
+    case kAppleBootModeExitRecovery:
         env_set(nvram, "auto-boot", "true", 0);
-        s8000->boot_mode = kBootModeAuto;
+        s8000->boot_info.boot_mode = kAppleBootModeAuto;
         break;
     default:
         break;
@@ -411,7 +411,7 @@ static void s8000_memory_setup(MachineState *machine)
     info_report("auto-boot=%s",
                 env_get_bool(nvram, "auto-boot", false) ? "true" : "false");
 
-    if (s8000->boot_mode == kBootModeAuto &&
+    if (s8000->boot_info.boot_mode == kAppleBootModeAuto &&
         !env_get_bool(nvram, "auto-boot", false)) {
         cmdline = g_strconcat("-restore rd=md0 nand-enable-reformat=1 ",
                               machine->kernel_cmdline, NULL);
@@ -1593,15 +1593,15 @@ static void s8000_set_boot_mode(Object *obj, const char *value, Error **errp)
 
     s8000 = APPLE_S8000(obj);
     if (g_str_equal(value, "auto")) {
-        s8000->boot_mode = kBootModeAuto;
+        s8000->boot_info.boot_mode = kAppleBootModeAuto;
     } else if (g_str_equal(value, "manual")) {
-        s8000->boot_mode = kBootModeManual;
+        s8000->boot_info.boot_mode = kAppleBootModeManual;
     } else if (g_str_equal(value, "enter_recovery")) {
-        s8000->boot_mode = kBootModeEnterRecovery;
+        s8000->boot_info.boot_mode = kAppleBootModeEnterRecovery;
     } else if (g_str_equal(value, "exit_recovery")) {
-        s8000->boot_mode = kBootModeExitRecovery;
+        s8000->boot_info.boot_mode = kAppleBootModeExitRecovery;
     } else {
-        s8000->boot_mode = kBootModeAuto;
+        s8000->boot_info.boot_mode = kAppleBootModeAuto;
         error_setg(errp, "Invalid boot mode: %s", value);
     }
 }
@@ -1611,14 +1611,14 @@ static char *s8000_get_boot_mode(Object *obj, Error **errp)
     AppleS8000MachineState *s8000;
 
     s8000 = APPLE_S8000(obj);
-    switch (s8000->boot_mode) {
-    case kBootModeManual:
+    switch (s8000->boot_info.boot_mode) {
+    case kAppleBootModeManual:
         return g_strdup("manual");
-    case kBootModeEnterRecovery:
+    case kAppleBootModeEnterRecovery:
         return g_strdup("enter_recovery");
-    case kBootModeExitRecovery:
+    case kAppleBootModeExitRecovery:
         return g_strdup("exit_recovery");
-    case kBootModeAuto:
+    case kAppleBootModeAuto:
         return g_strdup("auto");
     }
 }
