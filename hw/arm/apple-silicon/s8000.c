@@ -1594,8 +1594,6 @@ static void s8000_set_boot_mode(Object *obj, const char *value, Error **errp)
     s8000 = APPLE_S8000(obj);
     if (g_str_equal(value, "auto")) {
         s8000->boot_info.boot_mode = kAppleBootModeAuto;
-    } else if (g_str_equal(value, "manual")) {
-        s8000->boot_info.boot_mode = kAppleBootModeManual;
     } else if (g_str_equal(value, "enter_recovery")) {
         s8000->boot_info.boot_mode = kAppleBootModeEnterRecovery;
     } else if (g_str_equal(value, "exit_recovery")) {
@@ -1612,8 +1610,6 @@ static char *s8000_get_boot_mode(Object *obj, Error **errp)
 
     s8000 = APPLE_S8000(obj);
     switch (s8000->boot_info.boot_mode) {
-    case kAppleBootModeManual:
-        return g_strdup("manual");
     case kAppleBootModeEnterRecovery:
         return g_strdup("enter_recovery");
     case kAppleBootModeExitRecovery:
