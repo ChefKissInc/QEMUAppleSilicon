@@ -2750,8 +2750,6 @@ static void t8030_set_boot_mode(Object *obj, const char *value, Error **errp)
 
     if (g_str_equal(value, "auto")) {
         boot_mode = kAppleBootModeAuto;
-    } else if (g_str_equal(value, "manual")) {
-        boot_mode = kAppleBootModeManual;
     } else if (g_str_equal(value, "enter_recovery")) {
         boot_mode = kAppleBootModeEnterRecovery;
     } else if (g_str_equal(value, "exit_recovery")) {
@@ -2767,8 +2765,6 @@ static void t8030_set_boot_mode(Object *obj, const char *value, Error **errp)
 static char *t8030_get_boot_mode(Object *obj, Error **errp)
 {
     switch (APPLE_T8030(obj)->boot_info.boot_mode) {
-    case kAppleBootModeManual:
-        return g_strdup("manual");
     case kAppleBootModeEnterRecovery:
         return g_strdup("enter_recovery");
     case kAppleBootModeExitRecovery:
