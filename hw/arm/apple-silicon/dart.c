@@ -267,9 +267,9 @@ static gboolean apple_dart_tlb_remove_by_sid_mask(gpointer key, gpointer value,
                                                   gpointer user_data)
 {
     hwaddr va = (hwaddr)key;
+    uint64_t sid_mask = (uint64_t)user_data;
 
-    return (1ULL << SHARED_FIELD_EX64(va, DART_IOTLB_SID)) &
-           GPOINTER_TO_UINT(user_data);
+    return sid_mask & BIT_ULL(SHARED_FIELD_EX64(va, DART_IOTLB_SID));
 }
 
 static void apple_dart_invalidate_bh(void *opaque)
