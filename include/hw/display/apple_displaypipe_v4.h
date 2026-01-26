@@ -31,5 +31,6 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr);
 
 void adp_v4_update_vram_mapping(AppleDisplayPipeV4State *s, MemoryRegion *mr,
                                 hwaddr off, uint64_t size);
+uint64_t adp_v4_get_fb_off(AppleDisplayPipeV4State *s);
 
 #endif /* APPLE_DISPLAYPIPE_V4_H */

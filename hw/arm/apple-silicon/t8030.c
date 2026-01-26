@@ -640,6 +640,9 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
         vram_reg[1] = DISPLAY_SIZE;
         apple_dt_set_prop(vram, "reg", sizeof(vram_reg), &vram_reg);
     }
+    // adjust framebuffer for verbose display.
+    t8030->video_args.base_addr += adp_v4_get_fb_off(APPLE_DISPLAY_PIPE_V4(
+        object_property_get_link(OBJECT(t8030), "disp0", &error_abort)));
 
     hdr = t8030->kernel;
     g_assert_nonnull(hdr);
