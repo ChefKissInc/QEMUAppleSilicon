@@ -298,7 +298,7 @@ static void apple_dart_invalidate_bh(void *opaque)
         event.entry.target_as = &address_space_memory;
         event.entry.iova = 0;
         event.entry.perm = IOMMU_NONE;
-        event.entry.addr_mask = ~(hwaddr)0;
+        event.entry.addr_mask = HWADDR_MAX;
 
         memory_region_notify_iommu(&mapper->iommus[i]->iommu, 0, event);
     }
