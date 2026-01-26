@@ -880,7 +880,6 @@ SysBusDevice *apple_aop_create(AppleDTNode *node, AppleA7IOPVersion version)
                                         &error_fatal);
 
     apple_dt_set_prop_u32(child, "pre-loaded", 1);
-    // FIXME: This causes a panic in iOS 18+. Please investigate.
     apple_dt_set_prop_u32(child, "running", 1);
 
     return sbd;
