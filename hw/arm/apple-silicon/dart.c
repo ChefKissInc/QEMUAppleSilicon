@@ -244,11 +244,8 @@ static void apple_dart_update_irq(AppleDARTState *dart)
     AppleDARTInstance *instance;
     AppleDARTMapperInstance *mapper;
 
-    g_assert_nonnull(dart);
-
     for (uint32_t i = 0; i < dart->num_instances; i++) {
         instance = dart->instances[i];
-        g_assert_nonnull(instance);
         if (instance->type != DART_DART) {
             continue;
         }
