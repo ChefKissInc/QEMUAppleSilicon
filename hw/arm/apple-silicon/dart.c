@@ -48,6 +48,7 @@
 #define DART_MAX_STREAMS (16)
 #define DART_MAX_TTBR (4)
 #define DART_MAX_VA_BITS (38)
+#define DART_MAX_TLB_OP_SETS (1)
 
 enum {
     DART_TLB_OP_INVALIDATE = 0,
@@ -77,8 +78,8 @@ REG32(DART_TLB_OP, 0x20)
     FIELD(DART_TLB_OP, TE_INDEX, 8, 3)
     FIELD(DART_TLB_OP, SET_INDEX, 20, 12)
 // 0x24..0x30 = ??
-REG32(DART_TLB_OP_SET_1_LOW, 0x34)
-REG32(DART_TLB_OP_SET_1_HIGH, 0x38)
+REG32(DART_TLB_OP_SET_0_LOW, 0x34)
+REG32(DART_TLB_OP_SET_0_HIGH, 0x38)
 // 0x3C = ??
 REG32(DART_ERROR_STATUS, 0x40)
     FIELD(DART_ERROR_STATUS, TTBR_INVLD, 0, 1)
@@ -176,7 +177,7 @@ typedef struct {
     uint32_t params1;
     uint32_t params2;
     uint32_t tlb_op;
-    uint64_t tlb_op_set[2];
+    uint64_t tlb_op_set[DART_MAX_TLB_OP_SETS];
     uint32_t error_status;
     uint64_t error_address;
     uint32_t config;
@@ -275,32 +276,41 @@ static gboolean apple_dart_tlb_remove_by_sid_mask(gpointer key, gpointer value,
 static void apple_dart_invalidate_bh(void *opaque)
 {
     AppleDARTMapperInstance *mapper = opaque;
-    uint64_t sid_mask;
+    uint32_t i;
+    uint32_t set_index;
+    uint64_t sid_mask = 0;
     IOMMUTLBEvent event = { 0 };
-    int i;
 
     WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
     {
-        sid_mask = mapper->common.dart->sid_mask &
-                   mapper->regs.tlb_op_set[FIELD_EX32(mapper->regs.tlb_op,
-                                                      DART_TLB_OP, SET_INDEX)];
+        set_index = FIELD_EX32(mapper->regs.tlb_op, DART_TLB_OP, SET_INDEX);
+        for (i = 0; i < DART_MAX_TLB_OP_SETS; ++i) {
+            if ((set_index & BIT_ULL(i)) == 0) {
+                continue;
+            }
+
+            sid_mask |=
+                mapper->common.dart->sid_mask & mapper->regs.tlb_op_set[i];
+        }
         g_hash_table_foreach_remove(mapper->tlb,
                                     apple_dart_tlb_remove_by_sid_mask,
                                     GUINT_TO_POINTER(sid_mask));
     }
 
-    for (i = 0; i < DART_MAX_STREAMS; i++) {
-        if ((sid_mask & BIT_ULL(i)) == 0) {
-            continue;
+    if (sid_mask != 0) {
+        for (i = 0; i < DART_MAX_STREAMS; i++) {
+            if ((sid_mask & BIT_ULL(i)) == 0) {
+                continue;
+            }
+
+            event.type = IOMMU_NOTIFIER_UNMAP;
+            event.entry.target_as = &address_space_memory;
+            event.entry.iova = 0;
+            event.entry.perm = IOMMU_NONE;
+            event.entry.addr_mask = HWADDR_MAX;
+
+            memory_region_notify_iommu(&mapper->iommus[i]->iommu, 0, event);
         }
-
-        event.type = IOMMU_NOTIFIER_UNMAP;
-        event.entry.target_as = &address_space_memory;
-        event.entry.iova = 0;
-        event.entry.perm = IOMMU_NONE;
-        event.entry.addr_mask = HWADDR_MAX;
-
-        memory_region_notify_iommu(&mapper->iommus[i]->iommu, 0, event);
     }
 
     WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
@@ -338,13 +348,13 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
 
         qemu_bh_schedule(mapper->invalidate_bh);
         break;
-    case R_DART_TLB_OP_SET_1_LOW:
-        mapper->regs.tlb_op_set[1] =
-            deposit64(mapper->regs.tlb_op_set[1], 0, 32, val);
+    case R_DART_TLB_OP_SET_0_LOW:
+        mapper->regs.tlb_op_set[0] =
+            deposit64(mapper->regs.tlb_op_set[0], 0, 32, val);
         break;
-    case R_DART_TLB_OP_SET_1_HIGH:
-        mapper->regs.tlb_op_set[1] =
-            deposit64(mapper->regs.tlb_op_set[1], 32, 32, val);
+    case R_DART_TLB_OP_SET_0_HIGH:
+        mapper->regs.tlb_op_set[0] =
+            deposit64(mapper->regs.tlb_op_set[0], 32, 32, val);
         break;
     case R_DART_ERROR_STATUS:
         mapper->regs.error_status &= ~val;
@@ -396,10 +406,10 @@ static uint64_t apple_dart_mapper_reg_read(void *opaque, hwaddr addr,
         return mapper->regs.params2;
     case R_DART_TLB_OP:
         return mapper->regs.tlb_op;
-    case R_DART_TLB_OP_SET_1_LOW:
-        return extract64(mapper->regs.tlb_op_set[1], 0, 32);
-    case R_DART_TLB_OP_SET_1_HIGH:
-        return extract64(mapper->regs.tlb_op_set[1], 32, 32);
+    case R_DART_TLB_OP_SET_0_LOW:
+        return extract64(mapper->regs.tlb_op_set[0], 0, 32);
+    case R_DART_TLB_OP_SET_0_HIGH:
+        return extract64(mapper->regs.tlb_op_set[0], 32, 32);
     case R_DART_ERROR_STATUS:
         return mapper->regs.error_status;
     case R_DART_ERROR_ADDRESS_LOW:
