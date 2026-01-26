@@ -349,12 +349,16 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
         qemu_bh_schedule(mapper->invalidate_bh);
         break;
     case R_DART_TLB_OP_SET_0_LOW:
-        mapper->regs.tlb_op_set[0] =
-            deposit64(mapper->regs.tlb_op_set[0], 0, 32, val);
+        if (!FIELD_EX32(mapper->regs.tlb_op, DART_TLB_OP, BUSY)) {
+            mapper->regs.tlb_op_set[0] =
+                deposit64(mapper->regs.tlb_op_set[0], 0, 32, val);
+        }
         break;
     case R_DART_TLB_OP_SET_0_HIGH:
-        mapper->regs.tlb_op_set[0] =
-            deposit64(mapper->regs.tlb_op_set[0], 32, 32, val);
+        if (!FIELD_EX32(mapper->regs.tlb_op, DART_TLB_OP, BUSY)) {
+            mapper->regs.tlb_op_set[0] =
+                deposit64(mapper->regs.tlb_op_set[0], 32, 32, val);
+        }
         break;
     case R_DART_ERROR_STATUS:
         mapper->regs.error_status &= ~val;
