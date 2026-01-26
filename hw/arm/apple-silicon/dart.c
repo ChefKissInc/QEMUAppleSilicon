@@ -537,7 +537,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
         container_of(mr, AppleDARTIOMMUMemoryRegion, iommu);
     AppleDARTMapperInstance *mapper = iommu->mapper;
     AppleDARTState *dart = mapper->common.dart;
-    AppleDARTTLBEntry *tlb_entry = NULL;
+    AppleDARTTLBEntry *tlb_entry;
     uint32_t sid = iommu->sid;
     uint64_t iova;
     uint64_t key;
