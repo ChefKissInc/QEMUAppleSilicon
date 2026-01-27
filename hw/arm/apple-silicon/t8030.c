@@ -134,10 +134,8 @@
 
 #define NUM_UARTS (9)
 
-#define ANS_TEXT_SIZE (0x124000)
-#define ANS_DATA_SIZE (0x3C00000)
-#define SIO_TEXT_SIZE (0x1C000)
-#define SIO_DATA_SIZE (0xF8000)
+#define ANS_SIZE (0x3D24000)
+#define SIO_SIZE (0x114000)
 #define PANIC_SIZE (0x100000)
 
 #define AMCC_BASE (0x200000000)
@@ -419,46 +417,16 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
     }
 }
 
-typedef enum {
-    RTKIT_SEGMENT_PROP_SETUP_RANGES_ON_CHILD = BIT(0),
-    RTKIT_SEGMENT_PROP_SETUP_SET_REGION_BASE_SIZE = BIT(1),
-} RTKitSegmentPropSetupOptions;
-
-static void t8030_rtkit_seg_prop_setup(AppleDTNode *child, AppleDTNode *iop_nub,
-                                       hwaddr base, uint32_t text_size,
-                                       uint32_t data_size,
-                                       RTKitSegmentPropSetupOptions options)
+static void t8030_rtkit_seg_prop_setup(AppleDTNode *iop_nub, hwaddr base,
+                                       uint32_t size)
 {
-    AppleIOPSegmentRange segranges[2] = { 0 };
-
-    apple_dt_set_prop_str(child, "segment-names", "__TEXT;__DATA");
-    apple_dt_set_prop_str(iop_nub, "segment-names", "__TEXT;__DATA");
-
-    segranges[0].phys = base;
-    segranges[0].size = text_size;
-    segranges[0].flags = BIT(0);
-    segranges[1].phys = segranges[0].phys + text_size;
-    segranges[1].virt = text_size;
-    segranges[1].remap = text_size;
-    segranges[1].size = data_size;
-
-    if (options & RTKIT_SEGMENT_PROP_SETUP_SET_REGION_BASE_SIZE) {
-        apple_dt_set_prop_u64(iop_nub, "region-base", segranges[0].phys);
-        apple_dt_set_prop_u64(iop_nub, "region-size", text_size + data_size);
-    }
-
-    apple_dt_set_prop(iop_nub, "segment-ranges", sizeof(segranges), segranges);
-    if (options & RTKIT_SEGMENT_PROP_SETUP_RANGES_ON_CHILD) {
-        apple_dt_set_prop(child, "segment-ranges", sizeof(segranges),
-                          segranges);
-    }
+    apple_dt_set_prop_u64(iop_nub, "region-base", base);
+    apple_dt_set_prop_u64(iop_nub, "region-size", size);
 }
 
 static void t8030_rtkit_mem_setup(AppleT8030MachineState *t8030,
                                   CarveoutAllocator *ca, const char *name,
-                                  const char *nub_name, uint32_t text_size,
-                                  uint32_t data_size,
-                                  RTKitSegmentPropSetupOptions options)
+                                  const char *nub_name, uint32_t size)
 {
     AppleDTNode *child;
     AppleDTNode *iop_nub;
@@ -470,9 +438,7 @@ static void t8030_rtkit_mem_setup(AppleT8030MachineState *t8030,
     iop_nub = apple_dt_get_node(child, nub_name);
     g_assert_nonnull(iop_nub);
 
-    t8030_rtkit_seg_prop_setup(child, iop_nub,
-                               carveout_alloc_mem(ca, text_size + data_size),
-                               text_size, data_size, options);
+    t8030_rtkit_seg_prop_setup(iop_nub, carveout_alloc_mem(ca, size), size);
 }
 
 static void t8030_memory_setup(AppleT8030MachineState *t8030)
@@ -509,12 +475,8 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     ca = carveout_alloc_new(carveout_memory_map, info->dram_base,
                             info->dram_size, 16 * KiB);
 
-    t8030_rtkit_mem_setup(t8030, ca, "sio", "iop-sio-nub", SIO_TEXT_SIZE,
-                          SIO_DATA_SIZE,
-                          RTKIT_SEGMENT_PROP_SETUP_RANGES_ON_CHILD);
-    t8030_rtkit_mem_setup(t8030, ca, "ans", "iop-ans-nub", ANS_TEXT_SIZE,
-                          ANS_DATA_SIZE,
-                          RTKIT_SEGMENT_PROP_SETUP_SET_REGION_BASE_SIZE);
+    t8030_rtkit_mem_setup(t8030, ca, "sio", "iop-sio-nub", SIO_SIZE);
+    t8030_rtkit_mem_setup(t8030, ca, "ans", "iop-ans-nub", ANS_SIZE);
 
     if (t8030->sep_rom_filename) {
         if (!g_file_get_contents(t8030->sep_rom_filename, &seprom, &fsize,
@@ -1164,6 +1126,7 @@ static void t8030_create_dart(AppleT8030MachineState *t8030, const char *name,
 
     child = apple_dt_get_node(child, name);
     g_assert_nonnull(child);
+    apple_dt_set_prop_u32(child, "vm-base", 0x4000);
 
     dart = apple_dart_from_node(child);
     g_assert_nonnull(dart);
@@ -2266,8 +2229,6 @@ static void t8030_create_aop(AppleT8030MachineState *t8030)
     AppleDTNode *dart_aop;
     AppleDTNode *dart_aop_mapper;
     SysBusDevice *sbd;
-    uint64_t region_size;
-    uint64_t region_base;
 
     child = apple_dt_get_node(t8030->device_tree, "arm-io");
     g_assert_nonnull(child);
@@ -2277,12 +2238,6 @@ static void t8030_create_aop(AppleT8030MachineState *t8030)
     g_assert_nonnull(child);
     iop_nub = apple_dt_get_node(child, "iop-aop-nub");
     g_assert_nonnull(iop_nub);
-
-    region_size = apple_dt_get_prop_u64(iop_nub, "region-size", &error_fatal);
-    region_base = apple_dt_get_prop_u64(iop_nub, "region-base", &error_fatal);
-    t8030_rtkit_seg_prop_setup(child, iop_nub, region_base, region_size / 2,
-                               region_size - (region_size / 2),
-                               RTKIT_SEGMENT_PROP_SETUP_RANGES_ON_CHILD);
 
     aop = apple_aop_create(child, APPLE_A7IOP_V4);
     g_assert_nonnull(aop);
