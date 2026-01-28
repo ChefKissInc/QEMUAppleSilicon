@@ -2,6 +2,7 @@
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/irq.h"
 #include "hw/misc/apple-silicon/spmi-pmu.h"
+#include "hw/registerfields.h"
 #include "hw/spmi/spmi.h"
 #include "migration/vmstate.h"
 #include "qapi/error.h"
@@ -13,16 +14,13 @@
 #define TYPE_APPLE_SPMI_PMU "apple-spmi-pmu"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleSPMIPMUState, APPLE_SPMI_PMU)
 
-#define LEG_SCRPAD_OFFSET_SECS_OFFSET (4)
-#define LEG_SCRPAD_OFFSET_TICKS_OFFSET (21)
 #define RTC_TICK_FREQ (32768ULL)
-#define RTC_CONTROL_MONITOR (1 << 0)
-#define RTC_CONTROL_ALARM_EN (1 << 6)
-#define RTC_EVENT_ALARM (1 << 0)
 
-#define RREG32(off) ldl_le_p(&s->reg[off])
-#define WREG32(off, val) stl_le_p(&s->reg[off], val)
-#define WREG32_OR(off, val) WREG32(off, RREG32(off) | (val))
+REG8(LEG_SCRPAD_OFFSET_SECS, 4)
+REG8(LEG_SCRPAD_OFFSET_TICKS, 21)
+FIELD(RTC_CONTROL, MONITOR, 0, 1)
+FIELD(RTC_CONTROL, ALARM_EN, 6, 1)
+FIELD(RTC_EVENT, ALARM, 0, 1)
 
 struct AppleSPMIPMUState {
     /*< private >*/
@@ -31,9 +29,6 @@ struct AppleSPMIPMUState {
     /*< public >*/
     qemu_irq irq;
     QEMUTimer *timer;
-    uint64_t rtc_offset;
-    uint64_t tick_offset;
-    uint32_t tick_period;
     uint32_t reg_leg_scrpad;
     uint32_t reg_rtc;
     uint32_t reg_rtc_irq_mask;
@@ -44,139 +39,137 @@ struct AppleSPMIPMUState {
     uint16_t addr;
 };
 
-static unsigned int frq_to_period_ns(unsigned int freq_hz)
+static uint64_t apple_spmi_pmu_get_tick_offset(AppleSPMIPMUState *pmu)
 {
-    return MAX(NANOSECONDS_PER_SECOND / freq_hz, 1);
-}
+    uint32_t secs_reg;
+    uint32_t ticks_reg;
+    uint64_t tick_offset;
 
-static uint64_t tick_to_ns(AppleSPMIPMUState *p, uint64_t tick)
-{
-    return (tick >> 15) * NANOSECONDS_PER_SECOND +
-           (tick & 0x7FFF) * p->tick_period;
-}
+    secs_reg = pmu->reg_leg_scrpad + R_LEG_SCRPAD_OFFSET_SECS;
+    ticks_reg = pmu->reg_leg_scrpad + R_LEG_SCRPAD_OFFSET_TICKS;
 
-static uint64_t rtc_get_tick(AppleSPMIPMUState *p, uint64_t *out_ns)
-{
-    uint64_t now = qemu_clock_get_ns(rtc_clock);
-    if (out_ns) {
-        *out_ns = now;
-    }
-
-    uint64_t elapsed = now - p->rtc_offset;
-    return ((elapsed / NANOSECONDS_PER_SECOND) << 15) |
-           ((elapsed / p->tick_period) & 0x7FFF);
-}
-
-static uint64_t apple_spmi_pmu_get_tick_offset(AppleSPMIPMUState *s)
-{
-    uint64_t tick_offset = 0;
-
-    tick_offset =
-        ((uint64_t)RREG32(s->reg_leg_scrpad + LEG_SCRPAD_OFFSET_SECS_OFFSET)
-         << 15) +
-        (RREG32(s->reg_leg_scrpad + LEG_SCRPAD_OFFSET_TICKS_OFFSET) & 0x7FFF);
+    tick_offset = (uint64_t)pmu->reg[secs_reg + 3] << 39;
+    tick_offset |= (uint64_t)pmu->reg[secs_reg + 2] << 31;
+    tick_offset |= (uint64_t)pmu->reg[secs_reg + 1] << 23;
+    tick_offset |= (uint64_t)pmu->reg[secs_reg + 0] << 15;
+    tick_offset |= ((uint64_t)pmu->reg[ticks_reg + 1] & 0x7F) << 8;
+    tick_offset |= (uint64_t)pmu->reg[ticks_reg + 0];
 
     return tick_offset;
 }
 
-static void apple_spmi_pmu_set_tick_offset(AppleSPMIPMUState *s,
+static void apple_spmi_pmu_set_tick_offset(AppleSPMIPMUState *pmu,
                                            uint64_t tick_offset)
 {
-    WREG32(s->reg_leg_scrpad + LEG_SCRPAD_OFFSET_SECS_OFFSET,
-           tick_offset >> 15);
-    s->reg[s->reg_leg_scrpad + LEG_SCRPAD_OFFSET_TICKS_OFFSET + 0] =
-        tick_offset & 0xff;
-    s->reg[s->reg_leg_scrpad + LEG_SCRPAD_OFFSET_TICKS_OFFSET + 1] =
-        (tick_offset >> 8) & 0x7f;
+    uint32_t secs_reg;
+    uint32_t ticks_reg;
+
+    secs_reg = pmu->reg_leg_scrpad + R_LEG_SCRPAD_OFFSET_SECS;
+    ticks_reg = pmu->reg_leg_scrpad + R_LEG_SCRPAD_OFFSET_TICKS;
+
+    pmu->reg[secs_reg + 3] = (tick_offset >> 39) & 0xFF;
+    pmu->reg[secs_reg + 2] = (tick_offset >> 31) & 0xFF;
+    pmu->reg[secs_reg + 1] = (tick_offset >> 23) & 0xFF;
+    pmu->reg[secs_reg + 0] = (tick_offset >> 15) & 0xFF;
+    pmu->reg[ticks_reg + 1] = ((tick_offset >> 8) & 0x7F);
+    pmu->reg[ticks_reg + 0] = tick_offset & 0xFF;
 }
 
-static void apple_spmi_pmu_update_irq(AppleSPMIPMUState *s)
+static uint64_t apple_rtc_ns_to_tick(AppleSPMIPMUState *pmu, uint64_t now)
 {
-    if (RREG32(s->reg_rtc_irq_mask) & RREG32(s->reg_alarm_event)) {
-        qemu_irq_raise(s->irq);
+    uint64_t secs = now / NANOSECONDS_PER_SECOND;
+    uint64_t frac_ns = now % NANOSECONDS_PER_SECOND;
+    uint64_t frac_ticks = (frac_ns * RTC_TICK_FREQ) / NANOSECONDS_PER_SECOND;
+    return ((secs << 15) | (frac_ticks & 0x7FFF)) -
+           apple_spmi_pmu_get_tick_offset(pmu);
+}
+static uint64_t apple_rtc_get_current_tick(AppleSPMIPMUState *pmu)
+{
+    return apple_rtc_ns_to_tick(pmu, qemu_clock_get_ns(rtc_clock));
+}
+
+static void apple_spmi_pmu_update_irq(AppleSPMIPMUState *pmu)
+{
+    if (pmu->reg[pmu->reg_rtc_irq_mask] & pmu->reg[pmu->reg_alarm_event]) {
+        qemu_irq_raise(pmu->irq);
     } else {
-        qemu_irq_lower(s->irq);
+        qemu_irq_lower(pmu->irq);
     }
 }
 
 static void apple_spmi_pmu_alarm(void *opaque)
 {
-    AppleSPMIPMUState *s = opaque;
-    WREG32_OR(s->reg_alarm_event, RTC_EVENT_ALARM);
-    apple_spmi_pmu_update_irq(s);
+    AppleSPMIPMUState *pmu = opaque;
+
+    pmu->reg[pmu->reg_alarm_event] |= R_RTC_EVENT_ALARM_MASK;
+    apple_spmi_pmu_update_irq(pmu);
     qemu_system_wakeup_request(QEMU_WAKEUP_REASON_RTC, NULL);
 }
 
-static void apple_spmi_pmu_set_alarm(AppleSPMIPMUState *s)
+static void apple_spmi_pmu_set_alarm(AppleSPMIPMUState *pmu)
 {
-    uint32_t seconds = RREG32(s->reg_alarm) - (rtc_get_tick(s, NULL) >> 15);
-    if (RREG32(s->reg_alarm_ctrl) & RTC_CONTROL_ALARM_EN) {
+    int64_t now = qemu_clock_get_ns(rtc_clock);
+    int64_t seconds = (int64_t)pmu->reg[pmu->reg_alarm] -
+                      (int64_t)(apple_rtc_ns_to_tick(pmu, now) >> 15);
+
+    if (pmu->reg[pmu->reg_alarm_ctrl] & R_RTC_CONTROL_ALARM_EN_MASK) {
         if (seconds == 0) {
-            timer_del(s->timer);
-            apple_spmi_pmu_alarm(s);
+            timer_del(pmu->timer);
+            apple_spmi_pmu_alarm(pmu);
         } else {
-            int64_t now = qemu_clock_get_ns(rtc_clock);
-            timer_mod_ns(s->timer,
-                         now + ((int64_t)seconds * NANOSECONDS_PER_SECOND));
+            timer_mod_ns(pmu->timer, now + seconds * NANOSECONDS_PER_SECOND);
         }
     } else {
-        timer_del(s->timer);
+        timer_del(pmu->timer);
     }
 }
 
-static int apple_spmi_pmu_send(SPMISlave *s, uint8_t *data, uint8_t len)
+static int apple_spmi_pmu_send(SPMISlave *slave, uint8_t *data, uint8_t len)
 {
-    AppleSPMIPMUState *p = APPLE_SPMI_PMU(s);
-    bool aflg = false;
+    AppleSPMIPMUState *pmu = container_of(slave, AppleSPMIPMUState, parent_obj);
     uint16_t addr;
-    for (addr = p->addr; addr < p->addr + len; addr++) {
-        p->reg[addr] = data[addr - p->addr];
-        if (addr == p->reg_alarm_ctrl) {
-            aflg = true;
-        }
-        if (addr >= p->reg_alarm && addr < p->reg_alarm + 4) {
-            aflg = true;
-        }
-        if ((addr >= p->reg_leg_scrpad + LEG_SCRPAD_OFFSET_SECS_OFFSET &&
-             addr < p->reg_leg_scrpad + LEG_SCRPAD_OFFSET_SECS_OFFSET + 4) ||
-            (addr >= p->reg_leg_scrpad + LEG_SCRPAD_OFFSET_TICKS_OFFSET &&
-             addr < p->reg_leg_scrpad + LEG_SCRPAD_OFFSET_TICKS_OFFSET + 2)) {
-            p->tick_offset = apple_spmi_pmu_get_tick_offset(p);
+
+    for (addr = pmu->addr; addr < pmu->addr + len; addr++) {
+        pmu->reg[addr] = data[addr - pmu->addr];
+        if (addr == pmu->reg_alarm_ctrl ||
+            (addr >= pmu->reg_alarm && addr < pmu->reg_alarm + 4)) {
+            apple_spmi_pmu_set_alarm(pmu);
         }
     }
-    p->addr = addr;
-    if (aflg) {
-        apple_spmi_pmu_set_alarm(p);
-    }
+    pmu->addr = addr;
+
     return len;
 }
 
-static int apple_spmi_pmu_recv(SPMISlave *s, uint8_t *data, uint8_t len)
+static int apple_spmi_pmu_recv(SPMISlave *slave, uint8_t *data, uint8_t len)
 {
-    AppleSPMIPMUState *p = APPLE_SPMI_PMU(s);
-    uint16_t addr;
+    AppleSPMIPMUState *pmu = container_of(slave, AppleSPMIPMUState, parent_obj);
+    uint16_t addr = pmu->addr;
+    uint16_t end_addr = pmu->addr + len;
 
-    for (addr = p->addr; addr < p->addr + len; addr++) {
-        if (addr == p->reg_rtc) {
-            uint64_t now = rtc_get_tick(p, NULL);
-            p->reg[p->reg_rtc] = (now << 1) & 0xFF;
-            p->reg[p->reg_rtc + 1] = (now >> 7) & 0xFF;
-            p->reg[p->reg_rtc + 2] = (now >> 15) & 0xFF;
-            p->reg[p->reg_rtc + 3] = (now >> 23) & 0xFF;
-            p->reg[p->reg_rtc + 4] = (now >> 31) & 0xFF;
-            p->reg[p->reg_rtc + 5] = (now >> 39) & 0xFF;
-        }
-
-        data[addr - p->addr] = p->reg[addr];
+    if (end_addr > pmu->reg_rtc && addr < pmu->reg_rtc + 6) {
+        uint64_t now = apple_rtc_get_current_tick(pmu);
+        pmu->reg[pmu->reg_rtc] = (now << 1) & 0xFF;
+        pmu->reg[pmu->reg_rtc + 1] = (now >> 7) & 0xFF;
+        pmu->reg[pmu->reg_rtc + 2] = (now >> 15) & 0xFF;
+        pmu->reg[pmu->reg_rtc + 3] = (now >> 23) & 0xFF;
+        pmu->reg[pmu->reg_rtc + 4] = (now >> 31) & 0xFF;
+        pmu->reg[pmu->reg_rtc + 5] = (now >> 39) & 0xFF;
     }
-    p->addr = addr;
+
+    for (; addr < end_addr; ++addr) {
+        data[addr - pmu->addr] = pmu->reg[addr];
+    }
+
+    pmu->addr = addr;
     return len;
 }
 
-static int apple_spmi_pmu_command(SPMISlave *s, uint8_t opcode, uint16_t addr)
+static int apple_spmi_pmu_command(SPMISlave *slave, uint8_t opcode,
+                                  uint16_t addr)
 {
-    AppleSPMIPMUState *p = APPLE_SPMI_PMU(s);
-    p->addr = addr;
+    AppleSPMIPMUState *pmu = container_of(slave, AppleSPMIPMUState, parent_obj);
+    pmu->addr = addr;
 
     switch (opcode) {
     case SPMI_CMD_EXT_READ:
@@ -192,48 +185,45 @@ static int apple_spmi_pmu_command(SPMISlave *s, uint8_t opcode, uint16_t addr)
 DeviceState *apple_spmi_pmu_from_node(AppleDTNode *node)
 {
     DeviceState *dev;
-    AppleSPMIPMUState *p;
+    AppleSPMIPMUState *pmu;
     AppleDTProp *prop;
 
     dev = qdev_new(TYPE_APPLE_SPMI_PMU);
-    p = APPLE_SPMI_PMU(dev);
+    pmu = APPLE_SPMI_PMU(dev);
 
     prop = apple_dt_get_prop(node, "reg");
     g_assert_nonnull(prop);
     spmi_set_slave_sid(SPMI_SLAVE(dev), *(uint32_t *)prop->data);
 
-    p->reg_rtc = apple_dt_get_prop_u32(node, "info-rtc", &error_fatal);
-    p->reg_alarm =
+    pmu->reg_rtc = apple_dt_get_prop_u32(node, "info-rtc", &error_fatal);
+    pmu->reg_alarm =
         apple_dt_get_prop_u32(node, "info-rtc_alarm_offset", &error_fatal);
-    p->reg_alarm_ctrl =
+    pmu->reg_alarm_ctrl =
         apple_dt_get_prop_u32(node, "info-rtc_alarm_ctrl", &error_fatal);
-    p->reg_alarm_event =
+    pmu->reg_alarm_event =
         apple_dt_get_prop_u32(node, "info-rtc_alarm_event", &error_fatal);
-    p->reg_rtc_irq_mask =
+    pmu->reg_rtc_irq_mask =
         apple_dt_get_prop_u32(node, "info-rtc_irq_mask_offset", &error_fatal);
-    p->reg_leg_scrpad =
+    pmu->reg_leg_scrpad =
         apple_dt_get_prop_u32(node, "info-leg_scrpad", &error_fatal);
+    // TODO: Handle `info-clock_offset` if it exists.
 
-    p->tick_period = frq_to_period_ns(RTC_TICK_FREQ);
-    p->tick_offset = rtc_get_tick(p, &p->rtc_offset);
-    apple_spmi_pmu_set_tick_offset(p, p->tick_offset);
+    apple_spmi_pmu_set_tick_offset(pmu, apple_rtc_get_current_tick(pmu));
 
-    p->timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, apple_spmi_pmu_alarm, p);
+    pmu->timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, apple_spmi_pmu_alarm, pmu);
     qemu_system_wakeup_enable(QEMU_WAKEUP_REASON_RTC, true);
 
-    qdev_init_gpio_out(dev, &p->irq, 1);
+    qdev_init_gpio_out(dev, &pmu->irq, 1);
 
     return dev;
 }
 
 static const VMStateDescription vmstate_apple_spmi_pmu = {
-    .name = "apple_spmi_pmu",
+    .name = "AppleSPMIPMUState",
     .version_id = 0,
     .minimum_version_id = 0,
     .fields =
         (const VMStateField[]){
-            VMSTATE_UINT64(tick_offset, AppleSPMIPMUState),
-            VMSTATE_UINT64(rtc_offset, AppleSPMIPMUState),
             VMSTATE_UINT16(addr, AppleSPMIPMUState),
             VMSTATE_UINT8_ARRAY(reg, AppleSPMIPMUState, 0xFFFF),
             VMSTATE_TIMER_PTR(timer, AppleSPMIPMUState),
