@@ -332,12 +332,12 @@ static uint8_t pmu_d2255_rx(I2CSlave *i2c)
 
     if (s->address == REG_RTC_SUB_SECOND_A) {
         uint64_t now = rtc_get_tick(s, NULL);
-        s->reg[REG_RTC_SUB_SECOND_A] = now << 1;
-        s->reg[REG_RTC_SUB_SECOND_B] = now >> 7;
-        s->reg[REG_RTC_SECOND_A] = now >> 15;
-        s->reg[REG_RTC_SECOND_B] = now >> 23;
-        s->reg[REG_RTC_SECOND_C] = now >> 31;
-        s->reg[REG_RTC_SECOND_D] = now >> 39;
+        s->reg[REG_RTC_SUB_SECOND_A] = (now << 1) & 0xFF;
+        s->reg[REG_RTC_SUB_SECOND_B] = (now >> 7) & 0xFF;
+        s->reg[REG_RTC_SECOND_A] = (now >> 15) & 0xFF;
+        s->reg[REG_RTC_SECOND_B] = (now >> 23) & 0xFF;
+        s->reg[REG_RTC_SECOND_C] = (now >> 31) & 0xFF;
+        s->reg[REG_RTC_SECOND_D] = (now >> 39) & 0xFF;
     }
 
 #ifdef DEBUG_PMU_D2255
