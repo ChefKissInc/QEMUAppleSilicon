@@ -297,11 +297,10 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
         qatomic_set(&mapper->regs.tlb_op,
                     FIELD_DP32(val, DART_TLB_OP, BUSY, 1));
 
+        set_index = FIELD_EX32(val, DART_TLB_OP, SET_INDEX);
+
         WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
         {
-            set_index = FIELD_EX32(qatomic_read(&mapper->regs.tlb_op),
-                                   DART_TLB_OP, SET_INDEX);
-
             for (i = 0; i < DART_MAX_TLB_OP_SETS; ++i) {
                 if ((set_index & BIT_ULL(i)) == 0) {
                     continue;
@@ -314,26 +313,25 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
             g_hash_table_foreach_remove(mapper->tlb,
                                         apple_dart_tlb_remove_by_sid_mask,
                                         GUINT_TO_POINTER(sid_mask));
-
-            if (sid_mask != 0) {
-                for (i = 0; i < DART_MAX_STREAMS; ++i) {
-                    if ((sid_mask & BIT_ULL(i)) == 0) {
-                        continue;
-                    }
-
-                    event.type = IOMMU_NOTIFIER_UNMAP;
-                    event.entry.target_as = &address_space_memory;
-                    event.entry.iova = 0;
-                    event.entry.perm = IOMMU_NONE;
-                    event.entry.addr_mask = HWADDR_MAX;
-
-                    memory_region_notify_iommu(&mapper->iommus[i]->iommu, 0,
-                                               event);
-                }
-            }
-
-            qatomic_and(&mapper->regs.tlb_op, ~R_DART_TLB_OP_BUSY_MASK);
         }
+
+        if (sid_mask != 0) {
+            for (i = 0; i < DART_MAX_STREAMS; ++i) {
+                if ((sid_mask & BIT_ULL(i)) == 0) {
+                    continue;
+                }
+
+                event.type = IOMMU_NOTIFIER_UNMAP;
+                event.entry.target_as = &address_space_memory;
+                event.entry.iova = 0;
+                event.entry.perm = IOMMU_NONE;
+                event.entry.addr_mask = HWADDR_MAX;
+
+                memory_region_notify_iommu(&mapper->iommus[i]->iommu, 0, event);
+            }
+        }
+
+        qatomic_and(&mapper->regs.tlb_op, ~R_DART_TLB_OP_BUSY_MASK);
         break;
     case R_DART_TLB_OP_SET_0_LOW:
         if (!FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP,
