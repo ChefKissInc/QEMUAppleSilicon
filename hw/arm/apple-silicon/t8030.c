@@ -449,6 +449,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     AppleNvramState *nvram;
     AppleBootInfo *info;
     AppleDTNode *memory_map;
+    bool auto_boot;
     char *cmdline;
     char *seprom;
     gsize fsize;
@@ -509,37 +510,37 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     }
     apple_nvram_load(nvram);
 
-    if (machine->initrd_filename == NULL &&
-        t8030->boot_info.boot_mode != kAppleBootModeExitRecovery &&
-        !env_get_bool(nvram, "auto-boot", false)) {
-        error_setg(&error_abort,
-                   "No RAM Disk specified but auto boot disabled.");
-        return;
-    }
+    auto_boot = env_get_bool(nvram, "auto-boot", false);
 
-    info_report("boot_mode: %u", t8030->boot_info.boot_mode);
+    info_report("Boot Mode: %u", t8030->boot_info.boot_mode);
     switch (t8030->boot_info.boot_mode) {
     case kAppleBootModeEnterRecovery:
-        env_set(nvram, "auto-boot", "false", 0);
-        t8030->boot_info.boot_mode = kAppleBootModeAuto;
-        break;
+        auto_boot = false;
+        goto set_boot_mode;
     case kAppleBootModeExitRecovery:
-        env_set(nvram, "auto-boot", "true", 0);
+        auto_boot = true;
+    set_boot_mode:
+        env_set_bool(nvram, "auto-boot", auto_boot, 0);
         t8030->boot_info.boot_mode = kAppleBootModeAuto;
         break;
     default:
         break;
     }
 
-    info_report("auto-boot=%s",
-                env_get_bool(nvram, "auto-boot", false) ? "true" : "false");
+    info_report("auto-boot=%s", auto_boot ? "true" : "false");
 
-    if (t8030->boot_info.boot_mode == kAppleBootModeAuto &&
-        !env_get_bool(nvram, "auto-boot", false)) {
+    if (machine->initrd_filename == NULL && !auto_boot) {
+        error_setg(
+            &error_abort,
+            "RAM Disk required for recovery, please specify it via `-initrd`.");
+        return;
+    }
+
+    if (auto_boot) {
+        cmdline = g_strdup(machine->kernel_cmdline);
+    } else {
         cmdline = g_strconcat("-restore rd=md0 nand-enable-reformat=1 ",
                               machine->kernel_cmdline, NULL);
-    } else {
-        cmdline = g_strdup(machine->kernel_cmdline);
     }
 
     apple_nvram_save(nvram);
@@ -611,20 +612,19 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
 
     apple_boot_allocate_segment_records(memory_map, hdr);
 
-    apple_boot_populate_dt(t8030->device_tree, info);
+    apple_boot_populate_dt(t8030->device_tree, info, auto_boot);
 
     switch (hdr->file_type) {
     case MH_EXECUTE:
     case MH_FILESET:
         t8030_load_kernelcache(t8030, cmdline, ca);
+        g_free(cmdline);
         break;
     default:
-        error_setg(&error_abort, "Unsupported kernelcache type: 0x%x\n",
+        error_setg(&error_abort, "Unsupported kernelcache type: 0x%X\n",
                    hdr->file_type);
-        g_assert_not_reached();
+        return;
     }
-
-    g_free(cmdline);
 }
 
 static uint64_t pmgr_unk_e4800 = 0;

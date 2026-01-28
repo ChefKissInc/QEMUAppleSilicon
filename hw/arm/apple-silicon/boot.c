@@ -521,7 +521,8 @@ static void apple_boot_init_mem_ranges(AppleDTNode *root)
     apple_dt_set_prop(child, "DeviceTree", 16, NULL);
 }
 
-void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
+void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
+                            bool auto_boot)
 {
     AppleDTNode *child;
     AppleDTProp *prop;
@@ -569,7 +570,13 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info)
     // 0x04: macos-darwinos-environment
     // 0x05: embedded-darwinos-environment
     // 0x06: trusted-darwinos-environment/"PrivateCloudOS detected"
-    apple_dt_set_prop_u32(child, "darwinos-security-environment", 1);
+    // TODO: Don't set this one manually, process osenvironments node.
+    apple_dt_set_prop_u32(child, "darwinos-security-environment",
+                          auto_boot ? 1 : 2);
+    // 7: Erase/darwinOS RAMDisk?
+    // 3: => Upgrade RAMDisk?
+    // 1: => Main OS?
+    apple_dt_set_prop_u32(child, "boot-command", auto_boot ? 1 : 7);
 
     child = apple_dt_get_node(root, "defaults");
     g_assert_nonnull(child);

@@ -370,6 +370,7 @@ static void s8000_memory_setup(MachineState *machine)
     AppleS8000MachineState *s8000 = APPLE_S8000(machine);
     AppleBootInfo *info = &s8000->boot_info;
     AppleNvramState *nvram;
+    bool auto_boot;
     char *cmdline;
     MachoHeader64 *header;
     AppleDTNode *memory_map;
@@ -394,29 +395,37 @@ static void s8000_memory_setup(MachineState *machine)
     }
     apple_nvram_load(nvram);
 
-    info_report("Boot mode: %u", s8000->boot_info.boot_mode);
+    auto_boot = env_get_bool(nvram, "auto-boot", false);
+
+    info_report("Boot Mode: %u", s8000->boot_info.boot_mode);
     switch (s8000->boot_info.boot_mode) {
     case kAppleBootModeEnterRecovery:
-        env_set(nvram, "auto-boot", "false", 0);
-        s8000->boot_info.boot_mode = kAppleBootModeAuto;
-        break;
+        auto_boot = false;
+        goto set_boot_mode;
     case kAppleBootModeExitRecovery:
-        env_set(nvram, "auto-boot", "true", 0);
+        auto_boot = true;
+    set_boot_mode:
+        env_set_bool(nvram, "auto-boot", auto_boot, 0);
         s8000->boot_info.boot_mode = kAppleBootModeAuto;
         break;
     default:
         break;
     }
 
-    info_report("auto-boot=%s",
-                env_get_bool(nvram, "auto-boot", false) ? "true" : "false");
+    info_report("auto-boot=%s", auto_boot ? "true" : "false");
 
-    if (s8000->boot_info.boot_mode == kAppleBootModeAuto &&
-        !env_get_bool(nvram, "auto-boot", false)) {
+    if (machine->initrd_filename == NULL && !auto_boot) {
+        error_setg(
+            &error_abort,
+            "RAM Disk required for recovery, please specify it via `-initrd`.");
+        return;
+    }
+
+    if (auto_boot) {
+        cmdline = g_strdup(machine->kernel_cmdline);
+    } else {
         cmdline = g_strconcat("-restore rd=md0 nand-enable-reformat=1 ",
                               machine->kernel_cmdline, NULL);
-    } else {
-        cmdline = g_strdup(machine->kernel_cmdline);
     }
 
     apple_nvram_save(nvram);
@@ -439,14 +448,9 @@ static void s8000_memory_setup(MachineState *machine)
         return;
     }
 
-    if (apple_boot_contains_boot_arg(cmdline, "-restore", false)) {
-        // HACK: Use DEV Hardware model to restore without FDR errors
-        apple_dt_set_prop(s8000->device_tree, "compatible", 26,
-                          "N66DEV\0iPhone8,2\0AppleARM");
-    } else {
-        apple_dt_set_prop(s8000->device_tree, "compatible", 25,
-                          "N66AP\0iPhone8,2\0AppleARM");
-    }
+    // HACK: Use DEV Hardware model to restore without FDR errors
+    apple_dt_set_prop(s8000->device_tree, "compatible", 26,
+                      "N66DEV\0iPhone8,2\0AppleARM");
 
     AppleDTNode *chosen = apple_dt_get_node(s8000->device_tree, "chosen");
     if (!apple_boot_contains_boot_arg(cmdline, "rd=", true)) {
@@ -487,20 +491,19 @@ static void s8000_memory_setup(MachineState *machine)
 
     apple_boot_allocate_segment_records(memory_map, header);
 
-    apple_boot_populate_dt(s8000->device_tree, info);
+    apple_boot_populate_dt(s8000->device_tree, info, auto_boot);
 
     switch (header->file_type) {
     case MH_EXECUTE:
     case MH_FILESET:
         s8000_load_kernelcache(s8000, cmdline);
+        g_free(cmdline);
         break;
     default:
         error_setg(&error_abort, "Unsupported kernelcache type: 0x%x\n",
                    header->file_type);
         g_assert_not_reached();
     }
-
-    g_free(cmdline);
 }
 
 static void pmgr_unk_reg_write(void *opaque, hwaddr addr, uint64_t data,
