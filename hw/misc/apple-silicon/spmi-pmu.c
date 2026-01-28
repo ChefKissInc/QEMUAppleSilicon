@@ -15,7 +15,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleSPMIPMUState, APPLE_SPMI_PMU)
 
 #define LEG_SCRPAD_OFFSET_SECS_OFFSET (4)
 #define LEG_SCRPAD_OFFSET_TICKS_OFFSET (21)
-#define RTC_TICK_FREQ (32768)
+#define RTC_TICK_FREQ (32768ULL)
 #define RTC_CONTROL_MONITOR (1 << 0)
 #define RTC_CONTROL_ALARM_EN (1 << 6)
 #define RTC_EVENT_ALARM (1 << 0)
@@ -46,8 +46,7 @@ struct AppleSPMIPMUState {
 
 static unsigned int frq_to_period_ns(unsigned int freq_hz)
 {
-    return NANOSECONDS_PER_SECOND > freq_hz ? NANOSECONDS_PER_SECOND / freq_hz :
-                                              1;
+    return MAX(NANOSECONDS_PER_SECOND / freq_hz, 1);
 }
 
 static uint64_t tick_to_ns(AppleSPMIPMUState *p, uint64_t tick)
@@ -59,13 +58,13 @@ static uint64_t tick_to_ns(AppleSPMIPMUState *p, uint64_t tick)
 static uint64_t rtc_get_tick(AppleSPMIPMUState *p, uint64_t *out_ns)
 {
     uint64_t now = qemu_clock_get_ns(rtc_clock);
-    uint64_t offset = p->rtc_offset;
     if (out_ns) {
         *out_ns = now;
     }
-    now -= offset;
-    return ((now / NANOSECONDS_PER_SECOND) << 15) |
-           ((now / p->tick_period) & 0x7FFF);
+
+    uint64_t elapsed = now - p->rtc_offset;
+    return ((elapsed / NANOSECONDS_PER_SECOND) << 15) |
+           ((elapsed / p->tick_period) & 0x7FFF);
 }
 
 static uint64_t apple_spmi_pmu_get_tick_offset(AppleSPMIPMUState *s)
