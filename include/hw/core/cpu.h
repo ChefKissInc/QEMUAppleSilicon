@@ -213,15 +213,16 @@ struct CPUClass {
  */
 struct CPUTLBEntryFull {
     /*
-     * @xlat_section contains:
-     *  - in the lower TARGET_PAGE_BITS, a physical section number
-     *  - with the lower TARGET_PAGE_BITS masked off, an offset which
-     *    must be added to the virtual address to obtain:
-     *     + the ram_addr_t of the target RAM (if the physical section
-     *       number is PHYS_SECTION_NOTDIRTY or PHYS_SECTION_ROM)
-     *     + the offset within the target MemoryRegion (otherwise)
+     * @xlat_offset: TARGET_PAGE_BITS aligned offset which must be added to
+     * the virtual address to obtain:
+     *   + the ram_addr_t of the target RAM (if the physical section
+     *     number is PHYS_SECTION_NOTDIRTY or PHYS_SECTION_ROM)
+     *   + the offset within the target MemoryRegion (otherwise)
      */
-    hwaddr xlat_section;
+    hwaddr xlat_offset;
+
+    /* @section contains physical section. */
+    MemoryRegionSection *section;
 
     /*
      * @phys_addr contains the physical address in the address space
