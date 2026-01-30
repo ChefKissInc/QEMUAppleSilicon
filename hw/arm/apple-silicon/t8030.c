@@ -38,6 +38,7 @@
 #include "hw/block/apple-silicon/ans.h"
 #include "hw/char/apple_uart.h"
 #include "hw/display/apple_displaypipe_v4.h"
+#include "hw/display/synopsys_mipi_dsim.h"
 #include "hw/dma/apple_sio.h"
 #include "hw/gpio/apple_gpio.h"
 #include "hw/i2c/apple_i2c.h"
@@ -2341,6 +2342,46 @@ static void t8030_create_buttons(AppleT8030MachineState *t8030)
     sysbus_realize_and_unref(buttons, &error_fatal);
 }
 
+
+static void t8030_create_mipi_dsim(AppleT8030MachineState *t8030)
+{
+    int i;
+    uint32_t *ints;
+    AppleDTProp *prop;
+    uint64_t *reg;
+    SysBusDevice *mipi;
+    AppleDTNode *child;
+
+    child = apple_dt_get_node(t8030->device_tree, "arm-io/mipi-dsim");
+    g_assert_nonnull(child);
+
+    mipi = synopsys_mipi_dsim_create(child);
+    g_assert_nonnull(mipi);
+
+    object_property_add_child(OBJECT(t8030), "mipi", OBJECT(mipi));
+    prop = apple_dt_get_prop(child, "reg");
+    g_assert_nonnull(prop);
+    reg = (uint64_t *)prop->data;
+
+    sysbus_mmio_map(mipi, 0, t8030->armio_base + reg[0]);
+    sysbus_mmio_map(mipi, 1, t8030->armio_base + reg[2]);
+
+    prop = apple_dt_get_prop(child, "interrupts");
+    g_assert_nonnull(prop);
+    ints = (uint32_t *)prop->data;
+
+    for (i = 0; i < prop->len / sizeof(uint32_t); i++) {
+        sysbus_connect_irq(mipi, i,
+                           qdev_get_gpio_in(DEVICE(t8030->aic), ints[i]));
+    }
+
+    sysbus_realize_and_unref(mipi, &error_fatal);
+
+    child = apple_dt_get_node(child, "lcd");
+    g_assert_nonnull(child);
+    apple_dt_set_prop_u32(child, "lcd-panel-id", 0xA1C432D1);
+}
+
 static void t8030_cpu_reset(AppleT8030MachineState *t8030)
 {
     CPUState *cpu;
@@ -2686,6 +2727,7 @@ static void t8030_init(MachineState *machine)
     t8030_create_speaker_top(t8030);
     t8030_create_speaker_bottom(t8030);
     t8030_create_buttons(t8030);
+    t8030_create_mipi_dsim(t8030);
 
     t8030->init_done_notifier.notify = t8030_init_done;
     qemu_add_machine_init_done_notifier(&t8030->init_done_notifier);
