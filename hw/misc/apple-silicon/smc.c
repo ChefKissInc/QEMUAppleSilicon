@@ -246,9 +246,8 @@ static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
         qemu_system_reset_request(SHUTDOWN_CAUSE_GUEST_RESET);
         return SMC_RESULT_SUCCESS;
     case 'waka': // FIXME: Are we supposed to do anything here?
-        return SMC_RESULT_ERROR;
-    case 'slpa':
-        qemu_system_suspend_request();
+        return SMC_RESULT_SUCCESS;
+    case 'slpa': // Ditto
         return SMC_RESULT_SUCCESS;
     case 'panb': {
         r.status = SMC_NOTIFICATION;
