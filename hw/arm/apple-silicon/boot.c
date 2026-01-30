@@ -405,9 +405,8 @@ static void extract_im4p_payload(const char *filename, char *payload_type,
         return;
     }
 
-    payload_data = NULL;
     len = 0;
-    ret = asn1_read_value(img4, "data", payload_data, &len);
+    ret = asn1_read_value(img4, "data", NULL, &len);
     if (ret != ASN1_MEM_ERROR) {
         error_setg(&error_fatal, "img4 payload size read for `%s` failed: %d.",
                    filename, ret);
