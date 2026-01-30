@@ -2322,11 +2322,10 @@ static void t8030_create_speaker_top(AppleT8030MachineState *t8030)
 static void t8030_create_speaker_bottom(AppleT8030MachineState *t8030)
 {
     AppleSPIState *spi;
-    DeviceState *device;
 
     spi = APPLE_SPI(
         object_property_get_link(OBJECT(t8030), "spi3", &error_fatal));
-    device = ssi_create_peripheral(apple_spi_get_bus(spi), TYPE_APPLE_CS42L77);
+    ssi_create_peripheral(apple_spi_get_bus(spi), TYPE_APPLE_CS42L77);
 }
 
 static void t8030_create_buttons(AppleT8030MachineState *t8030)
