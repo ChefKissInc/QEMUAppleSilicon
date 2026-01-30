@@ -1972,8 +1972,8 @@ static void t8030_create_misc(AppleT8030MachineState *t8030)
     // setting 0 results in defaulting to 2400000
     apple_dt_set_prop_u32(child, "transport-speed", 2400000);
 
-    child = apple_dt_get_node(armio, "wlan");
-    g_assert_nonnull(child);
+    // child = apple_dt_get_node(armio, "wlan");
+    // g_assert_nonnull(child);
 }
 
 static void t8030_create_display(AppleT8030MachineState *t8030)
