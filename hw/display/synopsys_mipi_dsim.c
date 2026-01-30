@@ -32,7 +32,6 @@ REG32(CORE_CMD_PKT_STATUS, 0x74)
 REG32(GENERAL_CTRL, 0x80004)
     FIELD(GENERAL_CTRL, PHYLOCK_HW_LOCK, 4, 1)
 REG32(TOP_PLL_CTRL, 0x80034)
-    FIELD(TOP_PLL_CTRL, SHADOW_CLEAR, 2, 1)
 // clang-format on
 
 struct SynopsysMIPIDSIMState {
@@ -94,8 +93,6 @@ static const MemoryRegionOps synopsys_mipi_dsim_reg_ops = {
 static void synopsys_mipi_dsim_swmpr_reg_write(void *opaque, hwaddr addr,
                                                uint64_t data, unsigned size)
 {
-    // AppleMipiDsimState *s = opaque;
-
     switch (addr) {
     default:
         break;
@@ -105,8 +102,6 @@ static void synopsys_mipi_dsim_swmpr_reg_write(void *opaque, hwaddr addr,
 static uint64_t synopsys_mipi_dsim_swmpr_reg_read(void *opaque, hwaddr addr,
                                                   unsigned size)
 {
-    // AppleMipiDsimState *s = opaque;
-
     switch (addr) {
     default:
         return UINT32_MAX;
