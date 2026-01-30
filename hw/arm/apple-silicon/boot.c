@@ -533,6 +533,8 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
 
     g_assert_cmphex(info->nvram_size, <=, XNU_MAX_NVRAM_SIZE);
 
+    apple_dt_set_prop_null(root, "no-suspend");
+
     child = apple_dt_get_node(root, "chosen");
     g_assert_nonnull(child);
 
