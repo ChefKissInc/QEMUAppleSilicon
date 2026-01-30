@@ -176,8 +176,10 @@ static void synopsys_mipi_dsim_class_init(ObjectClass *oc, const void *data)
 
     rc->phases.hold = synopsys_mipi_dsim_reset_hold;
 
-    set_bit(DEVICE_CATEGORY_MISC, dc->categories);
+    dc->desc = "Synopsys MIPI DSIM";
+    dc->user_creatable = false;
     dc->realize = synopsys_mipi_dsim_realize;
+    set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
 }
 
 static const TypeInfo synopsys_mipi_dsim_info = {
