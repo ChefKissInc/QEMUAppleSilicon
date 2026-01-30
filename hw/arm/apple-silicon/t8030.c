@@ -2342,7 +2342,6 @@ static void t8030_create_buttons(AppleT8030MachineState *t8030)
     sysbus_realize_and_unref(buttons, &error_fatal);
 }
 
-
 static void t8030_create_mipi_dsim(AppleT8030MachineState *t8030)
 {
     int i;
