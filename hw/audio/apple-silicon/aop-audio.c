@@ -19,12 +19,13 @@
 
 #include "hw/audio/apple-silicon/aop-audio.h"
 #include "hw/misc/apple-silicon/aop.h"
+#include "qemu/units.h"
 
 #if 0
-#define AOP_DPRINTF(v, ...) fprintf(stderr, v, ##__VA_ARGS__)
+#define AOP_DPRINTF(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 #else
-#define AOP_DPRINTF(v, ...) \
-    do {                    \
+#define AOP_DPRINTF(fmt, ...) \
+    do {                      \
     } while (0)
 #endif
 
@@ -121,7 +122,7 @@ static const uint32_t apple_aop_devices[] = {
 static AppleAOPResult apple_aop_audio_get_prop(void *opaque, uint32_t prop,
                                                void *out)
 {
-    AOP_DPRINTF("AOPAudio GetProperty 0x%X\n", prop);
+    AOP_DPRINTF("AOPAudio GetProperty 0x%X", prop);
 
     switch (prop) {
     case PROPERTY_IDENTITY: // ???
@@ -155,14 +156,14 @@ static AppleAOPResult apple_aop_audio_handle_command(void *opaque, uint16_t seq,
 
     switch (ldl_le_p(payload + sizeof(uint32_t))) {
     case COMMAND_GET_DEVICE_ID:
-        AOP_DPRINTF("AOPAudio GetDeviceID %d\n",
+        AOP_DPRINTF("AOPAudio GetDeviceID %d",
                     ldl_le_p(payload + COMMAND_HDR_LEN));
 
         stl_le_p(payload_out,
                  apple_aop_devices[ldl_le_p(payload + COMMAND_HDR_LEN)]);
         break;
     case COMMAND_GET_DEVICE_PROP:
-        AOP_DPRINTF("AOPAudio GetDeviceProperty %X 0x%X\n",
+        AOP_DPRINTF("AOPAudio GetDeviceProperty %X 0x%X",
                     ldl_le_p(payload + COMMAND_HDR_LEN),
                     ldl_le_p(payload + COMMAND_HDR_LEN + 4));
 
@@ -239,7 +240,7 @@ static AppleAOPResult apple_aop_audio_handle_command(void *opaque, uint16_t seq,
         }
         break;
     case COMMAND_SET_DEVICE_PROP:
-        AOP_DPRINTF("AOPAudio SetDeviceProperty %X 0x%X\n",
+        AOP_DPRINTF("AOPAudio SetDeviceProperty %X 0x%X",
                     ldl_le_p(payload + COMMAND_HDR_LEN),
                     ldl_le_p(payload + COMMAND_HDR_LEN + 4));
 
@@ -256,6 +257,8 @@ static AppleAOPResult apple_aop_audio_handle_command(void *opaque, uint16_t seq,
             }
             break;
         }
+        break;
+    default:
         break;
     }
 
