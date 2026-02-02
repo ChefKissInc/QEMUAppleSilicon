@@ -1950,33 +1950,6 @@ static void t8030_create_backlight(AppleT8030MachineState *t8030)
                             *(uint32_t *)prop->data);
 }
 
-static void t8030_create_misc(AppleT8030MachineState *t8030)
-{
-    AppleDTNode *child;
-    AppleDTNode *armio;
-
-    armio = apple_dt_get_node(t8030->device_tree, "arm-io");
-    g_assert_nonnull(armio);
-
-    child = apple_dt_get_node(armio, "bluetooth");
-    g_assert_nonnull(child);
-
-    // 0x0 = USB
-    // 0x1 = HS
-    // 0x2 = H4DS
-    // 0x3 = H4BC (UART?)
-    // 0x4 = H5
-    // 0x5 = BCSP Transport not supported, fallback USB
-    // 0x6 = APPLEBT
-    // 0x7 = PCIE, the original value
-    apple_dt_set_prop_u32(child, "transport-encoding", 0);
-    // setting 0 results in defaulting to 2400000
-    apple_dt_set_prop_u32(child, "transport-speed", 2400000);
-
-    // child = apple_dt_get_node(armio, "wlan");
-    // g_assert_nonnull(child);
-}
-
 static void t8030_create_display(AppleT8030MachineState *t8030)
 {
     MachineState *machine;
@@ -2717,7 +2690,6 @@ static void t8030_init(MachineState *machine)
     t8030_create_roswell(t8030);
     t8030_create_backlight(t8030);
     t8030_create_chestnut(t8030);
-    t8030_create_misc(t8030);
     t8030_create_display(t8030);
     t8030_create_mt_spi(t8030);
     t8030_create_aop(t8030);
