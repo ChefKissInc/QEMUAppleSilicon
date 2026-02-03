@@ -571,7 +571,7 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     // should actually be a function
     apple_smc_add_key(s, 'B0FV', sizeof(b0fv), SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE,
                       &b0fv);
-    uint8_t bdd1 = 0x19;
+    const uint8_t bdd1 = 0x19;
     apple_smc_add_key(s, 'BDD1', sizeof(bdd1), SMC_KEY_TYPE_UINT8,
                       SMC_ATTR_R_LE, &bdd1);
     // should actually be a function
@@ -586,7 +586,7 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
                       SMC_ATTR_R_LE, &batt_cell_voltage);
     apple_smc_add_key(s, 'BC4V', sizeof(batt_cell_voltage), SMC_KEY_TYPE_UINT16,
                       SMC_ATTR_R_LE, &batt_cell_voltage);
-    uint16_t b0dc = 0xEF13;
+    const uint16_t b0dc = 0xEF13;
     apple_smc_add_key(s, 'B0DC', sizeof(b0dc), SMC_KEY_TYPE_UINT16,
                       SMC_ATTR_R_LE, &b0dc);
     apple_smc_add_key(s, 'B0BL', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
@@ -598,7 +598,7 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
                       &batt_actual_amperage);
     apple_smc_add_key(s, 'B0AV', sizeof(batt_actual_voltage),
                       SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, &batt_actual_voltage);
-    uint64_t chnc = 0x1; // ???
+    const uint64_t chnc = 0x1; // ???
     apple_smc_add_key(s, 'CHNC', sizeof(chnc), SMC_KEY_TYPE_HEX, SMC_ATTR_R_LE,
                       &chnc);
     // should actually be a function
