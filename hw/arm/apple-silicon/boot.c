@@ -178,9 +178,6 @@ static const char *REM_NAMES[] = {
 static const char *REM_DEV_TYPES[] = {
     "bluetooth\0$",     "wlan\0$",
     "pmp\0$",
-#ifndef ENABLE_BASEBAND
-    "baseband\0$",      "baseband-spmi\0$",
-#endif
     "spherecontrol\0$", "smc-ext-charger\0$",
     "smc-charger\0$",
 };
