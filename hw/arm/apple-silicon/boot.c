@@ -169,6 +169,8 @@ static const char *REM_NAMES[] = {
     "baseband\0$",
     "baseband-spmi\0$",
     "baseband-vol\0$",
+    "baseband-pcie\0$",
+    "audio-baseband-voice\0$",
 #endif
     // doing this won't^H^H^Hwill fix sepfw 17
     // should also work with 14beta5
