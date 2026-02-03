@@ -647,8 +647,7 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     apple_smc_add_key(s, 'D1VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'D2VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
 
-    apple_smc_add_sensor(s, 'TV0s', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_RW_LE,
-                         NULL);
+    apple_smc_add_key(s, 'TV0s', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_RW_LE, NULL);
 
     apple_smc_add_key(s, 'BHTL', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_RW_LE, NULL);
 
