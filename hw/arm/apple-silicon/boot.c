@@ -143,6 +143,8 @@ static const char *KEEP_COMP[] = {
     "rsm,t8030\0$",
     "tempsensor,t8030\0$",
     "mtrtempsensor,t8020\0$",
+    "dietempctl,t8030\0$",
+    "vtempctl,t8030\0$",
 };
 
 static const char *REM_NAMES[] = {
