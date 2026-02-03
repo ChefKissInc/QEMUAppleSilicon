@@ -909,7 +909,7 @@ static void apple_mt_spi_timer_tick(void *opaque)
 
     if (s->btn_state & MOUSE_EVENT_LBUTTON) {
         timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
-                                NANOSECONDS_PER_SECOND / 10);
+                                NANOSECONDS_PER_SECOND / 20);
     }
 }
 
