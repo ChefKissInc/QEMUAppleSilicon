@@ -193,7 +193,7 @@ static const char *REM_PROPS[] = {
     "function-usb_500_100",
     "mcc-power-gating",
     "nand-debug",
-    "nvme-coastguard",
+    "nvme-coastguard", // FIXME: panic: "pmap_iommu_map failed\n"
     "pmp",
     "soc-tuning",
 #ifndef ENABLE_BASEBAND
