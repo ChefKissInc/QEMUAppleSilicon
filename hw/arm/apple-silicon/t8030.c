@@ -2320,33 +2320,34 @@ static void t8030_create_mipi_dsim(AppleT8030MachineState *t8030)
     uint32_t *ints;
     AppleDTProp *prop;
     uint64_t *reg;
-    SysBusDevice *mipi;
+    SysBusDevice *sbd;
     AppleDTNode *child;
 
     child = apple_dt_get_node(t8030->device_tree, "arm-io/mipi-dsim");
     g_assert_nonnull(child);
 
-    mipi = synopsys_mipi_dsim_create(child);
-    g_assert_nonnull(mipi);
+    sbd = synopsys_mipi_dsim_create(child);
+    g_assert_nonnull(sbd);
 
-    object_property_add_child(OBJECT(t8030), "mipi", OBJECT(mipi));
+    object_property_add_child(OBJECT(t8030), "mipi", OBJECT(sbd));
+
     prop = apple_dt_get_prop(child, "reg");
     g_assert_nonnull(prop);
     reg = (uint64_t *)prop->data;
 
-    sysbus_mmio_map(mipi, 0, t8030->armio_base + reg[0]);
-    sysbus_mmio_map(mipi, 1, t8030->armio_base + reg[2]);
+    sysbus_mmio_map(sbd, 0, t8030->armio_base + reg[0]);
+    sysbus_mmio_map(sbd, 1, t8030->armio_base + reg[2]);
 
     prop = apple_dt_get_prop(child, "interrupts");
     g_assert_nonnull(prop);
     ints = (uint32_t *)prop->data;
 
     for (i = 0; i < prop->len / sizeof(uint32_t); i++) {
-        sysbus_connect_irq(mipi, i,
+        sysbus_connect_irq(sbd, i,
                            qdev_get_gpio_in(DEVICE(t8030->aic), ints[i]));
     }
 
-    sysbus_realize_and_unref(mipi, &error_fatal);
+    sysbus_realize_and_unref(sbd, &error_fatal);
 
     child = apple_dt_get_node(child, "lcd");
     g_assert_nonnull(child);
