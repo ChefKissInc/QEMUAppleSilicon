@@ -156,7 +156,6 @@ static const char *REM_NAMES[] = {
     "dart-rsm\0$",
     "dart-scaler\0$",
     "dockchannel-uart\0$",
-    "dotara\0$",
     "pmp\0$",
     "stockholm\0$",
     "stockholm-spmi\0$",
