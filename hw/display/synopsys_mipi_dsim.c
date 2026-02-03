@@ -49,7 +49,7 @@ static void synopsys_mipi_dsim_reg_write(void *opaque, hwaddr addr,
 {
     SynopsysMIPIDSIMState *s = opaque;
 
-    switch (addr) {
+    switch (addr >> 2) {
     case R_CORE_PWR_UP:
         s->power_up = data;
         break;
@@ -93,7 +93,7 @@ static const MemoryRegionOps synopsys_mipi_dsim_reg_ops = {
 static void synopsys_mipi_dsim_swmpr_reg_write(void *opaque, hwaddr addr,
                                                uint64_t data, unsigned size)
 {
-    switch (addr) {
+    switch (addr >> 2) {
     default:
         break;
     }
@@ -102,7 +102,7 @@ static void synopsys_mipi_dsim_swmpr_reg_write(void *opaque, hwaddr addr,
 static uint64_t synopsys_mipi_dsim_swmpr_reg_read(void *opaque, hwaddr addr,
                                                   unsigned size)
 {
-    switch (addr) {
+    switch (addr >> 2) {
     default:
         return UINT32_MAX;
     }
