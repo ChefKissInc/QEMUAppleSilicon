@@ -52,6 +52,7 @@
 #include "hw/misc/apple-silicon/smc.h"
 #include "hw/misc/apple-silicon/spmi-baseband.h"
 #include "hw/misc/apple-silicon/spmi-pmu.h"
+#include "hw/misc/apple-silicon/tempsensor.h"
 #include "hw/misc/unimp.h"
 #include "hw/nvram/apple_nvram.h"
 #include "hw/pci-host/apcie.h"
@@ -2354,25 +2355,43 @@ static void t8030_create_mipi_dsim(AppleT8030MachineState *t8030)
     apple_dt_set_prop_u32(child, "lcd-panel-id", 0xA1C432D1);
 }
 
-static void t8030_create_tempsensor(AppleT8030MachineState *t8030, const char* name)
+static void t8030_create_tempsensor(AppleT8030MachineState *t8030,
+                                    const char *name)
 {
     AppleDTNode *child;
     AppleDTProp *prop;
+    SysBusDevice *sbd;
     uint64_t *reg;
 
     child = apple_dt_get_node(t8030->device_tree, "arm-io");
     g_assert_nonnull(child);
     child = apple_dt_get_node(child, name);
     g_assert_nonnull(child);
+
+    apple_dt_set_prop_u32(child, "invokes-sochot", 0);
+
+    sbd = apple_temp_sensor_create(child);
+    g_assert_nonnull(sbd);
+
+    object_property_add_child(OBJECT(t8030), name, OBJECT(sbd));
 
     prop = apple_dt_get_prop(child, "reg");
     g_assert_nonnull(prop);
     reg = (uint64_t *)prop->data;
 
-    create_unimplemented_device(name, t8030->armio_base + reg[0], reg[1]);
+    sysbus_mmio_map(sbd, 0, t8030->armio_base + reg[0]);
+
+    prop = apple_dt_get_prop(child, "interrupts");
+    g_assert_nonnull(prop);
+
+    sysbus_connect_irq(
+        sbd, 0, qdev_get_gpio_in(DEVICE(t8030->aic), ldl_le_p(prop->data)));
+
+    sysbus_realize_and_unref(sbd, &error_fatal);
 }
 
-static void t8030_create_mtr_tempsensor(AppleT8030MachineState *t8030, const char* name)
+static void t8030_create_mtr_tempsensor(AppleT8030MachineState *t8030,
+                                        const char *name)
 {
     AppleDTNode *child;
     AppleDTProp *prop;
@@ -2382,6 +2401,8 @@ static void t8030_create_mtr_tempsensor(AppleT8030MachineState *t8030, const cha
     g_assert_nonnull(child);
     child = apple_dt_get_node(child, name);
     g_assert_nonnull(child);
+
+    apple_dt_set_prop_u32(child, "invokes-sochot", 0);
 
     prop = apple_dt_get_prop(child, "reg");
     g_assert_nonnull(prop);
