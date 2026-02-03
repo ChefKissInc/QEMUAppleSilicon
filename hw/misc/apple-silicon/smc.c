@@ -610,6 +610,10 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     // TODO: BHT0 battery heat map function, length 0x19/25
     // TODO: battery settings page won't fully load
 
+    const uint8_t wireless_charger_chip_id = 1;
+    apple_smc_add_key(s, 'WADI', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE,
+                      &wireless_charger_chip_id);
+
     return sbd;
 }
 

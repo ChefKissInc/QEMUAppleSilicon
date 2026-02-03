@@ -163,8 +163,6 @@ static const char *REM_NAMES[] = {
     "bluetooth\0$",
     "bluetooth-pcie\0$",
     "wlan\0$",
-    "smc-ext-charger\0$",
-    "smc-charger\0$",
 #ifndef ENABLE_BASEBAND
     "baseband\0$",
     "baseband-spmi\0$",
@@ -180,8 +178,6 @@ static const char *REM_NAMES[] = {
 static const char *REM_DEV_TYPES[] = {
     "bluetooth\0$",     "wlan\0$",
     "pmp\0$",
-    "spherecontrol\0$", "smc-ext-charger\0$",
-    "smc-charger\0$",
 };
 
 static const char *REM_PROPS[] = {
@@ -189,7 +185,6 @@ static const char *REM_PROPS[] = {
     "content-protect",
     "encryptable",
 #endif
-    "function-brick_id_voltage",
     "function-dock_parent",
     "function-error_handler",
     "function-ldcm_bypass_en",
@@ -199,7 +194,6 @@ static const char *REM_PROPS[] = {
     "function-spi0_mosi_config",
     "function-spi0_sclk_config",
     "function-usb_500_100",
-    "function-vbus_voltage",
     "mcc-power-gating",
     "nand-debug",
     "nvme-coastguard",
