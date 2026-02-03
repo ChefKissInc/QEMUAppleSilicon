@@ -140,6 +140,7 @@ static const char *KEEP_COMP[] = {
     "wdt,t8030\0wdt,s5l8960x\0$",
     "apcie,t8030\0$",
     "apcie,s8000\0$",
+    "rsm,t8030\0$",
 };
 
 static const char *REM_NAMES[] = {
@@ -155,7 +156,6 @@ static const char *REM_NAMES[] = {
     "dart-jpeg0\0$",
     "dart-jpeg1\0$",
     "dart-pmp\0$",
-    "dart-rsm\0$",
     "dart-scaler\0$",
     "dockchannel-uart\0$",
     "pmp\0$",

@@ -2656,6 +2656,7 @@ static void t8030_init(MachineState *machine)
     t8030_create_dart(t8030, "dart-apcie2", true);
     t8030_create_dart(t8030, "dart-apcie3", true);
     t8030_create_dart(t8030, "dart-aop", false);
+    t8030_create_dart(t8030, "dart-rsm", false);
     t8030_create_pcie(t8030);
     t8030_create_ans(t8030);
     t8030_create_usb(t8030);
