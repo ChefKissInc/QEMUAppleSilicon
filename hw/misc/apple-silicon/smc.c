@@ -149,6 +149,21 @@ void apple_smc_add_key(AppleSMCState *s, uint32_t key, uint8_t size,
     apple_smc_insert_key(s, key_entry, data_entry);
 }
 
+void apple_smc_add_sensor(AppleSMCState *s, uint32_t key, uint8_t size,
+                          SMCKeyType type, SMCKeyAttribute attr,
+                          const void *data)
+{
+    SMCKey *key_entry;
+    SMCKeyData *data_entry;
+
+    g_assert_false(attr & SMC_ATTR_FUNC);
+
+    key_entry = apple_smc_new_key(key, size, type, attr, data, &data_entry);
+    key_entry->is_sensor = true;
+
+    apple_smc_insert_key(s, key_entry, data_entry);
+}
+
 void apple_smc_add_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
                             SMCKeyType type, SMCKeyAttribute attr, void *opaque,
                             SMCKeyFunc *reader, SMCKeyFunc *writer)
@@ -210,10 +225,9 @@ static SMCResult smc_key_count_read(SMCKey *key, SMCKeyData *data,
 {
     AppleSMCState *s = key->opaque;
     SMCKey *cur;
-    SMCKey *next;
     uint32_t key_count = 0;
 
-    QTAILQ_FOREACH_SAFE (cur, &s->keys, next, next) {
+    QTAILQ_FOREACH (cur, &s->keys, next) {
         ++key_count;
     }
 
@@ -266,6 +280,52 @@ static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
     default:
         return SMC_RESULT_BAD_FUNC_PARAMETER;
     }
+}
+
+static SMCResult apple_smc_sensor_count_read(SMCKey *key, SMCKeyData *data,
+                                             const void *in, uint8_t in_length)
+{
+    AppleSMCState *s = key->opaque;
+    SMCKey *cur;
+    uint32_t count = 0;
+
+    QTAILQ_FOREACH (cur, &s->keys, next) {
+        if (cur->is_sensor) {
+            ++count;
+        }
+    }
+
+    stl_le_p(data->data, count);
+
+    return SMC_RESULT_SUCCESS;
+}
+
+static SMCResult apple_smc_sensor_query_read(SMCKey *key, SMCKeyData *data,
+                                             const void *in, uint8_t in_length)
+{
+    AppleSMCState *s = key->opaque;
+    uint32_t queried_i;
+    SMCKey *cur;
+    uint32_t i = 0;
+
+    if (in == NULL || in_length != sizeof(uint32_t)) {
+        return SMC_RESULT_BAD_ARGUMENT_ERROR;
+    }
+
+    queried_i = ldl_le_p(in);
+    QTAILQ_FOREACH (cur, &s->keys, next) {
+        if (cur->is_sensor) {
+            if (i == queried_i) {
+                stl_le_p(data->data, cur->key);
+                return SMC_RESULT_SUCCESS;
+            }
+
+            ++i;
+        }
+    }
+
+
+    return SMC_RESULT_BAD_ARGUMENT_ERROR;
 }
 
 static void apple_smc_handle_key_endpoint(void *opaque, uint8_t ep,
@@ -343,17 +403,20 @@ static void apple_smc_handle_key_endpoint(void *opaque, uint8_t ep,
         break;
     }
     case SMC_GET_KEY_BY_INDEX: {
-        key_entry = QTAILQ_FIRST(&s->keys);
+        uint32_t i = 0;
 
-        for (int i = 0; i < key && key_entry != NULL; i++) {
-            key_entry = QTAILQ_NEXT(key_entry, next);
+        QTAILQ_FOREACH (key_entry, &s->keys, next) {
+            if (i == key) {
+                break;
+            }
+            ++i;
         }
 
         if (key_entry == NULL) {
             resp.status = SMC_RESULT_KEY_INDEX_RANGE_ERROR;
         } else {
             resp.status = SMC_RESULT_SUCCESS;
-            stl_le_p(resp.response, cpu_to_le32(key_entry->key));
+            stl_le_p(resp.response, key_entry->key);
         }
 
         apple_rtkit_send_user_msg(rtk, ep, resp.raw);
@@ -485,8 +548,6 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     data[0] = 3;
     apple_smc_add_key(s, 'RGEN', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R, data);
 
-    apple_smc_add_key(s, 'aDC#', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R, NULL);
-
     // seems to be readable, too
     apple_smc_add_key_func(s, 'MBSE', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_LE, s, NULL,
                            apple_smc_mbse_write);
@@ -504,47 +565,90 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     apple_smc_add_key(s, 'AC-W', sizeof(ac_w), SMC_KEY_TYPE_SINT8, SMC_ATTR_R,
                       &ac_w);
     apple_smc_add_key(s, 'CHAI', 4, SMC_KEY_TYPE_UINT32, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TG0B', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TG0V', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TG0B', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TG0V', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
     // ----
-
-    apple_smc_add_key(s, 'TP1A', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP2C', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP1d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP2d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP3d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP4d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP5d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP3R', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP4H', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'TP0Z', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
 
     apple_smc_add_key(s, 'B0AP', 4, SMC_KEY_TYPE_SINT32, SMC_ATTR_R_LE, NULL);
 
-    apple_smc_add_key(s, 'Th0a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th1a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th2a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th0f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th1f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th2f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th0x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th1x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Th2x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc0a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc1a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc2a', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc0f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc1f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc2f', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc0x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc1x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
-    apple_smc_add_key(s, 'Tc2x', 4, SMC_KEY_TYPE_FLT, SMC_ATTR_R_LE, NULL);
+    // ??
+    apple_smc_add_sensor(s, 'TP1d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP2d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP3d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP4d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP5d', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP1A', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP2C', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP3R', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'TP4H', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // PMU tcal
+    apple_smc_add_sensor(s, 'TP0Z', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: PMGR SOC Die Temp Sensor0
+    apple_smc_add_sensor(s, 'Th0a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Th0f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: PMGR SOC Die Temp Sensor0
+    apple_smc_add_sensor(s, 'Th0x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: PMGR SOC Die Temp Sensor1
+    apple_smc_add_sensor(s, 'Th1a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Th1f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: PMGR SOC Die Temp Sensor1
+    apple_smc_add_sensor(s, 'Th1x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: PMGR SOC Die Temp Sensor2
+    apple_smc_add_sensor(s, 'Th2a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Th2f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: PMGR SOC Die Temp Sensor2
+    apple_smc_add_sensor(s, 'Th2x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: pACC Temp Sensor0
+    apple_smc_add_sensor(s, 'Tc0a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Tc0f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: pACC Temp Sensor0
+    apple_smc_add_sensor(s, 'Tc0x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: pACC Temp Sensor1
+    apple_smc_add_sensor(s, 'Tc1a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Tc1f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: pACC Temp Sensor1
+    apple_smc_add_sensor(s, 'Tc1x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: pACC Temp Sensor2
+    apple_smc_add_sensor(s, 'Tc2a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Tc2f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: pACC Temp Sensor2
+    apple_smc_add_sensor(s, 'Tc2x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: pACC Temp Sensor4
+    apple_smc_add_sensor(s, 'Tc4a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Tc4f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: pACC Temp Sensor4
+    apple_smc_add_sensor(s, 'Tc4x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: SOC MTR Temp Sensor0
+    apple_smc_add_sensor(s, 'Ts0a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Ts0f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: SOC MTR Temp Sensor0
+    apple_smc_add_sensor(s, 'Ts0x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: SOC MTR Temp Sensor3
+    apple_smc_add_sensor(s, 'Ts3a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Ts3f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: SOC MTR Temp Sensor3
+    apple_smc_add_sensor(s, 'Ts3x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: ANE MTR Temp Sensor0
+    apple_smc_add_sensor(s, 'Ta0a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Ta0f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: ANE MTR Temp Sensor0
+    apple_smc_add_sensor(s, 'Ta0x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Avg: pACC MTR Temp Sensor0
+    apple_smc_add_sensor(s, 'Tp0a', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Tp0f', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // Max: pACC MTR Temp Sensor0
+    apple_smc_add_sensor(s, 'Tp0x', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    // ???
+    apple_smc_add_sensor(s, 'mic2', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Prs0', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
+    apple_smc_add_sensor(s, 'Tarc', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
 
     apple_smc_add_key(s, 'D0VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'D1VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
     apple_smc_add_key(s, 'D2VR', 2, SMC_KEY_TYPE_UINT16, SMC_ATTR_R_LE, NULL);
 
-    apple_smc_add_key(s, 'TV0s', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_RW_LE, NULL);
+    apple_smc_add_sensor(s, 'TV0s', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_RW_LE,
+                         NULL);
 
     apple_smc_add_key(s, 'BHTL', 1, SMC_KEY_TYPE_FLAG, SMC_ATTR_RW_LE, NULL);
 
@@ -614,6 +718,10 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     apple_smc_add_key(s, 'WADI', 1, SMC_KEY_TYPE_UINT8, SMC_ATTR_R_LE,
                       &wireless_charger_chip_id);
 
+    apple_smc_add_key_func(s, 'aDC#', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_LE, s,
+                           apple_smc_sensor_count_read, NULL);
+    apple_smc_add_key_func(s, 'aDC?', 4, SMC_KEY_TYPE_HEX, SMC_ATTR_LE, s,
+                           apple_smc_sensor_query_read, NULL);
     return sbd;
 }
 

@@ -185,8 +185,9 @@ typedef struct {
 } QEMU_PACKED SMCKeyInfo;
 
 struct SMCKey {
-    uint32_t key;
     SMCKeyInfo info;
+    uint32_t key;
+    bool is_sensor;
     void *opaque;
     SMCKeyFunc *read;
     SMCKeyFunc *write;
@@ -207,6 +208,9 @@ SMCKey *apple_smc_get_key(AppleSMCState *s, uint32_t key);
 SMCKeyData *apple_smc_get_key_data(AppleSMCState *s, uint32_t key);
 void apple_smc_add_key(AppleSMCState *s, uint32_t key, uint8_t size,
                        SMCKeyType type, SMCKeyAttribute attr, const void *data);
+void apple_smc_add_sensor(AppleSMCState *s, uint32_t key, uint8_t size,
+                          SMCKeyType type, SMCKeyAttribute attr,
+                          const void *data);
 void apple_smc_add_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
                             SMCKeyType type, SMCKeyAttribute attr, void *opaque,
                             SMCKeyFunc *reader, SMCKeyFunc *writer);
