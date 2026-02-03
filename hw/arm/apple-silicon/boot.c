@@ -88,6 +88,8 @@ static const char *KEEP_COMP[] = {
     "dart,t8020\0$",
     "disp0,t8030\0$",
     "display-pmu,chestnut\0$",
+    "dock,9pin\0$",
+    "dock,0pin\0$",
     "gen-mt-decider\0$",
     "gpio,s8000\0gpio,s5l8960x\0$",
     "gpio,t8015\0gpio,s5l8960x\0$",
@@ -190,7 +192,6 @@ static const char *REM_PROPS[] = {
     "function-mcc_ctrl",
     "function-mcc_dataset",
     "function-pmp_control",
-    "function-usb_500_100",
     "mcc-power-gating",
     "nand-debug",
     "nvme-coastguard", // FIXME: panic: "pmap_iommu_map failed\n"
