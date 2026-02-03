@@ -2353,6 +2353,42 @@ static void t8030_create_mipi_dsim(AppleT8030MachineState *t8030)
     apple_dt_set_prop_u32(child, "lcd-panel-id", 0xA1C432D1);
 }
 
+static void t8030_create_tempsensor(AppleT8030MachineState *t8030, const char* name)
+{
+    AppleDTNode *child;
+    AppleDTProp *prop;
+    uint64_t *reg;
+
+    child = apple_dt_get_node(t8030->device_tree, "arm-io");
+    g_assert_nonnull(child);
+    child = apple_dt_get_node(child, name);
+    g_assert_nonnull(child);
+
+    prop = apple_dt_get_prop(child, "reg");
+    g_assert_nonnull(prop);
+    reg = (uint64_t *)prop->data;
+
+    create_unimplemented_device(name, t8030->armio_base + reg[0], reg[1]);
+}
+
+static void t8030_create_mtr_tempsensor(AppleT8030MachineState *t8030, const char* name)
+{
+    AppleDTNode *child;
+    AppleDTProp *prop;
+    uint64_t *reg;
+
+    child = apple_dt_get_node(t8030->device_tree, "arm-io");
+    g_assert_nonnull(child);
+    child = apple_dt_get_node(child, name);
+    g_assert_nonnull(child);
+
+    prop = apple_dt_get_prop(child, "reg");
+    g_assert_nonnull(prop);
+    reg = (uint64_t *)prop->data;
+
+    create_unimplemented_device(name, t8030->armio_base + reg[0], reg[1]);
+}
+
 static void t8030_cpu_reset(AppleT8030MachineState *t8030)
 {
     CPUState *cpu;
@@ -2699,6 +2735,20 @@ static void t8030_init(MachineState *machine)
     t8030_create_speaker_bottom(t8030);
     t8030_create_buttons(t8030);
     t8030_create_mipi_dsim(t8030);
+
+    t8030_create_tempsensor(t8030, "tempsensor0");
+    t8030_create_tempsensor(t8030, "tempsensor1");
+    t8030_create_tempsensor(t8030, "tempsensor2");
+    t8030_create_tempsensor(t8030, "tempsensor3");
+    t8030_create_tempsensor(t8030, "tempsensor4");
+    t8030_create_tempsensor(t8030, "tempsensor5");
+    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor6");
+    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor7");
+    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor8");
+    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor11");
+    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor13");
+    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor14");
+    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor15");
 
     t8030->init_done_notifier.notify = t8030_init_done;
     qemu_add_machine_init_done_notifier(&t8030->init_done_notifier);
