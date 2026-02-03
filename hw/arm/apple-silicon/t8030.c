@@ -754,6 +754,18 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     case 0x3C100C4C: // Could that also have been for T8015? No idea anymore.
         return 0x1;
     default:
+        // SOC MTR Temp Sensor0
+        if ((base + addr) >= 0x3B281000 && (base + addr) < 0x3B281000 + 0x8000) {
+            return 0xAFAFAFAF;
+        }
+        // SOC MTR Temp Sensor3
+        if ((base + addr) >= 0x3B289000 && (base + addr) < 0x3B289000 + 0x8000) {
+            return 0xAFAFAFAF;
+        }
+        // ANE MTR Temp Sensor0
+        if ((base + addr) >= 0x3B299000 && (base + addr) < 0x3B299000 + 0x8000) {
+            return 0xAFAFAFAF;
+        }
         if (((base + addr) & 0x10E70000) == 0x10E70000) {
             return (108 << 4) | 0x200000; // ?
         }
@@ -2356,7 +2368,7 @@ static void t8030_create_mipi_dsim(AppleT8030MachineState *t8030)
 }
 
 static void t8030_create_tempsensor(AppleT8030MachineState *t8030,
-                                    const char *name)
+                                    const char *name, bool conflicts_pmgr)
 {
     AppleDTNode *child;
     AppleDTProp *prop;
@@ -2370,9 +2382,11 @@ static void t8030_create_tempsensor(AppleT8030MachineState *t8030,
 
     apple_dt_set_prop_u32(child, "invokes-sochot", 0);
 
-    sbd = apple_temp_sensor_create(child);
-    g_assert_nonnull(sbd);
+    if (conflicts_pmgr) {
+        return;
+    }
 
+    sbd = apple_temp_sensor_create(child);
     object_property_add_child(OBJECT(t8030), name, OBJECT(sbd));
 
     prop = apple_dt_get_prop(child, "reg");
@@ -2758,17 +2772,17 @@ static void t8030_init(MachineState *machine)
     t8030_create_buttons(t8030);
     t8030_create_mipi_dsim(t8030);
 
-    t8030_create_tempsensor(t8030, "tempsensor0");
-    t8030_create_tempsensor(t8030, "tempsensor1");
-    t8030_create_tempsensor(t8030, "tempsensor2");
-    t8030_create_tempsensor(t8030, "tempsensor3");
-    t8030_create_tempsensor(t8030, "tempsensor4");
-    t8030_create_tempsensor(t8030, "tempsensor5");
-    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor6");
-    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor7");
-    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor8");
-    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor11");
-    t8030_create_mtr_tempsensor(t8030, "mtrtempsensor13");
+    t8030_create_tempsensor(t8030, "tempsensor0", false);
+    t8030_create_tempsensor(t8030, "tempsensor1", false);
+    t8030_create_tempsensor(t8030, "tempsensor2", false);
+    t8030_create_tempsensor(t8030, "tempsensor3", false);
+    t8030_create_tempsensor(t8030, "tempsensor4", false);
+    t8030_create_tempsensor(t8030, "tempsensor5", false);
+    t8030_create_tempsensor(t8030, "mtrtempsensor6", true);
+    t8030_create_tempsensor(t8030, "mtrtempsensor7", true);
+    t8030_create_tempsensor(t8030, "mtrtempsensor8", true);
+    t8030_create_tempsensor(t8030, "mtrtempsensor11", false);
+    t8030_create_tempsensor(t8030, "mtrtempsensor13", false);
     t8030_create_mtr_tempsensor(t8030, "mtrtempsensor14");
     t8030_create_mtr_tempsensor(t8030, "mtrtempsensor15");
 

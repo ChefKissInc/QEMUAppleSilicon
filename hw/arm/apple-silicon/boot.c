@@ -141,6 +141,7 @@ static const char *KEEP_COMP[] = {
     "apcie,t8030\0$",
     "apcie,s8000\0$",
     "rsm,t8030\0$",
+    "tempsensor,t8020\0$",
     "tempsensor,t8030\0$",
     "mtrtempsensor,t8020\0$",
     "dietempctl,t8030\0$",
