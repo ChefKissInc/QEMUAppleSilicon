@@ -755,15 +755,18 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
         return 0x1;
     default:
         // SOC MTR Temp Sensor0
-        if ((base + addr) >= 0x3B281000 && (base + addr) < 0x3B281000 + 0x8000) {
+        if ((base + addr) >= 0x3B281000 &&
+            (base + addr) < 0x3B281000 + 0x8000) {
             return 0xAFAFAFAF;
         }
         // SOC MTR Temp Sensor3
-        if ((base + addr) >= 0x3B289000 && (base + addr) < 0x3B289000 + 0x8000) {
+        if ((base + addr) >= 0x3B289000 &&
+            (base + addr) < 0x3B289000 + 0x8000) {
             return 0xAFAFAFAF;
         }
         // ANE MTR Temp Sensor0
-        if ((base + addr) >= 0x3B299000 && (base + addr) < 0x3B299000 + 0x8000) {
+        if ((base + addr) >= 0x3B299000 &&
+            (base + addr) < 0x3B299000 + 0x8000) {
             return 0xAFAFAFAF;
         }
         if (((base + addr) & 0x10E70000) == 0x10E70000) {
