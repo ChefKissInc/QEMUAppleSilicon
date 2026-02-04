@@ -157,10 +157,6 @@ static void synopsys_mipi_dsim_reset_hold(Object *obj, ResetType type)
     s->power_up = FIELD_DP32(0, CORE_PWR_UP, SHUTDOWNZ, 1);
 }
 
-static void synopsys_mipi_dsim_realize(DeviceState *dev, Error **errp)
-{
-}
-
 static void synopsys_mipi_dsim_class_init(ObjectClass *oc, const void *data)
 {
     ResettableClass *rc;
@@ -173,7 +169,6 @@ static void synopsys_mipi_dsim_class_init(ObjectClass *oc, const void *data)
 
     dc->desc = "Synopsys MIPI DSIM";
     dc->user_creatable = false;
-    dc->realize = synopsys_mipi_dsim_realize;
     set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
 }
 
