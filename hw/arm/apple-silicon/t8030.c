@@ -48,6 +48,7 @@
 #include "hw/misc/apple-silicon/baseband.h"
 #include "hw/misc/apple-silicon/buttons.h"
 #include "hw/misc/apple-silicon/chestnut.h"
+#include "hw/misc/apple-silicon/mic_tempsensor.h"
 #include "hw/misc/apple-silicon/roswell.h"
 #include "hw/misc/apple-silicon/smc.h"
 #include "hw/misc/apple-silicon/spmi-baseband.h"
@@ -2428,6 +2429,28 @@ static void t8030_create_mtr_tempsensor(AppleT8030MachineState *t8030,
     create_unimplemented_device(name, t8030->armio_base + reg[0], reg[1]);
 }
 
+static void t8030_create_mic_temp_sensor2(AppleT8030MachineState *t8030)
+{
+    AppleDTNode *child;
+    AppleDTProp *prop;
+    AppleI2CState *i2c;
+    I2CSlave *dev;
+
+    child = apple_dt_get_node(t8030->device_tree, "arm-io/i2c1/mic-temp-sens2");
+    g_assert_nonnull(child);
+
+    prop = apple_dt_get_prop(child, "reg");
+    g_assert_nonnull(prop);
+
+    apple_dt_del_prop_named(child, "function-micbias-enable");
+
+    i2c = APPLE_I2C(
+        object_property_get_link(OBJECT(t8030), "i2c1", &error_fatal));
+    // TODO: Revert product id to 3 and vendor id to 2 once audio support is implemented.
+    dev = apple_mic_temp_sensor_create(*(uint8_t *)prop->data, 1, 0, 0, 5);
+    i2c_slave_realize_and_unref(dev, i2c->bus, &error_abort);
+}
+
 static void t8030_cpu_reset(AppleT8030MachineState *t8030)
 {
     CPUState *cpu;
@@ -2788,6 +2811,7 @@ static void t8030_init(MachineState *machine)
     t8030_create_tempsensor(t8030, "mtrtempsensor13", false);
     t8030_create_mtr_tempsensor(t8030, "mtrtempsensor14");
     t8030_create_mtr_tempsensor(t8030, "mtrtempsensor15");
+    t8030_create_mic_temp_sensor2(t8030);
 
     t8030->init_done_notifier.notify = t8030_init_done;
     qemu_add_machine_init_done_notifier(&t8030->init_done_notifier);

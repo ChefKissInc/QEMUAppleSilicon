@@ -15,6 +15,7 @@ system_ss.add(when: 'CONFIG_APPLE_SOC', if_true: files(
     'baseband.c',
     'buttons.c',
     'tempsensor.c',
+    'mic_tempsensor.c',
 ))
 system_ss.add(when: 'CONFIG_APPLE_SPMI_PMU', if_true: files('spmi-pmu.c'))
 system_ss.add(when: 'CONFIG_APPLE_SPMI_BASEBAND', if_true: files('spmi-baseband.c'))
