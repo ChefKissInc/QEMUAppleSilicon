@@ -508,7 +508,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     nvram =
         APPLE_NVRAM(object_resolve_path_at(NULL, "/machine/peripheral/nvram"));
     if (nvram == NULL) {
-        error_setg(&error_abort, "Failed to find NVRAM device");
+        error_setg(&error_fatal, "Failed to find NVRAM device");
         return;
     }
     apple_nvram_load(nvram);
@@ -534,7 +534,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
 
     if (machine->initrd_filename == NULL && !auto_boot) {
         error_setg(
-            &error_abort,
+            &error_fatal,
             "RAM Disk required for recovery, please specify it via `-initrd`.");
         return;
     }
@@ -624,7 +624,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
         g_free(cmdline);
         break;
     default:
-        error_setg(&error_abort, "Unsupported kernelcache type: 0x%X\n",
+        error_setg(&error_fatal, "Unsupported kernelcache type: 0x%X\n",
                    hdr->file_type);
         return;
     }
@@ -2534,7 +2534,7 @@ static void t8030_init(MachineState *machine)
     t8030 = APPLE_T8030(machine);
 
     if ((t8030->sep_fw_filename == NULL) != (t8030->sep_rom_filename == NULL)) {
-        error_setg(&error_abort,
+        error_setg(&error_fatal,
                    "You need to specify both the SEPROM and the decrypted "
                    "SEPFW in order to use SEP emulation!");
         return;
@@ -2542,12 +2542,12 @@ static void t8030_init(MachineState *machine)
 
     if (t8030->sep_fw_filename == NULL) {
         if (machine->smp.cpus > A13_MAX_CPU) {
-            error_setg(&error_abort,
+            error_setg(&error_fatal,
                        "Too many CPU cores specified for simulated SEP!");
             return;
         }
     } else if (machine->smp.cpus < 2) {
-        error_setg(&error_abort,
+        error_setg(&error_fatal,
                    "Too few CPU cores specified for emulated SEP!");
         return;
     }
@@ -2605,7 +2605,7 @@ static void t8030_init(MachineState *machine)
 
     t8030->device_tree = apple_boot_load_dt_file(machine->dtb);
     if (t8030->device_tree == NULL) {
-        error_setg(&error_abort, "Failed to load device tree");
+        error_setg(&error_fatal, "Failed to load device tree");
         return;
     }
 
@@ -2659,7 +2659,7 @@ static void t8030_init(MachineState *machine)
     } else {
         if (!g_file_get_contents(t8030->securerom_filename, &t8030->securerom,
                                  &t8030->securerom_size, NULL)) {
-            error_setg(&error_abort, "Failed to load SecureROM from `%s`",
+            error_setg(&error_fatal, "Failed to load SecureROM from `%s`",
                        t8030->securerom_filename);
             return;
         }
@@ -2770,7 +2770,7 @@ static void t8030_init(MachineState *machine)
         t8030_create_sep(t8030);
     } else {
 #ifdef ENABLE_DATA_ENCRYPTION
-        error_setg(&error_abort, "Simulated SEP cannot be used with data "
+        error_setg(&error_fatal, "Simulated SEP cannot be used with data "
                                  "encryption at the moment.");
         return;
 #else
@@ -2813,7 +2813,7 @@ static ram_addr_t t8030_fixup_ram_size(ram_addr_t size)
 {
     ram_addr_t ret = ROUND_UP_16K(size);
     if (ret > 4 * GiB) {
-        error_setg(&error_abort,
+        error_setg(&error_fatal,
                    "Specified RAM size exceeds supported SoC maximum (4 GiB)");
         g_assert_not_reached();
     }
