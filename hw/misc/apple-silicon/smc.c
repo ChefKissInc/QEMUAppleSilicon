@@ -606,7 +606,8 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     apple_smc_add_sensor(s, 'TG0C', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
     apple_smc_add_sensor(s, 'TG0H', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
     apple_smc_add_sensor(s, 'TG0V', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
-    // Haptics/LEAP Temperature. FIXME: Remove once Haptic Engine stub is implemented.
+    // Haptics/LEAP Temperature. FIXME: Remove once Haptic Engine stub is
+    // implemented.
     apple_smc_add_sensor(s, 'Tarc', 8, SMC_KEY_TYPE_IOFLT, SMC_ATTR_R_LE, NULL);
     // ---------
 
