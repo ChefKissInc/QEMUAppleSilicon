@@ -1230,8 +1230,8 @@ static void t8030_create_ans(AppleT8030MachineState *t8030)
         object_property_get_link(OBJECT(t8030), "pcie.host", &error_fatal));
     ans = apple_ans_from_node(child, APPLE_A7IOP_V4, sec_bus);
     g_assert_nonnull(ans);
-    g_assert_nonnull(object_property_add_const_link(
-        OBJECT(ans), "dma-mr", OBJECT(sysbus_mmio_get_region(sart, 1))));
+    object_property_add_const_link(OBJECT(ans), "dma-mr",
+                                   OBJECT(sysbus_mmio_get_region(sart, 1)));
 
     object_property_add_child(OBJECT(t8030), "ans", OBJECT(ans));
     prop = apple_dt_get_prop(child, "reg");
@@ -1380,7 +1380,7 @@ static void t8030_create_spi0(AppleT8030MachineState *t8030)
     object_property_add_child(OBJECT(t8030), name, OBJECT(spi));
 
     sio = object_property_get_link(OBJECT(t8030), "sio", &error_fatal);
-    g_assert_nonnull(object_property_add_const_link(OBJECT(spi), "sio", sio));
+    object_property_add_const_link(OBJECT(spi), "sio", sio);
     sysbus_realize_and_unref(SYS_BUS_DEVICE(spi), &error_fatal);
 
     sysbus_mmio_map(SYS_BUS_DEVICE(spi), 0, t8030->armio_base + SPI0_BASE);
@@ -1418,7 +1418,7 @@ static void t8030_create_spi(AppleT8030MachineState *t8030, uint32_t port)
     object_property_add_child(OBJECT(t8030), name, OBJECT(spi));
 
     sio = object_property_get_link(OBJECT(t8030), "sio", &error_fatal);
-    g_assert_nonnull(object_property_add_const_link(OBJECT(spi), "sio", sio));
+    object_property_add_const_link(OBJECT(spi), "sio", sio);
     sysbus_realize_and_unref(SYS_BUS_DEVICE(spi), &error_fatal);
 
     prop = apple_dt_get_prop(child, "reg");
@@ -1485,10 +1485,8 @@ static void t8030_create_usb(AppleT8030MachineState *t8030)
     iommu = apple_dart_instance_iommu_mr(dart, 1, *(uint32_t *)prop->data);
     g_assert_nonnull(iommu);
 
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(atc), "dma-xhci", OBJECT(iommu)));
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(atc), "dma-drd", OBJECT(iommu)));
+    object_property_add_const_link(OBJECT(atc), "dma-xhci", OBJECT(iommu));
+    object_property_add_const_link(OBJECT(atc), "dma-drd", OBJECT(iommu));
 
     prop = apple_dt_get_prop(dart_dwc2_mapper, "reg");
     g_assert_nonnull(prop);
@@ -1496,8 +1494,7 @@ static void t8030_create_usb(AppleT8030MachineState *t8030)
     iommu = apple_dart_instance_iommu_mr(dart, 1, *(uint32_t *)prop->data);
     g_assert_nonnull(iommu);
 
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(atc), "dma-otg", OBJECT(iommu)));
+    object_property_add_const_link(OBJECT(atc), "dma-otg", OBJECT(iommu));
 
     prop = apple_dt_get_prop(phy, "reg");
     g_assert_nonnull(prop);
@@ -1603,8 +1600,7 @@ static void t8030_create_aes(AppleT8030MachineState *t8030)
 
     dma_mr = apple_dart_iommu_mr(dart, *(uint32_t *)prop->data);
     g_assert_nonnull(dma_mr);
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(aes), "dma-mr", OBJECT(dma_mr)));
+    object_property_add_const_link(OBJECT(aes), "dma-mr", OBJECT(dma_mr));
 
     sysbus_realize_and_unref(aes, &error_fatal);
 }
@@ -1780,9 +1776,8 @@ static void t8030_create_sio(AppleT8030MachineState *t8030)
     g_assert_nonnull(iop_nub);
 
     sio = apple_sio_from_node(child, APPLE_A7IOP_V4, t8030->sio_protocol);
-    g_assert_nonnull(sio);
-
     object_property_add_child(OBJECT(t8030), "sio", OBJECT(sio));
+
     prop = apple_dt_get_prop(child, "reg");
     g_assert_nonnull(prop);
     reg = (uint64_t *)prop->data;
@@ -1808,8 +1803,7 @@ static void t8030_create_sio(AppleT8030MachineState *t8030)
 
     dma_mr = apple_dart_iommu_mr(dart, *(uint32_t *)prop->data);
     g_assert_nonnull(dma_mr);
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(sio), "dma-mr", OBJECT(dma_mr)));
+    object_property_add_const_link(OBJECT(sio), "dma-mr", OBJECT(dma_mr));
 
     sysbus_realize_and_unref(sio, &error_fatal);
 }
@@ -1831,7 +1825,7 @@ static void t8030_create_roswell(AppleT8030MachineState *t8030)
                             *(uint8_t *)prop->data);
 }
 
-static void t8030_create_chestnut(AppleT8030MachineState *t8030)
+static void t8030_create_display_pmu(AppleT8030MachineState *t8030)
 {
     AppleDTNode *child;
     AppleDTProp *prop;
@@ -1875,7 +1869,7 @@ static void t8030_create_pcie(AppleT8030MachineState *t8030)
 
     pcie = apple_pcie_from_node(child, chip_id);
     g_assert_nonnull(pcie);
-    object_property_add_child(OBJECT(t8030), "pcie", OBJECT(pcie));
+    object_property_add_child(OBJECT(t8030), "apcie", OBJECT(pcie));
 
 #if 0
     prop = apple_dt_find_prop(child, "reg");
@@ -1940,7 +1934,7 @@ static void t8030_create_pcie(AppleT8030MachineState *t8030)
     sysbus_realize_and_unref(pcie, &error_fatal);
 }
 
-static void t8030_create_backlight(AppleT8030MachineState *t8030)
+static void t8030_create_lm_backlight(AppleT8030MachineState *t8030)
 {
     AppleDTNode *child;
     AppleDTProp *prop;
@@ -2160,8 +2154,7 @@ static void t8030_create_sep_sim(AppleT8030MachineState *t8030)
     sep->dma_mr =
         MEMORY_REGION(apple_dart_iommu_mr(dart, *(uint32_t *)prop->data));
     g_assert_nonnull(sep->dma_mr);
-    g_assert_nonnull(object_property_add_const_link(OBJECT(sep), "dma-mr",
-                                                    OBJECT(sep->dma_mr)));
+    object_property_add_const_link(OBJECT(sep), "dma-mr", OBJECT(sep->dma_mr));
     sep->dma_as = g_new0(AddressSpace, 1);
     address_space_init(sep->dma_as, sep->dma_mr, "sep.dma");
 
@@ -2172,7 +2165,7 @@ static void t8030_create_mt_spi(AppleT8030MachineState *t8030)
 {
     AppleSPIState *spi;
     DeviceState *device;
-    DeviceState *aop_gpio;
+    DeviceState *gpio;
     AppleDTNode *child;
     AppleDTProp *prop;
     uint32_t *ints;
@@ -2186,7 +2179,7 @@ static void t8030_create_mt_spi(AppleT8030MachineState *t8030)
     qdev_prop_set_uint32(device, "display_height", t8030->disp_height);
     ssi_realize_and_unref(device, apple_spi_get_bus(spi), &error_fatal);
 
-    aop_gpio = DEVICE(
+    gpio = DEVICE(
         object_property_get_link(OBJECT(t8030), "aop-gpio", &error_fatal));
 
     child = apple_dt_get_node(t8030->device_tree, "arm-io/spi1/multi-touch");
@@ -2203,7 +2196,7 @@ static void t8030_create_mt_spi(AppleT8030MachineState *t8030)
     ints = (uint32_t *)prop->data;
 
     qdev_connect_gpio_out_named(device, APPLE_MT_SPI_IRQ, 0,
-                                qdev_get_gpio_in(aop_gpio, ints[0]));
+                                qdev_get_gpio_in(gpio, ints[0]));
 }
 
 static void t8030_create_aop(AppleT8030MachineState *t8030)
@@ -2260,8 +2253,7 @@ static void t8030_create_aop(AppleT8030MachineState *t8030)
 
     dma_mr = apple_dart_iommu_mr(dart, *(uint32_t *)prop->data);
     g_assert_nonnull(dma_mr);
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(aop), "dma-mr", OBJECT(dma_mr)));
+    object_property_add_const_link(OBJECT(aop), "dma-mr", OBJECT(dma_mr));
 
     sbd = apple_aop_audio_create(APPLE_AOP(aop));
     g_assert_nonnull(sbd);
@@ -2346,7 +2338,7 @@ static void t8030_create_mipi_dsim(AppleT8030MachineState *t8030)
     sbd = synopsys_mipi_dsim_create(child);
     g_assert_nonnull(sbd);
 
-    object_property_add_child(OBJECT(t8030), "mipi", OBJECT(sbd));
+    object_property_add_child(OBJECT(t8030), "mipi-dsim", OBJECT(sbd));
 
     prop = apple_dt_get_prop(child, "reg");
     g_assert_nonnull(prop);
@@ -2787,8 +2779,8 @@ static void t8030_init(MachineState *machine)
     }
 
     t8030_create_roswell(t8030);
-    t8030_create_backlight(t8030);
-    t8030_create_chestnut(t8030);
+    t8030_create_lm_backlight(t8030);
+    t8030_create_display_pmu(t8030);
     t8030_create_display(t8030);
     t8030_create_mt_spi(t8030);
     t8030_create_aop(t8030);
