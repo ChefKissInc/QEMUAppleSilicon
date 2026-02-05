@@ -2426,7 +2426,6 @@ static void t8030_create_mic_temp_sensor2(AppleT8030MachineState *t8030)
     AppleDTNode *child;
     AppleDTProp *prop;
     AppleI2CState *i2c;
-    I2CSlave *dev;
 
     child = apple_dt_get_node(t8030->device_tree, "arm-io/i2c1/mic-temp-sens2");
     g_assert_nonnull(child);
@@ -2438,9 +2437,10 @@ static void t8030_create_mic_temp_sensor2(AppleT8030MachineState *t8030)
 
     i2c = APPLE_I2C(
         object_property_get_link(OBJECT(t8030), "i2c1", &error_fatal));
-    // TODO: Revert product id to 3 and vendor id to 2 once audio support is implemented.
-    dev = apple_mic_temp_sensor_create(*(uint8_t *)prop->data, 1, 0, 0, 5);
-    i2c_slave_realize_and_unref(dev, i2c->bus, &error_abort);
+    // TODO: Revert product id to 3 and vendor id to 2 once audio support is
+    // implemented.
+    apple_mic_temp_sensor_create(*(uint8_t *)prop->data, i2c->bus, 1, 0, 0, 5,
+                                 &error_fatal);
 }
 
 static void t8030_cpu_reset(AppleT8030MachineState *t8030)

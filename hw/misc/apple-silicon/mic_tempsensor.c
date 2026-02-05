@@ -21,6 +21,7 @@
 #include "hw/misc/apple-silicon/mic_tempsensor.h"
 #include "hw/registerfields.h"
 #include "migration/vmstate.h"
+#include "qapi/error.h"
 
 // clang-format off
 REG8(ID0, 0)
@@ -145,16 +146,23 @@ static void apple_mic_temp_sensor_register_types(void)
 
 type_init(apple_mic_temp_sensor_register_types);
 
-I2CSlave *apple_mic_temp_sensor_create(uint8_t addr, uint8_t product_id,
-                                       uint8_t vendor_id, uint8_t revision,
-                                       uint8_t fab_id)
+I2CSlave *apple_mic_temp_sensor_create(uint8_t addr, I2CBus *bus,
+                                       uint8_t product_id, uint8_t vendor_id,
+                                       uint8_t revision, uint8_t fab_id,
+                                       Error **errp)
 {
+    ERRP_GUARD();
+
     I2CSlave *dev = i2c_slave_new(TYPE_APPLE_MIC_TEMP_SENSOR, addr);
     AppleMicTempSensorState *sensor =
         container_of(dev, AppleMicTempSensorState, i2c);
+
     sensor->id0 = FIELD_DP8(FIELD_DP8(0, ID0, PRODUCT_ID, product_id), ID0,
                             VENDOR_ID, vendor_id);
     sensor->id1 =
         FIELD_DP8(FIELD_DP8(0, ID1, REVISION, revision), ID1, FAB_ID, fab_id);
+
+    i2c_slave_realize_and_unref(dev, bus, errp);
+
     return dev;
 }
