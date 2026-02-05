@@ -390,7 +390,7 @@ static void s8000_memory_setup(MachineState *machine)
     nvram =
         APPLE_NVRAM(object_resolve_path_at(NULL, "/machine/peripheral/nvram"));
     if (!nvram) {
-        error_setg(&error_abort, "Failed to find NVRAM device");
+        error_setg(&error_fatal, "Failed to find NVRAM device");
         return;
     }
     apple_nvram_load(nvram);
@@ -416,7 +416,7 @@ static void s8000_memory_setup(MachineState *machine)
 
     if (machine->initrd_filename == NULL && !auto_boot) {
         error_setg(
-            &error_abort,
+            &error_fatal,
             "RAM Disk required for recovery, please specify it via `-initrd`.");
         return;
     }
@@ -500,7 +500,7 @@ static void s8000_memory_setup(MachineState *machine)
         g_free(cmdline);
         break;
     default:
-        error_setg(&error_abort, "Unsupported kernelcache type: 0x%x\n",
+        error_setg(&error_fatal, "Unsupported kernelcache type: 0x%x\n",
                    header->file_type);
         g_assert_not_reached();
     }
@@ -1457,7 +1457,7 @@ static void s8000_init(MachineState *machine)
 
     s8000->device_tree = apple_boot_load_dt_file(machine->dtb);
     if (s8000->device_tree == NULL) {
-        error_setg(&error_abort, "Failed to load device tree");
+        error_setg(&error_fatal, "Failed to load device tree");
         return;
     }
 
@@ -1497,7 +1497,7 @@ static void s8000_init(MachineState *machine)
     } else {
         if (!g_file_get_contents(s8000->securerom_filename, &s8000->securerom,
                                  &s8000->securerom_size, NULL)) {
-            error_setg(&error_abort, "Failed to load SecureROM from `%s`",
+            error_setg(&error_fatal, "Failed to load SecureROM from `%s`",
                        s8000->securerom_filename);
             return;
         }
@@ -1585,7 +1585,7 @@ static ram_addr_t s8000_fixup_ram_size(ram_addr_t size)
 {
     ram_addr_t ret = ROUND_UP_16K(size);
     if (ret != DRAM_SIZE) {
-        error_setg(&error_abort, "Specified RAM size must be 2 GiB");
+        error_setg(&error_fatal, "Specified RAM size must be 2 GiB");
     }
     return ret;
 }
