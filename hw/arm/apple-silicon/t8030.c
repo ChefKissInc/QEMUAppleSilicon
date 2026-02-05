@@ -2255,10 +2255,10 @@ static void t8030_create_aop(AppleT8030MachineState *t8030)
     g_assert_nonnull(dma_mr);
     object_property_add_const_link(OBJECT(aop), "dma-mr", OBJECT(dma_mr));
 
-    sbd = apple_aop_audio_create(APPLE_AOP(aop));
-    g_assert_nonnull(sbd);
-    object_property_add_child(OBJECT(aop), "aop-audio", OBJECT(sbd));
-    sysbus_realize_and_unref(sbd, &error_fatal);
+    // sbd = apple_aop_audio_create(APPLE_AOP(aop));
+    // g_assert_nonnull(sbd);
+    // object_property_add_child(OBJECT(aop), "aop-audio", OBJECT(sbd));
+    // sysbus_realize_and_unref(sbd, &error_fatal);
 
     sysbus_realize_and_unref(aop, &error_fatal);
 }
