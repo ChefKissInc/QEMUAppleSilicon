@@ -151,8 +151,16 @@ static const char *KEEP_COMP[] = {
 };
 
 static const char *REM_NAMES[] = {
-    "aop\0$",
-    "dart-aop\0$",
+    "accel\0$",
+    "gyro\0$",
+    "compass\0$",
+    "spherecontrol\0$",
+    "prox\0$",
+    "SPUApp\0$",
+    "aop-mca\0$",
+    "smc-control\0$",
+    "aop-smart-cover\0$",
+    "rose\0$",
     "smc-aop\0$",
     "gfx-asc\0$",
     "amfm\0$",
