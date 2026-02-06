@@ -825,11 +825,11 @@ static void aarch64_apple_gxf_initfn(Object *obj)
     aarch64_max_initfn(obj);
     SET_IDREG(&cpu->isar, ID_AA64ISAR1, FIELD_DP64(GET_IDREG(&cpu->isar, ID_AA64ISAR1), ID_AA64ISAR1, APA, PauthFeat_2));
 
-    object_property_set_bool(obj, "pauth-noop", true, NULL);
-
     if (tcg_enabled()) {
-        set_feature(&ARM_CPU(obj)->env, ARM_FEATURE_GXF);
+        object_property_set_bool(obj, "pauth-noop", true, NULL);
     }
+
+    set_feature(&ARM_CPU(obj)->env, ARM_FEATURE_GXF);
 }
 
 static const ARMCPUInfo aarch64_cpus[] = {
