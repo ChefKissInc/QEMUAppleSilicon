@@ -578,8 +578,8 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
     apple_dt_set_prop_u32(child, "darwinos-security-environment",
                           auto_boot ? 1 : 2);
     // 7: Erase/darwinOS RAMDisk?
-    // 3: => Upgrade RAMDisk?
-    // 1: => Main OS?
+    // 3: Upgrade RAMDisk?
+    // 1: Main OS?
     apple_dt_set_prop_u32(child, "boot-command", auto_boot ? 1 : 7);
 
     child = apple_dt_get_node(root, "defaults");
