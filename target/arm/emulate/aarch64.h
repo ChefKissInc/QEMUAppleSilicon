@@ -26,7 +26,7 @@ typedef uint64_t (*ArmAarch64FallbackEmuGetReg)(CPUState *cpu, int rt);
 typedef void (*ArmAarch64FallbackEmuSetReg)(CPUState *cpu, int rt,
                                             uint64_t val);
 
-bool arm_aarch64_fallback_emu_single(CPUState *cpu,
+bool arm_aarch64_fallback_emu_single(CPUState *cpu, AddressSpace *as,
                                      ArmAarch64FallbackEmuGetReg get_reg,
                                      ArmAarch64FallbackEmuSetReg set_reg);
 #endif /* TARGET_ARM_EMULATE_AARCH64_H */

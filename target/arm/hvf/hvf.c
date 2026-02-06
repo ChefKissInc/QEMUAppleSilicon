@@ -1891,10 +1891,11 @@ static int hvf_handle_exception(CPUState *cpu, hv_vcpu_exit_exception_t *excp)
             break;
         }
 
+        AddressSpace *as = cpu_get_address_space(cpu, ARMASIdx_NS);
         if (isv) {
             if (iswrite) {
                 val = hvf_get_reg(cpu, srt);
-                if (address_space_write(&address_space_memory,
+                if (address_space_write(as,
                         excp->physical_address,
                         MEMTXATTRS_UNSPECIFIED, &val, len) != MEMTX_OK) {
                     fprintf(stderr, "%s: Failed to write MMIO at 0x%llX\n",
@@ -1903,8 +1904,7 @@ static int hvf_handle_exception(CPUState *cpu, hv_vcpu_exit_exception_t *excp)
                     break;
                 }
             } else {
-                if (address_space_read(&address_space_memory,
-                        excp->physical_address,
+                if (address_space_read(as, excp->physical_address,
                         MEMTXATTRS_UNSPECIFIED, &val, len) != MEMTX_OK) {
                     fprintf(stderr, "%s: Failed to read MMIO at 0x%llX\n",
                             __func__, excp->physical_address);
@@ -1916,7 +1916,7 @@ static int hvf_handle_exception(CPUState *cpu, hv_vcpu_exit_exception_t *excp)
                 }
                 hvf_set_reg(cpu, srt, val);
             }
-        } else if (!arm_aarch64_fallback_emu_single(cpu, hvf_get_reg,
+        } else if (!arm_aarch64_fallback_emu_single(cpu, as, hvf_get_reg,
                                                     hvf_set_reg)) {
             hvf_raise_exception(cpu, EXCP_DATA_ABORT, syndrome, 1);
             fprintf(stderr, "%s: instruction decoding failed\n", __func__);
