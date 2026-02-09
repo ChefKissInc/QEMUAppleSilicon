@@ -118,7 +118,7 @@ static const char *KEEP_COMP[] = {
     "pmgr1,t8030\0$",
     // "pmu,d2255\0$", // buggy
     "pmu,spmi\0pmu,avus\0$",
-    // "roswell\0$", // unimplemented
+    "roswell\0$",
     "sart,coastguard\0$",
     "sart,t8030\0$",
     "sacm,1\0$",
