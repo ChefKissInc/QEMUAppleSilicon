@@ -335,11 +335,11 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
         apple_dt_get_node(t8030->device_tree, "/chosen/memory-map"),
         g_phys_base + g_phys_slide, g_virt_slide);
 
-    info_report("Kernel virtual base: 0x%016" VADDR_PRIx, g_virt_base);
-    info_report("Kernel physical base: 0x" HWADDR_FMT_plx, g_phys_base);
-    info_report("Kernel virtual slide: 0x%016" VADDR_PRIx, g_virt_slide);
-    info_report("Kernel physical slide: 0x" HWADDR_FMT_plx, g_phys_slide);
-    info_report("Kernel entry point: 0x%016" VADDR_PRIx, info->kern_entry);
+    info_report("Kernel Virtual Base: 0x%016" VADDR_PRIx, g_virt_base);
+    info_report("Kernel Physical Base: 0x" HWADDR_FMT_plx, g_phys_base);
+    info_report("Kernel Virtual Slide: 0x%016" VADDR_PRIx, g_virt_slide);
+    info_report("Kernel Physical Slide: 0x" HWADDR_FMT_plx, g_phys_slide);
+    info_report("Kernel Entry Point: 0x%016" VADDR_PRIx, info->kern_entry);
 
     phys_ptr = vtop_static(ROUND_UP_16K(kc_end + g_virt_slide));
 
@@ -384,19 +384,20 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
     info->device_tree_addr = phys_ptr;
     apple_dt_va = ptov_static(info->device_tree_addr);
     phys_ptr += info->device_tree_size;
-    info_report("Device tree physical base: 0x" HWADDR_FMT_plx,
+    info_report("Device Tree Physical Base: 0x" HWADDR_FMT_plx,
                 info->device_tree_addr);
-    info_report("Device tree virtual base: 0x%016" VADDR_PRIx, apple_dt_va);
-    info_report("Device tree size: 0x" HWADDR_FMT_plx, info->device_tree_size);
+    info_report("Device Tree Virtual Base: 0x%016" VADDR_PRIx, apple_dt_va);
+    info_report("Device Tree Size: 0x" HWADDR_FMT_plx, info->device_tree_size);
 
-    mem_size = carveout_alloc_finalise(ca);
-    info_report("mem_size: 0x" HWADDR_FMT_plx, mem_size);
+    info->top_of_kernel_data_pa = ROUND_UP_16K(phys_ptr);
+    info_report("Top Of Kernel Data: 0x" HWADDR_FMT_plx,
+                info->top_of_kernel_data_pa);
 
     apple_boot_finalise_dt(t8030->device_tree, &address_space_memory, info);
 
-    info->top_of_kernel_data_pa = ROUND_UP_16K(phys_ptr);
+    mem_size = carveout_alloc_finalise(ca);
+    info_report("Memory Size: 0x" HWADDR_FMT_plx, mem_size);
 
-    info_report("Boot args: [%s]", cmdline);
     apple_boot_setup_bootargs(
         t8030->build_version, &address_space_memory, info->kern_boot_args_addr,
         g_virt_base, g_phys_base, mem_size, info->top_of_kernel_data_pa,
@@ -530,7 +531,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
         break;
     }
 
-    info_report("auto-boot=%s", auto_boot ? "true" : "false");
+    info_report("Auto Boot: %s", auto_boot ? "true" : "false");
 
     if (machine->initrd_filename == NULL && !auto_boot) {
         error_setg(
@@ -545,6 +546,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
         cmdline = g_strconcat("-restore rd=md0 nand-enable-reformat=1 ",
                               machine->kernel_cmdline, NULL);
     }
+    info_report("Boot Args: [%s]", cmdline);
 
     apple_nvram_save(nvram);
 
