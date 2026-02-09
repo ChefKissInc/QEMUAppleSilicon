@@ -40,8 +40,8 @@ struct AppleMicTempSensorState {
 
     /*< public >*/
     bool receiving_addr;
-    uint8_t rx_addr;
-    uint8_t tx_addr;
+    uint8_t addr;
+    uint8_t cur_addr;
     uint8_t id0;
     uint8_t id1;
 };
@@ -52,7 +52,7 @@ static uint8_t apple_mic_temp_sensor_rx(I2CSlave *s)
         container_of(s, AppleMicTempSensorState, i2c);
     uint8_t ret;
 
-    switch (sensor->rx_addr) {
+    switch (sensor->cur_addr) {
     case R_ID0:
         ret = sensor->id0;
         break;
@@ -73,7 +73,7 @@ static uint8_t apple_mic_temp_sensor_rx(I2CSlave *s)
         break;
     }
 
-    ++sensor->rx_addr;
+    ++sensor->cur_addr;
     return ret;
 }
 
@@ -83,10 +83,10 @@ static int apple_mic_temp_sensor_tx(I2CSlave *s, uint8_t data)
         container_of(s, AppleMicTempSensorState, i2c);
 
     if (sensor->receiving_addr) {
-        sensor->rx_addr = sensor->tx_addr = data;
         sensor->receiving_addr = false;
+        sensor->cur_addr = sensor->addr = data;
     } else {
-        ++sensor->tx_addr;
+        ++sensor->cur_addr;
     }
 
     return 0;
@@ -99,7 +99,8 @@ static int apple_mic_temp_sensor_event(I2CSlave *s, enum i2c_event event)
 
     if (event == I2C_START_SEND) {
         sensor->receiving_addr = true;
-        sensor->rx_addr = sensor->tx_addr = 0;
+    } else if (event == I2C_FINISH) {
+        sensor->cur_addr = sensor->addr;
     }
 
     return 0;
