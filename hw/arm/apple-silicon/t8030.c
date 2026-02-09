@@ -1144,7 +1144,11 @@ static void t8030_create_dart(AppleT8030MachineState *t8030, const char *name,
 
     child = apple_dt_get_node(child, name);
     g_assert_nonnull(child);
-    apple_dt_set_prop_u32(child, "vm-base", 0x4000);
+
+    prop = apple_dt_get_prop(child, "vm-base");
+    if (prop != NULL && ldl_le_p(prop->data) == 0) {
+        stl_le_p(prop->data, 0x4000);
+    }
 
     dart = apple_dart_from_node(child);
     g_assert_nonnull(dart);
