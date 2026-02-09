@@ -32,6 +32,9 @@ REG8(ID1, 1)
     FIELD(ID1, FAB_ID, 5, 3)
 REG8(STATUS, 2)
     FIELD(STATUS, OK, 1, 1)
+REG8(VALUE0, 4)
+REG8(VALUE1, 5)
+REG8(VALUE2, 6)
 // clang-format on
 
 struct AppleMicTempSensorState {
@@ -62,11 +65,12 @@ static uint8_t apple_mic_temp_sensor_rx(I2CSlave *s)
     case R_STATUS:
         ret = FIELD_DP8(0, STATUS, OK, 1);
         break;
-    case 4: // Readings
-    case 5:
-    case 6:
-    case 7:
-        ret = 0xAA;
+    case R_VALUE0:
+        ret = 0x0A;
+        break;
+    case R_VALUE1:
+    case R_VALUE2:
+        ret = 0x00;
         break;
     default:
         ret = 0x00;
