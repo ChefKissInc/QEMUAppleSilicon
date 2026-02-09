@@ -579,7 +579,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
                     " -> 0x" HWADDR_FMT_plx " (%c%c)\n",
                     DEVICE(mapper->common.dart)->id, mapper->common.id,
                     dart_instance_name[mapper->common.type], iommu->sid, addr,
-                    tlb_entry->block_addr | (addr & dart->page_bits),
+                    tlb_entry->block_addr | (addr & entry.addr_mask),
                     (tlb_entry->perm & IOMMU_RO) ? 'r' : '-',
                     (tlb_entry->perm & IOMMU_WO) ? 'w' : '-');
         } else {
