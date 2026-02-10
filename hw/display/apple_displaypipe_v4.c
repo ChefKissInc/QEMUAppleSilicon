@@ -23,6 +23,7 @@
 #include "hw/display/apple_displaypipe_v4.h"
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
+#include "hw/registerfields.h"
 #include "migration/vmstate.h"
 #include "qemu/cutils.h"
 #include "qemu/log.h"
@@ -190,175 +191,68 @@ static const VMStateDescription vmstate_adp_v4 = {
         },
 };
 
-// APIODMA
-#define REG_APIODMA_CFG (0x40000)
-#define REG_APIODMA_CFG_MEM_SRC (0x40010)
-#define REG_APIODMA_CFG_MEM_DAT (0x40014)
-#define REG_APIODMA_CFG_DMA_CFG_PIO_RD (0x4001C)
-#define REG_APIODMA_CFG_DMA_CFG_PIO_WR (0x40020)
-
-// shadow FIFO
-#define REG_SHADOW_FIFO_POWER_CONTROL (0x45010)
-
+// clang-format off
 // pipe control
-#define REG_CONTROL_INT_STATUS (0x45818)
-#define CONTROL_INT_MODE_CHANGED BIT(1)
-#define CONTROL_INT_UNDERRUN BIT(3)
-#define CONTROL_INT_OUTPUT_READY BIT(10)
-#define CONTROL_INT_SUB_FRAME_OVERFLOW BIT(11)
-#define CONTROL_INT_M3 BIT(13)
-#define CONTROL_INT_PCC BIT(17)
-#define CONTROL_INT_CDFD BIT(19)
-#define CONTROL_INT_FRAME_PROCESSED BIT(20)
-#define CONTROL_INT_AXI_READ_ERR BIT(30)
-#define CONTROL_INT_AXI_WRITE_ERR BIT(31)
-#define REG_CONTROL_INT_ENABLE (0x4581C)
-#define REG_CONTROL_HILO (0x45830)
-#define REG_CONTROL_DISP_FIFO_POWER_CONTROL (0x45834)
-#define REG_CONTROL_POWER_GATE_TIMER_GP0 (0x4583C)
-#define REG_CONTROL_POWER_GATE_TIMER_GP1 (0x45840)
-#define REG_CONTROL_POWER_GATE_TIMER_PPP (0x45844)
-#define REG_CONTROL_POWER_GATE_TIMER_HILO (0x45848)
+REG32(CONTROL_INT_STATUS, 0x45818)
+    FIELD(CONTROL_INT, MODE_CHANGED, 1, 1)
+    FIELD(CONTROL_INT, UNDERRUN, 3, 1)
+    FIELD(CONTROL_INT, OUTPUT_READY, 10, 1)
+    FIELD(CONTROL_INT, SUB_FRAME_OVERFLOW, 11, 1)
+    FIELD(CONTROL_INT, M3, 13, 1)
+    FIELD(CONTROL_INT, PCC, 17, 1)
+    FIELD(CONTROL_INT, CDFD, 19, 1)
+    FIELD(CONTROL_INT, FRAME_PROCESSED, 20, 1)
+    FIELD(CONTROL_INT, AXI_READ_ERR, 30, 1)
+    FIELD(CONTROL_INT, AXI_WRITE_ERR, 31, 1)
+REG32(CONTROL_INT_ENABLE, 0x4581C)
 
 // pipe config
-#define REG_CONTROL_PIPE_CONFIG_SPARE_0 (0x46000)
-#define REG_CONTROL_VERSION (0x46020)
+REG32(CONTROL_VERSION, 0x46020)
 #define CONTROL_VERSION_A0 (0x70044)
 #define CONTROL_VERSION_A1 (0x70045)
-#define REG_CONTROL_FRAME_SIZE (0x4603C)
-#define REG_CONTROL_CONFIG (0x46040)
-#define REG_CONTROL_OUT_FIFO_CLK_GATE (0x46074)
-#define REG_CONTROL_OUT_FIFO_DEPTH (0x46084)
-#define REG_CONTROL_COMPRESSION_CFG (0x460E0)
-#define REG_CONTROL_BACKPRESSURE (0x46120)
-#define REG_CONTROL_POWER_GATE_CTRL (0x46158)
-#define REG_CONTROL_BIS_UPDATE_INTERVAL (0x46198)
-#define REG_CONTROL_MIN_BANDWIDTH_RATE (0x461C0)
-#define REG_CONTROL_BANDWIDTH_RATE_SCALE_FACTOR (0x461C4)
-#define REG_CONTROL_PIO_DMA_BANDWIDTH_RATE (0x461C8)
-#define REG_CONTROL_REPLAY_DMA_BANDWIDTH_RATE (0x461CC)
-#define REG_CONTROL_GATE_CONTROL (0x461D0)
-#define REG_CONTROL_READ_LINK_GATE_METRIC (0x461D4)
-#define REG_CONTROL_READ_LTR_CONFIG (0x461D8)
-#define REG_CONTROL_LTR_TIMER (0x461DC)
-#define REG_CONTROL_WR_LTR_CONFIG (0x461E0)
-#define REG_CONTROL_RD_PIXEL_LTR_CONV_FACTOR (0x461E4)
-#define REG_CONTROL_WR_PIXEL_LTR_CONV_FACTOR (0x461E8)
-#define REG_CONTROL_LTR_OFFSET (0x461EC)
-#define REG_CONTROL_EVENT_ORDERING (0x46254)
-#define REG_CONTROL_MIN_TLTR (0x46258)
-#define REG_CONTROL_START_CLTR (0x4625C)
-#define REG_CONTROL_OPE_OFFSET0 (0x46268)
-#define REG_CONTROL_OPE_OFFSET1 (0x4626C)
-#define REG_CONTROL_GP_AGGR_OFFSET0 (0x4627C)
-#define REG_CONTROL_GP_AGGR_OFFSET1 (0x46280)
-#define REG_CONTROL_BIC_AGGR_OFFSET (0x46284)
-#define REG_CONTROL_SPUC_AGGR_OFFSET (0x46288)
-#define REG_CONTROL_PDC_RD_AGGR_OFFSET (0x4628C)
-#define REG_CONTROL_PREFETCH_BWR_CONFIG (0x46290)
-#define REG_CONTROL_PREFETCH_LTR_CONFIG (0x46294)
-#define REG_CONTROL_PREFETCH_LTR_PEG_CONFIG (0x46298)
-#define REG_CONTROL_COLUMN_REPEAT (0x462D0)
-#define REG_CONTROL_LINK_GATE_LB_CONFIG (0x462D4)
-#define REG_CONTROL_REPLAY_READ_HEADER_AF_CONFIG (0x462F0)
-#define REG_CONTROL_REPLAY_READ_TILE_AF_CONFIG (0x462F4)
-#define REG_CONTROL_REPLAY_WRITE_HEADER_AF_CONFIG (0x462F8)
-#define REG_CONTROL_REPLAY_WRITE_TILE_AF_CONFIG (0x462FC)
-#define REG_CONTROL_DART_AF_CONFIG (0x46300)
-#define REG_CONTROL_PIODMA_READ_AF_CONFIG (0x46304)
-#define REG_CONTROL_PIODMA_WRITE_AF_CONFIG (0x46308)
-#define REG_CONTROL_WRITE_LINK_GATE_METRIC (0x4630C)
-#define REG_CONTROL_BIS_WR_AGGR_CONFIGURATION (0x46314)
-#define REG_CONTROL_REPLAY_WR_AGGR_CONFIGURATION (0x46318)
-#define REG_CONTROL_PDC_WR_AGGR_CONFIGURATION (0x4631C)
-#define REG_CONTROL_WR_LINK_GATE_CONFIG (0x46320)
-#define REG_CONTROL_WR_LTR_OFFSET_RAMP_CONFIG (0x46324)
-
-#define VFTG_BLOCK_BASE (0x48000)
-#define REG_VFTG_DEBUG (0x0)
-#define REG_VFTG_CONTROL (0x24)
-#define VFTG_CONTROL_RUN BIT(30)
-#define REG_VFTG_ACTIVE_SIZE (0x2C)
-#define REG_VFTG_FRONT_PORCH (0x30)
-#define REG_VFTG_SYNC_PULSE (0x34)
-#define REG_VFTG_BACK_PORCH (0x38)
-#define REG_VFTG_VBLANK_POSITION (0x44)
-#define REG_VFTG_AUTO_IDLE_SUBFRAME_COUNT (0x50)
-// 0x200-0x280: IFP_CFG
-// 0x300-0x380: BSYNC1
-// 0x400-0x480: EB_BSYNC1
-// 0x500-0x580: BSYNC0
-// 0x600-0x680: EB_BSYNC0
-#define REG_VFTG_EB_OFFSET (0x700)
-#define REG_VFTG_IDLE_SUB_FRAME_CONFIG (0x708)
-#define REG_VFTG_IDLE_SUB_FRAME_TOP_CONFIG (0x70C)
-#define REG_VFTG_N1_PARAM (0x780)
-#define REG_VFTG_N1_PARAM_VBLANK (0x784)
-#define REG_VFTG_N5_A_PARAM (0x788)
-#define REG_VFTG_N5_A_PARAM_VBLANK (0x78C)
-#define REG_VFTG_N5_B_PARAM (0x790)
-#define REG_VFTG_N5_B_PARAM_VBLANK (0x794)
-#define REG_VFTG_N6_PARAM (0x798)
-#define REG_VFTG_N7_PARAM (0x79C)
-#define REG_VFTG_N7_PARAM_VBLANK (0x7A0)
-#define REG_VFTG_LINK_UP_TIME_CONFIG (0x7A4)
-#define REG_VFTG_AUX_WAKE_CONFIG (0x7A8)
-#define REG_VFTG_AUX_DISABLE_TIME (0x7AC)
-#define REG_VFTG_POL_OFFSET (0x7C4)
-#define REG_VFTG_SWIZZLE_CONFIG_EVEN_ROWS (0x7D0)
-#define REG_VFTG_SWIZZLE_CONFIG_EVEN_ROWS_LAST_PAIR (0x7D4)
-#define REG_VFTG_SWIZZLE_CONFIG_ODD_ROWS (0x7D8)
-#define REG_VFTG_SWIZZLE_CONFIG_ODD_ROWS_LAST_PAIR (0x7DC)
-#define REG_VFTG_CROP_CONTROL (0x81C)
-#define REG_VFTG_MIPI_MODE (0x828)
+REG32(CONTROL_FRAME_SIZE, 0x4603C)
 
 #define GP_BLOCK_BASE (0x50000)
 #define GP_BLOCK_SIZE (0x8000)
-#define REG_GP_CONFIG_CONTROL (0x4)
-#define GP_CONFIG_CONTROL_RUN BIT(0)
-#define GP_CONFIG_CONTROL_USE_DMA BIT(18)
-#define GP_CONFIG_CONTROL_HDR BIT(24)
-#define GP_CONFIG_CONTROL_ENABLED BIT(31)
-// 0x8, 0xC = ??
-// 0x10 = HDR_CONFIG?
-#define REG_GP_AF_CONFIG_0 (0x14)
-#define REG_GP_AF_CONFIG_1 (0x18)
-#define REG_GP_PIXEL_FORMAT (0x1C)
+REG32(GP_CONFIG_CONTROL, 0x4)
+    FIELD(GP_CONFIG_CONTROL, RUN, 0, 1)
+    FIELD(GP_CONFIG_CONTROL, USE_DMA, 18, 1)
+    FIELD(GP_CONFIG_CONTROL, HDR, 24, 1)
+    FIELD(GP_CONFIG_CONTROL, ENABLED, 31, 1)
+REG32(GP_PIXEL_FORMAT, 0x1C)
 #define GP_PIXEL_FORMAT_BGRA ((BIT(4) << 22) | BIT(24) | (3 << 13))
 #define GP_PIXEL_FORMAT_ARGB ((BIT(4) << 22) | BIT(24))
 #define GP_PIXEL_FORMAT_COMPRESSED BIT(30)
-// 0x20 = ??
-#define REG_GP_AGX_CONFIG (0x24)
-#define REG_GP_LAYER_0_HTPC_CONFIG (0x28)
-#define REG_GP_LAYER_1_HTPC_CONFIG (0x2C)
-#define REG_GP_LAYER_0_DATA_START (0x30)
-#define REG_GP_LAYER_1_DATA_START (0x34)
-#define REG_GP_LAYER_0_DATA_END (0x40)
-#define REG_GP_LAYER_1_DATA_END (0x44)
-#define REG_GP_LAYER_0_HEADER_BASE (0x48)
-#define REG_GP_LAYER_1_HEADER_BASE (0x4C)
-#define REG_GP_LAYER_0_HEADER_END (0x58)
-#define REG_GP_LAYER_1_HEADER_END (0x5C)
-#define REG_GP_LAYER_0_STRIDE (0x60)
-#define REG_GP_LAYER_1_STRIDE (0x64)
-#define REG_GP_LAYER_0_POSITION (0x68)
-#define REG_GP_LAYER_1_POSITION (0x6C)
-#define REG_GP_LAYER_0_DIMENSIONS (0x70)
-#define REG_GP_LAYER_1_DIMENSIONS (0x74)
-#define REG_GP_SRC_POSITION (0x78)
-#define REG_GP_DEST_POSITION (0x7C)
-#define REG_GP_DEST_DIMENSIONS (0x80)
-#define REG_GP_SRC_ACTIVE_REGION_0_POSITION (0x98)
-#define REG_GP_SRC_ACTIVE_REGION_1_POSITION (0x9C)
-#define REG_GP_SRC_ACTIVE_REGION_2_POSITION (0xA0)
-#define REG_GP_SRC_ACTIVE_REGION_3_POSITION (0xA4)
-#define REG_GP_SRC_ACTIVE_REGION_0_DIMENSIONS (0xA8)
-#define REG_GP_SRC_ACTIVE_REGION_1_DIMENSIONS (0xAC)
-#define REG_GP_SRC_ACTIVE_REGION_2_DIMENSIONS (0xB0)
-#define REG_GP_SRC_ACTIVE_REGION_3_DIMENSIONS (0xB4)
-#define REG_GP_CRC_DATA (0x160)
-#define REG_GP_DMA_BANDWIDTH_RATE (0x170)
-#define REG_GP_STATUS (0x184)
+REG32(GP_LAYER_0_HTPC_CONFIG, 0x28)
+REG32(GP_LAYER_1_HTPC_CONFIG, 0x2C)
+REG32(GP_LAYER_0_DATA_START, 0x30)
+REG32(GP_LAYER_1_DATA_START, 0x34)
+REG32(GP_LAYER_0_DATA_END, 0x40)
+REG32(GP_LAYER_1_DATA_END, 0x44)
+REG32(GP_LAYER_0_HEADER_BASE, 0x48)
+REG32(GP_LAYER_1_HEADER_BASE, 0x4C)
+REG32(GP_LAYER_0_HEADER_END, 0x58)
+REG32(GP_LAYER_1_HEADER_END, 0x5C)
+REG32(GP_LAYER_0_STRIDE, 0x60)
+REG32(GP_LAYER_1_STRIDE, 0x64)
+REG32(GP_LAYER_0_POSITION, 0x68)
+REG32(GP_LAYER_1_POSITION, 0x6C)
+REG32(GP_LAYER_0_DIMENSIONS, 0x70)
+REG32(GP_LAYER_1_DIMENSIONS, 0x74)
+REG32(GP_SRC_POSITION, 0x78)
+REG32(GP_DEST_POSITION, 0x7C)
+REG32(GP_DEST_DIMENSIONS, 0x80)
+REG32(GP_SRC_ACTIVE_REGION_0_POSITION, 0x98)
+REG32(GP_SRC_ACTIVE_REGION_1_POSITION, 0x9C)
+REG32(GP_SRC_ACTIVE_REGION_2_POSITION, 0xA0)
+REG32(GP_SRC_ACTIVE_REGION_3_POSITION, 0xA4)
+REG32(GP_SRC_ACTIVE_REGION_0_DIMENSIONS, 0xA8)
+REG32(GP_SRC_ACTIVE_REGION_1_DIMENSIONS, 0xAC)
+REG32(GP_SRC_ACTIVE_REGION_2_DIMENSIONS, 0xB0)
+REG32(GP_SRC_ACTIVE_REGION_3_DIMENSIONS, 0xB4)
+REG32(GP_CRC_DATA, 0x160)
+REG32(GP_DMA_BANDWIDTH_RATE, 0x170)
+REG32(GP_STATUS, 0x184)
 #define GP_STATUS_DECOMPRESSION_FAIL BIT(0)
 
 #define GP_BLOCK_BASE_FOR(i) (GP_BLOCK_BASE + ((i) * GP_BLOCK_SIZE))
@@ -366,23 +260,24 @@ static const VMStateDescription vmstate_adp_v4 = {
 
 #define BLEND_BLOCK_BASE (0x60000)
 #define BLEND_BLOCK_SIZE (0x8000)
-#define REG_BLEND_CONFIG (0x4)
-#define REG_BLEND_BG (0x8)
-#define REG_BLEND_LAYER_0_BG (0xC)
-#define REG_BLEND_LAYER_1_BG (0x10)
-#define REG_BLEND_LAYER_0_CONFIG (0x14)
-#define REG_BLEND_LAYER_1_CONFIG (0x18)
+REG32(BLEND_CONFIG, 0x4)
+REG32(BLEND_BG, 0x8)
+REG32(BLEND_LAYER_0_BG, 0xC)
+REG32(BLEND_LAYER_1_BG, 0x10)
+REG32(BLEND_LAYER_0_CONFIG, 0x14)
+REG32(BLEND_LAYER_1_CONFIG, 0x18)
 #define BLEND_LAYER_CONFIG_PIPE(v) ((v) & 0xF)
 #define BLEND_LAYER_CONFIG_MODE(v) (((v) >> 4) & 0xF)
 #define BLEND_MODE_NONE (0)
 #define BLEND_MODE_ALPHA (1)
 #define BLEND_MODE_PREMULT (2)
 #define BLEND_MODE_BYPASS (3)
-#define REG_BLEND_DEGAMMA_TABLE_R (0x1C)
-#define REG_BLEND_DEGAMMA_TABLE_G (0x1024)
-#define REG_BLEND_DEGAMMA_TABLE_B (0x202C)
-// #define REG_BLEND_?? (0x3034)
-#define REG_BLEND_PIXCAP_CONFIG (0x303C)
+REG32(BLEND_DEGAMMA_TABLE_R, 0x1C)
+REG32(BLEND_DEGAMMA_TABLE_G, 0x1024)
+REG32(BLEND_DEGAMMA_TABLE_B, 0x202C)
+// REG32(BLEND_??, 0x3034)
+REG32(BLEND_PIXCAP_CONFIG, 0x303C)
+// clang-format on
 
 static void adp_v4_update_irqs(AppleDisplayPipeV4State *s)
 {
@@ -442,41 +337,41 @@ static void adp_v4_gp_read(ADPV4GenPipeState *s, AddressSpace *dma_as)
 static void adp_v4_gp_reg_write(ADPV4GenPipeState *s, hwaddr addr,
                                 uint64_t data)
 {
-    switch (addr) {
-    case REG_GP_CONFIG_CONTROL: {
+    switch (addr >> 2) {
+    case R_GP_CONFIG_CONTROL: {
         ADP_INFO("gp%d: control <- 0x" HWADDR_FMT_plx, s->index, data);
         s->config_control = (uint32_t)data;
         break;
     }
-    case REG_GP_PIXEL_FORMAT: {
+    case R_GP_PIXEL_FORMAT: {
         ADP_INFO("gp%d: pixel format <- 0x" HWADDR_FMT_plx, s->index, data);
         s->pixel_format = (uint32_t)data;
         break;
     }
-    case REG_GP_LAYER_0_DATA_START: {
+    case R_GP_LAYER_0_DATA_START: {
         ADP_INFO("gp%d: layer 0 data start <- 0x" HWADDR_FMT_plx, s->index,
                  data);
         s->data_start = (uint32_t)data;
         break;
     }
-    case REG_GP_LAYER_0_DATA_END: {
+    case R_GP_LAYER_0_DATA_END: {
         ADP_INFO("gp%d: layer 0 data end <- 0x" HWADDR_FMT_plx, s->index, data);
         s->data_end = (uint32_t)data;
         break;
     }
-    case REG_GP_LAYER_0_STRIDE: {
+    case R_GP_LAYER_0_STRIDE: {
         ADP_INFO("gp%d: layer 0 stride <- 0x" HWADDR_FMT_plx, s->index, data);
         s->stride = (uint32_t)data;
         break;
     }
-    case REG_GP_LAYER_0_DIMENSIONS: {
+    case R_GP_LAYER_0_DIMENSIONS: {
         s->src_height = data & 0xFFFF;
         s->src_width = (data >> 16) & 0xFFFF;
         ADP_INFO("gp%d: layer 0 dimensions <- 0x" HWADDR_FMT_plx " (%dx%d)",
                  s->index, data, s->src_width, s->src_height);
         break;
     }
-    case REG_GP_DEST_DIMENSIONS: {
+    case R_GP_DEST_DIMENSIONS: {
         s->dest_height = data & 0xFFFF;
         s->dest_width = (data >> 16) & 0xFFFF;
         ADP_INFO("gp%d: dest dimensions <- 0x" HWADDR_FMT_plx " (%dx%d)",
@@ -493,34 +388,34 @@ static void adp_v4_gp_reg_write(ADPV4GenPipeState *s, hwaddr addr,
 
 static uint32_t adp_v4_gp_reg_read(ADPV4GenPipeState *s, hwaddr addr)
 {
-    switch (addr) {
-    case REG_GP_CONFIG_CONTROL: {
+    switch (addr >> 2) {
+    case R_GP_CONFIG_CONTROL: {
         ADP_INFO("gp%d: control -> 0x%X", s->index, s->config_control);
         return s->config_control;
     }
-    case REG_GP_PIXEL_FORMAT: {
+    case R_GP_PIXEL_FORMAT: {
         ADP_INFO("gp%d: pixel format -> 0x%X", s->index, s->pixel_format);
         return s->pixel_format;
     }
-    case REG_GP_LAYER_0_DATA_START: {
+    case R_GP_LAYER_0_DATA_START: {
         ADP_INFO("gp%d: layer 0 data start -> 0x%X", s->index, s->data_start);
         return s->data_start;
     }
-    case REG_GP_LAYER_0_DATA_END: {
+    case R_GP_LAYER_0_DATA_END: {
         ADP_INFO("gp%d: layer 0 data end -> 0x%X", s->index, s->data_end);
         return s->data_end;
     }
-    case REG_GP_LAYER_0_STRIDE: {
+    case R_GP_LAYER_0_STRIDE: {
         ADP_INFO("gp%d: layer 0 stride -> 0x%X", s->index, s->stride);
         return s->stride;
     }
-    case REG_GP_LAYER_0_DIMENSIONS: {
+    case R_GP_LAYER_0_DIMENSIONS: {
         ADP_INFO("gp%d: layer 0 dimensions -> 0x%X (%dx%d)", s->index,
                  (s->src_width << 16) | s->src_height, s->src_width,
                  s->src_height);
         return ((uint32_t)s->src_width << 16) | s->src_height;
     }
-    case REG_GP_DEST_DIMENSIONS: {
+    case R_GP_DEST_DIMENSIONS: {
         ADP_INFO("gp%d: dest dimensions -> 0x%X (%dx%d)", s->index,
                  (s->dest_width << 16) | s->dest_height, s->dest_width,
                  s->dest_height);
@@ -544,13 +439,13 @@ static void adp_v4_gp_reset(ADPV4GenPipeState *s, uint8_t index)
 static void adp_v4_blend_reg_write(ADPV4BlendUnitState *s, uint64_t addr,
                                    uint64_t data)
 {
-    switch (addr) {
-    case REG_BLEND_LAYER_0_CONFIG: {
+    switch (addr >> 2) {
+    case R_BLEND_LAYER_0_CONFIG: {
         ADP_INFO("blend: layer 0 config <- 0x" HWADDR_FMT_plx, data);
         s->layer_config[0] = (uint32_t)data;
         break;
     }
-    case REG_BLEND_LAYER_1_CONFIG: {
+    case R_BLEND_LAYER_1_CONFIG: {
         s->layer_config[1] = (uint32_t)data;
         ADP_INFO("blend: layer 1 config <- 0x" HWADDR_FMT_plx, data);
         break;
@@ -565,12 +460,12 @@ static void adp_v4_blend_reg_write(ADPV4BlendUnitState *s, uint64_t addr,
 
 static uint64_t adp_v4_blend_reg_read(ADPV4BlendUnitState *s, uint64_t addr)
 {
-    switch (addr) {
-    case REG_BLEND_LAYER_0_CONFIG: {
+    switch (addr >> 2) {
+    case R_BLEND_LAYER_0_CONFIG: {
         ADP_INFO("blend: layer 0 config -> 0x%X", s->layer_config[0]);
         return s->layer_config[0];
     }
-    case REG_BLEND_LAYER_1_CONFIG: {
+    case R_BLEND_LAYER_1_CONFIG: {
         ADP_INFO("blend: layer 1 config -> 0x%X", s->layer_config[1]);
         return s->layer_config[1];
     }
@@ -594,38 +489,46 @@ static void adp_v4_reg_write(void *opaque, hwaddr addr, uint64_t data,
 
     QEMU_LOCK_GUARD(&s->lock);
 
-    switch (addr >= 0x200000 ? addr - 0x200000 : addr) {
-    case REG_CONTROL_INT_STATUS: {
+    if (addr >= 0x200000) {
+        addr -= 0x200000;
+    }
+
+    if (addr >= GP_BLOCK_BASE_FOR(0) && addr < GP_BLOCK_END_FOR(0)) {
+        adp_v4_gp_reg_write(&s->genpipe[0], addr - GP_BLOCK_BASE_FOR(0), data);
+        return;
+    }
+
+    if (addr >= GP_BLOCK_BASE_FOR(1) && addr < GP_BLOCK_END_FOR(1)) {
+        adp_v4_gp_reg_write(&s->genpipe[1], addr - GP_BLOCK_BASE_FOR(1), data);
+        return;
+    }
+
+    if (addr >= BLEND_BLOCK_BASE &&
+        addr < (BLEND_BLOCK_BASE + BLEND_BLOCK_SIZE)) {
+        adp_v4_blend_reg_write(&s->blend_unit, addr - BLEND_BLOCK_BASE, data);
+        return;
+    }
+
+    switch (addr >> 2) {
+    case R_CONTROL_INT_STATUS: {
         ADP_INFO("disp: int status <- 0x%X", (uint32_t)data);
         s->int_status &= ~(uint32_t)data;
         adp_v4_update_irqs(s);
         break;
     }
-    case REG_CONTROL_INT_ENABLE: {
+    case R_CONTROL_INT_ENABLE: {
         ADP_INFO("disp: int enable <- 0x%X", (uint32_t)data);
         s->int_enable = (uint32_t)data;
         adp_v4_update_irqs(s);
         break;
     }
-    case 0x4602C: {
+    case 0x4602C >> 2: {
         ADP_INFO("disp: REG_0x4602C <- 0x%X", (uint32_t)data);
         if (data & BIT32(12)) {
             qemu_bh_schedule(s->update_disp_image_bh);
         } else {
             qemu_bh_cancel(s->update_disp_image_bh);
         }
-        break;
-    }
-    case GP_BLOCK_BASE_FOR(0)... GP_BLOCK_END_FOR(0): {
-        adp_v4_gp_reg_write(&s->genpipe[0], addr - GP_BLOCK_BASE_FOR(0), data);
-        break;
-    }
-    case GP_BLOCK_BASE_FOR(1)... GP_BLOCK_END_FOR(1): {
-        adp_v4_gp_reg_write(&s->genpipe[1], addr - GP_BLOCK_BASE_FOR(1), data);
-        break;
-    }
-    case BLEND_BLOCK_BASE ...(BLEND_BLOCK_BASE + BLEND_BLOCK_SIZE): {
-        adp_v4_blend_reg_write(&s->blend_unit, addr - BLEND_BLOCK_BASE, data);
         break;
     }
     default: {
@@ -636,34 +539,41 @@ static void adp_v4_reg_write(void *opaque, hwaddr addr, uint64_t data,
     }
 }
 
-static uint64_t adp_v4_reg_read(void *const opaque, const hwaddr addr,
-                                const unsigned size)
+static uint64_t adp_v4_reg_read(void *const opaque, hwaddr addr, unsigned size)
 {
     AppleDisplayPipeV4State *s = opaque;
 
     QEMU_LOCK_GUARD(&s->lock);
 
-    switch (addr >= 0x200000 ? addr - 0x200000 : addr) {
-    case REG_CONTROL_VERSION: {
+    if (addr >= 0x200000) {
+        addr -= 0x200000;
+    }
+
+    if (addr >= GP_BLOCK_BASE_FOR(0) && addr < GP_BLOCK_END_FOR(0)) {
+        return adp_v4_gp_reg_read(&s->genpipe[0], addr - GP_BLOCK_BASE_FOR(0));
+    }
+
+    if (addr >= GP_BLOCK_BASE_FOR(1) && addr < GP_BLOCK_END_FOR(1)) {
+        return adp_v4_gp_reg_read(&s->genpipe[1], addr - GP_BLOCK_BASE_FOR(1));
+    }
+
+    if (addr >= BLEND_BLOCK_BASE &&
+        addr < (BLEND_BLOCK_BASE + BLEND_BLOCK_SIZE)) {
+        return adp_v4_blend_reg_read(&s->blend_unit, addr - BLEND_BLOCK_BASE);
+    }
+
+    switch (addr >> 2) {
+    case R_CONTROL_VERSION: {
         ADP_INFO("disp: version -> 0x%X", CONTROL_VERSION_A1);
         return CONTROL_VERSION_A1;
     }
-    case REG_CONTROL_FRAME_SIZE: {
+    case R_CONTROL_FRAME_SIZE: {
         ADP_INFO("disp: frame size -> 0x%X", (s->width << 16) | s->height);
         return (s->width << 16) | s->height;
     }
-    case REG_CONTROL_INT_STATUS: {
+    case R_CONTROL_INT_STATUS: {
         ADP_INFO("disp: int status -> 0x%X", s->int_status);
         return s->int_status;
-    }
-    case GP_BLOCK_BASE_FOR(0)... GP_BLOCK_END_FOR(0): {
-        return adp_v4_gp_reg_read(&s->genpipe[0], addr - GP_BLOCK_BASE_FOR(0));
-    }
-    case GP_BLOCK_BASE_FOR(1)... GP_BLOCK_END_FOR(1): {
-        return adp_v4_gp_reg_read(&s->genpipe[1], addr - GP_BLOCK_BASE_FOR(1));
-    }
-    case BLEND_BLOCK_BASE ...(BLEND_BLOCK_BASE + BLEND_BLOCK_SIZE): {
-        return adp_v4_blend_reg_read(&s->blend_unit, addr - BLEND_BLOCK_BASE);
     }
     default: {
         ADP_INFO("disp: unknown @ 0x" HWADDR_FMT_plx " -> 0x" HWADDR_FMT_plx,
@@ -718,7 +628,7 @@ static void adp_v4_gfx_update(void *opaque)
 
     g_free(snap);
 
-    s->int_status |= CONTROL_INT_OUTPUT_READY;
+    s->int_status = FIELD_DP32(s->int_status, CONTROL_INT, OUTPUT_READY, 1);
     adp_v4_update_irqs(s);
 }
 
@@ -947,8 +857,8 @@ static void adp_v4_gp_draw(ADPV4GenPipeState *genpipe, AddressSpace *dma_as,
     pixman_format_code_t fmt;
     pixman_image_t *image;
 
-    if ((genpipe->config_control & GP_CONFIG_CONTROL_RUN) == 0 ||
-        (genpipe->config_control & GP_CONFIG_CONTROL_ENABLED) == 0) {
+    if (FIELD_EX32(genpipe->config_control, GP_CONFIG_CONTROL, RUN) == 0 ||
+        FIELD_EX32(genpipe->config_control, GP_CONFIG_CONTROL, ENABLED) == 0) {
         return;
     }
 
@@ -982,7 +892,7 @@ static void adp_v4_update_disp_bh(void *opaque)
     adp_v4_gp_draw(&s->genpipe[0], &s->dma_as, disp_image, s->console);
     adp_v4_gp_draw(&s->genpipe[1], &s->dma_as, disp_image, s->console);
 
-    s->int_status |= CONTROL_INT_FRAME_PROCESSED;
+    s->int_status = FIELD_DP32(s->int_status, CONTROL_INT, FRAME_PROCESSED, 1);
     adp_v4_update_irqs(s);
 }
 
