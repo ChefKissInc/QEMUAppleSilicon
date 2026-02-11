@@ -78,7 +78,6 @@
 #define REG_MAX (0x50)
 
 #define REG_FIFO_DEPTH 16
-#define REG_FIFO_MAX_DEPTH (16 * 8)
 
 #define REG(_s, _v) ((_s)->regs[(_v) >> 2])
 
@@ -86,27 +85,25 @@ struct AppleSPIState {
     SysBusDevice parent_obj;
 
     MemoryRegion iomem;
-    SSIBus *spi;
+    SSIBus *ssi_bus;
     AppleSIODMAEndpoint *tx_chan;
     AppleSIODMAEndpoint *rx_chan;
 
     qemu_irq irq;
-    uint32_t last_irq;
     qemu_irq cs_line;
 
     Fifo32 rx_fifo;
     Fifo32 tx_fifo;
     uint32_t regs[APPLE_SPI_MMIO_SIZE >> 2];
-    uint32_t mmio_size;
 
     int tx_chan_id;
     int rx_chan_id;
     bool dma_capable;
 };
 
-static int apple_spi_word_size(AppleSPIState *s)
+static uint32_t apple_spi_word_size(AppleSPIState *spi)
 {
-    switch (REG_CFG_WORD_SIZE(REG(s, REG_CFG))) {
+    switch (REG_CFG_WORD_SIZE(REG(spi, REG_CFG))) {
     case REG_CFG_WORD_SIZE_8B:
         return 1;
     case REG_CFG_WORD_SIZE_16B:
@@ -119,237 +116,247 @@ static int apple_spi_word_size(AppleSPIState *s)
     g_assert_not_reached();
 }
 
-static void apple_spi_update_xfer_tx(AppleSPIState *s)
+static void apple_spi_update_xfer_tx(AppleSPIState *spi)
 {
-    if (fifo32_is_empty(&s->tx_fifo)) {
-        if ((REG_CFG_MODE(REG(s, REG_CFG))) == REG_CFG_MODE_DMA) {
-            uint8_t buffer[REG_FIFO_MAX_DEPTH] = { 0 };
-            int word_size = apple_spi_word_size(s);
-            uint64_t dma_len = apple_sio_dma_remaining(s->tx_chan);
-            int xfer_len = REG(s, REG_TXCNT) * word_size;
-            int fifo_len = fifo32_num_free(&s->tx_fifo) * word_size;
-            if (dma_len > xfer_len) {
-                dma_len = xfer_len;
-            }
-            if (dma_len > fifo_len) {
-                dma_len = fifo_len;
-            }
-            dma_len = apple_sio_dma_read(s->tx_chan, buffer, dma_len);
-            if (dma_len == 0) {
-                REG(s, REG_STATUS) |= REG_STATUS_TXEMPTY;
-            } else {
-                switch (word_size) {
-                case sizeof(uint8_t):
-                    for (uint64_t i = 0; i < dma_len; ++i) {
-                        fifo32_push(&s->tx_fifo, buffer[i]);
-                    }
-                    break;
-                case sizeof(uint16_t):
-                    for (uint64_t i = 0; i < dma_len; i += sizeof(uint16_t)) {
-                        fifo32_push(&s->tx_fifo, lduw_le_p(&buffer[i]));
-                    }
-                    break;
-                case sizeof(uint32_t):
-                    for (uint64_t i = 0; i < dma_len; i += sizeof(uint32_t)) {
-                        fifo32_push(&s->tx_fifo, ldl_le_p(&buffer[i]));
-                    }
-                    break;
-                default:
-                    g_assert_not_reached();
-                }
-            }
-        } else {
-            REG(s, REG_STATUS) |= REG_STATUS_TXEMPTY;
-        }
-    }
-}
-
-static void apple_spi_flush_rx(AppleSPIState *s)
-{
-    uint8_t buffer[REG_FIFO_MAX_DEPTH] = { 0 };
-
-    if ((REG_CFG_MODE(REG(s, REG_CFG))) != REG_CFG_MODE_DMA) {
+    if (!fifo32_is_empty(&spi->tx_fifo)) {
         return;
     }
 
-    int word_size = apple_spi_word_size(s);
-    uint64_t dma_len = apple_sio_dma_remaining(s->rx_chan);
-
-    if (dma_len / word_size > fifo32_num_used(&s->rx_fifo)) {
-        dma_len = fifo32_num_used(&s->rx_fifo) * word_size;
+    if ((REG_CFG_MODE(REG(spi, REG_CFG))) != REG_CFG_MODE_DMA) {
+        REG(spi, REG_STATUS) |= REG_STATUS_TXEMPTY;
+        return;
     }
+
+    uint64_t dma_remaining = apple_sio_dma_remaining(spi->tx_chan);
+    if (dma_remaining == 0) {
+        REG(spi, REG_STATUS) |= REG_STATUS_TXEMPTY;
+        return;
+    }
+
+    uint32_t word_size = apple_spi_word_size(spi);
+    uint32_t dma_len = REG(spi, REG_TXCNT) * word_size;
+    uint32_t fifo_len = fifo32_num_free(&spi->tx_fifo) * word_size;
+
+    dma_len = MIN(dma_len, dma_remaining);
     if (dma_len == 0) {
+        REG(spi, REG_STATUS) |= REG_STATUS_TXEMPTY;
         return;
     }
+
+    dma_len = MIN(dma_len, fifo_len);
+    if (dma_len == 0) { // TODO: TX Overflow
+        return;
+    }
+
+    uint8_t *buffer = g_new(uint8_t, dma_len);
+    apple_sio_dma_read(spi->tx_chan, buffer, dma_len);
 
     switch (word_size) {
     case sizeof(uint8_t):
-        for (uint64_t i = 0; i < dma_len; ++i) {
-            buffer[i] = fifo32_pop(&s->rx_fifo);
+        for (uint32_t i = 0; i < dma_len; ++i) {
+            fifo32_push(&spi->tx_fifo, buffer[i]);
         }
         break;
     case sizeof(uint16_t):
-        for (uint64_t i = 0; i < dma_len; i += sizeof(uint16_t)) {
-            stw_le_p(buffer + i, fifo32_pop(&s->rx_fifo));
+        for (uint32_t i = 0; i < dma_len; i += sizeof(uint16_t)) {
+            fifo32_push(&spi->tx_fifo, lduw_le_p(&buffer[i]));
         }
         break;
     case sizeof(uint32_t):
-        for (uint64_t i = 0; i < dma_len; i += sizeof(uint32_t)) {
-            stl_le_p(buffer + i, fifo32_pop(&s->rx_fifo));
+        for (uint32_t i = 0; i < dma_len; i += sizeof(uint32_t)) {
+            fifo32_push(&spi->tx_fifo, ldl_le_p(&buffer[i]));
         }
         break;
     default:
         g_assert_not_reached();
     }
 
-    dma_len = apple_sio_dma_write(s->rx_chan, buffer, dma_len);
+    g_free(buffer);
 }
 
-static void apple_spi_update_xfer_rx(AppleSPIState *s)
+static void apple_spi_flush_rx(AppleSPIState *spi)
 {
-    if (!fifo32_is_empty(&s->rx_fifo)) {
-        REG(s, REG_STATUS) |= REG_STATUS_RXREADY;
+    if ((REG_CFG_MODE(REG(spi, REG_CFG))) != REG_CFG_MODE_DMA) {
+        return;
+    }
+
+    uint64_t dma_remaining = apple_sio_dma_remaining(spi->rx_chan);
+    if (dma_remaining == 0) {
+        return;
+    }
+
+    uint32_t word_size = apple_spi_word_size(spi);
+    uint64_t dma_len = fifo32_num_used(&spi->rx_fifo) * word_size;
+    dma_len = MIN(dma_len, dma_remaining);
+    if (dma_len == 0) {
+        return;
+    }
+
+    uint8_t *buffer = g_new(uint8_t, dma_len);
+
+    switch (word_size) {
+    case sizeof(uint8_t):
+        for (uint32_t i = 0; i < dma_len; ++i) {
+            buffer[i] = fifo32_pop(&spi->rx_fifo);
+        }
+        break;
+    case sizeof(uint16_t):
+        for (uint32_t i = 0; i < dma_len; i += sizeof(uint16_t)) {
+            stw_le_p(buffer + i, fifo32_pop(&spi->rx_fifo));
+        }
+        break;
+    case sizeof(uint32_t):
+        for (uint32_t i = 0; i < dma_len; i += sizeof(uint32_t)) {
+            stl_le_p(buffer + i, fifo32_pop(&spi->rx_fifo));
+        }
+        break;
+    default:
+        g_assert_not_reached();
+    }
+
+    apple_sio_dma_write(spi->rx_chan, buffer, dma_len);
+    g_free(buffer);
+}
+
+static void apple_spi_update_xfer_rx(AppleSPIState *spi)
+{
+    if (fifo32_is_empty(&spi->rx_fifo)) {
+        REG(spi, REG_STATUS) &= ~REG_STATUS_RXREADY;
+    } else {
+        REG(spi, REG_STATUS) |= REG_STATUS_RXREADY;
     }
 }
 
-static void apple_spi_update_irq(AppleSPIState *s)
+static void apple_spi_update_irq(AppleSPIState *spi)
 {
-    uint32_t irq = 0;
     uint32_t mask = 0;
 
-    if (REG(s, REG_CFG) & REG_CFG_IE_RXREADY) {
+    if (REG(spi, REG_CFG) & REG_CFG_IE_RXREADY) {
         mask |= REG_STATUS_RXREADY;
     }
-    if (REG(s, REG_CFG) & REG_CFG_IE_TXEMPTY) {
+    if (REG(spi, REG_CFG) & REG_CFG_IE_TXEMPTY) {
         mask |= REG_STATUS_TXEMPTY;
     }
-    if (REG(s, REG_CFG) & REG_CFG_IE_COMPLETE) {
+    if (REG(spi, REG_CFG) & REG_CFG_IE_COMPLETE) {
         mask |= REG_STATUS_COMPLETE;
     }
 
-    if (REG(s, REG_STATUS) & mask) {
-        irq = 1;
-    }
-    if (irq != s->last_irq) {
-        s->last_irq = irq;
-        qemu_set_irq(s->irq, irq);
-    }
+    qemu_set_irq(spi->irq, (REG(spi, REG_STATUS) & mask) != 0);
 }
 
-static void apple_spi_update_cs(AppleSPIState *s)
+static void apple_spi_update_cs(AppleSPIState *spi)
 {
-    BusState *b = BUS(s->spi);
-    BusChild *kid = QTAILQ_FIRST(&b->children);
-    if (kid) {
-        SSIPeripheralClass *ssc = SSI_PERIPHERAL_GET_CLASS(kid->child);
-        if (ssc->cs_polarity == SSI_CS_NONE) {
-            return;
-        }
-        qemu_irq cs_pin = qdev_get_gpio_in_named(kid->child, SSI_GPIO_CS, 0);
-        if (cs_pin) {
-            qemu_set_irq(cs_pin, (REG(s, REG_PIN) & REG_PIN_CS) != 0);
-        }
+    BusState *b = BUS(spi->ssi_bus);
+    BusChild *child = QTAILQ_FIRST(&b->children);
+    if (!child) {
+        return;
+    }
+    SSIPeripheralClass *spc = SSI_PERIPHERAL_GET_CLASS(child->child);
+    if (spc->cs_polarity == SSI_CS_NONE) {
+        return;
+    }
+    qemu_irq cs_pin = qdev_get_gpio_in_named(child->child, SSI_GPIO_CS, 0);
+    if (cs_pin) {
+        qemu_set_irq(cs_pin, (REG(spi, REG_PIN) & REG_PIN_CS) != 0);
     }
 }
 
 static void apple_spi_cs_set(void *opaque, int pin, int level)
 {
-    AppleSPIState *s = opaque;
+    AppleSPIState *spi = opaque;
     if (level) {
-        REG(s, REG_PIN) |= REG_PIN_CS;
+        REG(spi, REG_PIN) |= REG_PIN_CS;
     } else {
-        REG(s, REG_PIN) &= ~REG_PIN_CS;
+        REG(spi, REG_PIN) &= ~REG_PIN_CS;
     }
-    apple_spi_update_cs(s);
+    apple_spi_update_cs(spi);
 }
 
-static void apple_spi_run(AppleSPIState *s)
+static void apple_spi_run(AppleSPIState *spi)
 {
     uint32_t tx;
     uint32_t rx;
-    int word_size = apple_spi_word_size(s);
+    int word_size = apple_spi_word_size(spi);
 
-    if (REG_CFG_MODE(REG(s, REG_CFG)) == REG_CFG_MODE_INVALID) {
-        return;
-    }
-    if (!(REG(s, REG_CTRL) & REG_CTRL_RUN)) {
-        return;
-    }
-    if (REG(s, REG_RXCNT) == 0 && REG(s, REG_TXCNT) == 0) {
-        return;
-    }
-    if ((REG_CFG_MODE(REG(s, REG_CFG))) == REG_CFG_MODE_DMA &&
-        !s->dma_capable) {
+    if ((REG_CFG_MODE(REG(spi, REG_CFG))) == REG_CFG_MODE_DMA &&
+        !spi->dma_capable) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "%s: DMA mode is not supported on this device\n",
                       __func__);
         return;
     }
 
-    apple_spi_update_xfer_tx(s);
+    if (REG_CFG_MODE(REG(spi, REG_CFG)) == REG_CFG_MODE_INVALID ||
+        (REG(spi, REG_CTRL) & REG_CTRL_RUN) == 0 ||
+        ((REG(spi, REG_RXCNT) | REG(spi, REG_TXCNT)) == 0)) {
+        return;
+    }
 
-    while (REG(s, REG_TXCNT) && !fifo32_is_empty(&s->tx_fifo)) {
-        tx = fifo32_pop(&s->tx_fifo);
+    apple_spi_update_xfer_tx(spi);
+
+    while (REG(spi, REG_TXCNT) && !fifo32_is_empty(&spi->tx_fifo)) {
+        tx = fifo32_pop(&spi->tx_fifo);
         rx = 0;
         for (int i = 0; i < word_size; i++) {
             rx <<= 8;
-            rx |= ssi_transfer(s->spi, tx & 0xff);
+            rx |= ssi_transfer(spi->ssi_bus, tx & 0xff);
             tx >>= 8;
         }
-        REG(s, REG_TXCNT)--;
-        apple_spi_update_xfer_tx(s);
-        if (REG(s, REG_RXCNT) > 0) {
-            if (fifo32_is_full(&s->rx_fifo)) {
-                apple_spi_flush_rx(s);
+        REG(spi, REG_TXCNT)--;
+        apple_spi_update_xfer_tx(spi);
+        if (REG(spi, REG_RXCNT) > 0) {
+            if (fifo32_is_full(&spi->rx_fifo)) {
+                apple_spi_flush_rx(spi);
             }
-            if (fifo32_is_full(&s->rx_fifo)) {
-                qemu_log_mask(LOG_GUEST_ERROR, "%s: rx overflow\n", __func__);
-                REG(s, REG_STATUS) |= REG_STATUS_RXOVERFLOW;
+            if (fifo32_is_full(&spi->rx_fifo)) {
+                qemu_log_mask(LOG_GUEST_ERROR, "%s: RX overflow\n", __func__);
+                REG(spi, REG_STATUS) |= REG_STATUS_RXOVERFLOW;
                 break;
             } else {
-                fifo32_push(&s->rx_fifo, rx);
-                REG(s, REG_RXCNT)--;
-                apple_spi_update_xfer_rx(s);
+                fifo32_push(&spi->rx_fifo, rx);
+                REG(spi, REG_RXCNT)--;
+                apple_spi_update_xfer_rx(spi);
             }
         }
     }
 
-    if (fifo32_is_full(&s->rx_fifo)) {
-        apple_spi_flush_rx(s);
+    if (fifo32_is_full(&spi->rx_fifo)) {
+        apple_spi_flush_rx(spi);
     }
-    while (!fifo32_is_full(&s->rx_fifo) && (REG(s, REG_RXCNT) > 0) &&
-           (REG(s, REG_CFG) & REG_CFG_AGD)) {
+
+    while (!fifo32_is_full(&spi->rx_fifo) && (REG(spi, REG_RXCNT) > 0) &&
+           (REG(spi, REG_CFG) & REG_CFG_AGD)) {
         rx = 0;
         for (int i = 0; i < word_size; i++) {
             rx <<= 8;
-            rx |= ssi_transfer(s->spi, 0xff);
+            rx |= ssi_transfer(spi->ssi_bus, 0xff);
         }
-        if (fifo32_is_full(&s->rx_fifo)) {
-            apple_spi_flush_rx(s);
+        if (fifo32_is_full(&spi->rx_fifo)) {
+            apple_spi_flush_rx(spi);
         }
-        if (fifo32_is_full(&s->rx_fifo)) {
+        if (fifo32_is_full(&spi->rx_fifo)) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: rx overflow\n", __func__);
-            REG(s, REG_STATUS) |= REG_STATUS_RXOVERFLOW;
+            REG(spi, REG_STATUS) |= REG_STATUS_RXOVERFLOW;
             break;
         } else {
-            fifo32_push(&s->rx_fifo, rx);
-            REG(s, REG_RXCNT)--;
-            apple_spi_update_xfer_rx(s);
+            fifo32_push(&spi->rx_fifo, rx);
+            REG(spi, REG_RXCNT)--;
+            apple_spi_update_xfer_rx(spi);
         }
     }
 
-    apple_spi_flush_rx(s);
-    if (REG(s, REG_RXCNT) == 0 && REG(s, REG_TXCNT) == 0) {
-        REG(s, REG_STATUS) |= REG_STATUS_COMPLETE;
+    apple_spi_flush_rx(spi);
+    if (REG(spi, REG_RXCNT) == 0 && REG(spi, REG_TXCNT) == 0) {
+        REG(spi, REG_STATUS) |= REG_STATUS_COMPLETE;
     }
 }
 
 static void apple_spi_reg_write(void *opaque, hwaddr addr, uint64_t data,
                                 unsigned size)
 {
-    AppleSPIState *s = opaque;
-    uint32_t r = data;
-    uint32_t *mmio = &REG(s, addr);
+    AppleSPIState *spi = opaque;
+    uint32_t value = data;
+    uint32_t *mmio = &REG(spi, addr);
     uint32_t old = *mmio;
     bool cs_flg = false;
     bool run = false;
@@ -364,40 +371,40 @@ static void apple_spi_reg_write(void *opaque, hwaddr addr, uint64_t data,
 
     switch (addr) {
     case REG_CTRL:
-        if (r & REG_CTRL_TX_RESET) {
-            fifo32_reset(&s->tx_fifo);
-            r &= ~REG_CTRL_TX_RESET;
+        if (value & REG_CTRL_TX_RESET) {
+            fifo32_reset(&spi->tx_fifo);
+            value &= ~REG_CTRL_TX_RESET;
         }
-        if (r & REG_CTRL_RX_RESET) {
-            fifo32_reset(&s->rx_fifo);
-            r &= ~REG_CTRL_RX_RESET;
+        if (value & REG_CTRL_RX_RESET) {
+            fifo32_reset(&spi->rx_fifo);
+            value &= ~REG_CTRL_RX_RESET;
         }
-        if (r & REG_CTRL_RUN) {
+        if (value & REG_CTRL_RUN) {
             run = true;
         }
         break;
     case REG_STATUS:
-        r = old & (~r);
+        value = old & (~value);
         break;
     case REG_PIN:
         cs_flg = true;
         break;
     case REG_TXDATA: {
-        if (fifo32_is_full(&s->tx_fifo)) {
+        if (fifo32_is_full(&spi->tx_fifo)) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: tx overflow\n", __func__);
-            r = 0;
+            value = 0;
             break;
         }
 
-        switch (apple_spi_word_size(s)) {
+        switch (apple_spi_word_size(spi)) {
         case sizeof(uint8_t):
-            fifo32_push(&s->tx_fifo, r & 0xFF);
+            fifo32_push(&spi->tx_fifo, value & 0xFF);
             break;
         case sizeof(uint16_t):
-            fifo32_push(&s->tx_fifo, r & 0xFFFF);
+            fifo32_push(&spi->tx_fifo, value & 0xFFFF);
             break;
         case sizeof(uint32_t):
-            fifo32_push(&s->tx_fifo, r);
+            fifo32_push(&spi->tx_fifo, value);
             break;
         default:
             g_assert_not_reached();
@@ -415,19 +422,19 @@ static void apple_spi_reg_write(void *opaque, hwaddr addr, uint64_t data,
         break;
     }
 
-    *mmio = r;
+    *mmio = value;
     if (cs_flg) {
-        apple_spi_update_cs(s);
+        apple_spi_update_cs(spi);
     }
     if (run) {
-        apple_spi_run(s);
+        apple_spi_run(spi);
     }
-    apple_spi_update_irq(s);
+    apple_spi_update_irq(spi);
 }
 
 static uint64_t apple_spi_reg_read(void *opaque, hwaddr addr, unsigned size)
 {
-    AppleSPIState *s = opaque;
+    AppleSPIState *spi = opaque;
     uint32_t r;
     bool run = false;
 
@@ -437,25 +444,25 @@ static uint64_t apple_spi_reg_read(void *opaque, hwaddr addr, unsigned size)
         return 0;
     }
 
-    r = s->regs[addr >> 2];
+    r = spi->regs[addr >> 2];
     switch (addr) {
     case REG_RXDATA: {
-        if (fifo32_is_empty(&s->rx_fifo)) {
+        if (fifo32_is_empty(&spi->rx_fifo)) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: rx underflow\n", __func__);
             r = 0;
             break;
         }
 
-        r = fifo32_pop(&s->rx_fifo);
-        if (fifo32_is_empty(&s->rx_fifo)) {
+        r = fifo32_pop(&spi->rx_fifo);
+        if (fifo32_is_empty(&spi->rx_fifo)) {
             run = true;
         }
         break;
     }
     case REG_STATUS: {
         uint32_t val = 0;
-        val |= fifo32_num_used(&s->tx_fifo) << REG_STATUS_TXFIFO_SHIFT;
-        val |= fifo32_num_used(&s->rx_fifo) << REG_STATUS_RXFIFO_SHIFT;
+        val |= fifo32_num_used(&spi->tx_fifo) << REG_STATUS_TXFIFO_SHIFT;
+        val |= fifo32_num_used(&spi->rx_fifo) << REG_STATUS_RXFIFO_SHIFT;
         val &= (REG_STATUS_TXFIFO_MASK | REG_STATUS_RXFIFO_MASK);
         r &= ~(REG_STATUS_TXFIFO_MASK | REG_STATUS_RXFIFO_MASK);
         r |= val;
@@ -466,9 +473,9 @@ static uint64_t apple_spi_reg_read(void *opaque, hwaddr addr, unsigned size)
     }
 
     if (run) {
-        apple_spi_run(s);
+        apple_spi_run(spi);
     }
-    apple_spi_update_irq(s);
+    apple_spi_update_irq(spi);
     return r;
 }
 
@@ -482,55 +489,35 @@ static const MemoryRegionOps apple_spi_reg_ops = {
 
 static void apple_spi_reset(DeviceState *dev)
 {
-    AppleSPIState *s = APPLE_SPI(dev);
+    AppleSPIState *spi = APPLE_SPI(dev);
 
-    memset(s->regs, 0, sizeof(s->regs));
-    fifo32_reset(&s->tx_fifo);
-    fifo32_reset(&s->rx_fifo);
+    memset(spi->regs, 0, sizeof(spi->regs));
+    fifo32_reset(&spi->tx_fifo);
+    fifo32_reset(&spi->rx_fifo);
 }
 
-SSIBus *apple_spi_get_bus(AppleSPIState *s)
+SSIBus *apple_spi_get_bus(AppleSPIState *spi)
 {
-    return s->spi;
+    return spi->ssi_bus;
 }
 
 static void apple_spi_realize(DeviceState *dev, struct Error **errp)
 {
-    AppleSPIState *s = APPLE_SPI(dev);
-    SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
-    char mmio_name[32] = { 0 };
-    char bus_name[32] = { 0 };
-    Object *obj;
+    AppleSPIState *spi = APPLE_SPI(dev);
     AppleSIOState *sio;
 
-    snprintf(bus_name, sizeof(bus_name), "%s.bus", dev->id);
-    s->spi = ssi_create_bus(dev, (const char *)bus_name);
-
-    snprintf(mmio_name, sizeof(mmio_name), "%s.mmio", dev->id);
-    memory_region_init_io(&s->iomem, OBJECT(dev), &apple_spi_reg_ops, s,
-                          mmio_name, s->mmio_size);
-
-    sysbus_init_mmio(sbd, &s->iomem);
-    sysbus_init_irq(sbd, &s->irq);
-    sysbus_init_irq(sbd, &s->cs_line);
-    qdev_init_gpio_in_named(dev, apple_spi_cs_set, SSI_GPIO_CS, 1);
-
-    fifo32_create(&s->tx_fifo, REG_FIFO_DEPTH);
-    fifo32_create(&s->rx_fifo, REG_FIFO_DEPTH);
-
-    obj = object_property_get_link(OBJECT(dev), "sio", NULL);
-    sio = APPLE_SIO(obj);
+    sio = APPLE_SIO(object_property_get_link(OBJECT(dev), "sio", NULL));
 
     if (sio == NULL) {
-        if (s->dma_capable) {
+        if (spi->dma_capable) {
             warn_report("%s: SPI bus is DMA capable, but no SIO is attached. "
                         "This is a bug.",
                         __func__);
         }
-        s->dma_capable = false;
-    } else if (s->dma_capable) {
-        s->tx_chan = apple_sio_get_endpoint(sio, s->tx_chan_id);
-        s->rx_chan = apple_sio_get_endpoint(sio, s->rx_chan_id);
+        spi->dma_capable = false;
+    } else if (spi->dma_capable) {
+        spi->tx_chan = apple_sio_get_endpoint(sio, spi->tx_chan_id);
+        spi->rx_chan = apple_sio_get_endpoint(sio, spi->rx_chan_id);
     }
 }
 
@@ -538,26 +525,41 @@ SysBusDevice *apple_spi_from_node(AppleDTNode *node)
 {
     DeviceState *dev = qdev_new(TYPE_APPLE_SPI);
     SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
-    AppleSPIState *s = APPLE_SPI(dev);
+    AppleSPIState *spi = APPLE_SPI(dev);
+    char name[32];
     AppleDTProp *prop = apple_dt_get_prop(node, "reg");
-    uint64_t mmio_size = ((hwaddr *)prop->data)[1];
 
     dev->id = apple_dt_get_prop_strdup(node, "name", &error_fatal);
-    s->mmio_size = mmio_size;
+
+    snprintf(name, sizeof(name), "%s.bus", dev->id);
+    spi->ssi_bus = ssi_create_bus(dev, name);
+
+    snprintf(name, sizeof(name), "%s.mmio", dev->id);
+    memory_region_init_io(&spi->iomem, OBJECT(dev), &apple_spi_reg_ops, spi,
+                          name, ldq_le_p(prop->data + 8));
 
     if ((prop = apple_dt_get_prop(node, "dma-channels")) != NULL) {
-        uint32_t *data = (uint32_t *)prop->data;
-        s->dma_capable = true;
-        s->tx_chan_id = data[0];
-        s->rx_chan_id = data[8];
+        spi->dma_capable = true;
+        spi->tx_chan_id = ldl_le_p(prop->data);
+        spi->rx_chan_id = ldl_le_p(prop->data + 0x20);
     }
+
     return sbd;
 }
 
-static void apple_spi_init(Object *obj)
+static void apple_spi_instance_init(Object *obj)
 {
-    AppleSPIState *s = APPLE_SPI(obj);
-    s->mmio_size = APPLE_SPI_MMIO_SIZE;
+    AppleSPIState *spi = APPLE_SPI(obj);
+    DeviceState *dev = DEVICE(spi);
+    SysBusDevice *sbd = SYS_BUS_DEVICE(spi);
+
+    sysbus_init_mmio(sbd, &spi->iomem);
+    sysbus_init_irq(sbd, &spi->irq);
+    sysbus_init_irq(sbd, &spi->cs_line);
+    qdev_init_gpio_in_named(dev, apple_spi_cs_set, SSI_GPIO_CS, 1);
+
+    fifo32_create(&spi->tx_fifo, REG_FIFO_DEPTH);
+    fifo32_create(&spi->rx_fifo, REG_FIFO_DEPTH);
 }
 
 static const VMStateDescription vmstate_apple_spi = {
@@ -569,8 +571,6 @@ static const VMStateDescription vmstate_apple_spi = {
             VMSTATE_UINT32_ARRAY(regs, AppleSPIState, APPLE_SPI_MMIO_SIZE >> 2),
             VMSTATE_FIFO32(rx_fifo, AppleSPIState),
             VMSTATE_FIFO32(tx_fifo, AppleSPIState),
-            VMSTATE_UINT32(last_irq, AppleSPIState),
-            VMSTATE_UINT32(mmio_size, AppleSPIState),
             VMSTATE_END_OF_LIST(),
         }
 };
@@ -590,7 +590,7 @@ static const TypeInfo apple_spi_type_info = {
     .name = TYPE_APPLE_SPI,
     .parent = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(AppleSPIState),
-    .instance_init = apple_spi_init,
+    .instance_init = apple_spi_instance_init,
     .class_init = apple_spi_class_init,
 };
 
