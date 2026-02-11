@@ -354,8 +354,8 @@ static void t8030_load_kernelcache(AppleT8030MachineState *t8030,
 
     // TZ0
     info->tz0_addr = phys_ptr;
-    info->tz0_size = 300 * MiB;
-    // info->tz0_size = 240 * MiB; // workaround for sepos >= 16
+    // info->tz0_size = 300 * MiB;
+    info->tz0_size = 240 * MiB; // FIXME: workaround for sepos >= 16
     phys_ptr += info->tz0_size;
 
     // SEP Firmware
