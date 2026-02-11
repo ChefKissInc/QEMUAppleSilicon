@@ -59,12 +59,10 @@ extern HVFState *hvf_state;
 
 struct AccelCPUState {
     hvf_vcpuid fd;
-#ifdef __aarch64__
-    hv_vcpu_exit_t *exit;
+    void *exit;
     bool vtimer_masked;
     sigset_t unblock_ipi_mask;
     bool guest_debug_enabled;
-#endif
 };
 
 void assert_hvf_ok_impl(hv_return_t ret, const char *file, unsigned int line,
@@ -73,21 +71,13 @@ void assert_hvf_ok_impl(hv_return_t ret, const char *file, unsigned int line,
 const char *hvf_return_string(hv_return_t ret);
 int hvf_arch_init(void);
 hv_return_t hvf_arch_vm_create(MachineState *ms, uint32_t pa_range);
-hvf_slot *hvf_find_overlap_slot(uint64_t, uint64_t);
-void hvf_kick_vcpu_thread(CPUState *cpu);
-
-/* Must be called by the owning thread */
 int hvf_arch_init_vcpu(CPUState *cpu);
-/* Must be called by the owning thread */
 void hvf_arch_vcpu_destroy(CPUState *cpu);
-/* Must be called by the owning thread */
-int hvf_arch_vcpu_exec(CPUState *);
-/* Must be called by the owning thread */
-int hvf_arch_put_registers(CPUState *);
-/* Must be called by the owning thread */
-int hvf_arch_get_registers(CPUState *);
-/* Must be called by the owning thread */
-void hvf_arch_update_guest_debug(CPUState *cpu);
+int hvf_vcpu_exec(CPUState *);
+hvf_slot *hvf_find_overlap_slot(uint64_t, uint64_t);
+int hvf_put_registers(CPUState *);
+int hvf_get_registers(CPUState *);
+void hvf_kick_vcpu_thread(CPUState *cpu);
 
 struct hvf_sw_breakpoint {
     vaddr pc;
@@ -114,6 +104,7 @@ void hvf_arch_remove_all_hw_breakpoints(void);
  * handled by calling down to hvf_arch_update_guest_debug.
  */
 int hvf_update_guest_debug(CPUState *cpu);
+void hvf_arch_update_guest_debug(CPUState *cpu);
 
 /*
  * Return whether the guest supports debugging.

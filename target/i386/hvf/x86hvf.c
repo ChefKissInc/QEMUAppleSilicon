@@ -236,7 +236,7 @@ void hvf_get_msrs(CPUState *cs)
     env->tsc = rdtscp() + rvmcs(cs->accel->fd, VMCS_TSC_OFFSET);
 }
 
-int hvf_arch_put_registers(CPUState *cs)
+int hvf_put_registers(CPUState *cs)
 {
     X86CPU *x86cpu = X86_CPU(cs);
     CPUX86State *env = &x86cpu->env;
@@ -280,7 +280,7 @@ int hvf_arch_put_registers(CPUState *cs)
     return 0;
 }
 
-int hvf_arch_get_registers(CPUState *cs)
+int hvf_get_registers(CPUState *cs)
 {
     X86CPU *x86cpu = X86_CPU(cs);
     CPUX86State *env = &x86cpu->env;
@@ -395,9 +395,9 @@ bool hvf_inject_interrupts(CPUState *cs)
         };
     }
 
-    if (cpu_test_interrupt(cs, CPU_INTERRUPT_NMI)) {
+    if (cs->interrupt_request & CPU_INTERRUPT_NMI) {
         if (!(env->hflags2 & HF2_NMI_MASK) && !(info & VMCS_INTR_VALID)) {
-            cpu_reset_interrupt(cs, CPU_INTERRUPT_NMI);
+            cs->interrupt_request &= ~CPU_INTERRUPT_NMI;
             info = VMCS_INTR_VALID | VMCS_INTR_T_NMI | EXCP02_NMI;
             wvmcs(cs->accel->fd, VMCS_ENTRY_INTR_INFO, info);
         } else {
@@ -406,19 +406,20 @@ bool hvf_inject_interrupts(CPUState *cs)
     }
 
     if (!(env->hflags & HF_INHIBIT_IRQ_MASK) &&
-        cpu_test_interrupt(cs, CPU_INTERRUPT_HARD) &&
+        (cs->interrupt_request & CPU_INTERRUPT_HARD) &&
         (env->eflags & IF_MASK) && !(info & VMCS_INTR_VALID)) {
         int line = cpu_get_pic_interrupt(env);
-        cpu_reset_interrupt(cs, CPU_INTERRUPT_HARD);
+        cs->interrupt_request &= ~CPU_INTERRUPT_HARD;
         if (line >= 0) {
             wvmcs(cs->accel->fd, VMCS_ENTRY_INTR_INFO, line |
                   VMCS_INTR_VALID | VMCS_INTR_T_HWINTR);
         }
     }
-    if (cpu_test_interrupt(cs, CPU_INTERRUPT_HARD)) {
+    if (cs->interrupt_request & CPU_INTERRUPT_HARD) {
         vmx_set_int_window_exiting(cs);
     }
-    return cpu_test_interrupt(cs, CPU_INTERRUPT_INIT | CPU_INTERRUPT_TPR);
+    return (cs->interrupt_request
+            & (CPU_INTERRUPT_INIT | CPU_INTERRUPT_TPR));
 }
 
 int hvf_process_events(CPUState *cs)
@@ -431,27 +432,27 @@ int hvf_process_events(CPUState *cs)
         env->eflags = rreg(cs->accel->fd, HV_X86_RFLAGS);
     }
 
-    if (cpu_test_interrupt(cs, CPU_INTERRUPT_INIT)) {
+    if (cs->interrupt_request & CPU_INTERRUPT_INIT) {
         cpu_synchronize_state(cs);
         do_cpu_init(cpu);
     }
 
-    if (cpu_test_interrupt(cs, CPU_INTERRUPT_POLL)) {
-        cpu_reset_interrupt(cs, CPU_INTERRUPT_POLL);
+    if (cs->interrupt_request & CPU_INTERRUPT_POLL) {
+        cs->interrupt_request &= ~CPU_INTERRUPT_POLL;
         apic_poll_irq(cpu->apic_state);
     }
-    if ((cpu_test_interrupt(cs, CPU_INTERRUPT_HARD) &&
+    if (((cs->interrupt_request & CPU_INTERRUPT_HARD) &&
         (env->eflags & IF_MASK)) ||
-        cpu_test_interrupt(cs, CPU_INTERRUPT_NMI)) {
+        (cs->interrupt_request & CPU_INTERRUPT_NMI)) {
         cs->halted = 0;
     }
-    if (cpu_test_interrupt(cs, CPU_INTERRUPT_SIPI)) {
+    if (cs->interrupt_request & CPU_INTERRUPT_SIPI) {
         cpu_reset_interrupt(cs, CPU_INTERRUPT_SIPI);
         cpu_synchronize_state(cs);
         do_cpu_sipi(cpu);
     }
-    if (cpu_test_interrupt(cs, CPU_INTERRUPT_TPR)) {
-        cpu_reset_interrupt(cs, CPU_INTERRUPT_TPR);
+    if (cs->interrupt_request & CPU_INTERRUPT_TPR) {
+        cs->interrupt_request &= ~CPU_INTERRUPT_TPR;
         cpu_synchronize_state(cs);
         apic_handle_tpr_access_report(cpu->apic_state, env->eip,
                                       env->tpr_access_type);
