@@ -16,7 +16,7 @@ ChefKiss Inferno is derivative of the QEMU project which provides Apple ARM devi
 
 ## More info and usage
 
-Please see the click [here](https://github.com/ChefKissInc/Inferno/wiki) for more information about the project and how to use it.
+Please see the click [here](https://chefkiss.dev/applehax/inferno/) for more information about the project and how to use it.
 
 ## Legal Disclaimer
 
