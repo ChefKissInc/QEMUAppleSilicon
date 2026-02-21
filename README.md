@@ -18,7 +18,15 @@ ChefKiss Inferno is derivative of the QEMU project which provides Apple ARM devi
 
 Please see [here](https://chefkiss.dev/applehax/inferno/) for more information about the project and how to use it.
 
-## Legal Disclaimer
+## Legal Disclaimers
+
+“ChefKiss Inferno” is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement.
+
+By using this software, you acknowledge that you are solely responsible for how you use it. The “ChefKiss Inferno” project team is not responsible for any damage, legal issues, data loss, or other consequences arising from its use.
+
+This project is intended for lawful purposes only. Users are responsible for complying with all applicable laws, licenses, and agreements, including copyright, trademark, and End User License Agreements (EULAs).
+
+The “ChefKiss Inferno” project team does not condone or support piracy, copyright infringement, or any illegal activity.
 
 This derivative project (“ChefKiss Inferno”) is licensed under the GNU General Public License, version 3, with our own code licensed under the GNU Affero General Public License, version 3. See `LICENSE` for details.
 
@@ -28,10 +36,8 @@ The parts of QEMU which are licensed under the "version 2 or later" clause retai
 The parts that are only GNU General Public License, version 2, with no "or later" clause, will be removed in subsequent commits.
 You may explicitly contact us for early/faster removal of your code if desired.
 
-Restrictions apply for the branding of the “ChefKiss Inferno” project, see [here](ui/icons/CKBrandingNotice.md).
+Restrictions apply for the branding of the “ChefKiss Inferno” project, see [here](./ui/icons/CKBrandingNotice.md).
 
-QEMU is a copyright and trademark of Fabrice Bellard.
+QEMU is a copyright and trademark of Fabrice Bellard. QEMU is unaffiliated with this project.
 
-QEMU is unaffiliated with this project.
-
-Apple, Inc. is unaffiliated with this project.
+iOS is a copyright and trademark of Apple, Inc. Apple, Inc. is unaffiliated with this project. 
