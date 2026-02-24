@@ -58,7 +58,7 @@ bool apple_a9_cpu_is_asleep(AppleA9State *acpu)
 
 bool apple_a9_cpu_is_off(AppleA9State *acpu)
 {
-    return ARM_CPU(acpu)->power_state == PSCI_OFF;
+    return acpu->parent_obj.power_state == PSCI_OFF;
 }
 
 void apple_a9_cpu_set_on(AppleA9State *acpu)
@@ -66,7 +66,7 @@ void apple_a9_cpu_set_on(AppleA9State *acpu)
     int ret = QEMU_ARM_POWERCTL_RET_SUCCESS;
 
     if (apple_a9_cpu_is_off(acpu)) {
-        ret = arm_set_cpu_on_and_reset(ARM_CPU(acpu)->mp_affinity);
+        ret = arm_set_cpu_on_and_reset(acpu->parent_obj.mp_affinity);
     }
 
     if (ret != QEMU_ARM_POWERCTL_RET_SUCCESS) {
@@ -110,7 +110,7 @@ static const ARMCPRegInfo a9_cp_reginfo_tcg[] = {
 
 static void a9_add_cpregs(AppleA9State *acpu)
 {
-    ARMCPU *cpu = ARM_CPU(acpu);
+    ARMCPU *cpu = &acpu->parent_obj;
     define_arm_cp_regs(cpu, a9_cp_reginfo_tcg);
 }
 
