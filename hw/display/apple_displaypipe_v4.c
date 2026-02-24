@@ -432,7 +432,7 @@ static uint32_t adp_v4_gp_reg_read(ADPV4GenPipeState *s, hwaddr addr)
 static void adp_v4_gp_reset(ADPV4GenPipeState *s, uint8_t index)
 {
     g_free(s->buf);
-    memset(s, 0, sizeof(*s));
+    *s = (ADPV4GenPipeState){ 0 };
     s->index = index;
 }
 
@@ -479,7 +479,7 @@ static uint64_t adp_v4_blend_reg_read(ADPV4BlendUnitState *s, uint64_t addr)
 
 static void adp_v4_blend_reset(ADPV4BlendUnitState *s)
 {
-    memset(s, 0, sizeof(*s));
+    *s = (ADPV4BlendUnitState){ 0 };
 }
 
 static void adp_v4_reg_write(void *opaque, hwaddr addr, uint64_t data,
