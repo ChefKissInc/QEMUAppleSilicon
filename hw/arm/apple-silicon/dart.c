@@ -202,7 +202,6 @@ struct AppleDARTState {
     uint32_t l_mask[3];
     uint32_t l_shift[3];
     uint64_t sid_mask;
-    uint32_t bypass_mask;
     uint32_t dart_options;
 };
 
@@ -521,8 +520,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
     sid = mapper->regs.sid_remap[sid];
 
     // Disabled translation means bypass, not error (?)
-    if ((dart->bypass_mask & BIT32(sid)) != 0 ||
-        FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
+    if (FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                    TRANSLATION_ENABLE) == 0 ||
         FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                    FULL_BYPASS) != 0) {
@@ -697,8 +695,6 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
     // but other ones.
     dart->sid_mask =
         apple_dt_get_prop_u32_or(node, "sids", 0xFFFF, &error_fatal);
-    dart->bypass_mask =
-        apple_dt_get_prop_u32_or(node, "bypass", 0, &error_fatal);
     dart->dart_options =
         apple_dt_get_prop_u32_or(node, "dart-options", 0, &error_fatal);
 
