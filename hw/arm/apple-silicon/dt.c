@@ -218,7 +218,7 @@ AppleDTProp *apple_dt_set_prop(AppleDTNode *node, const char *name,
         g_assert_false(node->finalised && prop->len != len);
 
         g_free(prop->data);
-        memset(prop, 0, sizeof(*prop));
+        *prop = (AppleDTProp){ 0 };
     }
 
     if (val == NULL) {
