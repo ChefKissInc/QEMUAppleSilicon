@@ -1564,29 +1564,25 @@ static void trng_regs_reg_write(void *opaque, hwaddr addr, uint64_t data,
         if ((s->offset_0x70 & TRNG_UNKN5_INIT_DRBG) != 0) {
             data = bswap32(data);
         }
-        s->ecid &= 0xFFFFFFFF00000000;
-        s->ecid |= data & 0xFFFFFFFF;
+        s->ecid = deposit64(s->ecid, 0, 32, data);
         break;
     case REG_TRNG_ECID_HI:
         if ((s->offset_0x70 & TRNG_UNKN5_INIT_DRBG) != 0) {
             data = bswap32(data);
         }
-        s->ecid &= 0x00000000FFFFFFFF;
-        s->ecid |= (data & 0xFFFFFFFF) << 32;
+        s->ecid = deposit64(s->ecid, 32, 32, data);
         break;
     case REG_TRNG_COUNTER_LOW:
         if ((s->offset_0x70 & TRNG_UNKN5_INIT_DRBG) != 0) {
             data = bswap32(data);
         }
-        s->counter &= 0xFFFFFFFF00000000;
-        s->counter |= data & 0xFFFFFFFF;
+        s->counter = deposit64(s->counter, 0, 32, data);
         break;
     case REG_TRNG_COUNTER_HI:
         if ((s->offset_0x70 & TRNG_UNKN5_INIT_DRBG) != 0) {
             data = bswap32(data);
         }
-        s->counter &= 0x00000000FFFFFFFF;
-        s->counter |= (data & 0xFFFFFFFF) << 32;
+        s->counter = deposit64(s->counter, 32, 32, data);
         if ((s->offset_0x70 & TRNG_UNKN5_INIT_DRBG) != 0) {
             uint8_t seed_material[DRBG_CTR_AES256_SEED_SIZE] = { 0 };
             memcpy(seed_material + 0x0, s->key, sizeof(s->key));
