@@ -1391,7 +1391,7 @@ static void s8000_cpu_reset(AppleS8000MachineState *s8000)
                                     &error_abort);
             cpu_reset(cpu);
             if (acpu->cpu_id == 0) {
-                arm_set_cpu_on(ARM_CPU(acpu)->mp_affinity,
+                arm_set_cpu_on(acpu->parent_obj.mp_affinity,
                                s8000->boot_info.tz1_entry,
                                s8000->boot_info.tz1_boot_args_pa, 3, true);
             }
@@ -1400,7 +1400,7 @@ static void s8000_cpu_reset(AppleS8000MachineState *s8000)
                                     &error_abort);
             cpu_reset(cpu);
             if (acpu->cpu_id == 0) {
-                arm_set_cpu_on(ARM_CPU(acpu)->mp_affinity, SROM_BASE, 0, 3,
+                arm_set_cpu_on(acpu->parent_obj.mp_affinity, SROM_BASE, 0, 3,
                                true);
             }
         }
