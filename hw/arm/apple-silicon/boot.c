@@ -177,7 +177,6 @@ static const char *REM_NAMES[] = {
     "pmp\0$",
     "stockholm\0$",
     "stockholm-spmi\0$",
-    "bluetooth\0$",
     "bluetooth-pcie\0$",
     "wlan\0$",
 #ifndef ENABLE_BASEBAND
@@ -193,7 +192,7 @@ static const char *REM_NAMES[] = {
 };
 
 static const char *REM_DEV_TYPES[] = {
-    "bluetooth\0$",     "wlan\0$",
+    "wlan\0$",
     "pmp\0$",
 };
 
