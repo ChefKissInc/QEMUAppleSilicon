@@ -516,6 +516,10 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
         .perm = IOMMU_NONE,
     };
 
+    if (FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) {
+        return entry;
+    }
+
     QEMU_LOCK_GUARD(&mapper->common.mutex);
 
     sid = mapper->regs.sid_remap[sid];
