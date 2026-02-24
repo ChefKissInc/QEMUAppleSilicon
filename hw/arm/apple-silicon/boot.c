@@ -84,6 +84,7 @@ static const char *KEEP_COMP[] = {
 #endif
     // "biosensor,pearl\0$", // not implemented
     "buttons\0$",
+    "bluetooth,n88\0$",
     "dart,s8000\0dart,s5l8960x\0$",
     "dart,t8020\0$",
     "disp0,t8030\0$",
