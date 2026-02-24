@@ -159,7 +159,7 @@ struct AppleMTSPIState {
 static void apple_mt_spi_buf_free(AppleMTSPIBuffer *buf)
 {
     g_free(buf->data);
-    memset(buf, 0, sizeof(*buf));
+    *buf = (AppleMTSPIBuffer){ 0 };
 }
 
 static void apple_mt_spi_buf_ensure_capacity(AppleMTSPIBuffer *buf,
