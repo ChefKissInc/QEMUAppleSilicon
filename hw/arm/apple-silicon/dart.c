@@ -142,8 +142,6 @@ REG32(DART_TLB_MISS_CTR, 0x1020)
 REG32(DART_TLB_HIT_CTR, 0x1028)
 REG32(DART_ST_MISS_CTR, 0x102C)
 REG32(DART_ST_HIT_CTR, 0x1034)
-
-SHARED_FIELD(DART_IOTLB_SID, 53, 4)
 // clang-format on
 
 typedef enum {
@@ -159,11 +157,6 @@ static const char *dart_instance_name[] = {
     [DART_SMMU] = "SMMU",
     [DART_DAPF] = "DAPF",
 };
-
-typedef struct AppleDARTTLBEntry {
-    hwaddr block_addr;
-    IOMMUAccessFlags perm;
-} AppleDARTTLBEntry;
 
 typedef struct AppleDARTMapperInstance AppleDARTMapperInstance;
 
@@ -197,7 +190,6 @@ typedef struct {
 struct AppleDARTMapperInstance {
     AppleDARTInstance common;
     AppleDARTIOMMUMemoryRegion *iommus[DART_MAX_STREAMS];
-    GHashTable *tlb;
     AppleDARTDARTRegs regs;
 };
 
@@ -263,15 +255,6 @@ static void apple_dart_update_irq(AppleDARTState *dart)
     qemu_irq_lower(dart->irq);
 }
 
-static gboolean apple_dart_tlb_remove_by_sid_mask(gpointer key, gpointer value,
-                                                  gpointer user_data)
-{
-    hwaddr va = (hwaddr)key;
-    uint64_t sid_mask = (uint64_t)user_data;
-
-    return sid_mask & BIT_ULL(SHARED_FIELD_EX64(va, DART_IOTLB_SID));
-}
-
 static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
                                         uint64_t data, unsigned size)
 {
@@ -284,7 +267,6 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
 
     DPRINTF("%s[%d]: (DART) 0x" HWADDR_FMT_plx " <- 0x" HWADDR_FMT_plx "\n",
             DEVICE(mapper->common.dart)->id, mapper->common.id, addr, data);
-
 
     switch (addr >> 2) {
     case R_DART_TLB_OP:
@@ -309,10 +291,6 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
                 sid_mask |=
                     mapper->regs.tlb_op_set[i] & mapper->common.dart->sid_mask;
             }
-
-            g_hash_table_foreach_remove(mapper->tlb,
-                                        apple_dart_tlb_remove_by_sid_mask,
-                                        GUINT_TO_POINTER(sid_mask));
         }
 
         if (sid_mask != 0) {
@@ -469,9 +447,9 @@ static const MemoryRegionOps apple_dart_dummy_reg_ops = {
     .valid.unaligned = false,
 };
 
-static AppleDARTTLBEntry *apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
-                                                uint32_t sid, hwaddr iova,
-                                                uint32_t *out_error_status)
+static inline uint32_t apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
+                                             uint32_t sid, hwaddr iova,
+                                             IOMMUTLBEntry *tlb_entry)
 {
     AppleDARTState *dart = mapper->common.dart;
 
@@ -479,15 +457,13 @@ static AppleDARTTLBEntry *apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
     uint64_t pte;
     uint64_t pa;
     int level;
-    AppleDARTTLBEntry *tlb_entry = NULL;
-    uint32_t error_status;
+    MemTxResult res;
 
     if (sid >= DART_MAX_STREAMS || (dart->sid_mask & BIT_ULL(sid)) == 0 ||
         idx >= DART_MAX_TTBR ||
         !FIELD_EX32(mapper->regs.ttbr[sid][idx], DART_TTBR, VALID)) {
-        error_status = FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
-                                  DART_ERROR_STATUS, TTBR_INVLD, 1);
-        goto end;
+        return FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
+                          DART_ERROR_STATUS, TTBR_INVLD, 1);
     }
 
     pte = mapper->regs.ttbr[sid][idx];
@@ -497,35 +473,28 @@ static AppleDARTTLBEntry *apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
         idx = (iova & (dart->l_mask[level])) >> dart->l_shift[level];
         pa += 8 * idx;
 
-        if (dma_memory_read(&address_space_memory, pa, &pte, sizeof(pte),
-                            MEMTXATTRS_UNSPECIFIED) != MEMTX_OK) {
-            error_status = FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
-                                      DART_ERROR_STATUS, L2E_INVLD, 1);
-            goto end;
+        pte = address_space_ldq(&address_space_memory, pa,
+                                MEMTXATTRS_UNSPECIFIED, &res);
+        if (res != MEMTX_OK) {
+            return FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
+                              DART_ERROR_STATUS, L2E_INVLD, 1);
         }
         DPRINTF("%s: level: %d, pa: 0x" HWADDR_FMT_plx " pte: 0x%llx(0x%llx)\n",
                 __func__, level, pa, pte, idx);
 
         if ((pte & DART_PTE_VALID) == 0) {
-            error_status = FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
-                                      DART_ERROR_STATUS, PTE_INVLD, 1);
-            goto end;
+            return FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
+                              DART_ERROR_STATUS, PTE_INVLD, 1);
         }
+
         pa = pte & dart->page_mask & DART_PTE_ADDR_MASK;
     }
 
-    tlb_entry = g_new(AppleDARTTLBEntry, 1);
-    tlb_entry->block_addr = (pte & dart->page_mask & DART_PTE_ADDR_MASK);
+    tlb_entry->translated_addr = (pte & dart->page_mask & DART_PTE_ADDR_MASK);
     tlb_entry->perm = IOMMU_ACCESS_FLAG(!FIELD_EX32(pte, DART_PTE, NO_READ),
                                         !FIELD_EX32(pte, DART_PTE, NO_WRITE));
-    error_status = 0;
 
-end:
-    if (out_error_status) {
-        *out_error_status = error_status;
-    }
-
-    return tlb_entry;
+    return 0;
 }
 
 static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
@@ -537,10 +506,8 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
         container_of(mr, AppleDARTIOMMUMemoryRegion, iommu);
     AppleDARTMapperInstance *mapper = iommu->mapper;
     AppleDARTState *dart = mapper->common.dart;
-    AppleDARTTLBEntry *tlb_entry;
     uint32_t sid = iommu->sid;
     uint64_t iova;
-    uint64_t key;
 
     IOMMUTLBEntry entry = {
         .target_as = &address_space_memory,
@@ -551,9 +518,9 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
 
     QEMU_LOCK_GUARD(&mapper->common.mutex);
 
-    sid = mapper->regs.sid_remap[sid] & 0xF;
+    sid = mapper->regs.sid_remap[sid];
 
-    // Disabled translation means bypass, not error
+    // Disabled translation means bypass, not error (?)
     if ((dart->bypass_mask & BIT32(sid)) != 0 ||
         FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                    TRANSLATION_ENABLE) == 0 ||
@@ -567,32 +534,17 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
     }
 
     iova = addr >> dart->page_shift;
-    key = SHARED_FIELD_DP64(iova, DART_IOTLB_SID, iommu->sid);
 
-    tlb_entry = g_hash_table_lookup(mapper->tlb, GUINT_TO_POINTER(key));
-
-    if (tlb_entry == NULL) {
-        uint32_t status;
-        if ((tlb_entry = apple_dart_mapper_ptw(mapper, sid, iova, &status))) {
-            g_hash_table_insert(mapper->tlb, GUINT_TO_POINTER(key), tlb_entry);
-            DPRINTF("%s[%d]: (%s) SID %u: 0x" HWADDR_FMT_plx
-                    " -> 0x" HWADDR_FMT_plx " (%c%c)\n",
-                    DEVICE(mapper->common.dart)->id, mapper->common.id,
-                    dart_instance_name[mapper->common.type], iommu->sid, addr,
-                    tlb_entry->block_addr | (addr & entry.addr_mask),
-                    (tlb_entry->perm & IOMMU_RO) ? 'r' : '-',
-                    (tlb_entry->perm & IOMMU_WO) ? 'w' : '-');
-        } else {
-            mapper->regs.error_address = addr;
-            mapper->regs.error_status =
-                FIELD_DP32(mapper->regs.error_status | status,
-                           DART_ERROR_STATUS, SID, iommu->sid);
-            goto end;
-        }
+    uint32_t status = apple_dart_mapper_ptw(mapper, sid, iova, &entry);
+    if (status != 0) {
+        mapper->regs.error_address = addr;
+        mapper->regs.error_status =
+            FIELD_DP32(mapper->regs.error_status | status, DART_ERROR_STATUS,
+                       SID, iommu->sid);
+        goto end;
     }
 
-    entry.translated_addr = tlb_entry->block_addr | (addr & entry.addr_mask);
-    entry.perm = tlb_entry->perm;
+    entry.translated_addr |= addr & entry.addr_mask;
 
     if ((flag & IOMMU_WO) != 0 && (entry.perm & IOMMU_WO) == 0) {
         mapper->regs.error_address = addr;
@@ -649,11 +601,6 @@ static void apple_dart_reset(DeviceState *dev)
             for (j = 0; j < DART_MAX_STREAMS; j++) {
                 mapper->regs.sid_remap[j] = j;
             }
-
-            if (mapper->tlb) {
-                g_hash_table_destroy(mapper->tlb);
-            }
-            mapper->tlb = g_hash_table_new_full(NULL, NULL, NULL, g_free);
             break;
         }
         default:
