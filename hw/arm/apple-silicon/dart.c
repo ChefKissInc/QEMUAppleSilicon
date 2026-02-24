@@ -637,7 +637,7 @@ static void apple_dart_reset(DeviceState *dev)
                                   common);
 
             QEMU_LOCK_GUARD(&mapper->common.mutex);
-            memset(&mapper->regs, 0, sizeof(mapper->regs));
+            mapper->regs = (AppleDARTDARTRegs){ 0 };
 
             mapper->regs.params1 =
                 FIELD_DP32(0, DART_PARAMS1, PAGE_SHIFT, dart->page_shift);
@@ -731,16 +731,20 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
 
     switch (dart->page_shift) {
     case 12:
-        memcpy(dart->l_mask, (uint32_t[3]){ 0xC0000, 0x3FE00, 0x1FF },
-               sizeof(dart->l_mask));
-        memcpy(dart->l_shift, (uint32_t[3]){ 0x12, 9, 0 },
-               sizeof(dart->l_shift));
+        dart->l_mask[0] = 0xC0000;
+        dart->l_mask[1] = 0x3FE00;
+        dart->l_mask[2] = 0x1FF;
+        dart->l_shift[0] = 0x12;
+        dart->l_shift[1] = 9;
+        dart->l_shift[2] = 0;
         break;
     case 14:
-        memcpy(dart->l_mask, (uint32_t[3]){ 0xC00000, 0x3FF800, 0x7FF },
-               sizeof(dart->l_mask));
-        memcpy(dart->l_shift, (uint32_t[3]){ 0x16, 11, 0 },
-               sizeof(dart->l_shift));
+        dart->l_mask[0] = 0xC00000;
+        dart->l_mask[1] = 0x3FF800;
+        dart->l_mask[2] = 0x7FF;
+        dart->l_shift[0] = 0x16;
+        dart->l_shift[1] = 11;
+        dart->l_shift[2] = 0;
         break;
     default:
         g_assert_not_reached();
