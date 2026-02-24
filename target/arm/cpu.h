@@ -2662,7 +2662,8 @@ static inline bool arm_is_el2_enabled_secstate(CPUARMState *env,
 
 static inline bool arm_is_el2_enabled(CPUARMState *env)
 {
-    return arm_is_el2_enabled_secstate(env, arm_security_space_below_el3(env));
+    return arm_feature(env, ARM_FEATURE_EL2)
+           && arm_is_el2_enabled_secstate(env, arm_security_space_below_el3(env));
 }
 
 #else
