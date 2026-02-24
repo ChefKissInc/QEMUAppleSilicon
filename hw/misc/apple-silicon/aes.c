@@ -668,7 +668,7 @@ static void apple_aes_reset(DeviceState *dev)
 {
     AppleAESState *s = APPLE_AES(dev);
 
-    memset(s->reg.raw, 0, AES_BLK_REG_SIZE);
+    s->reg = (aes_reg_t){ 0 };
 
     s->reg.status.v5.text0_dpa_random_seeded = true;
     s->reg.status.v5.text1_dpa_random_seeded = true;
