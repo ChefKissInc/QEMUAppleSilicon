@@ -727,9 +727,9 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
         return ((t8030->chip_revision & 0x7) << 6) |
                (((t8030->chip_revision & 0x70) >> 4) << 5) | (0 << 1);
     case 0x3D2BC300: // ECID LOW T8030
-        return t8030->ecid & 0xFFFFFFFF;
+        return extract64(t8030->ecid, 0, 32);
     case 0x3D2BC304: // ECID HIGH T8030
-        return (t8030->ecid >> 32) & 0xFFFFFFFF;
+        return extract64(t8030->ecid, 32, 32);
     case 0x3D2BC30C: {
         // T8030 SEP Chip Revision
         //  1 vs. not 1: TRNG/Monitor
@@ -792,7 +792,7 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
     uint32_t value = (uint32_t)data;
 
     if (addr >= 0x80000 && addr <= 0x8C000) {
-        value = (value & 0xF) << 4 | (value & 0xF);
+        value = deposit32(extract32(value, 0, 4), 4, 4, extract32(value, 0, 4));
     }
 #if 0
     qemu_log_mask(LOG_UNIMP,
