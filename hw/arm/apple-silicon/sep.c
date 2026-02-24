@@ -1634,7 +1634,7 @@ static uint64_t trng_regs_reg_read(void *opaque, hwaddr addr, unsigned size)
     // uint32_t enabled = (s->config & TRNG_CONTROL_ENABLED) != 0;
     switch (addr) {
     case REG_TRNG_FIFO_OUTPUT_BASE ... REG_TRNG_FIFO_OUTPUT_END:
-        memcpy(&ret, s->fifo + (addr - REG_TRNG_FIFO_OUTPUT_BASE), size);
+        ret = ldl_le_p(s->fifo + (addr - REG_TRNG_FIFO_OUTPUT_BASE));
         if ((s->offset_0x70 &
              (TRNG_UNKN5_ENCRYPT_FIFO | TRNG_UNKN5_INIT_DRBG)) != 0) {
             ret = bswap32(ret);
@@ -1651,19 +1651,19 @@ static uint64_t trng_regs_reg_read(void *opaque, hwaddr addr, unsigned size)
         // }
         break;
     case REG_TRNG_AES_KEY_BASE ... REG_TRNG_AES_KEY_END:
-        memcpy(&ret, s->key + (addr - REG_TRNG_AES_KEY_BASE), size);
+        ret = ldl_le_p(s->key + (addr - REG_TRNG_AES_KEY_BASE));
         break;
     case REG_TRNG_ECID_LOW:
-        ret = s->ecid & 0xFFFFFFFF;
+        ret = extract64(s->ecid, 0, 32);
         break;
     case REG_TRNG_ECID_HI:
-        ret = (s->ecid & 0xFFFFFFFF00000000) >> 32;
+        ret = extract64(s->ecid, 32, 32);
         break;
     case REG_TRNG_COUNTER_LOW:
-        ret = s->counter & 0xFFFFFFFF;
+        ret = extract64(s->counter, 0, 32);
         break;
     case REG_TRNG_COUNTER_HI:
-        ret = (s->counter & 0xFFFFFFFF00000000) >> 32;
+        ret = extract64(s->counter, 32, 32);
         break;
     case REG_TRNG_UNKN5:
         ret = s->offset_0x70;
@@ -3619,12 +3619,9 @@ static const MemoryRegionOps boot_monitor_reg_ops = {
 static void apple_sep_send_message(AppleSEPState *s, uint8_t ep, uint8_t tag,
                                    uint8_t op, uint8_t param, uint32_t data)
 {
-    AppleA7IOP *a7iop;
+    AppleA7IOP *a7iop = &s->parent_obj;
     AppleA7IOPMessage *sent_msg;
     SEPMessage *sent_sep_msg;
-
-    //a7iop = APPLE_A7IOP(s);
-    a7iop = &s->parent_obj;
 
     sent_msg = g_new0(AppleA7IOPMessage, 1);
     sent_sep_msg = (SEPMessage *)sent_msg->data;
@@ -3689,8 +3686,7 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
 #if 1
         // if (data == 0x6A5D128D && (s->chip_id == 0x8015))
         if (data == 0x6A5D128D) {
-            AppleA7IOPMessage *msg =
-                apple_a7iop_inbox_peek(s->mailbox);
+            AppleA7IOPMessage *msg = apple_a7iop_inbox_peek(s->mailbox);
             if (msg != NULL) {
                 memcpy(&sep_msg, msg->data, sizeof(sep_msg));
                 uint64_t shmbuf_base = (uint64_t)sep_msg.data << 12;
@@ -3698,9 +3694,9 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
                         "shmbuf=0x" HWADDR_FMT_plx
                         ": ep=0x%02x, tag=0x%02x, opcode=0x%02x(%u), "
                         "param=0x%02x, data=0x%08x\n",
-                        s->mailbox->role, data, shmbuf_base,
-                        sep_msg.ep, sep_msg.tag, sep_msg.op, sep_msg.op,
-                        sep_msg.param, sep_msg.data);
+                        s->mailbox->role, data, shmbuf_base, sep_msg.ep,
+                        sep_msg.tag, sep_msg.op, sep_msg.op, sep_msg.param,
+                        sep_msg.data);
                 int debug_trace_mmio_index = -1;
                 if (s->chip_id == 0x8015) {
                     debug_trace_mmio_index = 11;
@@ -3712,8 +3708,7 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
                     uint64_t tracebuf_mmio_addr =
                         shmbuf_base + s->trace_buffer_base_offset;
                     DPRINTF("%s: SHMBUF_TEST1: tracbuf=0x" HWADDR_FMT_plx "\n",
-                            s->mailbox->role,
-                            tracebuf_mmio_addr);
+                            s->mailbox->role, tracebuf_mmio_addr);
                     // _if SEP_ENABLE_DEBUG_TRACE_MAPPING
                     // TODO: T8020 isn't handled here anymore, but T8015
                     // probably still should.
@@ -3773,8 +3768,7 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
                 if (i == 0x10008 || i == 0x1002C) {
                     continue;
                 }
-                apple_a7iop_interrupt_status_push(s->mailbox,
-                                                  i);
+                apple_a7iop_interrupt_status_push(s->mailbox, i);
             }
         }
         if (data == 0xCAFE1335) {
@@ -3783,8 +3777,7 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
                 if (i == 0x40000) {
                     continue;
                 }
-                apple_a7iop_interrupt_status_push(s->mailbox,
-                                                  i);
+                apple_a7iop_interrupt_status_push(s->mailbox, i);
             }
         }
         if (data == 0xCAFE1336) {
@@ -3793,8 +3786,7 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
                 // if (i == 0x70001) {
                 //     continue;
                 // }
-                apple_a7iop_interrupt_status_push(s->mailbox,
-                                                  i);
+                apple_a7iop_interrupt_status_push(s->mailbox, i);
             }
         }
         if (data == 0xCAFE1337) {
@@ -3803,22 +3795,19 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
                 if (i == 0x10008 || i == 0x1002C) {
                     continue;
                 }
-                apple_a7iop_interrupt_status_push(s->mailbox,
-                                                  i);
+                apple_a7iop_interrupt_status_push(s->mailbox, i);
             }
             for (i = 0x40000; i < 0x40100; i++) {
                 if (i == 0x40000) {
                     continue;
                 }
-                apple_a7iop_interrupt_status_push(s->mailbox,
-                                                  i);
+                apple_a7iop_interrupt_status_push(s->mailbox, i);
             }
             for (i = 0x70000; i < 0x70400; i++) {
                 // if (i == 0x70001) {
                 //     continue;
                 // }
-                apple_a7iop_interrupt_status_push(s->mailbox,
-                                                  i);
+                apple_a7iop_interrupt_status_push(s->mailbox, i);
             }
         }
         break;
@@ -3919,9 +3908,7 @@ static void apple_sep_cpu_moni_jump(CPUState *cpu, run_on_cpu_data data)
 
 static void apple_sep_iop_start(AppleA7IOP *s)
 {
-    AppleSEPState *sep;
-
-    sep = APPLE_SEP(s);
+    AppleSEPState *sep = container_of(s, AppleSEPState, parent_obj);
 
     trace_apple_sep_iop_start(s->iop_mailbox->role);
 
@@ -3933,9 +3920,7 @@ static void apple_sep_iop_start(AppleA7IOP *s)
 
 static void apple_sep_iop_wakeup(AppleA7IOP *s)
 {
-    AppleSEPState *sep;
-
-    sep = APPLE_SEP(s);
+    AppleSEPState *sep = container_of(s, AppleSEPState, parent_obj);
 
     trace_apple_sep_iop_wakeup(s->iop_mailbox->role);
 
@@ -3997,9 +3982,8 @@ AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
     uint32_t i;
 
     dev = qdev_new(TYPE_APPLE_SEP);
-    // a7iop = APPLE_A7IOP(dev);
+    a7iop = APPLE_A7IOP(dev);
     s = APPLE_SEP(dev);
-    a7iop = &s->parent_obj;
     sbd = SYS_BUS_DEVICE(dev);
 
     prop = apple_dt_get_prop(node, "reg");
@@ -4224,8 +4208,6 @@ AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
     qemu_mutex_init(&s->pka_state.lock);
     qemu_mutex_init(&s->manual_timer_lock);
 
-    // possible performance improvements by avoiding most of these dynamic casts
-    // s->mailbox = APPLE_A7IOP(s)->iop_mailbox;
     s->mailbox = s->parent_obj.iop_mailbox;
 
     // No async necessary for TRNG?
@@ -4263,20 +4245,19 @@ static void apple_sep_realize(DeviceState *dev, Error **errp)
         sc->parent_realize(dev, errp);
     }
     qdev_realize(DEVICE(s->cpu), NULL, errp);
-    qdev_connect_gpio_out_named(DEVICE(s->mailbox),
-                                APPLE_A7IOP_SEP_CPU_IRQ, 0,
+    qdev_connect_gpio_out_named(DEVICE(s->mailbox), APPLE_A7IOP_SEP_CPU_IRQ, 0,
                                 qdev_get_gpio_in(DEVICE(s->cpu), ARM_CPU_IRQ));
     // mailbox irq's aren't being handled that way (anymore)
     // timer0 == phys
-    qdev_connect_gpio_out(
-        DEVICE(s->cpu), GTIMER_PHYS,
-        qdev_get_gpio_in_named(DEVICE(s->mailbox),
-                               APPLE_A7IOP_SEP_GPIO_TIMER0, 0));
+    qdev_connect_gpio_out(DEVICE(s->cpu), GTIMER_PHYS,
+                          qdev_get_gpio_in_named(DEVICE(s->mailbox),
+                                                 APPLE_A7IOP_SEP_GPIO_TIMER0,
+                                                 0));
     // timer1 == virt (sepos >= 16)
-    qdev_connect_gpio_out(
-        DEVICE(s->cpu), GTIMER_VIRT,
-        qdev_get_gpio_in_named(DEVICE(s->mailbox),
-                               APPLE_A7IOP_SEP_GPIO_TIMER1, 0));
+    qdev_connect_gpio_out(DEVICE(s->cpu), GTIMER_VIRT,
+                          qdev_get_gpio_in_named(DEVICE(s->mailbox),
+                                                 APPLE_A7IOP_SEP_GPIO_TIMER1,
+                                                 0));
 
     s->manual_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, sep_manual_timer, s);
 }
