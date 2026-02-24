@@ -593,6 +593,9 @@ static void apple_dart_reset(DeviceState *dev)
                 mapper->regs.params1, DART_PARAMS1, ACCESS_REGION_PROTECTION,
                 (dart->dart_options & BIT(1)) != 0);
 
+            mapper->regs.params2 =
+                FIELD_DP32(0, DART_PARAMS2, BYPASS_SUPPORT, 1);
+
             for (j = 0; j < DART_MAX_STREAMS; j++) {
                 mapper->regs.sid_remap[j] = j;
             }
