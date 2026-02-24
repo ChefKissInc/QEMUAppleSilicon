@@ -639,16 +639,27 @@ static void pmgr_unk_reg_write(void *opaque, hwaddr addr, uint64_t data,
                                unsigned size)
 {
     hwaddr base = (hwaddr)opaque;
+    hwaddr i;
+
     switch (base + addr) {
     case 0x3D2E4800: // ???? 0x240002c00 and 0x2400037a4
-        pmgr_unk_e4800 = data; // 0x240002c00 and 0x2400037a4
+        pmgr_unk_e4800 = deposit64(pmgr_unk_e4800, 0, size * 8,
+                                   data); // 0x240002c00 and 0x2400037a4
+        break;
+    case 0x3D2E4804:
+        pmgr_unk_e4800 = deposit64(pmgr_unk_e4800, 32, 32, data);
         break;
     case 0x3D2E4000 ... 0x3D2E417f: // ???? 0x24000377c
-        pmgr_unk_e4000[((base + addr) - 0x3D2E4000) / 4] = data; // 0x24000377c
+        i = ((base + addr) - 0x3D2E4000) / 4;
+        pmgr_unk_e4000[i] = extract64(data, 0, 32); // 0x24000377c
+        if (size == 8) {
+            pmgr_unk_e4000[i + 1] = extract64(data, 32, 32);
+        }
         break;
     default:
         break;
     }
+
 #if 0
     qemu_log_mask(LOG_UNIMP,
                   "PMGR reg WRITE unk @ 0x" HWADDR_FMT_plx
@@ -700,17 +711,17 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
         return raw_secure_mode ? FUSE_ENABLED : FUSE_DISABLED;
     case 0x3D2BC008: // Current Security Domain Bit 0
     case 0x3D2BC408: // Raw Security Domain Bit 0
-        return (security_domain & BIT(0)) == 0 ? FUSE_DISABLED : FUSE_ENABLED;
+        return (security_domain & BIT32(0)) == 0 ? FUSE_DISABLED : FUSE_ENABLED;
     case 0x3D2BC00C: // Current Security Domain Bit 1
     case 0x3D2BC40C: // Raw Security Domain Bit 1
-        return (security_domain & BIT(1)) == 0 ? FUSE_DISABLED : FUSE_ENABLED;
+        return (security_domain & BIT32(1)) == 0 ? FUSE_DISABLED : FUSE_ENABLED;
     case 0x3D2BC010: // Current Board ID and Epoch
         sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
-        sep_bit30_current_value =
-            (sep == NULL ?
-                 0 :
-                 ((uint32_t)sep->pmgr_fuse_changer_bit0_was_set << 30));
+        if (sep != NULL) {
+            sep_bit30_current_value =
+                (uint32_t)sep->pmgr_fuse_changer_bit0_was_set << 30;
+        }
         QEMU_FALLTHROUGH;
     case 0x3D2BC410: // Raw Board ID and Epoch, bit 30 should remain unset
         return ((t8030->board_id >> 5) & 0x7) | ((security_epoch & 0x7f) << 5) |
@@ -722,7 +733,7 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
     // case 0x3D2BC028: // ?
     //     return ...;
     case 0x3D2BC02c: // Unknown
-        return (0 << 31) | BIT(30); // bit31 causes a panic
+        return (0 << 31) | BIT32(30); // bit31 causes a panic
     case 0x3D2BC030: // Chip Revision
         return ((t8030->chip_revision & 0x7) << 6) |
                (((t8030->chip_revision & 0x70) >> 4) << 5) | (0 << 1);
@@ -782,6 +793,12 @@ static uint64_t pmgr_unk_reg_read(void *opaque, hwaddr addr, unsigned size)
 static const MemoryRegionOps pmgr_unk_reg_ops = {
     .write = pmgr_unk_reg_write,
     .read = pmgr_unk_reg_read,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid.min_access_size = 4,
+    .valid.max_access_size = 8,
+    .impl.min_access_size = 4,
+    .impl.max_access_size = 8,
+    .valid.unaligned = false,
 };
 
 static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
@@ -789,17 +806,14 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
 {
     AppleT8030MachineState *t8030 = opaque;
     AppleSEPState *sep;
-    uint32_t value = (uint32_t)data;
 
-    if (addr >= 0x80000 && addr <= 0x8C000) {
-        value = deposit32(extract32(value, 0, 4), 4, 4, extract32(value, 0, 4));
-    }
 #if 0
     qemu_log_mask(LOG_UNIMP,
                   "PMGR reg WRITE @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx
                   "\n",
                   addr, data);
 #endif
+
     switch (addr) {
     case 0xD4004:
         t8030_start_cpus(t8030, data);
@@ -808,9 +822,9 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
         sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
         if (sep != NULL) {
-            if (data & BIT(31)) {
+            if (data & BIT32(31)) {
                 apple_a13_reset(APPLE_A13(sep->cpu));
-            } else if (data & BIT(10)) {
+            } else if (data & BIT32(10)) {
                 apple_a13_set_off(APPLE_A13(sep->cpu));
             } else {
                 apple_a13_set_on(APPLE_A13(sep->cpu));
@@ -818,35 +832,59 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
         }
         break;
     default:
+        if (addr >= 0x80000 && addr <= 0x8C000) {
+            data =
+                deposit64(extract64(data, 0, 4), 4, 4, extract64(data, 0, 4));
+            if (size == 8) {
+                data = deposit64(extract64(data, 32, 4), 32 + 4, 4,
+                                 extract64(data, 32, 4));
+            }
+        }
+
         break;
     }
-    memcpy(t8030->pmgr_reg + addr, &value, size);
+
+    if (size == 8) {
+        stq_le_p(t8030->pmgr_reg + addr, data);
+    } else {
+        stl_le_p(t8030->pmgr_reg + addr, data);
+    }
 }
 
 static uint64_t pmgr_reg_read(void *opaque, hwaddr addr, unsigned size)
 {
     AppleT8030MachineState *t8030 = opaque;
     uint64_t result = 0;
+
     switch (addr) {
     case 0xF0010: // AppleT8030PMGR::commonSramCheck
         result = 0x5000;
         break;
     default:
-        memcpy(&result, t8030->pmgr_reg + addr, size);
+        result = size == 8 ? ldq_le_p(t8030->pmgr_reg + addr) :
+                             ldl_le_p(t8030->pmgr_reg + addr);
         break;
     }
+
 #if 0
     qemu_log_mask(LOG_UNIMP,
                   "PMGR reg READ @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx
                   "\n",
                   addr, result);
 #endif
+
     return result;
 }
 
 static const MemoryRegionOps pmgr_reg_ops = {
     .write = pmgr_reg_write,
     .read = pmgr_reg_read,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid.min_access_size = 4,
+    .valid.max_access_size = 8,
+    .impl.min_access_size = 4,
+    .impl.max_access_size = 8,
+    .valid.unaligned = false,
 };
 
 static void amcc_reg_write(void *opaque, hwaddr addr, uint64_t data,
@@ -870,26 +908,35 @@ static void amcc_reg_write(void *opaque, hwaddr addr, uint64_t data,
         return;
     }
 
-    memcpy(t8030->amcc_reg + addr, &data, size);
+    stl_le_p(t8030->amcc_reg + addr, data);
 }
 
 static uint64_t amcc_reg_read(void *opaque, hwaddr addr, unsigned size)
 {
     AppleT8030MachineState *t8030 = opaque;
-    uint64_t result = 0;
-    memcpy(&result, t8030->amcc_reg + addr, size);
+    uint64_t result;
+
+    result = ldl_le_p(t8030->amcc_reg + addr);
+
 #if 0
     qemu_log_mask(LOG_UNIMP,
                   "AMCC reg READ @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx
                   "\n",
                   orig_addr, result);
 #endif
+
     return result;
 }
 
 static const MemoryRegionOps amcc_reg_ops = {
     .write = amcc_reg_write,
     .read = amcc_reg_read,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid.min_access_size = 4,
+    .valid.max_access_size = 4,
+    .impl.min_access_size = 4,
+    .impl.max_access_size = 4,
+    .valid.unaligned = false,
 };
 
 static void t8030_cluster_setup(AppleT8030MachineState *t8030)
