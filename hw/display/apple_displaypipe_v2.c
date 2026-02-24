@@ -259,7 +259,7 @@ static void adp_v2_realize(DeviceState *dev, Error **errp)
 {
     AppleDisplayPipeV2State *s = APPLE_DISPLAY_PIPE_V2(dev);
 
-    memset(&s->dbe_state, 0, sizeof(s->dbe_state));
+    s->dbe_state = (DisplayBackEndState){ 0 };
     s->dbe_state.vftg_ctl =
         DBE_VFTG_CTRL_VFTG_ENABLE | DBE_VFTG_CTRL_VFTG_STATUS |
         DBE_VFTG_CTRL_UPDATE_ENABLE_TIMING | DBE_VFTG_CTRL_UPDATE_REQ_TIMING;
