@@ -206,7 +206,6 @@ struct AppleDARTState {
     uint32_t l_shift[3];
     uint64_t sid_mask;
     uint32_t bypass_mask;
-    // uint64_t bypass_address;
     uint32_t dart_options;
 };
 
@@ -530,10 +529,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
                    TRANSLATION_ENABLE) == 0 ||
         FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                    FULL_BYPASS) != 0) {
-        // if (s->bypass_address != 0) {
-        //     entry.translated_addr = s->bypass_address + addr,
-        //     entry.perm = IOMMU_RW;
-        // }
+        // TODO
         goto end;
     }
 
@@ -706,8 +702,6 @@ AppleDARTState *apple_dart_from_node(AppleDTNode *node)
         apple_dt_get_prop_u32_or(node, "sids", 0xFFFF, &error_fatal);
     dart->bypass_mask =
         apple_dt_get_prop_u32_or(node, "bypass", 0, &error_fatal);
-    // s->bypass_address =
-    //     apple_dt_get_prop_u64_or(node, "bypass-address", 0, &error_warn);
     dart->dart_options =
         apple_dt_get_prop_u32_or(node, "dart-options", 0, &error_fatal);
 
