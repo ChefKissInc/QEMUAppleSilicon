@@ -18,11 +18,9 @@
  */
 
 #include "qemu/osdep.h"
-#include "block/aio.h"
 #include "hw/arm/apple-silicon/dart.h"
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/irq.h"
-#include "hw/qdev-core.h"
 #include "hw/registerfields.h"
 #include "hw/sysbus.h"
 #include "migration/vmstate.h"
@@ -30,7 +28,6 @@
 #include "monitor/monitor.h"
 #include "qapi/error.h"
 #include "qemu/bitops.h"
-#include "qemu/module.h"
 #include "system/dma.h"
 #include "qobject/qdict.h"
 
