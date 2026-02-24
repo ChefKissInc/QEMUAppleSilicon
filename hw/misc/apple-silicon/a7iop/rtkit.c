@@ -377,9 +377,7 @@ static void apple_rtkit_mgmt_handle_msg(void *opaque, uint8_t ep,
 
 static void apple_rtkit_iop_start(AppleA7IOP *s)
 {
-    AppleRTKit *rtk;
-
-    rtk = APPLE_RTKIT(s);
+    AppleRTKit *rtk = container_of(s, AppleRTKit, parent_obj);
 
     trace_apple_rtkit_iop_start(s->role);
 
@@ -392,9 +390,7 @@ static void apple_rtkit_iop_start(AppleA7IOP *s)
 
 static void apple_rtkit_iop_wakeup(AppleA7IOP *s)
 {
-    AppleRTKit *rtk;
-
-    rtk = APPLE_RTKIT(s);
+    AppleRTKit *rtk = container_of(s, AppleRTKit, parent_obj);
 
     trace_apple_rtkit_iop_wakeup(s->role);
 
