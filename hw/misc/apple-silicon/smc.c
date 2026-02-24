@@ -203,14 +203,12 @@ static SMCResult apple_smc_key_read(const SMCKey *key_entry,
 void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
                                bool state)
 {
-    AppleRTKit *rtk;
+    AppleRTKit *rtk = &s->parent_obj;
     KeyResponse r = { 0 };
 
     if (!s->is_booted) {
         return;
     }
-
-    rtk = APPLE_RTKIT(s);
 
     r.status = SMC_NOTIFICATION;
     r.response[0] = state;
@@ -240,7 +238,7 @@ static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
                                       const void *in, uint8_t in_length)
 {
     AppleSMCState *s = key->opaque;
-    AppleRTKit *rtk;
+    AppleRTKit *rtk = &s->parent_obj;
     uint32_t value;
     KeyResponse r = { 0 };
 
@@ -248,7 +246,6 @@ static SMCResult apple_smc_mbse_write(SMCKey *key, SMCKeyData *data,
         return SMC_RESULT_BAD_ARGUMENT_ERROR;
     }
 
-    rtk = APPLE_RTKIT(s);
     value = ldl_le_p(in);
 
     switch (value) {
