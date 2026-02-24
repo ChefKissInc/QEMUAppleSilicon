@@ -36,7 +36,7 @@ CPUState *arm_get_cpu_by_id(uint64_t id)
     DPRINTF("cpu %" PRId64 "\n", id);
 
     CPU_FOREACH(cpu) {
-        ARMCPU *armcpu = ARM_CPU(cpu);
+        ARMCPU *armcpu = container_of(cpu, ARMCPU, parent_obj);
 
         if (arm_cpu_mp_affinity(armcpu) == id) {
             return cpu;
@@ -61,7 +61,7 @@ struct CpuOnInfo {
 static void arm_set_cpu_on_async_work(CPUState *target_cpu_state,
                                       run_on_cpu_data data)
 {
-    ARMCPU *target_cpu = ARM_CPU(target_cpu_state);
+    ARMCPU *target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
     struct CpuOnInfo *info = (struct CpuOnInfo *) data.host_ptr;
 
     /* Initialize the cpu we are turning on */
@@ -124,7 +124,7 @@ int arm_set_cpu_on(uint64_t cpuid, uint64_t entry, uint64_t context_id,
         return QEMU_ARM_POWERCTL_INVALID_PARAM;
     }
 
-    target_cpu = ARM_CPU(target_cpu_state);
+    target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
     if (target_cpu->power_state == PSCI_ON) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "[ARM]%s: CPU %" PRId64 " is already on\n",
@@ -190,7 +190,7 @@ int arm_set_cpu_on(uint64_t cpuid, uint64_t entry, uint64_t context_id,
 static void arm_set_cpu_on_and_reset_async_work(CPUState *target_cpu_state,
                                                 run_on_cpu_data data)
 {
-    ARMCPU *target_cpu = ARM_CPU(target_cpu_state);
+    ARMCPU *target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
 
     /* Initialize the cpu we are turning on */
     cpu_reset(target_cpu_state);
@@ -215,7 +215,7 @@ int arm_set_cpu_on_and_reset(uint64_t cpuid)
         return QEMU_ARM_POWERCTL_INVALID_PARAM;
     }
 
-    target_cpu = ARM_CPU(target_cpu_state);
+    target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
     if (target_cpu->power_state == PSCI_ON) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "[ARM]%s: CPU %" PRId64 " is already on\n",
@@ -246,7 +246,7 @@ int arm_set_cpu_on_and_reset(uint64_t cpuid)
 static void arm_set_cpu_off_async_work(CPUState *target_cpu_state,
                                        run_on_cpu_data data)
 {
-    ARMCPU *target_cpu = ARM_CPU(target_cpu_state);
+    ARMCPU *target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
 
     assert(bql_locked());
     target_cpu->power_state = PSCI_OFF;
@@ -268,7 +268,7 @@ int arm_set_cpu_off(uint64_t cpuid)
     if (!target_cpu_state) {
         return QEMU_ARM_POWERCTL_INVALID_PARAM;
     }
-    target_cpu = ARM_CPU(target_cpu_state);
+    target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
     if (target_cpu->power_state == PSCI_OFF) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "[ARM]%s: CPU %" PRId64 " is already off\n",
@@ -304,7 +304,7 @@ int arm_reset_cpu(uint64_t cpuid)
     if (!target_cpu_state) {
         return QEMU_ARM_POWERCTL_INVALID_PARAM;
     }
-    target_cpu = ARM_CPU(target_cpu_state);
+    target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
 
     if (target_cpu->power_state == PSCI_OFF) {
         qemu_log_mask(LOG_GUEST_ERROR,
