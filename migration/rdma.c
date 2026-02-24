@@ -2309,7 +2309,7 @@ static int qemu_rdma_source_init(RDMAContext *rdma, bool pin_all, Error **errp)
     qemu_rdma_init_ram_blocks(rdma);
 
     /* Build the hash that maps from offset to RAMBlock */
-    rdma->blockmap = g_hash_table_new(g_direct_hash, g_direct_equal);
+    rdma->blockmap = g_hash_table_new(NULL, NULL);
     for (int i = 0; i < rdma->local_ram_blocks.nb_blocks; i++) {
         g_hash_table_insert(rdma->blockmap,
                 (void *)(uintptr_t)rdma->local_ram_blocks.block[i].offset,

@@ -193,7 +193,7 @@ qemu_file_monitor_new(Error **errp)
 
     mon->dirs = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
                                       qemu_file_monitor_dir_free);
-    mon->idmap = g_hash_table_new(g_direct_hash, g_direct_equal);
+    mon->idmap = g_hash_table_new(NULL, NULL);
 
     trace_qemu_file_monitor_new(mon, mon->fd);
 

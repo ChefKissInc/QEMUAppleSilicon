@@ -1003,7 +1003,7 @@ void vof_init(Vof *vof, uint64_t top_addr, Error **errp)
 {
     vof_cleanup(vof);
 
-    vof->of_instances = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+    vof->of_instances = g_hash_table_new_full(NULL, NULL,
                                               NULL, vof_instance_free);
     vof->claimed = g_array_new(false, false, sizeof(OfClaimed));
 

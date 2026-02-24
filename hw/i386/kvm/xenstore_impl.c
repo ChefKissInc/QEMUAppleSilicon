@@ -1374,7 +1374,7 @@ XenstoreImplState *xs_impl_create(unsigned int dom_id)
     GList *perms;
 
     s->watches = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-    s->transactions = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+    s->transactions = g_hash_table_new_full(NULL, NULL,
                                             NULL, xs_tx_free);
 
     perms = g_list_append(NULL, xs_perm_as_string(XS_PERM_NONE, 0));

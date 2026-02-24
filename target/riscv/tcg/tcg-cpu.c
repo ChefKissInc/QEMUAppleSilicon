@@ -1641,15 +1641,15 @@ static void riscv_tcg_cpu_instance_init(CPUState *cs)
     RISCVCPU *cpu = RISCV_CPU(cs);
     Object *obj = OBJECT(cpu);
 
-    misa_ext_user_opts = g_hash_table_new(NULL, g_direct_equal);
-    multi_ext_user_opts = g_hash_table_new(NULL, g_direct_equal);
+    misa_ext_user_opts = g_hash_table_new(NULL, NULL);
+    multi_ext_user_opts = g_hash_table_new(NULL, NULL);
 
     if (!misa_ext_implied_rules) {
-        misa_ext_implied_rules = g_hash_table_new(NULL, g_direct_equal);
+        misa_ext_implied_rules = g_hash_table_new(NULL, NULL);
     }
 
     if (!multi_ext_implied_rules) {
-        multi_ext_implied_rules = g_hash_table_new(NULL, g_direct_equal);
+        multi_ext_implied_rules = g_hash_table_new(NULL, NULL);
     }
 
     riscv_cpu_add_user_properties(obj);

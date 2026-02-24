@@ -2458,7 +2458,7 @@ static void kvm_irqchip_create(KVMState *s)
 
     kvm_init_irq_routing(s);
 
-    s->gsimap = g_hash_table_new(g_direct_hash, g_direct_equal);
+    s->gsimap = g_hash_table_new(NULL, NULL);
 }
 
 /* Find number of supported CPUs using the recommended

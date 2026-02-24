@@ -441,8 +441,7 @@ void apple_rtkit_init(AppleRTKit *s, void *opaque, const char *role,
                      apple_rtkit_handle_messages_bh);
 
     s->opaque = opaque ? opaque : s;
-    s->endpoints =
-        g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, g_free);
+    s->endpoints = g_hash_table_new_full(NULL, NULL, NULL, g_free);
     s->ops = ops;
     QTAILQ_INIT(&s->rollcall);
     qemu_mutex_init(&s->lock);

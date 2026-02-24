@@ -2583,7 +2583,7 @@ static void riscv_iommu_realize(DeviceState *dev, Error **errp)
     if (s->cap & RISCV_IOMMU_CAP_HPM) {
         s->hpm_timer =
             timer_new_ns(QEMU_CLOCK_VIRTUAL, riscv_iommu_hpm_timer_cb, s);
-        s->hpm_event_ctr_map = g_hash_table_new(g_direct_hash, g_direct_equal);
+        s->hpm_event_ctr_map = g_hash_table_new(NULL, NULL);
     }
 }
 

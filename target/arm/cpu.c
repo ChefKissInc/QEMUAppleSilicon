@@ -1456,7 +1456,7 @@ static void arm_cpu_initfn(Object *obj)
 {
     ARMCPU *cpu = ARM_CPU(obj);
 
-    cpu->cp_regs = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+    cpu->cp_regs = g_hash_table_new_full(NULL, NULL,
                                          NULL, g_free);
 
     QLIST_INIT(&cpu->pre_el_change_hooks);

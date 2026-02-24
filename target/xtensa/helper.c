@@ -79,7 +79,7 @@ xtensa_find_opcode_ops(const XtensaOpcodeTranslators *t,
     GHashTable *translator;
 
     if (translators == NULL) {
-        translators = g_hash_table_new(g_direct_hash, g_direct_equal);
+        translators = g_hash_table_new(NULL, NULL);
     }
     translator = g_hash_table_lookup(translators, t);
     if (translator == NULL) {

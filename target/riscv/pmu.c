@@ -592,7 +592,7 @@ void riscv_pmu_init(RISCVCPU *cpu, Error **errp)
         return;
     }
 
-    cpu->pmu_event_ctr_map = g_hash_table_new(g_direct_hash, g_direct_equal);
+    cpu->pmu_event_ctr_map = g_hash_table_new(NULL, NULL);
     if (!cpu->pmu_event_ctr_map) {
         error_setg(errp, "Unable to allocate PMU event hash table");
         return;

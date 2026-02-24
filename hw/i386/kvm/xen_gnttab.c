@@ -498,7 +498,7 @@ static struct xengntdev_handle *xen_be_gnttab_open(void)
 {
     struct xengntdev_handle *xgt = g_new0(struct xengntdev_handle, 1);
 
-    xgt->active_maps = g_hash_table_new(g_direct_hash, g_direct_equal);
+    xgt->active_maps = g_hash_table_new(NULL, NULL);
     return xgt;
 }
 

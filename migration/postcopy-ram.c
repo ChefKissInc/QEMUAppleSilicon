@@ -269,7 +269,7 @@ static GHashTable *blocktime_init_tid_to_vcpu_hash(void)
      * be 0, which means NULL.  Then when lookup we can never know whether
      * it's 0 or "not found".  Hence use an indirection for CPU index.
      */
-    GHashTable *table = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+    GHashTable *table = g_hash_table_new_full(NULL, NULL,
                                               NULL, g_free);
     CPUState *cpu;
 
@@ -311,8 +311,8 @@ static struct PostcopyBlocktimeContext *blocktime_context_new(void)
      *
      * The value will be a list of BlocktimeVCPUEntry entries.
      */
-    ctx->vcpu_addr_hash = g_hash_table_new_full(g_direct_hash,
-                                                g_direct_equal,
+    ctx->vcpu_addr_hash = g_hash_table_new_full(NULL,
+                                                NULL,
                                                 NULL,
                                                 blocktime_vcpu_list_free);
 

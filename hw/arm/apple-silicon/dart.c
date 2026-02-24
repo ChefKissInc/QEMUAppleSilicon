@@ -653,8 +653,7 @@ static void apple_dart_reset(DeviceState *dev)
             if (mapper->tlb) {
                 g_hash_table_destroy(mapper->tlb);
             }
-            mapper->tlb = g_hash_table_new_full(g_direct_hash, g_direct_equal,
-                                                NULL, g_free);
+            mapper->tlb = g_hash_table_new_full(NULL, NULL, NULL, g_free);
             break;
         }
         default:

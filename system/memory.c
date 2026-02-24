@@ -1043,7 +1043,7 @@ static void flatviews_init(void)
         return;
     }
 
-    flat_views = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL,
+    flat_views = g_hash_table_new_full(NULL, NULL, NULL,
                                        (GDestroyNotify) flatview_unref);
     if (!empty_view) {
         empty_view = generate_memory_topology(NULL);
@@ -3563,7 +3563,7 @@ static void mtree_info_flatview(bool dispatch_tree, bool owner)
     AddressSpace *as;
     FlatView *view;
     GArray *fv_address_spaces;
-    GHashTable *views = g_hash_table_new(g_direct_hash, g_direct_equal);
+    GHashTable *views = g_hash_table_new(NULL, NULL);
     AccelClass *ac = ACCEL_GET_CLASS(current_accel());
 
     if (ac->has_memory) {
@@ -3639,7 +3639,7 @@ static void mtree_info_as(bool dispatch_tree, bool owner, bool disabled)
     MemoryRegionListHead ml_head;
     MemoryRegionList *ml, *ml2;
     AddressSpace *as;
-    GHashTable *views = g_hash_table_new(g_direct_hash, g_direct_equal);
+    GHashTable *views = g_hash_table_new(NULL, NULL);
     GSList *as_same_root_mr_list;
     struct AddressSpaceInfo asi = {
         .ml_head = &ml_head,
