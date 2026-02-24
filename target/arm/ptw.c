@@ -3805,7 +3805,7 @@ static hwaddr arm_cpu_get_phys_page(CPUARMState *env, vaddr addr,
 hwaddr arm_cpu_get_phys_page_attrs_debug(CPUState *cs, vaddr addr,
                                          MemTxAttrs *attrs)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
+    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     CPUARMState *env = &cpu->env;
     ARMMMUIdx mmu_idx = arm_mmu_idx(env);
 
