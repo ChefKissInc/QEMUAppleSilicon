@@ -326,7 +326,7 @@ static MemTxResult apple_aop_ep_send_packet_full(AppleAOPEndpoint *s,
                                                  const void *payload,
                                                  uint32_t len, uint32_t out_len)
 {
-    AppleRTKit *rtk;
+    AppleRTKit *rtk = &s->aop->parent_obj;
     uint32_t wptr;
     uint32_t total_size;
     uint32_t end_wptr;
@@ -337,7 +337,6 @@ static MemTxResult apple_aop_ep_send_packet_full(AppleAOPEndpoint *s,
         return MEMTX_ERROR;
     }
 
-    rtk = APPLE_RTKIT(s->aop);
     timestamp = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
 
     TXOK_GUARD(apple_aop_ep_get_wptr(s, s->tx_off, &wptr));
@@ -517,7 +516,7 @@ static MemTxResult apple_aop_ep_recv_packet_locked(
 static void apple_aop_ep_handle_message(void *opaque, uint8_t ep, uint64_t msg)
 {
     AppleAOPEndpoint *s = opaque;
-    AppleRTKit *rtk;
+    AppleRTKit *rtk = &s->aop->parent_obj;
     MemTxResult ret;
     uint8_t ready_report_buf[READY_REPORT_LEN] = { 0 };
     uint16_t type;
@@ -534,8 +533,6 @@ static void apple_aop_ep_handle_message(void *opaque, uint8_t ep, uint64_t msg)
     uint64_t in_ool_addr;
     uint64_t out_ool_addr;
     AppleAOPResult res;
-
-    rtk = APPLE_RTKIT(s->aop);
 
     AOP_LOG_MSG(ep, msg);
 
@@ -721,11 +718,8 @@ static void apple_aop_ep_handle_message(void *opaque, uint8_t ep, uint64_t msg)
 
 static void apple_aop_ep_hello_foreach(gpointer data, gpointer user_data)
 {
-    AppleAOPEndpoint *s;
-    AppleRTKit *rtk;
-
-    s = (AppleAOPEndpoint *)data;
-    rtk = APPLE_RTKIT(s->aop);
+    AppleAOPEndpoint *s = data;
+    AppleRTKit *rtk = &s->aop->parent_obj;
 
     QEMU_LOCK_GUARD(&s->mutex);
 
@@ -889,14 +883,13 @@ AppleAOPEndpoint *apple_aop_ep_create(AppleAOPState *s, void *opaque,
                                       const AppleAOPEndpointDescription *descr)
 {
     AppleAOPEndpoint *ep;
-    AppleRTKit *rtk;
+    AppleRTKit *rtk = &s->parent_obj;
 
     g_assert_nonnull(descr);
     g_assert_cmpuint(descr->rx_len % s->align, ==, 0);
     g_assert_cmpuint(descr->tx_len % s->align, ==, 0);
 
     ep = g_new0(AppleAOPEndpoint, 1);
-    rtk = APPLE_RTKIT(s);
 
     ep->aop = s;
     ep->num = g_list_length(s->endpoints);
