@@ -236,7 +236,7 @@ static void apple_baseband_add_pcie_cap_hmap(AppleBasebandDeviceState *s,
 {
     DPRINTF("%s: pci_is_express: %d\n", __func__, pci_is_express(dev));
     g_assert_cmpuint(sizeof(s->hmap), ==, 0x70);
-    memset(&s->hmap, 0x0, sizeof(s->hmap));
+    s->hmap = (custom_hmap_t){ 0 };
     s->hmap.vsec_id = 0x24;
     pcie_add_capability(dev, PCI_EXT_CAP_ID_VNDR, 0x0, s->hmap_hardcoded_offset,
                         sizeof(s->hmap));
@@ -790,7 +790,7 @@ static SMCResult smc_key_gP09_read(SMCKey *key, SMCKeyData *data,
         // tmpval0 = 0x0;
         // tmpval0 = 0x1;
         tmpval0 = 0x2;
-        memcpy(data->data, &tmpval0, sizeof(tmpval0));
+        stl_le_p(data->data, tmpval0);
         return SMC_RESULT_SUCCESS;
     }
     default:
@@ -1173,7 +1173,7 @@ static void apple_baseband_device_qdev_reset_hold(Object *obj, ResetType type)
         g_free(s->image_ptr);
         s->image_ptr = NULL;
     }
-    memset(&s->baseband_context0, 0, sizeof(s->baseband_context0));
+    s->baseband_context0 = (baseband_context0_t){ 0 };
     g_assert_cmpuint(sizeof(s->baseband_context0), ==, 0x68);
     g_assert_cmpuint(sizeof(custom_baseband0_t), ==, 60);
 
