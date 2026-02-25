@@ -28,7 +28,9 @@ static inline void qemu_mutex_post_init(QemuMutex *mutex)
 static inline void qemu_mutex_pre_lock(QemuMutex *mutex,
                                        const char *file, int line)
 {
+#ifdef CONFIG_DEBUG_MUTEX
     trace_qemu_mutex_lock(mutex, file, line);
+#endif
 }
 
 static inline void qemu_mutex_post_lock(QemuMutex *mutex,
@@ -37,8 +39,8 @@ static inline void qemu_mutex_post_lock(QemuMutex *mutex,
 #ifdef CONFIG_DEBUG_MUTEX
     mutex->file = file;
     mutex->line = line;
-#endif
     trace_qemu_mutex_locked(mutex, file, line);
+#endif
 }
 
 static inline void qemu_mutex_pre_unlock(QemuMutex *mutex,
@@ -47,8 +49,8 @@ static inline void qemu_mutex_pre_unlock(QemuMutex *mutex,
 #ifdef CONFIG_DEBUG_MUTEX
     mutex->file = NULL;
     mutex->line = 0;
-#endif
     trace_qemu_mutex_unlock(mutex, file, line);
+#endif
 }
 
 #endif
