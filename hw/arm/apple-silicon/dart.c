@@ -226,6 +226,11 @@ static GSList *apple_dart_get_device_list(void)
     return list;
 }
 
+static void apple_dart_raise_irq(AppleDARTState *dart)
+{
+    qemu_irq_raise(dart->irq);
+}
+
 static void apple_dart_update_irq(AppleDARTState *dart)
 {
     AppleDARTInstance *instance;
@@ -243,7 +248,7 @@ static void apple_dart_update_irq(AppleDARTState *dart)
             continue;
         }
 
-        qemu_irq_raise(dart->irq);
+        apple_dart_raise_irq(dart);
         return;
     }
 
@@ -539,6 +544,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
         mapper->regs.error_status =
             FIELD_DP32(mapper->regs.error_status | status, DART_ERROR_STATUS,
                        SID, iommu->sid);
+        apple_dart_raise_irq(dart);
         goto end;
     }
 
@@ -551,6 +557,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
                                              DART_ERROR_STATUS, FLAG, 1),
                                   DART_ERROR_STATUS, WRITE_PROT, 1),
                        DART_ERROR_STATUS, SID, iommu->sid);
+        apple_dart_raise_irq(dart);
     }
 
     if ((flag & IOMMU_RO) != 0 && (entry.perm & IOMMU_RO) == 0) {
@@ -560,6 +567,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
                                              DART_ERROR_STATUS, FLAG, 1),
                                   DART_ERROR_STATUS, WRITE_PROT, 1),
                        DART_ERROR_STATUS, SID, iommu->sid);
+        apple_dart_raise_irq(dart);
     }
 
 end:
@@ -569,7 +577,6 @@ end:
             dart_instance_name[mapper->common.type], iommu->sid, entry.iova,
             entry.translated_addr, (entry.perm & IOMMU_RO) ? 'r' : '-',
             (entry.perm & IOMMU_WO) ? 'w' : '-');
-    apple_dart_update_irq(dart);
     return entry;
 }
 
