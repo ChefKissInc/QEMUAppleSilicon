@@ -36,7 +36,7 @@
 /* Called with chr_write_lock held.  */
 static int fd_chr_write(Chardev *chr, const uint8_t *buf, int len)
 {
-    FDChardev *s = FD_CHARDEV(chr);
+    FDChardev *s = container_of(chr, FDChardev, parent);
 
     if (!s->ioc_out) {
         return -1;
@@ -47,8 +47,8 @@ static int fd_chr_write(Chardev *chr, const uint8_t *buf, int len)
 
 static gboolean fd_chr_read(QIOChannel *chan, GIOCondition cond, void *opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    FDChardev *s = FD_CHARDEV(opaque);
+    Chardev *chr = opaque;
+    FDChardev *s = opaque;
     int len;
     QEMU_UNINITIALIZED uint8_t buf[CHR_READ_BUF_LEN];
     ssize_t ret;
@@ -77,8 +77,8 @@ static gboolean fd_chr_read(QIOChannel *chan, GIOCondition cond, void *opaque)
 
 static int fd_chr_read_poll(void *opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    FDChardev *s = FD_CHARDEV(opaque);
+    Chardev *chr = opaque;
+    FDChardev *s = opaque;
 
     s->max_size = qemu_chr_be_can_write(chr);
     return s->max_size;
@@ -148,7 +148,7 @@ static gboolean child_func(GIOChannel *source,
 
 static GSource *fd_chr_add_watch(Chardev *chr, GIOCondition cond)
 {
-    FDChardev *s = FD_CHARDEV(chr);
+    FDChardev *s = container_of(chr, FDChardev, parent);
     g_autoptr(GSource) source = fd_source_new(s);
 
     if (s->ioc_out) {
@@ -167,7 +167,7 @@ static GSource *fd_chr_add_watch(Chardev *chr, GIOCondition cond)
 
 static void fd_chr_update_read_handler(Chardev *chr)
 {
-    FDChardev *s = FD_CHARDEV(chr);
+    FDChardev *s = container_of(chr, FDChardev, parent);
 
     remove_fd_in_watch(chr);
     if (s->ioc_in) {
@@ -209,7 +209,7 @@ int qmp_chardev_open_file_source(char *src, int flags, Error **errp)
 void qemu_chr_open_fd(Chardev *chr,
                       int fd_in, int fd_out)
 {
-    FDChardev *s = FD_CHARDEV(chr);
+    FDChardev *s = container_of(chr, FDChardev, parent);
     g_autofree char *name = NULL;
 
     if (fd_out >= 0 && !g_unix_set_fd_nonblocking(fd_out, true, NULL)) {
