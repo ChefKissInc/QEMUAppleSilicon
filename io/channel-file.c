@@ -112,7 +112,7 @@ static ssize_t qio_channel_file_readv(QIOChannel *ioc,
                                       int flags,
                                       Error **errp)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
     ssize_t ret;
 
  retry:
@@ -141,7 +141,7 @@ static ssize_t qio_channel_file_writev(QIOChannel *ioc,
                                        int flags,
                                        Error **errp)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
     ssize_t ret;
 
  retry:
@@ -167,7 +167,7 @@ static ssize_t qio_channel_file_preadv(QIOChannel *ioc,
                                        off_t offset,
                                        Error **errp)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
     ssize_t ret;
 
  retry:
@@ -193,7 +193,7 @@ static ssize_t qio_channel_file_pwritev(QIOChannel *ioc,
                                         off_t offset,
                                         Error **errp)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
     ssize_t ret;
 
  retry:
@@ -221,7 +221,7 @@ static int qio_channel_file_set_blocking(QIOChannel *ioc,
     error_setg_errno(errp, errno, "Failed to set FD nonblocking");
     return -1;
 #else
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
 
     if (!g_unix_set_fd_nonblocking(fioc->fd, !enabled, NULL)) {
         error_setg_errno(errp, errno, "Failed to set FD nonblocking");
@@ -237,7 +237,7 @@ static off_t qio_channel_file_seek(QIOChannel *ioc,
                                    int whence,
                                    Error **errp)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
     off_t ret;
 
     ret = lseek(fioc->fd, offset, whence);
@@ -254,7 +254,7 @@ static off_t qio_channel_file_seek(QIOChannel *ioc,
 static int qio_channel_file_close(QIOChannel *ioc,
                                   Error **errp)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
 
     if (qemu_close(fioc->fd) < 0) {
         error_setg_errno(errp, errno,
@@ -273,7 +273,7 @@ static void qio_channel_file_set_aio_fd_handler(QIOChannel *ioc,
                                                 IOHandler *io_write,
                                                 void *opaque)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
 
     qio_channel_util_set_aio_fd_handler(fioc->fd, read_ctx, io_read,
                                         fioc->fd, write_ctx, io_write,
@@ -283,7 +283,7 @@ static void qio_channel_file_set_aio_fd_handler(QIOChannel *ioc,
 static GSource *qio_channel_file_create_watch(QIOChannel *ioc,
                                               GIOCondition condition)
 {
-    QIOChannelFile *fioc = QIO_CHANNEL_FILE(ioc);
+    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
     return qio_channel_create_fd_watch(ioc,
                                        fioc->fd,
                                        condition);
