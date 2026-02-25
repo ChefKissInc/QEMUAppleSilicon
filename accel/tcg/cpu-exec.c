@@ -449,7 +449,9 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
     last_tb = tcg_splitwx_to_rw((void *)(ret & ~TB_EXIT_MASK));
     *tb_exit = ret & TB_EXIT_MASK;
 
+#ifdef CONFIG_DEBUG_TCG
     trace_exec_tb_exit(last_tb, *tb_exit);
+#endif
 
     if (*tb_exit > TB_EXIT_IDX1) {
         /* We didn't start executing this TB (eg because the instruction
@@ -579,7 +581,9 @@ void cpu_exec_step_atomic(CPUState *cpu)
 
         cpu_exec_enter(cpu);
         /* execute the generated code */
+#ifdef CONFIG_DEBUG_TCG
         trace_exec_tb(tb, s.pc);
+#endif
         cpu_tb_exec(cpu, tb, &tb_exit);
         cpu_exec_exit(cpu);
     } else {
@@ -868,7 +872,9 @@ static inline void cpu_loop_exec_tb(CPUState *cpu, TranslationBlock *tb,
                                     vaddr pc, TranslationBlock **last_tb,
                                     int *tb_exit)
 {
+#ifdef CONFIG_DEBUG_TCG
     trace_exec_tb(tb, pc);
+#endif
     tb = cpu_tb_exec(cpu, tb, tb_exit);
     if (*tb_exit != TB_EXIT_REQUESTED) {
         *last_tb = tb;
