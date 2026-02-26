@@ -106,7 +106,7 @@ typedef struct DWC3State {
     MemoryRegion iomem;
     AddressSpace dma_as;
     XHCISysbusState sysbus_xhci;
-    struct DWC3DeviceState device;
+    DWC3DeviceState device;
     qemu_irq irq;
     QemuMutex lock;
 
