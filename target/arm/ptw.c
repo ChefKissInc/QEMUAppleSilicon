@@ -1003,61 +1003,62 @@ static int simple_ap_to_rw_prot(CPUARMState *env, ARMMMUIdx mmu_idx, int ap)
 static inline int
 pte_to_sprr_prot_is_guarded(CPUARMState *env, int ap, int xn, int pxn, bool guarded)
 {
+    if (!arm_is_sprr_enabled(env)) {
+        return PAGE_READ | PAGE_WRITE | PAGE_EXEC;
+    }
+
     int sprr_idx = ((ap << 2) | (xn << 1) | pxn) & 0xf;
     assert(arm_current_el(env) < 2);
     uint64_t sprr_perm = env->sprr.sprr_el_br_el1[arm_current_el(env)][arm_current_el(env)];
 
-    if (arm_is_sprr_enabled(env)) {
-        int attr = SPRR_EXTRACT_IDX_ATTR(sprr_perm, sprr_idx);
-        int prot = 0;
+    int attr = SPRR_EXTRACT_IDX_ATTR(sprr_perm, sprr_idx);
+    int prot = 0;
 
-        if (guarded) {
-            switch (attr >> 2) {
-            case 0:
-                prot = 0;
-                break;
-            case 1:
-                prot = PAGE_READ | PAGE_EXEC;
-                break;
-            case 2:
-                prot = PAGE_READ;
-                break;
-            case 3:
-                prot = PAGE_READ | PAGE_WRITE;
-                break;
-            default:
-                g_assert_not_reached();
-                break;
-            }
-        } else {
-            switch (attr & 3) {
-            case 0:
-                prot = 0;
-                break;
-            case 1:
-                prot = PAGE_READ | PAGE_EXEC;
-                if ((attr >> 2) == 2) {
-                    prot = PAGE_EXEC;
-                }
-                break;
-            case 2:
-                prot = PAGE_READ;
-                break;
-            case 3:
-                prot = PAGE_READ | PAGE_WRITE;
-                if ((attr >> 2) == 1) {
-                    /* No R/W in EL if RX in GXF */
-                    prot = 0;
-                }
-                break;
-            default:
-                g_assert_not_reached();
-                break;
-            }
+    if (guarded) {
+        switch (attr >> 2) {
+        case 0:
+            prot = 0;
+            break;
+        case 1:
+            prot = PAGE_READ | PAGE_EXEC;
+            break;
+        case 2:
+            prot = PAGE_READ;
+            break;
+        case 3:
+            prot = PAGE_READ | PAGE_WRITE;
+            break;
+        default:
+            g_assert_not_reached();
+            break;
         }
-        return prot;
+    } else {
+        switch (attr & 3) {
+        case 0:
+            prot = 0;
+            break;
+        case 1:
+            prot = PAGE_READ | PAGE_EXEC;
+            if ((attr >> 2) == 2) {
+                prot = PAGE_EXEC;
+            }
+            break;
+        case 2:
+            prot = PAGE_READ;
+            break;
+        case 3:
+            prot = PAGE_READ | PAGE_WRITE;
+            if ((attr >> 2) == 1) {
+                /* No R/W in EL if RX in GXF */
+                prot = 0;
+            }
+            break;
+        default:
+            g_assert_not_reached();
+            break;
+        }
     }
-    return PAGE_READ | PAGE_WRITE | PAGE_EXEC;
+    return prot;
 }
 
 
