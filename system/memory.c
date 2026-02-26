@@ -1254,7 +1254,7 @@ static void memory_region_get_container(Object *obj, Visitor *v,
                                         const char *name, void *opaque,
                                         Error **errp)
 {
-    MemoryRegion *mr = MEMORY_REGION(obj);
+    MemoryRegion *mr = container_of(obj, MemoryRegion, parent_obj);
     char *path = (char *)"";
 
     if (mr->container) {
@@ -1269,7 +1269,7 @@ static void memory_region_get_container(Object *obj, Visitor *v,
 static Object *memory_region_resolve_container(Object *obj, void *opaque,
                                                const char *part)
 {
-    MemoryRegion *mr = MEMORY_REGION(obj);
+    MemoryRegion *mr = container_of(obj, MemoryRegion, parent_obj);
 
     return OBJECT(mr->container);
 }
@@ -1278,7 +1278,7 @@ static void memory_region_get_priority(Object *obj, Visitor *v,
                                        const char *name, void *opaque,
                                        Error **errp)
 {
-    MemoryRegion *mr = MEMORY_REGION(obj);
+    MemoryRegion *mr = container_of(obj, MemoryRegion, parent_obj);
     int32_t value = mr->priority;
 
     visit_type_int32(v, name, &value, errp);
@@ -1287,7 +1287,7 @@ static void memory_region_get_priority(Object *obj, Visitor *v,
 static void memory_region_get_size(Object *obj, Visitor *v, const char *name,
                                    void *opaque, Error **errp)
 {
-    MemoryRegion *mr = MEMORY_REGION(obj);
+    MemoryRegion *mr = container_of(obj, MemoryRegion, parent_obj);
     uint64_t value = memory_region_size(mr);
 
     visit_type_uint64(v, name, &value, errp);
@@ -1295,7 +1295,7 @@ static void memory_region_get_size(Object *obj, Visitor *v, const char *name,
 
 static void memory_region_initfn(Object *obj)
 {
-    MemoryRegion *mr = MEMORY_REGION(obj);
+    MemoryRegion *mr = container_of(obj, MemoryRegion, parent_obj);
     ObjectProperty *op;
 
     mr->ops = &unassigned_mem_ops;
@@ -1326,7 +1326,7 @@ static void memory_region_initfn(Object *obj)
 
 static void iommu_memory_region_initfn(Object *obj)
 {
-    MemoryRegion *mr = MEMORY_REGION(obj);
+    MemoryRegion *mr = container_of(obj, MemoryRegion, parent_obj);
 
     mr->is_iommu = true;
 }
@@ -1784,9 +1784,9 @@ void memory_region_init_iommu(void *_iommu_mr,
     struct MemoryRegion *mr;
 
     object_initialize(_iommu_mr, instance_size, mrtypename);
-    mr = MEMORY_REGION(_iommu_mr);
+    iommu_mr = IOMMU_MEMORY_REGION(_iommu_mr);
+    mr = &iommu_mr->parent_obj;
     memory_region_do_init(mr, owner, name, size);
-    iommu_mr = IOMMU_MEMORY_REGION(mr);
     mr->terminates = true;  /* then re-forwards */
     QLIST_INIT(&iommu_mr->iommu_notify);
     iommu_mr->iommu_notify_flags = IOMMU_NOTIFIER_NONE;
@@ -1794,7 +1794,7 @@ void memory_region_init_iommu(void *_iommu_mr,
 
 static void memory_region_finalize(Object *obj)
 {
-    MemoryRegion *mr = MEMORY_REGION(obj);
+    MemoryRegion *mr = container_of(obj, MemoryRegion, parent_obj);
 
     assert(!mr->container);
 
@@ -1963,7 +1963,7 @@ uint64_t memory_region_iommu_get_min_page_size(IOMMUMemoryRegion *iommu_mr)
 
 void memory_region_iommu_replay(IOMMUMemoryRegion *iommu_mr, IOMMUNotifier *n)
 {
-    MemoryRegion *mr = MEMORY_REGION(iommu_mr);
+    MemoryRegion *mr = &iommu_mr->parent_obj;
     IOMMUMemoryRegionClass *imrc = IOMMU_MEMORY_REGION_GET_CLASS(iommu_mr);
     hwaddr addr, granularity;
     IOMMUTLBEntry iotlb;
@@ -2055,7 +2055,7 @@ void memory_region_notify_iommu(IOMMUMemoryRegion *iommu_mr,
 {
     IOMMUNotifier *iommu_notifier;
 
-    assert(memory_region_is_iommu(MEMORY_REGION(iommu_mr)));
+    assert(memory_region_is_iommu(&iommu_mr->parent_obj));
 
     IOMMU_NOTIFIER_FOREACH(iommu_notifier, iommu_mr) {
         if (iommu_notifier->iommu_idx == iommu_idx) {
