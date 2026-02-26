@@ -126,7 +126,7 @@ qio_channel_socket_set_fd(QIOChannelSocket *sioc,
 
 #ifndef WIN32
     if (sioc->localAddr.ss_family == AF_UNIX) {
-        QIOChannel *ioc = QIO_CHANNEL(sioc);
+        QIOChannel *ioc = &sioc->parent;
         qio_channel_set_feature(ioc, QIO_CHANNEL_FEATURE_FD_PASS);
     }
 #endif /* WIN32 */
@@ -180,12 +180,12 @@ int qio_channel_socket_connect_sync(QIOChannelSocket *ioc,
     ret = setsockopt(fd, SOL_SOCKET, SO_ZEROCOPY, &v, sizeof(v));
     if (ret == 0) {
         /* Zero copy available on host */
-        qio_channel_set_feature(QIO_CHANNEL(ioc),
+        qio_channel_set_feature(&ioc->parent,
                                 QIO_CHANNEL_FEATURE_WRITE_ZERO_COPY);
     }
 #endif
 
-    qio_channel_set_feature(QIO_CHANNEL(ioc),
+    qio_channel_set_feature(&ioc->parent,
                             QIO_CHANNEL_FEATURE_READ_MSG_PEEK);
 
     return 0;
@@ -195,7 +195,7 @@ int qio_channel_socket_connect_sync(QIOChannelSocket *ioc,
 static void qio_channel_socket_connect_worker(QIOTask *task,
                                               gpointer opaque)
 {
-    QIOChannelSocket *ioc = QIO_CHANNEL_SOCKET(qio_task_get_source(task));
+    QIOChannelSocket *ioc = (QIOChannelSocket*)qio_task_get_source(task);
     SocketAddress *addr = opaque;
     Error *err = NULL;
 
@@ -248,7 +248,7 @@ int qio_channel_socket_listen_sync(QIOChannelSocket *ioc,
         close(fd);
         return -1;
     }
-    qio_channel_set_feature(QIO_CHANNEL(ioc), QIO_CHANNEL_FEATURE_LISTEN);
+    qio_channel_set_feature(&ioc->parent, QIO_CHANNEL_FEATURE_LISTEN);
 
     return 0;
 }
@@ -443,7 +443,7 @@ static void qio_channel_socket_finalize(Object *obj)
     QIOChannelSocket *ioc = QIO_CHANNEL_SOCKET(obj);
 
     if (ioc->fd != -1) {
-        QIOChannel *ioc_local = QIO_CHANNEL(ioc);
+        QIOChannel *ioc_local = &ioc->parent;
         if (qio_channel_has_feature(ioc_local, QIO_CHANNEL_FEATURE_LISTEN)) {
             Error *err = NULL;
 
@@ -943,7 +943,7 @@ static void qio_channel_socket_set_aio_fd_handler(QIOChannel *ioc,
                                                   IOHandler *io_write,
                                                   void *opaque)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
+    QIOChannelSocket *sioc = container_of(ioc, QIOChannelSocket, parent);
 
     qio_channel_util_set_aio_fd_handler(sioc->fd, read_ctx, io_read,
                                         sioc->fd, write_ctx, io_write,
@@ -953,7 +953,7 @@ static void qio_channel_socket_set_aio_fd_handler(QIOChannel *ioc,
 static GSource *qio_channel_socket_create_watch(QIOChannel *ioc,
                                                 GIOCondition condition)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
+    QIOChannelSocket *sioc = container_of(ioc, QIOChannelSocket, parent);
     return qio_channel_create_socket_watch(ioc,
                                            sioc->fd,
                                            condition);
