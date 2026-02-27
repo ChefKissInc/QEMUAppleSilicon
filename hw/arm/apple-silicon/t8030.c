@@ -2669,9 +2669,6 @@ static void t8030_init(MachineState *machine)
         allocate_ram(get_system_memory(), "DRAM_34", 0x340000000ULL,
                      0x2000000ULL, 0);
         // SEP_UNKN0 is now MISC0
-        // allocate_ram(get_system_memory(), "SEP_UNKN0", 0x242140000ULL,
-        // 0x4000,
-        //              0);
         allocate_ram(get_system_memory(), "SEP_UNKN1", 0x242200000ULL, 0x24000,
                      0);
         // for last_jump
