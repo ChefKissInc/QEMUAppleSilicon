@@ -345,6 +345,8 @@ typedef struct {
     uint32_t nvram_size;
     char *ticket_data;
     gsize ticket_length;
+    bool non_cold_boot;
+    bool had_autoboot;
     AppleBootMode boot_mode;
 } AppleBootInfo;
 

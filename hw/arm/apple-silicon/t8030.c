@@ -453,6 +453,7 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     AppleNvramState *nvram;
     AppleBootInfo *info;
     AppleDTNode *memory_map;
+    bool have_autoboot;
     bool auto_boot;
     char *cmdline;
     char *seprom;
@@ -514,22 +515,37 @@ static void t8030_memory_setup(AppleT8030MachineState *t8030)
     }
     apple_nvram_load(nvram);
 
-    auto_boot = env_get_bool(nvram, "auto-boot", false);
-
     info_report("Boot Mode: %u", t8030->boot_info.boot_mode);
     switch (t8030->boot_info.boot_mode) {
     case kAppleBootModeEnterRecovery:
         auto_boot = false;
-        goto set_boot_mode;
+        env_unset(nvram, "auto-boot");
+        t8030->boot_info.boot_mode = kAppleBootModeAuto;
+        break;
     case kAppleBootModeExitRecovery:
         auto_boot = true;
-    set_boot_mode:
-        env_set_bool(nvram, "auto-boot", auto_boot, 0);
+        env_set_bool(nvram, "auto-boot", true, 0);
         t8030->boot_info.boot_mode = kAppleBootModeAuto;
         break;
     default:
         break;
     }
+
+    have_autoboot = env_find(nvram, "auto-boot") != NULL;
+    auto_boot = env_get_bool(nvram, "auto-boot", false);
+
+    if (t8030->boot_info.non_cold_boot &&
+        (!t8030->boot_info.had_autoboot && have_autoboot && auto_boot)) {
+        fprintf(stdout,
+                "\n--------\nDetected potentially-completed restore process. "
+                "Turning "
+                "off so the filesystem patches can be performed.\n--------\n");
+        exit(0);
+        return;
+    }
+
+    t8030->boot_info.had_autoboot = have_autoboot;
+    t8030->boot_info.non_cold_boot = true;
 
     info_report("Auto Boot: %s", auto_boot ? "true" : "false");
 
@@ -2653,7 +2669,8 @@ static void t8030_init(MachineState *machine)
         allocate_ram(get_system_memory(), "DRAM_34", 0x340000000ULL,
                      0x2000000ULL, 0);
         // SEP_UNKN0 is now MISC0
-        // allocate_ram(get_system_memory(), "SEP_UNKN0", 0x242140000ULL, 0x4000,
+        // allocate_ram(get_system_memory(), "SEP_UNKN0", 0x242140000ULL,
+        // 0x4000,
         //              0);
         allocate_ram(get_system_memory(), "SEP_UNKN1", 0x242200000ULL, 0x24000,
                      0);

@@ -75,6 +75,7 @@ void apple_nvram_load(AppleNvramState *s);
 void apple_nvram_save(AppleNvramState *s);
 ssize_t apple_nvram_serialize(AppleNvramState *s, void *buffer, size_t size);
 
+env_var *env_find(AppleNvramState *s, const char *name);
 const char *env_get(AppleNvramState *s, const char *name);
 size_t env_get_uint(AppleNvramState *s, const char *name, size_t default_val);
 bool env_get_bool(AppleNvramState *s, const char *name, bool default_val);

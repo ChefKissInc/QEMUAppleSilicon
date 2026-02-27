@@ -20,7 +20,7 @@ static inline uint8_t chrp_checksum(ChrpNvramPartHdr *header)
     return sum & 0xff;
 }
 
-static env_var *find_env(AppleNvramState *s, const char *name)
+env_var *env_find(AppleNvramState *s, const char *name)
 {
     env_var *v;
     QTAILQ_FOREACH (v, &s->env, entry) {
@@ -35,7 +35,7 @@ const char *env_get(AppleNvramState *s, const char *name)
 {
     env_var *v;
 
-    v = find_env(s, name);
+    v = env_find(s, name);
 
     if (v) {
         return v->str;
@@ -47,7 +47,7 @@ size_t env_get_uint(AppleNvramState *s, const char *name, size_t default_val)
 {
     env_var *v;
 
-    v = find_env(s, name);
+    v = env_find(s, name);
 
     if (v) {
         return v->u;
@@ -59,7 +59,7 @@ bool env_get_bool(AppleNvramState *s, const char *name, bool default_val)
 {
     env_var *v;
 
-    v = find_env(s, name);
+    v = env_find(s, name);
 
     if (!v) {
         return default_val;
@@ -78,7 +78,7 @@ int env_unset(AppleNvramState *s, const char *name)
 {
     env_var *v;
 
-    v = find_env(s, name);
+    v = env_find(s, name);
 
     if (!v) {
         return 0;
@@ -97,7 +97,7 @@ int env_set(AppleNvramState *s, const char *name, const char *val,
 {
     g_autofree env_var *v;
 
-    v = find_env(s, name);
+    v = env_find(s, name);
 
     if (v) {
         env_unset(s, name);
