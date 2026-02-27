@@ -2710,7 +2710,11 @@ static void t8030_init(MachineState *machine)
     }
 
     t8030->kernel = apple_boot_load_kernel(machine->kernel_filename, NULL);
-    g_assert_nonnull(t8030->kernel);
+    if (t8030->kernel == NULL) {
+        error_setg(&error_fatal, "Failed to load kernel");
+        return;
+    }
+
     build_version = apple_boot_build_version(t8030->kernel);
     info_report("%s %u.%u.%u", apple_boot_platform_string(t8030->kernel),
                 BUILD_VERSION_MAJOR(build_version),
