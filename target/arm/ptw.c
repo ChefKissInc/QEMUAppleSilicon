@@ -1003,13 +1003,16 @@ static int simple_ap_to_rw_prot(CPUARMState *env, ARMMMUIdx mmu_idx, int ap)
 static inline int
 pte_to_sprr_prot_is_guarded(CPUARMState *env, int ap, int xn, int pxn, bool guarded)
 {
+    int el;
+
     if (!arm_is_sprr_enabled(env)) {
         return PAGE_READ | PAGE_WRITE | PAGE_EXEC;
     }
 
     int sprr_idx = ((ap << 2) | (xn << 1) | pxn) & 0xf;
-    assert(arm_current_el(env) < 2);
-    uint64_t sprr_perm = env->sprr.sprr_el_br_el1[arm_current_el(env)][arm_current_el(env)];
+    el = arm_current_el(env);
+    assert(el < 2);
+    uint64_t sprr_perm = env->sprr.sprr_el_br_el1[el][el];
 
     int attr = SPRR_EXTRACT_IDX_ATTR(sprr_perm, sprr_idx);
     int prot = 0;
