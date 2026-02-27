@@ -1441,17 +1441,12 @@ static void t8030_create_spi0(AppleT8030MachineState *t8030)
     DeviceState *spi = NULL;
     DeviceState *gpio = NULL;
     Object *sio;
-    char bus_name[32] = { 0 };
-    const char *name = "spi0";
 
     spi = qdev_new(TYPE_APPLE_SPI);
     g_assert_nonnull(spi);
-    spi->id = g_strdup(name);
+    spi->id = g_strdup("spi0");
 
-    snprintf(bus_name, sizeof(bus_name), "%s.bus", spi->id);
-    APPLE_SPI(spi)->ssi_bus = ssi_create_bus(spi, bus_name);
-
-    object_property_add_child(OBJECT(t8030), name, OBJECT(spi));
+    object_property_add_child(OBJECT(t8030), "spi0", OBJECT(spi));
 
     sio = object_property_get_link(OBJECT(t8030), "sio", &error_fatal);
     object_property_add_const_link(OBJECT(spi), "sio", sio);

@@ -22,35 +22,13 @@
 #define HW_SSI_APPLE_SPI_H
 
 #include "hw/arm/apple-silicon/dt.h"
-#include "hw/dma/apple_sio.h"
 #include "hw/sysbus.h"
-#include "qemu/fifo32.h"
 #include "qom/object.h"
 
 #define APPLE_SPI_MMIO_SIZE (0x4000)
 
 #define TYPE_APPLE_SPI "apple-spi"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleSPIState, APPLE_SPI)
-
-struct AppleSPIState {
-    SysBusDevice parent_obj;
-
-    MemoryRegion iomem;
-    SSIBus *ssi_bus;
-    AppleSIODMAEndpoint *tx_chan;
-    AppleSIODMAEndpoint *rx_chan;
-
-    qemu_irq irq;
-    qemu_irq cs_line;
-
-    Fifo32 rx_fifo;
-    Fifo32 tx_fifo;
-    uint32_t regs[APPLE_SPI_MMIO_SIZE >> 2];
-
-    int tx_chan_id;
-    int rx_chan_id;
-    bool dma_capable;
-};
 
 SysBusDevice *apple_spi_from_node(AppleDTNode *node);
 SSIBus *apple_spi_get_bus(AppleSPIState *s);
