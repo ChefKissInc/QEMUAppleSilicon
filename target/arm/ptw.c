@@ -1038,7 +1038,6 @@ pte_to_sprr_prot_is_guarded(CPUARMState *env, int ap, int xn, int pxn, bool guar
             break;
         default:
             g_assert_not_reached();
-            break;
         }
     } else {
         switch (attr & 3) {
@@ -1063,7 +1062,6 @@ pte_to_sprr_prot_is_guarded(CPUARMState *env, int ap, int xn, int pxn, bool guar
             break;
         default:
             g_assert_not_reached();
-            break;
         }
     }
 
