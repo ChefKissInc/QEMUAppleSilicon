@@ -830,11 +830,18 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
                   addr, data);
 #endif
 
+    if (addr >= 0x80000 && addr <= 0x8C000) {
+        data = deposit64(data, 4, 4, extract64(data, 0, 4));
+        if (size == 8) {
+            data = deposit64(data, 32 + 4, 4, extract64(data, 32, 4));
+        }
+    }
+
     switch (addr) {
     case 0xD4004:
         t8030_start_cpus(t8030, data);
         return;
-    case 0x80C00:
+    case 0x80C00: // SEP_PS
         sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
         if (sep != NULL) {
@@ -848,15 +855,6 @@ static void pmgr_reg_write(void *opaque, hwaddr addr, uint64_t data,
         }
         break;
     default:
-        if (addr >= 0x80000 && addr <= 0x8C000) {
-            data =
-                deposit64(extract64(data, 0, 4), 4, 4, extract64(data, 0, 4));
-            if (size == 8) {
-                data = deposit64(extract64(data, 32, 4), 32 + 4, 4,
-                                 extract64(data, 32, 4));
-            }
-        }
-
         break;
     }
 
