@@ -1311,7 +1311,7 @@ void apple_boot_allocate_segment_records(AppleDTNode *memory_map,
             continue;
         }
         MachoSegmentCommand64 *segCmd = (MachoSegmentCommand64 *)cmd;
-        char region_name[32] = { 0 };
+        char region_name[32];
 
         snprintf(region_name, sizeof(region_name), "Kernel-%s",
                  segCmd->segname);
@@ -1355,7 +1355,7 @@ vaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
                 continue;
             }
 
-            char region_name[64] = { 0 };
+            char region_name[64];
             void *load_from = (void *)(data + segCmd->vmaddr - kc_base);
             hwaddr load_to = (phys_base + segCmd->vmaddr - kc_base);
 
