@@ -20,14 +20,12 @@
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
-#include "hw/dma/apple_sio.h"
 #include "hw/irq.h"
 #include "hw/ssi/apple_spi.h"
 #include "hw/ssi/ssi.h"
 #include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
-#include "qemu/fifo32.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
 
@@ -80,26 +78,6 @@
 #define REG_FIFO_DEPTH 16
 
 #define REG(_s, _v) ((_s)->regs[(_v) >> 2])
-
-struct AppleSPIState {
-    SysBusDevice parent_obj;
-
-    MemoryRegion iomem;
-    SSIBus *ssi_bus;
-    AppleSIODMAEndpoint *tx_chan;
-    AppleSIODMAEndpoint *rx_chan;
-
-    qemu_irq irq;
-    qemu_irq cs_line;
-
-    Fifo32 rx_fifo;
-    Fifo32 tx_fifo;
-    uint32_t regs[APPLE_SPI_MMIO_SIZE >> 2];
-
-    int tx_chan_id;
-    int rx_chan_id;
-    bool dma_capable;
-};
 
 static uint32_t apple_spi_word_size(AppleSPIState *spi)
 {
@@ -532,6 +510,7 @@ SysBusDevice *apple_spi_from_node(AppleDTNode *node)
     dev->id = apple_dt_get_prop_strdup(node, "name", &error_fatal);
 
     snprintf(name, sizeof(name), "%s.bus", dev->id);
+    fprintf(stderr, "%s: %s\n", __func__, name);
     spi->ssi_bus = ssi_create_bus(dev, name);
 
     snprintf(name, sizeof(name), "%s.mmio", dev->id);

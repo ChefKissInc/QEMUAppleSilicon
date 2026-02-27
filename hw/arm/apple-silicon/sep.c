@@ -3474,6 +3474,60 @@ static const MemoryRegionOps misc0_reg_ops = {
     .valid.unaligned = false,
 };
 
+static void misc1_reg_write(void *opaque, hwaddr addr, uint64_t data,
+                            unsigned size)
+{
+    AppleSEPState *s = opaque;
+
+#ifdef ENABLE_CPU_DUMP_STATE
+    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+#endif
+    switch (addr) {
+    case 0x180:
+        // workaround for slpw
+        if ((data & BIT(0)) != 0)
+            data &= ~BIT(0);
+        goto jump_default;
+    default:
+    jump_default:
+        memcpy(&s->misc1_regs[addr], &data, size);
+        DPRINTF("SEP MISC1: Unknown write at 0x" HWADDR_FMT_plx
+                " with value 0x%" PRIX64 "\n",
+                addr, data);
+        break;
+    }
+}
+
+static uint64_t misc1_reg_read(void *opaque, hwaddr addr, unsigned size)
+{
+    AppleSEPState *s = opaque;
+    uint64_t ret = 0;
+
+#ifdef ENABLE_CPU_DUMP_STATE
+    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+#endif
+    switch (addr) {
+    default:
+    jump_default:
+        memcpy(&ret, &s->misc1_regs[addr], size);
+        DPRINTF("SEP MISC1: Unknown read at 0x" HWADDR_FMT_plx "\n", addr);
+        break;
+    }
+
+    return ret;
+}
+
+static const MemoryRegionOps misc1_reg_ops = {
+    .write = misc1_reg_write,
+    .read = misc1_reg_read,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid.min_access_size = 4,
+    .valid.max_access_size = 4,
+    .impl.min_access_size = 4,
+    .impl.max_access_size = 4,
+    .valid.unaligned = false,
+};
+
 static void misc2_reg_write(void *opaque, hwaddr addr, uint64_t data,
                             unsigned size)
 {
@@ -4083,6 +4137,9 @@ AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
     memory_region_init_io(&s->misc0_mr, OBJECT(dev), &misc0_reg_ops, s,
                           "sep.misc0", MISC0_REG_SIZE);
     sysbus_init_mmio(sbd, &s->misc0_mr);
+    memory_region_init_io(&s->misc1_mr, OBJECT(dev), &misc1_reg_ops, s,
+                          "sep.misc1", MISC1_REG_SIZE);
+    sysbus_init_mmio(sbd, &s->misc1_mr);
     memory_region_init_io(&s->misc2_mr, OBJECT(dev), &misc2_reg_ops, s,
                           "sep.misc2", MISC2_REG_SIZE);
     sysbus_init_mmio(sbd, &s->misc2_mr);
@@ -4360,6 +4417,7 @@ static void apple_sep_reset_hold(Object *obj, ResetType type)
     memset(s->pka_base_regs, 0, sizeof(s->pka_base_regs));
     memset(s->pka_tmm_regs, 0, sizeof(s->pka_tmm_regs));
     memset(s->misc0_regs, 0, sizeof(s->misc0_regs));
+    memset(s->misc1_regs, 0, sizeof(s->misc1_regs));
     memset(s->misc2_regs, 0, sizeof(s->misc2_regs));
     memset(s->progress_regs, 0, sizeof(s->progress_regs));
     memset(s->boot_monitor_regs, 0, sizeof(s->boot_monitor_regs));

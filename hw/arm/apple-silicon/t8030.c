@@ -1425,11 +1425,16 @@ static void t8030_create_spi0(AppleT8030MachineState *t8030)
     DeviceState *spi = NULL;
     DeviceState *gpio = NULL;
     Object *sio;
+    char bus_name[32] = { 0 };
     const char *name = "spi0";
 
     spi = qdev_new(TYPE_APPLE_SPI);
     g_assert_nonnull(spi);
-    DEVICE(spi)->id = g_strdup(name);
+    spi->id = g_strdup(name);
+
+    snprintf(bus_name, sizeof(bus_name), "%s.bus", spi->id);
+    APPLE_SPI(spi)->ssi_bus = ssi_create_bus(spi, bus_name);
+
     object_property_add_child(OBJECT(t8030), name, OBJECT(spi));
 
     sio = object_property_get_link(OBJECT(t8030), "sio", &error_fatal);
@@ -2167,6 +2172,8 @@ static void t8030_create_sep(AppleT8030MachineState *t8030)
                     t8030->armio_base + 0x41504000);
     sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC0,
                     t8030->armio_base + 0x42140000);
+    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC1,
+                    t8030->armio_base + 0x41240000);
     sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC2,
                     t8030->armio_base + 0x410C4000);
     sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_PROGRESS,
@@ -2655,8 +2662,7 @@ static void t8030_init(MachineState *machine)
                      0);
         allocate_ram(get_system_memory(), "SEP_UNKN11", 0x241010000ULL, 0x4000,
                      0);
-        allocate_ram(get_system_memory(), "SEP_UNKN12", 0x241240000ULL, 0x40000,
-                     0);
+        // SEP_UNKN12 is now MISC1
         // 0x242400000 is apple-a7iop.SEP.regs
         // sepfw 26.2beta2 says it's (a7iop) size would be 0x64000
         // stack for 0x340005BF4/SEPFW

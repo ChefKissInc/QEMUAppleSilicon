@@ -65,9 +65,10 @@ DECLARE_INSTANCE_CHECKER(AppleSSCState, APPLE_SSC, TYPE_APPLE_SSC)
 #define SEP_MMIO_INDEX_PKA (13)
 #define SEP_MMIO_INDEX_PKA_TMM (14)
 #define SEP_MMIO_INDEX_MISC0 (15)
-#define SEP_MMIO_INDEX_MISC2 (16)
-#define SEP_MMIO_INDEX_PROGRESS (17)
-#define SEP_MMIO_INDEX_BOOT_MONITOR (18)
+#define SEP_MMIO_INDEX_MISC1 (16)
+#define SEP_MMIO_INDEX_MISC2 (17)
+#define SEP_MMIO_INDEX_PROGRESS (18)
+#define SEP_MMIO_INDEX_BOOT_MONITOR (19)
 
 typedef struct {
     AppleSEPState *sep;
@@ -287,6 +288,7 @@ struct AppleSSCState {
 #define PKA_BASE_REG_SIZE (0x10000) // T8015/T8030
 #define PKA_TMM_REG_SIZE (0x4000)
 #define MISC0_REG_SIZE (0x4000) // ?
+#define MISC1_REG_SIZE (0x40000) // ?
 #define MISC2_REG_SIZE (0x4000) // ?
 #define PROGRESS_REG_SIZE (0x4000) // ?
 #define BOOT_MONITOR_REG_SIZE (0x4000) // ?
@@ -326,6 +328,7 @@ struct AppleSEPState {
     MemoryRegion pka_base_mr;
     MemoryRegion pka_tmm_mr;
     MemoryRegion misc0_mr;
+    MemoryRegion misc1_mr;
     MemoryRegion misc2_mr;
     MemoryRegion progress_mr;
     MemoryRegion boot_monitor_mr;
@@ -345,6 +348,7 @@ struct AppleSEPState {
     uint8_t pka_base_regs[PKA_BASE_REG_SIZE];
     uint8_t pka_tmm_regs[PKA_TMM_REG_SIZE];
     uint8_t misc0_regs[MISC0_REG_SIZE];
+    uint8_t misc1_regs[MISC1_REG_SIZE];
     uint8_t misc2_regs[MISC2_REG_SIZE];
     uint8_t progress_regs[PROGRESS_REG_SIZE];
     uint8_t boot_monitor_regs[BOOT_MONITOR_REG_SIZE];
