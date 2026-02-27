@@ -216,7 +216,7 @@ static void t8030_create_s3c_uart(const AppleT8030MachineState *t8030,
     AppleDTProp *prop;
     hwaddr *uart_offset;
     AppleDTNode *child = apple_dt_get_node(t8030->device_tree, "arm-io/uart0");
-    char name[32] = { 0 };
+    char name[32];
 
     g_assert_cmpuint(port, <, NUM_UARTS);
 
@@ -1473,7 +1473,7 @@ static void t8030_create_spi(AppleT8030MachineState *t8030, uint32_t port)
     uint32_t *ints;
     AppleDTNode *child = apple_dt_get_node(t8030->device_tree, "arm-io");
     Object *sio;
-    char name[32] = { 0 };
+    char name[32];
     hwaddr base;
     uint32_t irq;
     uint32_t cs_pin;
