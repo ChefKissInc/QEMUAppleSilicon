@@ -1438,8 +1438,8 @@ static const MemoryRegionOps debug_trace_reg_ops = {
 };
 
 
-#define REG_TRNG_FIFO_OUTPUT_BASE (0x00)
-#define REG_TRNG_FIFO_OUTPUT_END (0x0C)
+#define REG_TRNG_INOUT_START (0x00)
+#define REG_TRNG_INOUT_END (0x0C)
 #define REG_TRNG_STATUS (0x10)
 #define TRNG_STATUS_READY BIT(0)
 #define TRNG_STATUS_SHUTDOWN_OVFL BIT(1)
@@ -1451,26 +1451,36 @@ static const MemoryRegionOps debug_trace_reg_ops = {
 #define TRNG_STATUS_MONOBIT_FAIL BIT(7)
 #define TRNG_STATUS_TEST_READY BIT(8)
 #define TRNG_STATUS_STUCK_NRBG BIT(9)
+#define TRNG_STATUS_RESEED_AI BIT(10)
 #define TRNG_STATUS_REPCNT_FAIL BIT(13)
-#define TRNG_STATUS_APROP_FAIL BIT(13)
-#define TRNG_STATUS_TEST_STUCK BIT(13)
+#define TRNG_STATUS_APROP_FAIL BIT(14)
+#define TRNG_STATUS_TEST_STUCK BIT(15)
+// blocks_available 16..23
+// blocks_threshold 24..30
 #define TRNG_STATUS_NEED_CLOCK BIT(31)
 #define REG_TRNG_CONTROL (0x14)
-#define TRNG_CONTROL_UNKN0 BIT(0)
-#define TRNG_CONTROL_UNKN1_INT_ENABLED BIT(1)
-#define TRNG_CONTROL_UNKN2 BIT(2)
-#define TRNG_CONTROL_UNKN3 BIT(3)
-#define TRNG_CONTROL_STUCK_NRBG_MASK BIT(10)
+#define TRNG_CONTROL_READY BIT(0)
+#define TRNG_CONTROL_SHUTDOWN_OVFLO BIT(1)
+#define TRNG_CONTROL_STUCK BIT(2)
+#define TRNG_CONTROL_NOISE_FAIL BIT(3)
+#define TRNG_CONTROL_RUN_FAIL BIT(4)
+#define TRNG_CONTROL_LONG_RUN_FAIL BIT(5)
+#define TRNG_CONTROL_POKER_FAIL BIT(6)
+#define TRNG_CONTROL_MONOBIT_FAIL BIT(7)
+#define TRNG_CONTROL_TEST_MODE BIT(8)
+#define TRNG_CONTROL_STUCK_NRBG BIT(9)
 #define TRNG_CONTROL_ENABLED BIT(10)
 #define TRNG_CONTROL_DRBG_ENABLED BIT(12)
 #define TRNG_CONTROL_REP_CNT_FAIL_MASK BIT(13)
 #define TRNG_CONTROL_APROP_FAIL_MASK BIT(14)
 #define TRNG_CONTROL_RESEED BIT(15)
-#define TRNG_CONTROL_REQ_DATA BIT(16)
-#define TRNG_CONTROL_REQ_HOLD BIT(17)
+#define TRNG_CONTROL_REQUEST_DATA BIT(16)
+#define TRNG_CONTROL_REQUEST_HOLD BIT(17)
 #define TRNG_CONTROL_DATA_BLOCKS(v) (((v) >> 20) & 0xFFF)
 #define REG_TRNG_CONFIG (0x18)
-#define TRNG_CONFIG_NOISE_BLOCKS(v) ((v) & 0xFF)
+#define TRNG_CONFIG_NOISE_BLOCKS(v) ((v) & 0x1F)
+#define TRNG_CONFIG_USE_STARTUP_BITS BIT(5)
+#define TRNG_CONFIG_SCALE(v) (((v) >> 6) & 0x3)
 #define TRNG_CONFIG_SAMPLE_DIV(v) (((v) >> 8) & 0xF)
 #define TRNG_CONFIG_READ_TIMEOUT(v) (((v) >> 12) & 0xF)
 #define TRNG_CONFIG_SAMPLE_CYCLES(v) (((v) >> 16) & 0xFFFF)
@@ -1509,12 +1519,12 @@ static void trng_regs_reg_write(void *opaque, hwaddr addr, uint64_t data,
             addr, data);
 
     switch (addr) {
-    case REG_TRNG_FIFO_OUTPUT_BASE ... REG_TRNG_FIFO_OUTPUT_END:
+    case REG_TRNG_INOUT_START ... REG_TRNG_INOUT_END:
         if ((s->offset_0x70 & TRNG_UNKN5_ENCRYPT_FIFO) != 0) {
             data = bswap32(data);
         }
-        memcpy(s->fifo + (addr - REG_TRNG_FIFO_OUTPUT_BASE), &data, size);
-        if (addr == REG_TRNG_FIFO_OUTPUT_END &&
+        memcpy(s->fifo + (addr - REG_TRNG_INOUT_START), &data, size);
+        if (addr == REG_TRNG_INOUT_END &&
             ((s->offset_0x70 & TRNG_UNKN5_ENCRYPT_FIFO) != 0)) {
             QCryptoCipher *cipher;
 
@@ -1533,7 +1543,7 @@ static void trng_regs_reg_write(void *opaque, hwaddr addr, uint64_t data,
             (s->offset_0x70 &
              (TRNG_UNKN5_ENCRYPT_FIFO | TRNG_UNKN5_INIT_DRBG)) == 0) {
             qemu_guest_getrandom_nofail(s->fifo, sizeof(s->fifo));
-            if ((s->config & TRNG_CONTROL_UNKN1_INT_ENABLED) != 0) {
+            if ((s->config & TRNG_CONTROL_SHUTDOWN_OVFLO) != 0) {
                 apple_a7iop_interrupt_status_push(sep->mailbox,
                                                   0x10003); // TRNG
             }
@@ -1629,8 +1639,8 @@ static uint64_t trng_regs_reg_read(void *opaque, hwaddr addr, unsigned size)
 
     // uint32_t enabled = (s->config & TRNG_CONTROL_ENABLED) != 0;
     switch (addr) {
-    case REG_TRNG_FIFO_OUTPUT_BASE ... REG_TRNG_FIFO_OUTPUT_END:
-        ret = ldl_le_p(s->fifo + (addr - REG_TRNG_FIFO_OUTPUT_BASE));
+    case REG_TRNG_INOUT_START ... REG_TRNG_INOUT_END:
+        ret = ldl_le_p(s->fifo + (addr - REG_TRNG_INOUT_START));
         if ((s->offset_0x70 &
              (TRNG_UNKN5_ENCRYPT_FIFO | TRNG_UNKN5_INIT_DRBG)) != 0) {
             ret = bswap32(ret);
