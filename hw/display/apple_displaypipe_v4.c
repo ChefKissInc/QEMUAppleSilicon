@@ -91,41 +91,44 @@
 #define ADP_V4_GP_COUNT (2)
 
 typedef struct {
+    QemuMutex lock;
     uint8_t index;
-    uint32_t config_control;
-    uint32_t pixel_format;
-    uint16_t dest_width;
-    uint16_t dest_height;
-    uint32_t data_start;
-    uint32_t data_end;
-    uint32_t stride;
-    uint16_t src_width;
-    uint16_t src_height;
-    uint8_t *buf;
-    uint32_t buf_len;
-    uint32_t max_buf_len;
-} ADPV4GenPipeState;
+    struct ADPV4GenPipeState {
+        uint32_t config_control;
+        uint32_t pixel_format;
+        uint16_t dest_width;
+        uint16_t dest_height;
+        uint32_t data_start;
+        uint32_t data_end;
+        uint32_t stride;
+        uint16_t src_width;
+        uint16_t src_height;
+        void *buf;
+        uint32_t buf_len;
+        uint32_t max_buf_len;
+    } state;
+} ADPV4GenPipe;
 
 static const VMStateDescription vmstate_adp_v4_gp = {
-    .name = "ADPV4GenPipeState",
+    .name = "ADPV4GenPipe",
     .version_id = 0,
     .minimum_version_id = 0,
     .fields =
         (const VMStateField[]){
-            VMSTATE_UINT8(index, ADPV4GenPipeState),
-            VMSTATE_UINT32(config_control, ADPV4GenPipeState),
-            VMSTATE_UINT32(pixel_format, ADPV4GenPipeState),
-            VMSTATE_UINT16(dest_width, ADPV4GenPipeState),
-            VMSTATE_UINT16(dest_height, ADPV4GenPipeState),
-            VMSTATE_UINT32(data_start, ADPV4GenPipeState),
-            VMSTATE_UINT32(data_end, ADPV4GenPipeState),
-            VMSTATE_UINT32(stride, ADPV4GenPipeState),
-            VMSTATE_UINT16(src_width, ADPV4GenPipeState),
-            VMSTATE_UINT16(src_height, ADPV4GenPipeState),
-            VMSTATE_UINT32(buf_len, ADPV4GenPipeState),
-            VMSTATE_UINT32(max_buf_len, ADPV4GenPipeState),
-            VMSTATE_VBUFFER_ALLOC_UINT32(buf, ADPV4GenPipeState, 0, NULL,
-                                         max_buf_len),
+            VMSTATE_UINT8(index, ADPV4GenPipe),
+            VMSTATE_UINT32(state.config_control, ADPV4GenPipe),
+            VMSTATE_UINT32(state.pixel_format, ADPV4GenPipe),
+            VMSTATE_UINT16(state.dest_width, ADPV4GenPipe),
+            VMSTATE_UINT16(state.dest_height, ADPV4GenPipe),
+            VMSTATE_UINT32(state.data_start, ADPV4GenPipe),
+            VMSTATE_UINT32(state.data_end, ADPV4GenPipe),
+            VMSTATE_UINT32(state.stride, ADPV4GenPipe),
+            VMSTATE_UINT16(state.src_width, ADPV4GenPipe),
+            VMSTATE_UINT16(state.src_height, ADPV4GenPipe),
+            VMSTATE_UINT32(state.buf_len, ADPV4GenPipe),
+            VMSTATE_UINT32(state.max_buf_len, ADPV4GenPipe),
+            VMSTATE_VBUFFER_ALLOC_UINT32(state.buf, ADPV4GenPipe, 0, NULL,
+                                         state.max_buf_len),
             VMSTATE_END_OF_LIST(),
         },
 };
@@ -151,7 +154,6 @@ struct AppleDisplayPipeV4State {
     SysBusDevice parent_obj;
 
     /*< public >*/
-    QemuMutex lock;
     MemoryRegion up_regs;
     uint32_t width;
     uint32_t height;
@@ -164,7 +166,7 @@ struct AppleDisplayPipeV4State {
     qemu_irq irqs[9];
     uint32_t int_status;
     uint32_t int_enable;
-    ADPV4GenPipeState genpipe[ADP_V4_GP_COUNT];
+    ADPV4GenPipe genpipe[ADP_V4_GP_COUNT];
     ADPV4BlendUnitState blend_unit;
     QemuConsole *console;
     QEMUBH *update_disp_image_bh;
@@ -183,7 +185,7 @@ static const VMStateDescription vmstate_adp_v4 = {
             VMSTATE_UINT32(int_enable, AppleDisplayPipeV4State),
             VMSTATE_STRUCT_ARRAY(genpipe, AppleDisplayPipeV4State,
                                  ADP_V4_GP_COUNT, 0, vmstate_adp_v4_gp,
-                                 ADPV4GenPipeState),
+                                 ADPV4GenPipe),
             VMSTATE_STRUCT(blend_unit, AppleDisplayPipeV4State, 0,
                            vmstate_adp_v4_blend_unit, ADPV4BlendUnitState),
             VMSTATE_TIMER_PTR(boot_splash_timer, AppleDisplayPipeV4State),
@@ -279,174 +281,189 @@ REG32(BLEND_DEGAMMA_TABLE_B, 0x202C)
 REG32(BLEND_PIXCAP_CONFIG, 0x303C)
 // clang-format on
 
-static void adp_v4_update_irqs(AppleDisplayPipeV4State *s)
+static void adp_v4_update_irqs(AppleDisplayPipeV4State *genpipe)
 {
-    qemu_set_irq(s->irqs[0], (s->int_enable & s->int_status) != 0);
+    qemu_set_irq(genpipe->irqs[0], (qatomic_read(&genpipe->int_enable) &
+                                    qatomic_read(&genpipe->int_status)) != 0);
 }
 
-static pixman_format_code_t adp_v4_gp_fmt_to_pixman(ADPV4GenPipeState *s)
+static pixman_format_code_t adp_v4_gp_fmt_to_pixman(ADPV4GenPipe *genpipe)
 {
-    if ((s->pixel_format & GP_PIXEL_FORMAT_BGRA) == GP_PIXEL_FORMAT_BGRA) {
-        ADP_INFO("gp%d: pixel format is BGRA (0x%X).", s->index,
-                 s->pixel_format);
+    if ((genpipe->state.pixel_format & GP_PIXEL_FORMAT_BGRA) ==
+        GP_PIXEL_FORMAT_BGRA) {
+        ADP_INFO("gp%d: pixel format is BGRA (0x%X).", genpipe->index,
+                 genpipe->state.pixel_format);
         return PIXMAN_b8g8r8a8;
     }
-    if ((s->pixel_format & GP_PIXEL_FORMAT_ARGB) == GP_PIXEL_FORMAT_ARGB) {
-        ADP_INFO("gp%d: pixel format is ARGB (0x%X).", s->index,
-                 s->pixel_format);
+    if ((genpipe->state.pixel_format & GP_PIXEL_FORMAT_ARGB) ==
+        GP_PIXEL_FORMAT_ARGB) {
+        ADP_INFO("gp%d: pixel format is ARGB (0x%X).", genpipe->index,
+                 genpipe->state.pixel_format);
         return PIXMAN_a8r8g8b8;
     }
     qemu_log_mask(LOG_GUEST_ERROR, "gp%d: pixel format is unknown (0x%X).\n",
-                  s->index, s->pixel_format);
+                  genpipe->index, genpipe->state.pixel_format);
     return 0;
 }
 
-static void adp_v4_gp_read(ADPV4GenPipeState *s, AddressSpace *dma_as)
+static void adp_v4_gp_read(ADPV4GenPipe *genpipe, AddressSpace *dma_as)
 {
     uint32_t buf_len;
 
-    s->buf_len = 0;
+    genpipe->state.buf_len = 0;
 
     // TODO: Decompress the data and display it properly.
-    if (s->pixel_format & GP_PIXEL_FORMAT_COMPRESSED) {
+    if (genpipe->state.pixel_format & GP_PIXEL_FORMAT_COMPRESSED) {
         qemu_log_mask(LOG_GUEST_ERROR,
-                      "gp%d: dropping frame as it's compressed.\n", s->index);
+                      "gp%d: dropping frame as it's compressed.\n",
+                      genpipe->index);
         return;
     }
 
-    ADP_INFO("gp%d: width and height is %dx%d.", s->index, s->src_width,
-             s->src_height);
-    ADP_INFO("gp%d: stride is %d.", s->index, s->stride);
+    ADP_INFO("gp%d: width and height is %dx%d.", genpipe->index,
+             genpipe->state.src_width, genpipe->state.src_height);
+    ADP_INFO("gp%d: stride is %d.", genpipe->index, genpipe->state.stride);
 
-    buf_len = s->src_height * s->stride;
-    if (s->max_buf_len < buf_len) {
-        g_free(s->buf);
-        s->buf = g_malloc(buf_len);
-        s->max_buf_len = buf_len;
+    buf_len = genpipe->state.src_height * genpipe->state.stride;
+    if (genpipe->state.max_buf_len < buf_len) {
+        g_free(genpipe->state.buf);
+        genpipe->state.buf = g_malloc(buf_len);
+        genpipe->state.max_buf_len = buf_len;
     }
 
-    if (dma_memory_read(dma_as, s->data_start, s->buf, buf_len,
-                        MEMTXATTRS_UNSPECIFIED) == MEMTX_OK) {
-        s->buf_len = buf_len;
+    if (dma_memory_read(dma_as, genpipe->state.data_start, genpipe->state.buf,
+                        buf_len, MEMTXATTRS_UNSPECIFIED) == MEMTX_OK) {
+        genpipe->state.buf_len = buf_len;
     } else {
         qemu_log_mask(LOG_GUEST_ERROR, "gp%d: failed to read from DMA.\n",
-                      s->index);
+                      genpipe->index);
     }
 }
 
-static void adp_v4_gp_reg_write(ADPV4GenPipeState *s, hwaddr addr,
+static void adp_v4_gp_reg_write(ADPV4GenPipe *genpipe, hwaddr addr,
                                 uint64_t data)
 {
     switch (addr >> 2) {
     case R_GP_CONFIG_CONTROL: {
-        ADP_INFO("gp%d: control <- 0x" HWADDR_FMT_plx, s->index, data);
-        s->config_control = (uint32_t)data;
+        ADP_INFO("gp%d: control <- 0x" HWADDR_FMT_plx, genpipe->index, data);
+        genpipe->state.config_control = (uint32_t)data;
         break;
     }
     case R_GP_PIXEL_FORMAT: {
-        ADP_INFO("gp%d: pixel format <- 0x" HWADDR_FMT_plx, s->index, data);
-        s->pixel_format = (uint32_t)data;
+        ADP_INFO("gp%d: pixel format <- 0x" HWADDR_FMT_plx, genpipe->index,
+                 data);
+        genpipe->state.pixel_format = (uint32_t)data;
         break;
     }
     case R_GP_LAYER_0_DATA_START: {
-        ADP_INFO("gp%d: layer 0 data start <- 0x" HWADDR_FMT_plx, s->index,
-                 data);
-        s->data_start = (uint32_t)data;
+        ADP_INFO("gp%d: layer 0 data start <- 0x" HWADDR_FMT_plx,
+                 genpipe->index, data);
+        genpipe->state.data_start = (uint32_t)data;
         break;
     }
     case R_GP_LAYER_0_DATA_END: {
-        ADP_INFO("gp%d: layer 0 data end <- 0x" HWADDR_FMT_plx, s->index, data);
-        s->data_end = (uint32_t)data;
+        ADP_INFO("gp%d: layer 0 data end <- 0x" HWADDR_FMT_plx, genpipe->index,
+                 data);
+        genpipe->state.data_end = (uint32_t)data;
         break;
     }
     case R_GP_LAYER_0_STRIDE: {
-        ADP_INFO("gp%d: layer 0 stride <- 0x" HWADDR_FMT_plx, s->index, data);
-        s->stride = (uint32_t)data;
+        ADP_INFO("gp%d: layer 0 stride <- 0x" HWADDR_FMT_plx, genpipe->index,
+                 data);
+        genpipe->state.stride = (uint32_t)data;
         break;
     }
     case R_GP_LAYER_0_DIMENSIONS: {
-        s->src_height = data & 0xFFFF;
-        s->src_width = (data >> 16) & 0xFFFF;
+        genpipe->state.src_height = data & 0xFFFF;
+        genpipe->state.src_width = (data >> 16) & 0xFFFF;
         ADP_INFO("gp%d: layer 0 dimensions <- 0x" HWADDR_FMT_plx " (%dx%d)",
-                 s->index, data, s->src_width, s->src_height);
+                 genpipe->index, data, genpipe->state.src_width,
+                 genpipe->state.src_height);
         break;
     }
     case R_GP_DEST_DIMENSIONS: {
-        s->dest_height = data & 0xFFFF;
-        s->dest_width = (data >> 16) & 0xFFFF;
+        genpipe->state.dest_height = data & 0xFFFF;
+        genpipe->state.dest_width = (data >> 16) & 0xFFFF;
         ADP_INFO("gp%d: dest dimensions <- 0x" HWADDR_FMT_plx " (%dx%d)",
-                 s->index, data, s->dest_width, s->dest_height);
+                 genpipe->index, data, genpipe->state.dest_width,
+                 genpipe->state.dest_height);
         break;
     }
     default: {
         ADP_INFO("gp%d: unknown @ 0x" HWADDR_FMT_plx " <- 0x" HWADDR_FMT_plx,
-                 s->index, addr, data);
+                 genpipe->index, addr, data);
         break;
     }
     }
 }
 
-static uint32_t adp_v4_gp_reg_read(ADPV4GenPipeState *s, hwaddr addr)
+static uint32_t adp_v4_gp_reg_read(ADPV4GenPipe *genpipe, hwaddr addr)
 {
     switch (addr >> 2) {
     case R_GP_CONFIG_CONTROL: {
-        ADP_INFO("gp%d: control -> 0x%X", s->index, s->config_control);
-        return s->config_control;
+        ADP_INFO("gp%d: control -> 0x%X", genpipe->index,
+                 genpipe->state.config_control);
+        return genpipe->state.config_control;
     }
     case R_GP_PIXEL_FORMAT: {
-        ADP_INFO("gp%d: pixel format -> 0x%X", s->index, s->pixel_format);
-        return s->pixel_format;
+        ADP_INFO("gp%d: pixel format -> 0x%X", genpipe->index,
+                 genpipe->state.pixel_format);
+        return genpipe->state.pixel_format;
     }
     case R_GP_LAYER_0_DATA_START: {
-        ADP_INFO("gp%d: layer 0 data start -> 0x%X", s->index, s->data_start);
-        return s->data_start;
+        ADP_INFO("gp%d: layer 0 data start -> 0x%X", genpipe->index,
+                 genpipe->state.data_start);
+        return genpipe->state.data_start;
     }
     case R_GP_LAYER_0_DATA_END: {
-        ADP_INFO("gp%d: layer 0 data end -> 0x%X", s->index, s->data_end);
-        return s->data_end;
+        ADP_INFO("gp%d: layer 0 data end -> 0x%X", genpipe->index,
+                 genpipe->state.data_end);
+        return genpipe->state.data_end;
     }
     case R_GP_LAYER_0_STRIDE: {
-        ADP_INFO("gp%d: layer 0 stride -> 0x%X", s->index, s->stride);
-        return s->stride;
+        ADP_INFO("gp%d: layer 0 stride -> 0x%X", genpipe->index,
+                 genpipe->state.stride);
+        return genpipe->state.stride;
     }
     case R_GP_LAYER_0_DIMENSIONS: {
-        ADP_INFO("gp%d: layer 0 dimensions -> 0x%X (%dx%d)", s->index,
-                 (s->src_width << 16) | s->src_height, s->src_width,
-                 s->src_height);
-        return ((uint32_t)s->src_width << 16) | s->src_height;
+        ADP_INFO("gp%d: layer 0 dimensions -> 0x%X (%dx%d)", genpipe->index,
+                 (genpipe->state.src_width << 16) | genpipe->state.src_height,
+                 genpipe->state.src_width, genpipe->state.src_height);
+        return ((uint32_t)genpipe->state.src_width << 16) |
+               genpipe->state.src_height;
     }
     case R_GP_DEST_DIMENSIONS: {
-        ADP_INFO("gp%d: dest dimensions -> 0x%X (%dx%d)", s->index,
-                 (s->dest_width << 16) | s->dest_height, s->dest_width,
-                 s->dest_height);
-        return ((uint32_t)s->dest_width << 16) | s->dest_height;
+        ADP_INFO("gp%d: dest dimensions -> 0x%X (%dx%d)", genpipe->index,
+                 (genpipe->state.dest_width << 16) | genpipe->state.dest_height,
+                 genpipe->state.dest_width, genpipe->state.dest_height);
+        return ((uint32_t)genpipe->state.dest_width << 16) |
+               genpipe->state.dest_height;
     }
     default: {
         ADP_INFO("gp%d: unknown @ 0x" HWADDR_FMT_plx " -> 0x" HWADDR_FMT_plx,
-                 s->index, addr, (hwaddr)0);
+                 genpipe->index, addr, (hwaddr)0);
         return 0;
     }
     }
 }
 
-static void adp_v4_gp_reset(ADPV4GenPipeState *s, uint8_t index)
+static void adp_v4_gp_reset(ADPV4GenPipe *genpipe)
 {
-    g_free(s->buf);
-    *s = (ADPV4GenPipeState){ 0 };
-    s->index = index;
+    g_free(genpipe->state.buf);
+    genpipe->state = (struct ADPV4GenPipeState){ 0 };
 }
 
-static void adp_v4_blend_reg_write(ADPV4BlendUnitState *s, uint64_t addr,
+static void adp_v4_blend_reg_write(ADPV4BlendUnitState *blend, uint64_t addr,
                                    uint64_t data)
 {
     switch (addr >> 2) {
     case R_BLEND_LAYER_0_CONFIG: {
         ADP_INFO("blend: layer 0 config <- 0x" HWADDR_FMT_plx, data);
-        s->layer_config[0] = (uint32_t)data;
+        blend->layer_config[0] = (uint32_t)data;
         break;
     }
     case R_BLEND_LAYER_1_CONFIG: {
-        s->layer_config[1] = (uint32_t)data;
+        blend->layer_config[1] = (uint32_t)data;
         ADP_INFO("blend: layer 1 config <- 0x" HWADDR_FMT_plx, data);
         break;
     }
@@ -458,16 +475,16 @@ static void adp_v4_blend_reg_write(ADPV4BlendUnitState *s, uint64_t addr,
     }
 }
 
-static uint64_t adp_v4_blend_reg_read(ADPV4BlendUnitState *s, uint64_t addr)
+static uint64_t adp_v4_blend_reg_read(ADPV4BlendUnitState *blend, uint64_t addr)
 {
     switch (addr >> 2) {
     case R_BLEND_LAYER_0_CONFIG: {
-        ADP_INFO("blend: layer 0 config -> 0x%X", s->layer_config[0]);
-        return s->layer_config[0];
+        ADP_INFO("blend: layer 0 config -> 0x%X", blend->layer_config[0]);
+        return blend->layer_config[0];
     }
     case R_BLEND_LAYER_1_CONFIG: {
-        ADP_INFO("blend: layer 1 config -> 0x%X", s->layer_config[1]);
-        return s->layer_config[1];
+        ADP_INFO("blend: layer 1 config -> 0x%X", blend->layer_config[1]);
+        return blend->layer_config[1];
     }
     default: {
         ADP_INFO("blend: unknown @ 0x" HWADDR_FMT_plx " -> 0x" HWADDR_FMT_plx,
@@ -477,57 +494,53 @@ static uint64_t adp_v4_blend_reg_read(ADPV4BlendUnitState *s, uint64_t addr)
     }
 }
 
-static void adp_v4_blend_reset(ADPV4BlendUnitState *s)
+static void adp_v4_blend_reset(ADPV4BlendUnitState *blend)
 {
-    *s = (ADPV4BlendUnitState){ 0 };
+    *blend = (ADPV4BlendUnitState){ 0 };
 }
 
 static void adp_v4_reg_write(void *opaque, hwaddr addr, uint64_t data,
                              unsigned size)
 {
-    AppleDisplayPipeV4State *s = opaque;
-
-    QEMU_LOCK_GUARD(&s->lock);
+    AppleDisplayPipeV4State *adp = opaque;
 
     if (addr >= 0x200000) {
         addr -= 0x200000;
     }
 
     if (addr >= GP_BLOCK_BASE_FOR(0) && addr < GP_BLOCK_END_FOR(0)) {
-        adp_v4_gp_reg_write(&s->genpipe[0], addr - GP_BLOCK_BASE_FOR(0), data);
-        return;
+        return adp_v4_gp_reg_write(&adp->genpipe[0],
+                                   addr - GP_BLOCK_BASE_FOR(0), data);
     }
 
     if (addr >= GP_BLOCK_BASE_FOR(1) && addr < GP_BLOCK_END_FOR(1)) {
-        adp_v4_gp_reg_write(&s->genpipe[1], addr - GP_BLOCK_BASE_FOR(1), data);
-        return;
+        return adp_v4_gp_reg_write(&adp->genpipe[1],
+                                   addr - GP_BLOCK_BASE_FOR(1), data);
     }
 
     if (addr >= BLEND_BLOCK_BASE &&
         addr < (BLEND_BLOCK_BASE + BLEND_BLOCK_SIZE)) {
-        adp_v4_blend_reg_write(&s->blend_unit, addr - BLEND_BLOCK_BASE, data);
-        return;
+        return adp_v4_blend_reg_write(&adp->blend_unit, addr - BLEND_BLOCK_BASE,
+                                      data);
     }
 
     switch (addr >> 2) {
     case R_CONTROL_INT_STATUS: {
         ADP_INFO("disp: int status <- 0x%X", (uint32_t)data);
-        s->int_status &= ~(uint32_t)data;
-        adp_v4_update_irqs(s);
+        qatomic_and(&adp->int_status, ~(uint32_t)data);
+        adp_v4_update_irqs(adp);
         break;
     }
     case R_CONTROL_INT_ENABLE: {
         ADP_INFO("disp: int enable <- 0x%X", (uint32_t)data);
-        s->int_enable = (uint32_t)data;
-        adp_v4_update_irqs(s);
+        qatomic_set(&adp->int_enable, (uint32_t)data);
+        adp_v4_update_irqs(adp);
         break;
     }
-    case 0x4602C >> 2: {
+    case (0x4602C >> 2): {
         ADP_INFO("disp: REG_0x4602C <- 0x%X", (uint32_t)data);
         if (data & BIT32(12)) {
-            qemu_bh_schedule(s->update_disp_image_bh);
-        } else {
-            qemu_bh_cancel(s->update_disp_image_bh);
+            qemu_bh_schedule(adp->update_disp_image_bh);
         }
         break;
     }
@@ -541,25 +554,25 @@ static void adp_v4_reg_write(void *opaque, hwaddr addr, uint64_t data,
 
 static uint64_t adp_v4_reg_read(void *const opaque, hwaddr addr, unsigned size)
 {
-    AppleDisplayPipeV4State *s = opaque;
-
-    QEMU_LOCK_GUARD(&s->lock);
+    AppleDisplayPipeV4State *adp = opaque;
 
     if (addr >= 0x200000) {
         addr -= 0x200000;
     }
 
     if (addr >= GP_BLOCK_BASE_FOR(0) && addr < GP_BLOCK_END_FOR(0)) {
-        return adp_v4_gp_reg_read(&s->genpipe[0], addr - GP_BLOCK_BASE_FOR(0));
+        return adp_v4_gp_reg_read(&adp->genpipe[0],
+                                  addr - GP_BLOCK_BASE_FOR(0));
     }
 
     if (addr >= GP_BLOCK_BASE_FOR(1) && addr < GP_BLOCK_END_FOR(1)) {
-        return adp_v4_gp_reg_read(&s->genpipe[1], addr - GP_BLOCK_BASE_FOR(1));
+        return adp_v4_gp_reg_read(&adp->genpipe[1],
+                                  addr - GP_BLOCK_BASE_FOR(1));
     }
 
     if (addr >= BLEND_BLOCK_BASE &&
         addr < (BLEND_BLOCK_BASE + BLEND_BLOCK_SIZE)) {
-        return adp_v4_blend_reg_read(&s->blend_unit, addr - BLEND_BLOCK_BASE);
+        return adp_v4_blend_reg_read(&adp->blend_unit, addr - BLEND_BLOCK_BASE);
     }
 
     switch (addr >> 2) {
@@ -568,12 +581,16 @@ static uint64_t adp_v4_reg_read(void *const opaque, hwaddr addr, unsigned size)
         return CONTROL_VERSION_A1;
     }
     case R_CONTROL_FRAME_SIZE: {
-        ADP_INFO("disp: frame size -> 0x%X", (s->width << 16) | s->height);
-        return (s->width << 16) | s->height;
+        ADP_INFO("disp: frame size -> 0x%X", (adp->width << 16) | adp->height);
+        return (adp->width << 16) | adp->height;
     }
     case R_CONTROL_INT_STATUS: {
-        ADP_INFO("disp: int status -> 0x%X", s->int_status);
-        return s->int_status;
+        ADP_INFO("disp: int status -> 0x%X", qatomic_read(&adp->int_status));
+        return qatomic_read(&adp->int_status);
+    }
+    case R_CONTROL_INT_ENABLE: {
+        ADP_INFO("disp: int enable -> 0x%X", qatomic_read(&adp->int_enable));
+        return qatomic_read(&adp->int_enable);
     }
     default: {
         ADP_INFO("disp: unknown @ 0x" HWADDR_FMT_plx " -> 0x" HWADDR_FMT_plx,
@@ -600,36 +617,36 @@ static void adp_v4_invalidate(void *opaque)
 
 static void adp_v4_gfx_update(void *opaque)
 {
-    AppleDisplayPipeV4State *s = opaque;
+    AppleDisplayPipeV4State *adp = opaque;
     DirtyBitmapSnapshot *snap;
     bool dirty;
     uint32_t y, ys;
 
     snap = memory_region_snapshot_and_clear_dirty(
-        s->vram_mr, s->vram_off + s->fb_off,
-        s->height * s->width * sizeof(uint32_t), DIRTY_MEMORY_VGA);
+        adp->vram_mr, adp->vram_off + adp->fb_off,
+        adp->height * adp->width * sizeof(uint32_t), DIRTY_MEMORY_VGA);
     ys = -1U;
-    for (y = 0; y < s->height; ++y) {
+    for (y = 0; y < adp->height; ++y) {
         dirty = memory_region_snapshot_get_dirty(
-            s->vram_mr, snap,
-            s->vram_off + s->fb_off + s->width * sizeof(uint32_t) * y,
-            s->width * sizeof(uint32_t));
+            adp->vram_mr, snap,
+            adp->vram_off + adp->fb_off + adp->width * sizeof(uint32_t) * y,
+            adp->width * sizeof(uint32_t));
         if (dirty && ys == -1U) {
             ys = y;
         }
         if (!dirty && ys != -1U) {
-            dpy_gfx_update(s->console, 0, ys, s->width, y - ys);
+            dpy_gfx_update(adp->console, 0, ys, adp->width, y - ys);
             ys = -1U;
         }
     }
     if (ys != -1U) {
-        dpy_gfx_update(s->console, 0, ys, s->width, y - ys);
+        dpy_gfx_update(adp->console, 0, ys, adp->width, y - ys);
     }
 
     g_free(snap);
 
-    s->int_status = FIELD_DP32(s->int_status, CONTROL_INT, OUTPUT_READY, 1);
-    adp_v4_update_irqs(s);
+    adp->int_status = FIELD_DP32(adp->int_status, CONTROL_INT, OUTPUT_READY, 1);
+    adp_v4_update_irqs(adp);
 }
 
 static const GraphicHwOps adp_v4_ops = {
@@ -637,26 +654,27 @@ static const GraphicHwOps adp_v4_ops = {
     .gfx_update = adp_v4_gfx_update,
 };
 
-static void *adp_v4_get_fb_ptr(AppleDisplayPipeV4State *s)
+static void *adp_v4_get_fb_ptr(AppleDisplayPipeV4State *adp)
 {
-    return memory_region_get_ram_ptr(s->vram_mr) + s->vram_off + s->fb_off;
+    return memory_region_get_ram_ptr(adp->vram_mr) + adp->vram_off +
+           adp->fb_off;
 }
 
-static void adp_v4_update_disp_image_ptr(AppleDisplayPipeV4State *s)
+static void adp_v4_update_disp_image_ptr(AppleDisplayPipeV4State *adp)
 {
     pixman_image_t *image;
 
-    image = pixman_image_create_bits(PIXMAN_a8r8g8b8, s->width, s->height,
-                                     adp_v4_get_fb_ptr(s),
-                                     s->width * sizeof(uint32_t));
+    image = pixman_image_create_bits(PIXMAN_a8r8g8b8, adp->width, adp->height,
+                                     adp_v4_get_fb_ptr(adp),
+                                     adp->width * sizeof(uint32_t));
 
-    dpy_gfx_replace_surface(s->console,
+    dpy_gfx_replace_surface(adp->console,
                             qemu_create_displaysurface_pixman(image));
     qemu_pixman_image_unref(image);
 }
 
 typedef struct {
-    AppleDisplayPipeV4State *s;
+    AppleDisplayPipeV4State *adp;
     uint32_t width;
     uint32_t height;
     pixman_transform_t transform;
@@ -675,25 +693,23 @@ static void adp_v4_draw_boot_splash(void *opaque)
                            0, 0, 0, ctx->dest_x, ctx->dest_y, ctx->dest_width,
                            ctx->dest_width);
 
-    dpy_gfx_update_full(ctx->s->console);
+    dpy_gfx_update_full(ctx->adp->console);
 }
 
 static void adp_v4_draw_boot_splash_timer(void *opaque)
 {
     ADPV4DrawBootSplashContext *ctx = opaque;
 
-    QEMU_LOCK_GUARD(&ctx->s->lock);
-
     adp_v4_draw_boot_splash(ctx);
 
     pixman_image_unref(ctx->image);
-    timer_free(ctx->s->boot_splash_timer);
-    ctx->s->boot_splash_timer = NULL;
+    timer_free(ctx->adp->boot_splash_timer);
+    ctx->adp->boot_splash_timer = NULL;
     g_free(ctx);
 }
 
 // Please see `ui/icons/CKBrandingNotice.md`
-static void adp_v4_read_and_draw_boot_splash(AppleDisplayPipeV4State *s)
+static void adp_v4_read_and_draw_boot_splash(AppleDisplayPipeV4State *adp)
 {
     char *path;
     FILE *fp;
@@ -750,14 +766,14 @@ static void adp_v4_read_and_draw_boot_splash(AppleDisplayPipeV4State *s)
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
     fclose(fp);
 
-    disp_width = qemu_console_get_width(s->console, 0);
-    disp_height = qemu_console_get_height(s->console, 0);
+    disp_width = qemu_console_get_width(adp->console, 0);
+    disp_height = qemu_console_get_height(adp->console, 0);
 
-    ctx->s = s;
+    ctx->adp = adp;
     ctx->dest_width = (double)disp_width / 1.5;
     ctx->dest_x = (disp_width / 2) - (ctx->dest_width / 2);
     ctx->dest_y = (disp_height / 2) - (ctx->dest_width / 2);
-    ctx->disp_image = qemu_console_surface(s->console)->image;
+    ctx->disp_image = qemu_console_surface(adp->console)->image;
 
     pixman_image_set_filter(ctx->image, PIXMAN_FILTER_BEST, NULL, 0);
     pixman_transform_init_identity(&ctx->transform);
@@ -780,41 +796,37 @@ static void adp_v4_read_and_draw_boot_splash(AppleDisplayPipeV4State *s)
 
     adp_v4_draw_boot_splash(ctx);
 
-    s->boot_splash_timer =
+    adp->boot_splash_timer =
         timer_new_ns(QEMU_CLOCK_VIRTUAL, adp_v4_draw_boot_splash_timer, ctx);
 
     // Workaround for `-v` removing the boot splash.
-    timer_mod(s->boot_splash_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
-                                        (NANOSECONDS_PER_SECOND / 2));
+    timer_mod(adp->boot_splash_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
+                                          (NANOSECONDS_PER_SECOND / 2));
 }
 
 static void adp_v4_reset_hold(Object *obj, ResetType type)
 {
-    AppleDisplayPipeV4State *s = APPLE_DISPLAY_PIPE_V4(obj);
+    AppleDisplayPipeV4State *adp = APPLE_DISPLAY_PIPE_V4(obj);
 
-    QEMU_LOCK_GUARD(&s->lock);
+    qatomic_set(&adp->int_status, 0);
+    qatomic_set(&adp->int_enable, 0);
 
-    s->int_status = 0;
-    s->int_enable = 0;
+    adp_v4_update_irqs(adp);
 
-    adp_v4_update_irqs(s);
+    adp_v4_update_disp_image_ptr(adp);
 
-    adp_v4_update_disp_image_ptr(s);
+    adp_v4_gp_reset(&adp->genpipe[0]);
+    adp_v4_gp_reset(&adp->genpipe[1]);
+    adp_v4_blend_reset(&adp->blend_unit);
 
-    adp_v4_gp_reset(&s->genpipe[0], 0);
-    adp_v4_gp_reset(&s->genpipe[1], 1);
-    adp_v4_blend_reset(&s->blend_unit);
-
-    adp_v4_read_and_draw_boot_splash(s);
+    adp_v4_read_and_draw_boot_splash(adp);
 }
 
 static void adp_v4_realize(DeviceState *dev, Error **errp)
 {
-    AppleDisplayPipeV4State *s = APPLE_DISPLAY_PIPE_V4(dev);
+    AppleDisplayPipeV4State *adp = APPLE_DISPLAY_PIPE_V4(dev);
 
-    QEMU_LOCK_GUARD(&s->lock);
-
-    s->console = graphic_console_init(dev, 0, &adp_v4_ops, s);
+    adp->console = graphic_console_init(dev, 0, &adp_v4_ops, adp);
 }
 
 static const Property adp_v4_props[] = {
@@ -851,49 +863,51 @@ static void adp_v4_register_types(void)
 type_init(adp_v4_register_types);
 
 // TODO: handle source/dest position, etc.
-static void adp_v4_gp_draw(ADPV4GenPipeState *genpipe, AddressSpace *dma_as,
+static void adp_v4_gp_draw(ADPV4GenPipe *genpipe, AddressSpace *dma_as,
                            pixman_image_t *disp_image, QemuConsole *console)
 {
     pixman_format_code_t fmt;
     pixman_image_t *image;
 
-    if (FIELD_EX32(genpipe->config_control, GP_CONFIG_CONTROL, RUN) == 0 ||
-        FIELD_EX32(genpipe->config_control, GP_CONFIG_CONTROL, ENABLED) == 0) {
+    if (FIELD_EX32(genpipe->state.config_control, GP_CONFIG_CONTROL, RUN) ==
+            0 ||
+        FIELD_EX32(genpipe->state.config_control, GP_CONFIG_CONTROL, ENABLED) ==
+            0) {
         return;
     }
 
+    qemu_mutex_lock(&genpipe->lock);
     adp_v4_gp_read(genpipe, dma_as);
+    qemu_mutex_unlock(&genpipe->lock);
 
-    if (genpipe->buf_len != 0) {
+    if (genpipe->state.buf_len != 0) {
         fmt = adp_v4_gp_fmt_to_pixman(genpipe);
         image = pixman_image_create_bits(
-            fmt, genpipe->src_width, genpipe->src_height,
-            (uint32_t *)genpipe->buf, genpipe->stride);
+            fmt, genpipe->state.src_width, genpipe->state.src_height,
+            (uint32_t *)genpipe->state.buf, genpipe->state.stride);
 
         pixman_image_composite(PIXMAN_OP_SRC, image, NULL, disp_image, 0, 0, 0,
-                               0, 0, 0, genpipe->dest_width,
-                               genpipe->dest_height);
+                               0, 0, 0, genpipe->state.dest_width,
+                               genpipe->state.dest_height);
         pixman_image_unref(image);
 
-        dpy_gfx_update(console, 0, 0, genpipe->dest_width,
-                       genpipe->dest_height);
+        dpy_gfx_update(console, 0, 0, genpipe->state.dest_width,
+                       genpipe->state.dest_height);
     }
 }
 
 static void adp_v4_update_disp_bh(void *opaque)
 {
-    AppleDisplayPipeV4State *s = opaque;
+    AppleDisplayPipeV4State *adp = opaque;
     pixman_image_t *disp_image;
 
-    QEMU_LOCK_GUARD(&s->lock);
+    disp_image = qemu_console_surface(adp->console)->image;
 
-    disp_image = qemu_console_surface(s->console)->image;
+    adp_v4_gp_draw(&adp->genpipe[0], &adp->dma_as, disp_image, adp->console);
+    adp_v4_gp_draw(&adp->genpipe[1], &adp->dma_as, disp_image, adp->console);
 
-    adp_v4_gp_draw(&s->genpipe[0], &s->dma_as, disp_image, s->console);
-    adp_v4_gp_draw(&s->genpipe[1], &s->dma_as, disp_image, s->console);
-
-    s->int_status = FIELD_DP32(s->int_status, CONTROL_INT, FRAME_PROCESSED, 1);
-    adp_v4_update_irqs(s);
+    qatomic_or(&adp->int_status, R_CONTROL_INT_FRAME_PROCESSED_MASK);
+    adp_v4_update_irqs(adp);
 }
 
 // `display-timing-info`
@@ -906,7 +920,7 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
 {
     DeviceState *dev;
     SysBusDevice *sbd;
-    AppleDisplayPipeV4State *s;
+    AppleDisplayPipeV4State *adp;
     AppleDTProp *prop;
     uint64_t *reg;
     int i;
@@ -916,12 +930,10 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
 
     dev = qdev_new(TYPE_APPLE_DISPLAY_PIPE_V4);
     sbd = SYS_BUS_DEVICE(dev);
-    s = APPLE_DISPLAY_PIPE_V4(sbd);
+    adp = APPLE_DISPLAY_PIPE_V4(sbd);
 
-    qemu_mutex_init(&s->lock);
-
-    s->update_disp_image_bh =
-        aio_bh_new_guarded(qemu_get_aio_context(), adp_v4_update_disp_bh, s,
+    adp->update_disp_image_bh =
+        aio_bh_new_guarded(qemu_get_aio_context(), adp_v4_update_disp_bh, adp,
                            &dev->mem_reentrancy_guard);
 
     apple_dt_set_prop_str(node, "display-target", "DisplayTarget5");
@@ -931,36 +943,41 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr)
     apple_dt_set_prop_u32(node, "dot-pitch", 326);
     apple_dt_set_prop_null(node, "function-brightness_update");
 
-    s->dma_mr = dma_mr;
-    object_property_add_const_link(OBJECT(sbd), "dma_mr", OBJECT(s->dma_mr));
-    address_space_init(&s->dma_as, s->dma_mr, "disp0.dma");
+    adp->dma_mr = dma_mr;
+    object_property_add_const_link(OBJECT(sbd), "dma_mr", OBJECT(adp->dma_mr));
+    address_space_init(&adp->dma_as, adp->dma_mr, "disp0.dma");
 
     prop = apple_dt_get_prop(node, "reg");
     g_assert_nonnull(prop);
     reg = (uint64_t *)prop->data;
-    memory_region_init_io(&s->up_regs, OBJECT(sbd), &adp_v4_reg_ops, sbd,
+    memory_region_init_io(&adp->up_regs, OBJECT(sbd), &adp_v4_reg_ops, sbd,
                           "up.regs", reg[1]);
-    sysbus_init_mmio(sbd, &s->up_regs);
-    object_property_add_const_link(OBJECT(sbd), "up.regs", OBJECT(&s->up_regs));
+    sysbus_init_mmio(sbd, &adp->up_regs);
+    object_property_add_const_link(OBJECT(sbd), "up.regs",
+                                   OBJECT(&adp->up_regs));
 
-    for (i = 0; i < ARRAY_SIZE(s->irqs); i++) {
-        sysbus_init_irq(sbd, &s->irqs[i]);
+    qemu_mutex_init(&adp->genpipe[0].lock);
+    qemu_mutex_init(&adp->genpipe[1].lock);
+
+    for (i = 0; i < ARRAY_SIZE(adp->irqs); i++) {
+        sysbus_init_irq(sbd, &adp->irqs[i]);
     }
 
     return sbd;
 }
 
-void adp_v4_update_vram_mapping(AppleDisplayPipeV4State *s, MemoryRegion *mr,
+void adp_v4_update_vram_mapping(AppleDisplayPipeV4State *adp, MemoryRegion *mr,
                                 hwaddr base, uint64_t size)
 {
-    s->vram_mr = mr;
-    s->vram_off = base;
-    s->vram_size = size;
+    adp->vram_mr = mr;
+    adp->vram_off = base;
+    adp->vram_size = size;
     // Put framebuffer at the end of VRAM (the start is used for GP stuff).
-    s->fb_off = s->vram_size - (s->height * s->width * sizeof(uint32_t));
+    adp->fb_off =
+        adp->vram_size - (adp->height * adp->width * sizeof(uint32_t));
 }
 
-uint64_t adp_v4_get_fb_off(AppleDisplayPipeV4State *s)
+uint64_t adp_v4_get_fb_off(AppleDisplayPipeV4State *adp)
 {
-    return s->fb_off;
+    return adp->fb_off;
 }
