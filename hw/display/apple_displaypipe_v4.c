@@ -642,10 +642,9 @@ static void adp_v4_gfx_update(void *opaque)
     if (ys != -1U) {
         dpy_gfx_update(adp->console, 0, ys, adp->width, y - ys);
     }
-
     g_free(snap);
 
-    adp->int_status = FIELD_DP32(adp->int_status, CONTROL_INT, OUTPUT_READY, 1);
+    qatomic_or(&adp->int_status, R_CONTROL_INT_OUTPUT_READY_MASK);
     adp_v4_update_irqs(adp);
 }
 
