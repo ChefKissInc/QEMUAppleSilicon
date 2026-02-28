@@ -88,25 +88,31 @@
  * 9 | ?
  */
 
+/* 2 GenPipes, 2 Layers per GenPipe */
 #define ADP_V4_GP_COUNT (2)
+#define ADP_V4_LAYER_COUNT (2)
+
+typedef struct {
+    uint32_t config_control;
+    uint32_t pixel_format;
+    uint16_t dest_width;
+    uint16_t dest_height;
+    uint32_t data_start;
+    uint32_t data_end;
+    uint32_t stride;
+    uint16_t src_width;
+    uint16_t src_height;
+    void *buf;
+    uint32_t buf_len;
+    uint32_t buf_capacity;
+    /// Cached image, to not remake it every single run.
+    pixman_image_t *image;
+} ADPV4GenPipeState;
 
 typedef struct {
     QemuMutex lock;
     uint8_t index;
-    struct ADPV4GenPipeState {
-        uint32_t config_control;
-        uint32_t pixel_format;
-        uint16_t dest_width;
-        uint16_t dest_height;
-        uint32_t data_start;
-        uint32_t data_end;
-        uint32_t stride;
-        uint16_t src_width;
-        uint16_t src_height;
-        void *buf;
-        uint32_t buf_len;
-        uint32_t max_buf_len;
-    } state;
+    ADPV4GenPipeState state;
 } ADPV4GenPipe;
 
 static const VMStateDescription vmstate_adp_v4_gp = {
@@ -126,15 +132,15 @@ static const VMStateDescription vmstate_adp_v4_gp = {
             VMSTATE_UINT16(state.src_width, ADPV4GenPipe),
             VMSTATE_UINT16(state.src_height, ADPV4GenPipe),
             VMSTATE_UINT32(state.buf_len, ADPV4GenPipe),
-            VMSTATE_UINT32(state.max_buf_len, ADPV4GenPipe),
+            VMSTATE_UINT32(state.buf_capacity, ADPV4GenPipe),
             VMSTATE_VBUFFER_ALLOC_UINT32(state.buf, ADPV4GenPipe, 0, NULL,
-                                         state.max_buf_len),
+                                         state.buf_capacity),
             VMSTATE_END_OF_LIST(),
         },
 };
 
 typedef struct {
-    uint32_t layer_config[ADP_V4_GP_COUNT];
+    uint32_t layer_config[ADP_V4_LAYER_COUNT];
 } ADPV4BlendUnitState;
 
 static const VMStateDescription vmstate_adp_v4_blend_unit = {
@@ -144,7 +150,7 @@ static const VMStateDescription vmstate_adp_v4_blend_unit = {
     .fields =
         (const VMStateField[]){
             VMSTATE_UINT32_ARRAY(layer_config, ADPV4BlendUnitState,
-                                 ADP_V4_GP_COUNT),
+                                 ADP_V4_LAYER_COUNT),
             VMSTATE_END_OF_LIST(),
         },
 };
@@ -308,7 +314,7 @@ static pixman_format_code_t adp_v4_gp_fmt_to_pixman(ADPV4GenPipe *genpipe)
 
 static void adp_v4_gp_read(ADPV4GenPipe *genpipe, AddressSpace *dma_as)
 {
-    uint32_t buf_len;
+    uint32_t len;
 
     genpipe->state.buf_len = 0;
 
@@ -324,21 +330,41 @@ static void adp_v4_gp_read(ADPV4GenPipe *genpipe, AddressSpace *dma_as)
              genpipe->state.src_width, genpipe->state.src_height);
     ADP_INFO("gp%d: stride is %d.", genpipe->index, genpipe->state.stride);
 
-    buf_len = genpipe->state.src_height * genpipe->state.stride;
-    if (genpipe->state.max_buf_len < buf_len) {
+    len = genpipe->state.src_height * genpipe->state.stride;
+    if (genpipe->state.buf_capacity < len) {
         g_free(genpipe->state.buf);
-        genpipe->state.buf = g_malloc(buf_len);
-        genpipe->state.max_buf_len = buf_len;
+        genpipe->state.buf = g_malloc(len);
+        genpipe->state.buf_capacity = len;
     }
 
     if (dma_memory_read(dma_as, genpipe->state.data_start, genpipe->state.buf,
-                        buf_len, MEMTXATTRS_UNSPECIFIED) == MEMTX_OK) {
-        genpipe->state.buf_len = buf_len;
+                        len, MEMTXATTRS_UNSPECIFIED) == MEMTX_OK) {
+        genpipe->state.buf_len = len;
     } else {
         qemu_log_mask(LOG_GUEST_ERROR, "gp%d: failed to read from DMA.\n",
                       genpipe->index);
     }
 }
+
+static void adp_v4_gp_image_changed_check(ADPV4GenPipe *genpipe, uint32_t old,
+                                          uint32_t new)
+{
+    if (old == new) {
+        return;
+    }
+
+    qemu_pixman_image_unref(genpipe->state.image);
+    genpipe->state.image = NULL;
+}
+
+#define ADP_V4_GP_REG_WRITE_SET_WITH_CHECK_VAL(_field, _val)                \
+    do {                                                                    \
+        typeof(_val) val = _val;                                            \
+        adp_v4_gp_image_changed_check(genpipe, genpipe->state._field, val); \
+        genpipe->state._field = val;                                        \
+    } while (0)
+#define ADP_V4_GP_REG_WRITE_SET_WITH_CHECK(_field) \
+    ADP_V4_GP_REG_WRITE_SET_WITH_CHECK_VAL(_field, (uint32_t)data);
 
 static void adp_v4_gp_reg_write(ADPV4GenPipe *genpipe, hwaddr addr,
                                 uint64_t data)
@@ -352,7 +378,7 @@ static void adp_v4_gp_reg_write(ADPV4GenPipe *genpipe, hwaddr addr,
     case R_GP_PIXEL_FORMAT: {
         ADP_INFO("gp%d: pixel format <- 0x" HWADDR_FMT_plx, genpipe->index,
                  data);
-        genpipe->state.pixel_format = (uint32_t)data;
+        ADP_V4_GP_REG_WRITE_SET_WITH_CHECK(pixel_format);
         break;
     }
     case R_GP_LAYER_0_DATA_START: {
@@ -370,12 +396,13 @@ static void adp_v4_gp_reg_write(ADPV4GenPipe *genpipe, hwaddr addr,
     case R_GP_LAYER_0_STRIDE: {
         ADP_INFO("gp%d: layer 0 stride <- 0x" HWADDR_FMT_plx, genpipe->index,
                  data);
-        genpipe->state.stride = (uint32_t)data;
+        ADP_V4_GP_REG_WRITE_SET_WITH_CHECK(stride);
         break;
     }
     case R_GP_LAYER_0_DIMENSIONS: {
-        genpipe->state.src_height = data & 0xFFFF;
-        genpipe->state.src_width = (data >> 16) & 0xFFFF;
+        ADP_V4_GP_REG_WRITE_SET_WITH_CHECK_VAL(src_height, data & 0xFFFF);
+        ADP_V4_GP_REG_WRITE_SET_WITH_CHECK_VAL(src_width,
+                                               (data >> 16) & 0xFFFF);
         ADP_INFO("gp%d: layer 0 dimensions <- 0x" HWADDR_FMT_plx " (%dx%d)",
                  genpipe->index, data, genpipe->state.src_width,
                  genpipe->state.src_height);
@@ -449,8 +476,9 @@ static uint32_t adp_v4_gp_reg_read(ADPV4GenPipe *genpipe, hwaddr addr)
 
 static void adp_v4_gp_reset(ADPV4GenPipe *genpipe)
 {
+    qemu_pixman_image_unref(genpipe->state.image);
     g_free(genpipe->state.buf);
-    genpipe->state = (struct ADPV4GenPipeState){ 0 };
+    genpipe->state = (ADPV4GenPipeState){ 0 };
 }
 
 static void adp_v4_blend_reg_write(ADPV4BlendUnitState *blend, uint64_t addr,
@@ -504,7 +532,7 @@ static void adp_v4_reg_write(void *opaque, hwaddr addr, uint64_t data,
 {
     AppleDisplayPipeV4State *adp = opaque;
 
-    if (addr >= 0x200000) {
+    if (addr >= 0x200000) { // some weird shadow shit
         addr -= 0x200000;
     }
 
@@ -556,7 +584,7 @@ static uint64_t adp_v4_reg_read(void *const opaque, hwaddr addr, unsigned size)
 {
     AppleDisplayPipeV4State *adp = opaque;
 
-    if (addr >= 0x200000) {
+    if (addr >= 0x200000) { // ditto
         addr -= 0x200000;
     }
 
@@ -880,15 +908,17 @@ static void adp_v4_gp_draw(ADPV4GenPipe *genpipe, AddressSpace *dma_as,
     qemu_mutex_unlock(&genpipe->lock);
 
     if (genpipe->state.buf_len != 0) {
-        fmt = adp_v4_gp_fmt_to_pixman(genpipe);
-        image = pixman_image_create_bits(
-            fmt, genpipe->state.src_width, genpipe->state.src_height,
-            (uint32_t *)genpipe->state.buf, genpipe->state.stride);
+        image = genpipe->state.image;
+        if (image == NULL) {
+            fmt = adp_v4_gp_fmt_to_pixman(genpipe);
+            genpipe->state.image = image = pixman_image_create_bits(
+                fmt, genpipe->state.src_width, genpipe->state.src_height,
+                (uint32_t *)genpipe->state.buf, genpipe->state.stride);
+        }
 
         pixman_image_composite(PIXMAN_OP_SRC, image, NULL, disp_image, 0, 0, 0,
                                0, 0, 0, genpipe->state.dest_width,
                                genpipe->state.dest_height);
-        pixman_image_unref(image);
 
         dpy_gfx_update(console, 0, 0, genpipe->state.dest_width,
                        genpipe->state.dest_height);
