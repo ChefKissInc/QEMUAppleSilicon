@@ -766,7 +766,9 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
     int target_el;
     uint32_t excp;
 
-    assert(ri != NULL);
+#ifdef CONFIG_DEBUG_TCG
+    g_assert(ri != NULL);
+#endif
 
     if (arm_feature(env, ARM_FEATURE_XSCALE) && ri->cp < 14
         && extract32(env->cp15.c15_cpar, ri->cp, 1) == 0) {
@@ -918,7 +920,9 @@ const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
     ARMCPU *cpu = env_archcpu(env);
     const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, key);
 
-    assert(ri != NULL);
+#ifdef CONFIG_DEBUG_TCG
+    g_assert(ri != NULL);
+#endif
     return ri;
 }
 
