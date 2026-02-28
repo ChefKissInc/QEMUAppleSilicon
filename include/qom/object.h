@@ -131,7 +131,7 @@ struct ObjectClass
     Type type;
     GSList *interfaces;
 
-#ifndef CONFIG_QOM_CAST_DEBUG
+#ifdef CONFIG_QOM_CAST_DEBUG
     const char *object_cast_cache[OBJECT_CLASS_CAST_CACHE];
     const char *class_cast_cache[OBJECT_CLASS_CAST_CACHE];
 #endif
