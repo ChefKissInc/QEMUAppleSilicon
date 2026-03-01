@@ -25,6 +25,6 @@
 #define M_ASSERT_SLOW(expr) (void)(expr)
 #endif
 
-#include "util/mlib/m-dict.h"
+#include "mlib/m-dict.h"
 
 #endif /* UTIL_MLIB_H */
