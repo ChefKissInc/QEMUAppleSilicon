@@ -22,6 +22,7 @@
 
 #include "qemu/osdep.h"
 #include "hw/misc/apple-silicon/a7iop/core.h"
+#include "util/mlib.h"
 
 #define TYPE_APPLE_RTKIT "apple-rtkit"
 OBJECT_DECLARE_TYPE(AppleRTKit, AppleRTKitClass, APPLE_RTKIT)
@@ -33,6 +34,27 @@ typedef struct {
     AppleRTKitEPHandler *handler;
     bool user;
 } AppleRTKitEPData;
+
+static inline size_t apple_rtkit_ep_table_key_hash(uint16_t x)
+{
+    return (size_t)x;
+}
+
+static inline void apple_rtkit_ep_table_oor_set(uint16_t *k, uint8_t n)
+{
+    *k = 0xFFFFU - (uint16_t)n;
+}
+
+static inline bool apple_rtkit_ep_table_oor_equal(uint16_t k, uint8_t n)
+{
+    return k == 0xFFFFU - (uint16_t)n;
+}
+
+DICT_OA_DEF2(AppleRTKitEPTable, uint16_t,
+             M_OPEXTEND(M_BASIC_OPLIST, HASH(apple_rtkit_ep_table_key_hash),
+                        OOR_EQUAL(apple_rtkit_ep_table_oor_equal),
+                        OOR_SET(apple_rtkit_ep_table_oor_set M_IPTR)),
+             AppleRTKitEPData, M_POD_OPLIST)
 
 typedef struct {
     void (*start)(void *opaque);
@@ -58,7 +80,7 @@ struct AppleRTKit {
     void *opaque;
     uint8_t ep0_status;
     uint32_t protocol_version;
-    GHashTable *endpoints;
+    AppleRTKitEPTable_t endpoints;
     QTAILQ_HEAD(, AppleA7IOPMessage) rollcall;
 };
 
