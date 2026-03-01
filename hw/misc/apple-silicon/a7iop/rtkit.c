@@ -152,7 +152,7 @@ void apple_rtkit_send_user_msg(AppleRTKit *s, uint8_t ep, uint64_t data)
 static void apple_rtkit_register_ep(AppleRTKit *s, uint8_t ep, void *opaque,
                                     AppleRTKitEPHandler *handler, bool user)
 {
-    g_assert_false(AppleRTKitEPTable_get(s->endpoints, ep));
+    g_assert_null(AppleRTKitEPTable_get(s->endpoints, ep));
 
     AppleRTKitEPTable_set_at(s->endpoints, ep,
                              (AppleRTKitEPData){
