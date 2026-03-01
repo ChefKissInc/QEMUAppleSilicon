@@ -864,8 +864,16 @@ Object *object_dynamic_cast(Object *obj, const char *typename);
  * This function is not meant to be called directly, but only through
  * the wrapper macro OBJECT_CHECK.
  */
+#ifdef CONFIG_QOM_CAST_DEBUG
 Object *object_dynamic_cast_assert(Object *obj, const char *typename,
                                    const char *file, int line, const char *func);
+#else
+inline Object *object_dynamic_cast_assert(Object *obj, const char *typename,
+                                   const char *file, int line, const char *func)
+{
+    return obj;
+}
+#endif
 
 /**
  * object_get_class:

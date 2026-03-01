@@ -901,10 +901,10 @@ Object *object_dynamic_cast(Object *obj, const char *typename)
     return NULL;
 }
 
+#ifdef CONFIG_QOM_CAST_DEBUG
 Object *object_dynamic_cast_assert(Object *obj, const char *typename,
                                    const char *file, int line, const char *func)
 {
-#ifdef CONFIG_QOM_CAST_DEBUG
     trace_object_dynamic_cast_assert(obj ? obj->class->type->name : "(null)",
                                      typename, file, line, func);
 
@@ -936,9 +936,9 @@ Object *object_dynamic_cast_assert(Object *obj, const char *typename,
     }
 
 out:
-#endif
     return obj;
 }
+#endif
 
 ObjectClass *object_class_dynamic_cast(ObjectClass *class,
                                        const char *typename)
