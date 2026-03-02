@@ -44,13 +44,11 @@ static void apple_typec_realize(DeviceState *dev, Error **errp)
 
     obj = object_property_get_link(OBJECT(dev), "dma-xhci", errp);
     g_assert_nonnull(obj);
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(&s->dwc3), "dma-xhci", obj));
+    object_property_add_const_link(OBJECT(&s->dwc3), "dma-xhci", obj);
 
     obj = object_property_get_link(OBJECT(dev), "dma-otg", errp);
     g_assert_nonnull(obj);
-    g_assert_nonnull(
-        object_property_add_const_link(OBJECT(&s->dwc2), "dma-mr", obj));
+    object_property_add_const_link(OBJECT(&s->dwc2), "dma-mr", obj);
 
     sysbus_realize(SYS_BUS_DEVICE(&s->dwc2), errp);
     sysbus_realize(SYS_BUS_DEVICE(&s->dwc3), errp);
