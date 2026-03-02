@@ -33,6 +33,7 @@
 #include "target/arm/multiprocessing.h"
 #include "target/arm/gtimer.h"
 #include "target/arm/cpu-sysregs.h"
+#include "target/arm/cpregs.h"
 
 #define EXCP_UDEF            1   /* undefined instruction */
 #define EXCP_SWI             2   /* software interrupt */
@@ -973,7 +974,7 @@ struct ArchCPU {
     CPUARMState env;
 
     /* Coprocessor information */
-    GHashTable *cp_regs;
+    ARMCPRegTable_t cp_regs;
     /* For marshalling (mostly coprocessor) register state between the
      * kernel and QEMU (for KVM) and between two QEMUs (for migration),
      * we use these arrays.

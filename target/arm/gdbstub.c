@@ -27,12 +27,6 @@
 #include "cpu-features.h"
 #include "cpregs.h"
 
-typedef struct RegisterSysregFeatureParam {
-    CPUState *cs;
-    GDBFeatureBuilder builder;
-    int n;
-} RegisterSysregFeatureParam;
-
 /* Old gdb always expect FPA registers.  Newer (xml-aware) gdb only expect
    whatever the target description contains.  Due to a historical mishap
    the FPA registers appear in between core integer regs and the CPSR.
@@ -272,54 +266,54 @@ static void arm_gen_one_feature_sysreg(GDBFeatureBuilder *builder,
     dyn_feature->data.cpregs.keys[n] = ri_key;
 }
 
-static void arm_register_sysreg_for_feature(gpointer key, gpointer value,
-                                            gpointer p)
-{
-    uint32_t ri_key = (uintptr_t)key;
-    ARMCPRegInfo *ri = value;
-    RegisterSysregFeatureParam *param = p;
-    ARMCPU *cpu = ARM_CPU(param->cs);
-    CPUARMState *env = &cpu->env;
-    DynamicGDBFeatureInfo *dyn_feature = &cpu->dyn_sysreg_feature;
-
-    if (!(ri->type & (ARM_CP_NO_RAW | ARM_CP_NO_GDB))) {
-        if (arm_feature(env, ARM_FEATURE_AARCH64)) {
-            if (ri->state == ARM_CP_STATE_AA64) {
-                arm_gen_one_feature_sysreg(&param->builder, dyn_feature,
-                                           ri, ri_key, 64, param->n++);
-            }
-        } else {
-            if (ri->state == ARM_CP_STATE_AA32) {
-                if (!arm_feature(env, ARM_FEATURE_EL3) &&
-                    (ri->secure & ARM_CP_SECSTATE_S)) {
-                    return;
-                }
-                if (ri->type & ARM_CP_64BIT) {
-                    arm_gen_one_feature_sysreg(&param->builder, dyn_feature,
-                                               ri, ri_key, 64, param->n++);
-                } else {
-                    arm_gen_one_feature_sysreg(&param->builder, dyn_feature,
-                                               ri, ri_key, 32, param->n++);
-                }
-            }
-        }
-    }
-}
-
 static GDBFeature *arm_gen_dynamic_sysreg_feature(CPUState *cs, int base_reg)
 {
     ARMCPU *cpu = ARM_CPU(cs);
-    RegisterSysregFeatureParam param = {cs};
-    gsize num_regs = g_hash_table_size(cpu->cp_regs);
+    size_t num_regs = ARMCPRegTable_size(cpu->cp_regs);
+    ARMCPRegTable_it_t it;
+    ARMCPRegTable_pair_ct *ref;
+    GDBFeatureBuilder builder;
+    uint32_t ri_key;
+    ARMCPRegInfo *ri;
+    int n = 0;
+    CPUARMState *env = &cpu->env;
+    DynamicGDBFeatureInfo *dyn_feature = &cpu->dyn_sysreg_feature;
 
-    gdb_feature_builder_init(&param.builder,
+    gdb_feature_builder_init(&builder,
                              &cpu->dyn_sysreg_feature.desc,
                              "org.qemu.gdb.arm.sys.regs",
                              "system-registers.xml",
                              base_reg);
     cpu->dyn_sysreg_feature.data.cpregs.keys = g_new(uint32_t, num_regs);
-    g_hash_table_foreach(cpu->cp_regs, arm_register_sysreg_for_feature, &param);
-    gdb_feature_builder_end(&param.builder);
+    for (ARMCPRegTable_it(it, cpu->cp_regs); !ARMCPRegTable_end_p(it); ARMCPRegTable_next(it)) {
+        ref = ARMCPRegTable_ref(it);
+        ri_key = ref->key;
+        ri = &ref->value;
+
+        if (!(ri->type & (ARM_CP_NO_RAW | ARM_CP_NO_GDB))) {
+            if (arm_feature(env, ARM_FEATURE_AARCH64)) {
+                if (ri->state == ARM_CP_STATE_AA64) {
+                    arm_gen_one_feature_sysreg(&builder, dyn_feature,
+                                               ri, ri_key, 64, n++);
+                }
+            } else {
+                if (ri->state == ARM_CP_STATE_AA32) {
+                    if (!arm_feature(env, ARM_FEATURE_EL3) &&
+                        (ri->secure & ARM_CP_SECSTATE_S)) {
+                        continue;
+                    }
+                    if (ri->type & ARM_CP_64BIT) {
+                        arm_gen_one_feature_sysreg(&builder, dyn_feature,
+                                                   ri, ri_key, 64, n++);
+                    } else {
+                        arm_gen_one_feature_sysreg(&builder, dyn_feature,
+                                                   ri, ri_key, 32, n++);
+                    }
+                }
+            }
+        }
+    }
+    gdb_feature_builder_end(&builder);
     return &cpu->dyn_sysreg_feature.desc;
 }
 

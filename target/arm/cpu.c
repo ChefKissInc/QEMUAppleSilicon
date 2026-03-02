@@ -171,12 +171,9 @@ void arm_register_el_change_hook(ARMCPU *cpu, ARMELChangeHookFn *hook,
     QLIST_INSERT_HEAD(&cpu->el_change_hooks, entry, node);
 }
 
-static void cp_reg_reset(gpointer key, gpointer value, gpointer opaque)
+static void cp_reg_reset(ARMCPRegInfo *ri, ARMCPU *cpu)
 {
     /* Reset a single ARMCPRegInfo register */
-    ARMCPRegInfo *ri = value;
-    ARMCPU *cpu = opaque;
-
     if (ri->type & (ARM_CP_SPECIAL_MASK | ARM_CP_ALIAS)) {
         return;
     }
@@ -202,15 +199,13 @@ static void cp_reg_reset(gpointer key, gpointer value, gpointer opaque)
     }
 }
 
-static void cp_reg_check_reset(gpointer key, gpointer value,  gpointer opaque)
+static void cp_reg_check_reset(ARMCPRegInfo *ri, ARMCPU *cpu)
 {
     /* Purely an assertion check: we've already done reset once,
      * so now check that running the reset for the cpreg doesn't
      * change its value. This traps bugs where two different cpregs
      * both try to reset the same state field but to different values.
      */
-    ARMCPRegInfo *ri = value;
-    ARMCPU *cpu = opaque;
     uint64_t oldvalue, newvalue;
 
     if (ri->type & (ARM_CP_SPECIAL_MASK | ARM_CP_ALIAS | ARM_CP_NO_RAW)) {
@@ -218,7 +213,7 @@ static void cp_reg_check_reset(gpointer key, gpointer value,  gpointer opaque)
     }
 
     oldvalue = read_raw_cp_reg(&cpu->env, ri);
-    cp_reg_reset(key, value, opaque);
+    cp_reg_reset(ri, cpu);
     newvalue = read_raw_cp_reg(&cpu->env, ri);
     assert(oldvalue == newvalue);
 }
@@ -229,6 +224,8 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
     ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
     ARMCPUClass *acc = ARM_CPU_GET_CLASS(obj);
     CPUARMState *env = &cpu->env;
+    ARMCPRegTable_it_t it;
+    ARMCPRegTable_pair_ct *ref;
 
     if (acc->parent_phases.hold) {
         acc->parent_phases.hold(obj, type);
@@ -236,8 +233,15 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
 
     memset(env, 0, offsetof(CPUARMState, end_reset_fields));
 
-    g_hash_table_foreach(cpu->cp_regs, cp_reg_reset, cpu);
-    g_hash_table_foreach(cpu->cp_regs, cp_reg_check_reset, cpu);
+    for (ARMCPRegTable_it(it, cpu->cp_regs); !ARMCPRegTable_end_p(it); ARMCPRegTable_next(it)) {
+        ref = ARMCPRegTable_ref(it);
+        cp_reg_reset(&ref->value, cpu);
+    }
+
+    for (ARMCPRegTable_it(it, cpu->cp_regs); !ARMCPRegTable_end_p(it); ARMCPRegTable_next(it)) {
+        ref = ARMCPRegTable_ref(it);
+        cp_reg_check_reset(&ref->value, cpu);
+    }
 
     env->vfp.xregs[ARM_VFP_FPSID] = cpu->reset_fpsid;
     env->vfp.xregs[ARM_VFP_MVFR0] = cpu->isar.mvfr0;
@@ -1455,8 +1459,7 @@ static void arm_cpu_initfn(Object *obj)
 {
     ARMCPU *cpu = ARM_CPU(obj);
 
-    cpu->cp_regs = g_hash_table_new_full(NULL, NULL,
-                                         NULL, g_free);
+    ARMCPRegTable_init(cpu->cp_regs);
 
     QLIST_INIT(&cpu->pre_el_change_hooks);
     QLIST_INIT(&cpu->el_change_hooks);
@@ -1901,7 +1904,7 @@ static void arm_cpu_finalizefn(Object *obj)
     ARMCPU *cpu = ARM_CPU(obj);
     ARMELChangeHook *hook, *next;
 
-    g_hash_table_destroy(cpu->cp_regs);
+    ARMCPRegTable_clear(cpu->cp_regs);
 
     QLIST_FOREACH_SAFE(hook, &cpu->pre_el_change_hooks, node, next) {
         QLIST_REMOVE(hook, node);

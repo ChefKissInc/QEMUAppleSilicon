@@ -209,74 +209,63 @@ bool write_list_to_cpustate(ARMCPU *cpu)
     return ok;
 }
 
-static void add_cpreg_to_list(gpointer key, gpointer opaque)
+static inline int cpreg_key_cmp(uint32_t pa, uint32_t pb)
 {
-    ARMCPU *cpu = opaque;
-    uint32_t regidx = (uintptr_t)key;
-    const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, regidx);
+    uint64_t aidx = cpreg_to_kvm_id(pa);
+    uint64_t bidx = cpreg_to_kvm_id(pb);
 
-    if (!(ri->type & (ARM_CP_NO_RAW | ARM_CP_ALIAS))) {
-        cpu->cpreg_indexes[cpu->cpreg_array_len] = cpreg_to_kvm_id(regidx);
-        /* The value array need not be initialized at this point */
-        cpu->cpreg_array_len++;
-    }
-}
-
-static void count_cpreg(gpointer key, gpointer opaque)
-{
-    ARMCPU *cpu = opaque;
-    const ARMCPRegInfo *ri;
-
-    ri = g_hash_table_lookup(cpu->cp_regs, key);
-
-    if (!(ri->type & (ARM_CP_NO_RAW | ARM_CP_ALIAS))) {
-        cpu->cpreg_array_len++;
-    }
-}
-
-static gint cpreg_key_compare(gconstpointer a, gconstpointer b, gpointer d)
-{
-    uint64_t aidx = cpreg_to_kvm_id((uintptr_t)a);
-    uint64_t bidx = cpreg_to_kvm_id((uintptr_t)b);
-
-    if (aidx > bidx) {
-        return 1;
-    }
-    if (aidx < bidx) {
-        return -1;
-    }
+    if (aidx > bidx) return 1;
+    if (aidx < bidx) return -1;
     return 0;
 }
 
+#define CPREG_KEY_OPLIST M_OPEXTEND(M_BASIC_OPLIST, CMP(cpreg_key_cmp))
+
+ARRAY_DEF(cpreg_key_array, uint32_t)
+ALGO_DEF(cpreg_key_array_algo, ARRAY_OPLIST(cpreg_key_array, CPREG_KEY_OPLIST))
+ 
 void init_cpreg_list(ARMCPU *cpu)
 {
     /*
      * Initialise the cpreg_tuples[] array based on the cp_regs hash.
      * Note that we require cpreg_tuples[] to be sorted by key ID.
      */
-    GList *keys;
-    int arraylen;
+    ARMCPRegTable_it_t it;
+    const ARMCPRegTable_pair_ct *cref;
+    cpreg_key_array_t key_array;
+    size_t arraylen;
+    cpreg_key_array_it_t key_it;
 
-    keys = g_hash_table_get_keys(cpu->cp_regs);
-    keys = g_list_sort_with_data(keys, cpreg_key_compare, NULL);
+    cpreg_key_array_init(key_array);
+    for (ARMCPRegTable_it(it, cpu->cp_regs); !ARMCPRegTable_end_p(it); ARMCPRegTable_next(it)) {
+        cref = ARMCPRegTable_cref(it);
+        if (!(cref->value.type & (ARM_CP_NO_RAW | ARM_CP_ALIAS))) {
+            cpreg_key_array_push_back(key_array, cref->key);
+        }
+    }
 
-    cpu->cpreg_array_len = 0;
-
-    g_list_foreach(keys, count_cpreg, cpu);
-
-    arraylen = cpu->cpreg_array_len;
+    arraylen = cpreg_key_array_size(key_array);
     cpu->cpreg_indexes = g_new(uint64_t, arraylen);
     cpu->cpreg_values = g_new(uint64_t, arraylen);
     cpu->cpreg_vmstate_indexes = g_new(uint64_t, arraylen);
     cpu->cpreg_vmstate_values = g_new(uint64_t, arraylen);
     cpu->cpreg_vmstate_array_len = cpu->cpreg_array_len;
-    cpu->cpreg_array_len = 0;
 
-    g_list_foreach(keys, add_cpreg_to_list, cpu);
+    cpreg_key_array_algo_sort(key_array);
+
+    cpu->cpreg_array_len = 0;
+    for (cpreg_key_array_it(key_it, key_array); !cpreg_key_array_end_p(key_it); cpreg_key_array_next(key_it)) {
+        uint32_t regidx = *cpreg_key_array_cref(key_it);
+        const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, regidx);
+
+        if (!(ri->type & (ARM_CP_NO_RAW | ARM_CP_ALIAS))) {
+            cpu->cpreg_indexes[cpu->cpreg_array_len] = cpreg_to_kvm_id(regidx);
+            cpu->cpreg_array_len++;
+        }
+    }
+    cpreg_key_array_clear(key_array);
 
     assert(cpu->cpreg_array_len == arraylen);
-
-    g_list_free(keys);
 }
 
 bool arm_pan_enabled(CPUARMState *env)
@@ -4617,17 +4606,14 @@ static void define_arm_vh_e2h_redirects_aliases(ARMCPU *cpu)
 
     for (i = 0; i < ARRAY_SIZE(aliases); i++) {
         const struct E2HAlias *a = &aliases[i];
-        ARMCPRegInfo *src_reg, *dst_reg, *new_reg;
-        bool ok;
+        ARMCPRegInfo *src_reg, *dst_reg, new_reg;
 
         if (a->feature && !a->feature(&cpu->isar)) {
             continue;
         }
 
-        src_reg = g_hash_table_lookup(cpu->cp_regs,
-                                      (gpointer)(uintptr_t)a->src_key);
-        dst_reg = g_hash_table_lookup(cpu->cp_regs,
-                                      (gpointer)(uintptr_t)a->dst_key);
+        src_reg = ARMCPRegTable_get(cpu->cp_regs, a->src_key);
+        dst_reg = ARMCPRegTable_get(cpu->cp_regs, a->dst_key);
         g_assert(src_reg != NULL);
         g_assert(dst_reg != NULL);
 
@@ -4639,51 +4625,50 @@ static void define_arm_vh_e2h_redirects_aliases(ARMCPU *cpu)
         g_assert(src_reg->opaque == NULL);
 
         /* Create alias before redirection so we dup the right data. */
-        new_reg = g_memdup(src_reg, sizeof(ARMCPRegInfo));
+        new_reg = *src_reg;
 
-        new_reg->name = a->new_name;
-        new_reg->type |= ARM_CP_ALIAS;
+        new_reg.name = a->new_name;
+        new_reg.type |= ARM_CP_ALIAS;
         /* Remove PL1/PL0 access, leaving PL2/PL3 R/W in place.  */
-        new_reg->access &= PL2_RW | PL3_RW;
+        new_reg.access &= PL2_RW | PL3_RW;
         /* The new_reg op fields are as per new_key, not the target reg */
-        new_reg->crn = (a->new_key & CP_REG_ARM64_SYSREG_CRN_MASK)
+        new_reg.crn = (a->new_key & CP_REG_ARM64_SYSREG_CRN_MASK)
             >> CP_REG_ARM64_SYSREG_CRN_SHIFT;
-        new_reg->crm = (a->new_key & CP_REG_ARM64_SYSREG_CRM_MASK)
+        new_reg.crm = (a->new_key & CP_REG_ARM64_SYSREG_CRM_MASK)
             >> CP_REG_ARM64_SYSREG_CRM_SHIFT;
-        new_reg->opc0 = (a->new_key & CP_REG_ARM64_SYSREG_OP0_MASK)
+        new_reg.opc0 = (a->new_key & CP_REG_ARM64_SYSREG_OP0_MASK)
             >> CP_REG_ARM64_SYSREG_OP0_SHIFT;
-        new_reg->opc1 = (a->new_key & CP_REG_ARM64_SYSREG_OP1_MASK)
+        new_reg.opc1 = (a->new_key & CP_REG_ARM64_SYSREG_OP1_MASK)
             >> CP_REG_ARM64_SYSREG_OP1_SHIFT;
-        new_reg->opc2 = (a->new_key & CP_REG_ARM64_SYSREG_OP2_MASK)
+        new_reg.opc2 = (a->new_key & CP_REG_ARM64_SYSREG_OP2_MASK)
             >> CP_REG_ARM64_SYSREG_OP2_SHIFT;
-        new_reg->opaque = src_reg;
-        new_reg->orig_readfn = src_reg->readfn ?: raw_read;
-        new_reg->orig_writefn = src_reg->writefn ?: raw_write;
-        new_reg->orig_accessfn = src_reg->accessfn;
-        if (!new_reg->raw_readfn) {
-            new_reg->raw_readfn = raw_read;
+        new_reg.opaque = src_reg;
+        new_reg.orig_readfn = src_reg->readfn ?: raw_read;
+        new_reg.orig_writefn = src_reg->writefn ?: raw_write;
+        new_reg.orig_accessfn = src_reg->accessfn;
+        if (!new_reg.raw_readfn) {
+            new_reg.raw_readfn = raw_read;
         }
-        if (!new_reg->raw_writefn) {
-            new_reg->raw_writefn = raw_write;
+        if (!new_reg.raw_writefn) {
+            new_reg.raw_writefn = raw_write;
         }
-        new_reg->readfn = el2_e2h_e12_read;
-        new_reg->writefn = el2_e2h_e12_write;
-        new_reg->accessfn = el2_e2h_e12_access;
+        new_reg.readfn = el2_e2h_e12_read;
+        new_reg.writefn = el2_e2h_e12_write;
+        new_reg.accessfn = el2_e2h_e12_access;
 
         /*
          * If the _EL1 register is redirected to memory by FEAT_NV2,
          * then it shares the offset with the _EL12 register,
          * and which one is redirected depends on HCR_EL2.NV1.
          */
-        if (new_reg->nv2_redirect_offset) {
-            assert(new_reg->nv2_redirect_offset & NV2_REDIR_NV1);
-            new_reg->nv2_redirect_offset &= ~NV2_REDIR_NV1;
-            new_reg->nv2_redirect_offset |= NV2_REDIR_NO_NV1;
+        if (new_reg.nv2_redirect_offset) {
+            assert(new_reg.nv2_redirect_offset & NV2_REDIR_NV1);
+            new_reg.nv2_redirect_offset &= ~NV2_REDIR_NV1;
+            new_reg.nv2_redirect_offset |= NV2_REDIR_NO_NV1;
         }
 
-        ok = g_hash_table_insert(cpu->cp_regs,
-                                 (gpointer)(uintptr_t)a->new_key, new_reg);
-        g_assert(ok);
+        g_assert_null(ARMCPRegTable_get(cpu->cp_regs, a->new_key));
+        ARMCPRegTable_set_at(cpu->cp_regs, a->new_key, new_reg);
 
         src_reg->opaque = dst_reg;
         src_reg->orig_readfn = src_reg->readfn ?: raw_read;
@@ -7371,11 +7356,10 @@ static void add_cpreg_to_hashtable(ARMCPU *cpu, const ARMCPRegInfo *r,
 {
     CPUARMState *env = &cpu->env;
     uint32_t key;
-    ARMCPRegInfo *r2;
+    ARMCPRegInfo r2;
     bool is64 = r->type & ARM_CP_64BIT;
     bool ns = secstate & ARM_CP_SECSTATE_NS;
     int cp = r->cp;
-    size_t name_len;
     bool make_const;
 
     switch (state) {
@@ -7437,57 +7421,54 @@ static void add_cpreg_to_hashtable(ARMCPU *cpu, const ARMCPRegInfo *r,
         }
     }
 
-    /* Combine cpreg and name into one allocation. */
-    name_len = strlen(name) + 1;
-    r2 = g_malloc(sizeof(*r2) + name_len);
-    *r2 = *r;
-    r2->name = memcpy(r2 + 1, name, name_len);
+    r2 = *r;
+    r2.name = g_strdup(name);
 
     /*
      * Update fields to match the instantiation, overwiting wildcards
      * such as CP_ANY, ARM_CP_STATE_BOTH, or ARM_CP_SECSTATE_BOTH.
      */
-    r2->cp = cp;
-    r2->crm = crm;
-    r2->opc1 = opc1;
-    r2->opc2 = opc2;
-    r2->state = state;
-    r2->secure = secstate;
+    r2.cp = cp;
+    r2.crm = crm;
+    r2.opc1 = opc1;
+    r2.opc2 = opc2;
+    r2.state = state;
+    r2.secure = secstate;
     if (opaque) {
-        r2->opaque = opaque;
+        r2.opaque = opaque;
     }
 
     if (make_const) {
         /* This should not have been a very special register to begin. */
-        int old_special = r2->type & ARM_CP_SPECIAL_MASK;
+        int old_special = r2.type & ARM_CP_SPECIAL_MASK;
         assert(old_special == 0 || old_special == ARM_CP_NOP);
         /*
          * Set the special function to CONST, retaining the other flags.
          * This is important for e.g. ARM_CP_SVE so that we still
          * take the SVE trap if CPTR_EL3.EZ == 0.
          */
-        r2->type = (r2->type & ~ARM_CP_SPECIAL_MASK) | ARM_CP_CONST;
+        r2.type = (r2.type & ~ARM_CP_SPECIAL_MASK) | ARM_CP_CONST;
         /*
          * Usually, these registers become RES0, but there are a few
          * special cases like VPIDR_EL2 which have a constant non-zero
          * value with writes ignored.
          */
         if (!(r->type & ARM_CP_EL3_NO_EL2_C_NZ)) {
-            r2->resetvalue = 0;
+            r2.resetvalue = 0;
         }
         /*
          * ARM_CP_CONST has precedence, so removing the callbacks and
          * offsets are not strictly necessary, but it is potentially
          * less confusing to debug later.
          */
-        r2->readfn = NULL;
-        r2->writefn = NULL;
-        r2->raw_readfn = NULL;
-        r2->raw_writefn = NULL;
-        r2->resetfn = NULL;
-        r2->fieldoffset = 0;
-        r2->bank_fieldoffsets[0] = 0;
-        r2->bank_fieldoffsets[1] = 0;
+        r2.readfn = NULL;
+        r2.writefn = NULL;
+        r2.raw_readfn = NULL;
+        r2.raw_writefn = NULL;
+        r2.resetfn = NULL;
+        r2.fieldoffset = 0;
+        r2.bank_fieldoffsets[0] = 0;
+        r2.bank_fieldoffsets[1] = 0;
     } else {
         bool isbanked = r->bank_fieldoffsets[0] && r->bank_fieldoffsets[1];
 
@@ -7497,7 +7478,7 @@ static void add_cpreg_to_hashtable(ARMCPU *cpu, const ARMCPRegInfo *r,
              * Overwriting fieldoffset as the array is only used to define
              * banked registers but later only fieldoffset is used.
              */
-            r2->fieldoffset = r->bank_fieldoffsets[ns];
+            r2.fieldoffset = r->bank_fieldoffsets[ns];
         }
         if (state == ARM_CP_STATE_AA32) {
             if (isbanked) {
@@ -7514,19 +7495,19 @@ static void add_cpreg_to_hashtable(ARMCPU *cpu, const ARMCPRegInfo *r,
                  */
                 if ((r->state == ARM_CP_STATE_BOTH && ns) ||
                     (arm_feature(env, ARM_FEATURE_V8) && !ns)) {
-                    r2->type |= ARM_CP_ALIAS;
+                    r2.type |= ARM_CP_ALIAS;
                 }
             } else if ((secstate != r->secure) && !ns) {
                 /*
                  * The register is not banked so we only want to allow
                  * migration of the non-secure instance.
                  */
-                r2->type |= ARM_CP_ALIAS;
+                r2.type |= ARM_CP_ALIAS;
             }
 
             if (HOST_BIG_ENDIAN &&
-                r->state == ARM_CP_STATE_BOTH && r2->fieldoffset) {
-                r2->fieldoffset += sizeof(uint32_t);
+                r->state == ARM_CP_STATE_BOTH && r2.fieldoffset) {
+                r2.fieldoffset += sizeof(uint32_t);
             }
         }
     }
@@ -7538,13 +7519,13 @@ static void add_cpreg_to_hashtable(ARMCPU *cpu, const ARMCPRegInfo *r,
      * multiple times. Special registers (ie NOP/WFI) are
      * never migratable and not even raw-accessible.
      */
-    if (r2->type & ARM_CP_SPECIAL_MASK) {
-        r2->type |= ARM_CP_NO_RAW;
+    if (r2.type & ARM_CP_SPECIAL_MASK) {
+        r2.type |= ARM_CP_NO_RAW;
     }
     if (((r->crm == CP_ANY) && crm != 0) ||
         ((r->opc1 == CP_ANY) && opc1 != 0) ||
         ((r->opc2 == CP_ANY) && opc2 != 0)) {
-        r2->type |= ARM_CP_ALIAS | ARM_CP_NO_GDB;
+        r2.type |= ARM_CP_ALIAS | ARM_CP_NO_GDB;
     }
 
     /*
@@ -7552,11 +7533,11 @@ static void add_cpreg_to_hashtable(ARMCPU *cpu, const ARMCPRegInfo *r,
      * we can't assert this earlier because the setup of fieldoffset for
      * banked registers has to be done first.
      */
-    if (!(r2->type & ARM_CP_NO_RAW)) {
-        assert(!raw_accessors_invalid(r2));
+    if (!(r2.type & ARM_CP_NO_RAW)) {
+        assert(!raw_accessors_invalid(&r2));
     }
 
-    g_hash_table_insert(cpu->cp_regs, (gpointer)(uintptr_t)key, r2);
+    ARMCPRegTable_set_at(cpu->cp_regs, key, r2);
 }
 
 
@@ -7817,9 +7798,9 @@ void modify_arm_cp_regs_with_len(ARMCPRegInfo *regs, size_t regs_len,
     }
 }
 
-const ARMCPRegInfo *get_arm_cp_reginfo(GHashTable *cpregs, uint32_t encoded_cp)
+const ARMCPRegInfo *get_arm_cp_reginfo(ARMCPRegTable_t cpregs, uint32_t encoded_cp)
 {
-    return g_hash_table_lookup(cpregs, (gpointer)(uintptr_t)encoded_cp);
+    return ARMCPRegTable_get(cpregs, encoded_cp);
 }
 
 void arm_cp_write_ignore(CPUARMState *env, const ARMCPRegInfo *ri,

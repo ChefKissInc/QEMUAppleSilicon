@@ -88,7 +88,7 @@ typedef struct DisasContext {
      */
     uint32_t svc_imm;
     int current_el;
-    GHashTable *cp_regs;
+    ARMCPRegTable_ptr cp_regs;
     uint64_t features; /* CPU features bits */
     bool aarch64;
     bool thumb;

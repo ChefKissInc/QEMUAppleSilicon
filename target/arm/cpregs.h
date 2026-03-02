@@ -23,7 +23,10 @@
 
 #include "hw/registerfields.h"
 #include "target/arm/kvm-consts.h"
-#include "cpu.h"
+#include "util/mlib.h"
+
+typedef struct ArchCPU ARMCPU;
+typedef struct CPUArchState CPUARMState;
 
 /*
  * ARMCPRegInfo type field bits:
@@ -995,6 +998,27 @@ struct ARMCPRegInfo {
     CPAccessFn *orig_accessfn;
 };
 
+static inline size_t arm_cp_reg_table_key_hash(uint32_t x)
+{
+    return (size_t)x;
+}
+
+static inline void arm_cp_reg_table_oor_set(uint32_t *k, uint8_t n)
+{
+    *k = UINT32_MAX - (uint32_t)n;
+}
+
+static inline bool arm_cp_reg_table_oor_equal(uint32_t k, uint8_t n)
+{
+    return k == UINT32_MAX - (uint32_t)n;
+}
+
+DICT_OA_DEF2(ARMCPRegTable, uint32_t,
+             M_OPEXTEND(M_BASIC_OPLIST, HASH(arm_cp_reg_table_key_hash),
+                        OOR_EQUAL(arm_cp_reg_table_oor_equal),
+                        OOR_SET(arm_cp_reg_table_oor_set M_IPTR)),
+             ARMCPRegInfo, M_POD_OPLIST)
+
 /*
  * Macros which are lvalues for the field in CPUARMState for the
  * ARMCPRegInfo *ri.
@@ -1025,7 +1049,7 @@ void define_arm_cp_regs_with_opaque_len(ARMCPU *cpu, const ARMCPRegInfo *regs,
 #define define_arm_cp_regs(CPU, REGS) \
     define_arm_cp_regs_with_opaque(CPU, REGS, NULL)
 
-const ARMCPRegInfo *get_arm_cp_reginfo(GHashTable *cpregs, uint32_t encoded_cp);
+const ARMCPRegInfo *get_arm_cp_reginfo(ARMCPRegTable_t cpregs, uint32_t encoded_cp);
 
 /*
  * Definition of an ARM co-processor register as viewed from
