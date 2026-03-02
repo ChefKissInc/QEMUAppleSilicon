@@ -7,7 +7,8 @@ on:
 
 jobs:
   build_linux:
-    runs-on: ubuntu-24.04
+    name: Linux Build
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -35,7 +36,8 @@ jobs:
           make -j$(nproc)
 
   build_macos:
-    runs-on: macos-15
+    name: macOS Build
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
         with:
@@ -51,7 +53,8 @@ jobs:
           make -j$(sysctl -n hw.logicalcpu)
 
   build_macos_x86_64:
-    runs-on: macos-15-intel
+    name: macOS Build (Intel)
+    runs-on: macos-26-intel
     steps:
       - uses: actions/checkout@v6
         with:
