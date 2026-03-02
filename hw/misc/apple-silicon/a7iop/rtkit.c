@@ -215,7 +215,7 @@ static void apple_rtkit_mgmt_send_hello(AppleRTKit *s)
 static void apple_rtkit_mgmt_rollcall_v10(AppleRTKit *s)
 {
     AppleRTKitManagementMessage msg = { 0 };
-    AppleRTKitEPTable_it_t it = { 0 };
+    AppleRTKitEPTable_it_t it;
     const AppleRTKitEPTable_pair_ct *cref;
 
     msg.type = MSG_TYPE_ROLLCALL;
@@ -232,7 +232,7 @@ static void apple_rtkit_mgmt_rollcall_v11(AppleRTKit *s)
     AppleA7IOP *a7iop = &s->parent_obj;
     AppleA7IOPMessage *msg;
     AppleRTKitManagementMessage mgmt_msg = { 0 };
-    AppleRTKitEPTable_it_t it = { 0 };
+    AppleRTKitEPTable_it_t it;
     const AppleRTKitEPTable_pair_ct *cref;
     uint32_t ep;
     uint32_t mask;
