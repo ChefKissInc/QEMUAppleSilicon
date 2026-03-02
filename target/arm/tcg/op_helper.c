@@ -63,7 +63,9 @@ void raise_exception(CPUARMState *env, uint32_t excp,
         }
     }
 
-    assert(!excp_is_internal(excp));
+#ifdef CONFIG_DEBUG_TCG
+    g_assert_false(excp_is_internal(excp));
+#endif
     cs->exception_index = excp;
     env->exception.syndrome = syndrome;
     env->exception.target_el = target_el;
@@ -503,7 +505,9 @@ void HELPER(exception_internal)(CPUARMState *env, uint32_t excp)
 {
     CPUState *cs = env_cpu(env);
 
-    assert(excp_is_internal(excp));
+#ifdef CONFIG_DEBUG_TCG
+    g_assert_true(excp_is_internal(excp));
+#endif
     cs->exception_index = excp;
     cpu_loop_exit(cs);
 }
