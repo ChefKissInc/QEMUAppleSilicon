@@ -2559,7 +2559,7 @@ enum arm_features {
 
 static inline int arm_feature(CPUARMState *env, int feature)
 {
-    return (env->features & (1ULL << feature)) != 0;
+    return (env->features & BIT_ULL(feature)) != 0;
 }
 
 void arm_cpu_finalize_features(ARMCPU *cpu, Error **errp);
