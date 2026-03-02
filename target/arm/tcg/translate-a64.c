@@ -127,7 +127,7 @@ static int get_a64_user_mem_index(DisasContext *s, bool unpriv)
             useridx = ARMMMUIdx_E20_0;
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
     }
     return arm_to_core_mmu_idx(useridx);
@@ -210,7 +210,7 @@ static void gen_top_byte_ignore(DisasContext *s, TCGv_i64 dst,
             /* tbi0 and tbi1: always use the extension */
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
     }
 }
@@ -1148,7 +1148,7 @@ static void do_gpr_ld_memidx(DisasContext *s, TCGv_i64 dest, TCGv_i64 tcg_addr,
     tcg_gen_qemu_ld_i64(dest, tcg_addr, memidx, memop);
 
     if (extend && (memop & MO_SIGN)) {
-        g_assert((memop & MO_SIZE) <= MO_32);
+        tcg_debug_assert((memop & MO_SIZE) <= MO_32);
         tcg_gen_ext32u_i64(dest, dest);
     }
 
@@ -1267,7 +1267,7 @@ static void read_vec_element(DisasContext *s, TCGv_i64 tcg_dest, int srcidx,
         tcg_gen_ld_i64(tcg_dest, tcg_env, vect_off);
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 }
 
@@ -1293,7 +1293,7 @@ static void read_vec_element_i32(DisasContext *s, TCGv_i32 tcg_dest, int srcidx,
         tcg_gen_ld_i32(tcg_dest, tcg_env, vect_off);
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 }
 
@@ -1316,7 +1316,7 @@ static void write_vec_element(DisasContext *s, TCGv_i64 tcg_src, int destidx,
         tcg_gen_st_i64(tcg_src, tcg_env, vect_off);
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 }
 
@@ -1335,7 +1335,7 @@ static void write_vec_element_i32(DisasContext *s, TCGv_i32 tcg_src,
         tcg_gen_st_i32(tcg_src, tcg_env, vect_off);
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 }
 
@@ -2743,7 +2743,7 @@ static void handle_sys(DisasContext *s, bool isread,
         }
         return;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 
     if (ri->type & ARM_CP_IO) {
@@ -2899,9 +2899,9 @@ static void gen_load_exclusive(DisasContext *s, int rt, int rt2, int rn,
     dirty_addr = cpu_reg_sp(s, rn);
     clean_addr = gen_mte_check1(s, dirty_addr, false, rn != 31, memop);
 
-    g_assert(size <= 3);
+    tcg_debug_assert(size <= 3);
     if (is_pair) {
-        g_assert(size >= 2);
+        tcg_debug_assert(size >= 2);
         if (size == 2) {
             tcg_gen_qemu_ld_i64(cpu_exclusive_val, clean_addr, idx, memop);
             if (s->be_data == MO_LE) {
@@ -3748,7 +3748,7 @@ static bool do_atomic_ld(DisasContext *s, arg_atomic *a, AtomicThreeOpFn *fn,
         case MO_64:
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
     }
     return true;
@@ -4601,7 +4601,7 @@ TRANS_FEAT(SUBG_i, aa64_mte_insn_reg, gen_add_sub_imm_with_tags, a, true)
  */
 static uint64_t bitfield_replicate(uint64_t mask, unsigned int e)
 {
-    assert(e != 0);
+    tcg_debug_assert(e != 0);
     while (e < 64) {
         mask |= mask << e;
         e *= 2;
@@ -4626,7 +4626,7 @@ bool logic_imm_decode_wmask(uint64_t *result, unsigned int immn,
     unsigned e, levels, s, r;
     int len;
 
-    assert(immn < 2 && imms < 64 && immr < 64);
+    tcg_debug_assert(immn < 2 && imms < 64 && immr < 64);
 
     /* The bit patterns we create here are 64 bit patterns which
      * are vectors of identical elements of size e = 2, 4, 8, 16, 32 or
@@ -6578,7 +6578,7 @@ static bool do_fp3_scalar_idx(DisasContext *s, arg_rrx_e *a, const FPScalar *f)
         }
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
     return true;
 }
@@ -6636,7 +6636,7 @@ static bool do_fmla_scalar_idx(DisasContext *s, arg_rrx_e *a, bool neg)
         }
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
     return true;
 }
@@ -6929,7 +6929,7 @@ static bool trans_FCMLA_vi(DisasContext *s, arg_FCMLA_vi *a)
         fn = gen_helper_gvec_fcmlas_idx;
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
     if (fp_access_check(s)) {
         gen_gvec_op4_fpst(s, a->q, a->rd, a->rn, a->rm, a->rd,
@@ -6983,7 +6983,7 @@ static bool do_fp3_scalar_pair(DisasContext *s, arg_rr_e *a, const FPScalar *f)
         }
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
     return true;
 }
@@ -7349,7 +7349,7 @@ static void handle_fp_compare(DisasContext *s, int size,
             }
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
     }
 
@@ -8092,7 +8092,7 @@ static bool do_crc32(DisasContext *s, arg_rrr_e *a, bool crc32c)
         tcg_val = cpu_reg(s, a->rm);
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
     tcg_acc = cpu_reg(s, a->rn);
     tcg_bytes = tcg_constant_i32(1 << a->esz);
@@ -8827,7 +8827,7 @@ static bool do_fp1_scalar_with_fpsttype(DisasContext *s, arg_rr_e *a,
         write_fp_hreg_merging(s, a->rd, a->rd, t32);
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 
     if (rmode >= 0) {
@@ -9076,7 +9076,7 @@ static bool do_cvtf_scalar(DisasContext *s, MemOp esz, int rd, int shift,
         break;
 
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
     return true;
 }
@@ -9157,7 +9157,7 @@ static void do_fcvt_scalar(DisasContext *s, MemOp out, MemOp esz,
             gen_helper_vfp_tould(tcg_out, tcg_out, tcg_shift, tcg_fpstatus);
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
         break;
 
@@ -9181,7 +9181,7 @@ static void do_fcvt_scalar(DisasContext *s, MemOp out, MemOp esz,
             tcg_gen_extu_i32_i64(tcg_out, tcg_single);
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
         break;
 
@@ -9215,12 +9215,12 @@ static void do_fcvt_scalar(DisasContext *s, MemOp out, MemOp esz,
             tcg_gen_extu_i32_i64(tcg_out, tcg_single);
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
         break;
 
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 
     gen_restore_rmode(tcg_rmode, tcg_fpstatus);
@@ -10231,7 +10231,7 @@ static void aarch64_tr_init_disas_context(DisasContextBase *dcbase,
     dc->ata[1] = EX_TBFLAG_A64(tb_flags, ATA0);
     dc->mte_active[0] = EX_TBFLAG_A64(tb_flags, MTE_ACTIVE);
     dc->mte_active[1] = EX_TBFLAG_A64(tb_flags, MTE0_ACTIVE);
-    g_assert(arm_is_guarded(env) == arm_mmu_idx_is_guarded(dc->mmu_idx));
+    tcg_debug_assert(arm_is_guarded(env) == arm_mmu_idx_is_guarded(dc->mmu_idx));
     dc->guarded = dc->gxf_active && arm_is_guarded(env);
     dc->pstate_sm = EX_TBFLAG_A64(tb_flags, PSTATE_SM);
     dc->pstate_za = EX_TBFLAG_A64(tb_flags, PSTATE_ZA);
