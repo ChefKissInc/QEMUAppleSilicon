@@ -39,8 +39,8 @@ static void apple_typec_realize(DeviceState *dev, Error **errp)
     s->dma_mr = MEMORY_REGION(obj);
     memory_region_add_subregion(&s->dma_container_mr, 0, s->dma_mr);
 
-    assert(object_property_add_const_link(OBJECT(&s->dwc3), "dma-mr",
-                                          OBJECT(&s->dma_container_mr)));
+    object_property_add_const_link(OBJECT(&s->dwc3), "dma-mr",
+                                          OBJECT(&s->dma_container_mr));
 
     obj = object_property_get_link(OBJECT(dev), "dma-xhci", errp);
     g_assert_nonnull(obj);
