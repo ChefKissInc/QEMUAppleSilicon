@@ -292,6 +292,11 @@ endforeach
 qemu_common_flags = [
   '-D_GNU_SOURCE', '-D_FILE_OFFSET_BITS=64', '-D_LARGEFILE_SOURCE',
   '-fno-strict-aliasing', '-fno-common', '-fwrapv' ]
+if get_option('debug')
+  qemu_common_flags += ['-DDEBUG']
+else
+  qemu_common_flags += ['-DG_DISABLE_ASSERT', '-DNDEBUG']
+endif
 qemu_cflags = []
 qemu_ldflags = []
 

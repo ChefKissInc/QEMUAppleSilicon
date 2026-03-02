@@ -651,7 +651,7 @@ static void msr_mrs_banked_exc_checks(CPUARMState *env, uint32_t tgtmode,
             }
             break;
         default:
-            tcg_debug_assert(false);
+            tcg_debug_assert_not_reached();
         }
         return;
     }
@@ -721,11 +721,11 @@ void HELPER(msr_banked)(CPUARMState *env, uint32_t value, uint32_t tgtmode,
             env->fiq_regs[regno - 8] = value;
             break;
         default:
-            tcg_debug_assert(false);
+            tcg_debug_assert_not_reached();
         }
         break;
     default:
-        tcg_debug_assert(false);
+        tcg_debug_assert_not_reached();
     }
 }
 
@@ -754,10 +754,10 @@ uint32_t HELPER(mrs_banked)(CPUARMState *env, uint32_t tgtmode, uint32_t regno)
         case ARM_CPU_MODE_FIQ:
             return env->fiq_regs[regno - 8];
         default:
-            tcg_debug_assert(false);
+            tcg_debug_assert_not_reached();
         }
     default:
-        tcg_debug_assert(false);
+        tcg_debug_assert_not_reached();
     }
 }
 
@@ -892,7 +892,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
         syndrome = syn_uncategorized();
         break;
     default:
-        tcg_debug_assert(false);
+        tcg_debug_assert_not_reached();
     }
 
     target_el = res & CP_ACCESS_EL_MASK;
@@ -911,7 +911,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
         tcg_debug_assert(arm_feature(env, ARM_FEATURE_EL3));
         break;
     default:
-        tcg_debug_assert(false);
+        tcg_debug_assert_not_reached();
     }
 
     raise_exception(env, excp, syndrome, target_el);

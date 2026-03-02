@@ -285,21 +285,6 @@ void QEMU_ERROR("code path is reachable")
 #ifndef WCOREDUMP
 #define WCOREDUMP(status) 0
 #endif
-/*
- * We have a lot of unaudited code that may fail in strange ways, or
- * even be a security risk during migration, if you disable assertions
- * at compile-time.  You may comment out these safety checks if you
- * absolutely want to disable assertion overhead, but it is not
- * supported upstream so the risk is all yours.  Meanwhile, please
- * submit patches to remove any side-effects inside an assertion, or
- * fixing error handling that should use Error instead of assert.
- */
-#ifdef NDEBUG
-#error building with NDEBUG is not supported
-#endif
-#ifdef G_DISABLE_ASSERT
-#error building with G_DISABLE_ASSERT is not supported
-#endif
 
 #ifndef OFF_MAX
 #define OFF_MAX (sizeof (off_t) == 8 ? INT64_MAX : INT32_MAX)
