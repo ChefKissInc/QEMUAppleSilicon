@@ -647,7 +647,7 @@ static void msr_mrs_banked_exc_checks(CPUARMState *env, uint32_t tgtmode,
             }
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
         return;
     }
@@ -717,11 +717,11 @@ void HELPER(msr_banked)(CPUARMState *env, uint32_t value, uint32_t tgtmode,
             env->fiq_regs[regno - 8] = value;
             break;
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 }
 
@@ -750,15 +750,16 @@ uint32_t HELPER(mrs_banked)(CPUARMState *env, uint32_t tgtmode, uint32_t regno)
         case ARM_CPU_MODE_FIQ:
             return env->fiq_regs[regno - 8];
         default:
-            g_assert_not_reached();
+            tcg_debug_assert(false);
         }
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 }
 
 const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
-                                        uint32_t syndrome, uint32_t isread)
+                                        uint32_t syndrome, uint32_t isread,
+                                        uint32_t fgt_active)
 {
     ARMCPU *cpu = env_archcpu(env);
     const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, key);
@@ -766,9 +767,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
     int target_el;
     uint32_t excp;
 
-#ifdef CONFIG_DEBUG_TCG
-    g_assert(ri != NULL);
-#endif
+    tcg_debug_assert(ri != NULL);
 
     if (arm_feature(env, ARM_FEATURE_XSCALE) && ri->cp < 14
         && extract32(env->cp15.c15_cpar, ri->cp, 1) == 0) {
@@ -798,9 +797,8 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
      * HSTR_EL2 traps from EL1 are checked earlier, in generated code;
      * we only need to check here for traps from EL0.
      */
-    if (!is_a64(env) && arm_current_el(env) == 0 && ri->cp == 15 &&
-        arm_is_el2_enabled(env) &&
-        (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE)) {
+    if (unlikely(arm_is_el2_enabled(env)) && !is_a64(env) && arm_current_el(env) == 0 &&
+        ri->cp == 15 && (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE)) {
         uint32_t mask = 1 << ri->crn;
 
         if (ri->type & ARM_CP_64BIT) {
@@ -821,7 +819,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
      * higher priority than trap-to-EL3, and we don't care about priority
      * order with other EL2 traps because the syndrome value is the same.
      */
-    if (arm_fgt_active(env, arm_current_el(env))) {
+    if (unlikely(fgt_active)) {
         uint64_t trapword = 0;
         unsigned int idx = REG_FIELD_EX32(ri->fgt, FGT, IDX);
         unsigned int bitpos = REG_FIELD_EX32(ri->fgt, FGT, BITPOS);
@@ -890,7 +888,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
         syndrome = syn_uncategorized();
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 
     target_el = res & CP_ACCESS_EL_MASK;
@@ -899,17 +897,17 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
         target_el = exception_target_el(env);
         break;
     case 1:
-        assert(arm_current_el(env) < 2);
+        tcg_debug_assert(arm_current_el(env) < 2);
         break;
     case 2:
-        assert(arm_current_el(env) != 3);
-        assert(arm_is_el2_enabled(env));
+        tcg_debug_assert(arm_current_el(env) != 3);
+        tcg_debug_assert(arm_is_el2_enabled(env));
         break;
     case 3:
-        assert(arm_feature(env, ARM_FEATURE_EL3));
+        tcg_debug_assert(arm_feature(env, ARM_FEATURE_EL3));
         break;
     default:
-        g_assert_not_reached();
+        tcg_debug_assert(false);
     }
 
     raise_exception(env, excp, syndrome, target_el);
@@ -920,9 +918,7 @@ const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
     ARMCPU *cpu = env_archcpu(env);
     const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, key);
 
-#ifdef CONFIG_DEBUG_TCG
-    g_assert(ri != NULL);
-#endif
+    tcg_debug_assert(ri != NULL);
     return ri;
 }
 

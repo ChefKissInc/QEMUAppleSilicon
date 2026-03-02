@@ -3067,7 +3067,8 @@ static void do_coproc_insn(DisasContext *s, int cpnum, int is64,
         gen_helper_access_check_cp_reg(tcg_ri, tcg_env,
                                        tcg_constant_i32(key),
                                        tcg_constant_i32(syndrome),
-                                       tcg_constant_i32(isread));
+                                       tcg_constant_i32(isread),
+                                       tcg_constant_i32(s->fgt_active));
     } else if (ri->type & ARM_CP_RAISES_EXC) {
         /*
          * The readfn or writefn might raise an exception;

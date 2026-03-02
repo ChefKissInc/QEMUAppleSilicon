@@ -1949,9 +1949,8 @@ static inline bool arm_fgt_active(CPUARMState *env, int el)
      * FGT traps only happen when EL2 is enabled and EL1 is AArch64;
      * traps from AArch32 only happen for the EL0 is AArch32 case.
      */
-    return cpu_isar_feature(aa64_fgt, env_archcpu(env)) &&
-        el < 2 && arm_is_el2_enabled(env) &&
-        arm_el_is_aa64(env, 1) &&
+    return arm_is_el2_enabled(env) && cpu_isar_feature(aa64_fgt, env_archcpu(env)) &&
+        el < 2 && arm_el_is_aa64(env, 1) &&
         (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE) &&
         (!arm_feature(env, ARM_FEATURE_EL3) || (env->cp15.scr_el3 & SCR_FGTEN));
 }
