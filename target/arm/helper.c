@@ -3260,27 +3260,24 @@ static CPAccessResult aa64_zva_access(CPUARMState *env, const ARMCPRegInfo *ri,
                                       bool isread)
 {
     int cur_el = arm_current_el(env);
+    if (cur_el >= 2) {
+        return CP_ACCESS_OK;
+    }
 
-    if (cur_el < 2) {
-        uint64_t hcr = arm_hcr_el2_eff(env);
+    uint64_t hcr = arm_hcr_el2_eff(env);
+    bool is_el0 = cur_el == 0;
+    bool e2h_tge = ((hcr & (HCR_E2H | HCR_TGE)) == (HCR_E2H | HCR_TGE));
 
-        if (cur_el == 0) {
-            if ((hcr & (HCR_E2H | HCR_TGE)) == (HCR_E2H | HCR_TGE)) {
-                if (!(env->cp15.sctlr_el[2] & SCTLR_DZE)) {
-                    return CP_ACCESS_TRAP_EL2;
-                }
-            } else {
-                if (!(env->cp15.sctlr_el[1] & SCTLR_DZE)) {
-                    return CP_ACCESS_TRAP_EL1;
-                }
-                if (hcr & HCR_TDZ) {
-                    return CP_ACCESS_TRAP_EL2;
-                }
-            }
-        } else if (hcr & HCR_TDZ) {
-            return CP_ACCESS_TRAP_EL2;
+    if (is_el0) {
+        if (!(env->cp15.sctlr_el[1 + (int)e2h_tge] & SCTLR_DZE)) {
+            return (e2h_tge ? CP_ACCESS_TRAP_EL2 : CP_ACCESS_TRAP_EL1);
         }
     }
+
+    if ((hcr & HCR_TDZ) && (!is_el0 || !e2h_tge)) {
+        return CP_ACCESS_TRAP_EL2;
+    }
+
     return CP_ACCESS_OK;
 }
 
