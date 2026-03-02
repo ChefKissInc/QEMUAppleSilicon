@@ -766,7 +766,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
                                         uint32_t fgt_active)
 {
     ARMCPU *cpu = env_archcpu(env);
-    const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, key);
+    const ARMCPRegInfo *ri = ARMCPRegTable_cget(cpu->cp_regs, key);
     CPAccessResult res = CP_ACCESS_OK;
     int target_el;
     uint32_t excp;
@@ -920,7 +920,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
 const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
 {
     ARMCPU *cpu = env_archcpu(env);
-    const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, key);
+    const ARMCPRegInfo *ri = ARMCPRegTable_cget(cpu->cp_regs, key);
 
     tcg_debug_assert(ri != NULL);
     return ri;

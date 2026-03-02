@@ -545,7 +545,7 @@ int hvf_arch_get_registers(CPUState *cpu)
                  */
                 uint32_t key = kvm_to_cpreg_id(kvm_id);
                 const ARMCPRegInfo *ri =
-                    get_arm_cp_reginfo(arm_cpu->cp_regs, key);
+                    ARMCPRegTable_cget(arm_cpu->cp_regs, key);
 
                 val = read_raw_cp_reg(env, ri);
 
@@ -934,7 +934,7 @@ int hvf_arch_init_vcpu(CPUState *cpu)
         hv_sys_reg_t hvf_id = hvf_sreg_list[i];
         uint64_t kvm_id = HVF_TO_KVMID(hvf_id);
         uint32_t key = kvm_to_cpreg_id(kvm_id);
-        const ARMCPRegInfo *ri = get_arm_cp_reginfo(arm_cpu->cp_regs, key);
+        const ARMCPRegInfo *ri = ARMCPRegTable_cget(arm_cpu->cp_regs, key);
 
         if (ri) {
             assert(!(ri->type & ARM_CP_NO_RAW));
@@ -1161,7 +1161,7 @@ static bool hvf_sysreg_read_cp(CPUState *cpu, const char *cpname,
     CPUARMState *env = &arm_cpu->env;
     const ARMCPRegInfo *ri;
 
-    ri = get_arm_cp_reginfo(arm_cpu->cp_regs, hvf_reg2cp_reg(reg));
+    ri = ARMCPRegTable_cget(arm_cpu->cp_regs, hvf_reg2cp_reg(reg));
     if (ri) {
         if (!cp_access_ok(1, ri, true)) {
             return false;
@@ -1192,7 +1192,7 @@ static bool hvf_sysreg_write_cp(CPUState *cpu, const char *cpname,
     CPUARMState *env = &arm_cpu->env;
     const ARMCPRegInfo *ri;
 
-    ri = get_arm_cp_reginfo(arm_cpu->cp_regs, hvf_reg2cp_reg(reg));
+    ri = ARMCPRegTable_cget(arm_cpu->cp_regs, hvf_reg2cp_reg(reg));
 
     if (ri) {
         if (!cp_access_ok(1, ri, false)) {

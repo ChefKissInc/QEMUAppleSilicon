@@ -143,7 +143,7 @@ bool write_cpustate_to_list(ARMCPU *cpu, bool kvm_sync)
         const ARMCPRegInfo *ri;
         uint64_t newval;
 
-        ri = get_arm_cp_reginfo(cpu->cp_regs, regidx);
+        ri = ARMCPRegTable_cget(cpu->cp_regs, regidx);
         if (!ri) {
             ok = false;
             continue;
@@ -186,9 +186,7 @@ bool write_list_to_cpustate(ARMCPU *cpu)
     for (i = 0; i < cpu->cpreg_array_len; i++) {
         uint32_t regidx = kvm_to_cpreg_id(cpu->cpreg_indexes[i]);
         uint64_t v = cpu->cpreg_values[i];
-        const ARMCPRegInfo *ri;
-
-        ri = get_arm_cp_reginfo(cpu->cp_regs, regidx);
+        const ARMCPRegInfo *ri = ARMCPRegTable_cget(cpu->cp_regs, regidx);
         if (!ri) {
             ok = false;
             continue;
@@ -256,7 +254,7 @@ void init_cpreg_list(ARMCPU *cpu)
     cpu->cpreg_array_len = 0;
     for (cpreg_key_array_it(key_it, key_array); !cpreg_key_array_end_p(key_it); cpreg_key_array_next(key_it)) {
         uint32_t regidx = *cpreg_key_array_cref(key_it);
-        const ARMCPRegInfo *ri = get_arm_cp_reginfo(cpu->cp_regs, regidx);
+        const ARMCPRegInfo *ri = ARMCPRegTable_cget(cpu->cp_regs, regidx);
 
         if (!(ri->type & (ARM_CP_NO_RAW | ARM_CP_ALIAS))) {
             cpu->cpreg_indexes[cpu->cpreg_array_len] = cpreg_to_kvm_id(regidx);
@@ -4667,7 +4665,7 @@ static void define_arm_vh_e2h_redirects_aliases(ARMCPU *cpu)
             new_reg.nv2_redirect_offset |= NV2_REDIR_NO_NV1;
         }
 
-        g_assert_null(ARMCPRegTable_get(cpu->cp_regs, a->new_key));
+        g_assert_null(ARMCPRegTable_cget(cpu->cp_regs, a->new_key));
         ARMCPRegTable_set_at(cpu->cp_regs, a->new_key, new_reg);
 
         src_reg->opaque = dst_reg;
@@ -7389,7 +7387,7 @@ static void add_cpreg_to_hashtable(ARMCPU *cpu, const ARMCPRegInfo *r,
 
     /* Overriding of an existing definition must be explicitly requested. */
     if (!(r->type & ARM_CP_OVERRIDE)) {
-        const ARMCPRegInfo *oldreg = get_arm_cp_reginfo(cpu->cp_regs, key);
+        const ARMCPRegInfo *oldreg = ARMCPRegTable_cget(cpu->cp_regs, key);
         if (oldreg) {
             assert(oldreg->type & ARM_CP_OVERRIDE);
         }
@@ -7796,11 +7794,6 @@ void modify_arm_cp_regs_with_len(ARMCPRegInfo *regs, size_t regs_len,
             g_pattern_spec_free(pat);
         }
     }
-}
-
-const ARMCPRegInfo *get_arm_cp_reginfo(ARMCPRegTable_t cpregs, uint32_t encoded_cp)
-{
-    return ARMCPRegTable_get(cpregs, encoded_cp);
 }
 
 void arm_cp_write_ignore(CPUARMState *env, const ARMCPRegInfo *ri,

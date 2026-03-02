@@ -2478,7 +2478,7 @@ static void handle_sys(DisasContext *s, bool isread,
 {
     uint32_t key = ENCODE_AA64_CP_REG(CP_REG_ARM64_SYSREG_CP,
                                       crn, crm, op0, op1, op2);
-    const ARMCPRegInfo *ri = get_arm_cp_reginfo(s->cp_regs, key);
+    const ARMCPRegInfo *ri = ARMCPRegTable_cget(s->cp_regs, key);
     bool need_exit_tb = false;
     bool nv_trap_to_el2 = false;
     bool nv_redirect_reg = false;
@@ -2616,14 +2616,14 @@ static void handle_sys(DisasContext *s, bool isread,
          */
         key = ENCODE_AA64_CP_REG(CP_REG_ARM64_SYSREG_CP,
                                  crn, crm, op0, 0, op2);
-        ri = get_arm_cp_reginfo(s->cp_regs, key);
-        assert(ri);
-        assert(cp_access_ok(s->current_el, ri, isread));
+        ri = ARMCPRegTable_cget(s->cp_regs, key);
+        tcg_debug_assert(ri);
+        tcg_debug_assert(cp_access_ok(s->current_el, ri, isread));
         /*
          * We might not have done an update_pc earlier, so check we don't
          * need it. We could support this in future if necessary.
          */
-        assert(!(ri->type & ARM_CP_RAISES_EXC));
+        tcg_debug_assert(!(ri->type & ARM_CP_RAISES_EXC));
     }
 
     if (nv2_mem_redirect) {

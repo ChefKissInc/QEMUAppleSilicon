@@ -239,7 +239,7 @@ static int arm_gdb_get_sysreg(CPUState *cs, GByteArray *buf, int reg)
     uint32_t key;
 
     key = cpu->dyn_sysreg_feature.data.cpregs.keys[reg];
-    ri = get_arm_cp_reginfo(cpu->cp_regs, key);
+    ri = ARMCPRegTable_cget(cpu->cp_regs, key);
     if (ri) {
         if (cpreg_field_is_64bit(ri)) {
             return gdb_get_reg64(buf, (uint64_t)read_raw_cp_reg(env, ri));

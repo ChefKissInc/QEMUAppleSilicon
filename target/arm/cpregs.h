@@ -1049,8 +1049,6 @@ void define_arm_cp_regs_with_opaque_len(ARMCPU *cpu, const ARMCPRegInfo *regs,
 #define define_arm_cp_regs(CPU, REGS) \
     define_arm_cp_regs_with_opaque(CPU, REGS, NULL)
 
-const ARMCPRegInfo *get_arm_cp_reginfo(ARMCPRegTable_t cpregs, uint32_t encoded_cp);
-
 /*
  * Definition of an ARM co-processor register as viewed from
  * userspace. This is used for presenting sanitised versions of

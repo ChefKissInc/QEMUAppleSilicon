@@ -2929,7 +2929,7 @@ static void do_coproc_insn(DisasContext *s, int cpnum, int is64,
                            bool isread, int rt, int rt2)
 {
     uint32_t key = ENCODE_CP_REG(cpnum, is64, s->ns, crn, crm, opc1, opc2);
-    const ARMCPRegInfo *ri = get_arm_cp_reginfo(s->cp_regs, key);
+    const ARMCPRegInfo *ri = ARMCPRegTable_cget(s->cp_regs, key);
     TCGv_ptr tcg_ri = NULL;
     bool need_exit_tb = false;
     uint32_t syndrome;
