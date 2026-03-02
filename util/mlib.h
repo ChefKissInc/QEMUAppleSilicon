@@ -21,8 +21,9 @@
 
 // Speed up compilation and runtime speed.
 #ifndef DEBUG
-#define M_ASSERT(expr) ((expr) ? (void)0 : __builtin_unreachable())
-#define M_ASSERT_SLOW(expr) ((expr) ? (void)0 : __builtin_unreachable())
+#define M_ASSERT(expr) (void)0
+#define M_ASSERT_SLOW(expr) (void)0
+#define NDEBUG
 #endif
 
 #include "mlib/m-algo.h"
