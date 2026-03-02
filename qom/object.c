@@ -25,6 +25,7 @@
 #include "qapi/qapi-builtin-visit.h"
 #include "qobject/qjson.h"
 #include "trace.h"
+#include "util/mlib.h"
 
 /* TODO: replace QObject with a simpler visitor to avoid a dependency
  * of the QOM core on QObject?  */
@@ -76,12 +77,33 @@ struct TypeImpl
 
 static Type type_interface;
 
-static GHashTable *type_table_get(void)
-{
-    static GHashTable *type_table;
+static const char empty_str[] = "(null)";
+static const char deleted_str[] = "(deleted)";
+static const char *const oor_table[] = { empty_str, deleted_str };
 
-    if (type_table == NULL) {
-        type_table = g_hash_table_new(g_str_hash, g_str_equal);
+static inline bool oor_equal_p(const char *k, int n)
+{
+    return k == oor_table[n];
+}
+
+static inline const char *oor_set(int n)
+{
+    return oor_table[n];
+}
+
+DICT_OA_DEF2(TypeTable, const char *,
+             M_OPEXTEND(M_CSTR_OPLIST, OOR_EQUAL(oor_equal_p),
+                        OOR_SET(API_4(oor_set))),
+             TypeImpl, M_POD_OPLIST)
+
+static TypeTable_ptr type_table_get(void)
+{
+    static TypeTable_t type_table;
+    static bool once = true;
+
+    if (once) {
+        TypeTable_init(type_table);
+        once = false;
     }
 
     return type_table;
@@ -89,20 +111,13 @@ static GHashTable *type_table_get(void)
 
 static bool enumerating_types;
 
-static void type_table_add(TypeImpl *ti)
-{
-    assert(!enumerating_types);
-    g_hash_table_insert(type_table_get(), (void *)ti->name, ti);
-}
-
 static TypeImpl *type_table_lookup(const char *name)
 {
-    return g_hash_table_lookup(type_table_get(), name);
+    return TypeTable_get(type_table_get(), name);
 }
 
-static TypeImpl *type_new(const TypeInfo *info)
+static void type_construct(TypeImpl *ti, const TypeInfo *info)
 {
-    TypeImpl *ti = g_malloc0(sizeof(*ti));
     int i;
 
     g_assert(info->name != NULL);
@@ -133,6 +148,25 @@ static TypeImpl *type_new(const TypeInfo *info)
         ti->interfaces[i].typename = g_strdup(info->interfaces[i].type);
     }
     ti->num_interfaces = i;
+}
+
+static TypeImpl *type_table_add(const TypeInfo *info)
+{
+    TypeImpl ti;
+
+    assert(!enumerating_types);
+
+    type_construct(&ti, info);
+    TypeTable_set_at(type_table_get(), ti.name, ti);
+    return TypeTable_get(type_table_get(), ti.name);
+}
+
+static TypeImpl *type_new(const TypeInfo *info)
+{
+    TypeImpl *ti;
+
+    ti = g_new0(TypeImpl, 1);
+    type_construct(ti, info);
 
     return ti;
 }
@@ -162,17 +196,12 @@ static bool type_name_is_valid(const char *name)
 
 static TypeImpl *type_register_internal(const TypeInfo *info)
 {
-    TypeImpl *ti;
-
     if (!type_name_is_valid(info->name)) {
         fprintf(stderr, "Registering '%s' with illegal type name\n", info->name);
         abort();
     }
 
-    ti = type_new(info);
-
-    type_table_add(ti);
-    return ti;
+    return type_table_add(info);
 }
 
 TypeImpl *type_register_static(const TypeInfo *info)
@@ -1092,44 +1121,32 @@ ObjectClass *object_class_get_parent(ObjectClass *class)
     return type->class;
 }
 
-typedef struct OCFData
-{
-    void (*fn)(ObjectClass *klass, void *opaque);
-    const char *implements_type;
-    bool include_abstract;
-    void *opaque;
-} OCFData;
-
-static void object_class_foreach_tramp(gpointer key, gpointer value,
-                                       gpointer opaque)
-{
-    OCFData *data = opaque;
-    TypeImpl *type = value;
-    ObjectClass *k;
-
-    type_initialize(type);
-    k = type->class;
-
-    if (!data->include_abstract && type->abstract) {
-        return;
-    }
-
-    if (data->implements_type && 
-        !object_class_dynamic_cast(k, data->implements_type)) {
-        return;
-    }
-
-    data->fn(k, data->opaque);
-}
-
 void object_class_foreach(void (*fn)(ObjectClass *klass, void *opaque),
                           const char *implements_type, bool include_abstract,
                           void *opaque)
 {
-    OCFData data = { fn, implements_type, include_abstract, opaque };
+    TypeTable_it_t it;
+    TypeTable_pair_ct *ref;
+    ObjectClass *k;
 
     enumerating_types = true;
-    g_hash_table_foreach(type_table_get(), object_class_foreach_tramp, &data);
+    for (TypeTable_it(it, type_table_get()); !TypeTable_end_p(it); TypeTable_next(it))
+    {
+        ref = TypeTable_ref(it);
+        type_initialize(&ref->value);
+        k = ref->value.class;
+
+        if (!include_abstract && ref->value.abstract) {
+            continue;
+        }
+
+        if (implements_type && 
+            !object_class_dynamic_cast(k, implements_type)) {
+            continue;
+        }
+
+        fn(k, opaque);
+    }
     enumerating_types = false;
 }
 
