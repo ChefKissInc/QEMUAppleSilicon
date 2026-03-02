@@ -16,9 +16,8 @@ jobs:
           submodules: true
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get upgrade
-          sudo apt-get install -y build-essential libtool meson ninja-build pkg-config libcapstone-dev device-tree-compiler libglib2.0-dev gnutls-bin libjpeg-turbo8-dev libpng-dev libslirp-dev libssh-dev libusb-1.0-0-dev liblzo2-dev libncurses5-dev libpixman-1-dev libsnappy-dev vde2 zstd libgnutls28-dev libgmp10 libgmp3-dev lzfse liblzfse-dev
+          sudo apt-get install -y build-essential libtool meson ninja-build pkg-config libcapstone-dev device-tree-compiler libglib2.0-dev gnutls-bin libjpeg-turbo8-dev libpng-dev libslirp-dev libssh-dev libusb-1.0-0-dev liblzo2-dev libncurses5-dev libpixman-1-dev libsnappy-dev vde2 zstd libgnutls28-dev libgmp10 libgmp3-dev lzfse liblzfse-dev python3-pip
+          pip3 install --user --upgrade meson
       - name: Build nettle 3.10.2
         run: |
           wget https://ftpmirror.gnu.org/gnu/nettle/nettle-3.10.2.tar.gz
@@ -32,6 +31,7 @@ jobs:
         run: |
           mkdir build
           cd build
+          export PATH="$HOME/.local/bin:$PATH"
           PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig ../configure --target-list=aarch64-softmmu,x86_64-softmmu --disable-linux-user --disable-guest-agent --enable-capstone --enable-slirp --enable-lzfse --enable-nettle --enable-gnutls --disable-werror --disable-qom-cast-debug --disable-plugins
           make -j$(nproc)
 
