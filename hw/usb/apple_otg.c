@@ -75,8 +75,8 @@ static void apple_otg_realize(DeviceState *dev, Error **errp)
         memory_region_add_subregion(&s->dma_container_mr, 0, s->dma_mr);
         s->dart = false;
     }
-    assert(object_property_add_const_link(OBJECT(&s->dwc2), "dma-mr",
-                                          OBJECT(&s->dma_container_mr)));
+    object_property_add_const_link(OBJECT(&s->dwc2), "dma-mr",
+                                          OBJECT(&s->dma_container_mr));
     sysbus_realize(SYS_BUS_DEVICE(&s->dwc2), errp);
     sysbus_pass_irq(SYS_BUS_DEVICE(s), SYS_BUS_DEVICE(&s->dwc2));
 
