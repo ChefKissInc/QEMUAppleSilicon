@@ -1,1 +1,0 @@
-double-type.json:2: expression must have exactly one key 'enum', 'struct', 'union', 'alternate', 'command', 'event'

@@ -37,7 +37,6 @@
 #include "qobject/qlist.h"
 #include "qobject/qstring.h"
 #include "qapi/qobject-input-visitor.h"
-#include "system/qtest.h"
 
 /* All APIs are thread-safe */
 
@@ -801,9 +800,7 @@ static void suspend_request(BlockDriverState *bs, BlkdebugRule *rule)
     remove_rule(rule);
     QLIST_INSERT_HEAD(&s->suspended_reqs, r, next);
 
-    if (!qtest_enabled()) {
-        printf("blkdebug: Suspended request '%s'\n", r->tag);
-    }
+    printf("blkdebug: Suspended request '%s'\n", r->tag);
 }
 
 /* Called with lock held.  */
@@ -903,9 +900,7 @@ retry:
         if (!strcmp(r->tag, tag)) {
             Coroutine *co = r->co;
 
-            if (!qtest_enabled()) {
-                printf("blkdebug: Resuming request '%s'\n", r->tag);
-            }
+            printf("blkdebug: Resuming request '%s'\n", r->tag);
 
             QLIST_REMOVE(r, next);
             g_free(r->tag);

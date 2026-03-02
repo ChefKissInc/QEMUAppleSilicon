@@ -33,7 +33,6 @@
 #include "system/cpus.h"
 #include "system/hw_accel.h"
 #include "system/runstate.h"
-#include "system/qtest.h"
 #include "kvm_ppc.h"
 
 #include "hw/ppc/spapr.h"
@@ -533,49 +532,6 @@ target_ulong spapr_rtas_call(PowerPCCPU *cpu, SpaprMachineState *spapr,
     return H_PARAMETER;
 }
 
-static uint64_t qtest_rtas_call(char *cmd, uint32_t nargs, uint64_t args,
-                                uint32_t nret, uint64_t rets)
-{
-    int token;
-
-    for (token = 0; token < RTAS_TOKEN_MAX - RTAS_TOKEN_BASE; token++) {
-        if (strcmp(cmd, rtas_table[token].name) == 0) {
-            SpaprMachineState *spapr = SPAPR_MACHINE(qdev_get_machine());
-            PowerPCCPU *cpu = POWERPC_CPU(first_cpu);
-
-            rtas_table[token].fn(cpu, spapr, token + RTAS_TOKEN_BASE,
-                                 nargs, args, nret, rets);
-            return H_SUCCESS;
-        }
-    }
-    return H_PARAMETER;
-}
-
-static bool spapr_qtest_callback(CharBackend *chr, gchar **words)
-{
-    if (strcmp(words[0], "rtas") == 0) {
-        uint64_t res, args, ret;
-        unsigned long nargs, nret;
-        int rc;
-
-        rc = qemu_strtoul(words[2], NULL, 0, &nargs);
-        g_assert(rc == 0);
-        rc = qemu_strtou64(words[3], NULL, 0, &args);
-        g_assert(rc == 0);
-        rc = qemu_strtoul(words[4], NULL, 0, &nret);
-        g_assert(rc == 0);
-        rc = qemu_strtou64(words[5], NULL, 0, &ret);
-        g_assert(rc == 0);
-        res = qtest_rtas_call(words[1], nargs, args, nret, ret);
-
-        qtest_sendf(chr, "OK %"PRIu64"\n", res);
-
-        return true;
-    }
-
-    return false;
-}
-
 void spapr_rtas_register(int token, const char *name, spapr_rtas_fn fn)
 {
     assert((token >= RTAS_TOKEN_BASE) && (token < RTAS_TOKEN_MAX));
@@ -658,8 +614,6 @@ static void core_rtas_register_types(void)
                         rtas_ibm_nmi_register);
     spapr_rtas_register(RTAS_IBM_NMI_INTERLOCK, "ibm,nmi-interlock",
                         rtas_ibm_nmi_interlock);
-
-    qtest_set_command_cb(spapr_qtest_callback);
 }
 
 type_init(core_rtas_register_types)

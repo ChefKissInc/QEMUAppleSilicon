@@ -1817,15 +1817,10 @@ DEF("fsdev", HAS_ARG, QEMU_OPTION_fsdev,
 
 SRST
 ``-fsdev local,id=id,path=path,security_model=security_model [,writeout=writeout][,readonly=on][,fmode=fmode][,dmode=dmode] [,throttling.option=value[,throttling.option=value[,...]]]``
-  \ 
-``-fsdev synth,id=id[,readonly=on]``
     Define a new file system device. Valid options are:
 
     ``local``
         Accesses to the filesystem are done by QEMU.
-
-    ``synth``
-        Synthetic filesystem, only used by QTests.
 
     ``id=id``
         Specifies identifier for this device.
@@ -1933,9 +1928,6 @@ SRST
 
     ``local``
         Accesses to the filesystem are done by QEMU.
-
-    ``synth``
-        Synthetic filesystem, only used by QTests.
 
     ``id=id``
         Specifies identifier for the filesystem device
@@ -5430,10 +5422,6 @@ SRST
     ``argname=argvalue``
         Argument passed to the plugin. (Can be given multiple times.)
 ERST
-
-HXCOMM Internal use
-DEF("qtest", HAS_ARG, QEMU_OPTION_qtest, "", QEMU_ARCH_ALL)
-DEF("qtest-log", HAS_ARG, QEMU_OPTION_qtest_log, "", QEMU_ARCH_ALL)
 
 #if defined(CONFIG_POSIX) && !defined(EMSCRIPTEN)
 DEF("run-with", HAS_ARG, QEMU_OPTION_run_with,

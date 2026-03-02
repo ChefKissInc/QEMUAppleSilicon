@@ -1,7 +1,0 @@
-# Command doesn't return anything
-
-##
-# @foo:
-# Returns: blah
-##
-{ 'command': 'foo' }

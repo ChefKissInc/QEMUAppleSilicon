@@ -78,8 +78,7 @@ x := $(shell rm -rf meson-private meson-info meson-logs)
 endif
 
 # 1. ensure config-host.mak is up-to-date
-config-host.mak: $(SRC_PATH)/configure $(SRC_PATH)/scripts/meson-buildoptions.sh \
-		$(SRC_PATH)/pythondeps.toml $(SRC_PATH)/VERSION
+config-host.mak: $(SRC_PATH)/configure $(SRC_PATH)/scripts/meson-buildoptions.sh $(SRC_PATH)/VERSION
 	@echo config-host.mak is out-of-date, running configure
 	@if test -f meson-private/coredata.dat; then \
 	  ./config.status --skip-meson; \
@@ -121,10 +120,6 @@ build.ninja.stamp: meson.stamp $(build-files)
 	  echo "$(MESON) setup --reconfigure $(SRC_PATH)"; \
 	  $(MESON) setup --reconfigure $(SRC_PATH); \
 	fi && echo "$(MESON)" > $@
-
-Makefile.mtest: build.ninja scripts/mtest2make.py
-	$(MESON) introspect --targets --tests --benchmarks | $(PYTHON) scripts/mtest2make.py > $@
--include Makefile.mtest
 
 .PHONY: update-buildoptions
 all update-buildoptions: $(SRC_PATH)/scripts/meson-buildoptions.sh
@@ -178,8 +173,6 @@ endif # config-host.mak does not exist
 
 SUBDIR_MAKEFLAGS=$(if $(V),,--no-print-directory --quiet)
 
-include $(SRC_PATH)/tests/Makefile.include
-
 all: recurse-all
 
 SUBDIR_RULES=$(foreach t, all clean distclean, $(addsuffix /$(t), $(SUBDIRS)))
@@ -203,7 +196,6 @@ clean: recurse-clean
 		! -path ./roms/edk2/ArmPkg/Library/GccLto/liblto-arm.a \
 		-exec rm {} +
 	rm -f TAGS cscope.* *~ */*~
-	@$(MAKE) -Ctests/qemu-iotests clean
 
 VERSION = $(shell cat $(SRC_PATH)/VERSION)
 
@@ -215,7 +207,6 @@ qemu-%.tar.xz:
 distclean: clean recurse-distclean
 	-$(quiet-@)test -f build.ninja && $(NINJA) $(NINJAFLAGS) -t clean -g || :
 	rm -f config-host.mak Makefile.prereqs
-	rm -f tests/tcg/*/config-target.mak tests/tcg/config-host.mak
 	rm -f config.status
 	rm -f roms/seabios/config.mak
 	rm -f qemu-plugins-ld.symbols qemu-plugins-ld64.symbols
@@ -279,10 +270,6 @@ cscope:
 # Needed by "meson install"
 export DESTDIR
 
-include $(SRC_PATH)/tests/lcitool/Makefile.include
-include $(SRC_PATH)/tests/docker/Makefile.include
-include $(SRC_PATH)/tests/vm/Makefile.include
-
 print-help-run = printf "  %-30s - %s\\n" "$1" "$2"
 print-help = @$(call print-help-run,$1,$2)
 
@@ -310,13 +297,6 @@ help:
 	@echo  ''
 	@echo  'Linux-user targets:'
 	$(call print-help,update-linux-vdso,Build linux-user vdso images)
-	@echo  ''
-	@echo  'Test targets:'
-	$(call print-help,check,Run all tests (check-help for details))
-	$(call print-help,bench,Run all benchmarks)
-	$(call print-help,lcitool-help,Help about targets for managing build environment manifests)
-	$(call print-help,docker-help,Help about targets running tests inside containers)
-	$(call print-help,vm-help,Help about targets running tests inside VM)
 	@echo  ''
 	@echo  'Documentation targets:'
 	$(call print-help,html man,Build documentation in specified format)

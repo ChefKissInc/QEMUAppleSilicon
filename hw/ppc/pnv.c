@@ -25,7 +25,6 @@
 #include "qemu/units.h"
 #include "qemu/cutils.h"
 #include "qapi/error.h"
-#include "system/qtest.h"
 #include "system/system.h"
 #include "system/numa.h"
 #include "system/reset.h"
@@ -730,11 +729,9 @@ static void pnv_reset(MachineState *machine, ResetType type)
     bmc = pnv_bmc_find(&error_fatal);
     if (!pnv->bmc) {
         if (!bmc) {
-            if (!qtest_enabled()) {
-                warn_report("machine has no BMC device. Use '-device "
-                            "ipmi-bmc-sim,id=bmc0 -device isa-ipmi-bt,bmc=bmc0,irq=10' "
-                            "to define one");
-            }
+            warn_report("machine has no BMC device. Use '-device "
+                        "ipmi-bmc-sim,id=bmc0 -device isa-ipmi-bt,bmc=bmc0,irq=10' "
+                        "to define one");
         } else {
             pnv_bmc_set_pnor(bmc, pnv->pnor);
             pnv->bmc = bmc;

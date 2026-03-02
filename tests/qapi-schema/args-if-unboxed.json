@@ -1,6 +1,0 @@
-{ 'struct': 'TestIfCmdArgs',
-  'data': {
-    'foo': 'int',
-    'bar': { 'type': 'str', 'if': 'TEST_IF_CMD_ARG' } } }
-{ 'command': 'test-if-cmd',
-  'data': 'TestIfCmdArgs' }

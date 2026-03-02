@@ -52,7 +52,6 @@
 #include "net/util.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
-#include "system/qtest.h"
 #include "system/runstate.h"
 #include "system/reset.h"
 #include "migration/vmstate.h"
@@ -674,19 +673,16 @@ static void q800_machine_init(MachineState *machine)
             bios_size = -1;
         }
 
-        /* Remove qtest_enabled() check once firmware files are in the tree */
-        if (!qtest_enabled()) {
-            if (bios_size <= 0 || bios_size > MACROM_SIZE) {
-                error_report("could not load MacROM '%s'", bios_name);
-                exit(1);
-            }
-
-            ptr = rom_ptr(MACROM_ADDR, bios_size);
-            assert(ptr != NULL);
-            stl_phys(cs->as, 0, ldl_be_p(ptr));    /* reset initial SP */
-            stl_phys(cs->as, 4,
-                     MACROM_ADDR + ldl_be_p(ptr + 4)); /* reset initial PC */
+        if (bios_size <= 0 || bios_size > MACROM_SIZE) {
+            error_report("could not load MacROM '%s'", bios_name);
+            exit(1);
         }
+
+        ptr = rom_ptr(MACROM_ADDR, bios_size);
+        assert(ptr != NULL);
+        stl_phys(cs->as, 0, ldl_be_p(ptr));    /* reset initial SP */
+        stl_phys(cs->as, 4,
+                 MACROM_ADDR + ldl_be_p(ptr + 4)); /* reset initial PC */
     }
 }
 

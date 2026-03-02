@@ -69,7 +69,6 @@
 #include "net/announce.h"
 #include "qemu/yank.h"
 #include "yank_functions.h"
-#include "system/qtest.h"
 #include "options.h"
 
 const unsigned int postcopy_ram_discard_version;
@@ -940,10 +939,6 @@ int vmstate_register_with_alias_id(VMStateIf *obj, uint32_t instance_id,
         se->instance_id = instance_id;
     }
 
-    /* Perform a recursive sanity check during the test runs */
-    if (qtest_enabled()) {
-        vmstate_check(vmsd);
-    }
     assert(!se->compat || se->instance_id == 0);
     savevm_state_handler_insert(se);
     return 0;

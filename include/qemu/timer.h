@@ -240,7 +240,7 @@ bool qemu_clock_run_all_timers(void);
  * @target_ns: target time in nanoseconds
  *
  * This function is used where the control of the flow of time has
- * been delegated to outside the clock subsystem (be it qtest, icount
+ * been delegated to outside the clock subsystem (be it icount
  * or some other external source). You can ask the clock system to
  * return @early at the first expired timer.
  *

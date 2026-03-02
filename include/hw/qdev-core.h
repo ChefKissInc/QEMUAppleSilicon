@@ -727,28 +727,6 @@ void qdev_connect_gpio_out_named(DeviceState *dev, const char *name, int n,
  */
 qemu_irq qdev_get_gpio_out_connector(DeviceState *dev, const char *name, int n);
 
-/**
- * qdev_intercept_gpio_out: Intercept an existing GPIO connection
- * @dev: Device to intercept the outbound GPIO line from
- * @icpt: New qemu_irq to connect instead
- * @name: Name of the output GPIO array
- * @n: Number of the GPIO line in the array
- *
- * .. note::
- *   This function is provided only for use by the qtest testing framework
- *   and is not suitable for use in non-testing parts of QEMU.
- *
- * This function breaks an existing connection of an outbound GPIO
- * line from @dev, and replaces it with the new qemu_irq @icpt, as if
- * ``qdev_connect_gpio_out_named(dev, icpt, name, n)`` had been called.
- * The previously connected qemu_irq is returned, so it can be restored
- * by a second call to qdev_intercept_gpio_out() if desired.
- *
- * Return: old disconnected qemu_irq if one existed
- */
-qemu_irq qdev_intercept_gpio_out(DeviceState *dev, qemu_irq icpt,
-                                 const char *name, int n);
-
 BusState *qdev_get_child_bus(DeviceState *dev, const char *name);
 
 /*** Device API.  ***/

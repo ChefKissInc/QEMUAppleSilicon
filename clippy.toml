@@ -1,3 +1,0 @@
-doc-valid-idents = ["IrDA", "PrimeCell", ".."]
-allow-mixed-uninlined-format-args = false
-msrv = "1.77.0"

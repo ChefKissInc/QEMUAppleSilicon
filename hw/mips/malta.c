@@ -49,7 +49,6 @@
 #include "qom/object.h"
 #include "hw/sysbus.h"             /* SysBusDevice */
 #include "qemu/host-utils.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "qapi/error.h"
@@ -1181,7 +1180,7 @@ void mips_malta_init(MachineState *machine)
                 bios_size = -1;
             }
             if ((bios_size < 0 || bios_size > BIOS_SIZE) &&
-                machine->firmware && !qtest_enabled()) {
+                machine->firmware) {
                 error_report("Could not load MIPS bios '%s'", machine->firmware);
                 exit(1);
             }

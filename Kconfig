@@ -4,4 +4,3 @@ source accel/Kconfig
 source target/Kconfig
 source hw/Kconfig
 source semihosting/Kconfig
-source rust/Kconfig

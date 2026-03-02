@@ -81,14 +81,6 @@ static FsDriverTable FsDrivers[] = {
             NULL
         },
     },
-    {
-        .name = "synth",
-        .ops = &synth_ops,
-        .opts = (const char * []) {
-            COMMON_FS_DRIVER_OPTIONS,
-            NULL
-        },
-    },
 };
 
 static int validate_opt(void *opaque, const char *name, const char *value,

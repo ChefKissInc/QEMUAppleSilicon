@@ -415,7 +415,6 @@ struct qemu_work_item;
  * @tcg_cflags: Pre-computed cflags for this cpu.
  * @nr_threads: Number of threads within this CPU core.
  * @thread: Host thread details, only live once @created is #true
- * @sem: WIN32 only semaphore used only for qtest
  * @thread_id: native thread id of vCPU, only live once @created is #true
  * @running: #true if CPU is currently running (lockless).
  * @has_waiter: #true if a CPU is currently waiting for the cpu_exec_end;
@@ -475,9 +474,6 @@ struct CPUState {
     int nr_threads;
 
     struct QemuThread *thread;
-#ifdef _WIN32
-    QemuSemaphore sem;
-#endif
     int thread_id;
     bool running, has_waiter;
     struct QemuCond *halt_cond;

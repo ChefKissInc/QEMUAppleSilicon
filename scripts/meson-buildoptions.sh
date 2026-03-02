@@ -36,7 +36,6 @@ meson_options_help() {
   printf "%s\n" '  --enable-debug-tcg       TCG debugging'
   printf "%s\n" '  --enable-fdt[=CHOICE]    Whether and how to find the libfdt library'
   printf "%s\n" '                           (choices: auto/disabled/enabled/internal/system)'
-  printf "%s\n" '  --enable-fuzzing         build fuzzing targets'
   printf "%s\n" '  --enable-gcov            Enable coverage tracking.'
   printf "%s\n" '  --enable-lto             Use link time optimization'
   printf "%s\n" '  --enable-malloc=CHOICE   choose memory allocator to use [system] (choices:'
@@ -47,8 +46,6 @@ meson_options_help() {
   printf "%s\n" '                           getrandom()'
   printf "%s\n" '  --enable-safe-stack      SafeStack Stack Smash Protection (requires'
   printf "%s\n" '                           clang/llvm and coroutine backend ucontext)'
-  printf "%s\n" '  --enable-strict-rust-lints'
-  printf "%s\n" '                           Enable stricter set of Rust warnings'
   printf "%s\n" '  --enable-strip           Strip targets on install'
   printf "%s\n" '  --enable-tcg-interpreter TCG with bytecode interpreter (slow)'
   printf "%s\n" '  --enable-trace-backends=CHOICES'
@@ -65,9 +62,9 @@ meson_options_help() {
   printf "%s\n" '  --libdir=VALUE           Library directory [system default]'
   printf "%s\n" '  --libexecdir=VALUE       Library executable directory [libexec]'
   printf "%s\n" '  --localedir=VALUE        Locale data directory [share/locale]'
-  printf "%s\n" '  --localstatedir=VALUE    Localstate data directory [/var/local]'
+  printf "%s\n" '  --localstatedir=VALUE    Localstate data directory [/opt/homebrew/var]'
   printf "%s\n" '  --mandir=VALUE           Manual page directory [share/man]'
-  printf "%s\n" '  --prefix=VALUE           Installation prefix [/usr/local]'
+  printf "%s\n" '  --prefix=VALUE           Installation prefix [/opt/homebrew]'
   printf "%s\n" '  --qemu-ga-distro=VALUE   second path element in qemu-ga registry entries'
   printf "%s\n" '                           [Linux]'
   printf "%s\n" '  --qemu-ga-manufacturer=VALUE'
@@ -114,7 +111,6 @@ meson_options_help() {
   printf "%s\n" '  curses          curses UI'
   printf "%s\n" '  dbus-display    -display dbus support'
   printf "%s\n" '  dmg             dmg image format support'
-  printf "%s\n" '  docs            Documentations build support'
   printf "%s\n" '  dsound          DirectSound sound support'
   printf "%s\n" '  fuse            FUSE block device export'
   printf "%s\n" '  fuse-lseek      SEEK_HOLE/SEEK_DATA support for FUSE exports'
@@ -177,7 +173,6 @@ meson_options_help() {
   printf "%s\n" '  rbd             Ceph block device driver'
   printf "%s\n" '  rdma            Enable RDMA-based migration'
   printf "%s\n" '  replication     replication support'
-  printf "%s\n" '  rust            Rust support'
   printf "%s\n" '  rutabaga-gfx    rutabaga_gfx support'
   printf "%s\n" '  sdl             SDL user interface'
   printf "%s\n" '  sdl-image       SDL Image support for icons'
@@ -230,7 +225,6 @@ meson_options_help() {
   printf "%s\n" '                  Xen PCI passthrough support'
   printf "%s\n" '  xkbcommon       xkbcommon support'
   printf "%s\n" '  zstd            zstd compression support'
-  printf "%s\n" '  tests           build tests'
 }
 _meson_option_parse() {
   case $1 in
@@ -309,8 +303,6 @@ _meson_option_parse() {
     --enable-dmg) printf "%s" -Ddmg=enabled ;;
     --disable-dmg) printf "%s" -Ddmg=disabled ;;
     --docdir=*) quote_sh "-Ddocdir=$2" ;;
-    --enable-docs) printf "%s" -Ddocs=enabled ;;
-    --disable-docs) printf "%s" -Ddocs=disabled ;;
     --enable-dsound) printf "%s" -Ddsound=enabled ;;
     --disable-dsound) printf "%s" -Ddsound=disabled ;;
     --enable-fdt) printf "%s" -Dfdt=enabled ;;
@@ -320,8 +312,6 @@ _meson_option_parse() {
     --disable-fuse) printf "%s" -Dfuse=disabled ;;
     --enable-fuse-lseek) printf "%s" -Dfuse_lseek=enabled ;;
     --disable-fuse-lseek) printf "%s" -Dfuse_lseek=disabled ;;
-    --enable-fuzzing) printf "%s" -Dfuzzing=true ;;
-    --disable-fuzzing) printf "%s" -Dfuzzing=false ;;
     --enable-gcrypt) printf "%s" -Dgcrypt=enabled ;;
     --disable-gcrypt) printf "%s" -Dgcrypt=disabled ;;
     --enable-gettext) printf "%s" -Dgettext=enabled ;;
@@ -469,8 +459,6 @@ _meson_option_parse() {
     --enable-rng-none) printf "%s" -Drng_none=true ;;
     --disable-rng-none) printf "%s" -Drng_none=false ;;
     --rtsig-map=*) quote_sh "-Drtsig_map=$2" ;;
-    --enable-rust) printf "%s" -Drust=enabled ;;
-    --disable-rust) printf "%s" -Drust=disabled ;;
     --enable-rutabaga-gfx) printf "%s" -Drutabaga_gfx=enabled ;;
     --disable-rutabaga-gfx) printf "%s" -Drutabaga_gfx=disabled ;;
     --enable-safe-stack) printf "%s" -Dsafe_stack=true ;;
@@ -502,8 +490,6 @@ _meson_option_parse() {
     --disable-spice-protocol) printf "%s" -Dspice_protocol=disabled ;;
     --enable-stack-protector) printf "%s" -Dstack_protector=enabled ;;
     --disable-stack-protector) printf "%s" -Dstack_protector=disabled ;;
-    --enable-strict-rust-lints) printf "%s" -Dstrict_rust_lints=true ;;
-    --disable-strict-rust-lints) printf "%s" -Dstrict_rust_lints=false ;;
     --enable-strip) printf "%s" -Dstrip=true ;;
     --disable-strip) printf "%s" -Dstrip=false ;;
     --sysconfdir=*) quote_sh "-Dsysconfdir=$2" ;;
@@ -585,8 +571,6 @@ _meson_option_parse() {
     --disable-xkbcommon) printf "%s" -Dxkbcommon=disabled ;;
     --enable-zstd) printf "%s" -Dzstd=enabled ;;
     --disable-zstd) printf "%s" -Dzstd=disabled ;;
-    --enable-tests) printf "%s" -Dtests=enabled ;;
-    --disable-tests) printf "%s" -Dtests=disabled ;;
     *) return 1 ;;
   esac
 }

@@ -9,11 +9,6 @@ bool bql_locked(void)
     return bql_is_locked;
 }
 
-void rust_bql_mock_lock(void)
-{
-    bql_is_locked = true;
-}
-
 void bql_lock_impl(const char *file, int line)
 {
 }

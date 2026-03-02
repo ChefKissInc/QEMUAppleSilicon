@@ -28,7 +28,6 @@
 #include "kvm_mips.h"
 #include "qemu/module.h"
 #include "system/kvm.h"
-#include "system/qtest.h"
 #include "hw/qdev-properties.h"
 #include "hw/qdev-clock.h"
 #include "fpu_helper.h"
@@ -459,12 +458,10 @@ static void mips_cpu_realizefn(DeviceState *dev, Error **errp)
 
     if (!clock_get(cpu->clock)) {
 #ifndef CONFIG_USER_ONLY
-        if (!qtest_enabled()) {
-            g_autofree char *cpu_freq_str = freq_to_str(CPU_FREQ_HZ_DEFAULT);
+        g_autofree char *cpu_freq_str = freq_to_str(CPU_FREQ_HZ_DEFAULT);
 
-            warn_report("CPU input clock is not connected to any output clock, "
-                        "using default frequency of %s.", cpu_freq_str);
-        }
+        warn_report("CPU input clock is not connected to any output clock, "
+                    "using default frequency of %s.", cpu_freq_str);
 #endif
         /* Initialize the frequency in case the clock remains unconnected. */
         clock_set_hz(cpu->clock, CPU_FREQ_HZ_DEFAULT);

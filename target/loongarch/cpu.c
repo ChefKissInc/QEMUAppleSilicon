@@ -10,7 +10,6 @@
 #include "qemu/qemu-print.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
-#include "system/qtest.h"
 #include "system/tcg.h"
 #include "system/kvm.h"
 #include "kvm/kvm_loongarch.h"

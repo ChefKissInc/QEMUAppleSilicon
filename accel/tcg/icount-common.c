@@ -28,7 +28,6 @@
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "system/cpus.h"
-#include "system/qtest.h"
 #include "qemu/main-loop.h"
 #include "qemu/option.h"
 #include "qemu/seqlock.h"
@@ -307,11 +306,6 @@ void icount_start_warp_timer(void)
 
     if (replay_mode != REPLAY_MODE_PLAY) {
         if (!all_cpu_threads_idle()) {
-            return;
-        }
-
-        if (qtest_enabled()) {
-            /* When testing, qtest commands advance icount.  */
             return;
         }
 

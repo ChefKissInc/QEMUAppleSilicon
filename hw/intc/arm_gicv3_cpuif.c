@@ -24,7 +24,6 @@
 #include "target/arm/cpu-features.h"
 #include "target/arm/internals.h"
 #include "system/tcg.h"
-#include "system/qtest.h"
 
 /*
  * Special case return value from hppvi_index(); must be larger than
@@ -3154,7 +3153,7 @@ void gicv3_init_cpuif(GICv3State *s)
                 define_arm_cp_regs(cpu, gicv3_cpuif_ich_apxr23_reginfo);
             }
         }
-        if (tcg_enabled() || qtest_enabled()) {
+        if (tcg_enabled()) {
             /*
              * We can only trap EL changes with TCG. However the GIC interrupt
              * state only changes on EL changes involving EL2 or EL3, so for

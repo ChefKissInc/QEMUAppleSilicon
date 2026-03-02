@@ -32,7 +32,6 @@
 #include "system/device_tree.h"
 #include "system/system.h"
 #include "hw/sysbus.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "hw/core/split-irq.h"
 

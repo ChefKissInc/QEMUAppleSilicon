@@ -27,7 +27,6 @@
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "system/xen.h"
-#include "system/qtest.h"
 #include "hw/pci/pci_bridge.h"
 #include "hw/mem/nvdimm.h"
 #include "migration/global_state.h"
@@ -1479,7 +1478,7 @@ static void machine_numa_finish_cpu_init(MachineState *machine)
         numa_validate_initiator(machine->numa_state);
     }
 
-    if (s->len && !qtest_enabled()) {
+    if (s->len) {
         warn_report("CPU(s) not present in any NUMA nodes: %s",
                     s->str);
         warn_report("All CPU(s) up to maxcpus should be described "
@@ -1497,7 +1496,7 @@ static void validate_cpu_cluster_to_numa_boundary(MachineState *ms)
     const CPUArchId *cpus = possible_cpus->cpus;
     int i, j;
 
-    if (qtest_enabled() || state->num_nodes <= 1 || possible_cpus->len <= 1) {
+    if (state->num_nodes <= 1 || possible_cpus->len <= 1) {
         return;
     }
 

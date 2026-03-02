@@ -22,7 +22,6 @@
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "system/reset.h"
-#include "system/qtest.h"
 #include "qemu/cutils.h"
 #include "hw/sysbus.h"
 #include "target/riscv/cpu.h"
@@ -60,57 +59,6 @@ static void riscv_harts_cpu_reset(void *opaque)
     RISCVCPU *cpu = opaque;
     cpu_reset(CPU(cpu));
 }
-
-#ifndef CONFIG_USER_ONLY
-static void csr_call(char *cmd, uint64_t cpu_num, int csrno, uint64_t *val)
-{
-    RISCVCPU *cpu = RISCV_CPU(cpu_by_arch_id(cpu_num));
-    CPURISCVState *env = &cpu->env;
-
-    int ret = RISCV_EXCP_NONE;
-    if (strcmp(cmd, "get_csr") == 0) {
-        ret = riscv_csrr(env, csrno, (target_ulong *)val);
-    } else if (strcmp(cmd, "set_csr") == 0) {
-        ret = riscv_csrrw(env, csrno, NULL, *(target_ulong *)val,
-                          MAKE_64BIT_MASK(0, TARGET_LONG_BITS), 0);
-    }
-
-    g_assert(ret == RISCV_EXCP_NONE);
-}
-
-static bool csr_qtest_callback(CharBackend *chr, gchar **words)
-{
-    if (strcmp(words[0], "csr") == 0) {
-
-        uint64_t cpu;
-        uint64_t val;
-        int rc, csr;
-
-        rc = qemu_strtou64(words[2], NULL, 0, &cpu);
-        g_assert(rc == 0);
-        rc = qemu_strtoi(words[3], NULL, 0, &csr);
-        g_assert(rc == 0);
-        rc = qemu_strtou64(words[4], NULL, 0, &val);
-        g_assert(rc == 0);
-        csr_call(words[1], cpu, csr, &val);
-
-        qtest_sendf(chr, "OK 0 "TARGET_FMT_lx"\n", (target_ulong)val);
-
-        return true;
-    }
-
-    return false;
-}
-
-static void riscv_cpu_register_csr_qtest_callback(void)
-{
-    static bool first = true;
-    if (first) {
-        first = false;
-        qtest_set_command_cb(csr_qtest_callback);
-    }
-}
-#endif
 
 static bool riscv_hart_realize(RISCVHartArrayState *s, int idx,
                                char *cpu_type, Error **errp)
@@ -151,10 +99,6 @@ static void riscv_harts_realize(DeviceState *dev, Error **errp)
     int n;
 
     s->harts = g_new0(RISCVCPU, s->num_harts);
-
-#ifndef CONFIG_USER_ONLY
-    riscv_cpu_register_csr_qtest_callback();
-#endif
 
     for (n = 0; n < s->num_harts; n++) {
         if (!riscv_hart_realize(s, n, s->cpu_type, errp)) {

@@ -1,4 +1,0 @@
- { 'event': 'TEST_IF_EVENT',
-  'data': {
-    'foo': 'int',
-    'bar': { 'type': 'str', 'if': 'TEST_IF_CMD_ARG' } } }

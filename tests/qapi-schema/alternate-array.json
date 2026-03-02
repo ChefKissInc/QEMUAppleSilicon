@@ -1,5 +1,0 @@
-{ 'struct': 'One',
-  'data': { 'name': 'str' } }
-{ 'alternate': 'Alt',
-  'data': { 'one': 'One',
-            'two': [ 'int' ] } }

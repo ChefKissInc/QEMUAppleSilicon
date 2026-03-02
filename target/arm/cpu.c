@@ -43,7 +43,6 @@
 #endif /* CONFIG_TCG */
 #endif /* !CONFIG_USER_ONLY */
 #include "system/tcg.h"
-#include "system/qtest.h"
 #include "system/hw_accel.h"
 #include "kvm_arm.h"
 #include "disas/capstone.h"
@@ -1793,14 +1792,14 @@ static void arm_cpu_post_init(Object *obj)
         if (cpu_isar_feature(aa64_fp_simd, cpu)) {
             cpu->has_vfp = true;
             cpu->has_vfp_d32 = true;
-            if (tcg_enabled() || qtest_enabled()) {
+            if (tcg_enabled()) {
                 qdev_property_add_static(DEVICE(obj),
                                          &arm_cpu_has_vfp_property);
             }
         }
     } else if (cpu_isar_feature(aa32_vfp, cpu)) {
         cpu->has_vfp = true;
-        if (tcg_enabled() || qtest_enabled()) {
+        if (tcg_enabled()) {
             qdev_property_add_static(DEVICE(obj),
                                      &arm_cpu_has_vfp_property);
         }
@@ -1811,7 +1810,7 @@ static void arm_cpu_post_init(Object *obj)
              * Armv8-A are either 0b0000 and 0b0010. On such CPUs,
              * make sure that has_vfp_d32 can not be set to false.
              */
-            if ((tcg_enabled() || qtest_enabled())
+            if ((tcg_enabled())
                 && !(arm_feature(&cpu->env, ARM_FEATURE_V8)
                      && !arm_feature(&cpu->env, ARM_FEATURE_M))) {
                 qdev_property_add_static(DEVICE(obj),
@@ -1822,7 +1821,7 @@ static void arm_cpu_post_init(Object *obj)
 
     if (arm_feature(&cpu->env, ARM_FEATURE_NEON)) {
         cpu->has_neon = true;
-        if (tcg_enabled() || qtest_enabled()) {
+        if (tcg_enabled()) {
             qdev_property_add_static(DEVICE(obj), &arm_cpu_has_neon_property);
         }
     }
@@ -2015,11 +2014,10 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         }
     }
 
-    if (!tcg_enabled() && !qtest_enabled()) {
+    if (!tcg_enabled()) {
         /*
-         * We assume that no accelerator except TCG (and the "not really an
-         * accelerator" qtest) can handle these features, because Arm hardware
-         * virtualization can't virtualize them.
+         * We assume that no accelerator except TCG can handle these features,
+         * because Arm hardware virtualization can't virtualize them.
          *
          * Catch all the cases which might cause us to create more than one
          * address space for the CPU (otherwise we will assert() later in

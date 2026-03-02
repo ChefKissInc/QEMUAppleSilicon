@@ -5,13 +5,6 @@ project('qemu', ['c'], meson_version: '>=1.5.0',
 
 meson.add_devenv({ 'MESON_BUILD_ROOT' : meson.project_build_root() })
 
-add_test_setup('quick', exclude_suites: ['slow', 'thorough'], is_default: true,
-               env: ['RUST_BACKTRACE=1'])
-add_test_setup('slow', exclude_suites: ['thorough'],
-               env: ['G_TEST_SLOW=1', 'SPEED=slow', 'RUST_BACKTRACE=1'])
-add_test_setup('thorough',
-               env: ['G_TEST_SLOW=1', 'SPEED=thorough', 'RUST_BACKTRACE=1'])
-
 meson.add_postconf_script(find_program('scripts/symlink-install-tree.py'))
 
 ####################
@@ -20,7 +13,6 @@ meson.add_postconf_script(find_program('scripts/symlink-install-tree.py'))
 
 not_found = dependency('', required: false)
 keyval = import('keyval')
-rust = import('rust')
 ss = import('sourceset')
 fs = import('fs')
 
@@ -88,66 +80,6 @@ if host_os == 'darwin' and \
   objc = meson.get_compiler('objc')
 endif
 
-have_rust = add_languages('rust', native: false,
-    required: get_option('rust').disable_auto_if(not have_system))
-have_rust = have_rust and add_languages('rust', native: true,
-    required: get_option('rust').disable_auto_if(not have_system))
-if have_rust
-  rustc = meson.get_compiler('rust')
-  if rustc.version().version_compare('<1.77.0')
-    if get_option('rust').enabled()
-      error('rustc version ' + rustc.version() + ' is unsupported. Please upgrade to at least 1.77.0')
-    else
-      warning('rustc version ' + rustc.version() + ' is unsupported, disabling Rust compilation.')
-      message('Please upgrade to at least 1.77.0 to use Rust.')
-      have_rust = false
-    endif
-  endif
-endif
-
-if have_rust
-  rustdoc = find_program('rustdoc', required: get_option('rust'))
-  bindgen = find_program('bindgen', required: get_option('rust'))
-  if not bindgen.found() or bindgen.version().version_compare('<0.60.0')
-    if get_option('rust').enabled()
-      error('bindgen version ' + bindgen.version() + ' is unsupported. You can install a new version with "cargo install bindgen-cli"')
-    else
-      if bindgen.found()
-        warning('bindgen version ' + bindgen.version() + ' is unsupported, disabling Rust compilation.')
-      else
-        warning('bindgen not found, disabling Rust compilation.')
-      endif
-      message('To use Rust you can install a new version with "cargo install bindgen-cli"')
-      have_rust = false
-    endif
-  endif
-endif
-
-if have_rust
-  rustc_args = [find_program('scripts/rust/rustc_args.py'),
-    '--rustc-version', rustc.version(),
-    '--workspace', meson.project_source_root() / 'rust']
-  if get_option('strict_rust_lints')
-    rustc_args += ['--strict-lints']
-  endif
-
-  rustfmt = find_program('rustfmt', required: false)
-
-  rustc_lint_args = run_command(rustc_args, '--lints',
-     capture: true, check: true).stdout().strip().splitlines()
-
-  # Apart from procedural macros, our Rust executables will often link
-  # with C code, so include all the libraries that C code needs.  This
-  # is safe; https://github.com/rust-lang/rust/pull/54675 says that
-  # passing -nodefaultlibs to the linker "was more ideological to
-  # start with than anything".
-  add_project_arguments(rustc_lint_args +
-      ['--cfg', 'MESON', '-C', 'default-linker-libraries'],
-      native: false, language: 'rust')
-  add_project_arguments(rustc_lint_args + ['--cfg', 'MESON'],
-      native: true, language: 'rust')
-endif
-
 dtrace = not_found
 stap = not_found
 if 'dtrace' in get_option('trace_backends')
@@ -183,18 +115,6 @@ endforeach
 #####################
 # Option validation #
 #####################
-
-# Fuzzing
-if get_option('fuzzing') and get_option('fuzzing_engine') == '' and \
-    not cc.links('''
-          #include <stdint.h>
-          #include <sys/types.h>
-          int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size);
-          int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) { return 0; }
-        ''',
-        args: ['-Werror', '-fsanitize=fuzzer'])
-  error('Your compiler does not support -fsanitize=fuzzer')
-endif
 
 # Tracing backends
 if 'ftrace' in get_option('trace_backends') and host_os != 'linux'
@@ -621,37 +541,6 @@ qemu_ldflags += cc.get_supported_link_arguments('-Wl,-z,relro', '-Wl,-z,now')
 if host_os == 'windows'
   qemu_ldflags += cc.get_supported_link_arguments('-Wl,--no-seh', '-Wl,--nxcompat')
   qemu_ldflags += cc.get_supported_link_arguments('-Wl,--dynamicbase', '-Wl,--high-entropy-va')
-endif
-
-if get_option('fuzzing')
-  # Specify a filter to only instrument code that is directly related to
-  # virtual-devices.
-  configure_file(output: 'instrumentation-filter',
-                 input: 'scripts/oss-fuzz/instrumentation-filter-template',
-                 copy: true)
-
-  if cc.compiles('int main () { return 0; }',
-                  name: '-fsanitize-coverage-allowlist=/dev/null',
-                 args: ['-fsanitize-coverage-allowlist=/dev/null',
-                        '-fsanitize-coverage=trace-pc'] )
-    qemu_common_flags += ['-fsanitize-coverage-allowlist=instrumentation-filter']
-  endif
-
-  if get_option('fuzzing_engine') == ''
-    # Add CFLAGS to tell clang to add fuzzer-related instrumentation to all the
-    # compiled code.  To build non-fuzzer binaries with --enable-fuzzing, link
-    # everything with fsanitize=fuzzer-no-link. Otherwise, the linker will be
-    # unable to bind the fuzzer-related callbacks added by instrumentation.
-    qemu_common_flags += ['-fsanitize=fuzzer-no-link']
-    qemu_ldflags += ['-fsanitize=fuzzer-no-link']
-    # For the actual fuzzer binaries, we need to link against the libfuzzer
-    # library. They need to be configurable, to support OSS-Fuzz
-    fuzz_exe_ldflags = ['-fsanitize=fuzzer']
-  else
-    # LIB_FUZZING_ENGINE was set; assume we are running on OSS-Fuzz, and
-    # the needed CFLAGS have already been provided
-    fuzz_exe_ldflags = get_option('fuzzing_engine').split()
-  endif
 endif
 
 if get_option('cfi')
@@ -2339,7 +2228,6 @@ endif
 
 config_host_data = configuration_data()
 
-config_host_data.set('CONFIG_HAVE_RUST', have_rust)
 audio_drivers_selected = []
 if have_system
   audio_drivers_available = {
@@ -2495,7 +2383,6 @@ config_host_data.set('CONFIG_CAPSTONE', capstone.found())
 config_host_data.set('CONFIG_COCOA', cocoa.found())
 config_host_data.set('CONFIG_DARWIN', host_os == 'darwin')
 config_host_data.set('CONFIG_FDT', fdt.found())
-config_host_data.set('CONFIG_FUZZ', get_option('fuzzing'))
 config_host_data.set('CONFIG_GCOV', get_option('b_coverage'))
 config_host_data.set('CONFIG_LIBUDEV', libudev.found())
 config_host_data.set('CONFIG_LINUX', host_os == 'linux')
@@ -3325,7 +3212,6 @@ disassemblers = {
 
 have_ivshmem = config_host_data.get('CONFIG_EVENTFD')
 host_kconfig = \
-  (get_option('fuzzing') ? ['CONFIG_FUZZ=y'] : []) + \
   (have_tpm ? ['CONFIG_TPM=y'] : []) + \
   (pixman.found() ? ['CONFIG_PIXMAN=y'] : []) + \
   (spice.found() ? ['CONFIG_SPICE=y'] : []) + \
@@ -3342,8 +3228,7 @@ host_kconfig = \
   (host_os == 'linux' ? ['CONFIG_LINUX=y'] : []) + \
   (multiprocess_allowed ? ['CONFIG_MULTIPROCESS_ALLOWED=y'] : []) + \
   (vfio_user_server_allowed ? ['CONFIG_VFIO_USER_SERVER_ALLOWED=y'] : []) + \
-  (hv_balloon ? ['CONFIG_HV_BALLOON_POSSIBLE=y'] : []) + \
-  (have_rust ? ['CONFIG_HAVE_RUST=y'] : [])
+  (hv_balloon ? ['CONFIG_HV_BALLOON_POSSIBLE=y'] : [])
 
 ignored = [ 'TARGET_XML_FILES', 'TARGET_ABI_DIR', 'TARGET_ARCH' ]
 
@@ -3759,16 +3644,11 @@ io_ss = ss.source_set()
 qmp_ss = ss.source_set()
 qom_ss = ss.source_set()
 system_ss = ss.source_set()
-specific_fuzz_ss = ss.source_set()
 specific_ss = ss.source_set()
-rust_devices_ss = ss.source_set()
 stub_ss = ss.source_set()
 trace_ss = ss.source_set()
 user_ss = ss.source_set()
 util_ss = ss.source_set()
-
-# accel modules
-qtest_module_ss = ss.source_set()
 
 modules = {}
 target_modules = {}
@@ -3932,13 +3812,6 @@ common_user_inc = []
 subdir('common-user')
 subdir('bsd-user')
 subdir('linux-user')
-
-# needed for fuzzing binaries
-subdir('tests/qtest/libqos')
-subdir('tests/qtest/fuzz')
-
-# accel modules
-target_modules += { 'accel' : { 'qtest': qtest_module_ss }}
 
 ##############################################
 # Internal static_libraries and dependencies #
@@ -4229,47 +4102,7 @@ foreach target_base_arch, config_base_arch : config_base_arch_mak
   endif
 endforeach
 
-if have_rust
-  bindings_incdir = include_directories('.', 'include')
-  # We would like to use --generate-cstr, but it is only available
-  # starting with bindgen 0.66.0.  The oldest supported versions
-  # is 0.60.x (Debian 12 has 0.60.1) which introduces --allowlist-file.
-  bindgen_args_common = [
-    '--disable-header-comment',
-    '--raw-line', '// @generated',
-    '--ctypes-prefix', 'std::os::raw',
-    '--generate-block',
-    '--impl-debug',
-    '--no-doc-comments',
-    '--with-derive-default',
-    '--no-layout-tests',
-    '--no-prepend-enum-name',
-    '--allowlist-file', meson.project_source_root() + '/include/.*',
-    '--allowlist-file', meson.project_source_root() + '/.*',
-    '--allowlist-file', meson.project_build_root() + '/.*'
-    ]
-  if not rustfmt.found()
-    if bindgen.version().version_compare('<0.65.0')
-      bindgen_args_common += ['--no-rustfmt-bindings']
-    else
-      bindgen_args_common += ['--formatter', 'none']
-    endif
-  endif
-  if bindgen.version().version_compare('>=0.66.0')
-    bindgen_args_common += ['--rust-target', '1.59']
-  endif
-  if bindgen.version().version_compare('<0.61.0')
-    # default in 0.61+
-    bindgen_args_common += ['--size_t-is-usize']
-  else
-    bindgen_args_common += ['--merge-extern-blocks']
-  endif
-  subdir('rust')
-endif
-
-
 feature_to_c = find_program('scripts/feature_to_c.py')
-rust_root_crate = find_program('scripts/rust/rust_root_crate.sh')
 
 if host_os == 'darwin'
   entitlement = find_program('scripts/entitlement.sh')
@@ -4385,28 +4218,6 @@ foreach target : target_dirs
   arch_srcs += target_specific.sources()
   arch_deps += target_specific.dependencies()
 
-  if have_rust and target_type == 'system'
-    target_rust = rust_devices_ss.apply(config_target, strict: false)
-    crates = []
-    foreach dep : target_rust.dependencies()
-      crates += dep.get_variable('crate')
-    endforeach
-    if crates.length() > 0
-      rlib_rs = custom_target('rust_' + target.underscorify() + '.rs',
-                              output: 'rust_' + target.underscorify() + '.rs',
-                              command: [rust_root_crate, crates],
-                              capture: true,
-                              build_by_default: true,
-                              build_always_stale: true)
-      rlib = static_library('rust_' + target.underscorify(),
-                            structured_sources([], {'.': rlib_rs}),
-                            dependencies: target_rust.dependencies(),
-                            override_options: ['rust_std=2021', 'build.rust_std=2021'],
-                            rust_abi: 'c')
-      arch_deps += declare_dependency(link_whole: [rlib])
-    endif
-  endif
-
   # allow using headers from the dependencies but do not include the sources,
   # because this emulator only needs those in "objects".  For external
   # dependencies, the full dependency is included below in the executable.
@@ -4436,15 +4247,6 @@ foreach target : target_dirs
         'win_subsystem': 'windows',
         'sources': files('system/main.c'),
         'dependencies': [sdl]
-      }]
-    endif
-    if get_option('fuzzing')
-      specific_fuzz = specific_fuzz_ss.apply(config_target, strict: false)
-      execs += [{
-        'name': 'qemu-fuzz-' + target_name,
-        'win_subsystem': 'console',
-        'sources': specific_fuzz.sources(),
-        'dependencies': specific_fuzz.dependencies(),
       }]
     endif
   else
@@ -4613,12 +4415,6 @@ endif
 subdir('scripts')
 subdir('tools')
 subdir('pc-bios')
-subdir('docs')
-# Tests are disabled on emscripten because they rely on host features that aren't
-# supported by emscripten (e.g. fork and unix socket).
-if host_os != 'emscripten' and get_option('tests').allowed()
-  subdir('tests')
-endif
 if gtk.found()
   subdir('po')
 endif
@@ -4634,9 +4430,6 @@ if host_machine.system() == 'windows'
     '--',
     '-DDISPLAYVERSION=' + meson.project_version(),
   ]
-  if build_docs
-    nsis_cmd += '-DCONFIG_DOCUMENTATION=y'
-  endif
   if gtk.found()
     nsis_cmd += '-DCONFIG_GTK=y'
   endif
@@ -4682,8 +4475,6 @@ summary(summary_info, bool_yn: true, section: 'Directories')
 
 # Host binaries
 summary_info = {}
-summary_info += {'python':            '@0@ (version: @1@)'.format(python.full_path(), python.language_version())}
-summary_info += {'sphinx-build':      sphinx_build}
 
 # FIXME: the [binaries] section of machine files, which can be probed
 # with find_program(), would be great for passing gdb and genisoimage
@@ -4704,7 +4495,6 @@ summary(summary_info, bool_yn: true, section: 'Host binaries')
 
 # Configurable features
 summary_info = {}
-summary_info += {'Documentation':     build_docs}
 summary_info += {'system-mode emulation': have_system}
 summary_info += {'user-mode emulation': have_user}
 summary_info += {'block layer':       have_block}
@@ -4713,7 +4503,6 @@ summary_info += {'module support':    enable_modules}
 if enable_modules
   summary_info += {'alternative module path': get_option('module_upgrades')}
 endif
-summary_info += {'fuzzing support':   get_option('fuzzing')}
 if have_system
   summary_info += {'Audio drivers':     ' '.join(audio_drivers_selected)}
 endif
@@ -4747,15 +4536,6 @@ if 'objc' in all_languages
   summary_info += {'Objective-C compiler': ' '.join(meson.get_compiler('objc').cmd_array())}
 else
   summary_info += {'Objective-C compiler': false}
-endif
-summary_info += {'Rust support':      have_rust}
-if have_rust
-  summary_info += {'Rust target':     config_host['RUST_TARGET_TRIPLE']}
-  summary_info += {'rustc':           ' '.join(rustc.cmd_array())}
-  summary_info += {'rustc version':   rustc.version()}
-  summary_info += {'rustdoc':         rustdoc}
-  summary_info += {'bindgen':         bindgen.full_path()}
-  summary_info += {'bindgen version': bindgen.version()}
 endif
 option_cflags = (get_option('debug') ? ['-g'] : [])
 if get_option('optimization') != 'plain'
@@ -4801,23 +4581,6 @@ summary_info += {'strip binaries':    get_option('strip')}
 summary_info += {'sparse':            sparse}
 summary_info += {'mingw32 support':   host_os == 'windows'}
 summary(summary_info, bool_yn: true, section: 'Compilation')
-
-# snarf the cross-compilation information for tests
-summary_info = {}
-have_cross = false
-foreach target: target_dirs
-  tcg_mak = meson.current_build_dir() / 'tests/tcg' / target / 'config-target.mak'
-  if fs.exists(tcg_mak)
-    config_cross_tcg = keyval.load(tcg_mak)
-    if 'CC' in config_cross_tcg
-      summary_info += {config_cross_tcg['TARGET_NAME']: config_cross_tcg['CC']}
-      have_cross = true
-    endif
-  endif
-endforeach
-if have_cross
-  summary(summary_info, bool_yn: true, section: 'Cross compilers')
-endif
 
 # Targets and accelerators
 summary_info = {}

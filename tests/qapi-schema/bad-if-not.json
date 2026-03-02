@@ -1,3 +1,0 @@
-# check 'if not' with empty argument
-{ 'struct': 'TestIfStruct', 'data': { 'foo': 'int' },
-  'if': { 'not': '' } }

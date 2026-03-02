@@ -19,7 +19,6 @@
 #include "hw/boards.h"
 #include "hw/qdev-properties.h"
 #include "qemu/error-report.h"
-#include "system/qtest.h"
 
 static void mcimx7d_sabre_init(MachineState *machine)
 {
@@ -63,9 +62,7 @@ static void mcimx7d_sabre_init(MachineState *machine)
         qdev_realize_and_unref(carddev, bus, &error_fatal);
     }
 
-    if (!qtest_enabled()) {
-        arm_load_kernel(&s->cpu[0], machine, &boot_info);
-    }
+    arm_load_kernel(&s->cpu[0], machine, &boot_info);
 }
 
 static void mcimx7d_sabre_machine_init(MachineClass *mc)

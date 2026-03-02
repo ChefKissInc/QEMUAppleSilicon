@@ -22,7 +22,6 @@
 #include "hw/qdev-properties.h"
 #include "system/reset.h"
 #include "system/runstate.h"
-#include "system/qtest.h"
 #include "hw/boards.h"
 #include "hw/loader.h"
 #include "hw/fw-path-provider.h"
@@ -250,7 +249,7 @@ static void pegasos2_init(MachineState *machine)
         if (!pm->vof) {
             warn_report("Option -kernel may be ineffective with -bios.");
         }
-    } else if (pm->vof && !qtest_enabled()) {
+    } else if (pm->vof) {
         warn_report("Using Virtual OpenFirmware but no -kernel option.");
     }
 

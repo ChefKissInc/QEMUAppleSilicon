@@ -33,7 +33,6 @@
 #include "hw/boards.h"
 #include "hw/arm/boot.h"
 #include "hw/block/flash.h"
-#include "system/qtest.h"
 #include "system/address-spaces.h"
 #include "qemu/cutils.h"
 #include "qemu/error-report.h"
@@ -180,7 +179,7 @@ static void sx1_init(MachineState *machine, const int version)
                                 OMAP_CS1_BASE, &cs[1]);
     }
 
-    if (!machine->kernel_filename && !fl_idx && !qtest_enabled()) {
+    if (!machine->kernel_filename && !fl_idx) {
         error_report("Kernel or Flash image must be specified");
         exit(1);
     }

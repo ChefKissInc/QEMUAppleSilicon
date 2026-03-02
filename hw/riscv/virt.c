@@ -50,7 +50,6 @@
 #include "system/tcg.h"
 #include "system/kvm.h"
 #include "system/tpm.h"
-#include "system/qtest.h"
 #include "hw/pci/pci.h"
 #include "hw/pci-host/gpex.h"
 #include "hw/display/ramfb.h"
@@ -76,7 +75,7 @@ static bool virt_use_emulated_aplic(RISCVVirtAIAType aia_type)
 
 static bool virt_aclint_allowed(void)
 {
-    return tcg_enabled() || qtest_enabled();
+    return tcg_enabled();
 }
 
 static const MemMapEntry virt_memmap[] = {

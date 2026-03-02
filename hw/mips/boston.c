@@ -39,7 +39,6 @@
 #include "chardev/char.h"
 #include "system/device_tree.h"
 #include "system/system.h"
-#include "system/qtest.h"
 #include "system/runstate.h"
 #include "system/reset.h"
 
@@ -833,7 +832,7 @@ static void boston_mach_init(MachineState *machine)
 
         gen_firmware(memory_region_get_ram_ptr(flash) + 0x7c00000,
                      s->kernel_entry, s->fdt_base);
-    } else if (!qtest_enabled()) {
+    } else {
         error_report("Please provide either a -kernel or -bios argument");
         exit(1);
     }

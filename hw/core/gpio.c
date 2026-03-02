@@ -157,14 +157,6 @@ static qemu_irq qdev_disconnect_gpio_out_named(DeviceState *dev,
     return ret;
 }
 
-qemu_irq qdev_intercept_gpio_out(DeviceState *dev, qemu_irq icpt,
-                                 const char *name, int n)
-{
-    qemu_irq disconnected = qdev_disconnect_gpio_out_named(dev, name, n);
-    qdev_connect_gpio_out_named(dev, name, n, icpt);
-    return disconnected;
-}
-
 void qdev_connect_gpio_out(DeviceState *dev, int n, qemu_irq input_pin)
 {
     qdev_connect_gpio_out_named(dev, NULL, n, input_pin);

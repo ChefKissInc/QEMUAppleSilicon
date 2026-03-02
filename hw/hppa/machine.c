@@ -14,7 +14,6 @@
 #include "exec/target_page.h"
 #include "system/reset.h"
 #include "system/system.h"
-#include "system/qtest.h"
 #include "system/runstate.h"
 #include "hw/rtc/mc146818rtc.h"
 #include "hw/timer/i8254.h"
@@ -423,34 +422,32 @@ static void machine_HP_common_init_tail(MachineState *machine, PCIBus *pci_bus,
        well load it directly from an ELF image. Load the 64-bit
        firmware on 64-bit machines by default if not specified
        on command line. */
-    if (!qtest_enabled()) {
-        if (!firmware) {
-            firmware = lasi_dev ? "hppa-firmware.img" : "hppa-firmware64.img";
-        }
-        firmware_filename = qemu_find_file(QEMU_FILE_TYPE_BIOS, firmware);
-        if (firmware_filename == NULL) {
-            error_report("no firmware provided");
-            exit(1);
-        }
-
-        size = load_elf(firmware_filename, NULL, translate, NULL,
-                        &firmware_entry, &firmware_low, &firmware_high, NULL,
-                        ELFDATA2MSB, EM_PARISC, 0, 0);
-
-        if (size < 0) {
-            error_report("could not load firmware '%s'", firmware_filename);
-            exit(1);
-        }
-        qemu_log_mask(CPU_LOG_PAGE, "Firmware loaded at 0x%08" PRIx64
-                      "-0x%08" PRIx64 ", entry at 0x%08" PRIx64 ".\n",
-                      firmware_low, firmware_high, firmware_entry);
-        if (firmware_low < translate(NULL, FIRMWARE_START) ||
-            firmware_high >= translate(NULL, FIRMWARE_END)) {
-            error_report("Firmware overlaps with memory or IO space");
-            exit(1);
-        }
-        g_free(firmware_filename);
+    if (!firmware) {
+        firmware = lasi_dev ? "hppa-firmware.img" : "hppa-firmware64.img";
     }
+    firmware_filename = qemu_find_file(QEMU_FILE_TYPE_BIOS, firmware);
+    if (firmware_filename == NULL) {
+        error_report("no firmware provided");
+        exit(1);
+    }
+
+    size = load_elf(firmware_filename, NULL, translate, NULL,
+                    &firmware_entry, &firmware_low, &firmware_high, NULL,
+                    ELFDATA2MSB, EM_PARISC, 0, 0);
+
+    if (size < 0) {
+        error_report("could not load firmware '%s'", firmware_filename);
+        exit(1);
+    }
+    qemu_log_mask(CPU_LOG_PAGE, "Firmware loaded at 0x%08" PRIx64
+                  "-0x%08" PRIx64 ", entry at 0x%08" PRIx64 ".\n",
+                  firmware_low, firmware_high, firmware_entry);
+    if (firmware_low < translate(NULL, FIRMWARE_START) ||
+        firmware_high >= translate(NULL, FIRMWARE_END)) {
+        error_report("Firmware overlaps with memory or IO space");
+        exit(1);
+    }
+    g_free(firmware_filename);
 
     rom_region = g_new(MemoryRegion, 1);
     memory_region_init_ram(rom_region, NULL, "firmware",

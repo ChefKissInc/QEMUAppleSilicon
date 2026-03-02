@@ -14,7 +14,6 @@
 #include "hw/loader.h"
 #include "elf.h"
 #include "qemu/error-report.h"
-#include "system/qtest.h"
 
 #define KERNEL_LOAD_ADDR 0x10000
 #define AN5206_MBAR_ADDR 0x10000000
@@ -66,9 +65,6 @@ static void an5206_init(MachineState *machine)
 
     /* Load kernel.  */
     if (!kernel_filename) {
-        if (qtest_enabled()) {
-            return;
-        }
         error_report("Kernel image must be specified");
         exit(1);
     }

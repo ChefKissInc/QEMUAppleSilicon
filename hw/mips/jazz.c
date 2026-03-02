@@ -44,7 +44,6 @@
 #include "hw/audio/pcspk.h"
 #include "hw/input/i8042.h"
 #include "hw/sysbus.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
@@ -251,7 +250,7 @@ static void mips_jazz_init(MachineState *machine,
         bios_size = -1;
     }
     if ((bios_size < 0 || bios_size > MAGNUM_BIOS_SIZE)
-        && machine->firmware && !qtest_enabled()) {
+        && machine->firmware) {
         error_report("Could not load MIPS bios '%s'", machine->firmware);
         exit(1);
     }

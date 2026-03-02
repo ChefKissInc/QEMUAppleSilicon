@@ -15,7 +15,6 @@
 #include "qemu/module.h"
 #include "system/kvm.h"
 #include "system/tcg.h"
-#include "system/qtest.h"
 #include "migration/qemu-file-types.h"
 #include "migration/register.h"
 
@@ -27,8 +26,6 @@ void s390_init_tod(void)
         obj = object_new(TYPE_KVM_S390_TOD);
     } else if (tcg_enabled()) {
         obj = object_new(TYPE_QEMU_S390_TOD);
-    } else if (qtest_enabled()) {
-        return;
     } else {
         error_report("current accelerator not handled in s390_init_tod!");
         abort();

@@ -1,2 +1,0 @@
-subdir('char')
-subdir('timer')

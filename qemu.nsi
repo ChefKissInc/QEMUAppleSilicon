@@ -161,16 +161,6 @@ Section "Libraries (DLL)" SectionDll
 SectionEnd
 !endif
 
-!ifdef CONFIG_DOCUMENTATION
-Section "Documentation" SectionDoc
-    SetOutPath "$INSTDIR\doc"
-    File /r "${BINDIR}\doc"
-    SetOutPath "$INSTDIR"
-    CreateDirectory "$SMPROGRAMS\${PRODUCT}"
-    CreateShortCut "$SMPROGRAMS\${PRODUCT}\User Documentation.lnk" "$INSTDIR\doc\index.html" "" "$INSTDIR\doc\index.html" 0
-SectionEnd
-!endif
-
 ; Optional section (can be disabled by the user)
 Section "Start Menu Shortcuts" SectionMenu
     CreateDirectory "$SMPROGRAMS\${PRODUCT}"
@@ -234,9 +224,6 @@ SectionEnd
     !insertmacro MUI_DESCRIPTION_TEXT ${SectionTools} "Tools."
 !ifdef DLLDIR
     !insertmacro MUI_DESCRIPTION_TEXT ${SectionDll}   "Runtime Libraries (DLL)."
-!endif
-!ifdef CONFIG_DOCUMENTATION
-    !insertmacro MUI_DESCRIPTION_TEXT ${SectionDoc}   "Documentation."
 !endif
     !insertmacro MUI_DESCRIPTION_TEXT ${SectionMenu}  "Menu entries."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END

@@ -27,17 +27,12 @@
 #include "block/accounting.h"
 #include "block/block_int.h"
 #include "qemu/timer.h"
-#include "system/qtest.h"
 
 static QEMUClockType clock_type = QEMU_CLOCK_REALTIME;
-static const int qtest_latency_ns = NANOSECONDS_PER_SECOND / 1000;
 
 void block_acct_init(BlockAcctStats *stats)
 {
     qemu_mutex_init(&stats->lock);
-    if (qtest_enabled()) {
-        clock_type = QEMU_CLOCK_VIRTUAL;
-    }
     stats->account_invalid = true;
     stats->account_failed = true;
 }
@@ -206,10 +201,6 @@ static void block_account_one_io(BlockAcctStats *stats, BlockAcctCookie *cookie,
     BlockAcctTimedStats *s;
     int64_t time_ns = qemu_clock_get_ns(clock_type);
     int64_t latency_ns = time_ns - cookie->start_time_ns;
-
-    if (qtest_enabled()) {
-        latency_ns = qtest_latency_ns;
-    }
 
     assert(cookie->type < BLOCK_MAX_IOTYPE);
 

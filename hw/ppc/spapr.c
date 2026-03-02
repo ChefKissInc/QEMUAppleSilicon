@@ -39,7 +39,6 @@
 #include "system/hostmem.h"
 #include "system/numa.h"
 #include "system/tcg.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "qemu/log.h"
@@ -1748,16 +1747,6 @@ static void spapr_machine_reset(MachineState *machine, ResetType type)
      * devices. To be called after the reset of the machine devices.
      */
     spapr_irq_reset(spapr, &error_fatal);
-
-    /*
-     * There is no CAS under qtest. Simulate one to please the code that
-     * depends on spapr->ov5_cas. This is especially needed to test device
-     * unplug, so we do that before resetting the DRCs.
-     */
-    if (qtest_enabled()) {
-        spapr_ovec_cleanup(spapr->ov5_cas);
-        spapr->ov5_cas = spapr_ovec_clone(spapr->ov5);
-    }
 
     spapr_nvdimm_finish_flushes();
 

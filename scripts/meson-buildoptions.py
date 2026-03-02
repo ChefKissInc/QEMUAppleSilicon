@@ -29,7 +29,6 @@ import sys
 # defaults.  Try not to add any.
 SKIP_OPTIONS = {
     "default_devices",
-    "fuzzing_engine",
 }
 
 # Options whose name doesn't match the option for backwards compatibility

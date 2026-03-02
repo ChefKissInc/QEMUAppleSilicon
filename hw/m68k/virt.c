@@ -25,7 +25,6 @@
 #include "net/net.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
-#include "system/qtest.h"
 #include "system/runstate.h"
 #include "system/reset.h"
 

@@ -22,7 +22,6 @@
 #include "hw/i2c/smbus_eeprom.h"
 #include "hw/ppc/ppc.h"
 #include "system/block-backend.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "kvm_ppc.h"
 #include "elf.h"

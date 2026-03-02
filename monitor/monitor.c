@@ -31,7 +31,6 @@
 #include "qobject/qdict.h"
 #include "qemu/error-report.h"
 #include "qemu/option.h"
-#include "system/qtest.h"
 #include "trace.h"
 
 /*
@@ -320,13 +319,12 @@ static MonitorQAPIEventConf monitor_qapi_event_conf[QAPI_EVENT__MAX] = {
 
 /*
  * Return the clock to use for recording an event's time.
- * It's QEMU_CLOCK_REALTIME, except for qtests it's
- * QEMU_CLOCK_VIRTUAL, to support testing rate limits.
+ * It's QEMU_CLOCK_REALTIME.
  * Beware: result is invalid before configure_accelerator().
  */
 static inline QEMUClockType monitor_get_event_clock(void)
 {
-    return qtest_enabled() ? QEMU_CLOCK_VIRTUAL : QEMU_CLOCK_REALTIME;
+    return QEMU_CLOCK_REALTIME;
 }
 
 /*

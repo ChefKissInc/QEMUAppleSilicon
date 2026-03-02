@@ -28,7 +28,6 @@
 #include "hw/riscv/boot_opensbi.h"
 #include "elf.h"
 #include "system/device_tree.h"
-#include "system/qtest.h"
 #include "system/kvm.h"
 #include "system/reset.h"
 
@@ -98,17 +97,9 @@ static char *riscv_find_bios(const char *bios_filename)
 
     filename = qemu_find_file(QEMU_FILE_TYPE_BIOS, bios_filename);
     if (filename == NULL) {
-        if (!qtest_enabled()) {
-            /*
-             * We only ship OpenSBI binary bios images in the QEMU source.
-             * For machines that use images other than the default bios,
-             * running QEMU test will complain hence let's suppress the error
-             * report for QEMU testing.
-             */
-            error_report("Unable to find the RISC-V BIOS \"%s\"",
-                         bios_filename);
-            exit(1);
-        }
+        error_report("Unable to find the RISC-V BIOS \"%s\"",
+                     bios_filename);
+        exit(1);
     }
 
     return filename;

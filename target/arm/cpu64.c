@@ -26,7 +26,6 @@
 #include "qemu/units.h"
 #include "system/kvm.h"
 #include "system/hvf.h"
-#include "system/qtest.h"
 #include "system/tcg.h"
 #include "kvm_arm.h"
 #include "hvf_arm.h"
@@ -808,7 +807,7 @@ static void aarch64_max_initfn(Object *obj)
         return;
     }
 
-    if (tcg_enabled() || qtest_enabled()) {
+    if (tcg_enabled()) {
         aarch64_a57_initfn(obj);
     }
 

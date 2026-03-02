@@ -46,7 +46,6 @@
 #include "hw/usb.h"
 #include "net/net.h"
 #include "system/kvm.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "qemu/error-report.h"
@@ -656,7 +655,7 @@ static void mips_loongson3_virt_init(MachineState *machine)
         }
 
         if ((bios_size < 0 || bios_size > virt_memmap[VIRT_BIOS_ROM].size) &&
-            !kernel_filename && !qtest_enabled()) {
+            !kernel_filename) {
             error_report("Could not load MIPS bios '%s'", machine->firmware);
             exit(1);
         }

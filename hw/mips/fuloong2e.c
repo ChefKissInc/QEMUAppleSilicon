@@ -36,7 +36,6 @@
 #include "hw/qdev-properties.h"
 #include "elf.h"
 #include "hw/isa/vt82c686.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "system/system.h"
 #include "qemu/error-report.h"
@@ -271,7 +270,7 @@ static void mips_fuloong2e_init(MachineState *machine)
         }
 
         if ((bios_size < 0 || bios_size > BIOS_SIZE) &&
-            machine->firmware && !qtest_enabled()) {
+            machine->firmware) {
             error_report("Could not load MIPS bios '%s'", machine->firmware);
             exit(1);
         }

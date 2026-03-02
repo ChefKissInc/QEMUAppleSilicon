@@ -27,7 +27,6 @@
 #include "qemu/timer.h"
 #include "hw/ptimer.h"
 #include "system/system.h"
-#include "system/qtest.h"
 #include "net/net.h"
 #include "hw/boards.h"
 #include "hw/loader.h"
@@ -364,7 +363,7 @@ static void mcf5208evb_init(MachineState *machine)
 
     /* Load kernel.  */
     if (!kernel_filename) {
-        if (qtest_enabled() || machine->firmware) {
+        if (machine->firmware) {
             return;
         }
         error_report("Kernel image must be specified");

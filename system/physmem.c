@@ -42,7 +42,6 @@
 #include "system/xen.h"
 #include "system/kvm.h"
 #include "system/tcg.h"
-#include "system/qtest.h"
 #include "qemu/timer.h"
 #include "qemu/config-file.h"
 #include "qemu/error-report.h"
@@ -2000,13 +1999,9 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
         qemu_madvise(new_block->host, new_block->max_length, QEMU_MADV_HUGEPAGE);
         /*
          * MADV_DONTFORK is also needed by KVM in absence of synchronous MMU
-         * Configure it unless the machine is a qtest server, in which case
-         * KVM is not used and it may be forked (eg for fuzzing purposes).
          */
-        if (!qtest_enabled()) {
-            qemu_madvise(new_block->host, new_block->max_length,
-                         QEMU_MADV_DONTFORK);
-        }
+        qemu_madvise(new_block->host, new_block->max_length,
+                     QEMU_MADV_DONTFORK);
         ram_block_notify_add(new_block->host, new_block->used_length,
                              new_block->max_length);
     }
@@ -3088,7 +3083,6 @@ MemTxResult flatview_read_continue(FlatView *fv, hwaddr addr,
     MemTxResult result = MEMTX_OK;
     uint8_t *buf = ptr;
 
-    fuzz_dma_read_cb(addr, len, mr);
     for (;;) {
         result |= flatview_read_continue_step(attrs, buf, len, mr_addr, &l, mr);
 
@@ -3469,7 +3463,6 @@ void *address_space_map(AddressSpace *as,
     memory_region_ref(mr);
     *plen = flatview_extend_translation(fv, addr, len, mr, xlat,
                                         l, is_write, attrs);
-    fuzz_dma_read_cb(addr, *plen, mr);
     return qemu_ram_ptr_length(mr->ram_block, xlat, plen, true, is_write);
 }
 

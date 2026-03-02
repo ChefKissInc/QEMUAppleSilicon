@@ -24,7 +24,6 @@
 #include "hw/ppc/ppc.h"
 #include "hw/qdev-properties.h"
 #include "system/reset.h"
-#include "system/qtest.h"
 
 #include <libfdt.h>
 
@@ -376,11 +375,8 @@ static int pnv_xive2_write_end(Xive2Router *xrtr, uint8_t blk, uint32_t idx,
 
 static inline int pnv_xive2_get_current_pir(PnvXive2 *xive)
 {
-    if (!qtest_enabled()) {
-        PowerPCCPU *cpu = POWERPC_CPU(current_cpu);
-        return ppc_cpu_pir(cpu);
-    }
-    return 0;
+    PowerPCCPU *cpu = POWERPC_CPU(current_cpu);
+    return ppc_cpu_pir(cpu);
 }
 
 /*

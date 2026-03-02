@@ -35,7 +35,6 @@
 #include "hw/ptimer.h"
 #include "hw/qdev-properties.h"
 #include "system/system.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "hw/boards.h"
 #include "hw/loader.h"
@@ -365,7 +364,7 @@ static void leon3_generic_hw_init(MachineState *machine)
             error_report("could not load prom '%s'", filename);
             exit(1);
         }
-    } else if (kernel_filename == NULL && !qtest_enabled()) {
+    } else if (kernel_filename == NULL) {
         error_report("Can't read bios image '%s'", filename
                                                    ? filename
                                                    : LEON3_PROM_FILENAME);

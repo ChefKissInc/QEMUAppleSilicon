@@ -101,7 +101,6 @@
 #ifdef CONFIG_VIRTFS
 #include "fsdev/qemu-fsdev.h"
 #endif
-#include "system/qtest.h"
 #ifdef CONFIG_TCG
 #include "tcg/perf.h"
 #endif
@@ -189,8 +188,6 @@ static Chardev **serial_hds;
 static const char *log_mask;
 static const char *log_file;
 static bool list_data_dirs;
-static const char *qtest_chrdev;
-static const char *qtest_log;
 
 static int has_defaults = 1;
 static int default_audio = 1;
@@ -1957,8 +1954,7 @@ static bool object_create_early(const char *type)
     }
 
     /* Reason: property "chardev" */
-    if (g_str_equal(type, "rng-egd") ||
-        g_str_equal(type, "qtest")) {
+    if (g_str_equal(type, "rng-egd")) {
         return false;
     }
 
@@ -2081,10 +2077,6 @@ static bool object_create_late(const char *type)
 
 static void qemu_create_late_backends(void)
 {
-    if (qtest_chrdev) {
-        qtest_server_init(qtest_chrdev, qtest_log, &error_fatal);
-    }
-
     net_init_clients();
 
     object_option_foreach_add(object_create_late);
@@ -2383,19 +2375,14 @@ static int do_configure_accelerator(void *opaque, QemuOpts *opts, Error **errp)
     AccelClass *ac = accel_find(acc);
     AccelState *accel;
     int ret;
-    bool qtest_with_kvm;
 
     if (!acc) {
         error_setg(errp, QERR_MISSING_PARAMETER, "accel");
         goto bad;
     }
 
-    qtest_with_kvm = g_str_equal(acc, "kvm") && qtest_chrdev != NULL;
-
     if (!ac) {
-        if (!qtest_with_kvm) {
-            error_report("invalid accelerator %s", acc);
-        }
+        error_report("invalid accelerator %s", acc);
         goto bad;
     }
     accel = ACCEL(object_new_with_class(OBJECT_CLASS(ac)));
@@ -2406,9 +2393,7 @@ static int do_configure_accelerator(void *opaque, QemuOpts *opts, Error **errp)
 
     ret = accel_init_machine(accel, current_machine);
     if (ret < 0) {
-        if (!qtest_with_kvm || ret != -ENOENT) {
-            error_report("failed to initialize %s: %s", acc, strerror(-ret));
-        }
+        error_report("failed to initialize %s: %s", acc, strerror(-ret));
         goto bad;
     }
 
@@ -2484,7 +2469,7 @@ static void configure_accelerators(const char *progname)
         exit(1);
     }
 
-    if (init_failed && !qtest_chrdev) {
+    if (init_failed) {
         error_report("falling back to %s", current_accel_name());
     }
 
@@ -2770,7 +2755,7 @@ static bool qemu_machine_creation_done(Error **errp)
      * (2) CONFIG_SLIRP not set, in which case the implicit "-net nic"
      * sets up a nic that isn't connected to anything.
      */
-    if (!default_net && (!qtest_enabled() || has_defaults)) {
+    if (!default_net) {
         net_check_clients();
     }
 
@@ -3420,9 +3405,7 @@ void qemu_init(int argc, char **argv)
                     for (el = accel_list; el; el = el->next) {
                         gchar *typename = g_strdup(object_class_get_name(
                                                    OBJECT_CLASS(el->data)));
-                        /* omit qtest which is used for tests only */
-                        if (g_strcmp0(typename, ACCEL_CLASS_NAME("qtest")) &&
-                            g_str_has_suffix(typename, ACCEL_CLASS_SUFFIX)) {
+                        if (g_str_has_suffix(typename, ACCEL_CLASS_SUFFIX)) {
                             gchar **optname = g_strsplit(typename,
                                                          ACCEL_CLASS_SUFFIX, 0);
                             printf("%s\n", optname[0]);
@@ -3594,12 +3577,6 @@ void qemu_init(int argc, char **argv)
                 display_remote++;
                 break;
 #endif
-            case QEMU_OPTION_qtest:
-                qtest_chrdev = optarg;
-                break;
-            case QEMU_OPTION_qtest_log:
-                qtest_log = optarg;
-                break;
             case QEMU_OPTION_sandbox:
                 olist = qemu_find_opts("sandbox");
                 if (!olist) {
@@ -3801,7 +3778,7 @@ void qemu_init(int argc, char **argv)
      */
 
     machine_class = MACHINE_GET_CLASS(current_machine);
-    if (!qtest_enabled() && machine_class->deprecation_reason) {
+    if (machine_class->deprecation_reason) {
         warn_report("Machine type '%s' is deprecated: %s",
                      machine_class->name, machine_class->deprecation_reason);
     }

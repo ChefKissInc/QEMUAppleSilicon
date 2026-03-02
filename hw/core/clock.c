@@ -14,7 +14,6 @@
 #include "qemu/osdep.h"
 #include "qemu/cutils.h"
 #include "qapi/visitor.h"
-#include "system/qtest.h"
 #include "hw/clock.h"
 #include "trace.h"
 
@@ -156,14 +155,6 @@ bool clock_set_mul_div(Clock *clk, uint32_t multiplier, uint32_t divider)
     return true;
 }
 
-static void clock_period_prop_get(Object *obj, Visitor *v, const char *name,
-                                void *opaque, Error **errp)
-{
-    Clock *clk = CLOCK(obj);
-    uint64_t period = clock_get(clk);
-    visit_type_uint64(v, name, &period, errp);
-}
-
 static void clock_unparent(Object *obj)
 {
     /*
@@ -183,11 +174,6 @@ static void clock_initfn(Object *obj)
     clk->divider = 1;
 
     QLIST_INIT(&clk->children);
-
-    if (qtest_enabled()) {
-        object_property_add(obj, "qtest-clock-period", "uint64",
-                            clock_period_prop_get, NULL, NULL, NULL);
-    }
 }
 
 static void clock_finalizefn(Object *obj)

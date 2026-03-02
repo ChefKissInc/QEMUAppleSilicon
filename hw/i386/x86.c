@@ -27,7 +27,6 @@
 #include "qapi/qapi-visit-common.h"
 #include "qapi/qapi-visit-machine.h"
 #include "qapi/visitor.h"
-#include "system/qtest.h"
 #include "system/numa.h"
 #include "trace.h"
 
@@ -171,7 +170,7 @@ bool x86_machine_is_smm_enabled(const X86MachineState *x86ms)
         return false;
     }
 
-    if (tcg_enabled() || qtest_enabled()) {
+    if (tcg_enabled()) {
         smm_available = true;
     } else if (kvm_enabled()) {
         smm_available = kvm_has_smm();

@@ -14,7 +14,6 @@
 #include "system/kvm.h"
 #include "system/tcg.h"
 #include "system/system.h"
-#include "system/qtest.h"
 #include "system/runstate.h"
 #include "system/reset.h"
 #include "system/rtc.h"

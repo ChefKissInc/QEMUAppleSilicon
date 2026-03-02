@@ -93,7 +93,7 @@ static void vc_chr_open(Chardev *chr,
 
 static void vc_chr_set_echo(Chardev *chr, bool echo)
 {
-    /* TODO: set echo for frontends QMP and qtest */
+    /* TODO: set echo for QMP frontend */
 }
 
 static void vc_chr_parse(QemuOpts *opts, ChardevBackend *backend, Error **errp)

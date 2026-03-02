@@ -26,7 +26,6 @@
 #include "hw/virtio/virtio-mmio.h"
 #include "system/device_tree.h"
 #include "system/system.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 
 #include <libfdt.h>

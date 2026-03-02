@@ -22,7 +22,6 @@ system_ss.add(files(
   'memory.c',
   'physmem.c',
   'qdev-monitor.c',
-  'qtest.c',
   'rtc.c',
   'runstate-action.c',
   'runstate-hmp-cmds.c',

@@ -13,7 +13,6 @@
 #include "elf.h"
 #include "qemu/error-report.h"
 #include "system/reset.h"
-#include "system/qtest.h"
 
 /*
  * Linux Image Format
@@ -395,9 +394,7 @@ static void loongarch_direct_kernel_boot(MachineState *ms,
     if (info->kernel_filename) {
         kernel_addr = load_kernel_info(info);
     } else {
-        if (!qtest_enabled()) {
-            warn_report("No kernel provided, booting from flash drive.");
-        }
+        warn_report("No kernel provided, booting from flash drive.");
     }
 
     /* Load cmdline and system tables at [0 - 1 MiB] */

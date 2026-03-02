@@ -56,10 +56,7 @@
 #
 #     1. Additional arguments depend on the type.
 #
-#     2. For detailed information about this command, please refer to
-#        the 'docs/qdev-device-use.txt' file.
-#
-#     3. It's possible to list device properties by running QEMU with
+#     2. It's possible to list device properties by running QEMU with
 #        the ``-device DEVICE,help`` command-line argument, where
 #        DEVICE is the device's name.
 #

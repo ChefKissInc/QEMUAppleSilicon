@@ -40,7 +40,6 @@
 #include "hw/sysbus.h"
 #include "hw/qdev-properties.h"
 #include "qemu/error-report.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "cpu.h"
 
@@ -184,7 +183,7 @@ mips_mipssim_init(MachineState *machine)
         bios_size = -1;
     }
     if ((bios_size < 0 || bios_size > BIOS_SIZE) &&
-        machine->firmware && !qtest_enabled()) {
+        machine->firmware) {
         /* Bail out if we have neither a kernel image nor boot vector code. */
         error_report("Could not load MIPS bios '%s'", machine->firmware);
         exit(1);

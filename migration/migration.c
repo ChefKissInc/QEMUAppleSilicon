@@ -63,7 +63,6 @@
 #include "qemu/yank.h"
 #include "system/cpus.h"
 #include "yank_functions.h"
-#include "system/qtest.h"
 #include "options.h"
 #include "system/dirtylimit.h"
 #include "qemu/sockets.h"
@@ -3667,8 +3666,7 @@ static void qemu_savevm_wait_unplug(MigrationState *s, int old_state,
             while (timeout-- && qemu_savevm_state_guest_unplug_pending()) {
                 qemu_sem_timedwait(&s->wait_unplug_sem, 250);
             }
-            if (qemu_savevm_state_guest_unplug_pending() &&
-                !qtest_enabled()) {
+            if (qemu_savevm_state_guest_unplug_pending()) {
                 warn_report("migration: partially unplugged device on "
                             "failure");
             }

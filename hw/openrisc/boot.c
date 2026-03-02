@@ -14,7 +14,6 @@
 #include "hw/loader.h"
 #include "hw/openrisc/boot.h"
 #include "system/device_tree.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "qemu/error-report.h"
 
@@ -31,7 +30,7 @@ hwaddr openrisc_load_kernel(ram_addr_t ram_size,
     uint64_t high_addr;
     hwaddr entry;
 
-    if (kernel_filename && !qtest_enabled()) {
+    if (kernel_filename) {
         kernel_size = load_elf(kernel_filename, NULL, NULL, NULL,
                                &elf_entry, NULL, &high_addr, NULL, ELFDATA2MSB,
                                EM_OPENRISC, 1, 0);

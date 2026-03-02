@@ -32,7 +32,6 @@
 #include "qapi/error.h"
 #include "qapi/opts-visitor.h"
 #include "qapi/qapi-visit-machine.h"
-#include "system/qtest.h"
 #include "hw/core/cpu.h"
 #include "hw/mem/pc-dimm.h"
 #include "hw/boards.h"
@@ -145,10 +144,8 @@ static void parse_numa_node(MachineState *ms, NumaNodeOptions *node,
         }
 
         numa_info[nodenr].node_mem = node->mem;
-        if (!qtest_enabled()) {
-            warn_report("Parameter -numa node,mem is deprecated,"
-                        " use -numa node,memdev instead");
-        }
+        warn_report("Parameter -numa node,mem is deprecated,"
+                    " use -numa node,memdev instead");
     }
     if (node->memdev) {
         Object *o;

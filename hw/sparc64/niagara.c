@@ -34,7 +34,6 @@
 #include "hw/rtc/sun4v-rtc.h"
 #include "system/block-backend.h"
 #include "qemu/error-report.h"
-#include "system/qtest.h"
 #include "system/system.h"
 #include "qapi/error.h"
 
@@ -86,10 +85,7 @@ typedef struct NiagaraBoardState {
 
 static void add_rom_or_fail(const char *file, const hwaddr addr)
 {
-    /* XXX remove qtest_enabled() check once firmware files are
-     * in the qemu tree
-     */
-    if (!qtest_enabled() && rom_add_file_fixed(file, addr, -1)) {
+    if (rom_add_file_fixed(file, addr, -1)) {
         error_report("Unable to load a firmware for -M niagara");
         exit(1);
     }

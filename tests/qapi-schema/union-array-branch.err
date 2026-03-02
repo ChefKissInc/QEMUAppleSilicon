@@ -1,2 +1,0 @@
-union-array-branch.json: In union 'TestUnion':
-union-array-branch.json:8: 'data' member 'value1' should be a type name

@@ -819,21 +819,6 @@
   'if': 'CONFIG_LINUX' }
 
 ##
-# @QtestProperties:
-#
-# Properties for qtest objects.
-#
-# @chardev: the chardev to be used to receive qtest commands on.
-#
-# @log: the path to a log file
-#
-# Since: 6.0
-##
-{ 'struct': 'QtestProperties',
-        'data': { 'chardev': 'str',
-                  '*log': 'str' } }
-
-##
 # @RemoteObjectProperties:
 #
 # Properties for x-remote-object objects.
@@ -1223,7 +1208,6 @@
     'pef-guest',
     { 'name': 'pr-manager-helper',
       'if': 'CONFIG_LINUX' },
-    'qtest',
     'rng-builtin',
     'rng-egd',
     { 'name': 'rng-random',
@@ -1300,7 +1284,6 @@
                                       'if': 'CONFIG_POSIX' },
       'pr-manager-helper':          { 'type': 'PrManagerHelperProperties',
                                       'if': 'CONFIG_LINUX' },
-      'qtest':                      'QtestProperties',
       'rng-builtin':                'RngProperties',
       'rng-egd':                    'RngEgdProperties',
       'rng-random':                 { 'type': 'RngRandomProperties',

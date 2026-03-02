@@ -28,7 +28,6 @@
 #include "qemu/module.h"
 #include "trace.h"
 #include "system/kvm.h"
-#include "system/qtest.h"
 
 /* #define DEBUG_GIC */
 
@@ -58,7 +57,7 @@ static const uint8_t gic_id_gicv2[] = {
 
 static inline int gic_get_current_cpu(GICState *s)
 {
-    if (!qtest_enabled() && s->num_cpu > 1) {
+    if (s->num_cpu > 1) {
         return current_cpu->cpu_index - s->first_cpu_index;
     }
     return 0;

@@ -33,7 +33,6 @@
 #include "system/blockdev.h"
 #include "system/system.h"
 #include "hw/arm/soc_dma.h"
-#include "system/qtest.h"
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "system/rtc.h"
@@ -3943,7 +3942,7 @@ struct omap_mpu_state_s *omap310_mpu_init(MemoryRegion *dram,
                                 omap_findclk(s, "dpll3"));
 
     dinfo = drive_get(IF_SD, 0, 0);
-    if (!dinfo && !qtest_enabled()) {
+    if (!dinfo) {
         warn_report("missing SecureDigital device");
     }
 

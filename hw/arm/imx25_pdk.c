@@ -30,7 +30,6 @@
 #include "hw/arm/boot.h"
 #include "hw/boards.h"
 #include "qemu/error-report.h"
-#include "system/qtest.h"
 #include "hw/i2c/i2c.h"
 #include "qemu/cutils.h"
 
@@ -131,14 +130,7 @@ static void imx25_pdk_init(MachineState *machine)
         qdev_realize_and_unref(carddev, bus, &error_fatal);
     }
 
-    /*
-     * We test explicitly for qtest here as it is not done (yet?) in
-     * arm_load_kernel(). Without this the "make check" command would
-     * fail.
-     */
-    if (!qtest_enabled()) {
-        arm_load_kernel(&s->soc.cpu, machine, &imx25_pdk_binfo);
-    }
+    arm_load_kernel(&s->soc.cpu, machine, &imx25_pdk_binfo);
 }
 
 static void imx25_pdk_machine_init(MachineClass *mc)

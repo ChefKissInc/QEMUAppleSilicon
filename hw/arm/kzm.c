@@ -23,7 +23,6 @@
 #include "net/net.h"
 #include "hw/net/lan9118.h"
 #include "hw/char/serial-mm.h"
-#include "system/qtest.h"
 #include "system/system.h"
 #include "qemu/cutils.h"
 
@@ -126,9 +125,7 @@ static void kzm_init(MachineState *machine)
 
     kzm_binfo.ram_size = machine->ram_size;
 
-    if (!qtest_enabled()) {
-        arm_load_kernel(&s->soc.cpu, machine, &kzm_binfo);
-    }
+    arm_load_kernel(&s->soc.cpu, machine, &kzm_binfo);
 }
 
 static void kzm_machine_init(MachineClass *mc)

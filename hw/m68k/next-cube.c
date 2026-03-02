@@ -14,7 +14,6 @@
 #include "exec/hwaddr.h"
 #include "exec/cpu-interrupt.h"
 #include "system/system.h"
-#include "system/qtest.h"
 #include "hw/irq.h"
 #include "hw/m68k/next-cube.h"
 #include "hw/boards.h"
@@ -1326,9 +1325,7 @@ static void next_cube_init(MachineState *machine)
                              0x20000);
     memory_region_add_subregion(sysmem, 0x0, &m->rom2);
     if (load_image_targphys(bios_name, 0x01000000, 0x20000) < 8) {
-        if (!qtest_enabled()) {
-            error_report("Failed to load firmware '%s'.", bios_name);
-        }
+        error_report("Failed to load firmware '%s'.", bios_name);
     } else {
         uint8_t *ptr;
         /* Initial PC is always at offset 4 in firmware binaries */
