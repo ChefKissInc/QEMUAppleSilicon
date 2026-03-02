@@ -4606,7 +4606,7 @@ static void define_arm_vh_e2h_redirects_aliases(ARMCPU *cpu)
 
     for (i = 0; i < ARRAY_SIZE(aliases); i++) {
         const struct E2HAlias *a = &aliases[i];
-        ARMCPRegInfo *src_reg, *dst_reg, new_reg;
+        ARMCPRegInfo *src_reg, *dst_reg, new_reg = { 0 };
 
         if (a->feature && !a->feature(&cpu->isar)) {
             continue;
