@@ -3901,7 +3901,8 @@ uint64_t arm_hcr_el2_eff_secstate(CPUARMState *env, ARMSecuritySpace space)
 
 uint64_t arm_hcr_el2_eff(CPUARMState *env)
 {
-    if (arm_feature(env, ARM_FEATURE_M)) {
+    if (likely(!arm_feature(env, ARM_FEATURE_EL2)) ||
+            arm_feature(env, ARM_FEATURE_M)) {
         return 0;
     }
     return arm_hcr_el2_eff_secstate(env, arm_security_space_below_el3(env));
