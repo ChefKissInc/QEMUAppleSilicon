@@ -303,9 +303,9 @@ static bool bp_wp_matches(ARMCPU *cpu, int n, bool is_wp)
      * Non-Secure to simplify the code slightly compared to the full
      * table in the ARM ARM.
      */
-    pac = FIELD_EX64(cr, DBGWCR, PAC);
-    hmc = FIELD_EX64(cr, DBGWCR, HMC);
-    ssc = FIELD_EX64(cr, DBGWCR, SSC);
+    pac = REG_FIELD_EX64(cr, DBGWCR, PAC);
+    hmc = REG_FIELD_EX64(cr, DBGWCR, HMC);
+    ssc = REG_FIELD_EX64(cr, DBGWCR, SSC);
 
     switch (ssc) {
     case 0:
@@ -344,8 +344,8 @@ static bool bp_wp_matches(ARMCPU *cpu, int n, bool is_wp)
         g_assert_not_reached();
     }
 
-    wt = FIELD_EX64(cr, DBGWCR, WT);
-    lbn = FIELD_EX64(cr, DBGWCR, LBN);
+    wt = REG_FIELD_EX64(cr, DBGWCR, WT);
+    lbn = REG_FIELD_EX64(cr, DBGWCR, LBN);
 
     if (wt && !linked_bp_matches(cpu, lbn)) {
         return false;
@@ -560,12 +560,12 @@ void hw_watchpoint_update(ARMCPU *cpu, int n)
         env->cpu_watchpoint[n] = NULL;
     }
 
-    if (!FIELD_EX64(wcr, DBGWCR, E)) {
+    if (!REG_FIELD_EX64(wcr, DBGWCR, E)) {
         /* E bit clear : watchpoint disabled */
         return;
     }
 
-    switch (FIELD_EX64(wcr, DBGWCR, LSC)) {
+    switch (REG_FIELD_EX64(wcr, DBGWCR, LSC)) {
     case 0:
         /* LSC 00 is reserved and must behave as if the wp is disabled */
         return;
@@ -585,7 +585,7 @@ void hw_watchpoint_update(ARMCPU *cpu, int n)
      * CONSTRAINED UNPREDICTABLE; we opt to ignore BAS in this case,
      * thus generating a watchpoint for every byte in the masked region.
      */
-    mask = FIELD_EX64(wcr, DBGWCR, MASK);
+    mask = REG_FIELD_EX64(wcr, DBGWCR, MASK);
     if (mask == 1 || mask == 2) {
         /*
          * Reserved values of MASK; we must act as if the mask value was
@@ -604,7 +604,7 @@ void hw_watchpoint_update(ARMCPU *cpu, int n)
         wvr &= ~(len - 1);
     } else {
         /* Watchpoint covers bytes defined by the byte address select bits */
-        int bas = FIELD_EX64(wcr, DBGWCR, BAS);
+        int bas = REG_FIELD_EX64(wcr, DBGWCR, BAS);
         int basstart;
 
         if (extract64(wvr, 2, 1)) {

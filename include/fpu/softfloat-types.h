@@ -246,10 +246,10 @@ typedef enum __attribute__((__packed__)) {
  * We set the Float3NaNPropRule enum values up so we can select the
  * right value in pickNaNMulAdd in a data driven way.
  */
-FIELD(3NAN, 1ST, 0, 2)   /* which operand is most preferred ? */
-FIELD(3NAN, 2ND, 2, 2)   /* which operand is next most preferred ? */
-FIELD(3NAN, 3RD, 4, 2)   /* which operand is least preferred ? */
-FIELD(3NAN, SNAN, 6, 1)  /* do we prefer SNaN over QNaN ? */
+REG_FIELD(3NAN, 1ST, 0, 2)   /* which operand is most preferred ? */
+REG_FIELD(3NAN, 2ND, 2, 2)   /* which operand is next most preferred ? */
+REG_FIELD(3NAN, 3RD, 4, 2)   /* which operand is least preferred ? */
+REG_FIELD(3NAN, SNAN, 6, 1)  /* do we prefer SNaN over QNaN ? */
 
 #define PROPRULE(X, Y, Z) \
     ((X << R_3NAN_1ST_SHIFT) | (Y << R_3NAN_2ND_SHIFT) | (Z << R_3NAN_3RD_SHIFT))

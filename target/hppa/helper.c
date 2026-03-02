@@ -221,7 +221,7 @@ void hppa_cpu_dump_state(CPUState *cs, FILE *f, int flags)
         ena[5] = '\0';
 
         qemu_fprintf(f, "FPSR %08x flag    %s enable  %s %s\n",
-                     fpsr, flg, ena, rm[FIELD_EX32(fpsr, FPSR, RM)]);
+                     fpsr, flg, ena, rm[REG_FIELD_EX32(fpsr, FPSR, RM)]);
 
         for (i = 0; i < 32; i++) {
             qemu_fprintf(f, "FR%02d %016" PRIx64 "%c",

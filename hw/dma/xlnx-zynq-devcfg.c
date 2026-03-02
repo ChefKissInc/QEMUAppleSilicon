@@ -48,20 +48,20 @@
 } while (0)
 
 REG32(CTRL, 0x00)
-    FIELD(CTRL,     FORCE_RST,          31,  1) /* Not supported, wr ignored */
-    FIELD(CTRL,     PCAP_PR,            27,  1) /* Forced to 0 on bad unlock */
-    FIELD(CTRL,     PCAP_MODE,          26,  1)
-    FIELD(CTRL,     MULTIBOOT_EN,       24,  1)
-    FIELD(CTRL,     USER_MODE,          15,  1)
-    FIELD(CTRL,     PCFG_AES_FUSE,      12,  1)
-    FIELD(CTRL,     PCFG_AES_EN,         9,  3)
-    FIELD(CTRL,     SEU_EN,              8,  1)
-    FIELD(CTRL,     SEC_EN,              7,  1)
-    FIELD(CTRL,     SPNIDEN,             6,  1)
-    FIELD(CTRL,     SPIDEN,              5,  1)
-    FIELD(CTRL,     NIDEN,               4,  1)
-    FIELD(CTRL,     DBGEN,               3,  1)
-    FIELD(CTRL,     DAP_EN,              0,  3)
+    REG_FIELD(CTRL,     FORCE_RST,          31,  1) /* Not supported, wr ignored */
+    REG_FIELD(CTRL,     PCAP_PR,            27,  1) /* Forced to 0 on bad unlock */
+    REG_FIELD(CTRL,     PCAP_MODE,          26,  1)
+    REG_FIELD(CTRL,     MULTIBOOT_EN,       24,  1)
+    REG_FIELD(CTRL,     USER_MODE,          15,  1)
+    REG_FIELD(CTRL,     PCFG_AES_FUSE,      12,  1)
+    REG_FIELD(CTRL,     PCFG_AES_EN,         9,  3)
+    REG_FIELD(CTRL,     SEU_EN,              8,  1)
+    REG_FIELD(CTRL,     SEC_EN,              7,  1)
+    REG_FIELD(CTRL,     SPNIDEN,             6,  1)
+    REG_FIELD(CTRL,     SPIDEN,              5,  1)
+    REG_FIELD(CTRL,     NIDEN,               4,  1)
+    REG_FIELD(CTRL,     DBGEN,               3,  1)
+    REG_FIELD(CTRL,     DAP_EN,              0,  3)
 
 REG32(LOCK, 0x04)
 #define AES_FUSE_LOCK        4
@@ -82,40 +82,40 @@ static const uint32_t lock_ctrl_map[] = {
 };
 
 REG32(CFG, 0x08)
-    FIELD(CFG,      RFIFO_TH,           10,  2)
-    FIELD(CFG,      WFIFO_TH,            8,  2)
-    FIELD(CFG,      RCLK_EDGE,           7,  1)
-    FIELD(CFG,      WCLK_EDGE,           6,  1)
-    FIELD(CFG,      DISABLE_SRC_INC,     5,  1)
-    FIELD(CFG,      DISABLE_DST_INC,     4,  1)
+    REG_FIELD(CFG,      RFIFO_TH,           10,  2)
+    REG_FIELD(CFG,      WFIFO_TH,            8,  2)
+    REG_FIELD(CFG,      RCLK_EDGE,           7,  1)
+    REG_FIELD(CFG,      WCLK_EDGE,           6,  1)
+    REG_FIELD(CFG,      DISABLE_SRC_INC,     5,  1)
+    REG_FIELD(CFG,      DISABLE_DST_INC,     4,  1)
 #define R_CFG_RESET 0x50B
 
 REG32(INT_STS, 0x0C)
-    FIELD(INT_STS,  PSS_GTS_USR_B,      31,  1)
-    FIELD(INT_STS,  PSS_FST_CFG_B,      30,  1)
-    FIELD(INT_STS,  PSS_CFG_RESET_B,    27,  1)
-    FIELD(INT_STS,  RX_FIFO_OV,         18,  1)
-    FIELD(INT_STS,  WR_FIFO_LVL,        17,  1)
-    FIELD(INT_STS,  RD_FIFO_LVL,        16,  1)
-    FIELD(INT_STS,  DMA_CMD_ERR,        15,  1)
-    FIELD(INT_STS,  DMA_Q_OV,           14,  1)
-    FIELD(INT_STS,  DMA_DONE,           13,  1)
-    FIELD(INT_STS,  DMA_P_DONE,         12,  1)
-    FIELD(INT_STS,  P2D_LEN_ERR,        11,  1)
-    FIELD(INT_STS,  PCFG_DONE,           2,  1)
+    REG_FIELD(INT_STS,  PSS_GTS_USR_B,      31,  1)
+    REG_FIELD(INT_STS,  PSS_FST_CFG_B,      30,  1)
+    REG_FIELD(INT_STS,  PSS_CFG_RESET_B,    27,  1)
+    REG_FIELD(INT_STS,  RX_FIFO_OV,         18,  1)
+    REG_FIELD(INT_STS,  WR_FIFO_LVL,        17,  1)
+    REG_FIELD(INT_STS,  RD_FIFO_LVL,        16,  1)
+    REG_FIELD(INT_STS,  DMA_CMD_ERR,        15,  1)
+    REG_FIELD(INT_STS,  DMA_Q_OV,           14,  1)
+    REG_FIELD(INT_STS,  DMA_DONE,           13,  1)
+    REG_FIELD(INT_STS,  DMA_P_DONE,         12,  1)
+    REG_FIELD(INT_STS,  P2D_LEN_ERR,        11,  1)
+    REG_FIELD(INT_STS,  PCFG_DONE,           2,  1)
 #define R_INT_STS_RSVD       ((0x7 << 24) | (0x1 << 19) | (0xF < 7))
 
 REG32(INT_MASK, 0x10)
 
 REG32(STATUS, 0x14)
-    FIELD(STATUS,   DMA_CMD_Q_F,        31,  1)
-    FIELD(STATUS,   DMA_CMD_Q_E,        30,  1)
-    FIELD(STATUS,   DMA_DONE_CNT,       28,  2)
-    FIELD(STATUS,   RX_FIFO_LVL,        20,  5)
-    FIELD(STATUS,   TX_FIFO_LVL,        12,  7)
-    FIELD(STATUS,   PSS_GTS_USR_B,      11,  1)
-    FIELD(STATUS,   PSS_FST_CFG_B,      10,  1)
-    FIELD(STATUS,   PSS_CFG_RESET_B,     5,  1)
+    REG_FIELD(STATUS,   DMA_CMD_Q_F,        31,  1)
+    REG_FIELD(STATUS,   DMA_CMD_Q_E,        30,  1)
+    REG_FIELD(STATUS,   DMA_DONE_CNT,       28,  2)
+    REG_FIELD(STATUS,   RX_FIFO_LVL,        20,  5)
+    REG_FIELD(STATUS,   TX_FIFO_LVL,        12,  7)
+    REG_FIELD(STATUS,   PSS_GTS_USR_B,      11,  1)
+    REG_FIELD(STATUS,   PSS_FST_CFG_B,      10,  1)
+    REG_FIELD(STATUS,   PSS_CFG_RESET_B,     5,  1)
 
 REG32(DMA_SRC_ADDR, 0x18)
 REG32(DMA_DST_ADDR, 0x1C)
@@ -128,10 +128,10 @@ REG32(UNLOCK, 0x34)
 #define R_UNLOCK_MAGIC 0x757BDF0D
 
 REG32(MCTRL, 0x80)
-    FIELD(MCTRL,    PS_VERSION,         28,  4)
-    FIELD(MCTRL,    PCFG_POR_B,          8,  1)
-    FIELD(MCTRL,    INT_PCAP_LPBK,       4,  1)
-    FIELD(MCTRL,    QEMU,                3,  1)
+    REG_FIELD(MCTRL,    PS_VERSION,         28,  4)
+    REG_FIELD(MCTRL,    PCFG_POR_B,          8,  1)
+    REG_FIELD(MCTRL,    INT_PCAP_LPBK,       4,  1)
+    REG_FIELD(MCTRL,    QEMU,                3,  1)
 
 static void xlnx_zynq_devcfg_update_ixr(XlnxZynqDevcfg *s)
 {
@@ -208,7 +208,7 @@ static uint64_t r_ctrl_pre_write(RegisterInfo *reg, uint64_t val)
 static void r_ctrl_post_write(RegisterInfo *reg, uint64_t val)
 {
     const char *device_prefix = object_get_typename(OBJECT(reg->opaque));
-    uint32_t aes_en = FIELD_EX32(val, CTRL, PCFG_AES_EN);
+    uint32_t aes_en = REG_FIELD_EX32(val, CTRL, PCFG_AES_EN);
 
     if (aes_en != 0 && aes_en != 7) {
         qemu_log_mask(LOG_UNIMP, "%s: warning, aes-en bits inconsistent,"

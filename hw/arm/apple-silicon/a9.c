@@ -174,15 +174,15 @@ AppleA9State *apple_a9_create(const char *name, uint32_t cpu_id,
 
     mpidr = acpu->phys_id | (1LL << 31) | (1 << ARM_AFF2_SHIFT);
 
-    cpu->midr = FIELD_DP64(0, MIDR_EL1, IMPLEMENTER, 0x61);
-    cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, ARCHITECTURE, 0xf);
-    cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, PARTNUM, 0x4); // Maui
-    cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, VARIANT, 0x1); // B1
-    cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, REVISION, 0x1);
+    cpu->midr = REG_FIELD_DP64(0, MIDR_EL1, IMPLEMENTER, 0x61);
+    cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, ARCHITECTURE, 0xf);
+    cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, PARTNUM, 0x4); // Maui
+    cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, VARIANT, 0x1); // B1
+    cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, REVISION, 0x1);
 
     SET_IDREG(
         &cpu->isar, ID_AA64MMFR1,
-        FIELD_DP64(GET_IDREG(&cpu->isar, ID_AA64MMFR1), ID_AA64MMFR1, PAN, 0));
+        REG_FIELD_DP64(GET_IDREG(&cpu->isar, ID_AA64MMFR1), ID_AA64MMFR1, PAN, 0));
 
     object_property_set_uint(obj, "mp-affinity", mpidr, &error_fatal);
     object_property_set_bool(obj, "start-powered-off", true, NULL);

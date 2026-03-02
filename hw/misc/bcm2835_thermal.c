@@ -14,20 +14,20 @@
 #include "migration/vmstate.h"
 
 REG32(CTL, 0)
-FIELD(CTL, POWER_DOWN, 0, 1)
-FIELD(CTL, RESET, 1, 1)
-FIELD(CTL, BANDGAP_CTRL, 2, 3)
-FIELD(CTL, INTERRUPT_ENABLE, 5, 1)
-FIELD(CTL, DIRECT, 6, 1)
-FIELD(CTL, INTERRUPT_CLEAR, 7, 1)
-FIELD(CTL, HOLD, 8, 10)
-FIELD(CTL, RESET_DELAY, 18, 8)
-FIELD(CTL, REGULATOR_ENABLE, 26, 1)
+REG_FIELD(CTL, POWER_DOWN, 0, 1)
+REG_FIELD(CTL, RESET, 1, 1)
+REG_FIELD(CTL, BANDGAP_CTRL, 2, 3)
+REG_FIELD(CTL, INTERRUPT_ENABLE, 5, 1)
+REG_FIELD(CTL, DIRECT, 6, 1)
+REG_FIELD(CTL, INTERRUPT_CLEAR, 7, 1)
+REG_FIELD(CTL, HOLD, 8, 10)
+REG_FIELD(CTL, RESET_DELAY, 18, 8)
+REG_FIELD(CTL, REGULATOR_ENABLE, 26, 1)
 
 REG32(STAT, 4)
-FIELD(STAT, DATA, 0, 10)
-FIELD(STAT, VALID, 10, 1)
-FIELD(STAT, INTERRUPT, 11, 1)
+REG_FIELD(STAT, DATA, 0, 10)
+REG_FIELD(STAT, VALID, 10, 1)
+REG_FIELD(STAT, INTERRUPT, 11, 1)
 
 #define THERMAL_OFFSET_C 412
 #define THERMAL_COEFF  (-0.538f)
@@ -48,7 +48,7 @@ static uint64_t bcm2835_thermal_read(void *opaque, hwaddr addr, unsigned size)
         break;
     case A_STAT:
         /* Temperature is constantly 25°C. */
-        val = FIELD_DP32(bcm2835_thermal_temp2adc(25), STAT, VALID, true);
+        val = REG_FIELD_DP32(bcm2835_thermal_temp2adc(25), STAT, VALID, true);
         break;
     default:
         /* MemoryRegionOps are aligned, so this can not happen. */

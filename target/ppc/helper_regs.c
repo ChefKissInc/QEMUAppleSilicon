@@ -146,10 +146,10 @@ static uint32_t hreg_compute_hflags_value(CPUPPCState *env)
 
     if (ppc_flags & POWERPC_FLAG_DE) {
         target_ulong dbcr0 = env->spr[SPR_BOOKE_DBCR0];
-        if ((dbcr0 & DBCR0_ICMP) && FIELD_EX64(msr, MSR, DE)) {
+        if ((dbcr0 & DBCR0_ICMP) && REG_FIELD_EX64(msr, MSR, DE)) {
             hflags |= 1 << HFLAGS_SE;
         }
-        if ((dbcr0 & DBCR0_BRT) && FIELD_EX64(msr, MSR, DE)) {
+        if ((dbcr0 & DBCR0_BRT) && REG_FIELD_EX64(msr, MSR, DE)) {
             hflags |= 1 << HFLAGS_BE;
         }
     } else {
@@ -320,7 +320,7 @@ int hreg_store_msr(CPUPPCState *env, target_ulong value, int alter_hv)
         hreg_swap_gpr_tgpr(env);
     }
     if (unlikely((value ^ env->msr) & R_MSR_EP_MASK)) {
-        env->excp_prefix = FIELD_EX64(value, MSR, EP) * 0xFFF00000;
+        env->excp_prefix = REG_FIELD_EX64(value, MSR, EP) * 0xFFF00000;
     }
     /*
      * If PR=1 then EE, IR and DR must be 1
@@ -341,7 +341,7 @@ int hreg_store_msr(CPUPPCState *env, target_ulong value, int alter_hv)
 #if !defined(CONFIG_USER_ONLY)
     ppc_maybe_interrupt(env);
 
-    if (unlikely(FIELD_EX64(env->msr, MSR, POW))) {
+    if (unlikely(REG_FIELD_EX64(env->msr, MSR, POW))) {
         if (!env->pending_interrupts && (*env->check_pow)(env)) {
             cs->halted = 1;
             excp = EXCP_HALTED;

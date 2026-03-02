@@ -18,14 +18,14 @@
 
 /* Command Register */
 REG32(PECI_CMD, 0x08)
-    FIELD(PECI_CMD, FIRE, 0, 1)
+    REG_FIELD(PECI_CMD, FIRE, 0, 1)
 
 /* Interrupt Control Register */
 REG32(PECI_INT_CTRL, 0x18)
 
 /* Interrupt Status Register */
 REG32(PECI_INT_STS, 0x1C)
-    FIELD(PECI_INT_STS, CMD_DONE, 0, 1)
+    REG_FIELD(PECI_INT_STS, CMD_DONE, 0, 1)
 
 /* Rx/Tx Data Buffer Registers */
 REG32(PECI_WR_DATA0, 0x20)
@@ -86,7 +86,7 @@ static void aspeed_peci_write(void *opaque, hwaddr offset, uint64_t data,
          * should be cleared. Since we complete the command immediately, the
          * value is not stored in the register array.
          */
-        if (!FIELD_EX32(data, PECI_CMD, FIRE)) {
+        if (!REG_FIELD_EX32(data, PECI_CMD, FIRE)) {
             break;
         }
         if (s->regs[R_PECI_INT_STS]) {
@@ -98,7 +98,7 @@ static void aspeed_peci_write(void *opaque, hwaddr offset, uint64_t data,
         s->regs[R_PECI_RD_DATA0] = ASPEED_PECI_CC_RSP_SUCCESS;
         s->regs[R_PECI_WR_DATA0] = ASPEED_PECI_CC_RSP_SUCCESS;
         aspeed_peci_raise_interrupt(s,
-                                    FIELD_DP32(0, PECI_INT_STS, CMD_DONE, 1));
+                                    REG_FIELD_DP32(0, PECI_INT_STS, CMD_DONE, 1));
         break;
     default:
         s->regs[offset / sizeof(s->regs[0])] = data;

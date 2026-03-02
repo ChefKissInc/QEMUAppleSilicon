@@ -306,7 +306,7 @@ static bool za_needed(void *opaque)
      * When ZA storage is disabled, its contents are discarded.
      * It will be zeroed when ZA storage is re-enabled.
      */
-    return FIELD_EX64(cpu->env.svcr, SVCR, ZA);
+    return REG_FIELD_EX64(cpu->env.svcr, SVCR, ZA);
 }
 
 static const VMStateDescription vmstate_za = {

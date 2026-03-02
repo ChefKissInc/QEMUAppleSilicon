@@ -48,12 +48,12 @@ struct RaspiMachineState {
  * Board revision codes:
  * www.raspberrypi.org/documentation/hardware/raspberrypi/revision-codes/
  */
-FIELD(REV_CODE, REVISION,           0, 4);
-FIELD(REV_CODE, TYPE,               4, 8);
-FIELD(REV_CODE, PROCESSOR,         12, 4);
-FIELD(REV_CODE, MANUFACTURER,      16, 4);
-FIELD(REV_CODE, MEMORY_SIZE,       20, 3);
-FIELD(REV_CODE, STYLE,             23, 1);
+REG_FIELD(REV_CODE, REVISION,           0, 4);
+REG_FIELD(REV_CODE, TYPE,               4, 8);
+REG_FIELD(REV_CODE, PROCESSOR,         12, 4);
+REG_FIELD(REV_CODE, MANUFACTURER,      16, 4);
+REG_FIELD(REV_CODE, MEMORY_SIZE,       20, 3);
+REG_FIELD(REV_CODE, STYLE,             23, 1);
 
 typedef enum RaspiProcessorId {
     PROCESSOR_ID_BCM2835 = 0,
@@ -74,15 +74,15 @@ static const struct {
 
 uint64_t board_ram_size(uint32_t board_rev)
 {
-    assert(FIELD_EX32(board_rev, REV_CODE, STYLE)); /* Only new style */
-    return 256 * MiB << FIELD_EX32(board_rev, REV_CODE, MEMORY_SIZE);
+    assert(REG_FIELD_EX32(board_rev, REV_CODE, STYLE)); /* Only new style */
+    return 256 * MiB << REG_FIELD_EX32(board_rev, REV_CODE, MEMORY_SIZE);
 }
 
 static RaspiProcessorId board_processor_id(uint32_t board_rev)
 {
-    int proc_id = FIELD_EX32(board_rev, REV_CODE, PROCESSOR);
+    int proc_id = REG_FIELD_EX32(board_rev, REV_CODE, PROCESSOR);
 
-    assert(FIELD_EX32(board_rev, REV_CODE, STYLE)); /* Only new style */
+    assert(REG_FIELD_EX32(board_rev, REV_CODE, STYLE)); /* Only new style */
     assert(proc_id < ARRAY_SIZE(soc_property) && soc_property[proc_id].type);
 
     return proc_id;
@@ -104,8 +104,8 @@ static const char *board_type(uint32_t board_rev)
         "A", "B", "A+", "B+", "2B", "Alpha", "CM1", NULL, "3B", "Zero",
         "CM3", NULL, "Zero W", "3B+", "3A+", NULL, "CM3+", "4B",
     };
-    assert(FIELD_EX32(board_rev, REV_CODE, STYLE)); /* Only new style */
-    int bt = FIELD_EX32(board_rev, REV_CODE, TYPE);
+    assert(REG_FIELD_EX32(board_rev, REV_CODE, STYLE)); /* Only new style */
+    int bt = REG_FIELD_EX32(board_rev, REV_CODE, TYPE);
     if (bt >= ARRAY_SIZE(types) || !types[bt]) {
         return "Unknown";
     }
@@ -320,7 +320,7 @@ void raspi_machine_class_common_init(MachineClass *mc,
 {
     mc->desc = g_strdup_printf("Raspberry Pi %s (revision 1.%u)",
                                board_type(board_rev),
-                               FIELD_EX32(board_rev, REV_CODE, REVISION));
+                               REG_FIELD_EX32(board_rev, REV_CODE, REVISION));
     mc->block_default_type = IF_SD;
     mc->no_parallel = 1;
     mc->no_floppy = 1;

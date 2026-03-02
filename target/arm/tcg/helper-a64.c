@@ -1153,7 +1153,7 @@ static void do_setp(CPUARMState *env, uint32_t syndrome, uint32_t mtedesc,
     int rs = mops_srcreg(syndrome);
     int rn = mops_sizereg(syndrome);
     uint8_t data = arm_reg_or_xzr(env, rs);
-    uint32_t memidx = FIELD_EX32(mtedesc, MTEDESC, MIDX);
+    uint32_t memidx = REG_FIELD_EX32(mtedesc, MTEDESC, MIDX);
     uint64_t toaddr = env->xregs[rd];
     uint64_t setsize = env->xregs[rn];
     uint64_t stagesetsize, step;
@@ -1214,7 +1214,7 @@ static void do_setm(CPUARMState *env, uint32_t syndrome, uint32_t mtedesc,
     uint8_t data = arm_reg_or_xzr(env, rs);
     uint64_t toaddr = env->xregs[rd] + env->xregs[rn];
     uint64_t setsize = -env->xregs[rn];
-    uint32_t memidx = FIELD_EX32(mtedesc, MTEDESC, MIDX);
+    uint32_t memidx = REG_FIELD_EX32(mtedesc, MTEDESC, MIDX);
     uint64_t step, stagesetsize;
 
     check_mops_enabled(env, ra);
@@ -1277,7 +1277,7 @@ static void do_sete(CPUARMState *env, uint32_t syndrome, uint32_t mtedesc,
     uint8_t data = arm_reg_or_xzr(env, rs);
     uint64_t toaddr = env->xregs[rd] + env->xregs[rn];
     uint64_t setsize = -env->xregs[rn];
-    uint32_t memidx = FIELD_EX32(mtedesc, MTEDESC, MIDX);
+    uint32_t memidx = REG_FIELD_EX32(mtedesc, MTEDESC, MIDX);
     uint64_t step;
 
     check_mops_enabled(env, ra);
@@ -1502,8 +1502,8 @@ static void do_cpyp(CPUARMState *env, uint32_t syndrome, uint32_t wdesc,
     int rd = mops_destreg(syndrome);
     int rs = mops_srcreg(syndrome);
     int rn = mops_sizereg(syndrome);
-    uint32_t rmemidx = FIELD_EX32(rdesc, MTEDESC, MIDX);
-    uint32_t wmemidx = FIELD_EX32(wdesc, MTEDESC, MIDX);
+    uint32_t rmemidx = REG_FIELD_EX32(rdesc, MTEDESC, MIDX);
+    uint32_t wmemidx = REG_FIELD_EX32(wdesc, MTEDESC, MIDX);
     bool forwards = true;
     uint64_t toaddr = env->xregs[rd];
     uint64_t fromaddr = env->xregs[rs];
@@ -1612,8 +1612,8 @@ static void do_cpym(CPUARMState *env, uint32_t syndrome, uint32_t wdesc,
     int rd = mops_destreg(syndrome);
     int rs = mops_srcreg(syndrome);
     int rn = mops_sizereg(syndrome);
-    uint32_t rmemidx = FIELD_EX32(rdesc, MTEDESC, MIDX);
-    uint32_t wmemidx = FIELD_EX32(wdesc, MTEDESC, MIDX);
+    uint32_t rmemidx = REG_FIELD_EX32(rdesc, MTEDESC, MIDX);
+    uint32_t wmemidx = REG_FIELD_EX32(wdesc, MTEDESC, MIDX);
     bool forwards = true;
     uint64_t toaddr, fromaddr, copysize, step;
 
@@ -1699,8 +1699,8 @@ static void do_cpye(CPUARMState *env, uint32_t syndrome, uint32_t wdesc,
     int rd = mops_destreg(syndrome);
     int rs = mops_srcreg(syndrome);
     int rn = mops_sizereg(syndrome);
-    uint32_t rmemidx = FIELD_EX32(rdesc, MTEDESC, MIDX);
-    uint32_t wmemidx = FIELD_EX32(wdesc, MTEDESC, MIDX);
+    uint32_t rmemidx = REG_FIELD_EX32(rdesc, MTEDESC, MIDX);
+    uint32_t wmemidx = REG_FIELD_EX32(wdesc, MTEDESC, MIDX);
     bool forwards = true;
     uint64_t toaddr, fromaddr, copysize, step;
 

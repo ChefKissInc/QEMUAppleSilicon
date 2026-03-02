@@ -34,7 +34,7 @@
 
 static inline uint32_t vext_nf(uint32_t desc)
 {
-    return FIELD_EX32(simd_data(desc), VDATA, NF);
+    return REG_FIELD_EX32(simd_data(desc), VDATA, NF);
 }
 
 /*
@@ -76,22 +76,22 @@ static inline int32_t vext_lmul(uint32_t desc)
 
 static inline uint32_t vext_vm(uint32_t desc)
 {
-    return FIELD_EX32(simd_data(desc), VDATA, VM);
+    return REG_FIELD_EX32(simd_data(desc), VDATA, VM);
 }
 
 static inline uint32_t vext_vma(uint32_t desc)
 {
-    return FIELD_EX32(simd_data(desc), VDATA, VMA);
+    return REG_FIELD_EX32(simd_data(desc), VDATA, VMA);
 }
 
 static inline uint32_t vext_vta(uint32_t desc)
 {
-    return FIELD_EX32(simd_data(desc), VDATA, VTA);
+    return REG_FIELD_EX32(simd_data(desc), VDATA, VTA);
 }
 
 static inline uint32_t vext_vta_all_1s(uint32_t desc)
 {
-    return FIELD_EX32(simd_data(desc), VDATA, VTA_ALL_1S);
+    return REG_FIELD_EX32(simd_data(desc), VDATA, VTA_ALL_1S);
 }
 
 /*

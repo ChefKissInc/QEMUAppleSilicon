@@ -41,13 +41,13 @@
  * we can treat it with the same address as CH 1, so define it like that.
  */
 REG16(CMSTR, 0)
-  FIELD(CMSTR, STR0, 0, 1)
-  FIELD(CMSTR, STR1, 1, 1)
-  FIELD(CMSTR, STR,  0, 2)
+  REG_FIELD(CMSTR, STR0, 0, 1)
+  REG_FIELD(CMSTR, STR1, 1, 1)
+  REG_FIELD(CMSTR, STR,  0, 2)
 /* This addeess is channel offset */
 REG16(CMCR, 0)
-  FIELD(CMCR, CKS,  0, 2)
-  FIELD(CMCR, CMIE, 6, 1)
+  REG_FIELD(CMCR, CKS,  0, 2)
+  REG_FIELD(CMCR, CMIE, 6, 1)
 REG16(CMCNT, 2)
 REG16(CMCOR, 4)
 
@@ -69,7 +69,7 @@ static void update_events(RCMTState *cmt, int ch)
      *  2 -> 128 (1 << 7)
      *  3 -> 512 (1 << 9)
      */
-    next_time *= 1 << (3 + FIELD_EX16(cmt->cmcr[ch], CMCR, CKS) * 2);
+    next_time *= 1 << (3 + REG_FIELD_EX16(cmt->cmcr[ch], CMCR, CKS) * 2);
     next_time += qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
     timer_mod(&cmt->timer[ch], next_time);
 }
@@ -82,7 +82,7 @@ static int64_t read_cmcnt(RCMTState *cmt, int ch)
         delta = (now - cmt->tick[ch]);
         delta /= NANOSECONDS_PER_SECOND;
         delta /= cmt->input_freq;
-        delta /= 1 << (3 + FIELD_EX16(cmt->cmcr[ch], CMCR, CKS) * 2);
+        delta /= 1 << (3 + REG_FIELD_EX16(cmt->cmcr[ch], CMCR, CKS) * 2);
         cmt->tick[ch] = now;
         return cmt->cmcnt[ch] + delta;
     } else {
@@ -98,8 +98,8 @@ static uint64_t cmt_read(void *opaque, hwaddr offset, unsigned size)
 
     if (offset == A_CMSTR) {
         ret = 0;
-        ret = FIELD_DP16(ret, CMSTR, STR,
-                         FIELD_EX16(cmt->cmstr, CMSTR, STR));
+        ret = REG_FIELD_DP16(ret, CMSTR, STR,
+                         REG_FIELD_EX16(cmt->cmstr, CMSTR, STR));
         return ret;
     } else {
         offset &= 0x07;
@@ -109,10 +109,10 @@ static uint64_t cmt_read(void *opaque, hwaddr offset, unsigned size)
         switch (offset) {
         case A_CMCR:
             ret = 0;
-            ret = FIELD_DP16(ret, CMCR, CKS,
-                             FIELD_EX16(cmt->cmstr, CMCR, CKS));
-            ret = FIELD_DP16(ret, CMCR, CMIE,
-                             FIELD_EX16(cmt->cmstr, CMCR, CMIE));
+            ret = REG_FIELD_DP16(ret, CMCR, CKS,
+                             REG_FIELD_EX16(cmt->cmstr, CMCR, CKS));
+            ret = REG_FIELD_DP16(ret, CMCR, CMIE,
+                             REG_FIELD_EX16(cmt->cmstr, CMCR, CMIE));
             return ret;
         case A_CMCNT:
             return read_cmcnt(cmt, ch);
@@ -141,9 +141,9 @@ static void cmt_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
     int ch = offset / 0x08;
 
     if (offset == A_CMSTR) {
-        cmt->cmstr = FIELD_EX16(val, CMSTR, STR);
-        start_stop(cmt, 0, FIELD_EX16(cmt->cmstr, CMSTR, STR0));
-        start_stop(cmt, 1, FIELD_EX16(cmt->cmstr, CMSTR, STR1));
+        cmt->cmstr = REG_FIELD_EX16(val, CMSTR, STR);
+        start_stop(cmt, 0, REG_FIELD_EX16(cmt->cmstr, CMSTR, STR0));
+        start_stop(cmt, 1, REG_FIELD_EX16(cmt->cmstr, CMSTR, STR1));
     } else {
         offset &= 0x07;
         if (ch == 0) {
@@ -151,10 +151,10 @@ static void cmt_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
         }
         switch (offset) {
         case A_CMCR:
-            cmt->cmcr[ch] = FIELD_DP16(cmt->cmcr[ch], CMCR, CKS,
-                                       FIELD_EX16(val, CMCR, CKS));
-            cmt->cmcr[ch] = FIELD_DP16(cmt->cmcr[ch], CMCR, CMIE,
-                                       FIELD_EX16(val, CMCR, CMIE));
+            cmt->cmcr[ch] = REG_FIELD_DP16(cmt->cmcr[ch], CMCR, CKS,
+                                       REG_FIELD_EX16(val, CMCR, CKS));
+            cmt->cmcr[ch] = REG_FIELD_DP16(cmt->cmcr[ch], CMCR, CMIE,
+                                       REG_FIELD_EX16(val, CMCR, CMIE));
             break;
         case 2:
             cmt->cmcnt[ch] = val;
@@ -168,7 +168,7 @@ static void cmt_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
                           offset);
             return;
         }
-        if (FIELD_EX16(cmt->cmstr, CMSTR, STR) & (1 << ch)) {
+        if (REG_FIELD_EX16(cmt->cmstr, CMSTR, STR) & (1 << ch)) {
             update_events(cmt, ch);
         }
     }
@@ -193,7 +193,7 @@ static void timer_events(RCMTState *cmt, int ch)
     cmt->cmcnt[ch] = 0;
     cmt->tick[ch] = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
     update_events(cmt, ch);
-    if (FIELD_EX16(cmt->cmcr[ch], CMCR, CMIE)) {
+    if (REG_FIELD_EX16(cmt->cmcr[ch], CMCR, CMIE)) {
         qemu_irq_pulse(cmt->cmi[ch]);
     }
 }

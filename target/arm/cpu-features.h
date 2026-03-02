@@ -158,9 +158,9 @@ static inline bool isar_feature_aa32_fp16_arith(const ARMISARegisters *id)
 {
     /* Sadly this is encoded differently for A-profile and M-profile */
     if (isar_feature_aa32_mprofile(id)) {
-        return FIELD_EX32(id->mvfr1, MVFR1, FP16) > 0;
+        return REG_FIELD_EX32(id->mvfr1, MVFR1, FP16) > 0;
     } else {
-        return FIELD_EX32(id->mvfr1, MVFR1, FPHP) >= 3;
+        return REG_FIELD_EX32(id->mvfr1, MVFR1, FPHP) >= 3;
     }
 }
 
@@ -172,7 +172,7 @@ static inline bool isar_feature_aa32_mve(const ARMISARegisters *id)
      * else for A-profile.
      */
     return isar_feature_aa32_mprofile(id) &&
-        FIELD_EX32(id->mvfr1, MVFR1, MVE) > 0;
+        REG_FIELD_EX32(id->mvfr1, MVFR1, MVE) > 0;
 }
 
 static inline bool isar_feature_aa32_mve_fp(const ARMISARegisters *id)
@@ -183,7 +183,7 @@ static inline bool isar_feature_aa32_mve_fp(const ARMISARegisters *id)
      * else for A-profile.
      */
     return isar_feature_aa32_mprofile(id) &&
-        FIELD_EX32(id->mvfr1, MVFR1, MVE) >= 2;
+        REG_FIELD_EX32(id->mvfr1, MVFR1, MVE) >= 2;
 }
 
 static inline bool isar_feature_aa32_vfp_simd(const ARMISARegisters *id)
@@ -192,42 +192,42 @@ static inline bool isar_feature_aa32_vfp_simd(const ARMISARegisters *id)
      * Return true if either VFP or SIMD is implemented.
      * In this case, a minimum of VFP w/ D0-D15.
      */
-    return FIELD_EX32(id->mvfr0, MVFR0, SIMDREG) > 0;
+    return REG_FIELD_EX32(id->mvfr0, MVFR0, SIMDREG) > 0;
 }
 
 static inline bool isar_feature_aa32_simd_r32(const ARMISARegisters *id)
 {
     /* Return true if D16-D31 are implemented */
-    return FIELD_EX32(id->mvfr0, MVFR0, SIMDREG) >= 2;
+    return REG_FIELD_EX32(id->mvfr0, MVFR0, SIMDREG) >= 2;
 }
 
 static inline bool isar_feature_aa32_fpshvec(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr0, MVFR0, FPSHVEC) > 0;
+    return REG_FIELD_EX32(id->mvfr0, MVFR0, FPSHVEC) > 0;
 }
 
 static inline bool isar_feature_aa32_fpsp_v2(const ARMISARegisters *id)
 {
     /* Return true if CPU supports single precision floating point, VFPv2 */
-    return FIELD_EX32(id->mvfr0, MVFR0, FPSP) > 0;
+    return REG_FIELD_EX32(id->mvfr0, MVFR0, FPSP) > 0;
 }
 
 static inline bool isar_feature_aa32_fpsp_v3(const ARMISARegisters *id)
 {
     /* Return true if CPU supports single precision floating point, VFPv3 */
-    return FIELD_EX32(id->mvfr0, MVFR0, FPSP) >= 2;
+    return REG_FIELD_EX32(id->mvfr0, MVFR0, FPSP) >= 2;
 }
 
 static inline bool isar_feature_aa32_fpdp_v2(const ARMISARegisters *id)
 {
     /* Return true if CPU supports double precision floating point, VFPv2 */
-    return FIELD_EX32(id->mvfr0, MVFR0, FPDP) > 0;
+    return REG_FIELD_EX32(id->mvfr0, MVFR0, FPDP) > 0;
 }
 
 static inline bool isar_feature_aa32_fpdp_v3(const ARMISARegisters *id)
 {
     /* Return true if CPU supports double precision floating point, VFPv3 */
-    return FIELD_EX32(id->mvfr0, MVFR0, FPDP) >= 2;
+    return REG_FIELD_EX32(id->mvfr0, MVFR0, FPDP) >= 2;
 }
 
 static inline bool isar_feature_aa32_vfp(const ARMISARegisters *id)
@@ -242,12 +242,12 @@ static inline bool isar_feature_aa32_vfp(const ARMISARegisters *id)
  */
 static inline bool isar_feature_aa32_fp16_spconv(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr1, MVFR1, FPHP) > 0;
+    return REG_FIELD_EX32(id->mvfr1, MVFR1, FPHP) > 0;
 }
 
 static inline bool isar_feature_aa32_fp16_dpconv(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr1, MVFR1, FPHP) > 1;
+    return REG_FIELD_EX32(id->mvfr1, MVFR1, FPHP) > 1;
 }
 
 /*
@@ -259,27 +259,27 @@ static inline bool isar_feature_aa32_fp16_dpconv(const ARMISARegisters *id)
  */
 static inline bool isar_feature_aa32_simdfmac(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr1, MVFR1, SIMDFMAC) != 0;
+    return REG_FIELD_EX32(id->mvfr1, MVFR1, SIMDFMAC) != 0;
 }
 
 static inline bool isar_feature_aa32_vsel(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 1;
+    return REG_FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 1;
 }
 
 static inline bool isar_feature_aa32_vcvt_dr(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 2;
+    return REG_FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 2;
 }
 
 static inline bool isar_feature_aa32_vrint(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 3;
+    return REG_FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 3;
 }
 
 static inline bool isar_feature_aa32_vminmaxnm(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 4;
+    return REG_FIELD_EX32(id->mvfr2, MVFR2, FPMISC) >= 4;
 }
 
 static inline bool isar_feature_aa32_pxn(const ARMISARegisters *id)
@@ -370,7 +370,7 @@ static inline bool isar_feature_aa32_debugv8p2(const ARMISARegisters *id)
 
 static inline bool isar_feature_aa32_doublelock(const ARMISARegisters *id)
 {
-    return FIELD_EX32(id->dbgdevid, DBGDEVID, DOUBLELOCK) > 0;
+    return REG_FIELD_EX32(id->dbgdevid, DBGDEVID, DOUBLELOCK) > 0;
 }
 
 /*

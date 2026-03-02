@@ -130,7 +130,7 @@ void loongarch_cpu_set_irq(void *opaque, int irq, int level)
         kvm_loongarch_set_interrupt(cpu, irq, level);
     } else if (tcg_enabled()) {
         env->CSR_ESTAT = deposit64(env->CSR_ESTAT, irq, 1, level != 0);
-        if (FIELD_EX64(env->CSR_ESTAT, CSR_ESTAT, IS)) {
+        if (REG_FIELD_EX64(env->CSR_ESTAT, CSR_ESTAT, IS)) {
             cpu_interrupt(cs, CPU_INTERRUPT_HARD);
         } else {
             cpu_reset_interrupt(cs, CPU_INTERRUPT_HARD);
@@ -142,8 +142,8 @@ static inline bool cpu_loongarch_hw_interrupts_enabled(CPULoongArchState *env)
 {
     bool ret = 0;
 
-    ret = (FIELD_EX64(env->CSR_CRMD, CSR_CRMD, IE) &&
-          !(FIELD_EX64(env->CSR_DBG, CSR_DBG, DST)));
+    ret = (REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, IE) &&
+          !(REG_FIELD_EX64(env->CSR_DBG, CSR_DBG, DST)));
 
     return ret;
 }
@@ -154,8 +154,8 @@ static inline bool cpu_loongarch_hw_interrupts_pending(CPULoongArchState *env)
     uint32_t pending;
     uint32_t status;
 
-    pending = FIELD_EX64(env->CSR_ESTAT, CSR_ESTAT, IS);
-    status  = FIELD_EX64(env->CSR_ECFG, CSR_ECFG, LIE);
+    pending = REG_FIELD_EX64(env->CSR_ESTAT, CSR_ESTAT, IS);
+    status  = REG_FIELD_EX64(env->CSR_ECFG, CSR_ECFG, LIE);
 
     return (pending & status) != 0;
 }
@@ -168,8 +168,8 @@ static void loongarch_cpu_do_interrupt(CPUState *cs)
     CPULoongArchState *env = cpu_env(cs);
     bool update_badinstr = 1;
     int cause = -1;
-    bool tlbfill = FIELD_EX64(env->CSR_TLBRERA, CSR_TLBRERA, ISTLBR);
-    uint32_t vec_size = FIELD_EX64(env->CSR_ECFG, CSR_ECFG, VS);
+    bool tlbfill = REG_FIELD_EX64(env->CSR_TLBRERA, CSR_TLBRERA, ISTLBR);
+    uint32_t vec_size = REG_FIELD_EX64(env->CSR_ECFG, CSR_ECFG, VS);
 
     if (cs->exception_index != EXCCODE_INT) {
         qemu_log_mask(CPU_LOG_INT,
@@ -182,17 +182,17 @@ static void loongarch_cpu_do_interrupt(CPUState *cs)
 
     switch (cs->exception_index) {
     case EXCCODE_DBP:
-        env->CSR_DBG = FIELD_DP64(env->CSR_DBG, CSR_DBG, DCL, 1);
-        env->CSR_DBG = FIELD_DP64(env->CSR_DBG, CSR_DBG, ECODE, 0xC);
+        env->CSR_DBG = REG_FIELD_DP64(env->CSR_DBG, CSR_DBG, DCL, 1);
+        env->CSR_DBG = REG_FIELD_DP64(env->CSR_DBG, CSR_DBG, ECODE, 0xC);
         goto set_DERA;
     set_DERA:
         env->CSR_DERA = env->pc;
-        env->CSR_DBG = FIELD_DP64(env->CSR_DBG, CSR_DBG, DST, 1);
+        env->CSR_DBG = REG_FIELD_DP64(env->CSR_DBG, CSR_DBG, DST, 1);
         set_pc(env, env->CSR_EENTRY + 0x480);
         break;
     case EXCCODE_INT:
-        if (FIELD_EX64(env->CSR_DBG, CSR_DBG, DST)) {
-            env->CSR_DBG = FIELD_DP64(env->CSR_DBG, CSR_DBG, DEI, 1);
+        if (REG_FIELD_EX64(env->CSR_DBG, CSR_DBG, DST)) {
+            env->CSR_DBG = REG_FIELD_DP64(env->CSR_DBG, CSR_DBG, DEI, 1);
             goto set_DERA;
         }
         QEMU_FALLTHROUGH;
@@ -233,30 +233,30 @@ static void loongarch_cpu_do_interrupt(CPUState *cs)
 
     /* Save PLV and IE */
     if (tlbfill) {
-        env->CSR_TLBRPRMD = FIELD_DP64(env->CSR_TLBRPRMD, CSR_TLBRPRMD, PPLV,
-                                       FIELD_EX64(env->CSR_CRMD,
+        env->CSR_TLBRPRMD = REG_FIELD_DP64(env->CSR_TLBRPRMD, CSR_TLBRPRMD, PPLV,
+                                       REG_FIELD_EX64(env->CSR_CRMD,
                                        CSR_CRMD, PLV));
-        env->CSR_TLBRPRMD = FIELD_DP64(env->CSR_TLBRPRMD, CSR_TLBRPRMD, PIE,
-                                       FIELD_EX64(env->CSR_CRMD, CSR_CRMD, IE));
+        env->CSR_TLBRPRMD = REG_FIELD_DP64(env->CSR_TLBRPRMD, CSR_TLBRPRMD, PIE,
+                                       REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, IE));
         /* set the DA mode */
-        env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DA, 1);
-        env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PG, 0);
-        env->CSR_TLBRERA = FIELD_DP64(env->CSR_TLBRERA, CSR_TLBRERA,
+        env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DA, 1);
+        env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PG, 0);
+        env->CSR_TLBRERA = REG_FIELD_DP64(env->CSR_TLBRERA, CSR_TLBRERA,
                                       PC, (env->pc >> 2));
     } else {
-        env->CSR_ESTAT = FIELD_DP64(env->CSR_ESTAT, CSR_ESTAT, ECODE,
+        env->CSR_ESTAT = REG_FIELD_DP64(env->CSR_ESTAT, CSR_ESTAT, ECODE,
                                     EXCODE_MCODE(cause));
-        env->CSR_ESTAT = FIELD_DP64(env->CSR_ESTAT, CSR_ESTAT, ESUBCODE,
+        env->CSR_ESTAT = REG_FIELD_DP64(env->CSR_ESTAT, CSR_ESTAT, ESUBCODE,
                                     EXCODE_SUBCODE(cause));
-        env->CSR_PRMD = FIELD_DP64(env->CSR_PRMD, CSR_PRMD, PPLV,
-                                   FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PLV));
-        env->CSR_PRMD = FIELD_DP64(env->CSR_PRMD, CSR_PRMD, PIE,
-                                   FIELD_EX64(env->CSR_CRMD, CSR_CRMD, IE));
+        env->CSR_PRMD = REG_FIELD_DP64(env->CSR_PRMD, CSR_PRMD, PPLV,
+                                   REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PLV));
+        env->CSR_PRMD = REG_FIELD_DP64(env->CSR_PRMD, CSR_PRMD, PIE,
+                                   REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, IE));
         env->CSR_ERA = env->pc;
     }
 
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PLV, 0);
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, IE, 0);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PLV, 0);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, IE, 0);
 
     if (vec_size) {
         vec_size = (1 << vec_size) * 4;
@@ -265,8 +265,8 @@ static void loongarch_cpu_do_interrupt(CPUState *cs)
     if  (cs->exception_index == EXCCODE_INT) {
         /* Interrupt */
         uint32_t vector = 0;
-        uint32_t pending = FIELD_EX64(env->CSR_ESTAT, CSR_ESTAT, IS);
-        pending &= FIELD_EX64(env->CSR_ECFG, CSR_ECFG, LIE);
+        uint32_t pending = REG_FIELD_EX64(env->CSR_ESTAT, CSR_ESTAT, IS);
+        pending &= REG_FIELD_EX64(env->CSR_ECFG, CSR_ECFG, LIE);
 
         /* Find the highest-priority interrupt. */
         vector = 31 - clz32(pending);
@@ -347,9 +347,9 @@ static TCGTBCPUState loongarch_get_tb_cpu_state(CPUState *cs)
     uint32_t flags;
 
     flags = env->CSR_CRMD & (R_CSR_CRMD_PLV_MASK | R_CSR_CRMD_PG_MASK);
-    flags |= FIELD_EX64(env->CSR_EUEN, CSR_EUEN, FPE) * HW_FLAGS_EUEN_FPE;
-    flags |= FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE) * HW_FLAGS_EUEN_SXE;
-    flags |= FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE) * HW_FLAGS_EUEN_ASXE;
+    flags |= REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, FPE) * HW_FLAGS_EUEN_FPE;
+    flags |= REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE) * HW_FLAGS_EUEN_SXE;
+    flags |= REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE) * HW_FLAGS_EUEN_ASXE;
     flags |= is_va32(env) * HW_FLAGS_VA32;
 
     return (TCGTBCPUState){ .pc = env->pc, .flags = flags };
@@ -388,8 +388,8 @@ static int loongarch_cpu_mmu_index(CPUState *cs, bool ifetch)
 {
     CPULoongArchState *env = cpu_env(cs);
 
-    if (FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PG)) {
-        return FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PLV);
+    if (REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PG)) {
+        return REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PLV);
     }
     return MMU_DA_IDX;
 }
@@ -404,7 +404,7 @@ static void loongarch_la464_init_csr(Object *obj)
 
     if (!initialized) {
         initialized = true;
-        num = FIELD_EX64(env->CSR_PRCFG1, CSR_PRCFG1, SAVE_NUM);
+        num = REG_FIELD_EX64(env->CSR_PRCFG1, CSR_PRCFG1, SAVE_NUM);
         for (i = num; i < 16; i++) {
             set_csr_flag(LOONGARCH_CSR_SAVE(i), CSRFL_UNUSED);
         }
@@ -435,92 +435,92 @@ static void loongarch_la464_initfn(Object *obj)
     cpu->dtb_compatible = "loongarch,Loongson-3A5000";
     env->cpucfg[0] = 0x14c010;  /* PRID */
 
-    data = FIELD_DP32(data, CPUCFG1, ARCH, 2);
-    data = FIELD_DP32(data, CPUCFG1, PGMMU, 1);
-    data = FIELD_DP32(data, CPUCFG1, IOCSR, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, ARCH, 2);
+    data = REG_FIELD_DP32(data, CPUCFG1, PGMMU, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, IOCSR, 1);
     if (kvm_enabled()) {
         /* GPA address width of VM is 47, field value is 47 - 1 */
         field = 0x2e;
     } else {
         field = 0x2f; /* 48 bit - 1 */
     }
-    data = FIELD_DP32(data, CPUCFG1, PALEN, field);
-    data = FIELD_DP32(data, CPUCFG1, VALEN, 0x2f);
-    data = FIELD_DP32(data, CPUCFG1, UAL, 1);
-    data = FIELD_DP32(data, CPUCFG1, RI, 1);
-    data = FIELD_DP32(data, CPUCFG1, EP, 1);
-    data = FIELD_DP32(data, CPUCFG1, RPLV, 1);
-    data = FIELD_DP32(data, CPUCFG1, HP, 1);
-    data = FIELD_DP32(data, CPUCFG1, CRC, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, PALEN, field);
+    data = REG_FIELD_DP32(data, CPUCFG1, VALEN, 0x2f);
+    data = REG_FIELD_DP32(data, CPUCFG1, UAL, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, RI, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, EP, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, RPLV, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, HP, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, CRC, 1);
     env->cpucfg[1] = data;
 
     data = 0;
-    data = FIELD_DP32(data, CPUCFG2, FP, 1);
-    data = FIELD_DP32(data, CPUCFG2, FP_SP, 1);
-    data = FIELD_DP32(data, CPUCFG2, FP_DP, 1);
-    data = FIELD_DP32(data, CPUCFG2, FP_VER, 1);
-    data = FIELD_DP32(data, CPUCFG2, LSX, 1),
-    data = FIELD_DP32(data, CPUCFG2, LASX, 1),
-    data = FIELD_DP32(data, CPUCFG2, LLFTP, 1);
-    data = FIELD_DP32(data, CPUCFG2, LLFTP_VER, 1);
-    data = FIELD_DP32(data, CPUCFG2, LSPW, 1);
-    data = FIELD_DP32(data, CPUCFG2, LAM, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, FP, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, FP_SP, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, FP_DP, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, FP_VER, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, LSX, 1),
+    data = REG_FIELD_DP32(data, CPUCFG2, LASX, 1),
+    data = REG_FIELD_DP32(data, CPUCFG2, LLFTP, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, LLFTP_VER, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, LSPW, 1);
+    data = REG_FIELD_DP32(data, CPUCFG2, LAM, 1);
     env->cpucfg[2] = data;
 
     env->cpucfg[4] = 100 * 1000 * 1000; /* Crystal frequency */
 
     data = 0;
-    data = FIELD_DP32(data, CPUCFG5, CC_MUL, 1);
-    data = FIELD_DP32(data, CPUCFG5, CC_DIV, 1);
+    data = REG_FIELD_DP32(data, CPUCFG5, CC_MUL, 1);
+    data = REG_FIELD_DP32(data, CPUCFG5, CC_DIV, 1);
     env->cpucfg[5] = data;
 
     data = 0;
-    data = FIELD_DP32(data, CPUCFG16, L1_IUPRE, 1);
-    data = FIELD_DP32(data, CPUCFG16, L1_DPRE, 1);
-    data = FIELD_DP32(data, CPUCFG16, L2_IUPRE, 1);
-    data = FIELD_DP32(data, CPUCFG16, L2_IUUNIFY, 1);
-    data = FIELD_DP32(data, CPUCFG16, L2_IUPRIV, 1);
-    data = FIELD_DP32(data, CPUCFG16, L3_IUPRE, 1);
-    data = FIELD_DP32(data, CPUCFG16, L3_IUUNIFY, 1);
-    data = FIELD_DP32(data, CPUCFG16, L3_IUINCL, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L1_IUPRE, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L1_DPRE, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L2_IUPRE, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L2_IUUNIFY, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L2_IUPRIV, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L3_IUPRE, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L3_IUUNIFY, 1);
+    data = REG_FIELD_DP32(data, CPUCFG16, L3_IUINCL, 1);
     env->cpucfg[16] = data;
 
     data = 0;
-    data = FIELD_DP32(data, CPUCFG17, L1IU_WAYS, 3);
-    data = FIELD_DP32(data, CPUCFG17, L1IU_SETS, 8);
-    data = FIELD_DP32(data, CPUCFG17, L1IU_SIZE, 6);
+    data = REG_FIELD_DP32(data, CPUCFG17, L1IU_WAYS, 3);
+    data = REG_FIELD_DP32(data, CPUCFG17, L1IU_SETS, 8);
+    data = REG_FIELD_DP32(data, CPUCFG17, L1IU_SIZE, 6);
     env->cpucfg[17] = data;
 
     data = 0;
-    data = FIELD_DP32(data, CPUCFG18, L1D_WAYS, 3);
-    data = FIELD_DP32(data, CPUCFG18, L1D_SETS, 8);
-    data = FIELD_DP32(data, CPUCFG18, L1D_SIZE, 6);
+    data = REG_FIELD_DP32(data, CPUCFG18, L1D_WAYS, 3);
+    data = REG_FIELD_DP32(data, CPUCFG18, L1D_SETS, 8);
+    data = REG_FIELD_DP32(data, CPUCFG18, L1D_SIZE, 6);
     env->cpucfg[18] = data;
 
     data = 0;
-    data = FIELD_DP32(data, CPUCFG19, L2IU_WAYS, 15);
-    data = FIELD_DP32(data, CPUCFG19, L2IU_SETS, 8);
-    data = FIELD_DP32(data, CPUCFG19, L2IU_SIZE, 6);
+    data = REG_FIELD_DP32(data, CPUCFG19, L2IU_WAYS, 15);
+    data = REG_FIELD_DP32(data, CPUCFG19, L2IU_SETS, 8);
+    data = REG_FIELD_DP32(data, CPUCFG19, L2IU_SIZE, 6);
     env->cpucfg[19] = data;
 
     data = 0;
-    data = FIELD_DP32(data, CPUCFG20, L3IU_WAYS, 15);
-    data = FIELD_DP32(data, CPUCFG20, L3IU_SETS, 14);
-    data = FIELD_DP32(data, CPUCFG20, L3IU_SIZE, 6);
+    data = REG_FIELD_DP32(data, CPUCFG20, L3IU_WAYS, 15);
+    data = REG_FIELD_DP32(data, CPUCFG20, L3IU_SETS, 14);
+    data = REG_FIELD_DP32(data, CPUCFG20, L3IU_SIZE, 6);
     env->cpucfg[20] = data;
 
-    env->CSR_ASID = FIELD_DP64(0, CSR_ASID, ASIDBITS, 0xa);
+    env->CSR_ASID = REG_FIELD_DP64(0, CSR_ASID, ASIDBITS, 0xa);
 
-    env->CSR_PRCFG1 = FIELD_DP64(env->CSR_PRCFG1, CSR_PRCFG1, SAVE_NUM, 8);
-    env->CSR_PRCFG1 = FIELD_DP64(env->CSR_PRCFG1, CSR_PRCFG1, TIMER_BITS, 0x2f);
-    env->CSR_PRCFG1 = FIELD_DP64(env->CSR_PRCFG1, CSR_PRCFG1, VSMAX, 7);
+    env->CSR_PRCFG1 = REG_FIELD_DP64(env->CSR_PRCFG1, CSR_PRCFG1, SAVE_NUM, 8);
+    env->CSR_PRCFG1 = REG_FIELD_DP64(env->CSR_PRCFG1, CSR_PRCFG1, TIMER_BITS, 0x2f);
+    env->CSR_PRCFG1 = REG_FIELD_DP64(env->CSR_PRCFG1, CSR_PRCFG1, VSMAX, 7);
 
     env->CSR_PRCFG2 = 0x3ffff000;
 
-    env->CSR_PRCFG3 = FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, TLB_TYPE, 2);
-    env->CSR_PRCFG3 = FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, MTLB_ENTRY, 63);
-    env->CSR_PRCFG3 = FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, STLB_WAYS, 7);
-    env->CSR_PRCFG3 = FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, STLB_SETS, 8);
+    env->CSR_PRCFG3 = REG_FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, TLB_TYPE, 2);
+    env->CSR_PRCFG3 = REG_FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, MTLB_ENTRY, 63);
+    env->CSR_PRCFG3 = REG_FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, STLB_WAYS, 7);
+    env->CSR_PRCFG3 = REG_FIELD_DP64(env->CSR_PRCFG3, CSR_PRCFG3, STLB_SETS, 8);
 
     loongarch_la464_init_csr(obj);
     loongarch_cpu_post_init(obj);
@@ -540,17 +540,17 @@ static void loongarch_la132_initfn(Object *obj)
     cpu->dtb_compatible = "loongarch,Loongson-1C103";
     env->cpucfg[0] = 0x148042;  /* PRID */
 
-    data = FIELD_DP32(data, CPUCFG1, ARCH, 1); /* LA32 */
-    data = FIELD_DP32(data, CPUCFG1, PGMMU, 1);
-    data = FIELD_DP32(data, CPUCFG1, IOCSR, 1);
-    data = FIELD_DP32(data, CPUCFG1, PALEN, 0x1f); /* 32 bits */
-    data = FIELD_DP32(data, CPUCFG1, VALEN, 0x1f); /* 32 bits */
-    data = FIELD_DP32(data, CPUCFG1, UAL, 1);
-    data = FIELD_DP32(data, CPUCFG1, RI, 0);
-    data = FIELD_DP32(data, CPUCFG1, EP, 0);
-    data = FIELD_DP32(data, CPUCFG1, RPLV, 0);
-    data = FIELD_DP32(data, CPUCFG1, HP, 1);
-    data = FIELD_DP32(data, CPUCFG1, CRC, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, ARCH, 1); /* LA32 */
+    data = REG_FIELD_DP32(data, CPUCFG1, PGMMU, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, IOCSR, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, PALEN, 0x1f); /* 32 bits */
+    data = REG_FIELD_DP32(data, CPUCFG1, VALEN, 0x1f); /* 32 bits */
+    data = REG_FIELD_DP32(data, CPUCFG1, UAL, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, RI, 0);
+    data = REG_FIELD_DP32(data, CPUCFG1, EP, 0);
+    data = REG_FIELD_DP32(data, CPUCFG1, RPLV, 0);
+    data = REG_FIELD_DP32(data, CPUCFG1, HP, 1);
+    data = REG_FIELD_DP32(data, CPUCFG1, CRC, 1);
     env->cpucfg[1] = data;
 }
 
@@ -578,30 +578,30 @@ static void loongarch_cpu_reset_hold(Object *obj, ResetType type)
 
     int n;
     /* Set csr registers value after reset, see the manual 6.4. */
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PLV, 0);
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, IE, 0);
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DA, 1);
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PG, 0);
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DATF, 0);
-    env->CSR_CRMD = FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DATM, 0);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PLV, 0);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, IE, 0);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DA, 1);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, PG, 0);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DATF, 0);
+    env->CSR_CRMD = REG_FIELD_DP64(env->CSR_CRMD, CSR_CRMD, DATM, 0);
 
-    env->CSR_EUEN = FIELD_DP64(env->CSR_EUEN, CSR_EUEN, FPE, 0);
-    env->CSR_EUEN = FIELD_DP64(env->CSR_EUEN, CSR_EUEN, SXE, 0);
-    env->CSR_EUEN = FIELD_DP64(env->CSR_EUEN, CSR_EUEN, ASXE, 0);
-    env->CSR_EUEN = FIELD_DP64(env->CSR_EUEN, CSR_EUEN, BTE, 0);
+    env->CSR_EUEN = REG_FIELD_DP64(env->CSR_EUEN, CSR_EUEN, FPE, 0);
+    env->CSR_EUEN = REG_FIELD_DP64(env->CSR_EUEN, CSR_EUEN, SXE, 0);
+    env->CSR_EUEN = REG_FIELD_DP64(env->CSR_EUEN, CSR_EUEN, ASXE, 0);
+    env->CSR_EUEN = REG_FIELD_DP64(env->CSR_EUEN, CSR_EUEN, BTE, 0);
 
     env->CSR_MISC = 0;
 
-    env->CSR_ECFG = FIELD_DP64(env->CSR_ECFG, CSR_ECFG, VS, 0);
-    env->CSR_ECFG = FIELD_DP64(env->CSR_ECFG, CSR_ECFG, LIE, 0);
+    env->CSR_ECFG = REG_FIELD_DP64(env->CSR_ECFG, CSR_ECFG, VS, 0);
+    env->CSR_ECFG = REG_FIELD_DP64(env->CSR_ECFG, CSR_ECFG, LIE, 0);
 
     env->CSR_ESTAT = env->CSR_ESTAT & (~MAKE_64BIT_MASK(0, 2));
-    env->CSR_RVACFG = FIELD_DP64(env->CSR_RVACFG, CSR_RVACFG, RBITS, 0);
+    env->CSR_RVACFG = REG_FIELD_DP64(env->CSR_RVACFG, CSR_RVACFG, RBITS, 0);
     env->CSR_CPUID = cs->cpu_index;
-    env->CSR_TCFG = FIELD_DP64(env->CSR_TCFG, CSR_TCFG, EN, 0);
-    env->CSR_LLBCTL = FIELD_DP64(env->CSR_LLBCTL, CSR_LLBCTL, KLO, 0);
-    env->CSR_TLBRERA = FIELD_DP64(env->CSR_TLBRERA, CSR_TLBRERA, ISTLBR, 0);
-    env->CSR_MERRCTL = FIELD_DP64(env->CSR_MERRCTL, CSR_MERRCTL, ISMERR, 0);
+    env->CSR_TCFG = REG_FIELD_DP64(env->CSR_TCFG, CSR_TCFG, EN, 0);
+    env->CSR_LLBCTL = REG_FIELD_DP64(env->CSR_LLBCTL, CSR_LLBCTL, KLO, 0);
+    env->CSR_TLBRERA = REG_FIELD_DP64(env->CSR_TLBRERA, CSR_TLBRERA, ISTLBR, 0);
+    env->CSR_MERRCTL = REG_FIELD_DP64(env->CSR_MERRCTL, CSR_MERRCTL, ISMERR, 0);
     env->CSR_TID = cs->cpu_index;
     /*
      * Workaround for edk2-stable202408, CSR PGD register is set only if
@@ -620,13 +620,13 @@ static void loongarch_cpu_reset_hold(Object *obj, ResetType type)
         env->CSR_PRCFG2 = 0x3fffff000;
     }
     tlb_ps = ctz32(env->CSR_PRCFG2);
-    env->CSR_STLBPS = FIELD_DP64(env->CSR_STLBPS, CSR_STLBPS, PS, tlb_ps);
-    env->CSR_PWCL = FIELD_DP64(env->CSR_PWCL, CSR_PWCL, PTBASE, tlb_ps);
+    env->CSR_STLBPS = REG_FIELD_DP64(env->CSR_STLBPS, CSR_STLBPS, PS, tlb_ps);
+    env->CSR_PWCL = REG_FIELD_DP64(env->CSR_PWCL, CSR_PWCL, PTBASE, tlb_ps);
     for (n = 0; n < 4; n++) {
-        env->CSR_DMW[n] = FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV0, 0);
-        env->CSR_DMW[n] = FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV1, 0);
-        env->CSR_DMW[n] = FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV2, 0);
-        env->CSR_DMW[n] = FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV3, 0);
+        env->CSR_DMW[n] = REG_FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV0, 0);
+        env->CSR_DMW[n] = REG_FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV1, 0);
+        env->CSR_DMW[n] = REG_FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV2, 0);
+        env->CSR_DMW[n] = REG_FIELD_DP64(env->CSR_DMW[n], CSR_DMW, PLV3, 0);
     }
 
 #ifndef CONFIG_USER_ONLY
@@ -709,16 +709,16 @@ static void loongarch_set_lsx(Object *obj, bool value, Error **errp)
     /* LSX feature detection in TCG mode */
     val = cpu->env.cpucfg[2];
     if (cpu->lsx == ON_OFF_AUTO_ON) {
-        if (FIELD_EX32(val, CPUCFG2, LSX) == 0) {
+        if (REG_FIELD_EX32(val, CPUCFG2, LSX) == 0) {
             error_setg(errp, "Failed to enable LSX in TCG mode");
             return;
         }
     } else {
-        cpu->env.cpucfg[2] = FIELD_DP32(val, CPUCFG2, LASX, 0);
+        cpu->env.cpucfg[2] = REG_FIELD_DP32(val, CPUCFG2, LASX, 0);
         val = cpu->env.cpucfg[2];
     }
 
-    cpu->env.cpucfg[2] = FIELD_DP32(val, CPUCFG2, LSX, value);
+    cpu->env.cpucfg[2] = REG_FIELD_DP32(val, CPUCFG2, LSX, value);
 }
 
 static bool loongarch_get_lasx(Object *obj, Error **errp)
@@ -745,13 +745,13 @@ static void loongarch_set_lasx(Object *obj, bool value, Error **errp)
     /* LASX feature detection in TCG mode */
     val = cpu->env.cpucfg[2];
     if (cpu->lasx == ON_OFF_AUTO_ON) {
-        if (FIELD_EX32(val, CPUCFG2, LASX) == 0) {
+        if (REG_FIELD_EX32(val, CPUCFG2, LASX) == 0) {
             error_setg(errp, "Failed to enable LASX in TCG mode");
             return;
         }
     }
 
-    cpu->env.cpucfg[2] = FIELD_DP32(val, CPUCFG2, LASX, value);
+    cpu->env.cpucfg[2] = REG_FIELD_DP32(val, CPUCFG2, LASX, value);
 }
 
 void loongarch_cpu_post_init(Object *obj)

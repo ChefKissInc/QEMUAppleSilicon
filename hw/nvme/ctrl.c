@@ -5293,8 +5293,8 @@ static uint16_t nvme_fdp_confs(NvmeCtrl *n, uint32_t endgrpid, uint32_t buf_len,
 
     hdr->descr_size = cpu_to_le16(fdp_descr_size);
     if (endgrp->fdp.enabled) {
-        hdr->fdpa = FIELD_DP8(hdr->fdpa, FDPA, VALID, 1);
-        hdr->fdpa = FIELD_DP8(hdr->fdpa, FDPA, RGIF, endgrp->fdp.rgif);
+        hdr->fdpa = REG_FIELD_DP8(hdr->fdpa, FDPA, VALID, 1);
+        hdr->fdpa = REG_FIELD_DP8(hdr->fdpa, FDPA, RGIF, endgrp->fdp.rgif);
         hdr->nrg = cpu_to_le16(endgrp->fdp.nrg);
         hdr->nruh = cpu_to_le16(endgrp->fdp.nruh);
         hdr->maxpids = cpu_to_le16(NVME_FDP_MAXPIDS - 1);
@@ -6210,8 +6210,8 @@ static int nvme_get_feature_fdp(NvmeCtrl *n, uint32_t endgrpid,
         return NVME_INVALID_FIELD | NVME_DNR;
     }
 
-    *result = FIELD_DP16(0, FEAT_FDP, FDPE, 1);
-    *result = FIELD_DP16(*result, FEAT_FDP, CONF_NDX, 0);
+    *result = REG_FIELD_DP16(0, FEAT_FDP, FDPE, 1);
+    *result = REG_FIELD_DP16(*result, FEAT_FDP, CONF_NDX, 0);
 
     return NVME_SUCCESS;
 }

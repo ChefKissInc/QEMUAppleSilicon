@@ -134,7 +134,7 @@ static void xram_ctrl_reset_enter(Object *obj, ResetType type)
         register_reset(&s->regs_info[i]);
     }
 
-    ARRAY_FIELD_DP32(s->regs, XRAM_IMP, SIZE, s->cfg.encoded_size);
+    REG_ARRAY_FIELD_DP32(s->regs, XRAM_IMP, SIZE, s->cfg.encoded_size);
 }
 
 static void xram_ctrl_reset_hold(Object *obj, ResetType type)

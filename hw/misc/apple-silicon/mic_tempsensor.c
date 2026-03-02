@@ -25,13 +25,13 @@
 
 // clang-format off
 REG8(ID0, 0)
-    FIELD(ID0, PRODUCT_ID, 0, 5)
-    FIELD(ID0, VENDOR_ID, 5, 3)
+    REG_FIELD(ID0, PRODUCT_ID, 0, 5)
+    REG_FIELD(ID0, VENDOR_ID, 5, 3)
 REG8(ID1, 1)
-    FIELD(ID1, REVISION, 0, 5)
-    FIELD(ID1, FAB_ID, 5, 3)
+    REG_FIELD(ID1, REVISION, 0, 5)
+    REG_FIELD(ID1, FAB_ID, 5, 3)
 REG8(STATUS, 2)
-    FIELD(STATUS, OK, 1, 1)
+    REG_FIELD(STATUS, OK, 1, 1)
 REG8(VALUE0, 4)
 REG8(VALUE1, 5)
 REG8(VALUE2, 6)
@@ -63,7 +63,7 @@ static uint8_t apple_mic_temp_sensor_rx(I2CSlave *s)
         ret = sensor->id1;
         break;
     case R_STATUS:
-        ret = FIELD_DP8(0, STATUS, OK, 1);
+        ret = REG_FIELD_DP8(0, STATUS, OK, 1);
         break;
     case R_VALUE0:
         ret = 0x0A;
@@ -162,10 +162,10 @@ I2CSlave *apple_mic_temp_sensor_create(uint8_t addr, I2CBus *bus,
     AppleMicTempSensorState *sensor =
         container_of(dev, AppleMicTempSensorState, i2c);
 
-    sensor->id0 = FIELD_DP8(FIELD_DP8(0, ID0, PRODUCT_ID, product_id), ID0,
+    sensor->id0 = REG_FIELD_DP8(REG_FIELD_DP8(0, ID0, PRODUCT_ID, product_id), ID0,
                             VENDOR_ID, vendor_id);
     sensor->id1 =
-        FIELD_DP8(FIELD_DP8(0, ID1, REVISION, revision), ID1, FAB_ID, fab_id);
+        REG_FIELD_DP8(REG_FIELD_DP8(0, ID1, REVISION, revision), ID1, FAB_ID, fab_id);
 
     i2c_slave_realize_and_unref(dev, bus, errp);
 

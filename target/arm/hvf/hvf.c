@@ -128,7 +128,7 @@ static inline int hvf_arm_num_brps(hv_vcpu_config_t config)
     ret = hv_vcpu_config_get_feature_reg(config, HV_FEATURE_REG_ID_AA64DFR0_EL1,
                                          &val);
     assert_hvf_ok(ret);
-    return FIELD_EX64(val, ID_AA64DFR0, BRPS) + 1;
+    return REG_FIELD_EX64(val, ID_AA64DFR0, BRPS) + 1;
 }
 
 static inline int hvf_arm_num_wrps(hv_vcpu_config_t config)
@@ -138,7 +138,7 @@ static inline int hvf_arm_num_wrps(hv_vcpu_config_t config)
     ret = hv_vcpu_config_get_feature_reg(config, HV_FEATURE_REG_ID_AA64DFR0_EL1,
                                          &val);
     assert_hvf_ok(ret);
-    return FIELD_EX64(val, ID_AA64DFR0, WRPS) + 1;
+    return REG_FIELD_EX64(val, ID_AA64DFR0, WRPS) + 1;
 }
 
 void hvf_arm_init_debug(void)
@@ -786,11 +786,11 @@ static bool hvf_arm_get_host_cpu_features(ARMHostCPUFeatures *ahcf)
      * Hardcode MIDR because Apple deliberately doesn't expose a divergent
      * MIDR across systems.
      */
-    t = FIELD_DP64(0, MIDR_EL1, IMPLEMENTER, 0x61); /* Apple */
-    t = FIELD_DP64(t, MIDR_EL1, ARCHITECTURE, 0xf); /* v7 or later */
-    t = FIELD_DP64(t, MIDR_EL1, PARTNUM, 0);
-    t = FIELD_DP64(t, MIDR_EL1, VARIANT, 0);
-    t = FIELD_DP64(t, MIDR_EL1, REVISION, 0);
+    t = REG_FIELD_DP64(0, MIDR_EL1, IMPLEMENTER, 0x61); /* Apple */
+    t = REG_FIELD_DP64(t, MIDR_EL1, ARCHITECTURE, 0xf); /* v7 or later */
+    t = REG_FIELD_DP64(t, MIDR_EL1, PARTNUM, 0);
+    t = REG_FIELD_DP64(t, MIDR_EL1, VARIANT, 0);
+    t = REG_FIELD_DP64(t, MIDR_EL1, REVISION, 0);
     ahcf->midr = t;
 
     clamp_id_aa64mmfr0_parange_to_ipa_size(&host_isar);

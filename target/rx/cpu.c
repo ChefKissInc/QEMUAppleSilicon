@@ -49,8 +49,8 @@ static TCGTBCPUState rx_get_tb_cpu_state(CPUState *cs)
     CPURXState *env = cpu_env(cs);
     uint32_t flags = 0;
 
-    flags = FIELD_DP32(flags, PSW, PM, env->psw_pm);
-    flags = FIELD_DP32(flags, PSW, U, env->psw_u);
+    flags = REG_FIELD_DP32(flags, PSW, PM, env->psw_pm);
+    flags = REG_FIELD_DP32(flags, PSW, U, env->psw_u);
 
     return (TCGTBCPUState){ .pc = env->pc, .flags = flags };
 }

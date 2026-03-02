@@ -225,7 +225,7 @@ static void target_setup_sve_record(struct target_sve_context *sve,
     __put_user(TARGET_SVE_MAGIC, &sve->head.magic);
     __put_user(size, &sve->head.size);
     __put_user(vq * TARGET_SVE_VQ_BYTES, &sve->vl);
-    if (FIELD_EX64(env->svcr, SVCR, SM)) {
+    if (REG_FIELD_EX64(env->svcr, SVCR, SM)) {
         __put_user(TARGET_SVE_SIG_FLAG_SM, &sve->flags);
     }
 
@@ -390,7 +390,7 @@ static bool target_restore_sve_record(CPUARMState *env,
         return false;
     }
 
-    *svcr = FIELD_DP64(*svcr, SVCR, SM, sm);
+    *svcr = REG_FIELD_DP64(*svcr, SVCR, SM, sm);
 
     /*
      * Note that SVE regs are stored as a byte stream, with each byte element
@@ -446,7 +446,7 @@ static bool target_restore_za_record(CPUARMState *env,
         return false;
     }
 
-    *svcr = FIELD_DP64(*svcr, SVCR, ZA, 1);
+    *svcr = REG_FIELD_DP64(*svcr, SVCR, ZA, 1);
 
     for (i = 0; i < vl; ++i) {
         uint64_t *z = (void *)za + TARGET_ZA_SIG_ZAV_OFFSET(vq, i);
@@ -703,7 +703,7 @@ static void target_setup_frame(int usig, struct target_sigaction *ka,
         tpidr2_size = sizeof(struct target_tpidr2_context);
         tpidr2_ofs = alloc_sigframe_space(tpidr2_size, &layout);
         /* ZA state needs saving only if it is enabled.  */
-        if (FIELD_EX64(env->svcr, SVCR, ZA)) {
+        if (REG_FIELD_EX64(env->svcr, SVCR, ZA)) {
             za_size = TARGET_ZA_SIG_CONTEXT_SIZE(sme_vq(env));
         } else {
             za_size = TARGET_ZA_SIG_CONTEXT_SIZE(0);
@@ -711,7 +711,7 @@ static void target_setup_frame(int usig, struct target_sigaction *ka,
         za_ofs = alloc_sigframe_space(za_size, &layout);
     }
     if (cpu_isar_feature(aa64_sme2, env_archcpu(env)) &&
-        FIELD_EX64(env->svcr, SVCR, ZA)) {
+        REG_FIELD_EX64(env->svcr, SVCR, ZA)) {
         /* If SME ZA storage is enabled, we must also save SME2 ZT0 */
         zt_size = TARGET_ZT_SIG_CONTEXT_SIZE(1);
         zt_ofs = alloc_sigframe_space(zt_size, &layout);

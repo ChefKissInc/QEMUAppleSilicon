@@ -36,115 +36,115 @@
 #endif
 
 REG32(WR_LOCK, 0x0)
-    FIELD(WR_LOCK, LOCK, 0, 16)
+    REG_FIELD(WR_LOCK, LOCK, 0, 16)
 REG32(CFG, 0x4)
-    FIELD(CFG, SLVERR_ENABLE, 5, 1)
-    FIELD(CFG, MARGIN_RD, 2, 1)
-    FIELD(CFG, PGM_EN, 1, 1)
+    REG_FIELD(CFG, SLVERR_ENABLE, 5, 1)
+    REG_FIELD(CFG, MARGIN_RD, 2, 1)
+    REG_FIELD(CFG, PGM_EN, 1, 1)
 REG32(STATUS, 0x8)
-    FIELD(STATUS, AES_USER_KEY_1_CRC_PASS, 11, 1)
-    FIELD(STATUS, AES_USER_KEY_1_CRC_DONE, 10, 1)
-    FIELD(STATUS, AES_USER_KEY_0_CRC_PASS, 9, 1)
-    FIELD(STATUS, AES_USER_KEY_0_CRC_DONE, 8, 1)
-    FIELD(STATUS, AES_CRC_PASS, 7, 1)
-    FIELD(STATUS, AES_CRC_DONE, 6, 1)
-    FIELD(STATUS, CACHE_DONE, 5, 1)
-    FIELD(STATUS, CACHE_LOAD, 4, 1)
-    FIELD(STATUS, EFUSE_2_TBIT, 2, 1)
-    FIELD(STATUS, EFUSE_1_TBIT, 1, 1)
-    FIELD(STATUS, EFUSE_0_TBIT, 0, 1)
+    REG_FIELD(STATUS, AES_USER_KEY_1_CRC_PASS, 11, 1)
+    REG_FIELD(STATUS, AES_USER_KEY_1_CRC_DONE, 10, 1)
+    REG_FIELD(STATUS, AES_USER_KEY_0_CRC_PASS, 9, 1)
+    REG_FIELD(STATUS, AES_USER_KEY_0_CRC_DONE, 8, 1)
+    REG_FIELD(STATUS, AES_CRC_PASS, 7, 1)
+    REG_FIELD(STATUS, AES_CRC_DONE, 6, 1)
+    REG_FIELD(STATUS, CACHE_DONE, 5, 1)
+    REG_FIELD(STATUS, CACHE_LOAD, 4, 1)
+    REG_FIELD(STATUS, EFUSE_2_TBIT, 2, 1)
+    REG_FIELD(STATUS, EFUSE_1_TBIT, 1, 1)
+    REG_FIELD(STATUS, EFUSE_0_TBIT, 0, 1)
 REG32(EFUSE_PGM_ADDR, 0xc)
-    FIELD(EFUSE_PGM_ADDR, PAGE, 13, 4)
-    FIELD(EFUSE_PGM_ADDR, ROW, 5, 8)
-    FIELD(EFUSE_PGM_ADDR, COLUMN, 0, 5)
+    REG_FIELD(EFUSE_PGM_ADDR, PAGE, 13, 4)
+    REG_FIELD(EFUSE_PGM_ADDR, ROW, 5, 8)
+    REG_FIELD(EFUSE_PGM_ADDR, COLUMN, 0, 5)
 REG32(EFUSE_RD_ADDR, 0x10)
-    FIELD(EFUSE_RD_ADDR, PAGE, 13, 4)
-    FIELD(EFUSE_RD_ADDR, ROW, 5, 8)
+    REG_FIELD(EFUSE_RD_ADDR, PAGE, 13, 4)
+    REG_FIELD(EFUSE_RD_ADDR, ROW, 5, 8)
 REG32(EFUSE_RD_DATA, 0x14)
 REG32(TPGM, 0x18)
-    FIELD(TPGM, VALUE, 0, 16)
+    REG_FIELD(TPGM, VALUE, 0, 16)
 REG32(TRD, 0x1c)
-    FIELD(TRD, VALUE, 0, 8)
+    REG_FIELD(TRD, VALUE, 0, 8)
 REG32(TSU_H_PS, 0x20)
-    FIELD(TSU_H_PS, VALUE, 0, 8)
+    REG_FIELD(TSU_H_PS, VALUE, 0, 8)
 REG32(TSU_H_PS_CS, 0x24)
-    FIELD(TSU_H_PS_CS, VALUE, 0, 8)
+    REG_FIELD(TSU_H_PS_CS, VALUE, 0, 8)
 REG32(TRDM, 0x28)
-    FIELD(TRDM, VALUE, 0, 8)
+    REG_FIELD(TRDM, VALUE, 0, 8)
 REG32(TSU_H_CS, 0x2c)
-    FIELD(TSU_H_CS, VALUE, 0, 8)
+    REG_FIELD(TSU_H_CS, VALUE, 0, 8)
 REG32(EFUSE_ISR, 0x30)
-    FIELD(EFUSE_ISR, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_ISR, CACHE_PARITY_E2, 14, 1)
-    FIELD(EFUSE_ISR, CACHE_PARITY_E1, 13, 1)
-    FIELD(EFUSE_ISR, CACHE_PARITY_E0S, 12, 1)
-    FIELD(EFUSE_ISR, CACHE_PARITY_E0R, 11, 1)
-    FIELD(EFUSE_ISR, CACHE_APB_SLVERR, 10, 1)
-    FIELD(EFUSE_ISR, CACHE_REQ_ERROR, 9, 1)
-    FIELD(EFUSE_ISR, MAIN_REQ_ERROR, 8, 1)
-    FIELD(EFUSE_ISR, READ_ON_CACHE_LD, 7, 1)
-    FIELD(EFUSE_ISR, CACHE_FSM_ERROR, 6, 1)
-    FIELD(EFUSE_ISR, MAIN_FSM_ERROR, 5, 1)
-    FIELD(EFUSE_ISR, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_ISR, RD_ERROR, 3, 1)
-    FIELD(EFUSE_ISR, RD_DONE, 2, 1)
-    FIELD(EFUSE_ISR, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_ISR, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_ISR, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_PARITY_E2, 14, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_PARITY_E1, 13, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_PARITY_E0S, 12, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_PARITY_E0R, 11, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_APB_SLVERR, 10, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_REQ_ERROR, 9, 1)
+    REG_FIELD(EFUSE_ISR, MAIN_REQ_ERROR, 8, 1)
+    REG_FIELD(EFUSE_ISR, READ_ON_CACHE_LD, 7, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_FSM_ERROR, 6, 1)
+    REG_FIELD(EFUSE_ISR, MAIN_FSM_ERROR, 5, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_ISR, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_ISR, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_ISR, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_ISR, PGM_DONE, 0, 1)
 REG32(EFUSE_IMR, 0x34)
-    FIELD(EFUSE_IMR, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_IMR, CACHE_PARITY_E2, 14, 1)
-    FIELD(EFUSE_IMR, CACHE_PARITY_E1, 13, 1)
-    FIELD(EFUSE_IMR, CACHE_PARITY_E0S, 12, 1)
-    FIELD(EFUSE_IMR, CACHE_PARITY_E0R, 11, 1)
-    FIELD(EFUSE_IMR, CACHE_APB_SLVERR, 10, 1)
-    FIELD(EFUSE_IMR, CACHE_REQ_ERROR, 9, 1)
-    FIELD(EFUSE_IMR, MAIN_REQ_ERROR, 8, 1)
-    FIELD(EFUSE_IMR, READ_ON_CACHE_LD, 7, 1)
-    FIELD(EFUSE_IMR, CACHE_FSM_ERROR, 6, 1)
-    FIELD(EFUSE_IMR, MAIN_FSM_ERROR, 5, 1)
-    FIELD(EFUSE_IMR, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_IMR, RD_ERROR, 3, 1)
-    FIELD(EFUSE_IMR, RD_DONE, 2, 1)
-    FIELD(EFUSE_IMR, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_IMR, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_IMR, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_PARITY_E2, 14, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_PARITY_E1, 13, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_PARITY_E0S, 12, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_PARITY_E0R, 11, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_APB_SLVERR, 10, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_REQ_ERROR, 9, 1)
+    REG_FIELD(EFUSE_IMR, MAIN_REQ_ERROR, 8, 1)
+    REG_FIELD(EFUSE_IMR, READ_ON_CACHE_LD, 7, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_FSM_ERROR, 6, 1)
+    REG_FIELD(EFUSE_IMR, MAIN_FSM_ERROR, 5, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_IMR, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_IMR, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_IMR, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_IMR, PGM_DONE, 0, 1)
 REG32(EFUSE_IER, 0x38)
-    FIELD(EFUSE_IER, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_IER, CACHE_PARITY_E2, 14, 1)
-    FIELD(EFUSE_IER, CACHE_PARITY_E1, 13, 1)
-    FIELD(EFUSE_IER, CACHE_PARITY_E0S, 12, 1)
-    FIELD(EFUSE_IER, CACHE_PARITY_E0R, 11, 1)
-    FIELD(EFUSE_IER, CACHE_APB_SLVERR, 10, 1)
-    FIELD(EFUSE_IER, CACHE_REQ_ERROR, 9, 1)
-    FIELD(EFUSE_IER, MAIN_REQ_ERROR, 8, 1)
-    FIELD(EFUSE_IER, READ_ON_CACHE_LD, 7, 1)
-    FIELD(EFUSE_IER, CACHE_FSM_ERROR, 6, 1)
-    FIELD(EFUSE_IER, MAIN_FSM_ERROR, 5, 1)
-    FIELD(EFUSE_IER, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_IER, RD_ERROR, 3, 1)
-    FIELD(EFUSE_IER, RD_DONE, 2, 1)
-    FIELD(EFUSE_IER, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_IER, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_IER, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_IER, CACHE_PARITY_E2, 14, 1)
+    REG_FIELD(EFUSE_IER, CACHE_PARITY_E1, 13, 1)
+    REG_FIELD(EFUSE_IER, CACHE_PARITY_E0S, 12, 1)
+    REG_FIELD(EFUSE_IER, CACHE_PARITY_E0R, 11, 1)
+    REG_FIELD(EFUSE_IER, CACHE_APB_SLVERR, 10, 1)
+    REG_FIELD(EFUSE_IER, CACHE_REQ_ERROR, 9, 1)
+    REG_FIELD(EFUSE_IER, MAIN_REQ_ERROR, 8, 1)
+    REG_FIELD(EFUSE_IER, READ_ON_CACHE_LD, 7, 1)
+    REG_FIELD(EFUSE_IER, CACHE_FSM_ERROR, 6, 1)
+    REG_FIELD(EFUSE_IER, MAIN_FSM_ERROR, 5, 1)
+    REG_FIELD(EFUSE_IER, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_IER, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_IER, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_IER, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_IER, PGM_DONE, 0, 1)
 REG32(EFUSE_IDR, 0x3c)
-    FIELD(EFUSE_IDR, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_IDR, CACHE_PARITY_E2, 14, 1)
-    FIELD(EFUSE_IDR, CACHE_PARITY_E1, 13, 1)
-    FIELD(EFUSE_IDR, CACHE_PARITY_E0S, 12, 1)
-    FIELD(EFUSE_IDR, CACHE_PARITY_E0R, 11, 1)
-    FIELD(EFUSE_IDR, CACHE_APB_SLVERR, 10, 1)
-    FIELD(EFUSE_IDR, CACHE_REQ_ERROR, 9, 1)
-    FIELD(EFUSE_IDR, MAIN_REQ_ERROR, 8, 1)
-    FIELD(EFUSE_IDR, READ_ON_CACHE_LD, 7, 1)
-    FIELD(EFUSE_IDR, CACHE_FSM_ERROR, 6, 1)
-    FIELD(EFUSE_IDR, MAIN_FSM_ERROR, 5, 1)
-    FIELD(EFUSE_IDR, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_IDR, RD_ERROR, 3, 1)
-    FIELD(EFUSE_IDR, RD_DONE, 2, 1)
-    FIELD(EFUSE_IDR, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_IDR, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_IDR, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_PARITY_E2, 14, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_PARITY_E1, 13, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_PARITY_E0S, 12, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_PARITY_E0R, 11, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_APB_SLVERR, 10, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_REQ_ERROR, 9, 1)
+    REG_FIELD(EFUSE_IDR, MAIN_REQ_ERROR, 8, 1)
+    REG_FIELD(EFUSE_IDR, READ_ON_CACHE_LD, 7, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_FSM_ERROR, 6, 1)
+    REG_FIELD(EFUSE_IDR, MAIN_FSM_ERROR, 5, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_IDR, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_IDR, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_IDR, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_IDR, PGM_DONE, 0, 1)
 REG32(EFUSE_CACHE_LOAD, 0x40)
-    FIELD(EFUSE_CACHE_LOAD, LOAD, 0, 1)
+    REG_FIELD(EFUSE_CACHE_LOAD, LOAD, 0, 1)
 REG32(EFUSE_PGM_LOCK, 0x44)
-    FIELD(EFUSE_PGM_LOCK, SPK_ID_LOCK, 0, 1)
+    REG_FIELD(EFUSE_PGM_LOCK, SPK_ID_LOCK, 0, 1)
 REG32(EFUSE_AES_CRC, 0x48)
 REG32(EFUSE_AES_USR_KEY0_CRC, 0x4c)
 REG32(EFUSE_AES_USR_KEY1_CRC, 0x50)
@@ -261,9 +261,9 @@ static void efuse_status_tbits_sync(XlnxVersalEFuseCtrl *s)
     uint32_t check = xlnx_efuse_tbits_check(s->efuse);
     uint32_t val = s->regs[R_STATUS];
 
-    val = FIELD_DP32(val, STATUS, EFUSE_0_TBIT, !!(check & (1 << 0)));
-    val = FIELD_DP32(val, STATUS, EFUSE_1_TBIT, !!(check & (1 << 1)));
-    val = FIELD_DP32(val, STATUS, EFUSE_2_TBIT, !!(check & (1 << 2)));
+    val = REG_FIELD_DP32(val, STATUS, EFUSE_0_TBIT, !!(check & (1 << 0)));
+    val = REG_FIELD_DP32(val, STATUS, EFUSE_1_TBIT, !!(check & (1 << 1)));
+    val = REG_FIELD_DP32(val, STATUS, EFUSE_2_TBIT, !!(check & (1 << 2)));
 
     s->regs[R_STATUS] = val;
 }
@@ -279,15 +279,15 @@ static void efuse_anchor_bits_check(XlnxVersalEFuseCtrl *s)
     for (page = 0; page < s->efuse->efuse_nr; page++) {
         uint32_t row = 0, bit;
 
-        row = FIELD_DP32(row, EFUSE_PGM_ADDR, PAGE, page);
-        row = FIELD_DP32(row, EFUSE_PGM_ADDR, ROW, EFUSE_ANCHOR_ROW);
+        row = REG_FIELD_DP32(row, EFUSE_PGM_ADDR, PAGE, page);
+        row = REG_FIELD_DP32(row, EFUSE_PGM_ADDR, ROW, EFUSE_ANCHOR_ROW);
 
-        bit = FIELD_DP32(row, EFUSE_PGM_ADDR, COLUMN, EFUSE_ANCHOR_3_COL);
+        bit = REG_FIELD_DP32(row, EFUSE_PGM_ADDR, COLUMN, EFUSE_ANCHOR_3_COL);
         if (!xlnx_efuse_get_bit(s->efuse, bit)) {
             xlnx_efuse_set_bit(s->efuse, bit);
         }
 
-        bit = FIELD_DP32(row, EFUSE_PGM_ADDR, COLUMN, EFUSE_ANCHOR_1_COL);
+        bit = REG_FIELD_DP32(row, EFUSE_PGM_ADDR, COLUMN, EFUSE_ANCHOR_1_COL);
         if (!xlnx_efuse_get_bit(s->efuse, bit)) {
             xlnx_efuse_set_bit(s->efuse, bit);
         }
@@ -373,7 +373,7 @@ static uint32_t efuse_bit_locked(XlnxVersalEFuseCtrl *s, uint32_t bit)
         [80 ... 87] = EFUSE_PPK2_WR_LK,
     };
 
-    uint32_t row = FIELD_EX32(bit, EFUSE_PGM_ADDR, ROW);
+    uint32_t row = REG_FIELD_EX32(bit, EFUSE_PGM_ADDR, ROW);
     uint32_t lk_bit = ARRAY_GET(pg0_hard_lock, row, 0);
 
     return lk_bit ? lk_bit : efuse_lk_spec_find(s, row);
@@ -385,14 +385,14 @@ static bool efuse_pgm_locked(XlnxVersalEFuseCtrl *s, unsigned int bit)
     unsigned int lock = 1;
 
     /* Global lock */
-    if (!ARRAY_FIELD_EX32(s->regs, CFG, PGM_EN)) {
+    if (!REG_ARRAY_FIELD_EX32(s->regs, CFG, PGM_EN)) {
         goto ret_lock;
     }
 
     /* Row lock */
-    switch (FIELD_EX32(bit, EFUSE_PGM_ADDR, PAGE)) {
+    switch (REG_FIELD_EX32(bit, EFUSE_PGM_ADDR, PAGE)) {
     case 0:
-        if (ARRAY_FIELD_EX32(s->regs, EFUSE_PGM_LOCK, SPK_ID_LOCK) &&
+        if (REG_ARRAY_FIELD_EX32(s->regs, EFUSE_PGM_LOCK, SPK_ID_LOCK) &&
             bit >= EFUSE_PGM_LOCKED_START && bit <= EFUSE_PGM_LOCKED_END) {
             goto ret_lock;
         }
@@ -445,9 +445,9 @@ static void efuse_pgm_addr_postw(RegisterInfo *reg, uint64_t val64)
         qemu_log_mask(LOG_GUEST_ERROR,
                       "%s: Denied setting of efuse<%u, %u, %u>\n",
                       path,
-                      FIELD_EX32(bit, EFUSE_PGM_ADDR, PAGE),
-                      FIELD_EX32(bit, EFUSE_PGM_ADDR, ROW),
-                      FIELD_EX32(bit, EFUSE_PGM_ADDR, COLUMN));
+                      REG_FIELD_EX32(bit, EFUSE_PGM_ADDR, PAGE),
+                      REG_FIELD_EX32(bit, EFUSE_PGM_ADDR, ROW),
+                      REG_FIELD_EX32(bit, EFUSE_PGM_ADDR, COLUMN));
     } else if (xlnx_efuse_set_bit(s->efuse, bit)) {
         ok = true;
         if (EFUSE_TBIT_POS(bit)) {
@@ -456,10 +456,10 @@ static void efuse_pgm_addr_postw(RegisterInfo *reg, uint64_t val64)
     }
 
     if (!ok) {
-        ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_ERROR, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_ERROR, 1);
     }
 
-    ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_DONE, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_DONE, 1);
     efuse_imr_update_irq(s);
 }
 
@@ -486,13 +486,13 @@ static void efuse_rd_addr_postw(RegisterInfo *reg, uint64_t val64)
         qemu_log_mask(LOG_GUEST_ERROR,
                       "%s: Denied reading of efuse<%u, %u>\n",
                       path,
-                      FIELD_EX32(bit, EFUSE_RD_ADDR, PAGE),
-                      FIELD_EX32(bit, EFUSE_RD_ADDR, ROW));
+                      REG_FIELD_EX32(bit, EFUSE_RD_ADDR, PAGE),
+                      REG_FIELD_EX32(bit, EFUSE_RD_ADDR, ROW));
 
-        ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_ERROR, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_ERROR, 1);
     }
 
-    ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_DONE, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_DONE, 1);
     efuse_imr_update_irq(s);
 }
 
@@ -503,7 +503,7 @@ static uint64_t efuse_cache_load_prew(RegisterInfo *reg, uint64_t val64)
     if (val64 & R_EFUSE_CACHE_LOAD_LOAD_MASK) {
         efuse_data_sync(s);
 
-        ARRAY_FIELD_DP32(s->regs, STATUS, CACHE_DONE, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS, CACHE_DONE, 1);
         efuse_imr_update_irq(s);
     }
 
@@ -515,10 +515,10 @@ static uint64_t efuse_pgm_lock_prew(RegisterInfo *reg, uint64_t val64)
     XlnxVersalEFuseCtrl *s = XLNX_VERSAL_EFUSE_CTRL(reg->opaque);
 
     /* Ignore all other bits */
-    val64 = FIELD_EX32(val64, EFUSE_PGM_LOCK, SPK_ID_LOCK);
+    val64 = REG_FIELD_EX32(val64, EFUSE_PGM_LOCK, SPK_ID_LOCK);
 
     /* Once the bit is written 1, only reset will clear it to 0 */
-    val64 |= ARRAY_FIELD_EX32(s->regs, EFUSE_PGM_LOCK, SPK_ID_LOCK);
+    val64 |= REG_ARRAY_FIELD_EX32(s->regs, EFUSE_PGM_LOCK, SPK_ID_LOCK);
 
     return val64;
 }

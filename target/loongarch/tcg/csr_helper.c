@@ -25,13 +25,13 @@ target_ulong helper_csrwr_stlbps(CPULoongArchState *env, target_ulong val)
      * The real hardware only supports the min tlb_ps is 12
      * tlb_ps=0 may cause undefined-behavior.
      */
-    uint8_t tlb_ps = FIELD_EX64(env->CSR_STLBPS, CSR_STLBPS, PS);
+    uint8_t tlb_ps = REG_FIELD_EX64(env->CSR_STLBPS, CSR_STLBPS, PS);
     if (!check_ps(env, tlb_ps)) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "Attempted set ps %d\n", tlb_ps);
     } else {
         /* Only update PS field, reserved bit keeps zero */
-        env->CSR_STLBPS = FIELD_DP64(old_v, CSR_STLBPS, PS, tlb_ps);
+        env->CSR_STLBPS = REG_FIELD_DP64(old_v, CSR_STLBPS, PS, tlb_ps);
     }
 
     return old_v;
@@ -126,12 +126,12 @@ target_ulong helper_csrwr_pwcl(CPULoongArchState *env, target_ulong val)
      * The real hardware only supports 64bit PTE width now, 128bit or others
      * treated as illegal.
      */
-    shift = FIELD_EX64(val, CSR_PWCL, PTEWIDTH);
-    ptbase = FIELD_EX64(val, CSR_PWCL, PTBASE);
+    shift = REG_FIELD_EX64(val, CSR_PWCL, PTEWIDTH);
+    ptbase = REG_FIELD_EX64(val, CSR_PWCL, PTBASE);
     if (shift) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "Attempted set pte width with %d bit\n", 64 << shift);
-        val = FIELD_DP64(val, CSR_PWCL, PTEWIDTH, 0);
+        val = REG_FIELD_DP64(val, CSR_PWCL, PTEWIDTH, 0);
     }
     if (!check_ps(env, ptbase)) {
          qemu_log_mask(LOG_GUEST_ERROR,

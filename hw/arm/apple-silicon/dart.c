@@ -61,70 +61,70 @@ REG32(DAPF_END_MSB, 0x14)
 // DAPF REG STRIDE 0x40
 
 REG32(DART_PARAMS1, 0x0)
-    FIELD(DART_PARAMS1, PAGE_SHIFT, 24, 4)
-    FIELD(DART_PARAMS1, ACCESS_REGION_PROTECTION, 31, 1)
+    REG_FIELD(DART_PARAMS1, PAGE_SHIFT, 24, 4)
+    REG_FIELD(DART_PARAMS1, ACCESS_REGION_PROTECTION, 31, 1)
 REG32(DART_PARAMS2, 0x4)
-    FIELD(DART_PARAMS2, BYPASS_SUPPORT, 0, 1)
-    FIELD(DART_PARAMS2, LOCK_SUPPORT, 1, 1)
+    REG_FIELD(DART_PARAMS2, BYPASS_SUPPORT, 0, 1)
+    REG_FIELD(DART_PARAMS2, LOCK_SUPPORT, 1, 1)
 // 0x8..0x1C = ??
 REG32(DART_TLB_OP, 0x20)
-    FIELD(DART_TLB_OP, OP, 0, 2)
-    FIELD(DART_TLB_OP, BUSY, 2, 1)
-    FIELD(DART_TLB_OP, HARDWARE_FLUSH, 3, 1)
-    FIELD(DART_TLB_OP, WAY_INDEX, 4, 4)
-    FIELD(DART_TLB_OP, TE_INDEX, 8, 3)
-    FIELD(DART_TLB_OP, SET_INDEX, 20, 12)
+    REG_FIELD(DART_TLB_OP, OP, 0, 2)
+    REG_FIELD(DART_TLB_OP, BUSY, 2, 1)
+    REG_FIELD(DART_TLB_OP, HARDWARE_FLUSH, 3, 1)
+    REG_FIELD(DART_TLB_OP, WAY_INDEX, 4, 4)
+    REG_FIELD(DART_TLB_OP, TE_INDEX, 8, 3)
+    REG_FIELD(DART_TLB_OP, SET_INDEX, 20, 12)
 // 0x24..0x30 = ??
 REG32(DART_TLB_OP_SET_0_LOW, 0x34)
 REG32(DART_TLB_OP_SET_0_HIGH, 0x38)
 // 0x3C = ??
 REG32(DART_ERROR_STATUS, 0x40)
-    FIELD(DART_ERROR_STATUS, TTBR_INVLD, 0, 1)
-    FIELD(DART_ERROR_STATUS, L2E_INVLD, 1, 1)
-    FIELD(DART_ERROR_STATUS, PTE_INVLD, 2, 1)
-    FIELD(DART_ERROR_STATUS, WRITE_PROT, 3, 1)
-    FIELD(DART_ERROR_STATUS, READ_PROT, 4, 1)
-    FIELD(DART_ERROR_STATUS, AXI_SLV_DECODE, 5, 1)
-    FIELD(DART_ERROR_STATUS, AXI_SLV_ERR, 6, 1)
-    FIELD(DART_ERROR_STATUS, REGION_PROT, 7, 1)
-    FIELD(DART_ERROR_STATUS, CTRR_WRITE_PROT, 8, 1)
-    FIELD(DART_ERROR_STATUS, UNKNOWN, 9, 1)
-    FIELD(DART_ERROR_STATUS, APF_REJECT, 11, 1)
-    FIELD(DART_ERROR_STATUS, SID, 24, 4)
-    FIELD(DART_ERROR_STATUS, FLAG, 31, 1)
+    REG_FIELD(DART_ERROR_STATUS, TTBR_INVLD, 0, 1)
+    REG_FIELD(DART_ERROR_STATUS, L2E_INVLD, 1, 1)
+    REG_FIELD(DART_ERROR_STATUS, PTE_INVLD, 2, 1)
+    REG_FIELD(DART_ERROR_STATUS, WRITE_PROT, 3, 1)
+    REG_FIELD(DART_ERROR_STATUS, READ_PROT, 4, 1)
+    REG_FIELD(DART_ERROR_STATUS, AXI_SLV_DECODE, 5, 1)
+    REG_FIELD(DART_ERROR_STATUS, AXI_SLV_ERR, 6, 1)
+    REG_FIELD(DART_ERROR_STATUS, REGION_PROT, 7, 1)
+    REG_FIELD(DART_ERROR_STATUS, CTRR_WRITE_PROT, 8, 1)
+    REG_FIELD(DART_ERROR_STATUS, UNKNOWN, 9, 1)
+    REG_FIELD(DART_ERROR_STATUS, APF_REJECT, 11, 1)
+    REG_FIELD(DART_ERROR_STATUS, SID, 24, 4)
+    REG_FIELD(DART_ERROR_STATUS, FLAG, 31, 1)
 // 0x44..0x4C = ??
 REG32(DART_ERROR_ADDRESS_LOW, 0x50)
 REG32(DART_ERROR_ADDRESS_HIGH, 0x54)
 // 0x58..0x5C = ??
 REG32(DART_CONFIG, 0x60)
-    FIELD(DART_CONFIG, LOCK, 15, 1)
+    REG_FIELD(DART_CONFIG, LOCK, 15, 1)
 #define A_DART_SID_REMAP(sid) (0x80 + ((sid) << 2))
 #define R_DART_SID_REMAP(sid) (A_DART_SID_REMAP(sid) >> 2)
 REG32(DART_SID_VALID, 0xFC)
 #define A_DART_SID_CONFIG(sid) (0x100 + ((sid) << 2))
 #define R_DART_SID_CONFIG(sid) (A_DART_SID_CONFIG(sid) >> 2)
-    FIELD(DART_SID_CONFIG, DISABLE_TTBR_INVALID_ERR, 0, 1)
-    FIELD(DART_SID_CONFIG, DISABLE_STE_INVALID_ERR, 1, 1)
-    FIELD(DART_SID_CONFIG, DISABLE_PTE_INVALID_ERR, 2, 1)
-    FIELD(DART_SID_CONFIG, DISABLE_WRITE_PROTECT_EXCEPTION, 3, 1)
-    FIELD(DART_SID_CONFIG, DISABLE_READ_PROTECT_EXCEPTION, 4, 1)
-    FIELD(DART_SID_CONFIG, DISABLE_AXI_RRESP_EXCEPTION, 6, 1)
-    FIELD(DART_SID_CONFIG, TRANSLATION_ENABLE, 7, 1)
-    FIELD(DART_SID_CONFIG, FULL_BYPASS, 8, 1)
-    FIELD(DART_SID_CONFIG, DISABLE_DROP_PROTECT_EXCEPTION, 9, 1)
-    FIELD(DART_SID_CONFIG, DISABLE_APF_REJECT_EXCEPTION, 10, 1)
-    FIELD(DART_SID_CONFIG, APF_BYPASS, 12, 1)
-    FIELD(DART_SID_CONFIG, BYPASS_ADDR_39_32, 16, 4)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_TTBR_INVALID_ERR, 0, 1)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_STE_INVALID_ERR, 1, 1)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_PTE_INVALID_ERR, 2, 1)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_WRITE_PROTECT_EXCEPTION, 3, 1)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_READ_PROTECT_EXCEPTION, 4, 1)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_AXI_RRESP_EXCEPTION, 6, 1)
+    REG_FIELD(DART_SID_CONFIG, TRANSLATION_ENABLE, 7, 1)
+    REG_FIELD(DART_SID_CONFIG, FULL_BYPASS, 8, 1)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_DROP_PROTECT_EXCEPTION, 9, 1)
+    REG_FIELD(DART_SID_CONFIG, DISABLE_APF_REJECT_EXCEPTION, 10, 1)
+    REG_FIELD(DART_SID_CONFIG, APF_BYPASS, 12, 1)
+    REG_FIELD(DART_SID_CONFIG, BYPASS_ADDR_39_32, 16, 4)
 #define A_DART_TLB_CONFIG(sid) (0x180 + ((sid) << 2))
 #define R_DART_TLB_CONFIG(sid) (A_DART_TLB_CONFIG(sid) >> 2)
 #define A_DART_TTBR(sid, idx) \
     (0x200 + (((DART_MAX_STREAMS * (sid)) + (DART_MAX_TTBR * (idx))) << 2))
 #define R_DART_TTBR(sid, idx) (A_DART_TTBR(sid, idx) >> 2)
-FIELD(DART_TTBR, VALID, 31, 1)
+REG_FIELD(DART_TTBR, VALID, 31, 1)
 #define DART_TTBR_SHIFT (12)
 #define DART_TTBR_MASK (0xFFFFFFF)
-FIELD(DART_PTE, NO_WRITE, 7, 1)
-FIELD(DART_PTE, NO_READ, 8, 1)
+REG_FIELD(DART_PTE, NO_WRITE, 7, 1)
+REG_FIELD(DART_PTE, NO_READ, 8, 1)
 #define DART_PTE_AP_MASK (3 << 7)
 #define DART_PTE_VALID (1 << 0) // wut?
 #define DART_PTE_TYPE_TABLE (1 << 0)
@@ -271,16 +271,16 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
 
     switch (addr >> 2) {
     case R_DART_TLB_OP:
-        if (FIELD_EX32(val, DART_TLB_OP, OP) != DART_TLB_OP_INVALIDATE ||
-            FIELD_EX32(val, DART_TLB_OP, SET_INDEX) == 0 ||
-            FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) {
+        if (REG_FIELD_EX32(val, DART_TLB_OP, OP) != DART_TLB_OP_INVALIDATE ||
+            REG_FIELD_EX32(val, DART_TLB_OP, SET_INDEX) == 0 ||
+            REG_FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) {
             break;
         }
 
         qatomic_set(&mapper->regs.tlb_op,
-                    FIELD_DP32(val, DART_TLB_OP, BUSY, 1));
+                    REG_FIELD_DP32(val, DART_TLB_OP, BUSY, 1));
 
-        set_index = FIELD_EX32(val, DART_TLB_OP, SET_INDEX);
+        set_index = REG_FIELD_EX32(val, DART_TLB_OP, SET_INDEX);
 
         WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
         {
@@ -313,14 +313,14 @@ static void apple_dart_mapper_reg_write(void *opaque, hwaddr addr,
         qatomic_and(&mapper->regs.tlb_op, ~R_DART_TLB_OP_BUSY_MASK);
         break;
     case R_DART_TLB_OP_SET_0_LOW:
-        if (!FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP,
+        if (!REG_FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP,
                         BUSY)) {
             mapper->regs.tlb_op_set[0] =
                 deposit64(mapper->regs.tlb_op_set[0], 0, 32, val);
         }
         break;
     case R_DART_TLB_OP_SET_0_HIGH:
-        if (!FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP,
+        if (!REG_FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP,
                         BUSY)) {
             mapper->regs.tlb_op_set[0] =
                 deposit64(mapper->regs.tlb_op_set[0], 32, 32, val);
@@ -464,8 +464,8 @@ static inline uint32_t apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
 
     if (sid >= DART_MAX_STREAMS || (dart->sid_mask & BIT_ULL(sid)) == 0 ||
         idx >= DART_MAX_TTBR ||
-        !FIELD_EX32(mapper->regs.ttbr[sid][idx], DART_TTBR, VALID)) {
-        return FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
+        !REG_FIELD_EX32(mapper->regs.ttbr[sid][idx], DART_TTBR, VALID)) {
+        return REG_FIELD_DP32(REG_FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
                           DART_ERROR_STATUS, TTBR_INVLD, 1);
     }
 
@@ -479,14 +479,14 @@ static inline uint32_t apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
         pte = address_space_ldq(&address_space_memory, pa,
                                 MEMTXATTRS_UNSPECIFIED, &res);
         if (res != MEMTX_OK) {
-            return FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
+            return REG_FIELD_DP32(REG_FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
                               DART_ERROR_STATUS, L2E_INVLD, 1);
         }
         DPRINTF("%s: level: %d, pa: 0x" HWADDR_FMT_plx " pte: 0x%llx(0x%llx)\n",
                 __func__, level, pa, pte, idx);
 
         if ((pte & DART_PTE_VALID) == 0) {
-            return FIELD_DP32(FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
+            return REG_FIELD_DP32(REG_FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1),
                               DART_ERROR_STATUS, PTE_INVLD, 1);
         }
 
@@ -494,8 +494,8 @@ static inline uint32_t apple_dart_mapper_ptw(AppleDARTMapperInstance *mapper,
     }
 
     tlb_entry->translated_addr = (pte & dart->page_mask & DART_PTE_ADDR_MASK);
-    tlb_entry->perm = IOMMU_ACCESS_FLAG(!FIELD_EX32(pte, DART_PTE, NO_READ),
-                                        !FIELD_EX32(pte, DART_PTE, NO_WRITE));
+    tlb_entry->perm = IOMMU_ACCESS_FLAG(!REG_FIELD_EX32(pte, DART_PTE, NO_READ),
+                                        !REG_FIELD_EX32(pte, DART_PTE, NO_WRITE));
 
     return 0;
 }
@@ -519,7 +519,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
         .perm = IOMMU_NONE,
     };
 
-    if (FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) {
+    if (REG_FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) {
         return entry;
     }
 
@@ -528,9 +528,9 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
     sid = mapper->regs.sid_remap[sid];
 
     // Disabled translation means bypass, not error (?)
-    if (FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
+    if (REG_FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                    TRANSLATION_ENABLE) == 0 ||
-        FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
+        REG_FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                    FULL_BYPASS) != 0) {
         // TODO
         goto end;
@@ -542,7 +542,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
     if (status != 0) {
         mapper->regs.error_address = addr;
         mapper->regs.error_status =
-            FIELD_DP32(mapper->regs.error_status | status, DART_ERROR_STATUS,
+            REG_FIELD_DP32(mapper->regs.error_status | status, DART_ERROR_STATUS,
                        SID, iommu->sid);
         apple_dart_raise_irq(dart);
         goto end;
@@ -553,7 +553,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
     if ((flag & IOMMU_WO) != 0 && (entry.perm & IOMMU_WO) == 0) {
         mapper->regs.error_address = addr;
         mapper->regs.error_status =
-            FIELD_DP32(FIELD_DP32(FIELD_DP32(mapper->regs.error_status,
+            REG_FIELD_DP32(REG_FIELD_DP32(REG_FIELD_DP32(mapper->regs.error_status,
                                              DART_ERROR_STATUS, FLAG, 1),
                                   DART_ERROR_STATUS, WRITE_PROT, 1),
                        DART_ERROR_STATUS, SID, iommu->sid);
@@ -563,7 +563,7 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion *mr,
     if ((flag & IOMMU_RO) != 0 && (entry.perm & IOMMU_RO) == 0) {
         mapper->regs.error_address = addr;
         mapper->regs.error_status =
-            FIELD_DP32(FIELD_DP32(FIELD_DP32(mapper->regs.error_status,
+            REG_FIELD_DP32(REG_FIELD_DP32(REG_FIELD_DP32(mapper->regs.error_status,
                                              DART_ERROR_STATUS, FLAG, 1),
                                   DART_ERROR_STATUS, WRITE_PROT, 1),
                        DART_ERROR_STATUS, SID, iommu->sid);
@@ -597,14 +597,14 @@ static void apple_dart_reset(DeviceState *dev)
             mapper->regs = (AppleDARTDARTRegs){ 0 };
 
             mapper->regs.params1 =
-                FIELD_DP32(0, DART_PARAMS1, PAGE_SHIFT, dart->page_shift);
+                REG_FIELD_DP32(0, DART_PARAMS1, PAGE_SHIFT, dart->page_shift);
             // TODO: added hack against panic
-            mapper->regs.params1 = FIELD_DP32(
+            mapper->regs.params1 = REG_FIELD_DP32(
                 mapper->regs.params1, DART_PARAMS1, ACCESS_REGION_PROTECTION,
                 (dart->dart_options & BIT(1)) != 0);
 
             mapper->regs.params2 =
-                FIELD_DP32(0, DART_PARAMS2, BYPASS_SUPPORT, 1);
+                REG_FIELD_DP32(0, DART_PARAMS2, BYPASS_SUPPORT, 1);
 
             for (j = 0; j < DART_MAX_STREAMS; j++) {
                 mapper->regs.sid_remap[j] = j;
@@ -806,8 +806,8 @@ static void apple_dart_dump_pt(Monitor *mon, AppleDARTInstance *instance,
                        " -> 0x%llx %c%c\n",
                        iova << dart->page_shift, (iova + 1) << dart->page_shift,
                        pte & dart->page_mask & DART_PTE_ADDR_MASK,
-                       FIELD_EX32(pte, DART_PTE, NO_READ) ? '-' : 'r',
-                       FIELD_EX32(pte, DART_PTE, NO_WRITE) ? '-' : 'w');
+                       REG_FIELD_EX32(pte, DART_PTE, NO_READ) ? '-' : 'r',
+                       REG_FIELD_EX32(pte, DART_PTE, NO_WRITE) ? '-' : 'w');
         return;
     }
 
@@ -816,7 +816,7 @@ static void apple_dart_dump_pt(Monitor *mon, AppleDARTInstance *instance,
         uint64_t pte2 = entries[i];
 
         if ((pte2 & DART_PTE_VALID) ||
-            ((level == 0) && FIELD_EX32(pte2, DART_TTBR, VALID))) {
+            ((level == 0) && REG_FIELD_EX32(pte2, DART_TTBR, VALID))) {
             uint64_t pa = pte2 & dart->page_mask & DART_PTE_ADDR_MASK;
             if (level == 0) {
                 pa = (pte2 & DART_TTBR_MASK) << DART_TTBR_SHIFT;
@@ -887,14 +887,14 @@ void hmp_info_dart(Monitor *mon, const QDict *qdict)
                                    remap);
                     continue;
                 }
-                if (FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
+                if (REG_FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                                TRANSLATION_ENABLE) == 0) {
                     monitor_printf(mon, "\t\tSID %d: Translation disabled\n",
                                    sid);
                     continue;
                 }
 
-                if (FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
+                if (REG_FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG,
                                FULL_BYPASS) != 0) {
                     monitor_printf(mon, "\t\tSID %d: Translation bypassed\n",
                                    sid);

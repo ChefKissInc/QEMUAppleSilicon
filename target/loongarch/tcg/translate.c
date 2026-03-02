@@ -134,11 +134,11 @@ static void loongarch_tr_init_disas_context(DisasContextBase *dcbase,
     bound = -(ctx->base.pc_first | TARGET_PAGE_MASK) / 4;
     ctx->base.max_insns = MIN(ctx->base.max_insns, bound);
 
-    if (FIELD_EX64(env->cpucfg[2], CPUCFG2, LSX)) {
+    if (REG_FIELD_EX64(env->cpucfg[2], CPUCFG2, LSX)) {
         ctx->vl = LSX_LEN;
     }
 
-    if (FIELD_EX64(env->cpucfg[2], CPUCFG2, LASX)) {
+    if (REG_FIELD_EX64(env->cpucfg[2], CPUCFG2, LASX)) {
         ctx->vl = LASX_LEN;
     }
 

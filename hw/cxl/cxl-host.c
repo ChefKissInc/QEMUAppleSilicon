@@ -111,7 +111,7 @@ static bool cxl_hdm_find_target(uint32_t *cache_mem, hwaddr addr,
     uint32_t cap;
 
     cap = ldl_le_p(cache_mem + R_CXL_HDM_DECODER_CAPABILITY);
-    hdm_count = cxl_decoder_count_dec(FIELD_EX32(cap,
+    hdm_count = cxl_decoder_count_dec(REG_FIELD_EX32(cap,
                                                  CXL_HDM_DECODER_CAPABILITY,
                                                  DECODER_COUNT));
     for (i = 0; i < hdm_count; i++) {
@@ -130,12 +130,12 @@ static bool cxl_hdm_find_target(uint32_t *cache_mem, hwaddr addr,
         }
 
         ctrl = ldl_le_p(cache_mem + R_CXL_HDM_DECODER0_CTRL + i * hdm_inc);
-        if (!FIELD_EX32(ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED)) {
+        if (!REG_FIELD_EX32(ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED)) {
             return false;
         }
         found = true;
-        ig_enc = FIELD_EX32(ctrl, CXL_HDM_DECODER0_CTRL, IG);
-        iw_enc = FIELD_EX32(ctrl, CXL_HDM_DECODER0_CTRL, IW);
+        ig_enc = REG_FIELD_EX32(ctrl, CXL_HDM_DECODER0_CTRL, IG);
+        iw_enc = REG_FIELD_EX32(ctrl, CXL_HDM_DECODER0_CTRL, IW);
         target_idx = (addr / cxl_decode_ig(ig_enc)) % (1 << iw_enc);
 
         if (target_idx < 4) {

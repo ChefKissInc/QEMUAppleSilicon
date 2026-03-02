@@ -841,28 +841,28 @@ static void gen_commit_packet(DisasContext *ctx)
 
             if (has_store_s0) {
                 mask =
-                    FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST0, 1);
+                    REG_FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST0, 1);
             }
             if (has_store_s1) {
                 mask =
-                    FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST1, 1);
+                    REG_FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST1, 1);
             }
             if (has_hvx_store) {
                 mask =
-                    FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES,
+                    REG_FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES,
                                HAS_HVX_STORES, 1);
             }
             if (has_store_s0 && slot_is_predicated(pkt, 0)) {
                 mask =
-                    FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES,
+                    REG_FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES,
                                S0_IS_PRED, 1);
             }
             if (has_store_s1 && slot_is_predicated(pkt, 1)) {
                 mask =
-                    FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES,
+                    REG_FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES,
                                S1_IS_PRED, 1);
             }
-            mask = FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES, MMU_IDX,
+            mask = REG_FIELD_DP32(mask, PROBE_PKT_SCALAR_HVX_STORES, MMU_IDX,
                               ctx->mem_idx);
             gen_helper_probe_pkt_scalar_hvx_stores(tcg_env,
                                                    tcg_constant_tl(mask));
@@ -874,10 +874,10 @@ static void gen_commit_packet(DisasContext *ctx)
          */
         int args = 0;
         args =
-            FIELD_DP32(args, PROBE_PKT_SCALAR_STORE_S0, MMU_IDX, ctx->mem_idx);
+            REG_FIELD_DP32(args, PROBE_PKT_SCALAR_STORE_S0, MMU_IDX, ctx->mem_idx);
         if (slot_is_predicated(pkt, 0)) {
             args =
-                FIELD_DP32(args, PROBE_PKT_SCALAR_STORE_S0, IS_PREDICATED, 1);
+                REG_FIELD_DP32(args, PROBE_PKT_SCALAR_STORE_S0, IS_PREDICATED, 1);
         }
         TCGv args_tcgv = tcg_constant_tl(args);
         gen_helper_probe_pkt_scalar_store_s0(tcg_env, args_tcgv);
@@ -943,7 +943,7 @@ static void hexagon_tr_init_disas_context(DisasContextBase *dcbase,
     ctx->num_insns = 0;
     ctx->num_hvx_insns = 0;
     ctx->branch_cond = TCG_COND_NEVER;
-    ctx->is_tight_loop = FIELD_EX32(hex_flags, TB_FLAGS, IS_TIGHT_LOOP);
+    ctx->is_tight_loop = REG_FIELD_EX32(hex_flags, TB_FLAGS, IS_TIGHT_LOOP);
     ctx->short_circuit = hex_cpu->short_circuit;
 }
 

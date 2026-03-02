@@ -26,8 +26,8 @@ static inline bool fgt_svc(CPUARMState *env, int el)
      * We also know el is 0 or 1.
      */
     return el == 0 ?
-        FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL0) :
-        FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL1);
+        REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL0) :
+        REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL1);
 }
 
 /* Return true if memory alignment should be enforced. */
@@ -148,17 +148,17 @@ static bool sme_fa64(CPUARMState *env, int el)
     }
 
     if (el <= 1 && !el_is_in_host(env, el)) {
-        if (!FIELD_EX64(env->vfp.smcr_el[1], SMCR, FA64)) {
+        if (!REG_FIELD_EX64(env->vfp.smcr_el[1], SMCR, FA64)) {
             return false;
         }
     }
     if (el <= 2 && arm_is_el2_enabled(env)) {
-        if (!FIELD_EX64(env->vfp.smcr_el[2], SMCR, FA64)) {
+        if (!REG_FIELD_EX64(env->vfp.smcr_el[2], SMCR, FA64)) {
             return false;
         }
     }
     if (arm_feature(env, ARM_FEATURE_EL3)) {
-        if (!FIELD_EX64(env->vfp.smcr_el[3], SMCR, FA64)) {
+        if (!REG_FIELD_EX64(env->vfp.smcr_el[3], SMCR, FA64)) {
             return false;
         }
     }
@@ -203,7 +203,7 @@ static CPUARMTBFlags rebuild_hflags_a32(CPUARMState *env, int fp_el,
      * AArch32.CheckAdvSIMDOrFPEnabled().
      */
     if (el == 0
-        && FIELD_EX64(env->svcr, SVCR, SM)
+        && REG_FIELD_EX64(env->svcr, SVCR, SM)
         && (!arm_is_el2_enabled(env)
             || (arm_el_is_aa64(env, 2) && !(env->cp15.hcr_el2 & HCR_TGE)))
         && arm_el_is_aa64(env, 1)
@@ -223,16 +223,16 @@ static int zt0_exception_el(CPUARMState *env, int el)
 #ifndef CONFIG_USER_ONLY
     if (el <= 1
         && !el_is_in_host(env, el)
-        && !FIELD_EX64(env->vfp.smcr_el[1], SMCR, EZT0)) {
+        && !REG_FIELD_EX64(env->vfp.smcr_el[1], SMCR, EZT0)) {
         return 1;
     }
     if (el <= 2
         && arm_is_el2_enabled(env)
-        && !FIELD_EX64(env->vfp.smcr_el[2], SMCR, EZT0)) {
+        && !REG_FIELD_EX64(env->vfp.smcr_el[2], SMCR, EZT0)) {
         return 2;
     }
     if (arm_feature(env, ARM_FEATURE_EL3)
-        && !FIELD_EX64(env->vfp.smcr_el[3], SMCR, EZT0)) {
+        && !REG_FIELD_EX64(env->vfp.smcr_el[3], SMCR, EZT0)) {
         return 3;
     }
 #endif
@@ -278,7 +278,7 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
     }
     if (cpu_isar_feature(aa64_sme, env_archcpu(env))) {
         int sme_el = sme_exception_el(env, el);
-        bool sm = FIELD_EX64(env->svcr, SVCR, SM);
+        bool sm = REG_FIELD_EX64(env->svcr, SVCR, SM);
 
         DP_TBFLAG_A64(flags, SMEEXC_EL, sme_el);
         if (sme_el == 0) {
@@ -295,7 +295,7 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
             DP_TBFLAG_A64(flags, SME_TRAP_NONSTREAMING, !sme_fa64(env, el));
         }
 
-        if (FIELD_EX64(env->svcr, SVCR, ZA)) {
+        if (REG_FIELD_EX64(env->svcr, SVCR, ZA)) {
             DP_TBFLAG_A64(flags, PSTATE_ZA, 1);
             if (cpu_isar_feature(aa64_sme2, env_archcpu(env))) {
                 int zt0_el = zt0_exception_el(env, el);
@@ -375,7 +375,7 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
 
     if (arm_fgt_active(env, el)) {
         DP_TBFLAG_ANY(flags, FGT_ACTIVE, 1);
-        if (FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, ERET)) {
+        if (REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, ERET)) {
             DP_TBFLAG_A64(flags, TRAP_ERET, 1);
         }
         if (fgt_svc(env, el)) {
@@ -603,7 +603,7 @@ TCGTBCPUState arm_get_tb_cpu_state(CPUState *cs)
 
         if (arm_feature(env, ARM_FEATURE_M)) {
             if (arm_feature(env, ARM_FEATURE_M_SECURITY) &&
-                FIELD_EX32(env->v7m.fpccr[M_REG_S], V7M_FPCCR, S)
+                REG_FIELD_EX32(env->v7m.fpccr[M_REG_S], V7M_FPCCR, S)
                 != env->v7m.secure) {
                 DP_TBFLAG_M32(flags, FPCCR_S_WRONG, 1);
             }

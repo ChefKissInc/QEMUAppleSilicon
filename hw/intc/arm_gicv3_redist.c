@@ -76,7 +76,7 @@ static bool vcpu_resident(GICv3CPUState *cs, uint64_t vptaddr)
      * whether the GICR_VPENDBASER register is marked VALID and
      * has the right virtual pending table address.
      */
-    if (!FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, VALID)) {
+    if (!REG_FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, VALID)) {
         return false;
     }
     return vptaddr == (cs->gicr_vpendbaser & R_GICR_VPENDBASER_PHYADDR_MASK);
@@ -241,7 +241,7 @@ static void gicv3_redist_update_vlpi_only(GICv3CPUState *cs)
 {
     uint64_t ptbase, ctbase, idbits;
 
-    if (!FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, VALID)) {
+    if (!REG_FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, VALID)) {
         cs->hppvlpi.prio = 0xff;
         cs->hppvlpi.nmi = false;
         return;
@@ -249,7 +249,7 @@ static void gicv3_redist_update_vlpi_only(GICv3CPUState *cs)
 
     ptbase = cs->gicr_vpendbaser & R_GICR_VPENDBASER_PHYADDR_MASK;
     ctbase = cs->gicr_vpropbaser & R_GICR_VPROPBASER_PHYADDR_MASK;
-    idbits = FIELD_EX64(cs->gicr_vpropbaser, GICR_VPROPBASER, IDBITS);
+    idbits = REG_FIELD_EX64(cs->gicr_vpropbaser, GICR_VPROPBASER, IDBITS);
 
     update_for_all_lpis(cs, ptbase, ctbase, idbits, true, &cs->hppvlpi);
 }
@@ -263,8 +263,8 @@ static void gicv3_redist_update_vlpi(GICv3CPUState *cs)
 static void gicr_write_vpendbaser(GICv3CPUState *cs, uint64_t newval)
 {
     /* Write @newval to GICR_VPENDBASER, handling its effects */
-    bool oldvalid = FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, VALID);
-    bool newvalid = FIELD_EX64(newval, GICR_VPENDBASER, VALID);
+    bool oldvalid = REG_FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, VALID);
+    bool newvalid = REG_FIELD_EX64(newval, GICR_VPENDBASER, VALID);
     bool pendinglast;
 
     /*
@@ -314,7 +314,7 @@ static void gicr_write_vpendbaser(GICv3CPUState *cs, uint64_t newval)
         pendinglast = cs->hppvlpi.prio != 0xff;
     }
 
-    newval = FIELD_DP64(newval, GICR_VPENDBASER, PENDINGLAST, pendinglast);
+    newval = REG_FIELD_DP64(newval, GICR_VPENDBASER, PENDINGLAST, pendinglast);
     cs->gicr_vpendbaser = newval;
     gicv3_redist_update_vlpi(cs);
 }
@@ -846,7 +846,7 @@ void gicv3_redist_update_lpi_only(GICv3CPUState *cs)
     uint64_t lpipt_baddr, lpict_baddr;
     uint64_t idbits;
 
-    idbits = MIN(FIELD_EX64(cs->gicr_propbaser, GICR_PROPBASER, IDBITS),
+    idbits = MIN(REG_FIELD_EX64(cs->gicr_propbaser, GICR_PROPBASER, IDBITS),
                  GICD_TYPER_IDBITS);
 
     if (!(cs->gicr_ctlr & GICR_CTLR_ENABLE_LPIS)) {
@@ -898,7 +898,7 @@ void gicv3_redist_process_lpi(GICv3CPUState *cs, int irq, int level)
 {
     uint64_t idbits;
 
-    idbits = MIN(FIELD_EX64(cs->gicr_propbaser, GICR_PROPBASER, IDBITS),
+    idbits = MIN(REG_FIELD_EX64(cs->gicr_propbaser, GICR_PROPBASER, IDBITS),
                  GICD_TYPER_IDBITS);
 
     if (!(cs->gicr_ctlr & GICR_CTLR_ENABLE_LPIS) ||
@@ -940,9 +940,9 @@ void gicv3_redist_mov_lpi(GICv3CPUState *src, GICv3CPUState *dest, int irq)
         return;
     }
 
-    idbits = MIN(FIELD_EX64(src->gicr_propbaser, GICR_PROPBASER, IDBITS),
+    idbits = MIN(REG_FIELD_EX64(src->gicr_propbaser, GICR_PROPBASER, IDBITS),
                  GICD_TYPER_IDBITS);
-    idbits = MIN(FIELD_EX64(dest->gicr_propbaser, GICR_PROPBASER, IDBITS),
+    idbits = MIN(REG_FIELD_EX64(dest->gicr_propbaser, GICR_PROPBASER, IDBITS),
                  idbits);
 
     pendt_size = 1ULL << (idbits + 1);
@@ -990,9 +990,9 @@ void gicv3_redist_movall_lpis(GICv3CPUState *src, GICv3CPUState *dest)
         return;
     }
 
-    idbits = MIN(FIELD_EX64(src->gicr_propbaser, GICR_PROPBASER, IDBITS),
+    idbits = MIN(REG_FIELD_EX64(src->gicr_propbaser, GICR_PROPBASER, IDBITS),
                  GICD_TYPER_IDBITS);
-    idbits = MIN(FIELD_EX64(dest->gicr_propbaser, GICR_PROPBASER, IDBITS),
+    idbits = MIN(REG_FIELD_EX64(dest->gicr_propbaser, GICR_PROPBASER, IDBITS),
                  idbits);
 
     pendt_size = 1ULL << (idbits + 1);
@@ -1031,7 +1031,7 @@ void gicv3_redist_vlpi_pending(GICv3CPUState *cs, int irq, int level)
      */
     uint64_t vptbase, ctbase;
 
-    vptbase = FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, PHYADDR) << 16;
+    vptbase = REG_FIELD_EX64(cs->gicr_vpendbaser, GICR_VPENDBASER, PHYADDR) << 16;
 
     if (set_pending_table_bit(cs, vptbase, irq, level)) {
         if (level) {
@@ -1056,7 +1056,7 @@ void gicv3_redist_process_vlpi(GICv3CPUState *cs, int irq, uint64_t vptaddr,
     uint64_t ctbase;
 
     if (resident) {
-        uint32_t idbits = FIELD_EX64(cs->gicr_vpropbaser, GICR_VPROPBASER, IDBITS);
+        uint32_t idbits = REG_FIELD_EX64(cs->gicr_vpropbaser, GICR_VPROPBASER, IDBITS);
         if (irq >= (1ULL << (idbits + 1))) {
             return;
         }

@@ -614,11 +614,11 @@ static CPAccessResult cpacr_access(CPUARMState *env, const ARMCPRegInfo *ri,
     if (arm_feature(env, ARM_FEATURE_V8)) {
         /* Check if CPACR accesses are to be trapped to EL2 */
         if (arm_current_el(env) == 1 && arm_is_el2_enabled(env) &&
-            FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TCPAC)) {
+            REG_FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TCPAC)) {
             return CP_ACCESS_TRAP_EL2;
         /* Check if CPACR accesses are to be trapped to EL3 */
         } else if (arm_current_el(env) < 3 &&
-                   FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, TCPAC)) {
+                   REG_FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, TCPAC)) {
             return CP_ACCESS_TRAP_EL3;
         }
     }
@@ -631,7 +631,7 @@ static CPAccessResult cptr_access(CPUARMState *env, const ARMCPRegInfo *ri,
 {
     /* Check if CPTR accesses are set to trap to EL3 */
     if (arm_current_el(env) == 2 &&
-        FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, TCPAC)) {
+        REG_FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, TCPAC)) {
         return CP_ACCESS_TRAP_EL3;
     }
 
@@ -1154,7 +1154,7 @@ static CPAccessResult gt_counter_access(CPUARMState *env, int timeridx,
             return CP_ACCESS_TRAP_EL2;
         }
         if (has_el2 && timeridx == GTIMER_VIRT) {
-            if (FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1TVCT)) {
+            if (REG_FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1TVCT)) {
                 return CP_ACCESS_TRAP_EL2;
             }
         }
@@ -1202,7 +1202,7 @@ static CPAccessResult gt_timer_access(CPUARMState *env, int timeridx,
             }
         }
         if (has_el2 && timeridx == GTIMER_VIRT) {
-            if (FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1TVT)) {
+            if (REG_FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1TVT)) {
                 return CP_ACCESS_TRAP_EL2;
             }
         }
@@ -1350,7 +1350,7 @@ void gt_rme_post_el_change(ARMCPU *cpu, void *ignored)
 static uint64_t gt_phys_raw_cnt_offset(CPUARMState *env)
 {
     if ((env->cp15.scr_el3 & SCR_ECVEN) &&
-        FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, ECV) &&
+        REG_FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, ECV) &&
         arm_is_el2_enabled(env) &&
         (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE)) {
         return env->cp15.cntpoff_el2;
@@ -4450,7 +4450,7 @@ static CPAccessResult access_el1nvpct(CPUARMState *env, const ARMCPRegInfo *ri,
 {
     if (arm_current_el(env) == 1) {
         /* This must be a FEAT_NV access with NVx == 101 */
-        if (FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1NVPCT)) {
+        if (REG_FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1NVPCT)) {
             return CP_ACCESS_TRAP_EL2;
         }
     }
@@ -4462,7 +4462,7 @@ static CPAccessResult access_el1nvvct(CPUARMState *env, const ARMCPRegInfo *ri,
 {
     if (arm_current_el(env) == 1) {
         /* This must be a FEAT_NV access with NVx == 101 */
-        if (FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1NVVCT)) {
+        if (REG_FIELD_EX64(env->cp15.cnthctl_el2, CNTHCTL, EL1NVVCT)) {
             return CP_ACCESS_TRAP_EL2;
         }
     }
@@ -4835,7 +4835,7 @@ int sve_exception_el(CPUARMState *env, int el)
 {
 #ifndef CONFIG_USER_ONLY
     if (el <= 1 && !el_is_in_host(env, el)) {
-        switch (FIELD_EX64(env->cp15.cpacr_el1, CPACR_EL1, ZEN)) {
+        switch (REG_FIELD_EX64(env->cp15.cpacr_el1, CPACR_EL1, ZEN)) {
         case 1:
             if (el != 0) {
                 break;
@@ -4850,7 +4850,7 @@ int sve_exception_el(CPUARMState *env, int el)
     if (el <= 2 && arm_is_el2_enabled(env)) {
         /* CPTR_EL2 changes format with HCR_EL2.E2H (regardless of TGE). */
         if (env->cp15.hcr_el2 & HCR_E2H) {
-            switch (FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, ZEN)) {
+            switch (REG_FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, ZEN)) {
             case 1:
                 if (el != 0 || !(env->cp15.hcr_el2 & HCR_TGE)) {
                     break;
@@ -4861,7 +4861,7 @@ int sve_exception_el(CPUARMState *env, int el)
                 return 2;
             }
         } else {
-            if (FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TZ)) {
+            if (REG_FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TZ)) {
                 return 2;
             }
         }
@@ -4869,7 +4869,7 @@ int sve_exception_el(CPUARMState *env, int el)
 
     /* CPTR_EL3.  Since EZ is negative we must check for EL3.  */
     if (arm_feature(env, ARM_FEATURE_EL3)
-        && !FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, EZ)) {
+        && !REG_FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, EZ)) {
         return 3;
     }
 #endif
@@ -4884,7 +4884,7 @@ int sme_exception_el(CPUARMState *env, int el)
 {
 #ifndef CONFIG_USER_ONLY
     if (el <= 1 && !el_is_in_host(env, el)) {
-        switch (FIELD_EX64(env->cp15.cpacr_el1, CPACR_EL1, SMEN)) {
+        switch (REG_FIELD_EX64(env->cp15.cpacr_el1, CPACR_EL1, SMEN)) {
         case 1:
             if (el != 0) {
                 break;
@@ -4899,7 +4899,7 @@ int sme_exception_el(CPUARMState *env, int el)
     if (el <= 2 && arm_is_el2_enabled(env)) {
         /* CPTR_EL2 changes format with HCR_EL2.E2H (regardless of TGE). */
         if (env->cp15.hcr_el2 & HCR_E2H) {
-            switch (FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, SMEN)) {
+            switch (REG_FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, SMEN)) {
             case 1:
                 if (el != 0 || !(env->cp15.hcr_el2 & HCR_TGE)) {
                     break;
@@ -4910,7 +4910,7 @@ int sme_exception_el(CPUARMState *env, int el)
                 return 2;
             }
         } else {
-            if (FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TSM)) {
+            if (REG_FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TSM)) {
                 return 2;
             }
         }
@@ -4918,7 +4918,7 @@ int sme_exception_el(CPUARMState *env, int el)
 
     /* CPTR_EL3.  Since ESM is negative we must check for EL3.  */
     if (arm_feature(env, ARM_FEATURE_EL3)
-        && !FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, ESM)) {
+        && !REG_FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, ESM)) {
         return 3;
     }
 #endif
@@ -4962,7 +4962,7 @@ uint32_t sve_vqm1_for_el_sm(CPUARMState *env, int el, bool sm)
 
 uint32_t sve_vqm1_for_el(CPUARMState *env, int el)
 {
-    return sve_vqm1_for_el_sm(env, el, FIELD_EX64(env->svcr, SVCR, SM));
+    return sve_vqm1_for_el_sm(env, el, REG_FIELD_EX64(env->svcr, SVCR, SM));
 }
 
 static void zcr_write(CPUARMState *env, const ARMCPRegInfo *ri,
@@ -5031,7 +5031,7 @@ static CPAccessResult access_smprimap(CPUARMState *env, const ARMCPRegInfo *ri,
     /* If EL1 this is a FEAT_NV access and CPTR_EL3.ESM doesn't apply */
     if (arm_current_el(env) == 2
         && arm_feature(env, ARM_FEATURE_EL3)
-        && !FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, ESM)) {
+        && !REG_FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, ESM)) {
         return CP_ACCESS_TRAP_EL3;
     }
     return CP_ACCESS_OK;
@@ -5042,7 +5042,7 @@ static CPAccessResult access_smpri(CPUARMState *env, const ARMCPRegInfo *ri,
 {
     if (arm_current_el(env) < 3
         && arm_feature(env, ARM_FEATURE_EL3)
-        && !FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, ESM)) {
+        && !REG_FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, ESM)) {
         return CP_ACCESS_TRAP_EL3;
     }
     return CP_ACCESS_OK;
@@ -5186,7 +5186,7 @@ static void gpccr_write(CPUARMState *env, const ARMCPRegInfo *ri,
 
 static void gpccr_reset(CPUARMState *env, const ARMCPRegInfo *ri)
 {
-    env->cp15.gpccr_el3 = FIELD_DP64(0, GPCCR, L0GPTSZ,
+    env->cp15.gpccr_el3 = REG_FIELD_DP64(0, GPCCR, L0GPTSZ,
                                      env_archcpu(env)->reset_l0gptsz);
 }
 
@@ -9638,7 +9638,7 @@ int fp_exception_el(CPUARMState *env, int cur_el)
      * This register is ignored if E2H+TGE are both set.
      */
     if ((hcr_el2 & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE)) {
-        int fpen = FIELD_EX64(env->cp15.cpacr_el1, CPACR_EL1, FPEN);
+        int fpen = REG_FIELD_EX64(env->cp15.cpacr_el1, CPACR_EL1, FPEN);
 
         switch (fpen) {
         case 1:
@@ -9679,7 +9679,7 @@ int fp_exception_el(CPUARMState *env, int cur_el)
      */
     if (cur_el <= 2) {
         if (hcr_el2 & HCR_E2H) {
-            switch (FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, FPEN)) {
+            switch (REG_FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, FPEN)) {
             case 1:
                 if (cur_el != 0 || !(hcr_el2 & HCR_TGE)) {
                     break;
@@ -9690,14 +9690,14 @@ int fp_exception_el(CPUARMState *env, int cur_el)
                 return 2;
             }
         } else if (arm_is_el2_enabled(env)) {
-            if (FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TFP)) {
+            if (REG_FIELD_EX64(env->cp15.cptr_el[2], CPTR_EL2, TFP)) {
                 return 2;
             }
         }
     }
 
     /* CPTR_EL3 : present in v8 */
-    if (FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, TFP)) {
+    if (REG_FIELD_EX64(env->cp15.cptr_el[3], CPTR_EL3, TFP)) {
         /* Trap all FP ops to EL3 */
         return 3;
     }
@@ -9914,7 +9914,7 @@ void aarch64_sve_change_el(CPUARMState *env, int old_el,
      * invoke ResetSVEState when taking an exception from, or
      * returning to, AArch32 state when PSTATE.SM is enabled.
      */
-    sm = FIELD_EX64(env->svcr, SVCR, SM);
+    sm = REG_FIELD_EX64(env->svcr, SVCR, SM);
     if (old_a64 != new_a64 && sm) {
         arm_reset_sve_state(env);
         return;

@@ -33,126 +33,126 @@
 
 
 REG32(CR1, 0x00)
-    FIELD(CR1, M1, 28, 1)    /* Word length (part 2, see M0) */
-    FIELD(CR1, EOBIE, 27, 1) /* End of Block interrupt enable */
-    FIELD(CR1, RTOIE, 26, 1) /* Receiver timeout interrupt enable */
-    FIELD(CR1, DEAT, 21, 5)  /* Driver Enable assertion time */
-    FIELD(CR1, DEDT, 16, 5)  /* Driver Enable de-assertion time */
-    FIELD(CR1, OVER8, 15, 1) /* Oversampling mode */
-    FIELD(CR1, CMIE, 14, 1)  /* Character match interrupt enable */
-    FIELD(CR1, MME, 13, 1)   /* Mute mode enable */
-    FIELD(CR1, M0, 12, 1)    /* Word length (part 1, see M1) */
-    FIELD(CR1, WAKE, 11, 1)  /* Receiver wakeup method */
-    FIELD(CR1, PCE, 10, 1)   /* Parity control enable */
-    FIELD(CR1, PS, 9, 1)     /* Parity selection */
-    FIELD(CR1, PEIE, 8, 1)   /* PE interrupt enable */
-    FIELD(CR1, TXEIE, 7, 1)  /* TXE interrupt enable */
-    FIELD(CR1, TCIE, 6, 1)   /* Transmission complete interrupt enable */
-    FIELD(CR1, RXNEIE, 5, 1) /* RXNE interrupt enable */
-    FIELD(CR1, IDLEIE, 4, 1) /* IDLE interrupt enable */
-    FIELD(CR1, TE, 3, 1)     /* Transmitter enable */
-    FIELD(CR1, RE, 2, 1)     /* Receiver enable */
-    FIELD(CR1, UESM, 1, 1)   /* USART enable in Stop mode */
-    FIELD(CR1, UE, 0, 1)     /* USART enable */
+    REG_FIELD(CR1, M1, 28, 1)    /* Word length (part 2, see M0) */
+    REG_FIELD(CR1, EOBIE, 27, 1) /* End of Block interrupt enable */
+    REG_FIELD(CR1, RTOIE, 26, 1) /* Receiver timeout interrupt enable */
+    REG_FIELD(CR1, DEAT, 21, 5)  /* Driver Enable assertion time */
+    REG_FIELD(CR1, DEDT, 16, 5)  /* Driver Enable de-assertion time */
+    REG_FIELD(CR1, OVER8, 15, 1) /* Oversampling mode */
+    REG_FIELD(CR1, CMIE, 14, 1)  /* Character match interrupt enable */
+    REG_FIELD(CR1, MME, 13, 1)   /* Mute mode enable */
+    REG_FIELD(CR1, M0, 12, 1)    /* Word length (part 1, see M1) */
+    REG_FIELD(CR1, WAKE, 11, 1)  /* Receiver wakeup method */
+    REG_FIELD(CR1, PCE, 10, 1)   /* Parity control enable */
+    REG_FIELD(CR1, PS, 9, 1)     /* Parity selection */
+    REG_FIELD(CR1, PEIE, 8, 1)   /* PE interrupt enable */
+    REG_FIELD(CR1, TXEIE, 7, 1)  /* TXE interrupt enable */
+    REG_FIELD(CR1, TCIE, 6, 1)   /* Transmission complete interrupt enable */
+    REG_FIELD(CR1, RXNEIE, 5, 1) /* RXNE interrupt enable */
+    REG_FIELD(CR1, IDLEIE, 4, 1) /* IDLE interrupt enable */
+    REG_FIELD(CR1, TE, 3, 1)     /* Transmitter enable */
+    REG_FIELD(CR1, RE, 2, 1)     /* Receiver enable */
+    REG_FIELD(CR1, UESM, 1, 1)   /* USART enable in Stop mode */
+    REG_FIELD(CR1, UE, 0, 1)     /* USART enable */
 REG32(CR2, 0x04)
-    FIELD(CR2, ADD_1, 28, 4)    /* ADD[7:4] */
-    FIELD(CR2, ADD_0, 24, 4)    /* ADD[3:0] */
-    FIELD(CR2, RTOEN, 23, 1)    /* Receiver timeout enable */
-    FIELD(CR2, ABRMOD, 21, 2)   /* Auto baud rate mode */
-    FIELD(CR2, ABREN, 20, 1)    /* Auto baud rate enable */
-    FIELD(CR2, MSBFIRST, 19, 1) /* Most significant bit first */
-    FIELD(CR2, DATAINV, 18, 1)  /* Binary data inversion */
-    FIELD(CR2, TXINV, 17, 1)    /* TX pin active level inversion */
-    FIELD(CR2, RXINV, 16, 1)    /* RX pin active level inversion */
-    FIELD(CR2, SWAP, 15, 1)     /* Swap RX/TX pins */
-    FIELD(CR2, LINEN, 14, 1)    /* LIN mode enable */
-    FIELD(CR2, STOP, 12, 2)     /* STOP bits */
-    FIELD(CR2, CLKEN, 11, 1)    /* Clock enable */
-    FIELD(CR2, CPOL, 10, 1)     /* Clock polarity */
-    FIELD(CR2, CPHA, 9, 1)      /* Clock phase */
-    FIELD(CR2, LBCL, 8, 1)      /* Last bit clock pulse */
-    FIELD(CR2, LBDIE, 6, 1)     /* LIN break detection interrupt enable */
-    FIELD(CR2, LBDL, 5, 1)      /* LIN break detection length */
-    FIELD(CR2, ADDM7, 4, 1)     /* 7-bit / 4-bit Address Detection */
+    REG_FIELD(CR2, ADD_1, 28, 4)    /* ADD[7:4] */
+    REG_FIELD(CR2, ADD_0, 24, 4)    /* ADD[3:0] */
+    REG_FIELD(CR2, RTOEN, 23, 1)    /* Receiver timeout enable */
+    REG_FIELD(CR2, ABRMOD, 21, 2)   /* Auto baud rate mode */
+    REG_FIELD(CR2, ABREN, 20, 1)    /* Auto baud rate enable */
+    REG_FIELD(CR2, MSBFIRST, 19, 1) /* Most significant bit first */
+    REG_FIELD(CR2, DATAINV, 18, 1)  /* Binary data inversion */
+    REG_FIELD(CR2, TXINV, 17, 1)    /* TX pin active level inversion */
+    REG_FIELD(CR2, RXINV, 16, 1)    /* RX pin active level inversion */
+    REG_FIELD(CR2, SWAP, 15, 1)     /* Swap RX/TX pins */
+    REG_FIELD(CR2, LINEN, 14, 1)    /* LIN mode enable */
+    REG_FIELD(CR2, STOP, 12, 2)     /* STOP bits */
+    REG_FIELD(CR2, CLKEN, 11, 1)    /* Clock enable */
+    REG_FIELD(CR2, CPOL, 10, 1)     /* Clock polarity */
+    REG_FIELD(CR2, CPHA, 9, 1)      /* Clock phase */
+    REG_FIELD(CR2, LBCL, 8, 1)      /* Last bit clock pulse */
+    REG_FIELD(CR2, LBDIE, 6, 1)     /* LIN break detection interrupt enable */
+    REG_FIELD(CR2, LBDL, 5, 1)      /* LIN break detection length */
+    REG_FIELD(CR2, ADDM7, 4, 1)     /* 7-bit / 4-bit Address Detection */
 
 REG32(CR3, 0x08)
     /* TCBGTIE only on STM32L496xx/4A6xx devices */
-    FIELD(CR3, UCESM, 23, 1)   /* USART Clock Enable in Stop Mode */
-    FIELD(CR3, WUFIE, 22, 1)   /* Wakeup from Stop mode interrupt enable */
-    FIELD(CR3, WUS, 20, 2)     /* Wakeup from Stop mode interrupt flag selection */
-    FIELD(CR3, SCARCNT, 17, 3) /* Smartcard auto-retry count */
-    FIELD(CR3, DEP, 15, 1)     /* Driver enable polarity selection */
-    FIELD(CR3, DEM, 14, 1)     /* Driver enable mode */
-    FIELD(CR3, DDRE, 13, 1)    /* DMA Disable on Reception Error */
-    FIELD(CR3, OVRDIS, 12, 1)  /* Overrun Disable */
-    FIELD(CR3, ONEBIT, 11, 1)  /* One sample bit method enable */
-    FIELD(CR3, CTSIE, 10, 1)   /* CTS interrupt enable */
-    FIELD(CR3, CTSE, 9, 1)     /* CTS enable */
-    FIELD(CR3, RTSE, 8, 1)     /* RTS enable */
-    FIELD(CR3, DMAT, 7, 1)     /* DMA enable transmitter */
-    FIELD(CR3, DMAR, 6, 1)     /* DMA enable receiver */
-    FIELD(CR3, SCEN, 5, 1)     /* Smartcard mode enable */
-    FIELD(CR3, NACK, 4, 1)     /* Smartcard NACK enable */
-    FIELD(CR3, HDSEL, 3, 1)    /* Half-duplex selection */
-    FIELD(CR3, IRLP, 2, 1)     /* IrDA low-power */
-    FIELD(CR3, IREN, 1, 1)     /* IrDA mode enable */
-    FIELD(CR3, EIE, 0, 1)      /* Error interrupt enable */
+    REG_FIELD(CR3, UCESM, 23, 1)   /* USART Clock Enable in Stop Mode */
+    REG_FIELD(CR3, WUFIE, 22, 1)   /* Wakeup from Stop mode interrupt enable */
+    REG_FIELD(CR3, WUS, 20, 2)     /* Wakeup from Stop mode interrupt flag selection */
+    REG_FIELD(CR3, SCARCNT, 17, 3) /* Smartcard auto-retry count */
+    REG_FIELD(CR3, DEP, 15, 1)     /* Driver enable polarity selection */
+    REG_FIELD(CR3, DEM, 14, 1)     /* Driver enable mode */
+    REG_FIELD(CR3, DDRE, 13, 1)    /* DMA Disable on Reception Error */
+    REG_FIELD(CR3, OVRDIS, 12, 1)  /* Overrun Disable */
+    REG_FIELD(CR3, ONEBIT, 11, 1)  /* One sample bit method enable */
+    REG_FIELD(CR3, CTSIE, 10, 1)   /* CTS interrupt enable */
+    REG_FIELD(CR3, CTSE, 9, 1)     /* CTS enable */
+    REG_FIELD(CR3, RTSE, 8, 1)     /* RTS enable */
+    REG_FIELD(CR3, DMAT, 7, 1)     /* DMA enable transmitter */
+    REG_FIELD(CR3, DMAR, 6, 1)     /* DMA enable receiver */
+    REG_FIELD(CR3, SCEN, 5, 1)     /* Smartcard mode enable */
+    REG_FIELD(CR3, NACK, 4, 1)     /* Smartcard NACK enable */
+    REG_FIELD(CR3, HDSEL, 3, 1)    /* Half-duplex selection */
+    REG_FIELD(CR3, IRLP, 2, 1)     /* IrDA low-power */
+    REG_FIELD(CR3, IREN, 1, 1)     /* IrDA mode enable */
+    REG_FIELD(CR3, EIE, 0, 1)      /* Error interrupt enable */
 REG32(BRR, 0x0C)
-    FIELD(BRR, BRR, 0, 16)
+    REG_FIELD(BRR, BRR, 0, 16)
 REG32(GTPR, 0x10)
-    FIELD(GTPR, GT, 8, 8)  /* Guard time value */
-    FIELD(GTPR, PSC, 0, 8) /* Prescaler value */
+    REG_FIELD(GTPR, GT, 8, 8)  /* Guard time value */
+    REG_FIELD(GTPR, PSC, 0, 8) /* Prescaler value */
 REG32(RTOR, 0x14)
-    FIELD(RTOR, BLEN, 24, 8) /* Block Length */
-    FIELD(RTOR, RTO, 0, 24)  /* Receiver timeout value */
+    REG_FIELD(RTOR, BLEN, 24, 8) /* Block Length */
+    REG_FIELD(RTOR, RTO, 0, 24)  /* Receiver timeout value */
 REG32(RQR, 0x18)
-    FIELD(RQR, TXFRQ, 4, 1)  /* Transmit data flush request */
-    FIELD(RQR, RXFRQ, 3, 1)  /* Receive data flush request */
-    FIELD(RQR, MMRQ, 2, 1)   /* Mute mode request */
-    FIELD(RQR, SBKRQ, 1, 1)  /* Send break request */
-    FIELD(RQR, ABBRRQ, 0, 1) /* Auto baud rate request */
+    REG_FIELD(RQR, TXFRQ, 4, 1)  /* Transmit data flush request */
+    REG_FIELD(RQR, RXFRQ, 3, 1)  /* Receive data flush request */
+    REG_FIELD(RQR, MMRQ, 2, 1)   /* Mute mode request */
+    REG_FIELD(RQR, SBKRQ, 1, 1)  /* Send break request */
+    REG_FIELD(RQR, ABBRRQ, 0, 1) /* Auto baud rate request */
 REG32(ISR, 0x1C)
     /* TCBGT only for STM32L475xx/476xx/486xx devices */
-    FIELD(ISR, REACK, 22, 1) /* Receive enable acknowledge flag */
-    FIELD(ISR, TEACK, 21, 1) /* Transmit enable acknowledge flag */
-    FIELD(ISR, WUF, 20, 1)   /* Wakeup from Stop mode flag */
-    FIELD(ISR, RWU, 19, 1)   /* Receiver wakeup from Mute mode */
-    FIELD(ISR, SBKF, 18, 1)  /* Send break flag */
-    FIELD(ISR, CMF, 17, 1)   /* Character match flag */
-    FIELD(ISR, BUSY, 16, 1)  /* Busy flag */
-    FIELD(ISR, ABRF, 15, 1)  /* Auto Baud rate flag */
-    FIELD(ISR, ABRE, 14, 1)  /* Auto Baud rate error */
-    FIELD(ISR, EOBF, 12, 1)  /* End of block flag */
-    FIELD(ISR, RTOF, 11, 1)  /* Receiver timeout */
-    FIELD(ISR, CTS, 10, 1)   /* CTS flag */
-    FIELD(ISR, CTSIF, 9, 1)  /* CTS interrupt flag */
-    FIELD(ISR, LBDF, 8, 1)   /* LIN break detection flag */
-    FIELD(ISR, TXE, 7, 1)    /* Transmit data register empty */
-    FIELD(ISR, TC, 6, 1)     /* Transmission complete */
-    FIELD(ISR, RXNE, 5, 1)   /* Read data register not empty */
-    FIELD(ISR, IDLE, 4, 1)   /* Idle line detected */
-    FIELD(ISR, ORE, 3, 1)    /* Overrun error */
-    FIELD(ISR, NF, 2, 1)     /* START bit Noise detection flag */
-    FIELD(ISR, FE, 1, 1)     /* Framing Error */
-    FIELD(ISR, PE, 0, 1)     /* Parity Error */
+    REG_FIELD(ISR, REACK, 22, 1) /* Receive enable acknowledge flag */
+    REG_FIELD(ISR, TEACK, 21, 1) /* Transmit enable acknowledge flag */
+    REG_FIELD(ISR, WUF, 20, 1)   /* Wakeup from Stop mode flag */
+    REG_FIELD(ISR, RWU, 19, 1)   /* Receiver wakeup from Mute mode */
+    REG_FIELD(ISR, SBKF, 18, 1)  /* Send break flag */
+    REG_FIELD(ISR, CMF, 17, 1)   /* Character match flag */
+    REG_FIELD(ISR, BUSY, 16, 1)  /* Busy flag */
+    REG_FIELD(ISR, ABRF, 15, 1)  /* Auto Baud rate flag */
+    REG_FIELD(ISR, ABRE, 14, 1)  /* Auto Baud rate error */
+    REG_FIELD(ISR, EOBF, 12, 1)  /* End of block flag */
+    REG_FIELD(ISR, RTOF, 11, 1)  /* Receiver timeout */
+    REG_FIELD(ISR, CTS, 10, 1)   /* CTS flag */
+    REG_FIELD(ISR, CTSIF, 9, 1)  /* CTS interrupt flag */
+    REG_FIELD(ISR, LBDF, 8, 1)   /* LIN break detection flag */
+    REG_FIELD(ISR, TXE, 7, 1)    /* Transmit data register empty */
+    REG_FIELD(ISR, TC, 6, 1)     /* Transmission complete */
+    REG_FIELD(ISR, RXNE, 5, 1)   /* Read data register not empty */
+    REG_FIELD(ISR, IDLE, 4, 1)   /* Idle line detected */
+    REG_FIELD(ISR, ORE, 3, 1)    /* Overrun error */
+    REG_FIELD(ISR, NF, 2, 1)     /* START bit Noise detection flag */
+    REG_FIELD(ISR, FE, 1, 1)     /* Framing Error */
+    REG_FIELD(ISR, PE, 0, 1)     /* Parity Error */
 REG32(ICR, 0x20)
-    FIELD(ICR, WUCF, 20, 1)   /* Wakeup from Stop mode clear flag */
-    FIELD(ICR, CMCF, 17, 1)   /* Character match clear flag */
-    FIELD(ICR, EOBCF, 12, 1)  /* End of block clear flag */
-    FIELD(ICR, RTOCF, 11, 1)  /* Receiver timeout clear flag */
-    FIELD(ICR, CTSCF, 9, 1)   /* CTS clear flag */
-    FIELD(ICR, LBDCF, 8, 1)   /* LIN break detection clear flag */
+    REG_FIELD(ICR, WUCF, 20, 1)   /* Wakeup from Stop mode clear flag */
+    REG_FIELD(ICR, CMCF, 17, 1)   /* Character match clear flag */
+    REG_FIELD(ICR, EOBCF, 12, 1)  /* End of block clear flag */
+    REG_FIELD(ICR, RTOCF, 11, 1)  /* Receiver timeout clear flag */
+    REG_FIELD(ICR, CTSCF, 9, 1)   /* CTS clear flag */
+    REG_FIELD(ICR, LBDCF, 8, 1)   /* LIN break detection clear flag */
     /* TCBGTCF only on STM32L496xx/4A6xx devices */
-    FIELD(ICR, TCCF, 6, 1)    /* Transmission complete clear flag */
-    FIELD(ICR, IDLECF, 4, 1)  /* Idle line detected clear flag */
-    FIELD(ICR, ORECF, 3, 1)   /* Overrun error clear flag */
-    FIELD(ICR, NCF, 2, 1)     /* Noise detected clear flag */
-    FIELD(ICR, FECF, 1, 1)    /* Framing error clear flag */
-    FIELD(ICR, PECF, 0, 1)    /* Parity error clear flag */
+    REG_FIELD(ICR, TCCF, 6, 1)    /* Transmission complete clear flag */
+    REG_FIELD(ICR, IDLECF, 4, 1)  /* Idle line detected clear flag */
+    REG_FIELD(ICR, ORECF, 3, 1)   /* Overrun error clear flag */
+    REG_FIELD(ICR, NCF, 2, 1)     /* Noise detected clear flag */
+    REG_FIELD(ICR, FECF, 1, 1)    /* Framing error clear flag */
+    REG_FIELD(ICR, PECF, 0, 1)    /* Parity error clear flag */
 REG32(RDR, 0x24)
-    FIELD(RDR, RDR, 0, 9)
+    REG_FIELD(RDR, RDR, 0, 9)
 REG32(TDR, 0x28)
-    FIELD(TDR, TDR, 0, 9)
+    REG_FIELD(TDR, TDR, 0, 9)
 
 static void stm32l4x5_update_isr(Stm32l4x5UsartBaseState *s)
 {
@@ -213,7 +213,7 @@ static void stm32l4x5_usart_base_receive(void *opaque, const uint8_t *buf,
 
     if (!((s->cr1 & R_CR1_UE_MASK) && (s->cr1 & R_CR1_RE_MASK))) {
         trace_stm32l4x5_usart_receiver_not_enabled(
-            FIELD_EX32(s->cr1, CR1, UE), FIELD_EX32(s->cr1, CR1, RE));
+            REG_FIELD_EX32(s->cr1, CR1, UE), REG_FIELD_EX32(s->cr1, CR1, RE));
         return;
     }
 
@@ -304,7 +304,7 @@ static void stm32l4x5_update_params(Stm32l4x5UsartBaseState *s)
     }
 
     /* Select the number of stop bits */
-    switch (FIELD_EX32(s->cr2, CR2, STOP)) {
+    switch (REG_FIELD_EX32(s->cr2, CR2, STOP)) {
     case 0:
         stop_bits = 1;
         break;
@@ -314,12 +314,12 @@ static void stm32l4x5_update_params(Stm32l4x5UsartBaseState *s)
     default:
         qemu_log_mask(LOG_UNIMP,
             "UNIMPLEMENTED: fractionnal stop bits; CR2[13:12] = %u",
-            FIELD_EX32(s->cr2, CR2, STOP));
+            REG_FIELD_EX32(s->cr2, CR2, STOP));
         return;
     }
 
     /* Select the length of the word */
-    switch ((FIELD_EX32(s->cr1, CR1, M1) << 1) | FIELD_EX32(s->cr1, CR1, M0)) {
+    switch ((REG_FIELD_EX32(s->cr1, CR1, M1) << 1) | REG_FIELD_EX32(s->cr1, CR1, M0)) {
     case 0:
         data_bits = 8;
         break;
@@ -336,14 +336,14 @@ static void stm32l4x5_update_params(Stm32l4x5UsartBaseState *s)
     }
 
     /* Select the baud rate */
-    value = FIELD_EX32(s->brr, BRR, BRR);
+    value = REG_FIELD_EX32(s->brr, BRR, BRR);
     if (value < 16) {
         qemu_log_mask(LOG_GUEST_ERROR,
             "UNDEFINED: BRR less than 16: %u", value);
         return;
     }
 
-    if (FIELD_EX32(s->cr1, CR1, OVER8) == 0) {
+    if (REG_FIELD_EX32(s->cr1, CR1, OVER8) == 0) {
         /*
          * Oversampling by 16
          * BRR = USARTDIV
@@ -420,7 +420,7 @@ static uint64_t stm32l4x5_usart_base_read(void *opaque, hwaddr addr,
         retvalue = s->cr3;
         break;
     case A_BRR:
-        retvalue = FIELD_EX32(s->brr, BRR, BRR);
+        retvalue = REG_FIELD_EX32(s->brr, BRR, BRR);
         break;
     case A_GTPR:
         retvalue = s->gtpr;
@@ -440,13 +440,13 @@ static uint64_t stm32l4x5_usart_base_read(void *opaque, hwaddr addr,
         retvalue = 0x00000000;
         break;
     case A_RDR:
-        retvalue = FIELD_EX32(s->rdr, RDR, RDR);
+        retvalue = REG_FIELD_EX32(s->rdr, RDR, RDR);
         /* Reset RXNE flag */
         s->isr &= ~R_ISR_RXNE_MASK;
         stm32l4x5_update_irq(s);
         break;
     case A_TDR:
-        retvalue = FIELD_EX32(s->tdr, TDR, TDR);
+        retvalue = REG_FIELD_EX32(s->tdr, TDR, TDR);
         break;
     default:
         qemu_log_mask(LOG_GUEST_ERROR,

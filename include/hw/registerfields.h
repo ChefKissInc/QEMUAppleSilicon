@@ -1,227 +1,224 @@
 /*
- * Register Definition API: field macros
+ * Register Definition Macros.
  *
- * Copyright (c) 2016 Xilinx Inc.
- * Copyright (c) 2013 Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+ * Copyright (c) 2026 Visual Ehrmanntraut (VisualEhrmanntraut).
  *
- * This work is licensed under the terms of the GNU GPL, version 2.  See
- * the COPYING file in the top-level directory.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef REGISTERFIELDS_H
-#define REGISTERFIELDS_H
+#ifndef HW_REGISTERFIELDS_H
+#define HW_REGISTERFIELDS_H
 
 #include "qemu/bitops.h"
 
-/* Define constants for a 32 bit register */
+#define REG8(_reg, _addr)        \
+    enum { A_##_reg = (_addr) }; \
+    enum { R_##_reg = (_addr) };
+#define REG16(_reg, _addr)       \
+    enum { A_##_reg = (_addr) }; \
+    enum { R_##_reg = (_addr) / 2 };
+#define REG32(_reg, _addr)       \
+    enum { A_##_reg = (_addr) }; \
+    enum { R_##_reg = (_addr) / 4 };
+#define REG64(_reg, _addr)       \
+    enum { A_##_reg = (_addr) }; \
+    enum { R_##_reg = (_addr) / 8 };
 
-/* This macro will define A_FOO, for the byte address of a register
- * as well as R_FOO for the uint32_t[] register number (A_FOO / 4).
- */
-#define REG32(reg, addr)                                                  \
-    enum { A_ ## reg = (addr) };                                          \
-    enum { R_ ## reg = (addr) / 4 };
+#define REG_FIELD(_reg, _field, _shift, _length)       \
+    enum { R_##_reg##_##_field##_SHIFT = (_shift) };   \
+    enum { R_##_reg##_##_field##_LENGTH = (_length) }; \
+    enum { R_##_reg##_##_field##_MASK = MAKE_64BIT_MASK(_shift, _length) };
 
-#define REG8(reg, addr)                                                   \
-    enum { A_ ## reg = (addr) };                                          \
-    enum { R_ ## reg = (addr) };
+#define REG_FIELD_EX8(_storage, _reg, _field)         \
+    extract8((_storage), R_##_reg##_##_field##_SHIFT, \
+             R_##_reg##_##_field##_LENGTH)
+#define REG_FIELD_EX16(_storage, _reg, _field)         \
+    extract16((_storage), R_##_reg##_##_field##_SHIFT, \
+              R_##_reg##_##_field##_LENGTH)
+#define REG_FIELD_EX32(_storage, _reg, _field)         \
+    extract32((_storage), R_##_reg##_##_field##_SHIFT, \
+              R_##_reg##_##_field##_LENGTH)
+#define REG_FIELD_EX64(_storage, _reg, _field)         \
+    extract64((_storage), R_##_reg##_##_field##_SHIFT, \
+              R_##_reg##_##_field##_LENGTH)
 
-#define REG16(reg, addr)                                                  \
-    enum { A_ ## reg = (addr) };                                          \
-    enum { R_ ## reg = (addr) / 2 };
+#define REG_FIELD_SEX8(_storage, _reg, _field)         \
+    sextract8((_storage), R_##_reg##_##_field##_SHIFT, \
+              R_##_reg##_##_field##_LENGTH)
+#define REG_FIELD_SEX16(_storage, _reg, _field)         \
+    sextract16((_storage), R_##_reg##_##_field##_SHIFT, \
+               R_##_reg##_##_field##_LENGTH)
+#define REG_FIELD_SEX32(_storage, _reg, _field)         \
+    sextract32((_storage), R_##_reg##_##_field##_SHIFT, \
+               R_##_reg##_##_field##_LENGTH)
+#define REG_FIELD_SEX64(_storage, _reg, _field)         \
+    sextract64((_storage), R_##_reg##_##_field##_SHIFT, \
+               R_##_reg##_##_field##_LENGTH)
 
-#define REG64(reg, addr)                                                  \
-    enum { A_ ## reg = (addr) };                                          \
-    enum { R_ ## reg = (addr) / 8 };
+#define REG_ARRAY_FIELD_EX32(_regs, _reg, _field) \
+    REG_FIELD_EX32((_regs)[R_##_reg], _reg, _field)
+#define REG_ARRAY_FIELD_EX64(_regs, _reg, _field) \
+    REG_FIELD_EX64((_regs)[R_##_reg], _reg, _field)
 
-/* Define SHIFT, LENGTH and MASK constants for a field within a register */
+#define REG_FIELD_DP8(_storage, _reg, _field, _val)             \
+    ({                                                          \
+        struct {                                                \
+            unsigned int v : R_##_reg##_##_field##_LENGTH;      \
+        } _v = { _val };                                        \
+        uint8_t _d;                                             \
+        _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
+#define REG_FIELD_DP16(_storage, _reg, _field, _val)            \
+    ({                                                          \
+        struct {                                                \
+            unsigned int v : R_##_reg##_##_field##_LENGTH;      \
+        } _v = { _val };                                        \
+        uint16_t _d;                                            \
+        _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
+#define REG_FIELD_DP32(_storage, _reg, _field, _val)            \
+    ({                                                          \
+        struct {                                                \
+            unsigned int v : R_##_reg##_##_field##_LENGTH;      \
+        } _v = { _val };                                        \
+        uint32_t _d;                                            \
+        _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
+#define REG_FIELD_DP64(_storage, _reg, _field, _val)            \
+    ({                                                          \
+        struct {                                                \
+            uint64_t v : R_##_reg##_##_field##_LENGTH;          \
+        } _v = { _val };                                        \
+        uint64_t _d;                                            \
+        _d = deposit64((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
 
-/* This macro will define R_FOO_BAR_MASK, R_FOO_BAR_SHIFT and R_FOO_BAR_LENGTH
- * constants for field BAR in register FOO.
- */
-#define FIELD(reg, field, shift, length)                                  \
-    enum { R_ ## reg ## _ ## field ## _SHIFT = (shift)};                  \
-    enum { R_ ## reg ## _ ## field ## _LENGTH = (length)};                \
-    enum { R_ ## reg ## _ ## field ## _MASK =                             \
-                                        MAKE_64BIT_MASK(shift, length)};
+#define REG_FIELD_SDP8(_storage, _reg, _field, _val)            \
+    ({                                                          \
+        struct {                                                \
+            signed int v : R_##_reg##_##_field##_LENGTH;        \
+        } _v = { _val };                                        \
+        uint8_t _d;                                             \
+        _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
+#define REG_FIELD_SDP16(_storage, _reg, _field, _val)           \
+    ({                                                          \
+        struct {                                                \
+            signed int v : R_##_reg##_##_field##_LENGTH;        \
+        } _v = { _val };                                        \
+        uint16_t _d;                                            \
+        _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
+#define REG_FIELD_SDP32(_storage, _reg, _field, _val)           \
+    ({                                                          \
+        struct {                                                \
+            signed int v : R_##_reg##_##_field##_LENGTH;        \
+        } _v = { _val };                                        \
+        uint32_t _d;                                            \
+        _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
+#define REG_FIELD_SDP64(_storage, _reg, _field, _val)           \
+    ({                                                          \
+        struct {                                                \
+            int64_t v : R_##_reg##_##_field##_LENGTH;           \
+        } _v = { _val };                                        \
+        uint64_t _d;                                            \
+        _d = deposit64((_storage), R_##_reg##_##_field##_SHIFT, \
+                       R_##_reg##_##_field##_LENGTH, _v.v);     \
+        _d;                                                     \
+    })
 
-/* Extract a field from a register */
-#define FIELD_EX8(storage, reg, field)                                    \
-    extract8((storage), R_ ## reg ## _ ## field ## _SHIFT,                \
-              R_ ## reg ## _ ## field ## _LENGTH)
-#define FIELD_EX16(storage, reg, field)                                   \
-    extract16((storage), R_ ## reg ## _ ## field ## _SHIFT,               \
-              R_ ## reg ## _ ## field ## _LENGTH)
-#define FIELD_EX32(storage, reg, field)                                   \
-    extract32((storage), R_ ## reg ## _ ## field ## _SHIFT,               \
-              R_ ## reg ## _ ## field ## _LENGTH)
-#define FIELD_EX64(storage, reg, field)                                   \
-    extract64((storage), R_ ## reg ## _ ## field ## _SHIFT,               \
-              R_ ## reg ## _ ## field ## _LENGTH)
+#define REG_ARRAY_FIELD_DP32(_regs, _reg, _field, _val) \
+    (_regs)[R_##_reg] = REG_FIELD_DP32((_regs)[R_##_reg], _reg, _field, _val);
+#define REG_ARRAY_FIELD_DP64(_regs, _reg, _field, _val) \
+    (_regs)[R_##_reg] = REG_FIELD_DP64((_regs)[R_##_reg], _reg, _field, _val);
 
-#define FIELD_SEX8(storage, reg, field)                                   \
-    sextract8((storage), R_ ## reg ## _ ## field ## _SHIFT,               \
-              R_ ## reg ## _ ## field ## _LENGTH)
-#define FIELD_SEX16(storage, reg, field)                                  \
-    sextract16((storage), R_ ## reg ## _ ## field ## _SHIFT,              \
-               R_ ## reg ## _ ## field ## _LENGTH)
-#define FIELD_SEX32(storage, reg, field)                                  \
-    sextract32((storage), R_ ## reg ## _ ## field ## _SHIFT,              \
-               R_ ## reg ## _ ## field ## _LENGTH)
-#define FIELD_SEX64(storage, reg, field)                                  \
-    sextract64((storage), R_ ## reg ## _ ## field ## _SHIFT,              \
-               R_ ## reg ## _ ## field ## _LENGTH)
+#define SHARED_REG_FIELD(_name, _shift, _length) \
+    enum { _name##_##SHIFT = (_shift) };         \
+    enum { _name##_##LENGTH = (_length) };       \
+    enum { _name##_##MASK = MAKE_64BIT_MASK(_shift, _length) };
 
-/* Extract a field from an array of registers */
-#define ARRAY_FIELD_EX32(regs, reg, field)                                \
-    FIELD_EX32((regs)[R_ ## reg], reg, field)
-#define ARRAY_FIELD_EX64(regs, reg, field)                                \
-    FIELD_EX64((regs)[R_ ## reg], reg, field)
+#define SHARED_REG_FIELD_EX8(_storage, _field) \
+    extract8((_storage), _field##_SHIFT, _field##_LENGTH)
+#define SHARED_REG_FIELD_EX16(_storage, _field) \
+    extract16((_storage), _field##_SHIFT, _field##_LENGTH)
+#define SHARED_REG_FIELD_EX32(_storage, _field) \
+    extract32((_storage), _field##_SHIFT, _field##_LENGTH)
+#define SHARED_REG_FIELD_EX64(_storage, _field) \
+    extract64((_storage), _field##_SHIFT, _field##_LENGTH)
 
-/* Deposit a register field.
- * Assigning values larger then the target field will result in
- * compilation warnings.
- */
-#define FIELD_DP8(storage, reg, field, val) ({                            \
-    struct {                                                              \
-        unsigned int v:R_ ## reg ## _ ## field ## _LENGTH;                \
-    } _v = { .v = val };                                                  \
-    uint8_t _d;                                                           \
-    _d = deposit32((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
-#define FIELD_DP16(storage, reg, field, val) ({                           \
-    struct {                                                              \
-        unsigned int v:R_ ## reg ## _ ## field ## _LENGTH;                \
-    } _v = { .v = val };                                                  \
-    uint16_t _d;                                                          \
-    _d = deposit32((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
-#define FIELD_DP32(storage, reg, field, val) ({                           \
-    struct {                                                              \
-        unsigned int v:R_ ## reg ## _ ## field ## _LENGTH;                \
-    } _v = { .v = val };                                                  \
-    uint32_t _d;                                                          \
-    _d = deposit32((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
-#define FIELD_DP64(storage, reg, field, val) ({                           \
-    struct {                                                              \
-        uint64_t v:R_ ## reg ## _ ## field ## _LENGTH;                    \
-    } _v = { .v = val };                                                  \
-    uint64_t _d;                                                          \
-    _d = deposit64((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
+#define SHARED_REG_ARRAY_FIELD_EX32(_regs, _offset, _field) \
+    SHARED_REG_FIELD_EX32((_regs)[(_offset)], _field)
+#define SHARED_REG_ARRAY_FIELD_EX64(_regs, _offset, _field) \
+    SHARED_REG_FIELD_EX64((_regs)[(_offset)], _field)
 
-#define FIELD_SDP8(storage, reg, field, val) ({                           \
-    struct {                                                              \
-        signed int v:R_ ## reg ## _ ## field ## _LENGTH;                  \
-    } _v = { .v = val };                                                  \
-    uint8_t _d;                                                           \
-    _d = deposit32((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
-#define FIELD_SDP16(storage, reg, field, val) ({                          \
-    struct {                                                              \
-        signed int v:R_ ## reg ## _ ## field ## _LENGTH;                  \
-    } _v = { .v = val };                                                  \
-    uint16_t _d;                                                          \
-    _d = deposit32((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
-#define FIELD_SDP32(storage, reg, field, val) ({                          \
-    struct {                                                              \
-        signed int v:R_ ## reg ## _ ## field ## _LENGTH;                  \
-    } _v = { .v = val };                                                  \
-    uint32_t _d;                                                          \
-    _d = deposit32((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
-#define FIELD_SDP64(storage, reg, field, val) ({                          \
-    struct {                                                              \
-        int64_t v:R_ ## reg ## _ ## field ## _LENGTH;                     \
-    } _v = { .v = val };                                                  \
-    uint64_t _d;                                                          \
-    _d = deposit64((storage), R_ ## reg ## _ ## field ## _SHIFT,          \
-                  R_ ## reg ## _ ## field ## _LENGTH, _v.v);              \
-    _d; })
+#define SHARED_REG_FIELD_DP8(_storage, _field, _val)                       \
+    ({                                                                     \
+        struct {                                                           \
+            unsigned int v : _field##_LENGTH;                              \
+        } _v = { _val };                                                   \
+        uint8_t _d;                                                        \
+        _d = deposit32((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
+        _d;                                                                \
+    })
+#define SHARED_REG_FIELD_DP16(_storage, _field, _val)                      \
+    ({                                                                     \
+        struct {                                                           \
+            unsigned int v : _field##_LENGTH;                              \
+        } _v = { _val };                                                   \
+        uint16_t _d;                                                       \
+        _d = deposit32((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
+        _d;                                                                \
+    })
+#define SHARED_REG_FIELD_DP32(_storage, _field, _val)                      \
+    ({                                                                     \
+        struct {                                                           \
+            unsigned int v : _field##_LENGTH;                              \
+        } _v = { _val };                                                   \
+        uint32_t _d;                                                       \
+        _d = deposit32((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
+        _d;                                                                \
+    })
+#define SHARED_REG_FIELD_DP64(_storage, _field, _val)                      \
+    ({                                                                     \
+        struct {                                                           \
+            uint64_t v : _field##_LENGTH;                                  \
+        } _v = { _val };                                                   \
+        uint64_t _d;                                                       \
+        _d = deposit64((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
+        _d;                                                                \
+    })
 
-/* Deposit a field to array of registers.  */
-#define ARRAY_FIELD_DP32(regs, reg, field, val)                           \
-    (regs)[R_ ## reg] = FIELD_DP32((regs)[R_ ## reg], reg, field, val);
-#define ARRAY_FIELD_DP64(regs, reg, field, val)                           \
-    (regs)[R_ ## reg] = FIELD_DP64((regs)[R_ ## reg], reg, field, val);
+#define SHARED_REG_ARRAY_FIELD_DP32(_regs, _offset, _field, _val) \
+    (_regs)[(_offset)] =                                          \
+        SHARED_REG_FIELD_DP32((_regs)[(_offset)], _field, _val);
+#define SHARED_REG_ARRAY_FIELD_DP64(_regs, _offset, _field, _val) \
+    (_regs)[(_offset)] =                                          \
+        SHARED_REG_FIELD_DP64((_regs)[(_offset)], _field, _val);
 
-
-/*
- * These macros can be used for defining and extracting fields that have the
- * same bit position across multiple registers.
- */
-
-/* Define shared SHIFT, LENGTH, and MASK constants */
-#define SHARED_FIELD(name, shift, length)   \
-    enum { name ## _ ## SHIFT = (shift)};   \
-    enum { name ## _ ## LENGTH = (length)}; \
-    enum { name ## _ ## MASK = MAKE_64BIT_MASK(shift, length)};
-
-/* Extract a shared field */
-#define SHARED_FIELD_EX8(storage, field) \
-    extract8((storage), field ## _SHIFT, field ## _LENGTH)
-
-#define SHARED_FIELD_EX16(storage, field) \
-    extract16((storage), field ## _SHIFT, field ## _LENGTH)
-
-#define SHARED_FIELD_EX32(storage, field) \
-    extract32((storage), field ## _SHIFT, field ## _LENGTH)
-
-#define SHARED_FIELD_EX64(storage, field) \
-    extract64((storage), field ## _SHIFT, field ## _LENGTH)
-
-/* Extract a shared field from a register array */
-#define SHARED_ARRAY_FIELD_EX32(regs, offset, field) \
-    SHARED_FIELD_EX32((regs)[(offset)], field)
-#define SHARED_ARRAY_FIELD_EX64(regs, offset, field) \
-    SHARED_FIELD_EX64((regs)[(offset)], field)
-
-/* Deposit a shared field */
-#define SHARED_FIELD_DP8(storage, field, val) ({                        \
-    struct {                                                            \
-        unsigned int v:field ## _LENGTH;                                \
-    } _v = { .v = val };                                                \
-    uint8_t _d;                                                         \
-    _d = deposit32((storage), field ## _SHIFT, field ## _LENGTH, _v.v); \
-    _d; })
-
-#define SHARED_FIELD_DP16(storage, field, val) ({                       \
-    struct {                                                            \
-        unsigned int v:field ## _LENGTH;                                \
-    } _v = { .v = val };                                                \
-    uint16_t _d;                                                        \
-    _d = deposit32((storage), field ## _SHIFT, field ## _LENGTH, _v.v); \
-    _d; })
-
-#define SHARED_FIELD_DP32(storage, field, val) ({                       \
-    struct {                                                            \
-        unsigned int v:field ## _LENGTH;                                \
-    } _v = { .v = val };                                                \
-    uint32_t _d;                                                        \
-    _d = deposit32((storage), field ## _SHIFT, field ## _LENGTH, _v.v); \
-    _d; })
-
-#define SHARED_FIELD_DP64(storage, field, val) ({                       \
-    struct {                                                            \
-        uint64_t v:field ## _LENGTH;                                    \
-    } _v = { .v = val };                                                \
-    uint64_t _d;                                                        \
-    _d = deposit64((storage), field ## _SHIFT, field ## _LENGTH, _v.v); \
-    _d; })
-
-/* Deposit a shared field to a register array */
-#define SHARED_ARRAY_FIELD_DP32(regs, offset, field, val) \
-    (regs)[(offset)] = SHARED_FIELD_DP32((regs)[(offset)], field, val);
-#define SHARED_ARRAY_FIELD_DP64(regs, offset, field, val) \
-    (regs)[(offset)] = SHARED_FIELD_DP64((regs)[(offset)], field, val);
-
-#endif
+#endif /* HW_REGISTERFIELDS_H */

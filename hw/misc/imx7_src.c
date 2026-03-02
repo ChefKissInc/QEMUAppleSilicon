@@ -184,11 +184,11 @@ static void imx7_src_write(void *opaque, hwaddr offset, uint64_t value,
 
     switch (index) {
     case SRC_A7RCR0:
-        if (FIELD_EX32(change_mask, CORE0, RST)) {
+        if (REG_FIELD_EX32(change_mask, CORE0, RST)) {
             arm_reset_cpu(0);
             imx7_defer_clear_reset_bit(0, s, R_CORE0_RST_SHIFT);
         }
-        if (FIELD_EX32(change_mask, CORE1, RST)) {
+        if (REG_FIELD_EX32(change_mask, CORE1, RST)) {
             arm_reset_cpu(1);
             imx7_defer_clear_reset_bit(1, s, R_CORE1_RST_SHIFT);
         }
@@ -204,8 +204,8 @@ static void imx7_src_write(void *opaque, hwaddr offset, uint64_t value,
          * requested address (we don't want to run the boot ROM code inside
          * QEMU)
          */
-        if (FIELD_EX32(change_mask, CORE1, ENABLE)) {
-            if (FIELD_EX32(current_value, CORE1, ENABLE)) {
+        if (REG_FIELD_EX32(change_mask, CORE1, ENABLE)) {
+            if (REG_FIELD_EX32(current_value, CORE1, ENABLE)) {
                 /* CORE 1 is brought up */
                 arm_set_cpu_on(1, s->regs[SRC_GPR3], s->regs[SRC_GPR4],
                                3, false);

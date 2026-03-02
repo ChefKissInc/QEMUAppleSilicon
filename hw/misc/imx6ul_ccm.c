@@ -305,7 +305,7 @@ static uint64_t imx6ul_analog_get_pll2_clk(IMX6ULCCMState *dev)
 {
     uint64_t freq = imx6ul_analog_get_osc_clk(dev);
 
-    if (FIELD_EX32(dev->analog[CCM_ANALOG_PLL_SYS],
+    if (REG_FIELD_EX32(dev->analog[CCM_ANALOG_PLL_SYS],
                    ANALOG_PLL_SYS, DIV_SELECT)) {
         freq *= 22;
     } else {
@@ -331,7 +331,7 @@ static uint64_t imx6ul_analog_get_pll2_pfd0_clk(IMX6ULCCMState *dev)
     uint64_t freq = 0;
 
     freq = imx6ul_analog_get_pll2_clk(dev) * 18
-           / FIELD_EX32(dev->analog[CCM_ANALOG_PFD_528],
+           / REG_FIELD_EX32(dev->analog[CCM_ANALOG_PFD_528],
                         ANALOG_PFD_528, PFD0_FRAC);
 
     trace_ccm_freq((uint32_t)freq);
@@ -344,7 +344,7 @@ static uint64_t imx6ul_analog_get_pll2_pfd2_clk(IMX6ULCCMState *dev)
     uint64_t freq = 0;
 
     freq = imx6ul_analog_get_pll2_clk(dev) * 18
-           / FIELD_EX32(dev->analog[CCM_ANALOG_PFD_528],
+           / REG_FIELD_EX32(dev->analog[CCM_ANALOG_PFD_528],
                         ANALOG_PFD_528, PFD2_FRAC);
 
     trace_ccm_freq((uint32_t)freq);
@@ -365,7 +365,7 @@ static uint64_t imx6ul_ccm_get_periph_clk2_sel_clk(IMX6ULCCMState *dev)
 {
     uint64_t freq = 0;
 
-    switch (FIELD_EX32(dev->ccm[CCM_CBCMR], CBCMR, PERIPH_CLK2_SEL)) {
+    switch (REG_FIELD_EX32(dev->ccm[CCM_CBCMR], CBCMR, PERIPH_CLK2_SEL)) {
     case 0:
         freq = imx6ul_analog_get_pll3_clk(dev);
         break;
@@ -395,7 +395,7 @@ static uint64_t imx6ul_ccm_get_periph_clk_sel_clk(IMX6ULCCMState *dev)
 {
     uint64_t freq = 0;
 
-    switch (FIELD_EX32(dev->ccm[CCM_CBCMR], CBCMR, PRE_PERIPH_CLK_SEL)) {
+    switch (REG_FIELD_EX32(dev->ccm[CCM_CBCMR], CBCMR, PRE_PERIPH_CLK_SEL)) {
     case 0:
         freq = imx6ul_analog_get_pll2_clk(dev);
         break;
@@ -422,7 +422,7 @@ static uint64_t imx6ul_ccm_get_periph_clk2_clk(IMX6ULCCMState *dev)
     uint64_t freq = 0;
 
     freq = imx6ul_ccm_get_periph_clk2_sel_clk(dev)
-           / (1 + FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, PERIPH_CLK2_PODF));
+           / (1 + REG_FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, PERIPH_CLK2_PODF));
 
     trace_ccm_freq((uint32_t)freq);
 
@@ -433,7 +433,7 @@ static uint64_t imx6ul_ccm_get_periph_sel_clk(IMX6ULCCMState *dev)
 {
     uint64_t freq = 0;
 
-    switch (FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, PERIPH_CLK_SEL)) {
+    switch (REG_FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, PERIPH_CLK_SEL)) {
     case 0:
         freq = imx6ul_ccm_get_periph_clk_sel_clk(dev);
         break;
@@ -454,7 +454,7 @@ static uint64_t imx6ul_ccm_get_ahb_clk(IMX6ULCCMState *dev)
     uint64_t freq = 0;
 
     freq = imx6ul_ccm_get_periph_sel_clk(dev)
-           / (1 + FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, AHB_PODF));
+           / (1 + REG_FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, AHB_PODF));
 
     trace_ccm_freq((uint32_t)freq);
 
@@ -466,7 +466,7 @@ static uint64_t imx6ul_ccm_get_ipg_clk(IMX6ULCCMState *dev)
     uint64_t freq = 0;
 
     freq = imx6ul_ccm_get_ahb_clk(dev)
-           / (1 + FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, IPG_PODF));
+           / (1 + REG_FIELD_EX32(dev->ccm[CCM_CBCDR], CBCDR, IPG_PODF));
 
     trace_ccm_freq((uint32_t)freq);
 
@@ -477,7 +477,7 @@ static uint64_t imx6ul_ccm_get_per_sel_clk(IMX6ULCCMState *dev)
 {
     uint64_t freq = 0;
 
-    switch (FIELD_EX32(dev->ccm[CCM_CSCMR1], CSCMR1, PERCLK_CLK_SEL)) {
+    switch (REG_FIELD_EX32(dev->ccm[CCM_CSCMR1], CSCMR1, PERCLK_CLK_SEL)) {
     case 0:
         freq = imx6ul_ccm_get_ipg_clk(dev);
         break;
@@ -498,7 +498,7 @@ static uint64_t imx6ul_ccm_get_per_clk(IMX6ULCCMState *dev)
     uint64_t freq = 0;
 
     freq = imx6ul_ccm_get_per_sel_clk(dev)
-           / (1 + FIELD_EX32(dev->ccm[CCM_CSCMR1], CSCMR1, PERCLK_PODF));
+           / (1 + REG_FIELD_EX32(dev->ccm[CCM_CSCMR1], CSCMR1, PERCLK_PODF));
 
     trace_ccm_freq((uint32_t)freq);
 

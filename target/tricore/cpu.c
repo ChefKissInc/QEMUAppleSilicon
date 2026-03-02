@@ -51,7 +51,7 @@ static TCGTBCPUState tricore_get_tb_cpu_state(CPUState *cs)
 
     return (TCGTBCPUState){
         .pc = env->PC,
-        .flags = FIELD_DP32(0, TB_FLAGS, PRIV, extract32(env->PSW, 10, 2)),
+        .flags = REG_FIELD_DP32(0, TB_FLAGS, PRIV, extract32(env->PSW, 10, 2)),
     };
 }
 

@@ -39,44 +39,44 @@
 #include "migration/vmstate.h"
 
 REG32(CFG1, 0x0)
-    FIELD(CFG1, RESET, 31, 1)
-    FIELD(CFG1, RX_EN, 2, 1)
-    FIELD(CFG1, TX_EN, 0, 1)
-    FIELD(CFG1, LB_EN, 8, 1)
+    REG_FIELD(CFG1, RESET, 31, 1)
+    REG_FIELD(CFG1, RX_EN, 2, 1)
+    REG_FIELD(CFG1, TX_EN, 0, 1)
+    REG_FIELD(CFG1, LB_EN, 8, 1)
 REG32(CFG2, 0x4)
 REG32(IFG, 0x8)
 REG32(HALF_DUPLEX, 0xc)
 REG32(MAX_FRAME_LENGTH, 0x10)
 REG32(MII_CMD, 0x24)
-    FIELD(MII_CMD, READ, 0, 1)
+    REG_FIELD(MII_CMD, READ, 0, 1)
 REG32(MII_ADDR, 0x28)
-    FIELD(MII_ADDR, REGADDR, 0, 5)
-    FIELD(MII_ADDR, PHYADDR, 8, 5)
+    REG_FIELD(MII_ADDR, REGADDR, 0, 5)
+    REG_FIELD(MII_ADDR, PHYADDR, 8, 5)
 REG32(MII_CTL, 0x2c)
 REG32(MII_STS, 0x30)
 REG32(STA1, 0x40)
 REG32(STA2, 0x44)
 REG32(FIFO_CFG0, 0x48)
 REG32(FIFO_CFG4, 0x58)
-    FIELD(FIFO_CFG4, BCAST, 9, 1)
-    FIELD(FIFO_CFG4, MCAST, 8, 1)
+    REG_FIELD(FIFO_CFG4, BCAST, 9, 1)
+    REG_FIELD(FIFO_CFG4, MCAST, 8, 1)
 REG32(FIFO_CFG5, 0x5C)
-    FIELD(FIFO_CFG5, BCAST, 9, 1)
-    FIELD(FIFO_CFG5, MCAST, 8, 1)
+    REG_FIELD(FIFO_CFG5, BCAST, 9, 1)
+    REG_FIELD(FIFO_CFG5, MCAST, 8, 1)
 REG32(DMA_TX_CTL, 0x180)
-    FIELD(DMA_TX_CTL, EN, 0, 1)
+    REG_FIELD(DMA_TX_CTL, EN, 0, 1)
 REG32(DMA_TX_DESC, 0x184)
 REG32(DMA_TX_STATUS, 0x188)
-    FIELD(DMA_TX_STATUS, PKTCNT, 16, 8)
-    FIELD(DMA_TX_STATUS, UNDERRUN, 1, 1)
-    FIELD(DMA_TX_STATUS, PKT_SENT, 0, 1)
+    REG_FIELD(DMA_TX_STATUS, PKTCNT, 16, 8)
+    REG_FIELD(DMA_TX_STATUS, UNDERRUN, 1, 1)
+    REG_FIELD(DMA_TX_STATUS, PKT_SENT, 0, 1)
 REG32(DMA_RX_CTL, 0x18c)
-    FIELD(DMA_RX_CTL, EN, 0, 1)
+    REG_FIELD(DMA_RX_CTL, EN, 0, 1)
 REG32(DMA_RX_DESC, 0x190)
 REG32(DMA_RX_STATUS, 0x194)
-    FIELD(DMA_RX_STATUS, PKTCNT, 16, 8)
-    FIELD(DMA_RX_STATUS, OVERFLOW, 2, 1)
-    FIELD(DMA_RX_STATUS, PKT_RCVD, 0, 1)
+    REG_FIELD(DMA_RX_STATUS, PKTCNT, 16, 8)
+    REG_FIELD(DMA_RX_STATUS, OVERFLOW, 2, 1)
+    REG_FIELD(DMA_RX_STATUS, PKT_RCVD, 0, 1)
 REG32(DMA_IRQ_MASK, 0x198)
 REG32(DMA_IRQ, 0x19c)
 
@@ -168,9 +168,9 @@ static void msf2_dma_tx(MSF2EmacState *s)
         emac_store_desc(s, &d, desc);
         /* update sent packets count */
         status = s->regs[R_DMA_TX_STATUS];
-        pktcnt = FIELD_EX32(status, DMA_TX_STATUS, PKTCNT);
+        pktcnt = REG_FIELD_EX32(status, DMA_TX_STATUS, PKTCNT);
         pktcnt++;
-        s->regs[R_DMA_TX_STATUS] = FIELD_DP32(status, DMA_TX_STATUS,
+        s->regs[R_DMA_TX_STATUS] = REG_FIELD_DP32(status, DMA_TX_STATUS,
                                               PKTCNT, pktcnt);
         s->regs[R_DMA_TX_STATUS] |= R_DMA_TX_STATUS_PKT_SENT_MASK;
         desc = d.next;
@@ -344,9 +344,9 @@ static void emac_write(void *opaque, hwaddr addr, uint64_t val64,
             s->regs[addr] &= ~R_DMA_TX_STATUS_UNDERRUN_MASK;
         }
         if (value & R_DMA_TX_STATUS_PKT_SENT_MASK) {
-            pktcnt = FIELD_EX32(s->regs[addr], DMA_TX_STATUS, PKTCNT);
+            pktcnt = REG_FIELD_EX32(s->regs[addr], DMA_TX_STATUS, PKTCNT);
             pktcnt--;
-            s->regs[addr] = FIELD_DP32(s->regs[addr], DMA_TX_STATUS,
+            s->regs[addr] = REG_FIELD_DP32(s->regs[addr], DMA_TX_STATUS,
                                        PKTCNT, pktcnt);
             if (pktcnt == 0) {
                 s->regs[addr] &= ~R_DMA_TX_STATUS_PKT_SENT_MASK;
@@ -358,9 +358,9 @@ static void emac_write(void *opaque, hwaddr addr, uint64_t val64,
             s->regs[addr] &= ~R_DMA_RX_STATUS_OVERFLOW_MASK;
         }
         if (value & R_DMA_RX_STATUS_PKT_RCVD_MASK) {
-            pktcnt = FIELD_EX32(s->regs[addr], DMA_RX_STATUS, PKTCNT);
+            pktcnt = REG_FIELD_EX32(s->regs[addr], DMA_RX_STATUS, PKTCNT);
             pktcnt--;
-            s->regs[addr] = FIELD_DP32(s->regs[addr], DMA_RX_STATUS,
+            s->regs[addr] = REG_FIELD_DP32(s->regs[addr], DMA_RX_STATUS,
                                        PKTCNT, pktcnt);
             if (pktcnt == 0) {
                 s->regs[addr] &= ~R_DMA_RX_STATUS_PKT_RCVD_MASK;
@@ -481,9 +481,9 @@ static ssize_t emac_rx(NetClientState *nc, const uint8_t *buf, size_t size)
         emac_store_desc(s, &d, s->rx_desc);
         /* update received packets count */
         status = s->regs[R_DMA_RX_STATUS];
-        pktcnt = FIELD_EX32(status, DMA_RX_STATUS, PKTCNT);
+        pktcnt = REG_FIELD_EX32(status, DMA_RX_STATUS, PKTCNT);
         pktcnt++;
-        s->regs[R_DMA_RX_STATUS] = FIELD_DP32(status, DMA_RX_STATUS,
+        s->regs[R_DMA_RX_STATUS] = REG_FIELD_DP32(status, DMA_RX_STATUS,
                                               PKTCNT, pktcnt);
         s->regs[R_DMA_RX_STATUS] |= R_DMA_RX_STATUS_PKT_RCVD_MASK;
         s->rx_desc = d.next;

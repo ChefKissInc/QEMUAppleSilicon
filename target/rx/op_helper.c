@@ -62,9 +62,9 @@ uint32_t helper_pack_psw(CPURXState *env)
 
 #define SET_FPSW(b)                                             \
     do {                                                        \
-        env->fpsw = FIELD_DP32(env->fpsw, FPSW, C ## b, 1);     \
-        if (!FIELD_EX32(env->fpsw, FPSW, E ## b)) {             \
-            env->fpsw = FIELD_DP32(env->fpsw, FPSW, F ## b, 1); \
+        env->fpsw = REG_FIELD_DP32(env->fpsw, FPSW, C ## b, 1);     \
+        if (!REG_FIELD_EX32(env->fpsw, FPSW, E ## b)) {             \
+            env->fpsw = REG_FIELD_DP32(env->fpsw, FPSW, F ## b, 1); \
         }                                                       \
     } while (0)
 
@@ -79,7 +79,7 @@ static void update_fpsw(CPURXState *env, float32 ret, uintptr_t retaddr)
     xcpt = get_float_exception_flags(&env->fp_status);
 
     /* Clear the cause entries */
-    env->fpsw = FIELD_DP32(env->fpsw, FPSW, CAUSE, 0);
+    env->fpsw = REG_FIELD_DP32(env->fpsw, FPSW, CAUSE, 0);
 
     /* set FPSW */
     if (unlikely(xcpt)) {
@@ -100,18 +100,18 @@ static void update_fpsw(CPURXState *env, float32 ret, uintptr_t retaddr)
         }
         if ((xcpt & (float_flag_input_denormal_flushed
                      | float_flag_output_denormal_flushed))
-            && !FIELD_EX32(env->fpsw, FPSW, DN)) {
-            env->fpsw = FIELD_DP32(env->fpsw, FPSW, CE, 1);
+            && !REG_FIELD_EX32(env->fpsw, FPSW, DN)) {
+            env->fpsw = REG_FIELD_DP32(env->fpsw, FPSW, CE, 1);
         }
 
         /* update FPSW_FLAG_S */
-        if (FIELD_EX32(env->fpsw, FPSW, FLAGS) != 0) {
-            env->fpsw = FIELD_DP32(env->fpsw, FPSW, FS, 1);
+        if (REG_FIELD_EX32(env->fpsw, FPSW, FLAGS) != 0) {
+            env->fpsw = REG_FIELD_DP32(env->fpsw, FPSW, FS, 1);
         }
 
         /* Generate an exception if enabled */
-        cause = FIELD_EX32(env->fpsw, FPSW, CAUSE);
-        enable = FIELD_EX32(env->fpsw, FPSW, ENABLE);
+        cause = REG_FIELD_EX32(env->fpsw, FPSW, CAUSE);
+        enable = REG_FIELD_EX32(env->fpsw, FPSW, ENABLE);
         enable |= 1 << 5; /* CE always enabled */
         if (cause & enable) {
             raise_exception(env, 21, retaddr);
@@ -131,9 +131,9 @@ void helper_set_fpsw(CPURXState *env, uint32_t val)
     fpsw |= 0x7fffff03;
     val &= ~0x80000000;
     fpsw &= val;
-    FIELD_DP32(fpsw, FPSW, FS, FIELD_EX32(fpsw, FPSW, FLAGS) != 0);
+    REG_FIELD_DP32(fpsw, FPSW, FS, REG_FIELD_EX32(fpsw, FPSW, FLAGS) != 0);
     env->fpsw = fpsw;
-    set_float_rounding_mode(roundmode[FIELD_EX32(env->fpsw, FPSW, RM)],
+    set_float_rounding_mode(roundmode[REG_FIELD_EX32(env->fpsw, FPSW, RM)],
                             &env->fp_status);
 }
 

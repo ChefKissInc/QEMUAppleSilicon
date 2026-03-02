@@ -127,12 +127,12 @@ static const VMStateDescription vmstate_smc91c111 = {
 #define RS_TOOSHORT     0x0400
 #define RS_MULTICAST    0x0001
 
-FIELD(PTR, PTR, 0, 11)
-FIELD(PTR, NOT_EMPTY, 11, 1)
-FIELD(PTR, RESERVED, 12, 1)
-FIELD(PTR, READ, 13, 1)
-FIELD(PTR, AUTOINCR, 14, 1)
-FIELD(PTR, RCV, 15, 1)
+REG_FIELD(PTR, PTR, 0, 11)
+REG_FIELD(PTR, NOT_EMPTY, 11, 1)
+REG_FIELD(PTR, RESERVED, 12, 1)
+REG_FIELD(PTR, READ, 13, 1)
+REG_FIELD(PTR, AUTOINCR, 14, 1)
+REG_FIELD(PTR, RCV, 15, 1)
 
 static inline bool packetnum_valid(int packet_num)
 {
@@ -407,8 +407,8 @@ static int data_reg_ptr(smc91c111_state *s, int offset)
          * Autoincrement: use the current pointer value, and
          * increment the pointer register's pointer field.
          */
-        p = FIELD_EX32(s->ptr, PTR, PTR);
-        s->ptr = FIELD_DP32(s->ptr, PTR, PTR, ptr_reg_add(s, 1));
+        p = REG_FIELD_EX32(s->ptr, PTR, PTR);
+        s->ptr = REG_FIELD_DP32(s->ptr, PTR, PTR, ptr_reg_add(s, 1));
     } else {
         /*
          * No autoincrement: register offset determines which

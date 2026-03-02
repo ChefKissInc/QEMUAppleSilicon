@@ -52,12 +52,12 @@ void loongarch_constant_timer_cb(void *opaque)
     CPULoongArchState *env = &cpu->env;
     uint64_t now, next;
 
-    if (FIELD_EX64(env->CSR_TCFG, CSR_TCFG, PERIODIC)) {
+    if (REG_FIELD_EX64(env->CSR_TCFG, CSR_TCFG, PERIODIC)) {
         now = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
         next = now + (env->CSR_TCFG & CONSTANT_TIMER_TICK_MASK) * TIMER_PERIOD;
         timer_mod(&cpu->timer, next);
     } else {
-        env->CSR_TCFG = FIELD_DP64(env->CSR_TCFG, CSR_TCFG, EN, 0);
+        env->CSR_TCFG = REG_FIELD_DP64(env->CSR_TCFG, CSR_TCFG, EN, 0);
     }
 
     loongarch_cpu_set_irq(opaque, IRQ_TIMER, 1);

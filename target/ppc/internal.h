@@ -296,16 +296,16 @@ void powerpc_excp(PowerPCCPU *cpu, int excp);
 
 #endif /* !CONFIG_USER_ONLY */
 
-FIELD(GER_MSK, XMSK, 0, 4)
-FIELD(GER_MSK, YMSK, 4, 4)
-FIELD(GER_MSK, PMSK, 8, 8)
+REG_FIELD(GER_MSK, XMSK, 0, 4)
+REG_FIELD(GER_MSK, YMSK, 4, 4)
+REG_FIELD(GER_MSK, PMSK, 8, 8)
 
 static inline int ger_pack_masks(int pmsk, int ymsk, int xmsk)
 {
     int msk = 0;
-    msk = FIELD_DP32(msk, GER_MSK, XMSK, xmsk);
-    msk = FIELD_DP32(msk, GER_MSK, YMSK, ymsk);
-    msk = FIELD_DP32(msk, GER_MSK, PMSK, pmsk);
+    msk = REG_FIELD_DP32(msk, GER_MSK, XMSK, xmsk);
+    msk = REG_FIELD_DP32(msk, GER_MSK, YMSK, ymsk);
+    msk = REG_FIELD_DP32(msk, GER_MSK, PMSK, pmsk);
     return msk;
 }
 

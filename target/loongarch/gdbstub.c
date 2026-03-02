@@ -178,17 +178,17 @@ void loongarch_cpu_register_gdb_regs_for_features(CPUState *cs)
     LoongArchCPU *cpu = LOONGARCH_CPU(cs);
     CPULoongArchState *env = &cpu->env;
 
-    if (FIELD_EX32(env->cpucfg[2], CPUCFG2, FP)) {
+    if (REG_FIELD_EX32(env->cpucfg[2], CPUCFG2, FP)) {
         gdb_register_coprocessor(cs, loongarch_gdb_get_fpu, loongarch_gdb_set_fpu,
                                  gdb_find_static_feature("loongarch-fpu.xml"), 0);
     }
 
-    if (FIELD_EX32(env->cpucfg[2], CPUCFG2, LSX)) {
+    if (REG_FIELD_EX32(env->cpucfg[2], CPUCFG2, LSX)) {
         gdb_register_coprocessor(cs, loongarch_gdb_get_lsx, loongarch_gdb_set_lsx,
                                  gdb_find_static_feature("loongarch-lsx.xml"), 0);
     }
 
-    if (FIELD_EX32(env->cpucfg[2], CPUCFG2, LASX)) {
+    if (REG_FIELD_EX32(env->cpucfg[2], CPUCFG2, LASX)) {
         gdb_register_coprocessor(cs, loongarch_gdb_get_lasx, loongarch_gdb_set_lasx,
                                  gdb_find_static_feature("loongarch-lasx.xml"), 0);
     }

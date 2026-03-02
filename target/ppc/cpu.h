@@ -468,62 +468,62 @@ typedef enum {
 #define MSR_RI   PPC_BIT_NR(62) /* Recoverable interrupt            1        */
 #define MSR_LE   PPC_BIT_NR(63) /* Little-endian mode               1 hflags */
 
-FIELD(MSR, SF, MSR_SF, 1)
-FIELD(MSR, TAG, MSR_TAG, 1)
-FIELD(MSR, ISF, MSR_ISF, 1)
+REG_FIELD(MSR, SF, MSR_SF, 1)
+REG_FIELD(MSR, TAG, MSR_TAG, 1)
+REG_FIELD(MSR, ISF, MSR_ISF, 1)
 #if defined(TARGET_PPC64)
-FIELD(MSR, HV, MSR_HV, 1)
+REG_FIELD(MSR, HV, MSR_HV, 1)
 #define FIELD_EX64_HV(storage) FIELD_EX64(storage, MSR, HV)
 #else
 #define FIELD_EX64_HV(storage) 0
 #endif
-FIELD(MSR, TS0, MSR_TS0, 1)
-FIELD(MSR, TS1, MSR_TS1, 1)
-FIELD(MSR, TS, MSR_TS0, 2)
-FIELD(MSR, TM, MSR_TM, 1)
-FIELD(MSR, CM, MSR_CM, 1)
-FIELD(MSR, ICM, MSR_ICM, 1)
-FIELD(MSR, GS, MSR_GS, 1)
-FIELD(MSR, UCLE, MSR_UCLE, 1)
-FIELD(MSR, VR, MSR_VR, 1)
-FIELD(MSR, SPE, MSR_SPE, 1)
-FIELD(MSR, VSX, MSR_VSX, 1)
-FIELD(MSR, S, MSR_S, 1)
-FIELD(MSR, KEY, MSR_KEY, 1)
-FIELD(MSR, POW, MSR_POW, 1)
-FIELD(MSR, WE, MSR_WE, 1)
-FIELD(MSR, TGPR, MSR_TGPR, 1)
-FIELD(MSR, CE, MSR_CE, 1)
-FIELD(MSR, ILE, MSR_ILE, 1)
-FIELD(MSR, EE, MSR_EE, 1)
-FIELD(MSR, PR, MSR_PR, 1)
-FIELD(MSR, FP, MSR_FP, 1)
-FIELD(MSR, ME, MSR_ME, 1)
-FIELD(MSR, FE0, MSR_FE0, 1)
-FIELD(MSR, SE, MSR_SE, 1)
-FIELD(MSR, DWE, MSR_DWE, 1)
-FIELD(MSR, UBLE, MSR_UBLE, 1)
-FIELD(MSR, BE, MSR_BE, 1)
-FIELD(MSR, DE, MSR_DE, 1)
-FIELD(MSR, FE1, MSR_FE1, 1)
-FIELD(MSR, AL, MSR_AL, 1)
-FIELD(MSR, EP, MSR_EP, 1)
-FIELD(MSR, IR, MSR_IR, 1)
-FIELD(MSR, DR, MSR_DR, 1)
-FIELD(MSR, IS, MSR_IS, 1)
-FIELD(MSR, DS, MSR_DS, 1)
-FIELD(MSR, PE, MSR_PE, 1)
-FIELD(MSR, PX, MSR_PX, 1)
-FIELD(MSR, PMM, MSR_PMM, 1)
-FIELD(MSR, RI, MSR_RI, 1)
-FIELD(MSR, LE, MSR_LE, 1)
+REG_FIELD(MSR, TS0, MSR_TS0, 1)
+REG_FIELD(MSR, TS1, MSR_TS1, 1)
+REG_FIELD(MSR, TS, MSR_TS0, 2)
+REG_FIELD(MSR, TM, MSR_TM, 1)
+REG_FIELD(MSR, CM, MSR_CM, 1)
+REG_FIELD(MSR, ICM, MSR_ICM, 1)
+REG_FIELD(MSR, GS, MSR_GS, 1)
+REG_FIELD(MSR, UCLE, MSR_UCLE, 1)
+REG_FIELD(MSR, VR, MSR_VR, 1)
+REG_FIELD(MSR, SPE, MSR_SPE, 1)
+REG_FIELD(MSR, VSX, MSR_VSX, 1)
+REG_FIELD(MSR, S, MSR_S, 1)
+REG_FIELD(MSR, KEY, MSR_KEY, 1)
+REG_FIELD(MSR, POW, MSR_POW, 1)
+REG_FIELD(MSR, WE, MSR_WE, 1)
+REG_FIELD(MSR, TGPR, MSR_TGPR, 1)
+REG_FIELD(MSR, CE, MSR_CE, 1)
+REG_FIELD(MSR, ILE, MSR_ILE, 1)
+REG_FIELD(MSR, EE, MSR_EE, 1)
+REG_FIELD(MSR, PR, MSR_PR, 1)
+REG_FIELD(MSR, FP, MSR_FP, 1)
+REG_FIELD(MSR, ME, MSR_ME, 1)
+REG_FIELD(MSR, FE0, MSR_FE0, 1)
+REG_FIELD(MSR, SE, MSR_SE, 1)
+REG_FIELD(MSR, DWE, MSR_DWE, 1)
+REG_FIELD(MSR, UBLE, MSR_UBLE, 1)
+REG_FIELD(MSR, BE, MSR_BE, 1)
+REG_FIELD(MSR, DE, MSR_DE, 1)
+REG_FIELD(MSR, FE1, MSR_FE1, 1)
+REG_FIELD(MSR, AL, MSR_AL, 1)
+REG_FIELD(MSR, EP, MSR_EP, 1)
+REG_FIELD(MSR, IR, MSR_IR, 1)
+REG_FIELD(MSR, DR, MSR_DR, 1)
+REG_FIELD(MSR, IS, MSR_IS, 1)
+REG_FIELD(MSR, DS, MSR_DS, 1)
+REG_FIELD(MSR, PE, MSR_PE, 1)
+REG_FIELD(MSR, PX, MSR_PX, 1)
+REG_FIELD(MSR, PMM, MSR_PMM, 1)
+REG_FIELD(MSR, RI, MSR_RI, 1)
+REG_FIELD(MSR, LE, MSR_LE, 1)
 
 /*
  * FE0 and FE1 bits are not side-by-side
- * so we can't combine them using FIELD()
+ * so we can't combine them using REG_FIELD()
  */
 #define FIELD_EX64_FE(msr) \
-    ((FIELD_EX64(msr, MSR, FE0) << 1) | FIELD_EX64(msr, MSR, FE1))
+    ((REG_FIELD_EX64(msr, MSR, FE0) << 1) | REG_FIELD_EX64(msr, MSR, FE1))
 
 /* PMU bits */
 #define MMCR0_FC     PPC_BIT(32)         /* Freeze Counters  */
@@ -865,7 +865,7 @@ enum {
                       (1 << FPSCR_VXSOFT) | (1 << FPSCR_VXSQRT) | \
                       (1 << FPSCR_VXCVI))
 
-FIELD(FPSCR, FI, FPSCR_FI, 1)
+REG_FIELD(FPSCR, FI, FPSCR_FI, 1)
 
 #define FP_DRN2         (1ull << FPSCR_DRN2)
 #define FP_DRN1         (1ull << FPSCR_DRN1)
@@ -1190,10 +1190,10 @@ struct ppc_radix_page_info {
 /* Dynamic Execution Control Register */
 
 #define DEXCR_ASPECT(name, num)                    \
-FIELD(DEXCR, PNH_##name, PPC_BIT_NR(num), 1)       \
-FIELD(DEXCR, PRO_##name, PPC_BIT_NR(num + 32), 1)  \
-FIELD(HDEXCR, HNU_##name, PPC_BIT_NR(num), 1)      \
-FIELD(HDEXCR, ENF_##name, PPC_BIT_NR(num + 32), 1) \
+REG_FIELD(DEXCR, PNH_##name, PPC_BIT_NR(num), 1)       \
+REG_FIELD(DEXCR, PRO_##name, PPC_BIT_NR(num + 32), 1)  \
+REG_FIELD(HDEXCR, HNU_##name, PPC_BIT_NR(num), 1)      \
+REG_FIELD(HDEXCR, ENF_##name, PPC_BIT_NR(num + 32), 1) \
 
 DEXCR_ASPECT(SBHE, 0)
 DEXCR_ASPECT(IBRTPD, 1)
@@ -3000,7 +3000,7 @@ static inline bool ppc_interrupts_little_endian(PowerPCCPU *cpu, bool hv)
     } else if (pcc->lpcr_mask & LPCR_ILE) {
         ile = !!(env->spr[SPR_LPCR] & LPCR_ILE);
     } else {
-        ile = FIELD_EX64(env->msr, MSR, ILE);
+        ile = REG_FIELD_EX64(env->msr, MSR, ILE);
     }
 
     return ile;

@@ -261,42 +261,42 @@ static void smmuv3_init_regs(SMMUv3State *s)
 {
     /* Based on sys property, the stages supported in smmu will be advertised.*/
     if (s->stage && !strcmp("2", s->stage)) {
-        s->idr[0] = FIELD_DP32(s->idr[0], IDR0, S2P, 1);
+        s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, S2P, 1);
     } else if (s->stage && !strcmp("nested", s->stage)) {
-        s->idr[0] = FIELD_DP32(s->idr[0], IDR0, S1P, 1);
-        s->idr[0] = FIELD_DP32(s->idr[0], IDR0, S2P, 1);
+        s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, S1P, 1);
+        s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, S2P, 1);
     } else {
-        s->idr[0] = FIELD_DP32(s->idr[0], IDR0, S1P, 1);
+        s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, S1P, 1);
     }
 
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, TTF, 2); /* AArch64 PTW only */
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, COHACC, 1); /* IO coherent */
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, ASID16, 1); /* 16-bit ASID */
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, VMID16, 1); /* 16-bit VMID */
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, TTENDIAN, 2); /* little endian */
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, STALL_MODEL, 1); /* No stall */
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, TTF, 2); /* AArch64 PTW only */
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, COHACC, 1); /* IO coherent */
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, ASID16, 1); /* 16-bit ASID */
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, VMID16, 1); /* 16-bit VMID */
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, TTENDIAN, 2); /* little endian */
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, STALL_MODEL, 1); /* No stall */
     /* terminated transaction will always be aborted/error returned */
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, TERM_MODEL, 1);
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, TERM_MODEL, 1);
     /* 2-level stream table supported */
-    s->idr[0] = FIELD_DP32(s->idr[0], IDR0, STLEVEL, 1);
+    s->idr[0] = REG_FIELD_DP32(s->idr[0], IDR0, STLEVEL, 1);
 
-    s->idr[1] = FIELD_DP32(s->idr[1], IDR1, SIDSIZE, SMMU_IDR1_SIDSIZE);
-    s->idr[1] = FIELD_DP32(s->idr[1], IDR1, EVENTQS, SMMU_EVENTQS);
-    s->idr[1] = FIELD_DP32(s->idr[1], IDR1, CMDQS,   SMMU_CMDQS);
+    s->idr[1] = REG_FIELD_DP32(s->idr[1], IDR1, SIDSIZE, SMMU_IDR1_SIDSIZE);
+    s->idr[1] = REG_FIELD_DP32(s->idr[1], IDR1, EVENTQS, SMMU_EVENTQS);
+    s->idr[1] = REG_FIELD_DP32(s->idr[1], IDR1, CMDQS,   SMMU_CMDQS);
 
-    s->idr[3] = FIELD_DP32(s->idr[3], IDR3, HAD, 1);
-    if (FIELD_EX32(s->idr[0], IDR0, S2P)) {
+    s->idr[3] = REG_FIELD_DP32(s->idr[3], IDR3, HAD, 1);
+    if (REG_FIELD_EX32(s->idr[0], IDR0, S2P)) {
         /* XNX is a stage-2-specific feature */
-        s->idr[3] = FIELD_DP32(s->idr[3], IDR3, XNX, 1);
+        s->idr[3] = REG_FIELD_DP32(s->idr[3], IDR3, XNX, 1);
     }
-    s->idr[3] = FIELD_DP32(s->idr[3], IDR3, RIL, 1);
-    s->idr[3] = FIELD_DP32(s->idr[3], IDR3, BBML, 2);
+    s->idr[3] = REG_FIELD_DP32(s->idr[3], IDR3, RIL, 1);
+    s->idr[3] = REG_FIELD_DP32(s->idr[3], IDR3, BBML, 2);
 
-    s->idr[5] = FIELD_DP32(s->idr[5], IDR5, OAS, SMMU_IDR5_OAS); /* 44 bits */
+    s->idr[5] = REG_FIELD_DP32(s->idr[5], IDR5, OAS, SMMU_IDR5_OAS); /* 44 bits */
     /* 4K, 16K and 64K granule support */
-    s->idr[5] = FIELD_DP32(s->idr[5], IDR5, GRAN4K, 1);
-    s->idr[5] = FIELD_DP32(s->idr[5], IDR5, GRAN16K, 1);
-    s->idr[5] = FIELD_DP32(s->idr[5], IDR5, GRAN64K, 1);
+    s->idr[5] = REG_FIELD_DP32(s->idr[5], IDR5, GRAN4K, 1);
+    s->idr[5] = REG_FIELD_DP32(s->idr[5], IDR5, GRAN16K, 1);
+    s->idr[5] = REG_FIELD_DP32(s->idr[5], IDR5, GRAN64K, 1);
 
     s->cmdq.base = deposit64(s->cmdq.base, 0, 5, SMMU_CMDQS);
     s->cmdq.prod = 0;
@@ -430,7 +430,7 @@ static bool s2_pgtable_config_valid(uint8_t sl0, uint8_t t0sz, uint8_t gran)
 static int decode_ste_s2_cfg(SMMUv3State *s, SMMUTransCfg *cfg,
                              STE *ste)
 {
-    uint8_t oas = FIELD_EX32(s->idr[5], IDR5, OAS);
+    uint8_t oas = REG_FIELD_EX32(s->idr[5], IDR5, OAS);
 
     if (STE_S2AA64(ste) == 0x0) {
         qemu_log_mask(LOG_UNIMP,
@@ -548,7 +548,7 @@ static int decode_ste(SMMUv3State *s, SMMUTransCfg *cfg,
                       STE *ste, SMMUEventInfo *event)
 {
     uint32_t config;
-    uint8_t oas = FIELD_EX32(s->idr[5], IDR5, OAS);
+    uint8_t oas = REG_FIELD_EX32(s->idr[5], IDR5, OAS);
     int ret;
 
     if (!STE_VALID(ste)) {
@@ -638,7 +638,7 @@ static int smmu_find_ste(SMMUv3State *s, uint32_t sid, STE *ste,
     int ret;
 
     trace_smmuv3_find_ste(sid, s->features, s->sid_split);
-    log2size = FIELD_EX32(s->strtab_base_cfg, STRTAB_BASE_CFG, LOG2SIZE);
+    log2size = REG_FIELD_EX32(s->strtab_base_cfg, STRTAB_BASE_CFG, LOG2SIZE);
     /*
      * Check SID range against both guest-configured and implementation limits
      */
@@ -719,7 +719,7 @@ static int decode_cd(SMMUv3State *s, SMMUTransCfg *cfg,
     int i;
     SMMUTranslationStatus status;
     SMMUTLBEntry *entry;
-    uint8_t oas = FIELD_EX32(s->idr[5], IDR5, OAS);
+    uint8_t oas = REG_FIELD_EX32(s->idr[5], IDR5, OAS);
 
     if (!CD_VALID(cd) || !CD_AARCH64(cd)) {
         goto bad_cd;
@@ -1058,7 +1058,7 @@ static IOMMUTLBEntry smmuv3_translate(IOMMUMemoryRegion *mr, hwaddr addr,
     qemu_mutex_lock(&s->mutex);
 
     if (!smmu_enabled(s)) {
-        if (FIELD_EX32(s->gbpa, GBPA, ABORT)) {
+        if (REG_FIELD_EX32(s->gbpa, GBPA, ABORT)) {
             status = SMMU_TRANS_ABORT;
         } else {
             status = SMMU_TRANS_DISABLE;
@@ -1302,7 +1302,7 @@ static int smmuv3_cmdq_consume(SMMUv3State *s)
         trace_smmuv3_cmdq_consume(Q_PROD(q), Q_CONS(q),
                                   Q_PROD_WRAP(q), Q_CONS_WRAP(q));
 
-        if (FIELD_EX32(pending, GERROR, CMDQ_ERR)) {
+        if (REG_FIELD_EX32(pending, GERROR, CMDQ_ERR)) {
             break;
         }
 
@@ -1600,8 +1600,8 @@ static MemTxResult smmu_writel(SMMUv3State *s, hwaddr offset,
         return MEMTX_OK;
     case A_STRTAB_BASE_CFG:
         s->strtab_base_cfg = data;
-        if (FIELD_EX32(data, STRTAB_BASE_CFG, FMT) == 1) {
-            s->sid_split = FIELD_EX32(data, STRTAB_BASE_CFG, SPLIT);
+        if (REG_FIELD_EX32(data, STRTAB_BASE_CFG, FMT) == 1) {
+            s->sid_split = REG_FIELD_EX32(data, STRTAB_BASE_CFG, SPLIT);
             s->features |= SMMU_FEATURE_2LVL_STE;
         }
         return MEMTX_OK;

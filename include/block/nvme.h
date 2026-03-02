@@ -1798,9 +1798,9 @@ typedef struct QEMU_PACKED NvmeFdpConfsHdr {
 } NvmeFdpConfsHdr;
 
 REG8(FDPA, 0x0)
-    FIELD(FDPA, RGIF, 0, 4)
-    FIELD(FDPA, VWC, 4, 1)
-    FIELD(FDPA, VALID, 7, 1);
+    REG_FIELD(FDPA, RGIF, 0, 4)
+    REG_FIELD(FDPA, VWC, 4, 1)
+    REG_FIELD(FDPA, VALID, 7, 1);
 
 typedef struct QEMU_PACKED NvmeFdpDescrHdr {
     uint16_t descr_size;
@@ -1893,8 +1893,8 @@ typedef struct QEMU_PACKED NvmePhidDescr {
 } NvmePhidDescr;
 
 REG32(FEAT_FDP, 0x0)
-    FIELD(FEAT_FDP, FDPE, 0, 1)
-    FIELD(FEAT_FDP, CONF_NDX, 8, 8);
+    REG_FIELD(FEAT_FDP, FDPE, 0, 1)
+    REG_FIELD(FEAT_FDP, CONF_NDX, 8, 8);
 
 typedef struct QEMU_PACKED NvmeFdpEventDescr {
     uint8_t evt;
@@ -1902,8 +1902,8 @@ typedef struct QEMU_PACKED NvmeFdpEventDescr {
 } NvmeFdpEventDescr;
 
 REG32(NVME_IOMR, 0x0)
-    FIELD(NVME_IOMR, MO, 0, 8)
-    FIELD(NVME_IOMR, MOS, 16, 16);
+    REG_FIELD(NVME_IOMR, MO, 0, 8)
+    REG_FIELD(NVME_IOMR, MOS, 16, 16);
 
 enum NvmeIomr2Mo {
     NVME_IOMR_MO_NOP = 0x0,
@@ -1925,8 +1925,8 @@ typedef struct QEMU_PACKED NvmeRuhStatusDescr {
 } NvmeRuhStatusDescr;
 
 REG32(NVME_IOMS, 0x0)
-    FIELD(NVME_IOMS, MO, 0, 8)
-    FIELD(NVME_IOMS, MOS, 16, 16);
+    REG_FIELD(NVME_IOMS, MO, 0, 8)
+    REG_FIELD(NVME_IOMS, MOS, 16, 16);
 
 enum NvmeIoms2Mo {
     NVME_IOMS_MO_NOP = 0x0,

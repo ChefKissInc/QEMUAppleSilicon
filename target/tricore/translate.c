@@ -8352,7 +8352,7 @@ static void tricore_tr_init_disas_context(DisasContextBase *dcbase,
     ctx->mem_idx = cpu_mmu_index(cs, false);
 
     uint32_t tb_flags = (uint32_t)ctx->base.tb->flags;
-    ctx->priv = FIELD_EX32(tb_flags, TB_FLAGS, PRIV);
+    ctx->priv = REG_FIELD_EX32(tb_flags, TB_FLAGS, PRIV);
 
     ctx->features = env->features;
     if (has_feature(ctx, TRICORE_FEATURE_161)) {

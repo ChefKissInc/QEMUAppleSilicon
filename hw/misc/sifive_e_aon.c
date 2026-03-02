@@ -28,18 +28,18 @@
 #include "hw/qdev-properties.h"
 
 REG32(AON_WDT_WDOGCFG, 0x0)
-    FIELD(AON_WDT_WDOGCFG, SCALE, 0, 4)
-    FIELD(AON_WDT_WDOGCFG, RSVD0, 4, 4)
-    FIELD(AON_WDT_WDOGCFG, RSTEN, 8, 1)
-    FIELD(AON_WDT_WDOGCFG, ZEROCMP, 9, 1)
-    FIELD(AON_WDT_WDOGCFG, RSVD1, 10, 2)
-    FIELD(AON_WDT_WDOGCFG, EN_ALWAYS, 12, 1)
-    FIELD(AON_WDT_WDOGCFG, EN_CORE_AWAKE, 13, 1)
-    FIELD(AON_WDT_WDOGCFG, RSVD2, 14, 14)
-    FIELD(AON_WDT_WDOGCFG, IP0, 28, 1)
-    FIELD(AON_WDT_WDOGCFG, RSVD3, 29, 3)
+    REG_FIELD(AON_WDT_WDOGCFG, SCALE, 0, 4)
+    REG_FIELD(AON_WDT_WDOGCFG, RSVD0, 4, 4)
+    REG_FIELD(AON_WDT_WDOGCFG, RSTEN, 8, 1)
+    REG_FIELD(AON_WDT_WDOGCFG, ZEROCMP, 9, 1)
+    REG_FIELD(AON_WDT_WDOGCFG, RSVD1, 10, 2)
+    REG_FIELD(AON_WDT_WDOGCFG, EN_ALWAYS, 12, 1)
+    REG_FIELD(AON_WDT_WDOGCFG, EN_CORE_AWAKE, 13, 1)
+    REG_FIELD(AON_WDT_WDOGCFG, RSVD2, 14, 14)
+    REG_FIELD(AON_WDT_WDOGCFG, IP0, 28, 1)
+    REG_FIELD(AON_WDT_WDOGCFG, RSVD3, 29, 3)
 REG32(AON_WDT_WDOGCOUNT, 0x8)
-    FIELD(AON_WDT_WDOGCOUNT, VALUE, 0, 31)
+    REG_FIELD(AON_WDT_WDOGCOUNT, VALUE, 0, 31)
 REG32(AON_WDT_WDOGS, 0x10)
 REG32(AON_WDT_WDOGFEED, 0x18)
 REG32(AON_WDT_WDOGKEY, 0x1c)
@@ -48,8 +48,8 @@ REG32(AON_WDT_WDOGCMP0, 0x20)
 static void sifive_e_aon_wdt_update_wdogcount(SiFiveEAONState *r)
 {
     int64_t now;
-    if (FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS) == 0 &&
-        FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_CORE_AWAKE) == 0) {
+    if (REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS) == 0 &&
+        REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_CORE_AWAKE) == 0) {
         return;
     }
 
@@ -68,31 +68,31 @@ static void sifive_e_aon_wdt_update_state(SiFiveEAONState *r)
     bool cmp_signal = false;
     sifive_e_aon_wdt_update_wdogcount(r);
     wdogs = (uint16_t)(r->wdogcount >>
-                           FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, SCALE));
+                           REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, SCALE));
 
     if (wdogs >= r->wdogcmp0) {
         cmp_signal = true;
-        if (FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, ZEROCMP) == 1) {
+        if (REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, ZEROCMP) == 1) {
             r->wdogcount = 0;
             wdogs = 0;
         }
     }
 
     if (cmp_signal) {
-        if (FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, RSTEN) == 1) {
+        if (REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, RSTEN) == 1) {
             watchdog_perform_action();
         }
-        r->wdogcfg = FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, IP0, 1);
+        r->wdogcfg = REG_FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, IP0, 1);
     }
 
-    qemu_set_irq(r->wdog_irq, FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, IP0));
+    qemu_set_irq(r->wdog_irq, REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, IP0));
 
     if (wdogs < r->wdogcmp0 &&
-        (FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS) == 1 ||
-         FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_CORE_AWAKE) == 1)) {
+        (REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS) == 1 ||
+         REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_CORE_AWAKE) == 1)) {
         int64_t next = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
         next += muldiv64((r->wdogcmp0 - wdogs) <<
-                         FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, SCALE),
+                         REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, SCALE),
                          NANOSECONDS_PER_SECOND, r->wdogclk_freq);
         timer_mod(r->wdog_timer, next);
     } else {
@@ -123,7 +123,7 @@ sifive_e_aon_wdt_read(void *opaque, hwaddr addr, unsigned int size)
     case A_AON_WDT_WDOGS:
         sifive_e_aon_wdt_update_wdogcount(r);
         return r->wdogcount >>
-               FIELD_EX32(r->wdogcfg,
+               REG_FIELD_EX32(r->wdogcfg,
                           AON_WDT_WDOGCFG,
                           SCALE);
     case A_AON_WDT_WDOGFEED:
@@ -157,10 +157,10 @@ sifive_e_aon_wdt_write(void *opaque, hwaddr addr,
             return;
         }
 
-        new_en_always = FIELD_EX32(value, AON_WDT_WDOGCFG, EN_ALWAYS);
-        new_en_core_awake = FIELD_EX32(value, AON_WDT_WDOGCFG, EN_CORE_AWAKE);
-        old_en_always = FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS);
-        old_en_core_awake = FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG,
+        new_en_always = REG_FIELD_EX32(value, AON_WDT_WDOGCFG, EN_ALWAYS);
+        new_en_core_awake = REG_FIELD_EX32(value, AON_WDT_WDOGCFG, EN_CORE_AWAKE);
+        old_en_always = REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS);
+        old_en_core_awake = REG_FIELD_EX32(r->wdogcfg, AON_WDT_WDOGCFG,
                                        EN_CORE_AWAKE);
 
         if ((old_en_always ||
@@ -265,9 +265,9 @@ static void sifive_e_aon_reset(DeviceState *dev)
 {
     SiFiveEAONState *r = SIFIVE_E_AON(dev);
 
-    r->wdogcfg = FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, RSTEN, 0);
-    r->wdogcfg = FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS, 0);
-    r->wdogcfg = FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, EN_CORE_AWAKE, 0);
+    r->wdogcfg = REG_FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, RSTEN, 0);
+    r->wdogcfg = REG_FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, EN_ALWAYS, 0);
+    r->wdogcfg = REG_FIELD_DP32(r->wdogcfg, AON_WDT_WDOGCFG, EN_CORE_AWAKE, 0);
     r->wdogcmp0 = 0xbeef;
 
     sifive_e_aon_wdt_update_state(r);

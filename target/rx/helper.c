@@ -26,18 +26,18 @@
 void rx_cpu_unpack_psw(CPURXState *env, uint32_t psw, int rte)
 {
     if (env->psw_pm == 0) {
-        env->psw_ipl = FIELD_EX32(psw, PSW, IPL);
+        env->psw_ipl = REG_FIELD_EX32(psw, PSW, IPL);
         if (rte) {
             /* PSW.PM can write RTE and RTFI */
-            env->psw_pm = FIELD_EX32(psw, PSW, PM);
+            env->psw_pm = REG_FIELD_EX32(psw, PSW, PM);
         }
-        env->psw_u = FIELD_EX32(psw, PSW, U);
-        env->psw_i = FIELD_EX32(psw, PSW, I);
+        env->psw_u = REG_FIELD_EX32(psw, PSW, U);
+        env->psw_i = REG_FIELD_EX32(psw, PSW, I);
     }
-    env->psw_o = FIELD_EX32(psw, PSW, O) << 31;
-    env->psw_s = FIELD_EX32(psw, PSW, S) << 31;
-    env->psw_z = 1 - FIELD_EX32(psw, PSW, Z);
-    env->psw_c = FIELD_EX32(psw, PSW, C);
+    env->psw_o = REG_FIELD_EX32(psw, PSW, O) << 31;
+    env->psw_s = REG_FIELD_EX32(psw, PSW, S) << 31;
+    env->psw_z = 1 - REG_FIELD_EX32(psw, PSW, Z);
+    env->psw_c = REG_FIELD_EX32(psw, PSW, C);
 }
 
 #define INT_FLAGS (CPU_INTERRUPT_HARD | CPU_INTERRUPT_FIR)

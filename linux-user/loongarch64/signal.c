@@ -134,10 +134,10 @@ static abi_ptr setup_extcontext(CPULoongArchState *env,
     /* For qemu, there is no lazy fp context switch, so fp always present. */
     extctx->flags = SC_USED_FP;
 
-    if (FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE)) {
+    if (REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE)) {
         sp = extframe_alloc(extctx, &extctx->lasx,
                         sizeof(struct target_lasx_context), LASX_CTX_ALIGN, sp);
-    } else if (FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE)) {
+    } else if (REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE)) {
         sp = extframe_alloc(extctx, &extctx->lsx,
                         sizeof(struct target_lsx_context), LSX_CTX_ALIGN, sp);
     } else {
@@ -166,7 +166,7 @@ static void setup_sigframe(CPULoongArchState *env,
      * Set extension context
      */
 
-    if (FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE)) {
+    if (REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE)) {
         struct target_lasx_context *lasx_ctx;
         info = extctx->lasx.haddr;
 
@@ -183,7 +183,7 @@ static void setup_sigframe(CPULoongArchState *env,
         }
         __put_user(read_fcc(env), &lasx_ctx->fcc);
         __put_user(env->fcsr0, &lasx_ctx->fcsr);
-    } else if (FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE)) {
+    } else if (REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE)) {
         struct target_lsx_context *lsx_ctx;
         info = extctx->lsx.haddr;
 
@@ -365,10 +365,10 @@ void setup_rt_frame(int sig, struct target_sigaction *ka,
         return;
     }
 
-    if (FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE)) {
+    if (REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, ASXE)) {
         extctx.lasx.haddr = (void *)frame + (extctx.lasx.gaddr - frame_addr);
         extctx.end.haddr = (void *)frame + (extctx.end.gaddr - frame_addr);
-    } else if (FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE)) {
+    } else if (REG_FIELD_EX64(env->CSR_EUEN, CSR_EUEN, SXE)) {
         extctx.lsx.haddr = (void *)frame + (extctx.lsx.gaddr - frame_addr);
         extctx.end.haddr = (void *)frame + (extctx.end.gaddr - frame_addr);
     } else {

@@ -1008,39 +1008,39 @@ static void v7m_update_fpccr(CPUARMState *env, uint32_t frameptr,
             (env->v7m.ccr[is_secure] & R_V7M_CCR_STKOFHFNMIGN_MASK);
 
         splimviol = !ign && frameptr < splim;
-        *fpccr = FIELD_DP32(*fpccr, V7M_FPCCR, SPLIMVIOL, splimviol);
+        *fpccr = REG_FIELD_DP32(*fpccr, V7M_FPCCR, SPLIMVIOL, splimviol);
     }
 
-    *fpccr = FIELD_DP32(*fpccr, V7M_FPCCR, LSPACT, 1);
+    *fpccr = REG_FIELD_DP32(*fpccr, V7M_FPCCR, LSPACT, 1);
 
-    *fpccr_s = FIELD_DP32(*fpccr_s, V7M_FPCCR, S, is_secure);
+    *fpccr_s = REG_FIELD_DP32(*fpccr_s, V7M_FPCCR, S, is_secure);
 
-    *fpccr = FIELD_DP32(*fpccr, V7M_FPCCR, USER, arm_current_el(env) == 0);
+    *fpccr = REG_FIELD_DP32(*fpccr, V7M_FPCCR, USER, arm_current_el(env) == 0);
 
-    *fpccr = FIELD_DP32(*fpccr, V7M_FPCCR, THREAD,
+    *fpccr = REG_FIELD_DP32(*fpccr, V7M_FPCCR, THREAD,
                         !arm_v7m_is_handler_mode(env));
 
     hfrdy = armv7m_nvic_get_ready_status(nvic, ARMV7M_EXCP_HARD, false);
-    *fpccr_s = FIELD_DP32(*fpccr_s, V7M_FPCCR, HFRDY, hfrdy);
+    *fpccr_s = REG_FIELD_DP32(*fpccr_s, V7M_FPCCR, HFRDY, hfrdy);
 
     bfrdy = armv7m_nvic_get_ready_status(nvic, ARMV7M_EXCP_BUS, false);
-    *fpccr_s = FIELD_DP32(*fpccr_s, V7M_FPCCR, BFRDY, bfrdy);
+    *fpccr_s = REG_FIELD_DP32(*fpccr_s, V7M_FPCCR, BFRDY, bfrdy);
 
     mmrdy = armv7m_nvic_get_ready_status(nvic, ARMV7M_EXCP_MEM, is_secure);
-    *fpccr = FIELD_DP32(*fpccr, V7M_FPCCR, MMRDY, mmrdy);
+    *fpccr = REG_FIELD_DP32(*fpccr, V7M_FPCCR, MMRDY, mmrdy);
 
     ns_ufrdy = armv7m_nvic_get_ready_status(nvic, ARMV7M_EXCP_USAGE, false);
-    *fpccr_ns = FIELD_DP32(*fpccr_ns, V7M_FPCCR, UFRDY, ns_ufrdy);
+    *fpccr_ns = REG_FIELD_DP32(*fpccr_ns, V7M_FPCCR, UFRDY, ns_ufrdy);
 
     monrdy = armv7m_nvic_get_ready_status(nvic, ARMV7M_EXCP_DEBUG, false);
-    *fpccr_s = FIELD_DP32(*fpccr_s, V7M_FPCCR, MONRDY, monrdy);
+    *fpccr_s = REG_FIELD_DP32(*fpccr_s, V7M_FPCCR, MONRDY, monrdy);
 
     if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
         s_ufrdy = armv7m_nvic_get_ready_status(nvic, ARMV7M_EXCP_USAGE, true);
-        *fpccr_s = FIELD_DP32(*fpccr_s, V7M_FPCCR, UFRDY, s_ufrdy);
+        *fpccr_s = REG_FIELD_DP32(*fpccr_s, V7M_FPCCR, UFRDY, s_ufrdy);
 
         sfrdy = armv7m_nvic_get_ready_status(nvic, ARMV7M_EXCP_SECURE, false);
-        *fpccr_s = FIELD_DP32(*fpccr_s, V7M_FPCCR, SFRDY, sfrdy);
+        *fpccr_s = REG_FIELD_DP32(*fpccr_s, V7M_FPCCR, SFRDY, sfrdy);
     }
 }
 
@@ -1841,7 +1841,7 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
                 }
             }
         }
-        env->v7m.control[M_REG_S] = FIELD_DP32(env->v7m.control[M_REG_S],
+        env->v7m.control[M_REG_S] = REG_FIELD_DP32(env->v7m.control[M_REG_S],
                                                V7M_CONTROL, FPCA, !ftype);
 
         /* Commit to consuming the stack frame */
@@ -1875,7 +1875,7 @@ static void do_v7m_exception_exit(ARMCPU *cpu)
     if (env->v7m.secure) {
         bool sfpa = xpsr & XPSR_SFPA;
 
-        env->v7m.control[M_REG_S] = FIELD_DP32(env->v7m.control[M_REG_S],
+        env->v7m.control[M_REG_S] = REG_FIELD_DP32(env->v7m.control[M_REG_S],
                                                V7M_CONTROL, SFPA, sfpa);
     }
 

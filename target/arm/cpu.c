@@ -267,22 +267,22 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
             env->cp15.sctlr_el[1] |= SCTLR_TIDCP;
         }
         /* and to the FP/Neon instructions */
-        env->cp15.cpacr_el1 = FIELD_DP64(env->cp15.cpacr_el1,
+        env->cp15.cpacr_el1 = REG_FIELD_DP64(env->cp15.cpacr_el1,
                                          CPACR_EL1, FPEN, 3);
         /* and to the SVE instructions, with default vector length */
         if (cpu_isar_feature(aa64_sve, cpu)) {
-            env->cp15.cpacr_el1 = FIELD_DP64(env->cp15.cpacr_el1,
+            env->cp15.cpacr_el1 = REG_FIELD_DP64(env->cp15.cpacr_el1,
                                              CPACR_EL1, ZEN, 3);
             env->vfp.zcr_el[1] = cpu->sve_default_vq - 1;
         }
         /* and for SME instructions, with default vector length, and TPIDR2 */
         if (cpu_isar_feature(aa64_sme, cpu)) {
             env->cp15.sctlr_el[1] |= SCTLR_EnTP2;
-            env->cp15.cpacr_el1 = FIELD_DP64(env->cp15.cpacr_el1,
+            env->cp15.cpacr_el1 = REG_FIELD_DP64(env->cp15.cpacr_el1,
                                              CPACR_EL1, SMEN, 3);
             env->vfp.smcr_el[1] = cpu->sme_default_vq - 1;
             if (cpu_isar_feature(aa64_sme_fa64, cpu)) {
-                env->vfp.smcr_el[1] = FIELD_DP64(env->vfp.smcr_el[1],
+                env->vfp.smcr_el[1] = REG_FIELD_DP64(env->vfp.smcr_el[1],
                                                  SMCR, FA64, 1);
             }
         }
@@ -338,9 +338,9 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
     } else {
 #if defined(CONFIG_USER_ONLY)
         /* Userspace expects access to cp10 and cp11 for FP/Neon */
-        env->cp15.cpacr_el1 = FIELD_DP64(env->cp15.cpacr_el1,
+        env->cp15.cpacr_el1 = REG_FIELD_DP64(env->cp15.cpacr_el1,
                                          CPACR, CP10, 3);
-        env->cp15.cpacr_el1 = FIELD_DP64(env->cp15.cpacr_el1,
+        env->cp15.cpacr_el1 = REG_FIELD_DP64(env->cp15.cpacr_el1,
                                          CPACR, CP11, 3);
 #endif
         if (arm_feature(env, ARM_FEATURE_V8)) {
@@ -1232,8 +1232,8 @@ static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
     if (cpu_isar_feature(aa64_sme, cpu)) {
         qemu_fprintf(f, "  SVCR=%08" PRIx64 " %c%c",
                      env->svcr,
-                     (FIELD_EX64(env->svcr, SVCR, ZA) ? 'Z' : '-'),
-                     (FIELD_EX64(env->svcr, SVCR, SM) ? 'S' : '-'));
+                     (REG_FIELD_EX64(env->svcr, SVCR, ZA) ? 'Z' : '-'),
+                     (REG_FIELD_EX64(env->svcr, SVCR, SM) ? 'S' : '-'));
     }
     if (cpu_isar_feature(aa64_bti, cpu)) {
         qemu_fprintf(f, "  BTYPE=%d", (psr & PSTATE_BTYPE) >> 10);
@@ -1253,7 +1253,7 @@ static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
     qemu_fprintf(f, "     FPCR=%08x FPSR=%08x\n",
                  vfp_get_fpcr(env), vfp_get_fpsr(env));
 
-    if (cpu_isar_feature(aa64_sme, cpu) && FIELD_EX64(env->svcr, SVCR, SM)) {
+    if (cpu_isar_feature(aa64_sme, cpu) && REG_FIELD_EX64(env->svcr, SVCR, SM)) {
         sve = sme_exception_el(env, el) == 0;
     } else if (cpu_isar_feature(aa64_sve, cpu)) {
         sve = sve_exception_el(env, el) == 0;
@@ -1332,7 +1332,7 @@ static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
     }
 
     if (cpu_isar_feature(aa64_sme, cpu) &&
-        FIELD_EX64(env->svcr, SVCR, ZA) &&
+        REG_FIELD_EX64(env->svcr, SVCR, ZA) &&
         sme_exception_el(env, el) == 0) {
         int zcr_len = sve_vqm1_for_el_sm(env, el, true);
         int svl = (zcr_len + 1) * 16;
@@ -2104,7 +2104,7 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
      * Clear CTR_EL0.DIC to ensure that software that honors these flags uses
      * IC IVAU even if the emulated processor does not normally require it.
      */
-    cpu->ctr = FIELD_DP64(cpu->ctr, CTR_EL0, DIC, 0);
+    cpu->ctr = REG_FIELD_DP64(cpu->ctr, CTR_EL0, DIC, 0);
 #endif
 
     if (arm_feature(env, ARM_FEATURE_AARCH64) &&
@@ -2127,7 +2127,7 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         uint32_t u;
 
         u = cpu->isar.mvfr0;
-        u = FIELD_DP32(u, MVFR0, SIMDREG, 1); /* 16 registers */
+        u = REG_FIELD_DP32(u, MVFR0, SIMDREG, 1); /* 16 registers */
         cpu->isar.mvfr0 = u;
     }
 
@@ -2139,33 +2139,33 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         FIELD_DP64_IDREG(isar, ID_AA64PFR0, FP, 0xf);
 
         u = GET_IDREG(isar, ID_ISAR6);
-        u = FIELD_DP32(u, ID_ISAR6, JSCVT, 0);
-        u = FIELD_DP32(u, ID_ISAR6, BF16, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR6, JSCVT, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR6, BF16, 0);
         SET_IDREG(isar, ID_ISAR6, u);
 
         u = cpu->isar.mvfr0;
-        u = FIELD_DP32(u, MVFR0, FPSP, 0);
-        u = FIELD_DP32(u, MVFR0, FPDP, 0);
-        u = FIELD_DP32(u, MVFR0, FPDIVIDE, 0);
-        u = FIELD_DP32(u, MVFR0, FPSQRT, 0);
-        u = FIELD_DP32(u, MVFR0, FPROUND, 0);
+        u = REG_FIELD_DP32(u, MVFR0, FPSP, 0);
+        u = REG_FIELD_DP32(u, MVFR0, FPDP, 0);
+        u = REG_FIELD_DP32(u, MVFR0, FPDIVIDE, 0);
+        u = REG_FIELD_DP32(u, MVFR0, FPSQRT, 0);
+        u = REG_FIELD_DP32(u, MVFR0, FPROUND, 0);
         if (!arm_feature(env, ARM_FEATURE_M)) {
-            u = FIELD_DP32(u, MVFR0, FPTRAP, 0);
-            u = FIELD_DP32(u, MVFR0, FPSHVEC, 0);
+            u = REG_FIELD_DP32(u, MVFR0, FPTRAP, 0);
+            u = REG_FIELD_DP32(u, MVFR0, FPSHVEC, 0);
         }
         cpu->isar.mvfr0 = u;
 
         u = cpu->isar.mvfr1;
-        u = FIELD_DP32(u, MVFR1, FPFTZ, 0);
-        u = FIELD_DP32(u, MVFR1, FPDNAN, 0);
-        u = FIELD_DP32(u, MVFR1, FPHP, 0);
+        u = REG_FIELD_DP32(u, MVFR1, FPFTZ, 0);
+        u = REG_FIELD_DP32(u, MVFR1, FPDNAN, 0);
+        u = REG_FIELD_DP32(u, MVFR1, FPHP, 0);
         if (arm_feature(env, ARM_FEATURE_M)) {
-            u = FIELD_DP32(u, MVFR1, FP16, 0);
+            u = REG_FIELD_DP32(u, MVFR1, FP16, 0);
         }
         cpu->isar.mvfr1 = u;
 
         u = cpu->isar.mvfr2;
-        u = FIELD_DP32(u, MVFR2, FPMISC, 0);
+        u = REG_FIELD_DP32(u, MVFR2, FPMISC, 0);
         cpu->isar.mvfr2 = u;
     }
 
@@ -2176,48 +2176,48 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         unset_feature(env, ARM_FEATURE_NEON);
 
         t = GET_IDREG(isar, ID_AA64ISAR0);
-        t = FIELD_DP64(t, ID_AA64ISAR0, AES, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR0, SHA1, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR0, SHA2, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR0, SHA3, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR0, SM3, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR0, SM4, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR0, DP, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR0, AES, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR0, SHA1, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR0, SHA2, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR0, SHA3, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR0, SM3, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR0, SM4, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR0, DP, 0);
         SET_IDREG(isar, ID_AA64ISAR0, t);
 
         t = GET_IDREG(isar, ID_AA64ISAR1);
-        t = FIELD_DP64(t, ID_AA64ISAR1, FCMA, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR1, BF16, 0);
-        t = FIELD_DP64(t, ID_AA64ISAR1, I8MM, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR1, FCMA, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR1, BF16, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ISAR1, I8MM, 0);
         SET_IDREG(isar, ID_AA64ISAR1, t);
 
         FIELD_DP64_IDREG(isar, ID_AA64PFR0, ADVSIMD, 0xf);
 
         u = GET_IDREG(isar, ID_ISAR5);
-        u = FIELD_DP32(u, ID_ISAR5, AES, 0);
-        u = FIELD_DP32(u, ID_ISAR5, SHA1, 0);
-        u = FIELD_DP32(u, ID_ISAR5, SHA2, 0);
-        u = FIELD_DP32(u, ID_ISAR5, RDM, 0);
-        u = FIELD_DP32(u, ID_ISAR5, VCMA, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR5, AES, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR5, SHA1, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR5, SHA2, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR5, RDM, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR5, VCMA, 0);
         SET_IDREG(isar, ID_ISAR5, u);
 
         u = GET_IDREG(isar, ID_ISAR6);
-        u = FIELD_DP32(u, ID_ISAR6, DP, 0);
-        u = FIELD_DP32(u, ID_ISAR6, FHM, 0);
-        u = FIELD_DP32(u, ID_ISAR6, BF16, 0);
-        u = FIELD_DP32(u, ID_ISAR6, I8MM, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR6, DP, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR6, FHM, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR6, BF16, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR6, I8MM, 0);
         SET_IDREG(isar, ID_ISAR6, u);
 
         if (!arm_feature(env, ARM_FEATURE_M)) {
             u = cpu->isar.mvfr1;
-            u = FIELD_DP32(u, MVFR1, SIMDLS, 0);
-            u = FIELD_DP32(u, MVFR1, SIMDINT, 0);
-            u = FIELD_DP32(u, MVFR1, SIMDSP, 0);
-            u = FIELD_DP32(u, MVFR1, SIMDHP, 0);
+            u = REG_FIELD_DP32(u, MVFR1, SIMDLS, 0);
+            u = REG_FIELD_DP32(u, MVFR1, SIMDINT, 0);
+            u = REG_FIELD_DP32(u, MVFR1, SIMDSP, 0);
+            u = REG_FIELD_DP32(u, MVFR1, SIMDHP, 0);
             cpu->isar.mvfr1 = u;
 
             u = cpu->isar.mvfr2;
-            u = FIELD_DP32(u, MVFR2, SIMDMISC, 0);
+            u = REG_FIELD_DP32(u, MVFR2, SIMDMISC, 0);
             cpu->isar.mvfr2 = u;
         }
     }
@@ -2230,12 +2230,12 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         FIELD_DP64_IDREG(isar, ID_AA64ISAR1, FRINTTS, 0);
 
         u = cpu->isar.mvfr0;
-        u = FIELD_DP32(u, MVFR0, SIMDREG, 0);
+        u = REG_FIELD_DP32(u, MVFR0, SIMDREG, 0);
         cpu->isar.mvfr0 = u;
 
         /* Despite the name, this field covers both VFP and Neon */
         u = cpu->isar.mvfr1;
-        u = FIELD_DP32(u, MVFR1, SIMDFMAC, 0);
+        u = REG_FIELD_DP32(u, MVFR1, SIMDFMAC, 0);
         cpu->isar.mvfr1 = u;
     }
 
@@ -2247,13 +2247,13 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         FIELD_DP32_IDREG(isar, ID_ISAR1, EXTEND, 1);
 
         u = GET_IDREG(isar, ID_ISAR2);
-        u = FIELD_DP32(u, ID_ISAR2, MULTU, 1);
-        u = FIELD_DP32(u, ID_ISAR2, MULTS, 1);
+        u = REG_FIELD_DP32(u, ID_ISAR2, MULTU, 1);
+        u = REG_FIELD_DP32(u, ID_ISAR2, MULTS, 1);
         SET_IDREG(isar, ID_ISAR2, u);
 
         u = GET_IDREG(isar, ID_ISAR3);
-        u = FIELD_DP32(u, ID_ISAR3, SIMD, 1);
-        u = FIELD_DP32(u, ID_ISAR3, SATURATE, 0);
+        u = REG_FIELD_DP32(u, ID_ISAR3, SIMD, 1);
+        u = REG_FIELD_DP32(u, ID_ISAR3, SATURATE, 0);
         SET_IDREG(isar, ID_ISAR3, u);
     }
 

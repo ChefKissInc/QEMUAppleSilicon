@@ -40,12 +40,12 @@
 
 /* Registers in the control frame */
 REG32(CNTCR, 0x0)
-    FIELD(CNTCR, EN, 0, 1)
-    FIELD(CNTCR, HDBG, 1, 1)
-    FIELD(CNTCR, SCEN, 2, 1)
-    FIELD(CNTCR, INTRMASK, 3, 1)
-    FIELD(CNTCR, PSLVERRDIS, 4, 1)
-    FIELD(CNTCR, INTRCLR, 5, 1)
+    REG_FIELD(CNTCR, EN, 0, 1)
+    REG_FIELD(CNTCR, HDBG, 1, 1)
+    REG_FIELD(CNTCR, SCEN, 2, 1)
+    REG_FIELD(CNTCR, INTRMASK, 3, 1)
+    REG_FIELD(CNTCR, PSLVERRDIS, 4, 1)
+    REG_FIELD(CNTCR, INTRCLR, 5, 1)
 /*
  * Although CNTCR defines interrupt-related bits, the counter doesn't
  * appear to actually have an interrupt output. So INTRCLR is
@@ -59,10 +59,10 @@ REG32(CNTCV_LO, 0x8)
 REG32(CNTCV_HI, 0xc)
 REG32(CNTSCR, 0x10) /* Aliased with CNTSCR0 */
 REG32(CNTID, 0x1c)
-    FIELD(CNTID, CNTSC, 0, 4)
-    FIELD(CNTID, CNTCS, 16, 1)
-    FIELD(CNTID, CNTSELCLK, 17, 2)
-    FIELD(CNTID, CNTSCR_OVR, 19, 1)
+    REG_FIELD(CNTID, CNTSC, 0, 4)
+    REG_FIELD(CNTID, CNTCS, 16, 1)
+    REG_FIELD(CNTID, CNTSELCLK, 17, 2)
+    REG_FIELD(CNTID, CNTSCR_OVR, 19, 1)
 REG32(CNTSCR0, 0xd0)
 REG32(CNTSCR1, 0xd4)
 

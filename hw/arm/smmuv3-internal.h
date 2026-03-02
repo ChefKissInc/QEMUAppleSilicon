@@ -41,84 +41,84 @@ typedef enum SMMUTranslationClass {
 /* MMIO Registers */
 
 REG32(IDR0,                0x0)
-    FIELD(IDR0, S2P,         0 , 1)
-    FIELD(IDR0, S1P,         1 , 1)
-    FIELD(IDR0, TTF,         2 , 2)
-    FIELD(IDR0, COHACC,      4 , 1)
-    FIELD(IDR0, BTM,         5 , 1)
-    FIELD(IDR0, HTTU,        6 , 2)
-    FIELD(IDR0, DORMHINT,    8 , 1)
-    FIELD(IDR0, HYP,         9 , 1)
-    FIELD(IDR0, ATS,         10, 1)
-    FIELD(IDR0, NS1ATS,      11, 1)
-    FIELD(IDR0, ASID16,      12, 1)
-    FIELD(IDR0, MSI,         13, 1)
-    FIELD(IDR0, SEV,         14, 1)
-    FIELD(IDR0, ATOS,        15, 1)
-    FIELD(IDR0, PRI,         16, 1)
-    FIELD(IDR0, VMW,         17, 1)
-    FIELD(IDR0, VMID16,      18, 1)
-    FIELD(IDR0, CD2L,        19, 1)
-    FIELD(IDR0, VATOS,       20, 1)
-    FIELD(IDR0, TTENDIAN,    21, 2)
-    FIELD(IDR0, ATSRECERR,   23, 1)
-    FIELD(IDR0, STALL_MODEL, 24, 2)
-    FIELD(IDR0, TERM_MODEL,  26, 1)
-    FIELD(IDR0, STLEVEL,     27, 2)
-    FIELD(IDR0, RME_IMPL,    30, 1)
+    REG_FIELD(IDR0, S2P,         0 , 1)
+    REG_FIELD(IDR0, S1P,         1 , 1)
+    REG_FIELD(IDR0, TTF,         2 , 2)
+    REG_FIELD(IDR0, COHACC,      4 , 1)
+    REG_FIELD(IDR0, BTM,         5 , 1)
+    REG_FIELD(IDR0, HTTU,        6 , 2)
+    REG_FIELD(IDR0, DORMHINT,    8 , 1)
+    REG_FIELD(IDR0, HYP,         9 , 1)
+    REG_FIELD(IDR0, ATS,         10, 1)
+    REG_FIELD(IDR0, NS1ATS,      11, 1)
+    REG_FIELD(IDR0, ASID16,      12, 1)
+    REG_FIELD(IDR0, MSI,         13, 1)
+    REG_FIELD(IDR0, SEV,         14, 1)
+    REG_FIELD(IDR0, ATOS,        15, 1)
+    REG_FIELD(IDR0, PRI,         16, 1)
+    REG_FIELD(IDR0, VMW,         17, 1)
+    REG_FIELD(IDR0, VMID16,      18, 1)
+    REG_FIELD(IDR0, CD2L,        19, 1)
+    REG_FIELD(IDR0, VATOS,       20, 1)
+    REG_FIELD(IDR0, TTENDIAN,    21, 2)
+    REG_FIELD(IDR0, ATSRECERR,   23, 1)
+    REG_FIELD(IDR0, STALL_MODEL, 24, 2)
+    REG_FIELD(IDR0, TERM_MODEL,  26, 1)
+    REG_FIELD(IDR0, STLEVEL,     27, 2)
+    REG_FIELD(IDR0, RME_IMPL,    30, 1)
 
 REG32(IDR1,                0x4)
-    FIELD(IDR1, SIDSIZE,      0 , 6)
-    FIELD(IDR1, SSIDSIZE,     6 , 5)
-    FIELD(IDR1, PRIQS,        11, 5)
-    FIELD(IDR1, EVENTQS,      16, 5)
-    FIELD(IDR1, CMDQS,        21, 5)
-    FIELD(IDR1, ATTR_PERMS_OVR, 26, 1)
-    FIELD(IDR1, ATTR_TYPES_OVR, 27, 1)
-    FIELD(IDR1, REL,          28, 1)
-    FIELD(IDR1, QUEUES_PRESET, 29, 1)
-    FIELD(IDR1, TABLES_PRESET, 30, 1)
-    FIELD(IDR1, ECMDQ,        31, 1)
+    REG_FIELD(IDR1, SIDSIZE,      0 , 6)
+    REG_FIELD(IDR1, SSIDSIZE,     6 , 5)
+    REG_FIELD(IDR1, PRIQS,        11, 5)
+    REG_FIELD(IDR1, EVENTQS,      16, 5)
+    REG_FIELD(IDR1, CMDQS,        21, 5)
+    REG_FIELD(IDR1, ATTR_PERMS_OVR, 26, 1)
+    REG_FIELD(IDR1, ATTR_TYPES_OVR, 27, 1)
+    REG_FIELD(IDR1, REL,          28, 1)
+    REG_FIELD(IDR1, QUEUES_PRESET, 29, 1)
+    REG_FIELD(IDR1, TABLES_PRESET, 30, 1)
+    REG_FIELD(IDR1, ECMDQ,        31, 1)
 
 #define SMMU_IDR1_SIDSIZE 16
 #define SMMU_CMDQS   19
 #define SMMU_EVENTQS 19
 
 REG32(IDR2,                0x8)
-     FIELD(IDR2, BA_VATOS, 0, 10)
+     REG_FIELD(IDR2, BA_VATOS, 0, 10)
 
 REG32(IDR3,                0xc)
-     FIELD(IDR3, HAD,         2, 1);
-     FIELD(IDR3, PBHA,        3, 1);
-     FIELD(IDR3, XNX,         4, 1);
-     FIELD(IDR3, PPS,         5, 1);
-     FIELD(IDR3, MPAM,        7, 1);
-     FIELD(IDR3, FWB,         8, 1);
-     FIELD(IDR3, STT,         9, 1);
-     FIELD(IDR3, RIL,        10, 1);
-     FIELD(IDR3, BBML,       11, 2);
-     FIELD(IDR3, E0PD,       13, 1);
-     FIELD(IDR3, PTWNNC,     14, 1);
-     FIELD(IDR3, DPT,        15, 1);
+     REG_FIELD(IDR3, HAD,         2, 1);
+     REG_FIELD(IDR3, PBHA,        3, 1);
+     REG_FIELD(IDR3, XNX,         4, 1);
+     REG_FIELD(IDR3, PPS,         5, 1);
+     REG_FIELD(IDR3, MPAM,        7, 1);
+     REG_FIELD(IDR3, FWB,         8, 1);
+     REG_FIELD(IDR3, STT,         9, 1);
+     REG_FIELD(IDR3, RIL,        10, 1);
+     REG_FIELD(IDR3, BBML,       11, 2);
+     REG_FIELD(IDR3, E0PD,       13, 1);
+     REG_FIELD(IDR3, PTWNNC,     14, 1);
+     REG_FIELD(IDR3, DPT,        15, 1);
 
 REG32(IDR4,                0x10)
 
 REG32(IDR5,                0x14)
-     FIELD(IDR5, OAS,         0, 3);
-     FIELD(IDR5, GRAN4K,      4, 1);
-     FIELD(IDR5, GRAN16K,     5, 1);
-     FIELD(IDR5, GRAN64K,     6, 1);
-     FIELD(IDR5, VAX,        10, 2);
-     FIELD(IDR5, STALL_MAX,  16, 16);
+     REG_FIELD(IDR5, OAS,         0, 3);
+     REG_FIELD(IDR5, GRAN4K,      4, 1);
+     REG_FIELD(IDR5, GRAN16K,     5, 1);
+     REG_FIELD(IDR5, GRAN64K,     6, 1);
+     REG_FIELD(IDR5, VAX,        10, 2);
+     REG_FIELD(IDR5, STALL_MAX,  16, 16);
 
 #define SMMU_IDR5_OAS 4
 
 REG32(IIDR,                0x18)
 REG32(AIDR,                0x1c)
 REG32(CR0,                 0x20)
-    FIELD(CR0, SMMU_ENABLE,   0, 1)
-    FIELD(CR0, EVENTQEN,      2, 1)
-    FIELD(CR0, CMDQEN,        3, 1)
+    REG_FIELD(CR0, SMMU_ENABLE,   0, 1)
+    REG_FIELD(CR0, EVENTQEN,      2, 1)
+    REG_FIELD(CR0, CMDQEN,        3, 1)
 
 #define SMMU_CR0_RESERVED 0xFFFFFC20
 
@@ -127,27 +127,27 @@ REG32(CR1,                 0x28)
 REG32(CR2,                 0x2c)
 REG32(STATUSR,             0x40)
 REG32(GBPA,                0x44)
-    FIELD(GBPA, ABORT,        20, 1)
-    FIELD(GBPA, UPDATE,       31, 1)
+    REG_FIELD(GBPA, ABORT,        20, 1)
+    REG_FIELD(GBPA, UPDATE,       31, 1)
 
 /* Use incoming. */
 #define SMMU_GBPA_RESET_VAL 0x1000
 
 REG32(IRQ_CTRL,            0x50)
-    FIELD(IRQ_CTRL, GERROR_IRQEN,        0, 1)
-    FIELD(IRQ_CTRL, PRI_IRQEN,           1, 1)
-    FIELD(IRQ_CTRL, EVENTQ_IRQEN,        2, 1)
+    REG_FIELD(IRQ_CTRL, GERROR_IRQEN,        0, 1)
+    REG_FIELD(IRQ_CTRL, PRI_IRQEN,           1, 1)
+    REG_FIELD(IRQ_CTRL, EVENTQ_IRQEN,        2, 1)
 
 REG32(IRQ_CTRL_ACK,        0x54)
 REG32(GERROR,              0x60)
-    FIELD(GERROR, CMDQ_ERR,           0, 1)
-    FIELD(GERROR, EVENTQ_ABT_ERR,     2, 1)
-    FIELD(GERROR, PRIQ_ABT_ERR,       3, 1)
-    FIELD(GERROR, MSI_CMDQ_ABT_ERR,   4, 1)
-    FIELD(GERROR, MSI_EVENTQ_ABT_ERR, 5, 1)
-    FIELD(GERROR, MSI_PRIQ_ABT_ERR,   6, 1)
-    FIELD(GERROR, MSI_GERROR_ABT_ERR, 7, 1)
-    FIELD(GERROR, MSI_SFM_ERR,        8, 1)
+    REG_FIELD(GERROR, CMDQ_ERR,           0, 1)
+    REG_FIELD(GERROR, EVENTQ_ABT_ERR,     2, 1)
+    REG_FIELD(GERROR, PRIQ_ABT_ERR,       3, 1)
+    REG_FIELD(GERROR, MSI_CMDQ_ABT_ERR,   4, 1)
+    REG_FIELD(GERROR, MSI_EVENTQ_ABT_ERR, 5, 1)
+    REG_FIELD(GERROR, MSI_PRIQ_ABT_ERR,   6, 1)
+    REG_FIELD(GERROR, MSI_GERROR_ABT_ERR, 7, 1)
+    REG_FIELD(GERROR, MSI_SFM_ERR,        8, 1)
 
 REG32(GERRORN,             0x64)
 
@@ -160,14 +160,14 @@ REG32(GERROR_IRQ_CFG2, 0x74)
 #define SMMU_BASE_ADDR_MASK 0xfffffffffffc0
 
 REG32(STRTAB_BASE_CFG,     0x88)
-    FIELD(STRTAB_BASE_CFG, FMT,      16, 2)
-    FIELD(STRTAB_BASE_CFG, SPLIT,    6 , 5)
-    FIELD(STRTAB_BASE_CFG, LOG2SIZE, 0 , 6)
+    REG_FIELD(STRTAB_BASE_CFG, FMT,      16, 2)
+    REG_FIELD(STRTAB_BASE_CFG, SPLIT,    6 , 5)
+    REG_FIELD(STRTAB_BASE_CFG, LOG2SIZE, 0 , 6)
 
 #define A_CMDQ_BASE        0x90 /* 64b */
 REG32(CMDQ_PROD,           0x98)
 REG32(CMDQ_CONS,           0x9c)
-    FIELD(CMDQ_CONS, ERR, 24, 7)
+    REG_FIELD(CMDQ_CONS, ERR, 24, 7)
 
 #define A_EVENTQ_BASE      0xa0 /* 64b */
 REG32(EVENTQ_PROD,         0xa8)
@@ -181,7 +181,7 @@ REG32(EVENTQ_IRQ_CFG2,     0xbc)
 
 static inline int smmu_enabled(SMMUv3State *s)
 {
-    return FIELD_EX32(s->cr[0], CR0, SMMU_ENABLE);
+    return REG_FIELD_EX32(s->cr[0], CR0, SMMU_ENABLE);
 }
 
 /* Command Queue Entry */
@@ -209,12 +209,12 @@ static inline uint32_t smmuv3_idreg(int regoffset)
 
 static inline bool smmuv3_eventq_irq_enabled(SMMUv3State *s)
 {
-    return FIELD_EX32(s->irq_ctrl, IRQ_CTRL, EVENTQ_IRQEN);
+    return REG_FIELD_EX32(s->irq_ctrl, IRQ_CTRL, EVENTQ_IRQEN);
 }
 
 static inline bool smmuv3_gerror_irq_enabled(SMMUv3State *s)
 {
-    return FIELD_EX32(s->irq_ctrl, IRQ_CTRL, GERROR_IRQEN);
+    return REG_FIELD_EX32(s->irq_ctrl, IRQ_CTRL, GERROR_IRQEN);
 }
 
 /* Queue Handling */
@@ -259,17 +259,17 @@ static inline void queue_cons_incr(SMMUQueue *q)
 
 static inline bool smmuv3_cmdq_enabled(SMMUv3State *s)
 {
-    return FIELD_EX32(s->cr[0], CR0, CMDQEN);
+    return REG_FIELD_EX32(s->cr[0], CR0, CMDQEN);
 }
 
 static inline bool smmuv3_eventq_enabled(SMMUv3State *s)
 {
-    return FIELD_EX32(s->cr[0], CR0, EVENTQEN);
+    return REG_FIELD_EX32(s->cr[0], CR0, EVENTQEN);
 }
 
 static inline void smmu_write_cmdq_err(SMMUv3State *s, uint32_t err_type)
 {
-    s->cmdq.cons = FIELD_DP32(s->cmdq.cons, CMDQ_CONS, ERR, err_type);
+    s->cmdq.cons = REG_FIELD_DP32(s->cmdq.cons, CMDQ_CONS, ERR, err_type);
 }
 
 /* Commands */

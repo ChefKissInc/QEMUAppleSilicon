@@ -49,7 +49,7 @@ DECLARE_INSTANCE_CHECKER(SDBus, SDHCI_BUS,
 
 static inline unsigned int sdhci_get_fifolen(SDHCIState *s)
 {
-    return 1 << (9 + FIELD_EX32(s->capareg, SDHC_CAPAB, MAXBLOCKLENGTH));
+    return 1 << (9 + REG_FIELD_EX32(s->capareg, SDHC_CAPAB, MAXBLOCKLENGTH));
 }
 
 /* return true on error */
@@ -79,126 +79,126 @@ static void sdhci_check_capareg(SDHCIState *s, Error **errp)
 
     switch (s->sd_spec_version) {
     case 4:
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, BUS64BIT_V4);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, BUS64BIT_V4);
         trace_sdhci_capareg("64-bit system bus (v4)", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, BUS64BIT_V4, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, BUS64BIT_V4, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, UHS_II);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, UHS_II);
         trace_sdhci_capareg("UHS-II", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, UHS_II, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, UHS_II, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, ADMA3);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, ADMA3);
         trace_sdhci_capareg("ADMA3", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, ADMA3, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, ADMA3, 0);
 
     /* fallthrough */
     case 3:
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, ASYNC_INT);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, ASYNC_INT);
         trace_sdhci_capareg("async interrupt", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, ASYNC_INT, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, ASYNC_INT, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, SLOT_TYPE);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, SLOT_TYPE);
         if (val) {
             error_setg(errp, "slot-type not supported");
             return;
         }
         trace_sdhci_capareg("slot type", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, SLOT_TYPE, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, SLOT_TYPE, 0);
 
         if (val != 2) {
-            val = FIELD_EX64(s->capareg, SDHC_CAPAB, EMBEDDED_8BIT);
+            val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, EMBEDDED_8BIT);
             trace_sdhci_capareg("8-bit bus", val);
         }
-        msk = FIELD_DP64(msk, SDHC_CAPAB, EMBEDDED_8BIT, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, EMBEDDED_8BIT, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, BUS_SPEED);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, BUS_SPEED);
         trace_sdhci_capareg("bus speed mask", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, BUS_SPEED, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, BUS_SPEED, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, DRIVER_STRENGTH);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, DRIVER_STRENGTH);
         trace_sdhci_capareg("driver strength mask", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, DRIVER_STRENGTH, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, DRIVER_STRENGTH, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, TIMER_RETUNING);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, TIMER_RETUNING);
         trace_sdhci_capareg("timer re-tuning", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, TIMER_RETUNING, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, TIMER_RETUNING, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, SDR50_TUNING);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, SDR50_TUNING);
         trace_sdhci_capareg("use SDR50 tuning", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, SDR50_TUNING, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, SDR50_TUNING, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, RETUNING_MODE);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, RETUNING_MODE);
         trace_sdhci_capareg("re-tuning mode", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, RETUNING_MODE, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, RETUNING_MODE, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, CLOCK_MULT);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, CLOCK_MULT);
         trace_sdhci_capareg("clock multiplier", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, CLOCK_MULT, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, CLOCK_MULT, 0);
 
     /* fallthrough */
     case 2: /* default version */
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, ADMA2);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, ADMA2);
         trace_sdhci_capareg("ADMA2", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, ADMA2, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, ADMA2, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, ADMA1);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, ADMA1);
         trace_sdhci_capareg("ADMA1", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, ADMA1, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, ADMA1, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, BUS64BIT);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, BUS64BIT);
         trace_sdhci_capareg("64-bit system bus (v3)", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, BUS64BIT, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, BUS64BIT, 0);
 
     /* fallthrough */
     case 1:
-        y = FIELD_EX64(s->capareg, SDHC_CAPAB, TOUNIT);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, TOUNIT, 0);
+        y = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, TOUNIT);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, TOUNIT, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, TOCLKFREQ);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, TOCLKFREQ);
         trace_sdhci_capareg(y ? "timeout (MHz)" : "Timeout (KHz)", val);
         if (sdhci_check_capab_freq_range(s, "timeout", val, errp)) {
             return;
         }
-        msk = FIELD_DP64(msk, SDHC_CAPAB, TOCLKFREQ, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, TOCLKFREQ, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, BASECLKFREQ);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, BASECLKFREQ);
         trace_sdhci_capareg(y ? "base (MHz)" : "Base (KHz)", val);
         if (sdhci_check_capab_freq_range(s, "base", val, errp)) {
             return;
         }
-        msk = FIELD_DP64(msk, SDHC_CAPAB, BASECLKFREQ, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, BASECLKFREQ, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, MAXBLOCKLENGTH);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, MAXBLOCKLENGTH);
         if (val >= 3) {
             error_setg(errp, "block size can be 512, 1024 or 2048 only");
             return;
         }
         trace_sdhci_capareg("max block length", sdhci_get_fifolen(s));
-        msk = FIELD_DP64(msk, SDHC_CAPAB, MAXBLOCKLENGTH, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, MAXBLOCKLENGTH, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, HIGHSPEED);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, HIGHSPEED);
         trace_sdhci_capareg("high speed", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, HIGHSPEED, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, HIGHSPEED, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, SDMA);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, SDMA);
         trace_sdhci_capareg("SDMA", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, SDMA, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, SDMA, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, SUSPRESUME);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, SUSPRESUME);
         trace_sdhci_capareg("suspend/resume", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, SUSPRESUME, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, SUSPRESUME, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, V33);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, V33);
         trace_sdhci_capareg("3.3v", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, V33, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, V33, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, V30);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, V30);
         trace_sdhci_capareg("3.0v", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, V30, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, V30, 0);
 
-        val = FIELD_EX64(s->capareg, SDHC_CAPAB, V18);
+        val = REG_FIELD_EX64(s->capareg, SDHC_CAPAB, V18);
         trace_sdhci_capareg("1.8v", val);
-        msk = FIELD_DP64(msk, SDHC_CAPAB, V18, 0);
+        msk = REG_FIELD_DP64(msk, SDHC_CAPAB, V18, 0);
         break;
 
     default:
@@ -430,12 +430,12 @@ static void sdhci_read_block_from_card(SDHCIState *s)
         return;
     }
 
-    if (!FIELD_EX32(s->hostctl2, SDHC_HOSTCTL2, EXECUTE_TUNING)) {
+    if (!REG_FIELD_EX32(s->hostctl2, SDHC_HOSTCTL2, EXECUTE_TUNING)) {
         /* Device is not in tuning */
         sdbus_read_data(&s->sdbus, s->fifo_buffer, blk_size);
     }
 
-    if (FIELD_EX32(s->hostctl2, SDHC_HOSTCTL2, EXECUTE_TUNING)) {
+    if (REG_FIELD_EX32(s->hostctl2, SDHC_HOSTCTL2, EXECUTE_TUNING)) {
         /* Device is in tuning */
         s->hostctl2 &= ~R_SDHC_HOSTCTL2_EXECUTE_TUNING_MASK;
         s->hostctl2 |= R_SDHC_HOSTCTL2_SAMPLING_CLKSEL_MASK;
@@ -1060,9 +1060,9 @@ static uint64_t sdhci_read(void *opaque, hwaddr offset, unsigned size)
         break;
     case SDHC_PRNSTS:
         ret = s->prnsts;
-        ret = FIELD_DP32(ret, SDHC_PRNSTS, DAT_LVL,
+        ret = REG_FIELD_DP32(ret, SDHC_PRNSTS, DAT_LVL,
                          sdbus_get_dat_lines(&s->sdbus));
-        ret = FIELD_DP32(ret, SDHC_PRNSTS, CMD_LVL,
+        ret = REG_FIELD_DP32(ret, SDHC_PRNSTS, CMD_LVL,
                          sdbus_get_cmd_line(&s->sdbus));
         break;
     case SDHC_HOSTCTL:
@@ -1349,7 +1349,7 @@ sdhci_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
         if (s->uhs_mode >= UHS_I) {
             MASKED_WRITE(s->hostctl2, mask >> 16, value >> 16);
 
-            if (FIELD_EX32(s->hostctl2, SDHC_HOSTCTL2, V18_ENA)) {
+            if (REG_FIELD_EX32(s->hostctl2, SDHC_HOSTCTL2, V18_ENA)) {
                 sdbus_set_voltage(&s->sdbus, SD_VOLTAGE_1_8V);
             } else {
                 sdbus_set_voltage(&s->sdbus, SD_VOLTAGE_3_3V);

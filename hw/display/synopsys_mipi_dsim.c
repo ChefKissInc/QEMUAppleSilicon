@@ -26,11 +26,11 @@
 // clang-format off
 REG32(CORE_VERSION, 0x0)
 REG32(CORE_PWR_UP, 0x4)
-    FIELD(CORE_PWR_UP, SHUTDOWNZ, 0, 1)
+    REG_FIELD(CORE_PWR_UP, SHUTDOWNZ, 0, 1)
 REG32(CORE_CMD_PKT_STATUS, 0x74)
-    FIELD(CORE_CMD_PKT_STATUS, GEN_CMD_EMPTY, 0, 1)
+    REG_FIELD(CORE_CMD_PKT_STATUS, GEN_CMD_EMPTY, 0, 1)
 REG32(GENERAL_CTRL, 0x80004)
-    FIELD(GENERAL_CTRL, PHYLOCK_HW_LOCK, 4, 1)
+    REG_FIELD(GENERAL_CTRL, PHYLOCK_HW_LOCK, 4, 1)
 REG32(TOP_PLL_CTRL, 0x80034)
 // clang-format on
 
@@ -69,9 +69,9 @@ static uint64_t synopsys_mipi_dsim_reg_read(void *opaque, hwaddr addr,
     case R_CORE_PWR_UP:
         return s->power_up;
     case R_CORE_CMD_PKT_STATUS:
-        return FIELD_DP32(0, CORE_CMD_PKT_STATUS, GEN_CMD_EMPTY, 1);
+        return REG_FIELD_DP32(0, CORE_CMD_PKT_STATUS, GEN_CMD_EMPTY, 1);
     case R_GENERAL_CTRL:
-        return FIELD_DP32(0, GENERAL_CTRL, PHYLOCK_HW_LOCK, 1);
+        return REG_FIELD_DP32(0, GENERAL_CTRL, PHYLOCK_HW_LOCK, 1);
     case R_TOP_PLL_CTRL:
         return 0;
     default:
@@ -154,7 +154,7 @@ static void synopsys_mipi_dsim_reset_hold(Object *obj, ResetType type)
     SynopsysMIPIDSIMState *s = SYNOPSYS_MIPI_DSIM(obj);
 
     // Default to display powered on
-    s->power_up = FIELD_DP32(0, CORE_PWR_UP, SHUTDOWNZ, 1);
+    s->power_up = REG_FIELD_DP32(0, CORE_PWR_UP, SHUTDOWNZ, 1);
 }
 
 static void synopsys_mipi_dsim_class_init(ObjectClass *oc, const void *data)

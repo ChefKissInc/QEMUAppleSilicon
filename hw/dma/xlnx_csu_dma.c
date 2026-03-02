@@ -37,69 +37,69 @@
  * CSUDMA Module section
  */
 REG32(ADDR, 0x0)
-    FIELD(ADDR, ADDR, 2, 30) /* wo */
+    REG_FIELD(ADDR, ADDR, 2, 30) /* wo */
 REG32(SIZE, 0x4)
-    FIELD(SIZE, SIZE, 2, 27)
-    FIELD(SIZE, LAST_WORD, 0, 1) /* rw, only exists in SRC */
+    REG_FIELD(SIZE, SIZE, 2, 27)
+    REG_FIELD(SIZE, LAST_WORD, 0, 1) /* rw, only exists in SRC */
 REG32(STATUS, 0x8)
-    FIELD(STATUS, DONE_CNT, 13, 3) /* wtc */
-    FIELD(STATUS, FIFO_LEVEL, 5, 8) /* ro */
-    FIELD(STATUS, OUTSTANDING, 1, 4) /* ro */
-    FIELD(STATUS, BUSY, 0, 1) /* ro */
+    REG_FIELD(STATUS, DONE_CNT, 13, 3) /* wtc */
+    REG_FIELD(STATUS, FIFO_LEVEL, 5, 8) /* ro */
+    REG_FIELD(STATUS, OUTSTANDING, 1, 4) /* ro */
+    REG_FIELD(STATUS, BUSY, 0, 1) /* ro */
 REG32(CTRL, 0xc)
-    FIELD(CTRL, FIFOTHRESH, 25, 7) /* rw, only exists in DST, reset 0x40 */
-    FIELD(CTRL, APB_ERR_RESP, 24, 1) /* rw */
-    FIELD(CTRL, ENDIANNESS, 23, 1) /* rw */
-    FIELD(CTRL, AXI_BRST_TYPE, 22, 1) /* rw */
-    FIELD(CTRL, TIMEOUT_VAL, 10, 12) /* rw, reset: 0xFFE */
-    FIELD(CTRL, FIFO_THRESH, 2, 8) /* rw, reset: 0x80 */
-    FIELD(CTRL, PAUSE_STRM, 1, 1) /* rw */
-    FIELD(CTRL, PAUSE_MEM, 0, 1) /* rw */
+    REG_FIELD(CTRL, FIFOTHRESH, 25, 7) /* rw, only exists in DST, reset 0x40 */
+    REG_FIELD(CTRL, APB_ERR_RESP, 24, 1) /* rw */
+    REG_FIELD(CTRL, ENDIANNESS, 23, 1) /* rw */
+    REG_FIELD(CTRL, AXI_BRST_TYPE, 22, 1) /* rw */
+    REG_FIELD(CTRL, TIMEOUT_VAL, 10, 12) /* rw, reset: 0xFFE */
+    REG_FIELD(CTRL, FIFO_THRESH, 2, 8) /* rw, reset: 0x80 */
+    REG_FIELD(CTRL, PAUSE_STRM, 1, 1) /* rw */
+    REG_FIELD(CTRL, PAUSE_MEM, 0, 1) /* rw */
 REG32(CRC, 0x10)
 REG32(INT_STATUS, 0x14)
-    FIELD(INT_STATUS, FIFO_OVERFLOW, 7, 1) /* wtc */
-    FIELD(INT_STATUS, INVALID_APB, 6, 1) /* wtc */
-    FIELD(INT_STATUS, THRESH_HIT, 5, 1) /* wtc */
-    FIELD(INT_STATUS, TIMEOUT_MEM, 4, 1) /* wtc */
-    FIELD(INT_STATUS, TIMEOUT_STRM, 3, 1) /* wtc */
-    FIELD(INT_STATUS, AXI_BRESP_ERR, 2, 1) /* wtc, SRC: AXI_RDERR */
-    FIELD(INT_STATUS, DONE, 1, 1) /* wtc */
-    FIELD(INT_STATUS, MEM_DONE, 0, 1) /* wtc */
+    REG_FIELD(INT_STATUS, FIFO_OVERFLOW, 7, 1) /* wtc */
+    REG_FIELD(INT_STATUS, INVALID_APB, 6, 1) /* wtc */
+    REG_FIELD(INT_STATUS, THRESH_HIT, 5, 1) /* wtc */
+    REG_FIELD(INT_STATUS, TIMEOUT_MEM, 4, 1) /* wtc */
+    REG_FIELD(INT_STATUS, TIMEOUT_STRM, 3, 1) /* wtc */
+    REG_FIELD(INT_STATUS, AXI_BRESP_ERR, 2, 1) /* wtc, SRC: AXI_RDERR */
+    REG_FIELD(INT_STATUS, DONE, 1, 1) /* wtc */
+    REG_FIELD(INT_STATUS, MEM_DONE, 0, 1) /* wtc */
 REG32(INT_ENABLE, 0x18)
-    FIELD(INT_ENABLE, FIFO_OVERFLOW, 7, 1) /* wtc */
-    FIELD(INT_ENABLE, INVALID_APB, 6, 1) /* wtc */
-    FIELD(INT_ENABLE, THRESH_HIT, 5, 1) /* wtc */
-    FIELD(INT_ENABLE, TIMEOUT_MEM, 4, 1) /* wtc */
-    FIELD(INT_ENABLE, TIMEOUT_STRM, 3, 1) /* wtc */
-    FIELD(INT_ENABLE, AXI_BRESP_ERR, 2, 1) /* wtc, SRC: AXI_RDERR */
-    FIELD(INT_ENABLE, DONE, 1, 1) /* wtc */
-    FIELD(INT_ENABLE, MEM_DONE, 0, 1) /* wtc */
+    REG_FIELD(INT_ENABLE, FIFO_OVERFLOW, 7, 1) /* wtc */
+    REG_FIELD(INT_ENABLE, INVALID_APB, 6, 1) /* wtc */
+    REG_FIELD(INT_ENABLE, THRESH_HIT, 5, 1) /* wtc */
+    REG_FIELD(INT_ENABLE, TIMEOUT_MEM, 4, 1) /* wtc */
+    REG_FIELD(INT_ENABLE, TIMEOUT_STRM, 3, 1) /* wtc */
+    REG_FIELD(INT_ENABLE, AXI_BRESP_ERR, 2, 1) /* wtc, SRC: AXI_RDERR */
+    REG_FIELD(INT_ENABLE, DONE, 1, 1) /* wtc */
+    REG_FIELD(INT_ENABLE, MEM_DONE, 0, 1) /* wtc */
 REG32(INT_DISABLE, 0x1c)
-    FIELD(INT_DISABLE, FIFO_OVERFLOW, 7, 1) /* wtc */
-    FIELD(INT_DISABLE, INVALID_APB, 6, 1) /* wtc */
-    FIELD(INT_DISABLE, THRESH_HIT, 5, 1) /* wtc */
-    FIELD(INT_DISABLE, TIMEOUT_MEM, 4, 1) /* wtc */
-    FIELD(INT_DISABLE, TIMEOUT_STRM, 3, 1) /* wtc */
-    FIELD(INT_DISABLE, AXI_BRESP_ERR, 2, 1) /* wtc, SRC: AXI_RDERR */
-    FIELD(INT_DISABLE, DONE, 1, 1) /* wtc */
-    FIELD(INT_DISABLE, MEM_DONE, 0, 1) /* wtc */
+    REG_FIELD(INT_DISABLE, FIFO_OVERFLOW, 7, 1) /* wtc */
+    REG_FIELD(INT_DISABLE, INVALID_APB, 6, 1) /* wtc */
+    REG_FIELD(INT_DISABLE, THRESH_HIT, 5, 1) /* wtc */
+    REG_FIELD(INT_DISABLE, TIMEOUT_MEM, 4, 1) /* wtc */
+    REG_FIELD(INT_DISABLE, TIMEOUT_STRM, 3, 1) /* wtc */
+    REG_FIELD(INT_DISABLE, AXI_BRESP_ERR, 2, 1) /* wtc, SRC: AXI_RDERR */
+    REG_FIELD(INT_DISABLE, DONE, 1, 1) /* wtc */
+    REG_FIELD(INT_DISABLE, MEM_DONE, 0, 1) /* wtc */
 REG32(INT_MASK, 0x20)
-    FIELD(INT_MASK, FIFO_OVERFLOW, 7, 1) /* ro, reset: 0x1 */
-    FIELD(INT_MASK, INVALID_APB, 6, 1) /* ro, reset: 0x1 */
-    FIELD(INT_MASK, THRESH_HIT, 5, 1) /* ro, reset: 0x1 */
-    FIELD(INT_MASK, TIMEOUT_MEM, 4, 1) /* ro, reset: 0x1 */
-    FIELD(INT_MASK, TIMEOUT_STRM, 3, 1) /* ro, reset: 0x1 */
-    FIELD(INT_MASK, AXI_BRESP_ERR, 2, 1) /* ro, reset: 0x1, SRC: AXI_RDERR */
-    FIELD(INT_MASK, DONE, 1, 1) /* ro, reset: 0x1 */
-    FIELD(INT_MASK, MEM_DONE, 0, 1) /* ro, reset: 0x1 */
+    REG_FIELD(INT_MASK, FIFO_OVERFLOW, 7, 1) /* ro, reset: 0x1 */
+    REG_FIELD(INT_MASK, INVALID_APB, 6, 1) /* ro, reset: 0x1 */
+    REG_FIELD(INT_MASK, THRESH_HIT, 5, 1) /* ro, reset: 0x1 */
+    REG_FIELD(INT_MASK, TIMEOUT_MEM, 4, 1) /* ro, reset: 0x1 */
+    REG_FIELD(INT_MASK, TIMEOUT_STRM, 3, 1) /* ro, reset: 0x1 */
+    REG_FIELD(INT_MASK, AXI_BRESP_ERR, 2, 1) /* ro, reset: 0x1, SRC: AXI_RDERR */
+    REG_FIELD(INT_MASK, DONE, 1, 1) /* ro, reset: 0x1 */
+    REG_FIELD(INT_MASK, MEM_DONE, 0, 1) /* ro, reset: 0x1 */
 REG32(CTRL2, 0x24)
-    FIELD(CTRL2, ARCACHE, 24, 3) /* rw */
-    FIELD(CTRL2, ROUTE_BIT, 23, 1) /* rw */
-    FIELD(CTRL2, TIMEOUT_EN, 22, 1) /* rw */
-    FIELD(CTRL2, TIMEOUT_PRE, 4, 12) /* rw, reset: 0xFFF */
-    FIELD(CTRL2, MAX_OUTS_CMDS, 0, 4) /* rw, reset: 0x8 */
+    REG_FIELD(CTRL2, ARCACHE, 24, 3) /* rw */
+    REG_FIELD(CTRL2, ROUTE_BIT, 23, 1) /* rw */
+    REG_FIELD(CTRL2, TIMEOUT_EN, 22, 1) /* rw */
+    REG_FIELD(CTRL2, TIMEOUT_PRE, 4, 12) /* rw, reset: 0xFFF */
+    REG_FIELD(CTRL2, MAX_OUTS_CMDS, 0, 4) /* rw, reset: 0x8 */
 REG32(ADDR_MSB, 0x28)
-    FIELD(ADDR_MSB, ADDR_MSB, 0, 17) /* wo */
+    REG_FIELD(ADDR_MSB, ADDR_MSB, 0, 17) /* wo */
 
 #define R_CTRL_TIMEOUT_VAL_RESET    (0xFFE)
 #define R_CTRL_FIFO_THRESH_RESET    (0x80)
@@ -144,8 +144,8 @@ static void xlnx_csu_dma_update_done_cnt(XlnxCSUDMA *s, int a)
     int cnt;
 
     /* Increase DONE_CNT */
-    cnt = ARRAY_FIELD_EX32(s->regs, STATUS, DONE_CNT) + a;
-    ARRAY_FIELD_DP32(s->regs, STATUS, DONE_CNT, cnt);
+    cnt = REG_ARRAY_FIELD_EX32(s->regs, STATUS, DONE_CNT) + a;
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS, DONE_CNT, cnt);
 }
 
 static void xlnx_csu_dma_data_process(XlnxCSUDMA *s, uint8_t *buf, uint32_t len)
@@ -312,8 +312,8 @@ static void xlnx_csu_dma_src_notify(void *opaque)
 
     if (xlnx_csu_dma_timeout_enabled(s) && s->regs[R_SIZE] &&
         !stream_can_push(s->tx_dev, xlnx_csu_dma_src_notify, s)) {
-        uint32_t timeout = ARRAY_FIELD_EX32(s->regs, CTRL, TIMEOUT_VAL);
-        uint32_t div = ARRAY_FIELD_EX32(s->regs, CTRL2, TIMEOUT_PRE) + 1;
+        uint32_t timeout = REG_ARRAY_FIELD_EX32(s->regs, CTRL, TIMEOUT_VAL);
+        uint32_t div = REG_ARRAY_FIELD_EX32(s->regs, CTRL2, TIMEOUT_PRE) + 1;
         uint32_t freq = XLNX_CSU_DMA_TIMER_FREQ;
 
         freq /= div;

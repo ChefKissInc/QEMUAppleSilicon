@@ -38,10 +38,10 @@ target_ulong HELPER(vsetvl)(CPURISCVState *env, target_ulong s1,
 {
     int vlmax, vl;
     RISCVCPU *cpu = env_archcpu(env);
-    uint64_t vlmul = FIELD_EX64(s2, VTYPE, VLMUL);
-    uint8_t vsew = FIELD_EX64(s2, VTYPE, VSEW);
+    uint64_t vlmul = REG_FIELD_EX64(s2, VTYPE, VLMUL);
+    uint8_t vsew = REG_FIELD_EX64(s2, VTYPE, VSEW);
     uint16_t sew = 8 << vsew;
-    uint8_t ediv = FIELD_EX64(s2, VTYPE, VEDIV);
+    uint8_t ediv = REG_FIELD_EX64(s2, VTYPE, VEDIV);
     int xlen = riscv_cpu_xlen(env);
     bool vill = (s2 >> (xlen - 1)) & 0x1;
     target_ulong reserved = s2 &
@@ -73,7 +73,7 @@ target_ulong HELPER(vsetvl)(CPURISCVState *env, target_ulong s1,
     }
 
     /* lmul encoded as in DisasContext::lmul */
-    lmul = sextract32(FIELD_EX64(s2, VTYPE, VLMUL), 0, 3);
+    lmul = sextract32(REG_FIELD_EX64(s2, VTYPE, VLMUL), 0, 3);
     vlmax = vext_get_vlmax(cpu->cfg.vlenb, vsew, lmul);
     if (s1 <= vlmax) {
         vl = s1;
@@ -5408,7 +5408,7 @@ void HELPER(vmvr_v)(void *vd, void *vs2, CPURISCVState *env, uint32_t desc)
 {
     /* EEW = SEW */
     uint32_t maxsz = simd_maxsz(desc);
-    uint32_t sewb = 1 << FIELD_EX64(env->vtype, VTYPE, VSEW);
+    uint32_t sewb = 1 << REG_FIELD_EX64(env->vtype, VTYPE, VSEW);
     uint32_t startb = env->vstart * sewb;
     uint32_t i = startb;
 

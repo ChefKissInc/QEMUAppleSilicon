@@ -86,7 +86,7 @@ static abi_long do_prctl_sme_set_vl(CPUArchState *env, abi_long arg2)
         vq = MAX(arg2 / 16, 1);
         vq = MIN(vq, 16);
         env->vfp.smcr_el[1] =
-            FIELD_DP64(env->vfp.smcr_el[1], SMCR, LEN, vq - 1);
+            REG_FIELD_DP64(env->vfp.smcr_el[1], SMCR, LEN, vq - 1);
 
         /* Delay rebuilding hflags until we know if ZA must change. */
         vq = sve_vqm1_for_el_sm(env, 0, true) + 1;
@@ -97,7 +97,7 @@ static abi_long do_prctl_sme_set_vl(CPUArchState *env, abi_long arg2)
              * We need not call arm_rebuild_hflags because PSTATE.SM was
              * cleared on syscall entry, so this hasn't changed VL.
              */
-            env->svcr = FIELD_DP64(env->svcr, SVCR, ZA, 0);
+            env->svcr = REG_FIELD_DP64(env->svcr, SVCR, ZA, 0);
             arm_rebuild_hflags(env);
         }
         return vq * 16;

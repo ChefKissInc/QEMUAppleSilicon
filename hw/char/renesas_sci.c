@@ -32,42 +32,42 @@
 
 /* SCI register map */
 REG8(SMR, 0)
-  FIELD(SMR, CKS,  0, 2)
-  FIELD(SMR, MP,   2, 1)
-  FIELD(SMR, STOP, 3, 1)
-  FIELD(SMR, PM,   4, 1)
-  FIELD(SMR, PE,   5, 1)
-  FIELD(SMR, CHR,  6, 1)
-  FIELD(SMR, CM,   7, 1)
+  REG_FIELD(SMR, CKS,  0, 2)
+  REG_FIELD(SMR, MP,   2, 1)
+  REG_FIELD(SMR, STOP, 3, 1)
+  REG_FIELD(SMR, PM,   4, 1)
+  REG_FIELD(SMR, PE,   5, 1)
+  REG_FIELD(SMR, CHR,  6, 1)
+  REG_FIELD(SMR, CM,   7, 1)
 REG8(BRR, 1)
 REG8(SCR, 2)
-  FIELD(SCR, CKE,  0, 2)
-  FIELD(SCR, TEIE, 2, 1)
-  FIELD(SCR, MPIE, 3, 1)
-  FIELD(SCR, RE,   4, 1)
-  FIELD(SCR, TE,   5, 1)
-  FIELD(SCR, RIE,  6, 1)
-  FIELD(SCR, TIE,  7, 1)
+  REG_FIELD(SCR, CKE,  0, 2)
+  REG_FIELD(SCR, TEIE, 2, 1)
+  REG_FIELD(SCR, MPIE, 3, 1)
+  REG_FIELD(SCR, RE,   4, 1)
+  REG_FIELD(SCR, TE,   5, 1)
+  REG_FIELD(SCR, RIE,  6, 1)
+  REG_FIELD(SCR, TIE,  7, 1)
 REG8(TDR, 3)
 REG8(SSR, 4)
-  FIELD(SSR, MPBT, 0, 1)
-  FIELD(SSR, MPB,  1, 1)
-  FIELD(SSR, TEND, 2, 1)
-  FIELD(SSR, ERR,  3, 3)
-    FIELD(SSR, PER,  3, 1)
-    FIELD(SSR, FER,  4, 1)
-    FIELD(SSR, ORER, 5, 1)
-  FIELD(SSR, RDRF, 6, 1)
-  FIELD(SSR, TDRE, 7, 1)
+  REG_FIELD(SSR, MPBT, 0, 1)
+  REG_FIELD(SSR, MPB,  1, 1)
+  REG_FIELD(SSR, TEND, 2, 1)
+  REG_FIELD(SSR, ERR,  3, 3)
+    REG_FIELD(SSR, PER,  3, 1)
+    REG_FIELD(SSR, FER,  4, 1)
+    REG_FIELD(SSR, ORER, 5, 1)
+  REG_FIELD(SSR, RDRF, 6, 1)
+  REG_FIELD(SSR, TDRE, 7, 1)
 REG8(RDR, 5)
 REG8(SCMR, 6)
-  FIELD(SCMR, SMIF, 0, 1)
-  FIELD(SCMR, SINV, 2, 1)
-  FIELD(SCMR, SDIR, 3, 1)
-  FIELD(SCMR, BCP2, 7, 1)
+  REG_FIELD(SCMR, SMIF, 0, 1)
+  REG_FIELD(SCMR, SINV, 2, 1)
+  REG_FIELD(SCMR, SDIR, 3, 1)
+  REG_FIELD(SCMR, BCP2, 7, 1)
 REG8(SEMR, 7)
-  FIELD(SEMR, ACS0, 0, 1)
-  FIELD(SEMR, ABCS, 4, 1)
+  REG_FIELD(SEMR, ACS0, 0, 1)
+  REG_FIELD(SEMR, ABCS, 4, 1)
 
 static int can_receive(void *opaque)
 {
@@ -75,7 +75,7 @@ static int can_receive(void *opaque)
     if (sci->rx_next > qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL)) {
         return 0;
     } else {
-        return FIELD_EX8(sci->scr, SCR, RE);
+        return REG_FIELD_EX8(sci->scr, SCR, RE);
     }
 }
 
@@ -83,15 +83,15 @@ static void receive(void *opaque, const uint8_t *buf, int size)
 {
     RSCIState *sci = RSCI(opaque);
     sci->rx_next = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + sci->trtime;
-    if (FIELD_EX8(sci->ssr, SSR, RDRF) || size > 1) {
-        sci->ssr = FIELD_DP8(sci->ssr, SSR, ORER, 1);
-        if (FIELD_EX8(sci->scr, SCR, RIE)) {
+    if (REG_FIELD_EX8(sci->ssr, SSR, RDRF) || size > 1) {
+        sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, ORER, 1);
+        if (REG_FIELD_EX8(sci->scr, SCR, RIE)) {
             qemu_set_irq(sci->irq[ERI], 1);
         }
     } else {
         sci->rdr = buf[0];
-        sci->ssr = FIELD_DP8(sci->ssr, SSR, RDRF, 1);
-        if (FIELD_EX8(sci->scr, SCR, RIE)) {
+        sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, RDRF, 1);
+        if (REG_FIELD_EX8(sci->scr, SCR, RIE)) {
             qemu_irq_pulse(sci->irq[RXI]);
         }
     }
@@ -103,10 +103,10 @@ static void send_byte(RSCIState *sci)
         qemu_chr_fe_write_all(&sci->chr, &sci->tdr, 1);
     }
     timer_mod(&sci->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + sci->trtime);
-    sci->ssr = FIELD_DP8(sci->ssr, SSR, TEND, 0);
-    sci->ssr = FIELD_DP8(sci->ssr, SSR, TDRE, 1);
+    sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, TEND, 0);
+    sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, TDRE, 1);
     qemu_set_irq(sci->irq[TEI], 0);
-    if (FIELD_EX8(sci->scr, SCR, TIE)) {
+    if (REG_FIELD_EX8(sci->scr, SCR, TIE)) {
         qemu_irq_pulse(sci->irq[TXI]);
     }
 }
@@ -114,11 +114,11 @@ static void send_byte(RSCIState *sci)
 static void txend(void *opaque)
 {
     RSCIState *sci = RSCI(opaque);
-    if (!FIELD_EX8(sci->ssr, SSR, TDRE)) {
+    if (!REG_FIELD_EX8(sci->ssr, SSR, TDRE)) {
         send_byte(sci);
     } else {
-        sci->ssr = FIELD_DP8(sci->ssr, SSR, TEND, 1);
-        if (FIELD_EX8(sci->scr, SCR, TEIE)) {
+        sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, TEND, 1);
+        if (REG_FIELD_EX8(sci->scr, SCR, TEIE)) {
             qemu_set_irq(sci->irq[TEI], 1);
         }
     }
@@ -127,19 +127,19 @@ static void txend(void *opaque)
 static void update_trtime(RSCIState *sci)
 {
     /* char per bits */
-    sci->trtime = 8 - FIELD_EX8(sci->smr, SMR, CHR);
-    sci->trtime += FIELD_EX8(sci->smr, SMR, PE);
-    sci->trtime += FIELD_EX8(sci->smr, SMR, STOP) + 1;
+    sci->trtime = 8 - REG_FIELD_EX8(sci->smr, SMR, CHR);
+    sci->trtime += REG_FIELD_EX8(sci->smr, SMR, PE);
+    sci->trtime += REG_FIELD_EX8(sci->smr, SMR, STOP) + 1;
     /* x bit transmit time (32 * divrate * brr) / base freq */
     sci->trtime *= 32 * sci->brr;
-    sci->trtime *= 1 << (2 * FIELD_EX8(sci->smr, SMR, CKS));
+    sci->trtime *= 1 << (2 * REG_FIELD_EX8(sci->smr, SMR, CKS));
     sci->trtime *= NANOSECONDS_PER_SECOND;
     sci->trtime /= sci->input_freq;
 }
 
 static bool sci_is_tr_enabled(RSCIState *sci)
 {
-    return FIELD_EX8(sci->scr, SCR, TE) || FIELD_EX8(sci->scr, SCR, RE);
+    return REG_FIELD_EX8(sci->scr, SCR, TE) || REG_FIELD_EX8(sci->scr, SCR, RE);
 }
 
 static void sci_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
@@ -161,35 +161,35 @@ static void sci_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
         break;
     case A_SCR:
         sci->scr = val;
-        if (FIELD_EX8(sci->scr, SCR, TE)) {
-            sci->ssr = FIELD_DP8(sci->ssr, SSR, TDRE, 1);
-            sci->ssr = FIELD_DP8(sci->ssr, SSR, TEND, 1);
-            if (FIELD_EX8(sci->scr, SCR, TIE)) {
+        if (REG_FIELD_EX8(sci->scr, SCR, TE)) {
+            sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, TDRE, 1);
+            sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, TEND, 1);
+            if (REG_FIELD_EX8(sci->scr, SCR, TIE)) {
                 qemu_irq_pulse(sci->irq[TXI]);
             }
         }
-        if (!FIELD_EX8(sci->scr, SCR, TEIE)) {
+        if (!REG_FIELD_EX8(sci->scr, SCR, TEIE)) {
             qemu_set_irq(sci->irq[TEI], 0);
         }
-        if (!FIELD_EX8(sci->scr, SCR, RIE)) {
+        if (!REG_FIELD_EX8(sci->scr, SCR, RIE)) {
             qemu_set_irq(sci->irq[ERI], 0);
         }
         break;
     case A_TDR:
         sci->tdr = val;
-        if (FIELD_EX8(sci->ssr, SSR, TEND)) {
+        if (REG_FIELD_EX8(sci->ssr, SSR, TEND)) {
             send_byte(sci);
         } else {
-            sci->ssr = FIELD_DP8(sci->ssr, SSR, TDRE, 0);
+            sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, TDRE, 0);
         }
         break;
     case A_SSR:
-        sci->ssr = FIELD_DP8(sci->ssr, SSR, MPBT,
-                             FIELD_EX8(val, SSR, MPBT));
-        sci->ssr = FIELD_DP8(sci->ssr, SSR, ERR,
-                             FIELD_EX8(val, SSR, ERR) & 0x07);
-        if (FIELD_EX8(sci->read_ssr, SSR, ERR) &&
-            FIELD_EX8(sci->ssr, SSR, ERR) == 0) {
+        sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, MPBT,
+                             REG_FIELD_EX8(val, SSR, MPBT));
+        sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, ERR,
+                             REG_FIELD_EX8(val, SSR, ERR) & 0x07);
+        if (REG_FIELD_EX8(sci->read_ssr, SSR, ERR) &&
+            REG_FIELD_EX8(sci->ssr, SSR, ERR) == 0) {
             qemu_set_irq(sci->irq[ERI], 0);
         }
         break;
@@ -224,7 +224,7 @@ static uint64_t sci_read(void *opaque, hwaddr offset, unsigned size)
         sci->read_ssr = sci->ssr;
         return sci->ssr;
     case A_RDR:
-        sci->ssr = FIELD_DP8(sci->ssr, SSR, RDRF, 0);
+        sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, RDRF, 0);
         return sci->rdr;
     case A_SCMR:
         return sci->scmr;
@@ -262,8 +262,8 @@ static void sci_event(void *opaque, QEMUChrEvent event)
 {
     RSCIState *sci = RSCI(opaque);
     if (event == CHR_EVENT_BREAK) {
-        sci->ssr = FIELD_DP8(sci->ssr, SSR, FER, 1);
-        if (FIELD_EX8(sci->scr, SCR, RIE)) {
+        sci->ssr = REG_FIELD_DP8(sci->ssr, SSR, FER, 1);
+        if (REG_FIELD_EX8(sci->scr, SCR, RIE)) {
             qemu_set_irq(sci->irq[ERI], 1);
         }
     }

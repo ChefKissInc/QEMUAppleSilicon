@@ -388,12 +388,12 @@ static bool kvm_arm_get_host_cpu_features(ARMHostCPUFeatures *ahcf)
                 !!FIELD_EX32_IDREG(&ahcf->isar, ID_AA64PFR0, EL3);
             uint32_t dbgdidr = 0;
 
-            dbgdidr = FIELD_DP32(dbgdidr, DBGDIDR, WRPS, wrps);
-            dbgdidr = FIELD_DP32(dbgdidr, DBGDIDR, BRPS, brps);
-            dbgdidr = FIELD_DP32(dbgdidr, DBGDIDR, CTX_CMPS, ctx_cmps);
-            dbgdidr = FIELD_DP32(dbgdidr, DBGDIDR, VERSION, version);
-            dbgdidr = FIELD_DP32(dbgdidr, DBGDIDR, NSUHD_IMP, has_el3);
-            dbgdidr = FIELD_DP32(dbgdidr, DBGDIDR, SE_IMP, has_el3);
+            dbgdidr = REG_FIELD_DP32(dbgdidr, DBGDIDR, WRPS, wrps);
+            dbgdidr = REG_FIELD_DP32(dbgdidr, DBGDIDR, BRPS, brps);
+            dbgdidr = REG_FIELD_DP32(dbgdidr, DBGDIDR, CTX_CMPS, ctx_cmps);
+            dbgdidr = REG_FIELD_DP32(dbgdidr, DBGDIDR, VERSION, version);
+            dbgdidr = REG_FIELD_DP32(dbgdidr, DBGDIDR, NSUHD_IMP, has_el3);
+            dbgdidr = REG_FIELD_DP32(dbgdidr, DBGDIDR, SE_IMP, has_el3);
             dbgdidr |= (1 << 15); /* RES1 bit */
             ahcf->isar.dbgdidr = dbgdidr;
         }

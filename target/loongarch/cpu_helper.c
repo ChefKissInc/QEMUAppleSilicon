@@ -20,25 +20,25 @@ void get_dir_base_width(CPULoongArchState *env, uint64_t *dir_base,
 {
     switch (level) {
     case 1:
-        *dir_base = FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR1_BASE);
-        *dir_width = FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR1_WIDTH);
+        *dir_base = REG_FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR1_BASE);
+        *dir_width = REG_FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR1_WIDTH);
         break;
     case 2:
-        *dir_base = FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR2_BASE);
-        *dir_width = FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR2_WIDTH);
+        *dir_base = REG_FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR2_BASE);
+        *dir_width = REG_FIELD_EX64(env->CSR_PWCL, CSR_PWCL, DIR2_WIDTH);
         break;
     case 3:
-        *dir_base = FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR3_BASE);
-        *dir_width = FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR3_WIDTH);
+        *dir_base = REG_FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR3_BASE);
+        *dir_width = REG_FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR3_WIDTH);
         break;
     case 4:
-        *dir_base = FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR4_BASE);
-        *dir_width = FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR4_WIDTH);
+        *dir_base = REG_FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR4_BASE);
+        *dir_width = REG_FIELD_EX64(env->CSR_PWCH, CSR_PWCH, DIR4_WIDTH);
         break;
     default:
         /* level may be zero for ldpte */
-        *dir_base = FIELD_EX64(env->CSR_PWCL, CSR_PWCL, PTBASE);
-        *dir_width = FIELD_EX64(env->CSR_PWCL, CSR_PWCL, PTWIDTH);
+        *dir_base = REG_FIELD_EX64(env->CSR_PWCL, CSR_PWCL, PTBASE);
+        *dir_width = REG_FIELD_EX64(env->CSR_PWCL, CSR_PWCL, PTWIDTH);
         break;
     }
 }
@@ -70,20 +70,20 @@ static int loongarch_page_table_walker(CPULoongArchState *env, hwaddr *physical,
         index = (address >> dir_base) & ((1 << dir_width) - 1);
         phys = base | index << 3;
         base = ldq_phys(cs->as, phys) & TARGET_PHYS_MASK;
-        if (FIELD_EX64(base, TLBENTRY, HUGE)) {
+        if (REG_FIELD_EX64(base, TLBENTRY, HUGE)) {
             /* base is a huge pte */
             break;
         }
     }
 
     /* pte */
-    if (FIELD_EX64(base, TLBENTRY, HUGE)) {
+    if (REG_FIELD_EX64(base, TLBENTRY, HUGE)) {
         /* Huge Page. base is pte */
-        base = FIELD_DP64(base, TLBENTRY, LEVEL, 0);
-        base = FIELD_DP64(base, TLBENTRY, HUGE, 0);
-        if (FIELD_EX64(base, TLBENTRY, HGLOBAL)) {
-            base = FIELD_DP64(base, TLBENTRY, HGLOBAL, 0);
-            base = FIELD_DP64(base, TLBENTRY, G, 1);
+        base = REG_FIELD_DP64(base, TLBENTRY, LEVEL, 0);
+        base = REG_FIELD_DP64(base, TLBENTRY, HUGE, 0);
+        if (REG_FIELD_EX64(base, TLBENTRY, HGLOBAL)) {
+            base = REG_FIELD_DP64(base, TLBENTRY, HGLOBAL, 0);
+            base = REG_FIELD_DP64(base, TLBENTRY, G, 1);
         }
     } else {
         /* Normal Page. base points to pte */
@@ -96,11 +96,11 @@ static int loongarch_page_table_walker(CPULoongArchState *env, hwaddr *physical,
     /* TODO: check plv and other bits? */
 
     /* base is pte, in normal pte format */
-    if (!FIELD_EX64(base, TLBENTRY, V)) {
+    if (!REG_FIELD_EX64(base, TLBENTRY, V)) {
         return TLBRET_NOMATCH;
     }
 
-    if (!FIELD_EX64(base, TLBENTRY, D)) {
+    if (!REG_FIELD_EX64(base, TLBENTRY, D)) {
         *prot = PAGE_READ;
     } else {
         *prot = PAGE_READ | PAGE_WRITE;
@@ -109,9 +109,9 @@ static int loongarch_page_table_walker(CPULoongArchState *env, hwaddr *physical,
     /* get TARGET_PAGE_SIZE aligned physical address */
     base += (address & TARGET_PHYS_MASK) & ((1 << dir_base) - 1);
     /* mask RPLV, NX, NR bits */
-    base = FIELD_DP64(base, TLBENTRY_64, RPLV, 0);
-    base = FIELD_DP64(base, TLBENTRY_64, NX, 0);
-    base = FIELD_DP64(base, TLBENTRY_64, NR, 0);
+    base = REG_FIELD_DP64(base, TLBENTRY_64, RPLV, 0);
+    base = REG_FIELD_DP64(base, TLBENTRY_64, NX, 0);
+    base = REG_FIELD_DP64(base, TLBENTRY_64, NR, 0);
     /* mask other attribute bits */
     *physical = base & TARGET_PAGE_MASK;
 
@@ -151,7 +151,7 @@ static hwaddr dmw_va2pa(CPULoongArchState *env, target_ulong va,
     if (is_la64(env)) {
         return va & TARGET_VIRT_MASK;
     } else {
-        uint32_t pseg = FIELD_EX32(dmw, CSR_DMW_32, PSEG);
+        uint32_t pseg = REG_FIELD_EX32(dmw, CSR_DMW_32, PSEG);
         return (va & MAKE_64BIT_MASK(0, R_CSR_DMW_32_VSEG_SHIFT)) | \
             (pseg << R_CSR_DMW_32_VSEG_SHIFT);
     }
@@ -165,8 +165,8 @@ int get_physical_address(CPULoongArchState *env, hwaddr *physical,
     int kernel_mode = mmu_idx == MMU_KERNEL_IDX;
     uint32_t plv, base_c, base_v;
     int64_t addr_high;
-    uint8_t da = FIELD_EX64(env->CSR_CRMD, CSR_CRMD, DA);
-    uint8_t pg = FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PG);
+    uint8_t da = REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, DA);
+    uint8_t pg = REG_FIELD_EX64(env->CSR_CRMD, CSR_CRMD, PG);
 
     /* Check PG and DA */
     if (da & !pg) {
@@ -184,9 +184,9 @@ int get_physical_address(CPULoongArchState *env, hwaddr *physical,
     /* Check direct map window */
     for (int i = 0; i < 4; i++) {
         if (is_la64(env)) {
-            base_c = FIELD_EX64(env->CSR_DMW[i], CSR_DMW_64, VSEG);
+            base_c = REG_FIELD_EX64(env->CSR_DMW[i], CSR_DMW_64, VSEG);
         } else {
-            base_c = FIELD_EX64(env->CSR_DMW[i], CSR_DMW_32, VSEG);
+            base_c = REG_FIELD_EX64(env->CSR_DMW[i], CSR_DMW_32, VSEG);
         }
         if ((plv & env->CSR_DMW[i]) && (base_c == base_v)) {
             *physical = dmw_va2pa(env, address, env->CSR_DMW[i]);

@@ -381,9 +381,9 @@ void HELPER(probe_noshuf_load)(CPUHexagonState *env, target_ulong va,
 /* Called during packet commit when there are two scalar stores */
 void HELPER(probe_pkt_scalar_store_s0)(CPUHexagonState *env, int args)
 {
-    int mmu_idx = FIELD_EX32(args, PROBE_PKT_SCALAR_STORE_S0, MMU_IDX);
+    int mmu_idx = REG_FIELD_EX32(args, PROBE_PKT_SCALAR_STORE_S0, MMU_IDX);
     bool is_predicated =
-        FIELD_EX32(args, PROBE_PKT_SCALAR_STORE_S0, IS_PREDICATED);
+        REG_FIELD_EX32(args, PROBE_PKT_SCALAR_STORE_S0, IS_PREDICATED);
     uintptr_t ra = GETPC();
     probe_store(env, 0, mmu_idx, is_predicated, ra);
 }
@@ -435,13 +435,13 @@ void HELPER(probe_hvx_stores)(CPUHexagonState *env, int mmu_idx)
 
 void HELPER(probe_pkt_scalar_hvx_stores)(CPUHexagonState *env, int mask)
 {
-    bool has_st0 = FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST0);
-    bool has_st1 = FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST1);
+    bool has_st0 = REG_FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST0);
+    bool has_st1 = REG_FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_ST1);
     bool has_hvx_stores =
-        FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_HVX_STORES);
-    bool s0_is_pred = FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, S0_IS_PRED);
-    bool s1_is_pred = FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, S1_IS_PRED);
-    int mmu_idx = FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, MMU_IDX);
+        REG_FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, HAS_HVX_STORES);
+    bool s0_is_pred = REG_FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, S0_IS_PRED);
+    bool s1_is_pred = REG_FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, S1_IS_PRED);
+    int mmu_idx = REG_FIELD_EX32(mask, PROBE_PKT_SCALAR_HVX_STORES, MMU_IDX);
     uintptr_t ra = GETPC();
 
     if (has_st0) {

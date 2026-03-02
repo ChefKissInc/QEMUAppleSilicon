@@ -454,7 +454,7 @@ static void do_float_check_status(CPUPPCState *env, bool change_fi,
         float_inexact_excp(env);
     }
     if (change_fi) {
-        env->fpscr = FIELD_DP64(env->fpscr, FPSCR, FI,
+        env->fpscr = REG_FIELD_DP64(env->fpscr, FPSCR, FI,
                                 !!(status & float_flag_inexact));
     }
 
@@ -3393,9 +3393,9 @@ static void vsxger16(CPUPPCState *env, ppc_vsr_t *a, ppc_vsr_t *b,
     float32 r, aux_acc;
     float64 psum, va, vb, vc, vd;
     int i, j, xmsk_bit, ymsk_bit;
-    uint8_t pmsk = FIELD_EX32(mask, GER_MSK, PMSK),
-            xmsk = FIELD_EX32(mask, GER_MSK, XMSK),
-            ymsk = FIELD_EX32(mask, GER_MSK, YMSK);
+    uint8_t pmsk = REG_FIELD_EX32(mask, GER_MSK, PMSK),
+            xmsk = REG_FIELD_EX32(mask, GER_MSK, XMSK),
+            ymsk = REG_FIELD_EX32(mask, GER_MSK, YMSK);
     float_status *excp_ptr = &env->fp_status;
     for (i = 0, xmsk_bit = 1 << 3; i < 4; i++, xmsk_bit >>= 1) {
         for (j = 0, ymsk_bit = 1 << 3; j < 4; j++, ymsk_bit >>= 1) {

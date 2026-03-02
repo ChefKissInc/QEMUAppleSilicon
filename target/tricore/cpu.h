@@ -83,14 +83,14 @@ struct TriCoreCPUClass {
 hwaddr tricore_cpu_get_phys_page_debug(CPUState *cpu, vaddr addr);
 void tricore_cpu_dump_state(CPUState *cpu, FILE *f, int flags);
 
-FIELD(PCXI, PCPN_13, 24, 8)
-FIELD(PCXI, PCPN_161, 22, 8)
-FIELD(PCXI, PIE_13, 23, 1)
-FIELD(PCXI, PIE_161, 21, 1)
-FIELD(PCXI, UL_13, 22, 1)
-FIELD(PCXI, UL_161, 20, 1)
-FIELD(PCXI, PCXS, 16, 4)
-FIELD(PCXI, PCXO, 0, 16)
+REG_FIELD(PCXI, PCPN_13, 24, 8)
+REG_FIELD(PCXI, PCPN_161, 22, 8)
+REG_FIELD(PCXI, PIE_13, 23, 1)
+REG_FIELD(PCXI, PIE_161, 21, 1)
+REG_FIELD(PCXI, UL_13, 22, 1)
+REG_FIELD(PCXI, UL_161, 20, 1)
+REG_FIELD(PCXI, PCXS, 16, 4)
+REG_FIELD(PCXI, PCXO, 0, 16)
 uint32_t pcxi_get_ul(CPUTriCoreState *env);
 uint32_t pcxi_get_pie(CPUTriCoreState *env);
 uint32_t pcxi_get_pcpn(CPUTriCoreState *env);
@@ -100,10 +100,10 @@ void pcxi_set_ul(CPUTriCoreState *env, uint32_t val);
 void pcxi_set_pie(CPUTriCoreState *env, uint32_t val);
 void pcxi_set_pcpn(CPUTriCoreState *env, uint32_t val);
 
-FIELD(ICR, IE_161, 15, 1)
-FIELD(ICR, IE_13, 8, 1)
-FIELD(ICR, PIPN, 16, 8)
-FIELD(ICR, CCPN, 0, 8)
+REG_FIELD(ICR, IE_161, 15, 1)
+REG_FIELD(ICR, IE_13, 8, 1)
+REG_FIELD(ICR, PIPN, 16, 8)
+REG_FIELD(ICR, CCPN, 0, 8)
 
 uint32_t icr_get_ie(CPUTriCoreState *env);
 uint32_t icr_get_ccpn(CPUTriCoreState *env);
@@ -251,7 +251,7 @@ void fpu_set_state(CPUTriCoreState *env);
 
 #define MMU_USER_IDX 2
 
-FIELD(TB_FLAGS, PRIV, 0, 2)
+REG_FIELD(TB_FLAGS, PRIV, 0, 2)
 
 void cpu_state_reset(CPUTriCoreState *s);
 void tricore_tcg_init(void);

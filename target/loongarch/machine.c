@@ -29,7 +29,7 @@ static bool fpu_needed(void *opaque)
 {
     LoongArchCPU *cpu = opaque;
 
-    return FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, FP);
+    return REG_FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, FP);
 }
 
 static const VMStateDescription vmstate_fpu = {
@@ -63,7 +63,7 @@ static bool lsx_needed(void *opaque)
 {
     LoongArchCPU *cpu = opaque;
 
-    return FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, LSX);
+    return REG_FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, LSX);
 }
 
 static const VMStateDescription vmstate_lsx = {
@@ -96,7 +96,7 @@ static bool lasx_needed(void *opaque)
 {
     LoongArchCPU *cpu = opaque;
 
-    return FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, LASX);
+    return REG_FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, LASX);
 }
 
 static const VMStateDescription vmstate_lasx = {
@@ -114,7 +114,7 @@ static bool lbt_needed(void *opaque)
 {
     LoongArchCPU *cpu = opaque;
 
-    return !!FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, LBT_ALL);
+    return !!REG_FIELD_EX64(cpu->env.cpucfg[2], CPUCFG2, LBT_ALL);
 }
 
 static const VMStateDescription vmstate_lbt = {

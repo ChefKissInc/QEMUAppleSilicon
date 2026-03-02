@@ -94,9 +94,9 @@ static void cfu_fgcr_postw(RegisterInfo *reg, uint64_t val64)
     uint32_t val = (uint32_t)val64;
 
     /* Do a scan. It always looks good. */
-    if (FIELD_EX32(val, CFU_FGCR, SC_HBC_TRIGGER)) {
-        ARRAY_FIELD_DP32(s->regs, CFU_STATUS, SCAN_CLEAR_PASS, 1);
-        ARRAY_FIELD_DP32(s->regs, CFU_STATUS, SCAN_CLEAR_DONE, 1);
+    if (REG_FIELD_EX32(val, CFU_FGCR, SC_HBC_TRIGGER)) {
+        REG_ARRAY_FIELD_DP32(s->regs, CFU_STATUS, SCAN_CLEAR_PASS, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, CFU_STATUS, SCAN_CLEAR_DONE, 1);
     }
 }
 
@@ -222,7 +222,7 @@ static void cfu_stream_write(void *opaque, hwaddr addr, uint64_t value,
         reg_addr = extract32(wfifo[0], 8, 6);
 
         /* Compressed bitstreams are not supported yet. */
-        if (ARRAY_FIELD_EX32(s->regs, CFU_CTL, DECOMPRESS) == 0) {
+        if (REG_ARRAY_FIELD_EX32(s->regs, CFU_CTL, DECOMPRESS) == 0) {
             if (s->regs[R_CFU_FDRI_CNT]) {
                 XlnxCfiPacket pkt = {
                     .reg_addr = CFRAME_FDRI,

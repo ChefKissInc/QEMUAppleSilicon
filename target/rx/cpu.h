@@ -34,39 +34,39 @@
 
 /* PSW define */
 REG32(PSW, 0)
-FIELD(PSW, C, 0, 1)
-FIELD(PSW, Z, 1, 1)
-FIELD(PSW, S, 2, 1)
-FIELD(PSW, O, 3, 1)
-FIELD(PSW, I, 16, 1)
-FIELD(PSW, U, 17, 1)
-FIELD(PSW, PM, 20, 1)
-FIELD(PSW, IPL, 24, 4)
+REG_FIELD(PSW, C, 0, 1)
+REG_FIELD(PSW, Z, 1, 1)
+REG_FIELD(PSW, S, 2, 1)
+REG_FIELD(PSW, O, 3, 1)
+REG_FIELD(PSW, I, 16, 1)
+REG_FIELD(PSW, U, 17, 1)
+REG_FIELD(PSW, PM, 20, 1)
+REG_FIELD(PSW, IPL, 24, 4)
 
 /* FPSW define */
 REG32(FPSW, 0)
-FIELD(FPSW, RM, 0, 2)
-FIELD(FPSW, CV, 2, 1)
-FIELD(FPSW, CO, 3, 1)
-FIELD(FPSW, CZ, 4, 1)
-FIELD(FPSW, CU, 5, 1)
-FIELD(FPSW, CX, 6, 1)
-FIELD(FPSW, CE, 7, 1)
-FIELD(FPSW, CAUSE, 2, 6)
-FIELD(FPSW, DN, 8, 1)
-FIELD(FPSW, EV, 10, 1)
-FIELD(FPSW, EO, 11, 1)
-FIELD(FPSW, EZ, 12, 1)
-FIELD(FPSW, EU, 13, 1)
-FIELD(FPSW, EX, 14, 1)
-FIELD(FPSW, ENABLE, 10, 5)
-FIELD(FPSW, FV, 26, 1)
-FIELD(FPSW, FO, 27, 1)
-FIELD(FPSW, FZ, 28, 1)
-FIELD(FPSW, FU, 29, 1)
-FIELD(FPSW, FX, 30, 1)
-FIELD(FPSW, FLAGS, 26, 4)
-FIELD(FPSW, FS, 31, 1)
+REG_FIELD(FPSW, RM, 0, 2)
+REG_FIELD(FPSW, CV, 2, 1)
+REG_FIELD(FPSW, CO, 3, 1)
+REG_FIELD(FPSW, CZ, 4, 1)
+REG_FIELD(FPSW, CU, 5, 1)
+REG_FIELD(FPSW, CX, 6, 1)
+REG_FIELD(FPSW, CE, 7, 1)
+REG_FIELD(FPSW, CAUSE, 2, 6)
+REG_FIELD(FPSW, DN, 8, 1)
+REG_FIELD(FPSW, EV, 10, 1)
+REG_FIELD(FPSW, EO, 11, 1)
+REG_FIELD(FPSW, EZ, 12, 1)
+REG_FIELD(FPSW, EU, 13, 1)
+REG_FIELD(FPSW, EX, 14, 1)
+REG_FIELD(FPSW, ENABLE, 10, 5)
+REG_FIELD(FPSW, FV, 26, 1)
+REG_FIELD(FPSW, FO, 27, 1)
+REG_FIELD(FPSW, FZ, 28, 1)
+REG_FIELD(FPSW, FU, 29, 1)
+REG_FIELD(FPSW, FX, 30, 1)
+REG_FIELD(FPSW, FLAGS, 26, 4)
+REG_FIELD(FPSW, FS, 31, 1)
 
 enum {
     NUM_REGS = 16,
@@ -156,14 +156,14 @@ void rx_cpu_unpack_psw(CPURXState *env, uint32_t psw, int rte);
 static inline uint32_t rx_cpu_pack_psw(CPURXState *env)
 {
     uint32_t psw = 0;
-    psw = FIELD_DP32(psw, PSW, IPL, env->psw_ipl);
-    psw = FIELD_DP32(psw, PSW, PM,  env->psw_pm);
-    psw = FIELD_DP32(psw, PSW, U,   env->psw_u);
-    psw = FIELD_DP32(psw, PSW, I,   env->psw_i);
-    psw = FIELD_DP32(psw, PSW, O,   env->psw_o >> 31);
-    psw = FIELD_DP32(psw, PSW, S,   env->psw_s >> 31);
-    psw = FIELD_DP32(psw, PSW, Z,   env->psw_z == 0);
-    psw = FIELD_DP32(psw, PSW, C,   env->psw_c);
+    psw = REG_FIELD_DP32(psw, PSW, IPL, env->psw_ipl);
+    psw = REG_FIELD_DP32(psw, PSW, PM,  env->psw_pm);
+    psw = REG_FIELD_DP32(psw, PSW, U,   env->psw_u);
+    psw = REG_FIELD_DP32(psw, PSW, I,   env->psw_i);
+    psw = REG_FIELD_DP32(psw, PSW, O,   env->psw_o >> 31);
+    psw = REG_FIELD_DP32(psw, PSW, S,   env->psw_s >> 31);
+    psw = REG_FIELD_DP32(psw, PSW, Z,   env->psw_z == 0);
+    psw = REG_FIELD_DP32(psw, PSW, C,   env->psw_c);
     return psw;
 }
 

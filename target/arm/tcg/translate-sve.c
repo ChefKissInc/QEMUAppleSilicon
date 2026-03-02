@@ -1778,8 +1778,8 @@ static bool do_pfirst_pnext(DisasContext *s, arg_rr_esz *a,
     TCGv_i32 t;
     unsigned desc = 0;
 
-    desc = FIELD_DP32(desc, PREDDESC, OPRSZ, pred_full_reg_size(s));
-    desc = FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, pred_full_reg_size(s));
+    desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
 
     tcg_gen_addi_ptr(t_pd, tcg_env, pred_full_reg_offset(s, a->rd));
     tcg_gen_addi_ptr(t_pg, tcg_env, pred_full_reg_offset(s, a->rn));
@@ -2546,9 +2546,9 @@ static bool do_perm_pred3(DisasContext *s, arg_rrr_esz *a, bool high_odd,
     TCGv_ptr t_m = tcg_temp_new_ptr();
     uint32_t desc = 0;
 
-    desc = FIELD_DP32(desc, PREDDESC, OPRSZ, vsz);
-    desc = FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
-    desc = FIELD_DP32(desc, PREDDESC, DATA, high_odd);
+    desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, vsz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, DATA, high_odd);
 
     tcg_gen_addi_ptr(t_d, tcg_env, pred_full_reg_offset(s, a->rd));
     tcg_gen_addi_ptr(t_n, tcg_env, pred_full_reg_offset(s, a->rn));
@@ -2573,9 +2573,9 @@ static bool do_perm_pred2(DisasContext *s, arg_rr_esz *a, bool high_odd,
     tcg_gen_addi_ptr(t_d, tcg_env, pred_full_reg_offset(s, a->rd));
     tcg_gen_addi_ptr(t_n, tcg_env, pred_full_reg_offset(s, a->rn));
 
-    desc = FIELD_DP32(desc, PREDDESC, OPRSZ, vsz);
-    desc = FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
-    desc = FIELD_DP32(desc, PREDDESC, DATA, high_odd);
+    desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, vsz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, DATA, high_odd);
 
     fn(t_d, t_n, tcg_constant_i32(desc));
     return true;
@@ -2697,8 +2697,8 @@ static void find_last_active(DisasContext *s, TCGv_i32 ret, int esz, int pg)
     TCGv_ptr t_p = tcg_temp_new_ptr();
     unsigned desc = 0;
 
-    desc = FIELD_DP32(desc, PREDDESC, OPRSZ, pred_full_reg_size(s));
-    desc = FIELD_DP32(desc, PREDDESC, ESZ, esz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, pred_full_reg_size(s));
+    desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, esz);
 
     tcg_gen_addi_ptr(t_p, tcg_env, pred_full_reg_offset(s, pg));
 
@@ -3144,7 +3144,7 @@ static bool do_brk3(DisasContext *s, arg_rprr_s *a,
     TCGv_ptr n = tcg_temp_new_ptr();
     TCGv_ptr m = tcg_temp_new_ptr();
     TCGv_ptr g = tcg_temp_new_ptr();
-    TCGv_i32 desc = tcg_constant_i32(FIELD_DP32(0, PREDDESC, OPRSZ, vsz));
+    TCGv_i32 desc = tcg_constant_i32(REG_FIELD_DP32(0, PREDDESC, OPRSZ, vsz));
 
     tcg_gen_addi_ptr(d, tcg_env, pred_full_reg_offset(s, a->rd));
     tcg_gen_addi_ptr(n, tcg_env, pred_full_reg_offset(s, a->rn));
@@ -3174,7 +3174,7 @@ static bool do_brk2(DisasContext *s, arg_rpr_s *a,
     TCGv_ptr d = tcg_temp_new_ptr();
     TCGv_ptr n = tcg_temp_new_ptr();
     TCGv_ptr g = tcg_temp_new_ptr();
-    TCGv_i32 desc = tcg_constant_i32(FIELD_DP32(0, PREDDESC, OPRSZ, vsz));
+    TCGv_i32 desc = tcg_constant_i32(REG_FIELD_DP32(0, PREDDESC, OPRSZ, vsz));
 
     tcg_gen_addi_ptr(d, tcg_env, pred_full_reg_offset(s, a->rd));
     tcg_gen_addi_ptr(n, tcg_env, pred_full_reg_offset(s, a->rn));
@@ -3238,8 +3238,8 @@ static void do_cntp(DisasContext *s, TCGv_i64 val, int esz, int pn, int pg)
         TCGv_ptr t_pg = tcg_temp_new_ptr();
         unsigned desc = 0;
 
-        desc = FIELD_DP32(desc, PREDDESC, OPRSZ, psz);
-        desc = FIELD_DP32(desc, PREDDESC, ESZ, esz);
+        desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, psz);
+        desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, esz);
 
         tcg_gen_addi_ptr(t_pn, tcg_env, pred_full_reg_offset(s, pn));
         tcg_gen_addi_ptr(t_pg, tcg_env, pred_full_reg_offset(s, pg));
@@ -3281,9 +3281,9 @@ static bool trans_CNTP_c(DisasContext *s, arg_CNTP_c *a)
                       pred_full_reg_offset(s, a->rn) ^
                       (HOST_BIG_ENDIAN ? 6 : 0));
 
-    desc = FIELD_DP32(desc, PREDDESC, OPRSZ, pred_full_reg_size(s));
-    desc = FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
-    desc = FIELD_DP32(desc, PREDDESC, DATA, a->vl);
+    desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, pred_full_reg_size(s));
+    desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, DATA, a->vl);
 
     gen_helper_sve2p1_cntp_c(cpu_reg(s, a->rd), t_png, tcg_constant_i32(desc));
     return true;
@@ -3485,9 +3485,9 @@ static bool do_WHILE(DisasContext *s, arg_while *a,
     t2 = tcg_temp_new_i32();
     tcg_gen_extrl_i64_i32(t2, t0);
 
-    desc = FIELD_DP32(desc, PREDDESC, OPRSZ, vsz / 8);
-    desc = FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
-    desc = FIELD_DP32(desc, PREDDESC, DATA, data);
+    desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, vsz / 8);
+    desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, DATA, data);
 
     ptr = tcg_temp_new_ptr();
     tcg_gen_addi_ptr(ptr, tcg_env, pred_full_reg_offset(s, a->rd));
@@ -3565,8 +3565,8 @@ static bool trans_WHILE_ptr(DisasContext *s, arg_WHILE_ptr *a)
     t2 = tcg_temp_new_i32();
     tcg_gen_extrl_i64_i32(t2, diff);
 
-    desc = FIELD_DP32(desc, PREDDESC, OPRSZ, vsz / 8);
-    desc = FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
+    desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, vsz / 8);
+    desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
 
     ptr = tcg_temp_new_ptr();
     tcg_gen_addi_ptr(ptr, tcg_env, pred_full_reg_offset(s, a->rd));
@@ -3599,9 +3599,9 @@ static bool do_pext(DisasContext *s, arg_pext *a, int n)
         int part = a->imm * n + i;
         unsigned desc = 0;
 
-        desc = FIELD_DP32(desc, PREDDESC, OPRSZ, pl);
-        desc = FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
-        desc = FIELD_DP32(desc, PREDDESC, DATA, part);
+        desc = REG_FIELD_DP32(desc, PREDDESC, OPRSZ, pl);
+        desc = REG_FIELD_DP32(desc, PREDDESC, ESZ, a->esz);
+        desc = REG_FIELD_DP32(desc, PREDDESC, DATA, part);
 
         tcg_gen_addi_ptr(t_pd, tcg_env, pred_full_reg_offset(s, rd));
         gen_helper_pext(t_pd, t_png, tcg_constant_i32(desc));
@@ -4895,11 +4895,11 @@ uint64_t make_svemte_desc(DisasContext *s, unsigned vsz, uint32_t nregs,
     assert(sizem1 <= R_MTEDESC_SIZEM1_MASK >> R_MTEDESC_SIZEM1_SHIFT);
 
     if (s->mte_active[0]) {
-        desc = FIELD_DP32(desc, MTEDESC, MIDX, get_mem_index(s));
-        desc = FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
-        desc = FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
-        desc = FIELD_DP32(desc, MTEDESC, WRITE, is_write);
-        desc = FIELD_DP32(desc, MTEDESC, SIZEM1, sizem1);
+        desc = REG_FIELD_DP32(desc, MTEDESC, MIDX, get_mem_index(s));
+        desc = REG_FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
+        desc = REG_FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
+        desc = REG_FIELD_DP32(desc, MTEDESC, WRITE, is_write);
+        desc = REG_FIELD_DP32(desc, MTEDESC, SIZEM1, sizem1);
         desc <<= 32;
     }
     return simd_desc(vsz, vsz, data) | desc;

@@ -30,32 +30,32 @@
 
 REG16(PSPI_DATA, 0x0)
 REG16(PSPI_CTL1, 0x2)
-    FIELD(PSPI_CTL1, SPIEN, 0,  1)
-    FIELD(PSPI_CTL1, MOD,   2,  1)
-    FIELD(PSPI_CTL1, EIR,   5,  1)
-    FIELD(PSPI_CTL1, EIW,   6,  1)
-    FIELD(PSPI_CTL1, SCM,   7,  1)
-    FIELD(PSPI_CTL1, SCIDL, 8,  1)
-    FIELD(PSPI_CTL1, SCDV,  9,  7)
+    REG_FIELD(PSPI_CTL1, SPIEN, 0,  1)
+    REG_FIELD(PSPI_CTL1, MOD,   2,  1)
+    REG_FIELD(PSPI_CTL1, EIR,   5,  1)
+    REG_FIELD(PSPI_CTL1, EIW,   6,  1)
+    REG_FIELD(PSPI_CTL1, SCM,   7,  1)
+    REG_FIELD(PSPI_CTL1, SCIDL, 8,  1)
+    REG_FIELD(PSPI_CTL1, SCDV,  9,  7)
 REG16(PSPI_STAT, 0x4)
-    FIELD(PSPI_STAT, BSY,  0,  1)
-    FIELD(PSPI_STAT, RBF,  1,  1)
+    REG_FIELD(PSPI_STAT, BSY,  0,  1)
+    REG_FIELD(PSPI_STAT, RBF,  1,  1)
 
 static void npcm_pspi_update_irq(NPCMPSPIState *s)
 {
     int level = 0;
 
     /* Only fire IRQ when the module is enabled. */
-    if (FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, SPIEN)) {
+    if (REG_FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, SPIEN)) {
         /* Update interrupt as BSY is cleared. */
-        if ((!FIELD_EX16(s->regs[R_PSPI_STAT], PSPI_STAT, BSY)) &&
-            FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, EIW)) {
+        if ((!REG_FIELD_EX16(s->regs[R_PSPI_STAT], PSPI_STAT, BSY)) &&
+            REG_FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, EIW)) {
             level = 1;
         }
 
         /* Update interrupt as RBF is set. */
-        if (FIELD_EX16(s->regs[R_PSPI_STAT], PSPI_STAT, RBF) &&
-            FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, EIR)) {
+        if (REG_FIELD_EX16(s->regs[R_PSPI_STAT], PSPI_STAT, RBF) &&
+            REG_FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, EIR)) {
             level = 1;
         }
     }
@@ -76,7 +76,7 @@ static void npcm_pspi_write_data(NPCMPSPIState *s, uint16_t data)
 {
     uint16_t value = 0;
 
-    if (FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, MOD)) {
+    if (REG_FIELD_EX16(s->regs[R_PSPI_CTL1], PSPI_CTL1, MOD)) {
         value = ssi_transfer(s->spi, extract16(data, 8, 8)) << 8;
     }
     value |= ssi_transfer(s->spi, extract16(data, 0, 8));

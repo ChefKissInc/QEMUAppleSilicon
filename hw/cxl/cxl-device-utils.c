@@ -84,11 +84,11 @@ static uint64_t mailbox_reg_read(void *opaque, hwaddr offset, unsigned size)
     case 8:
         if (offset == A_CXL_DEV_BG_CMD_STS) {
             uint64_t bg_status_reg;
-            bg_status_reg = FIELD_DP64(0, CXL_DEV_BG_CMD_STS, OP,
+            bg_status_reg = REG_FIELD_DP64(0, CXL_DEV_BG_CMD_STS, OP,
                                        cci->bg.opcode);
-            bg_status_reg = FIELD_DP64(bg_status_reg, CXL_DEV_BG_CMD_STS,
+            bg_status_reg = REG_FIELD_DP64(bg_status_reg, CXL_DEV_BG_CMD_STS,
                                        PERCENTAGE_COMP, cci->bg.complete_pct);
-            bg_status_reg = FIELD_DP64(bg_status_reg, CXL_DEV_BG_CMD_STS,
+            bg_status_reg = REG_FIELD_DP64(bg_status_reg, CXL_DEV_BG_CMD_STS,
                                        RET_CODE, cci->bg.ret_code);
             /* endian? */
             cxl_dstate->mbox_reg_state64[offset / size] = bg_status_reg;
@@ -100,7 +100,7 @@ static uint64_t mailbox_reg_read(void *opaque, hwaddr offset, unsigned size)
             qemu_mutex_lock(&cci->bg.lock);
             bgop = !(cci->bg.complete_pct == 100 || cci->bg.aborted);
 
-            status_reg = FIELD_DP64(status_reg, CXL_DEV_MAILBOX_STS, BG_OP,
+            status_reg = REG_FIELD_DP64(status_reg, CXL_DEV_MAILBOX_STS, BG_OP,
                                     bgop);
             cxl_dstate->mbox_reg_state64[offset / size] = status_reg;
             qemu_mutex_unlock(&cci->bg.lock);
@@ -183,14 +183,14 @@ static void mailbox_reg_write(void *opaque, hwaddr offset, uint64_t value,
         g_assert_not_reached();
     }
 
-    if (ARRAY_FIELD_EX32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CTRL,
+    if (REG_ARRAY_FIELD_EX32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CTRL,
                          DOORBELL)) {
         uint64_t command_reg =
             cxl_dstate->mbox_reg_state64[R_CXL_DEV_MAILBOX_CMD];
-        uint8_t cmd_set = FIELD_EX64(command_reg, CXL_DEV_MAILBOX_CMD,
+        uint8_t cmd_set = REG_FIELD_EX64(command_reg, CXL_DEV_MAILBOX_CMD,
                                      COMMAND_SET);
-        uint8_t cmd = FIELD_EX64(command_reg, CXL_DEV_MAILBOX_CMD, COMMAND);
-        size_t len_in = FIELD_EX64(command_reg, CXL_DEV_MAILBOX_CMD, LENGTH);
+        uint8_t cmd = REG_FIELD_EX64(command_reg, CXL_DEV_MAILBOX_CMD, COMMAND);
+        size_t len_in = REG_FIELD_EX64(command_reg, CXL_DEV_MAILBOX_CMD, LENGTH);
         uint8_t *pl = cxl_dstate->mbox_reg_state + A_CXL_DEV_CMD_PAYLOAD;
         /*
          * Copy taken to avoid need for individual command handlers to care
@@ -213,20 +213,20 @@ static void mailbox_reg_write(void *opaque, hwaddr offset, uint64_t value,
         }
 
         /* Set bg and the return code */
-        status_reg = FIELD_DP64(0, CXL_DEV_MAILBOX_STS, BG_OP,
+        status_reg = REG_FIELD_DP64(0, CXL_DEV_MAILBOX_STS, BG_OP,
                                 bg_started ? 1 : 0);
-        status_reg = FIELD_DP64(status_reg, CXL_DEV_MAILBOX_STS, ERRNO, rc);
+        status_reg = REG_FIELD_DP64(status_reg, CXL_DEV_MAILBOX_STS, ERRNO, rc);
         /* Set the return length */
-        command_reg = FIELD_DP64(0, CXL_DEV_MAILBOX_CMD, COMMAND_SET, cmd_set);
-        command_reg = FIELD_DP64(command_reg, CXL_DEV_MAILBOX_CMD,
+        command_reg = REG_FIELD_DP64(0, CXL_DEV_MAILBOX_CMD, COMMAND_SET, cmd_set);
+        command_reg = REG_FIELD_DP64(command_reg, CXL_DEV_MAILBOX_CMD,
                                  COMMAND, cmd);
-        command_reg = FIELD_DP64(command_reg, CXL_DEV_MAILBOX_CMD,
+        command_reg = REG_FIELD_DP64(command_reg, CXL_DEV_MAILBOX_CMD,
                                  LENGTH, len_out);
 
         cxl_dstate->mbox_reg_state64[R_CXL_DEV_MAILBOX_CMD] = command_reg;
         cxl_dstate->mbox_reg_state64[R_CXL_DEV_MAILBOX_STS] = status_reg;
         /* Tell the host we're done */
-        ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CTRL,
+        REG_ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CTRL,
                          DOORBELL, 0);
     }
 }
@@ -343,7 +343,7 @@ void cxl_event_set_status(CXLDeviceState *cxl_dstate, CXLEventLogType log_type,
         cxl_dstate->event_status &= ~(1 << log_type);
     }
 
-    ARRAY_FIELD_DP64(cxl_dstate->dev_reg_state64, CXL_DEV_EVENT_STATUS,
+    REG_ARRAY_FIELD_DP64(cxl_dstate->dev_reg_state64, CXL_DEV_EVENT_STATUS,
                      EVENT_STATUS, cxl_dstate->event_status);
 }
 
@@ -359,18 +359,18 @@ static void device_reg_init_common(CXLDeviceState *cxl_dstate)
 static void mailbox_reg_init_common(CXLDeviceState *cxl_dstate, int msi_n)
 {
     /* 2048 payload size */
-    ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
+    REG_ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
                      PAYLOAD_SIZE, CXL_MAILBOX_PAYLOAD_SHIFT);
     cxl_dstate->payload_size = CXL_MAILBOX_MAX_PAYLOAD_SIZE;
     /* irq support */
-    ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
+    REG_ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
                      BG_INT_CAP, 1);
-    ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
+    REG_ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
                      MSI_N, msi_n);
     cxl_dstate->mbox_msi_n = msi_n;
-    ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
+    REG_ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
                      MBOX_READY_TIME, 0); /* Not reported */
-    ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
+    REG_ARRAY_FIELD_DP32(cxl_dstate->mbox_reg_state32, CXL_DEV_MAILBOX_CAP,
                      TYPE, 0); /* Inferred from class code */
 }
 
@@ -378,8 +378,8 @@ static void memdev_reg_init_common(CXLDeviceState *cxl_dstate)
 {
     uint64_t memdev_status_reg;
 
-    memdev_status_reg = FIELD_DP64(0, CXL_MEM_DEV_STS, MEDIA_STATUS, 1);
-    memdev_status_reg = FIELD_DP64(memdev_status_reg, CXL_MEM_DEV_STS,
+    memdev_status_reg = REG_FIELD_DP64(0, CXL_MEM_DEV_STS, MEDIA_STATUS, 1);
+    memdev_status_reg = REG_FIELD_DP64(memdev_status_reg, CXL_MEM_DEV_STS,
                                    MBOX_READY, 1);
     cxl_dstate->memdev_status = memdev_status_reg;
 }
@@ -391,9 +391,9 @@ void cxl_device_register_init_t3(CXLType3Dev *ct3d, int msi_n)
     const int cap_count = 3;
 
     /* CXL Device Capabilities Array Register */
-    ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_ID, 0);
-    ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_VERSION, 1);
-    ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_COUNT, cap_count);
+    REG_ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_ID, 0);
+    REG_ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_VERSION, 1);
+    REG_ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_COUNT, cap_count);
 
     cxl_device_cap_init(cxl_dstate, DEVICE_STATUS, 1,
                         CXL_DEVICE_STATUS_VERSION);
@@ -417,9 +417,9 @@ void cxl_device_register_init_swcci(CSWMBCCIDev *sw, int msi_n)
     const int cap_count = 3;
 
     /* CXL Device Capabilities Array Register */
-    ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_ID, 0);
-    ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_VERSION, 1);
-    ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_COUNT, cap_count);
+    REG_ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_ID, 0);
+    REG_ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_VERSION, 1);
+    REG_ARRAY_FIELD_DP64(cap_h, CXL_DEV_CAP_ARRAY, CAP_COUNT, cap_count);
 
     cxl_device_cap_init(cxl_dstate, DEVICE_STATUS, 1, 2);
     device_reg_init_common(cxl_dstate);

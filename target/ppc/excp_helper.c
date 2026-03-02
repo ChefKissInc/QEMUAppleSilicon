@@ -397,7 +397,7 @@ static void powerpc_set_excp_state(PowerPCCPU *cpu, target_ulong vector,
 static void powerpc_mcheck_checkstop(CPUPPCState *env)
 {
     /* KVM guests always have MSR[ME] enabled */
-    if (FIELD_EX64(env->msr, MSR, ME)) {
+    if (REG_FIELD_EX64(env->msr, MSR, ME)) {
         return;
     }
     assert(tcg_enabled());
@@ -453,7 +453,7 @@ static void powerpc_excp_40x(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_PROGRAM:   /* Program exception                        */
         switch (env->error_code & ~0xF) {
         case POWERPC_EXCP_FP:
-            if (!FIELD_EX64_FE(env->msr) || !FIELD_EX64(env->msr, MSR, FP)) {
+            if (!FIELD_EX64_FE(env->msr) || !REG_FIELD_EX64(env->msr, MSR, FP)) {
                 trace_ppc_excp_fp_ignore();
                 powerpc_reset_excp_state(cpu);
                 return;
@@ -564,7 +564,7 @@ static void powerpc_excp_6xx(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_PROGRAM:   /* Program exception                        */
         switch (env->error_code & ~0xF) {
         case POWERPC_EXCP_FP:
-            if (!FIELD_EX64_FE(env->msr) || !FIELD_EX64(env->msr, MSR, FP)) {
+            if (!FIELD_EX64_FE(env->msr) || !REG_FIELD_EX64(env->msr, MSR, FP)) {
                 trace_ppc_excp_fp_ignore();
                 powerpc_reset_excp_state(cpu);
                 return;
@@ -608,7 +608,7 @@ static void powerpc_excp_6xx(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_ITLB:      /* Instruction TLB error                    */
         break;
     case POWERPC_EXCP_RESET:     /* System reset exception                   */
-        if (FIELD_EX64(env->msr, MSR, POW)) {
+        if (REG_FIELD_EX64(env->msr, MSR, POW)) {
             cpu_abort(env_cpu(env),
                       "Trying to deliver power-saving system reset exception "
                       "%d with no HV support\n", excp);
@@ -705,7 +705,7 @@ static void powerpc_excp_7xx(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_PROGRAM:   /* Program exception                        */
         switch (env->error_code & ~0xF) {
         case POWERPC_EXCP_FP:
-            if (!FIELD_EX64_FE(env->msr) || !FIELD_EX64(env->msr, MSR, FP)) {
+            if (!FIELD_EX64_FE(env->msr) || !REG_FIELD_EX64(env->msr, MSR, FP)) {
                 trace_ppc_excp_fp_ignore();
                 powerpc_reset_excp_state(cpu);
                 return;
@@ -767,7 +767,7 @@ static void powerpc_excp_7xx(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_DECR:      /* Decrementer exception                    */
         break;
     case POWERPC_EXCP_RESET:     /* System reset exception                   */
-        if (FIELD_EX64(env->msr, MSR, POW)) {
+        if (REG_FIELD_EX64(env->msr, MSR, POW)) {
             cpu_abort(env_cpu(env),
                       "Trying to deliver power-saving system reset exception "
                       "%d with no HV support\n", excp);
@@ -855,7 +855,7 @@ static void powerpc_excp_74xx(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_PROGRAM:   /* Program exception                        */
         switch (env->error_code & ~0xF) {
         case POWERPC_EXCP_FP:
-            if (!FIELD_EX64_FE(env->msr) || !FIELD_EX64(env->msr, MSR, FP)) {
+            if (!FIELD_EX64_FE(env->msr) || !REG_FIELD_EX64(env->msr, MSR, FP)) {
                 trace_ppc_excp_fp_ignore();
                 powerpc_reset_excp_state(cpu);
                 return;
@@ -917,7 +917,7 @@ static void powerpc_excp_74xx(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_DECR:      /* Decrementer exception                    */
         break;
     case POWERPC_EXCP_RESET:     /* System reset exception                   */
-        if (FIELD_EX64(env->msr, MSR, POW)) {
+        if (REG_FIELD_EX64(env->msr, MSR, POW)) {
             cpu_abort(env_cpu(env),
                       "Trying to deliver power-saving system reset "
                       "exception %d with no HV support\n", excp);
@@ -1022,7 +1022,7 @@ static void powerpc_excp_booke(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_PROGRAM:   /* Program exception                        */
         switch (env->error_code & ~0xF) {
         case POWERPC_EXCP_FP:
-            if (!FIELD_EX64_FE(env->msr) || !FIELD_EX64(env->msr, MSR, FP)) {
+            if (!FIELD_EX64_FE(env->msr) || !REG_FIELD_EX64(env->msr, MSR, FP)) {
                 trace_ppc_excp_fp_ignore();
                 powerpc_reset_excp_state(cpu);
                 return;
@@ -1104,7 +1104,7 @@ static void powerpc_excp_booke(PowerPCCPU *cpu, int excp)
         srr1 = SPR_BOOKE_CSRR1;
         break;
     case POWERPC_EXCP_RESET:     /* System reset exception                   */
-        if (FIELD_EX64(env->msr, MSR, POW)) {
+        if (REG_FIELD_EX64(env->msr, MSR, POW)) {
             cpu_abort(env_cpu(env),
                       "Trying to deliver power-saving system reset "
                       "exception %d with no HV support\n", excp);
@@ -1350,7 +1350,7 @@ static void powerpc_excp_books(PowerPCCPU *cpu, int excp)
     case POWERPC_EXCP_PROGRAM:   /* Program exception                        */
         switch (env->error_code & ~0xF) {
         case POWERPC_EXCP_FP:
-            if (!FIELD_EX64_FE(env->msr) || !FIELD_EX64(env->msr, MSR, FP)) {
+            if (!FIELD_EX64_FE(env->msr) || !REG_FIELD_EX64(env->msr, MSR, FP)) {
                 trace_ppc_excp_fp_ignore();
                 powerpc_reset_excp_state(cpu);
                 return;
@@ -1424,7 +1424,7 @@ static void powerpc_excp_books(PowerPCCPU *cpu, int excp)
         break;
     case POWERPC_EXCP_RESET:     /* System reset exception                   */
         /* A power-saving exception sets ME, otherwise it is unchanged */
-        if (FIELD_EX64(env->msr, MSR, POW)) {
+        if (REG_FIELD_EX64(env->msr, MSR, POW)) {
             /* indicate that we resumed from power save mode */
             msr |= 0x10000;
             new_msr |= ((target_ulong)1 << MSR_ME);
@@ -1436,7 +1436,7 @@ static void powerpc_excp_books(PowerPCCPU *cpu, int excp)
              */
             new_msr |= (target_ulong)MSR_HVB;
         } else {
-            if (FIELD_EX64(env->msr, MSR, POW)) {
+            if (REG_FIELD_EX64(env->msr, MSR, POW)) {
                 cpu_abort(env_cpu(env),
                           "Trying to deliver power-saving system reset "
                           "exception %d with no HV support\n", excp);
@@ -1640,7 +1640,7 @@ static int p7_next_unmasked_interrupt(CPUPPCState *env,
     CPUState *cs = env_cpu(env);
 
     /* Ignore MSR[EE] when coming out of some power management states */
-    bool msr_ee = FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
+    bool msr_ee = REG_FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
 
     assert((pending_interrupts & P7_UNUSED_INTERRUPTS) == 0);
 
@@ -1670,7 +1670,7 @@ static int p7_next_unmasked_interrupt(CPUPPCState *env,
         bool heic = !!(lpcr & LPCR_HEIC);
         /* HEIC blocks delivery to the hypervisor */
         if ((msr_ee && !(heic && FIELD_EX64_HV(env->msr) &&
-            !FIELD_EX64(env->msr, MSR, PR))) ||
+            !REG_FIELD_EX64(env->msr, MSR, PR))) ||
             (env->has_hv_mode && !FIELD_EX64_HV(env->msr) && !lpes0)) {
             return PPC_INTERRUPT_EXT;
         }
@@ -1733,7 +1733,7 @@ static int p8_next_unmasked_interrupt(CPUPPCState *env,
     CPUState *cs = env_cpu(env);
 
     /* Ignore MSR[EE] when coming out of some power management states */
-    bool msr_ee = FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
+    bool msr_ee = REG_FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
 
     assert((env->pending_interrupts & P8_UNUSED_INTERRUPTS) == 0);
 
@@ -1763,7 +1763,7 @@ static int p8_next_unmasked_interrupt(CPUPPCState *env,
         bool heic = !!(lpcr & LPCR_HEIC);
         /* HEIC blocks delivery to the hypervisor */
         if ((msr_ee && !(heic && FIELD_EX64_HV(env->msr) &&
-            !FIELD_EX64(env->msr, MSR, PR))) ||
+            !REG_FIELD_EX64(env->msr, MSR, PR))) ||
             (env->has_hv_mode && !FIELD_EX64_HV(env->msr) && !lpes0)) {
             return PPC_INTERRUPT_EXT;
         }
@@ -1788,7 +1788,7 @@ static int p8_next_unmasked_interrupt(CPUPPCState *env,
              * EBB exception must be taken in problem state and
              * with BESCR_GE set.
              */
-            if (FIELD_EX64(env->msr, MSR, PR) &&
+            if (REG_FIELD_EX64(env->msr, MSR, PR) &&
                 (env->spr[SPR_BESCR] & BESCR_GE)) {
                 return PPC_INTERRUPT_EBB;
             }
@@ -1813,7 +1813,7 @@ static int p9_interrupt_powersave(CPUPPCState *env,
         (lpcr & LPCR_EEE)) {
         bool heic = !!(lpcr & LPCR_HEIC);
         if (!heic || !FIELD_EX64_HV(env->msr) ||
-            FIELD_EX64(env->msr, MSR, PR)) {
+            REG_FIELD_EX64(env->msr, MSR, PR)) {
             return PPC_INTERRUPT_EXT;
         }
     }
@@ -1859,7 +1859,7 @@ static int p9_next_unmasked_interrupt(CPUPPCState *env,
     CPUState *cs = env_cpu(env);
 
     /* Ignore MSR[EE] when coming out of some power management states */
-    bool msr_ee = FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
+    bool msr_ee = REG_FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
 
     assert((pending_interrupts & P9_UNUSED_INTERRUPTS) == 0);
 
@@ -1909,7 +1909,7 @@ static int p9_next_unmasked_interrupt(CPUPPCState *env,
         bool heic = !!(lpcr & LPCR_HEIC);
         /* HEIC blocks delivery to the hypervisor */
         if ((msr_ee && !(heic && FIELD_EX64_HV(env->msr) &&
-            !FIELD_EX64(env->msr, MSR, PR))) ||
+            !REG_FIELD_EX64(env->msr, MSR, PR))) ||
             (env->has_hv_mode && !FIELD_EX64_HV(env->msr) && !lpes0)) {
             return PPC_INTERRUPT_EXT;
         }
@@ -1934,7 +1934,7 @@ static int p9_next_unmasked_interrupt(CPUPPCState *env,
              * EBB exception must be taken in problem state and
              * with BESCR_GE set.
              */
-            if (FIELD_EX64(env->msr, MSR, PR) &&
+            if (REG_FIELD_EX64(env->msr, MSR, PR) &&
                 (env->spr[SPR_BESCR] & BESCR_GE)) {
                 return PPC_INTERRUPT_EBB;
             }
@@ -1991,7 +1991,7 @@ static int ppc_next_unmasked_interrupt(CPUPPCState *env)
      * clear when coming out of some power management states (in order
      * for them to become a 0x100).
      */
-    async_deliver = FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
+    async_deliver = REG_FIELD_EX64(env->msr, MSR, EE) || env->resume_as_sreset;
 
     /* Hypervisor decrementer exception */
     if (pending_interrupts & PPC_INTERRUPT_HDECR) {
@@ -2018,12 +2018,12 @@ static int ppc_next_unmasked_interrupt(CPUPPCState *env)
         bool heic = !!(lpcr & LPCR_HEIC);
         /* HEIC blocks delivery to the hypervisor */
         if ((async_deliver && !(heic && FIELD_EX64_HV(env->msr) &&
-            !FIELD_EX64(env->msr, MSR, PR))) ||
+            !REG_FIELD_EX64(env->msr, MSR, PR))) ||
             (env->has_hv_mode && !FIELD_EX64_HV(env->msr) && !lpes0)) {
             return PPC_INTERRUPT_EXT;
         }
     }
-    if (FIELD_EX64(env->msr, MSR, CE)) {
+    if (REG_FIELD_EX64(env->msr, MSR, CE)) {
         /* External critical interrupt */
         if (pending_interrupts & PPC_INTERRUPT_CEXT) {
             return PPC_INTERRUPT_CEXT;
@@ -2068,7 +2068,7 @@ static int ppc_next_unmasked_interrupt(CPUPPCState *env)
              * EBB exception must be taken in problem state and
              * with BESCR_GE set.
              */
-            if (FIELD_EX64(env->msr, MSR, PR) &&
+            if (REG_FIELD_EX64(env->msr, MSR, PR) &&
                 (env->spr[SPR_BESCR] & BESCR_GE)) {
                 return PPC_INTERRUPT_EBB;
             }
@@ -2234,7 +2234,7 @@ static void p9_deliver_interrupt(CPUPPCState *env, int interrupt)
     CPUState *cs = env_cpu(env);
 
     if (cs->halted && !(env->spr[SPR_PSSCR] & PSSCR_EC) &&
-        !FIELD_EX64(env->msr, MSR, EE)) {
+        !REG_FIELD_EX64(env->msr, MSR, EE)) {
         /*
          * A pending interrupt took us out of power-saving, but MSR[EE] says
          * that we should return to NIP+4 instead of delivering it.

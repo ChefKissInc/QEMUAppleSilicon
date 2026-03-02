@@ -1894,10 +1894,10 @@ static void gic_vmcr_write(GICState *s, uint32_t value, MemTxAttrs attrs)
     uint32_t bpr;
     uint32_t prio_mask;
 
-    ctlr = FIELD_EX32(value, GICH_VMCR, VMCCtlr);
-    abpr = FIELD_EX32(value, GICH_VMCR, VMABP);
-    bpr = FIELD_EX32(value, GICH_VMCR, VMBP);
-    prio_mask = FIELD_EX32(value, GICH_VMCR, VMPriMask) << 3;
+    ctlr = REG_FIELD_EX32(value, GICH_VMCR, VMCCtlr);
+    abpr = REG_FIELD_EX32(value, GICH_VMCR, VMABP);
+    bpr = REG_FIELD_EX32(value, GICH_VMCR, VMBP);
+    prio_mask = REG_FIELD_EX32(value, GICH_VMCR, VMPriMask) << 3;
 
     gic_set_cpu_control(s, vcpu, ctlr, attrs);
     s->abpr[vcpu] = MAX(abpr, GIC_VIRT_MIN_ABPR);
@@ -1917,19 +1917,19 @@ static MemTxResult gic_hyp_read(void *opaque, int cpu, hwaddr addr,
         break;
 
     case A_GICH_VTR: /* VGIC Type */
-        *data = FIELD_DP32(0, GICH_VTR, ListRegs, s->num_lrs - 1);
-        *data = FIELD_DP32(*data, GICH_VTR, PREbits,
+        *data = REG_FIELD_DP32(0, GICH_VTR, ListRegs, s->num_lrs - 1);
+        *data = REG_FIELD_DP32(*data, GICH_VTR, PREbits,
                            GIC_VIRT_MAX_GROUP_PRIO_BITS - 1);
-        *data = FIELD_DP32(*data, GICH_VTR, PRIbits,
+        *data = REG_FIELD_DP32(*data, GICH_VTR, PRIbits,
                            (7 - GIC_VIRT_MIN_BPR) - 1);
         break;
 
     case A_GICH_VMCR: /* Virtual Machine Control */
-        *data = FIELD_DP32(0, GICH_VMCR, VMCCtlr,
+        *data = REG_FIELD_DP32(0, GICH_VMCR, VMCCtlr,
                            extract32(s->cpu_ctlr[vcpu], 0, 10));
-        *data = FIELD_DP32(*data, GICH_VMCR, VMABP, s->abpr[vcpu]);
-        *data = FIELD_DP32(*data, GICH_VMCR, VMBP, s->bpr[vcpu]);
-        *data = FIELD_DP32(*data, GICH_VMCR, VMPriMask,
+        *data = REG_FIELD_DP32(*data, GICH_VMCR, VMABP, s->abpr[vcpu]);
+        *data = REG_FIELD_DP32(*data, GICH_VMCR, VMBP, s->bpr[vcpu]);
+        *data = REG_FIELD_DP32(*data, GICH_VMCR, VMPriMask,
                            extract32(s->priority_mask[vcpu], 3, 5));
         break;
 

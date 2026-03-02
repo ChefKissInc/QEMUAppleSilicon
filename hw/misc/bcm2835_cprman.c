@@ -66,8 +66,8 @@ static void pll_reset(DeviceState *dev)
 
 static bool pll_is_locked(const CprmanPllState *pll)
 {
-    return !FIELD_EX32(*pll->reg_a2w_ctrl, A2W_PLLx_CTRL, PWRDN)
-        && !FIELD_EX32(*pll->reg_cm, CM_PLLx, ANARST);
+    return !REG_FIELD_EX32(*pll->reg_a2w_ctrl, A2W_PLLx_CTRL, PWRDN)
+        && !REG_FIELD_EX32(*pll->reg_cm, CM_PLLx, ANARST);
 }
 
 static void pll_update(CprmanPllState *pll)
@@ -79,15 +79,15 @@ static void pll_update(CprmanPllState *pll)
         return;
     }
 
-    pdiv = FIELD_EX32(*pll->reg_a2w_ctrl, A2W_PLLx_CTRL, PDIV);
+    pdiv = REG_FIELD_EX32(*pll->reg_a2w_ctrl, A2W_PLLx_CTRL, PDIV);
 
     if (!pdiv) {
         clock_update(pll->out, 0);
         return;
     }
 
-    ndiv = FIELD_EX32(*pll->reg_a2w_ctrl, A2W_PLLx_CTRL, NDIV);
-    fdiv = FIELD_EX32(*pll->reg_a2w_frac, A2W_PLLx_FRAC, FRAC);
+    ndiv = REG_FIELD_EX32(*pll->reg_a2w_ctrl, A2W_PLLx_CTRL, NDIV);
+    fdiv = REG_FIELD_EX32(*pll->reg_a2w_frac, A2W_PLLx_FRAC, FRAC);
 
     if (pll->reg_a2w_ana[1] & pll->prediv_mask) {
         /* The prescaler doubles the parent frequency */
@@ -167,7 +167,7 @@ static bool pll_channel_is_enabled(CprmanPllChannelState *channel)
      * not set it when enabling the channel, but does clear it when disabling
      * it.
      */
-    return !FIELD_EX32(*channel->reg_a2w_ctrl, A2W_PLLx_CHANNELy, DISABLE)
+    return !REG_FIELD_EX32(*channel->reg_a2w_ctrl, A2W_PLLx_CHANNELy, DISABLE)
         && !(*channel->reg_cm & channel->hold_mask);
 }
 
@@ -180,7 +180,7 @@ static void pll_channel_update(CprmanPllChannelState *channel)
         return;
     }
 
-    div = FIELD_EX32(*channel->reg_a2w_ctrl, A2W_PLLx_CHANNELy, DIV);
+    div = REG_FIELD_EX32(*channel->reg_a2w_ctrl, A2W_PLLx_CHANNELy, DIV);
 
     if (!div) {
         /*
@@ -260,16 +260,16 @@ static const TypeInfo cprman_pll_channel_info = {
 
 static bool clock_mux_is_enabled(CprmanClockMuxState *mux)
 {
-    return FIELD_EX32(*mux->reg_ctl, CM_CLOCKx_CTL, ENABLE);
+    return REG_FIELD_EX32(*mux->reg_ctl, CM_CLOCKx_CTL, ENABLE);
 }
 
 static void clock_mux_update(CprmanClockMuxState *mux)
 {
     uint64_t freq;
-    uint32_t div, src = FIELD_EX32(*mux->reg_ctl, CM_CLOCKx_CTL, SRC);
+    uint32_t div, src = REG_FIELD_EX32(*mux->reg_ctl, CM_CLOCKx_CTL, SRC);
     bool enabled = clock_mux_is_enabled(mux);
 
-    *mux->reg_ctl = FIELD_DP32(*mux->reg_ctl, CM_CLOCKx_CTL, BUSY, enabled);
+    *mux->reg_ctl = REG_FIELD_DP32(*mux->reg_ctl, CM_CLOCKx_CTL, BUSY, enabled);
 
     if (!enabled) {
         clock_update(mux->out, 0);
@@ -315,7 +315,7 @@ static void clock_mux_src_update(void *opaque, ClockEvent event)
     CprmanClockMuxState *s = *backref;
     CprmanClockMuxSource src = backref - s->backref;
 
-    if (FIELD_EX32(*s->reg_ctl, CM_CLOCKx_CTL, SRC) != src) {
+    if (REG_FIELD_EX32(*s->reg_ctl, CM_CLOCKx_CTL, SRC) != src) {
         return;
     }
 
@@ -383,7 +383,7 @@ static const TypeInfo cprman_clock_mux_info = {
 
 static void dsi0hsck_mux_update(CprmanDsi0HsckMuxState *s)
 {
-    bool src_is_plld = FIELD_EX32(*s->reg_cm, CM_DSI0HSCK, SELPLLD);
+    bool src_is_plld = REG_FIELD_EX32(*s->reg_cm, CM_DSI0HSCK, SELPLLD);
     Clock *src = src_is_plld ? s->plld_in : s->plla_in;
 
     clock_update(s->out, clock_get(src));
@@ -530,7 +530,7 @@ static void cprman_write(void *opaque, hwaddr offset,
     BCM2835CprmanState *s = CPRMAN(opaque);
     size_t idx = offset / sizeof(uint32_t);
 
-    if (FIELD_EX32(value, CPRMAN, PASSWORD) != CPRMAN_PASSWORD) {
+    if (REG_FIELD_EX32(value, CPRMAN, PASSWORD) != CPRMAN_PASSWORD) {
         trace_bcm2835_cprman_write_invalid_magic(offset, value);
         return;
     }

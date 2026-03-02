@@ -355,14 +355,14 @@ static uint8_t sd_crc7(const void *message, size_t width)
 
 #define OCR_POWER_DELAY_NS      500000 /* 0.5ms */
 
-FIELD(OCR, VDD_VOLTAGE_WINDOW,          0, 24)
-FIELD(OCR, VDD_VOLTAGE_WIN_LO,          0,  8)
-FIELD(OCR, DUAL_VOLTAGE_CARD,           7,  1)
-FIELD(OCR, VDD_VOLTAGE_WIN_HI,          8, 16)
-FIELD(OCR, ACCEPT_SWITCH_1V8,          24,  1) /* Only UHS-I */
-FIELD(OCR, UHS_II_CARD,                29,  1) /* Only UHS-II */
-FIELD(OCR, CARD_CAPACITY,              30,  1) /* 0:SDSC, 1:SDHC/SDXC */
-FIELD(OCR, CARD_POWER_UP,              31,  1)
+REG_FIELD(OCR, VDD_VOLTAGE_WINDOW,          0, 24)
+REG_FIELD(OCR, VDD_VOLTAGE_WIN_LO,          0,  8)
+REG_FIELD(OCR, DUAL_VOLTAGE_CARD,           7,  1)
+REG_FIELD(OCR, VDD_VOLTAGE_WIN_HI,          8, 16)
+REG_FIELD(OCR, ACCEPT_SWITCH_1V8,          24,  1) /* Only UHS-I */
+REG_FIELD(OCR, UHS_II_CARD,                29,  1) /* Only UHS-II */
+REG_FIELD(OCR, CARD_CAPACITY,              30,  1) /* 0:SDSC, 1:SDHC/SDXC */
+REG_FIELD(OCR, CARD_POWER_UP,              31,  1)
 
 #define ACMD41_ENQUIRY_MASK     0x00ffffff
 #define ACMD41_R3_MASK          (R_OCR_VDD_VOLTAGE_WIN_HI_MASK \
@@ -376,13 +376,13 @@ static void sd_ocr_powerup(void *opaque)
     SDState *sd = opaque;
 
     trace_sdcard_powerup();
-    assert(!FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP));
+    assert(!REG_FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP));
 
     /* card power-up OK */
-    sd->ocr = FIELD_DP32(sd->ocr, OCR, CARD_POWER_UP, 1);
+    sd->ocr = REG_FIELD_DP32(sd->ocr, OCR, CARD_POWER_UP, 1);
 
     if (sd->size > SDSC_MAX_CAPACITY) {
-        sd->ocr = FIELD_DP32(sd->ocr, OCR, CARD_CAPACITY, 1);
+        sd->ocr = REG_FIELD_DP32(sd->ocr, OCR, CARD_CAPACITY, 1);
     }
 }
 
@@ -538,7 +538,7 @@ static void emmc_set_csd(SDState *sd, uint64_t size)
         sd->csd[5] = 0x59;
         sd->csd[6] = 0x8f;
         sd->csd[7] = 0xff;
-        sd->ocr = FIELD_DP32(sd->ocr, OCR, CARD_CAPACITY, 1);
+        sd->ocr = REG_FIELD_DP32(sd->ocr, OCR, CARD_CAPACITY, 1);
     }
     sd->csd[8] = 0xff;
     sd->csd[9] = 0xfc |     /* Max. write current */
@@ -641,30 +641,30 @@ static bool sd_req_rca_same(SDState *s, SDRequest req)
 
 /* Card Status register */
 
-FIELD(CSR, AKE_SEQ_ERROR,               3,  1)
-FIELD(CSR, APP_CMD,                     5,  1)
-FIELD(CSR, FX_EVENT,                    6,  1)
-FIELD(CSR, SWITCH_ERROR,                7,  1)
-FIELD(CSR, READY_FOR_DATA,              8,  1)
-FIELD(CSR, CURRENT_STATE,               9,  4)
-FIELD(CSR, ERASE_RESET,                13,  1)
-FIELD(CSR, CARD_ECC_DISABLED,          14,  1)
-FIELD(CSR, WP_ERASE_SKIP,              15,  1)
-FIELD(CSR, CSD_OVERWRITE,              16,  1)
-FIELD(CSR, DEFERRED_RESPONSE,          17,  1)
-FIELD(CSR, ERROR,                      19,  1)
-FIELD(CSR, CC_ERROR,                   20,  1)
-FIELD(CSR, CARD_ECC_FAILED,            21,  1)
-FIELD(CSR, ILLEGAL_COMMAND,            22,  1)
-FIELD(CSR, COM_CRC_ERROR,              23,  1)
-FIELD(CSR, LOCK_UNLOCK_FAILED,         24,  1)
-FIELD(CSR, CARD_IS_LOCKED,             25,  1)
-FIELD(CSR, WP_VIOLATION,               26,  1)
-FIELD(CSR, ERASE_PARAM,                27,  1)
-FIELD(CSR, ERASE_SEQ_ERROR,            28,  1)
-FIELD(CSR, BLOCK_LEN_ERROR,            29,  1)
-FIELD(CSR, ADDRESS_ERROR,              30,  1)
-FIELD(CSR, OUT_OF_RANGE,               31,  1)
+REG_FIELD(CSR, AKE_SEQ_ERROR,               3,  1)
+REG_FIELD(CSR, APP_CMD,                     5,  1)
+REG_FIELD(CSR, FX_EVENT,                    6,  1)
+REG_FIELD(CSR, SWITCH_ERROR,                7,  1)
+REG_FIELD(CSR, READY_FOR_DATA,              8,  1)
+REG_FIELD(CSR, CURRENT_STATE,               9,  4)
+REG_FIELD(CSR, ERASE_RESET,                13,  1)
+REG_FIELD(CSR, CARD_ECC_DISABLED,          14,  1)
+REG_FIELD(CSR, WP_ERASE_SKIP,              15,  1)
+REG_FIELD(CSR, CSD_OVERWRITE,              16,  1)
+REG_FIELD(CSR, DEFERRED_RESPONSE,          17,  1)
+REG_FIELD(CSR, ERROR,                      19,  1)
+REG_FIELD(CSR, CC_ERROR,                   20,  1)
+REG_FIELD(CSR, CARD_ECC_FAILED,            21,  1)
+REG_FIELD(CSR, ILLEGAL_COMMAND,            22,  1)
+REG_FIELD(CSR, COM_CRC_ERROR,              23,  1)
+REG_FIELD(CSR, LOCK_UNLOCK_FAILED,         24,  1)
+REG_FIELD(CSR, CARD_IS_LOCKED,             25,  1)
+REG_FIELD(CSR, WP_VIOLATION,               26,  1)
+REG_FIELD(CSR, ERASE_PARAM,                27,  1)
+REG_FIELD(CSR, ERASE_SEQ_ERROR,            28,  1)
+REG_FIELD(CSR, BLOCK_LEN_ERROR,            29,  1)
+REG_FIELD(CSR, ADDRESS_ERROR,              30,  1)
+REG_FIELD(CSR, OUT_OF_RANGE,               31,  1)
 
 /* Card status bits, split by clear condition:
  * A : According to the card current state
@@ -764,13 +764,13 @@ static void sd_response_r1_make(SDState *sd, uint8_t *response)
 {
     if (sd_is_spi(sd)) {
         response[0] = sd->state == sd_idle_state
-                   && !FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP);
-        response[0] |= FIELD_EX32(sd->card_status, CSR, ERASE_RESET) << 1;
-        response[0] |= FIELD_EX32(sd->card_status, CSR, ILLEGAL_COMMAND) << 2;
-        response[0] |= FIELD_EX32(sd->card_status, CSR, COM_CRC_ERROR) << 3;
-        response[0] |= FIELD_EX32(sd->card_status, CSR, ERASE_SEQ_ERROR) << 4;
-        response[0] |= FIELD_EX32(sd->card_status, CSR, ADDRESS_ERROR) << 5;
-        response[0] |= FIELD_EX32(sd->card_status, CSR, BLOCK_LEN_ERROR) << 6;
+                   && !REG_FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP);
+        response[0] |= REG_FIELD_EX32(sd->card_status, CSR, ERASE_RESET) << 1;
+        response[0] |= REG_FIELD_EX32(sd->card_status, CSR, ILLEGAL_COMMAND) << 2;
+        response[0] |= REG_FIELD_EX32(sd->card_status, CSR, COM_CRC_ERROR) << 3;
+        response[0] |= REG_FIELD_EX32(sd->card_status, CSR, ERASE_SEQ_ERROR) << 4;
+        response[0] |= REG_FIELD_EX32(sd->card_status, CSR, ADDRESS_ERROR) << 5;
+        response[0] |= REG_FIELD_EX32(sd->card_status, CSR, BLOCK_LEN_ERROR) << 6;
         response[0] |= 0 << 7;
     } else {
         stl_be_p(response, sd->card_status);
@@ -785,15 +785,15 @@ static void spi_response_r2_make(SDState *sd, uint8_t *resp)
     /* Prepend R1 */
     sd_response_r1_make(sd, resp);
 
-    resp[1]  = FIELD_EX32(sd->card_status, CSR, CARD_IS_LOCKED) << 0;
-    resp[1] |= (FIELD_EX32(sd->card_status, CSR, LOCK_UNLOCK_FAILED)
-                || FIELD_EX32(sd->card_status, CSR, WP_ERASE_SKIP)) << 1;
-    resp[1] |= FIELD_EX32(sd->card_status, CSR, ERROR) << 2;
-    resp[1] |= FIELD_EX32(sd->card_status, CSR, CC_ERROR) << 3;
-    resp[1] |= FIELD_EX32(sd->card_status, CSR, CARD_ECC_FAILED) << 4;
-    resp[1] |= FIELD_EX32(sd->card_status, CSR, WP_VIOLATION) << 5;
-    resp[1] |= FIELD_EX32(sd->card_status, CSR, ERASE_PARAM) << 6;
-    resp[1] |= FIELD_EX32(sd->card_status, CSR, OUT_OF_RANGE) << 7;
+    resp[1]  = REG_FIELD_EX32(sd->card_status, CSR, CARD_IS_LOCKED) << 0;
+    resp[1] |= (REG_FIELD_EX32(sd->card_status, CSR, LOCK_UNLOCK_FAILED)
+                || REG_FIELD_EX32(sd->card_status, CSR, WP_ERASE_SKIP)) << 1;
+    resp[1] |= REG_FIELD_EX32(sd->card_status, CSR, ERROR) << 2;
+    resp[1] |= REG_FIELD_EX32(sd->card_status, CSR, CC_ERROR) << 3;
+    resp[1] |= REG_FIELD_EX32(sd->card_status, CSR, CARD_ECC_FAILED) << 4;
+    resp[1] |= REG_FIELD_EX32(sd->card_status, CSR, WP_VIOLATION) << 5;
+    resp[1] |= REG_FIELD_EX32(sd->card_status, CSR, ERASE_PARAM) << 6;
+    resp[1] |= REG_FIELD_EX32(sd->card_status, CSR, OUT_OF_RANGE) << 7;
 }
 
 static void sd_response_r3_make(SDState *sd, uint8_t *response)
@@ -830,7 +830,7 @@ static void sd_response_r7_make(SDState *sd, uint8_t *response)
 
 static uint32_t sd_blk_len(SDState *sd)
 {
-    if (FIELD_EX32(sd->ocr, OCR, CARD_CAPACITY)) {
+    if (REG_FIELD_EX32(sd->ocr, OCR, CARD_CAPACITY)) {
         return 1 << HWBLOCK_SHIFT;
     }
     return sd->blk_len;
@@ -867,7 +867,7 @@ static uint64_t sd_req_get_address(SDState *sd, SDRequest req)
 {
     uint64_t addr;
 
-    if (FIELD_EX32(sd->ocr, OCR, CARD_CAPACITY)) {
+    if (REG_FIELD_EX32(sd->ocr, OCR, CARD_CAPACITY)) {
         addr = (uint64_t) req.arg << HWBLOCK_SHIFT;
     } else {
         addr = req.arg;
@@ -969,7 +969,7 @@ static bool sd_ocr_vmstate_needed(void *opaque)
     SDState *sd = opaque;
 
     /* Include the OCR state (and timer) if it is not yet powered up */
-    return !FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP);
+    return !REG_FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP);
 }
 
 static const VMStateDescription sd_ocr_vmstate = {
@@ -1090,7 +1090,7 @@ static void sd_erase(SDState *sd)
         return;
     }
 
-    if (FIELD_EX32(sd->ocr, OCR, CARD_CAPACITY)) {
+    if (REG_FIELD_EX32(sd->ocr, OCR, CARD_CAPACITY)) {
         /* High capacity memory card: erase units are 512 byte blocks */
         erase_start <<= HWBLOCK_SHIFT;
         erase_end <<= HWBLOCK_SHIFT;
@@ -2028,7 +2028,7 @@ static sd_rsp_type_t sd_cmd_SEND_OP_COND(SDState *sd, SDRequest req)
      * assumes that the card is in ready state as soon as it
      * sees the power up bit set.
      */
-    if (!FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP)) {
+    if (!REG_FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP)) {
         if ((req.arg & ACMD41_ENQUIRY_MASK) != 0) {
             timer_del(sd->ocr_power_timer);
             sd_ocr_powerup(sd);
@@ -2042,7 +2042,7 @@ static sd_rsp_type_t sd_cmd_SEND_OP_COND(SDState *sd, SDRequest req)
         }
     }
 
-    if (FIELD_EX32(sd->ocr & req.arg, OCR, VDD_VOLTAGE_WINDOW)) {
+    if (REG_FIELD_EX32(sd->ocr & req.arg, OCR, VDD_VOLTAGE_WINDOW)) {
         /*
          * We accept any voltage.  10000 V is nothing.
          *
@@ -2100,7 +2100,7 @@ static sd_rsp_type_t sd_normal_command(SDState *sd, SDRequest req)
         sd->multi_blk_cnt = 0;
     }
 
-    if (sd->proto->cmd[req.cmd].class == 6 && FIELD_EX32(sd->ocr, OCR,
+    if (sd->proto->cmd[req.cmd].class == 6 && REG_FIELD_EX32(sd->ocr, OCR,
                                                          CARD_CAPACITY)) {
         /* Only Standard Capacity cards support class 6 commands */
         return sd_illegal;
@@ -2290,7 +2290,7 @@ static size_t sd_do_command(SDState *sd, SDRequest *req,
         /* Valid command, we can update the 'state before command' bits.
          * (Do this now so they appear in r1 responses.)
          */
-        sd->card_status = FIELD_DP32(sd->card_status, CSR,
+        sd->card_status = REG_FIELD_DP32(sd->card_status, CSR,
                                      CURRENT_STATE, last_state);
     }
 

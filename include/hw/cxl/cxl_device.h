@@ -285,9 +285,9 @@ void cxl_device_register_init_swcci(CSWMBCCIDev *sw, int msi_n);
  * 64 bits are currently reserved.
  */
 REG64(CXL_DEV_CAP_ARRAY, 0)
-    FIELD(CXL_DEV_CAP_ARRAY, CAP_ID, 0, 16)
-    FIELD(CXL_DEV_CAP_ARRAY, CAP_VERSION, 16, 8)
-    FIELD(CXL_DEV_CAP_ARRAY, CAP_COUNT, 32, 16)
+    REG_FIELD(CXL_DEV_CAP_ARRAY, CAP_ID, 0, 16)
+    REG_FIELD(CXL_DEV_CAP_ARRAY, CAP_VERSION, 16, 8)
+    REG_FIELD(CXL_DEV_CAP_ARRAY, CAP_COUNT, 32, 16)
 
 void cxl_event_set_status(CXLDeviceState *cxl_dstate, CXLEventLogType log_type,
                           bool available);
@@ -310,12 +310,12 @@ void cxl_event_set_status(CXLDeviceState *cxl_dstate, CXLEventLogType log_type,
  */
 #define CXL_DEVICE_CAPABILITY_HEADER_REGISTER(n, offset)  \
     REG32(CXL_DEV_##n##_CAP_HDR0, offset)                 \
-        FIELD(CXL_DEV_##n##_CAP_HDR0, CAP_ID, 0, 16)      \
-        FIELD(CXL_DEV_##n##_CAP_HDR0, CAP_VERSION, 16, 8) \
+        REG_FIELD(CXL_DEV_##n##_CAP_HDR0, CAP_ID, 0, 16)      \
+        REG_FIELD(CXL_DEV_##n##_CAP_HDR0, CAP_VERSION, 16, 8) \
     REG32(CXL_DEV_##n##_CAP_HDR1, offset + 4)             \
-        FIELD(CXL_DEV_##n##_CAP_HDR1, CAP_OFFSET, 0, 32)  \
+        REG_FIELD(CXL_DEV_##n##_CAP_HDR1, CAP_OFFSET, 0, 32)  \
     REG32(CXL_DEV_##n##_CAP_HDR2, offset + 8)             \
-        FIELD(CXL_DEV_##n##_CAP_HDR2, CAP_LENGTH, 0, 32)
+        REG_FIELD(CXL_DEV_##n##_CAP_HDR2, CAP_LENGTH, 0, 32)
 
 CXL_DEVICE_CAPABILITY_HEADER_REGISTER(DEVICE_STATUS, CXL_DEVICE_CAP_HDR1_OFFSET)
 CXL_DEVICE_CAPABILITY_HEADER_REGISTER(MAILBOX, CXL_DEVICE_CAP_HDR1_OFFSET + \
@@ -347,57 +347,57 @@ void cxl_initialize_t3_ld_cci(CXLCCI *cci, DeviceState *d,
         uint32_t *cap_hdrs = dstate->caps_reg_state32;                     \
         int which = R_CXL_DEV_##reg##_CAP_HDR0;                            \
         cap_hdrs[which] =                                                  \
-            FIELD_DP32(cap_hdrs[which], CXL_DEV_##reg##_CAP_HDR0,          \
+            REG_FIELD_DP32(cap_hdrs[which], CXL_DEV_##reg##_CAP_HDR0,          \
                        CAP_ID, cap_id);                                    \
-        cap_hdrs[which] = FIELD_DP32(                                      \
+        cap_hdrs[which] = REG_FIELD_DP32(                                      \
             cap_hdrs[which], CXL_DEV_##reg##_CAP_HDR0, CAP_VERSION, ver);  \
         cap_hdrs[which + 1] =                                              \
-            FIELD_DP32(cap_hdrs[which + 1], CXL_DEV_##reg##_CAP_HDR1,      \
+            REG_FIELD_DP32(cap_hdrs[which + 1], CXL_DEV_##reg##_CAP_HDR1,      \
                        CAP_OFFSET, CXL_##reg##_REGISTERS_OFFSET);          \
         cap_hdrs[which + 2] =                                              \
-            FIELD_DP32(cap_hdrs[which + 2], CXL_DEV_##reg##_CAP_HDR2,      \
+            REG_FIELD_DP32(cap_hdrs[which + 2], CXL_DEV_##reg##_CAP_HDR2,      \
                        CAP_LENGTH, CXL_##reg##_REGISTERS_LENGTH);          \
     } while (0)
 
 /* CXL r3.2 Section 8.2.8.3.1: Event Status Register */
 #define CXL_DEVICE_STATUS_VERSION 2
 REG64(CXL_DEV_EVENT_STATUS, 0)
-    FIELD(CXL_DEV_EVENT_STATUS, EVENT_STATUS, 0, 32)
+    REG_FIELD(CXL_DEV_EVENT_STATUS, EVENT_STATUS, 0, 32)
 
 #define CXL_DEV_MAILBOX_VERSION 1
 /* CXL r3.1 Section 8.2.8.4.3: Mailbox Capabilities Register */
 REG32(CXL_DEV_MAILBOX_CAP, 0)
-    FIELD(CXL_DEV_MAILBOX_CAP, PAYLOAD_SIZE, 0, 5)
-    FIELD(CXL_DEV_MAILBOX_CAP, INT_CAP, 5, 1)
-    FIELD(CXL_DEV_MAILBOX_CAP, BG_INT_CAP, 6, 1)
-    FIELD(CXL_DEV_MAILBOX_CAP, MSI_N, 7, 4)
-    FIELD(CXL_DEV_MAILBOX_CAP, MBOX_READY_TIME, 11, 8)
-    FIELD(CXL_DEV_MAILBOX_CAP, TYPE, 19, 4)
+    REG_FIELD(CXL_DEV_MAILBOX_CAP, PAYLOAD_SIZE, 0, 5)
+    REG_FIELD(CXL_DEV_MAILBOX_CAP, INT_CAP, 5, 1)
+    REG_FIELD(CXL_DEV_MAILBOX_CAP, BG_INT_CAP, 6, 1)
+    REG_FIELD(CXL_DEV_MAILBOX_CAP, MSI_N, 7, 4)
+    REG_FIELD(CXL_DEV_MAILBOX_CAP, MBOX_READY_TIME, 11, 8)
+    REG_FIELD(CXL_DEV_MAILBOX_CAP, TYPE, 19, 4)
 
 /* CXL r3.1 Section 8.2.8.4.4: Mailbox Control Register */
 REG32(CXL_DEV_MAILBOX_CTRL, 4)
-    FIELD(CXL_DEV_MAILBOX_CTRL, DOORBELL, 0, 1)
-    FIELD(CXL_DEV_MAILBOX_CTRL, INT_EN, 1, 1)
-    FIELD(CXL_DEV_MAILBOX_CTRL, BG_INT_EN, 2, 1)
+    REG_FIELD(CXL_DEV_MAILBOX_CTRL, DOORBELL, 0, 1)
+    REG_FIELD(CXL_DEV_MAILBOX_CTRL, INT_EN, 1, 1)
+    REG_FIELD(CXL_DEV_MAILBOX_CTRL, BG_INT_EN, 2, 1)
 
 /* CXL r3.1 Section 8.2.8.4.5: Command Register */
 REG64(CXL_DEV_MAILBOX_CMD, 8)
-    FIELD(CXL_DEV_MAILBOX_CMD, COMMAND, 0, 8)
-    FIELD(CXL_DEV_MAILBOX_CMD, COMMAND_SET, 8, 8)
-    FIELD(CXL_DEV_MAILBOX_CMD, LENGTH, 16, 20)
+    REG_FIELD(CXL_DEV_MAILBOX_CMD, COMMAND, 0, 8)
+    REG_FIELD(CXL_DEV_MAILBOX_CMD, COMMAND_SET, 8, 8)
+    REG_FIELD(CXL_DEV_MAILBOX_CMD, LENGTH, 16, 20)
 
 /* CXL r3.1 Section 8.2.8.4.6: Mailbox Status Register */
 REG64(CXL_DEV_MAILBOX_STS, 0x10)
-    FIELD(CXL_DEV_MAILBOX_STS, BG_OP, 0, 1)
-    FIELD(CXL_DEV_MAILBOX_STS, ERRNO, 32, 16)
-    FIELD(CXL_DEV_MAILBOX_STS, VENDOR_ERRNO, 48, 16)
+    REG_FIELD(CXL_DEV_MAILBOX_STS, BG_OP, 0, 1)
+    REG_FIELD(CXL_DEV_MAILBOX_STS, ERRNO, 32, 16)
+    REG_FIELD(CXL_DEV_MAILBOX_STS, VENDOR_ERRNO, 48, 16)
 
 /* CXL r3.1 Section 8.2.8.4.7: Background Command Status Register */
 REG64(CXL_DEV_BG_CMD_STS, 0x18)
-    FIELD(CXL_DEV_BG_CMD_STS, OP, 0, 16)
-    FIELD(CXL_DEV_BG_CMD_STS, PERCENTAGE_COMP, 16, 7)
-    FIELD(CXL_DEV_BG_CMD_STS, RET_CODE, 32, 16)
-    FIELD(CXL_DEV_BG_CMD_STS, VENDOR_RET_CODE, 48, 16)
+    REG_FIELD(CXL_DEV_BG_CMD_STS, OP, 0, 16)
+    REG_FIELD(CXL_DEV_BG_CMD_STS, PERCENTAGE_COMP, 16, 7)
+    REG_FIELD(CXL_DEV_BG_CMD_STS, RET_CODE, 32, 16)
+    REG_FIELD(CXL_DEV_BG_CMD_STS, VENDOR_RET_CODE, 48, 16)
 
 /* CXL r3.1 Section 8.2.8.4.8: Command Payload Registers */
 REG32(CXL_DEV_CMD_PAYLOAD, 0x20)
@@ -405,18 +405,18 @@ REG32(CXL_DEV_CMD_PAYLOAD, 0x20)
 /* CXL r3.1 Section 8.2.8.4.1: Memory Device Status Registers */
 #define CXL_MEM_DEV_STATUS_VERSION 1
 REG64(CXL_MEM_DEV_STS, 0)
-    FIELD(CXL_MEM_DEV_STS, FATAL, 0, 1)
-    FIELD(CXL_MEM_DEV_STS, FW_HALT, 1, 1)
-    FIELD(CXL_MEM_DEV_STS, MEDIA_STATUS, 2, 2)
-    FIELD(CXL_MEM_DEV_STS, MBOX_READY, 4, 1)
-    FIELD(CXL_MEM_DEV_STS, RESET_NEEDED, 5, 3)
+    REG_FIELD(CXL_MEM_DEV_STS, FATAL, 0, 1)
+    REG_FIELD(CXL_MEM_DEV_STS, FW_HALT, 1, 1)
+    REG_FIELD(CXL_MEM_DEV_STS, MEDIA_STATUS, 2, 2)
+    REG_FIELD(CXL_MEM_DEV_STS, MBOX_READY, 4, 1)
+    REG_FIELD(CXL_MEM_DEV_STS, RESET_NEEDED, 5, 3)
 
 static inline void __toggle_media(CXLDeviceState *cxl_dstate, int val)
 {
     uint64_t dev_status_reg;
 
     dev_status_reg = cxl_dstate->memdev_status;
-    dev_status_reg = FIELD_DP64(dev_status_reg, CXL_MEM_DEV_STS, MEDIA_STATUS,
+    dev_status_reg = REG_FIELD_DP64(dev_status_reg, CXL_MEM_DEV_STS, MEDIA_STATUS,
                                 val);
     cxl_dstate->memdev_status = dev_status_reg;
 }
@@ -428,7 +428,7 @@ static inline void __toggle_media(CXLDeviceState *cxl_dstate, int val)
 static inline bool cxl_dev_media_disabled(CXLDeviceState *cxl_dstate)
 {
     uint64_t dev_status_reg = cxl_dstate->mbox_reg_state64[R_CXL_MEM_DEV_STS];
-    return FIELD_EX64(dev_status_reg, CXL_MEM_DEV_STS, MEDIA_STATUS) == 0x3;
+    return REG_FIELD_EX64(dev_status_reg, CXL_MEM_DEV_STS, MEDIA_STATUS) == 0x3;
 }
 static inline bool scan_media_running(CXLCCI *cci)
 {

@@ -565,7 +565,7 @@ static void mte_sync_check_fail(CPUARMState *env, uint32_t desc,
 
     env->exception.vaddress = dirty_ptr;
 
-    is_write = FIELD_EX32(desc, MTEDESC, WRITE);
+    is_write = REG_FIELD_EX32(desc, MTEDESC, WRITE);
     syn = syn_data_abort_no_iss(arm_current_el(env) != 0, 0, 0, 0, 0, is_write,
                                 0x11);
     raise_exception_ra(env, EXCP_DATA_ABORT, syn, exception_target_el(env), ra);
@@ -599,7 +599,7 @@ static void mte_async_check_fail(CPUARMState *env, uint64_t dirty_ptr,
 void mte_check_fail(CPUARMState *env, uint32_t desc,
                     uint64_t dirty_ptr, uintptr_t ra)
 {
-    int mmu_idx = FIELD_EX32(desc, MTEDESC, MIDX);
+    int mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     ARMMMUIdx arm_mmu_idx = core_to_aa64_mmu_idx(mmu_idx);
     int el, reg_el, tcf;
     uint64_t sctlr;
@@ -642,7 +642,7 @@ void mte_check_fail(CPUARMState *env, uint32_t desc,
          * Tag check fail causes asynchronous flag set for stores, or
          * a synchronous exception for loads.
          */
-        if (FIELD_EX32(desc, MTEDESC, WRITE)) {
+        if (REG_FIELD_EX32(desc, MTEDESC, WRITE)) {
             mte_async_check_fail(env, dirty_ptr, ra, arm_mmu_idx, el);
         } else {
             mte_sync_check_fail(env, desc, dirty_ptr, ra);
@@ -798,9 +798,9 @@ static int mte_probe_int(CPUARMState *env, uint32_t desc, uint64_t ptr,
         return 1;
     }
 
-    mmu_idx = FIELD_EX32(desc, MTEDESC, MIDX);
-    type = FIELD_EX32(desc, MTEDESC, WRITE) ? MMU_DATA_STORE : MMU_DATA_LOAD;
-    sizem1 = FIELD_EX32(desc, MTEDESC, SIZEM1);
+    mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
+    type = REG_FIELD_EX32(desc, MTEDESC, WRITE) ? MMU_DATA_STORE : MMU_DATA_LOAD;
+    sizem1 = REG_FIELD_EX32(desc, MTEDESC, SIZEM1);
 
     /* Find the addr of the end of the access */
     ptr_last = ptr + sizem1;
@@ -886,12 +886,12 @@ uint64_t HELPER(mte_check)(CPUARMState *env, uint32_t desc, uint64_t ptr)
      * memory access.  With MTE enabled, we must check this here before
      * raising any translation fault in allocation_tag_mem.
      */
-    unsigned align = FIELD_EX32(desc, MTEDESC, ALIGN);
+    unsigned align = REG_FIELD_EX32(desc, MTEDESC, ALIGN);
     if (unlikely(align)) {
         align = (1u << align) - 1;
         if (unlikely(ptr & align)) {
-            int idx = FIELD_EX32(desc, MTEDESC, MIDX);
-            bool w = FIELD_EX32(desc, MTEDESC, WRITE);
+            int idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
+            bool w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
             MMUAccessType type = w ? MMU_DATA_STORE : MMU_DATA_LOAD;
             arm_cpu_do_unaligned_access(env_cpu(env), ptr, type, idx, GETPC());
         }
@@ -955,7 +955,7 @@ uint64_t HELPER(mte_check_zva)(CPUARMState *env, uint32_t desc, uint64_t ptr)
      * the original pointer for an invalid page.  But watchpoints require
      * that we probe the actual space.  So do both.
      */
-    mmu_idx = FIELD_EX32(desc, MTEDESC, MIDX);
+    mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     (void) probe_write(env, ptr, 1, mmu_idx, ra);
     mem = allocation_tag_mem(env, mmu_idx, align_ptr, MMU_DATA_STORE,
                              dcz_bytes, MMU_DATA_LOAD, ra);
@@ -1026,10 +1026,10 @@ uint64_t mte_mops_probe(CPUARMState *env, uint64_t ptr, uint64_t size,
     int mmu_idx, tag_count;
     uint64_t ptr_tag, tag_first, tag_last;
     void *mem;
-    bool w = FIELD_EX32(desc, MTEDESC, WRITE);
+    bool w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
     uint32_t n;
 
-    mmu_idx = FIELD_EX32(desc, MTEDESC, MIDX);
+    mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     /* True probe; this will never fault */
     mem = allocation_tag_mem_probe(env, mmu_idx, ptr,
                                    w ? MMU_DATA_STORE : MMU_DATA_LOAD,
@@ -1076,10 +1076,10 @@ uint64_t mte_mops_probe_rev(CPUARMState *env, uint64_t ptr, uint64_t size,
     int mmu_idx, tag_count;
     uint64_t ptr_tag, tag_first, tag_last;
     void *mem;
-    bool w = FIELD_EX32(desc, MTEDESC, WRITE);
+    bool w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
     uint32_t n;
 
-    mmu_idx = FIELD_EX32(desc, MTEDESC, MIDX);
+    mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     /*
      * True probe; this will never fault. Note that our caller passes
      * us a pointer to the end of the region, but allocation_tag_mem_probe()
@@ -1140,7 +1140,7 @@ void mte_mops_set_tags(CPUARMState *env, uint64_t ptr, uint64_t size,
         return;
     }
 
-    mmu_idx = FIELD_EX32(desc, MTEDESC, MIDX);
+    mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     /* True probe: this will never fault */
     mem = allocation_tag_mem_probe(env, mmu_idx, ptr, MMU_DATA_STORE, size,
                                    MMU_DATA_STORE, true, 0);

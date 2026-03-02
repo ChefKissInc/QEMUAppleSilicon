@@ -210,22 +210,22 @@
  * It only supports write operation
  */
 REG32(GPIO_INDEX_REG, 0x2AC)
-    FIELD(GPIO_INDEX_REG, NUMBER, 0, 8)
-    FIELD(GPIO_INDEX_REG, COMMAND, 12, 1)
-    FIELD(GPIO_INDEX_REG, TYPE, 16, 4)
-    FIELD(GPIO_INDEX_REG, DATA_VALUE, 20, 1)
-    FIELD(GPIO_INDEX_REG, DIRECTION, 20, 1)
-    FIELD(GPIO_INDEX_REG, INT_ENABLE, 20, 1)
-    FIELD(GPIO_INDEX_REG, INT_SENS_0, 21, 1)
-    FIELD(GPIO_INDEX_REG, INT_SENS_1, 22, 1)
-    FIELD(GPIO_INDEX_REG, INT_SENS_2, 23, 1)
-    FIELD(GPIO_INDEX_REG, INT_STATUS, 24, 1)
-    FIELD(GPIO_INDEX_REG, DEBOUNCE_1, 20, 1)
-    FIELD(GPIO_INDEX_REG, DEBOUNCE_2, 21, 1)
-    FIELD(GPIO_INDEX_REG, RESET_TOLERANT, 20, 1)
-    FIELD(GPIO_INDEX_REG, COMMAND_SRC_0, 20, 1)
-    FIELD(GPIO_INDEX_REG, COMMAND_SRC_1, 21, 1)
-    FIELD(GPIO_INDEX_REG, INPUT_MASK, 20, 1)
+    REG_FIELD(GPIO_INDEX_REG, NUMBER, 0, 8)
+    REG_FIELD(GPIO_INDEX_REG, COMMAND, 12, 1)
+    REG_FIELD(GPIO_INDEX_REG, TYPE, 16, 4)
+    REG_FIELD(GPIO_INDEX_REG, DATA_VALUE, 20, 1)
+    REG_FIELD(GPIO_INDEX_REG, DIRECTION, 20, 1)
+    REG_FIELD(GPIO_INDEX_REG, INT_ENABLE, 20, 1)
+    REG_FIELD(GPIO_INDEX_REG, INT_SENS_0, 21, 1)
+    REG_FIELD(GPIO_INDEX_REG, INT_SENS_1, 22, 1)
+    REG_FIELD(GPIO_INDEX_REG, INT_SENS_2, 23, 1)
+    REG_FIELD(GPIO_INDEX_REG, INT_STATUS, 24, 1)
+    REG_FIELD(GPIO_INDEX_REG, DEBOUNCE_1, 20, 1)
+    REG_FIELD(GPIO_INDEX_REG, DEBOUNCE_2, 21, 1)
+    REG_FIELD(GPIO_INDEX_REG, RESET_TOLERANT, 20, 1)
+    REG_FIELD(GPIO_INDEX_REG, COMMAND_SRC_0, 20, 1)
+    REG_FIELD(GPIO_INDEX_REG, COMMAND_SRC_1, 21, 1)
+    REG_FIELD(GPIO_INDEX_REG, INPUT_MASK, 20, 1)
 
 /* AST2700 GPIO Register Address Offsets */
 REG32(GPIO_2700_DEBOUNCE_TIME_1, 0x000)
@@ -240,21 +240,21 @@ REG32(GPIO_2700_INT_STATUS_6, 0x114)
 REG32(GPIO_2700_INT_STATUS_7, 0x118)
 /* GPIOA0 - GPIOAA7 Control Register */
 REG32(GPIO_A0_CONTROL, 0x180)
-    SHARED_FIELD(GPIO_CONTROL_OUT_DATA, 0, 1)
-    SHARED_FIELD(GPIO_CONTROL_DIRECTION, 1, 1)
-    SHARED_FIELD(GPIO_CONTROL_INT_ENABLE, 2, 1)
-    SHARED_FIELD(GPIO_CONTROL_INT_SENS_0, 3, 1)
-    SHARED_FIELD(GPIO_CONTROL_INT_SENS_1, 4, 1)
-    SHARED_FIELD(GPIO_CONTROL_INT_SENS_2, 5, 1)
-    SHARED_FIELD(GPIO_CONTROL_RESET_TOLERANCE, 6, 1)
-    SHARED_FIELD(GPIO_CONTROL_DEBOUNCE_1, 7, 1)
-    SHARED_FIELD(GPIO_CONTROL_DEBOUNCE_2, 8, 1)
-    SHARED_FIELD(GPIO_CONTROL_INPUT_MASK, 9, 1)
-    SHARED_FIELD(GPIO_CONTROL_BLINK_COUNTER_1, 10, 1)
-    SHARED_FIELD(GPIO_CONTROL_BLINK_COUNTER_2, 11, 1)
-    SHARED_FIELD(GPIO_CONTROL_INT_STATUS, 12, 1)
-    SHARED_FIELD(GPIO_CONTROL_IN_DATA, 13, 1)
-    SHARED_FIELD(GPIO_CONTROL_RESERVED, 14, 18)
+    SHARED_REG_FIELD(GPIO_CONTROL_OUT_DATA, 0, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_DIRECTION, 1, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_INT_ENABLE, 2, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_INT_SENS_0, 3, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_INT_SENS_1, 4, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_INT_SENS_2, 5, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_RESET_TOLERANCE, 6, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_DEBOUNCE_1, 7, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_DEBOUNCE_2, 8, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_INPUT_MASK, 9, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_BLINK_COUNTER_1, 10, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_BLINK_COUNTER_2, 11, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_INT_STATUS, 12, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_IN_DATA, 13, 1)
+    SHARED_REG_FIELD(GPIO_CONTROL_RESERVED, 14, 18)
 REG32(GPIO_AA7_CONTROL, 0x4DC)
 #define GPIO_2700_MEM_SIZE 0x4E0
 #define GPIO_2700_REG_ARRAY_SIZE (GPIO_2700_MEM_SIZE >> 2)
@@ -666,9 +666,9 @@ static void aspeed_gpio_write_index_mode(void *opaque, hwaddr offset,
     AspeedGPIOClass *agc = ASPEED_GPIO_GET_CLASS(s);
     const GPIOSetProperties *props;
     GPIOSets *set;
-    uint32_t reg_idx_number = FIELD_EX32(data, GPIO_INDEX_REG, NUMBER);
-    uint32_t reg_idx_type = FIELD_EX32(data, GPIO_INDEX_REG, TYPE);
-    uint32_t reg_idx_command = FIELD_EX32(data, GPIO_INDEX_REG, COMMAND);
+    uint32_t reg_idx_number = REG_FIELD_EX32(data, GPIO_INDEX_REG, NUMBER);
+    uint32_t reg_idx_type = REG_FIELD_EX32(data, GPIO_INDEX_REG, TYPE);
+    uint32_t reg_idx_command = REG_FIELD_EX32(data, GPIO_INDEX_REG, COMMAND);
     uint32_t set_idx = reg_idx_number / ASPEED_GPIOS_PER_SET;
     uint32_t pin_idx = reg_idx_number % ASPEED_GPIOS_PER_SET;
     uint32_t group_idx = pin_idx / GPIOS_PER_GROUP;
@@ -687,7 +687,7 @@ static void aspeed_gpio_write_index_mode(void *opaque, hwaddr offset,
     case gpio_reg_idx_data:
         reg_value = set->data_read;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, DATA_VALUE));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, DATA_VALUE));
         reg_value &= props->output;
         reg_value = update_value_control_source(set, set->data_value,
                                                 reg_value);
@@ -697,7 +697,7 @@ static void aspeed_gpio_write_index_mode(void *opaque, hwaddr offset,
     case gpio_reg_idx_direction:
         reg_value = set->direction;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, DIRECTION));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, DIRECTION));
         /*
          *   where data is the value attempted to be written to the pin:
          *    pin type      | input mask | output mask | expected value
@@ -717,26 +717,26 @@ static void aspeed_gpio_write_index_mode(void *opaque, hwaddr offset,
     case gpio_reg_idx_interrupt:
         reg_value = set->int_enable;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, INT_ENABLE));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, INT_ENABLE));
         set->int_enable = update_value_control_source(set, set->int_enable,
                                                       reg_value);
         reg_value = set->int_sens_0;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, INT_SENS_0));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, INT_SENS_0));
         set->int_sens_0 = update_value_control_source(set, set->int_sens_0,
                                                       reg_value);
         reg_value = set->int_sens_1;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, INT_SENS_1));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, INT_SENS_1));
         set->int_sens_1 = update_value_control_source(set, set->int_sens_1,
                                                       reg_value);
         reg_value = set->int_sens_2;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, INT_SENS_2));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, INT_SENS_2));
         set->int_sens_2 = update_value_control_source(set, set->int_sens_2,
                                                       reg_value);
         /* interrupt status */
-        if (FIELD_EX32(data, GPIO_INDEX_REG, INT_STATUS)) {
+        if (REG_FIELD_EX32(data, GPIO_INDEX_REG, INT_STATUS)) {
             /* pending is either 1 or 0 for a 1-bit field */
             pending = extract32(set->int_status, pin_idx, 1);
 
@@ -756,36 +756,36 @@ static void aspeed_gpio_write_index_mode(void *opaque, hwaddr offset,
     case gpio_reg_idx_debounce:
         reg_value = set->debounce_1;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, DEBOUNCE_1));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, DEBOUNCE_1));
         set->debounce_1 = update_value_control_source(set, set->debounce_1,
                                                       reg_value);
         reg_value = set->debounce_2;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, DEBOUNCE_2));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, DEBOUNCE_2));
         set->debounce_2 = update_value_control_source(set, set->debounce_2,
                                                       reg_value);
         return;
     case gpio_reg_idx_tolerance:
         reg_value = set->reset_tol;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, RESET_TOLERANT));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, RESET_TOLERANT));
         set->reset_tol = update_value_control_source(set, set->reset_tol,
                                                      reg_value);
         return;
     case gpio_reg_idx_cmd_src:
         reg_value = set->cmd_source_0;
         reg_value = deposit32(reg_value, GPIOS_PER_GROUP * group_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, COMMAND_SRC_0));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, COMMAND_SRC_0));
         set->cmd_source_0 = reg_value & ASPEED_CMD_SRC_MASK;
         reg_value = set->cmd_source_1;
         reg_value = deposit32(reg_value, GPIOS_PER_GROUP * group_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, COMMAND_SRC_1));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, COMMAND_SRC_1));
         set->cmd_source_1 = reg_value & ASPEED_CMD_SRC_MASK;
         return;
     case gpio_reg_idx_input_mask:
         reg_value = set->input_mask;
         reg_value = deposit32(reg_value, pin_idx, 1,
-                              FIELD_EX32(data, GPIO_INDEX_REG, INPUT_MASK));
+                              REG_FIELD_EX32(data, GPIO_INDEX_REG, INPUT_MASK));
         /*
          * feeds into interrupt generation
          * 0: read from data value reg will be updated
@@ -1019,29 +1019,29 @@ static uint64_t aspeed_gpio_2700_read_control_reg(AspeedGPIOState *s,
     }
 
     set = &s->sets[set_idx];
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_OUT_DATA,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_OUT_DATA,
                               extract32(set->data_read, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_DIRECTION,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_DIRECTION,
                               extract32(set->direction, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_INT_ENABLE,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_INT_ENABLE,
                               extract32(set->int_enable, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_INT_SENS_0,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_INT_SENS_0,
                               extract32(set->int_sens_0, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_INT_SENS_1,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_INT_SENS_1,
                               extract32(set->int_sens_1, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_INT_SENS_2,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_INT_SENS_2,
                               extract32(set->int_sens_2, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_RESET_TOLERANCE,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_RESET_TOLERANCE,
                               extract32(set->reset_tol, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_DEBOUNCE_1,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_DEBOUNCE_1,
                               extract32(set->debounce_1, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_DEBOUNCE_2,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_DEBOUNCE_2,
                               extract32(set->debounce_2, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_INPUT_MASK,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_INPUT_MASK,
                               extract32(set->input_mask, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_INT_STATUS,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_INT_STATUS,
                               extract32(set->int_status, pin_idx, 1));
-    value = SHARED_FIELD_DP32(value, GPIO_CONTROL_IN_DATA,
+    value = SHARED_REG_FIELD_DP32(value, GPIO_CONTROL_IN_DATA,
                               extract32(set->data_value, pin_idx, 1));
     return value;
 }
@@ -1072,7 +1072,7 @@ static void aspeed_gpio_2700_write_control_reg(AspeedGPIOState *s,
     /* direction */
     group_value = set->direction;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_DIRECTION));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_DIRECTION));
     /*
      * where data is the value attempted to be written to the pin:
      * pin type      | input mask | output mask | expected value
@@ -1092,7 +1092,7 @@ static void aspeed_gpio_2700_write_control_reg(AspeedGPIOState *s,
     /* out data */
     group_value = set->data_read;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_OUT_DATA));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_OUT_DATA));
     group_value &= props->output;
     group_value = update_value_control_source(set, set->data_read,
                                               group_value);
@@ -1101,56 +1101,56 @@ static void aspeed_gpio_2700_write_control_reg(AspeedGPIOState *s,
     /* interrupt enable */
     group_value = set->int_enable;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_INT_ENABLE));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_INT_ENABLE));
     set->int_enable = update_value_control_source(set, set->int_enable,
                                                   group_value);
 
     /* interrupt sensitivity type 0 */
     group_value = set->int_sens_0;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_INT_SENS_0));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_INT_SENS_0));
     set->int_sens_0 = update_value_control_source(set, set->int_sens_0,
                                                   group_value);
 
     /* interrupt sensitivity type 1 */
     group_value = set->int_sens_1;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_INT_SENS_1));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_INT_SENS_1));
     set->int_sens_1 = update_value_control_source(set, set->int_sens_1,
                                                   group_value);
 
     /* interrupt sensitivity type 2 */
     group_value = set->int_sens_2;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_INT_SENS_2));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_INT_SENS_2));
     set->int_sens_2 = update_value_control_source(set, set->int_sens_2,
                                                   group_value);
 
     /* reset tolerance enable */
     group_value = set->reset_tol;
     group_value = deposit32(group_value, pin_idx, 1,
-                        SHARED_FIELD_EX32(data, GPIO_CONTROL_RESET_TOLERANCE));
+                        SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_RESET_TOLERANCE));
     set->reset_tol = update_value_control_source(set, set->reset_tol,
                                                  group_value);
 
     /* debounce 1 */
     group_value = set->debounce_1;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_DEBOUNCE_1));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_DEBOUNCE_1));
     set->debounce_1 = update_value_control_source(set, set->debounce_1,
                                                   group_value);
 
     /* debounce 2 */
     group_value = set->debounce_2;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_DEBOUNCE_2));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_DEBOUNCE_2));
     set->debounce_2 = update_value_control_source(set, set->debounce_2,
                                                   group_value);
 
     /* input mask */
     group_value = set->input_mask;
     group_value = deposit32(group_value, pin_idx, 1,
-                            SHARED_FIELD_EX32(data, GPIO_CONTROL_INPUT_MASK));
+                            SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_INPUT_MASK));
     /*
      * feeds into interrupt generation
      * 0: read from data value reg will be updated
@@ -1163,7 +1163,7 @@ static void aspeed_gpio_2700_write_control_reg(AspeedGPIOState *s,
     /* unimplement */
 
     /* interrupt status */
-    if (SHARED_FIELD_EX32(data, GPIO_CONTROL_INT_STATUS)) {
+    if (SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_INT_STATUS)) {
         /* pending is either 1 or 0 for a 1-bit field */
         pending = extract32(set->int_status, pin_idx, 1);
 
@@ -1292,7 +1292,7 @@ static void aspeed_gpio_2700_write(void *opaque, hwaddr offset,
             return;
         }
 
-        if (SHARED_FIELD_EX32(data, GPIO_CONTROL_RESERVED)) {
+        if (SHARED_REG_FIELD_EX32(data, GPIO_CONTROL_RESERVED)) {
             qemu_log_mask(LOG_GUEST_ERROR, "%s: invalid reserved data: 0x%"
                           PRIx64"\n", __func__, data);
             return;

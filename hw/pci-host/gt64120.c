@@ -47,7 +47,7 @@
 #define GT_MULTI                (0x120 >> 2)
 
 REG32(GT_CPU,                   0x000)
-FIELD(GT_CPU,                   Endianness,     12, 1)
+REG_FIELD(GT_CPU,                   Endianness,     12, 1)
 
 /* CPU Address Decode */
 #define GT_SCS10LD              (0x008 >> 2)
@@ -219,13 +219,13 @@ FIELD(GT_CPU,                   Endianness,     12, 1)
 #define GT_PCI0_CFGDATA         (0xcfc >> 2)
 
 REG32(GT_PCI0_CMD,              0xc00)
-FIELD(GT_PCI0_CMD,              MByteSwap,      0,  1)
-FIELD(GT_PCI0_CMD,              SByteSwap,      16, 1)
+REG_FIELD(GT_PCI0_CMD,              MByteSwap,      0,  1)
+REG_FIELD(GT_PCI0_CMD,              SByteSwap,      16, 1)
 #define  R_GT_PCI0_CMD_ByteSwap_MASK \
         (R_GT_PCI0_CMD_MByteSwap_MASK | R_GT_PCI0_CMD_SByteSwap_MASK)
 REG32(GT_PCI1_CMD,              0xc80)
-FIELD(GT_PCI1_CMD,              MByteSwap,      0,  1)
-FIELD(GT_PCI1_CMD,              SByteSwap,      16, 1)
+REG_FIELD(GT_PCI1_CMD,              MByteSwap,      0,  1)
+REG_FIELD(GT_PCI1_CMD,              SByteSwap,      16, 1)
 #define  R_GT_PCI1_CMD_ByteSwap_MASK \
         (R_GT_PCI1_CMD_MByteSwap_MASK | R_GT_PCI1_CMD_SByteSwap_MASK)
 
@@ -997,7 +997,7 @@ static bool bswap(const GT64120State *s)
     PCIHostState *phb = PCI_HOST_BRIDGE(s);
     /*check for bus == 0 && device == 0, Bits 11:15 = Device , Bits 16:23 = Bus*/
     bool is_phb_dev0 = extract32(phb->config_reg, 11, 13) == 0;
-    bool le_mode = FIELD_EX32(s->regs[GT_PCI0_CMD], GT_PCI0_CMD, MByteSwap);
+    bool le_mode = REG_FIELD_EX32(s->regs[GT_PCI0_CMD], GT_PCI0_CMD, MByteSwap);
     /* Only swap for non-bridge devices in big-endian mode */
     return !le_mode && !is_phb_dev0;
 }

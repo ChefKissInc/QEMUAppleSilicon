@@ -30,21 +30,21 @@
 #include "migration/vmstate.h"
 
 REG8(TCR, 0)
-  FIELD(TCR, CCLR,  3, 2)
-  FIELD(TCR, OVIE,  5, 1)
-  FIELD(TCR, CMIEA, 6, 1)
-  FIELD(TCR, CMIEB, 7, 1)
+  REG_FIELD(TCR, CCLR,  3, 2)
+  REG_FIELD(TCR, OVIE,  5, 1)
+  REG_FIELD(TCR, CMIEA, 6, 1)
+  REG_FIELD(TCR, CMIEB, 7, 1)
 REG8(TCSR, 2)
-  FIELD(TCSR, OSA,  0, 2)
-  FIELD(TCSR, OSB,  2, 2)
-  FIELD(TCSR, ADTE, 4, 2)
+  REG_FIELD(TCSR, OSA,  0, 2)
+  REG_FIELD(TCSR, OSB,  2, 2)
+  REG_FIELD(TCSR, ADTE, 4, 2)
 REG8(TCORA, 4)
 REG8(TCORB, 6)
 REG8(TCNT, 8)
 REG8(TCCR, 10)
-  FIELD(TCCR, CKS,   0, 3)
-  FIELD(TCCR, CSS,   3, 2)
-  FIELD(TCCR, TMRIS, 7, 1)
+  REG_FIELD(TCCR, CKS,   0, 3)
+  REG_FIELD(TCCR, CSS,   3, 2)
+  REG_FIELD(TCCR, TMRIS, 7, 1)
 
 #define CSS_EXTERNAL  0x00
 #define CSS_INTERNAL  0x01
@@ -69,12 +69,12 @@ static void update_events(RTMRState *tmr, int ch)
     if (tmr->tccr[ch] == 0) {
         return;
     }
-    if (FIELD_EX8(tmr->tccr[ch], TCCR, CSS) == 0) {
+    if (REG_FIELD_EX8(tmr->tccr[ch], TCCR, CSS) == 0) {
         /* external clock mode */
         /* event not happened */
         return;
     }
-    if (FIELD_EX8(tmr->tccr[0], TCCR, CSS) == CSS_CASCADING) {
+    if (REG_FIELD_EX8(tmr->tccr[0], TCCR, CSS) == CSS_CASCADING) {
         /* cascading mode */
         if (ch == 1) {
             tmr->next[ch] = none;
@@ -98,7 +98,7 @@ static void update_events(RTMRState *tmr, int ch)
     }
     tmr->next[ch] = event;
     next_time = diff[event];
-    next_time *= clkdiv[FIELD_EX8(tmr->tccr[ch], TCCR, CKS)];
+    next_time *= clkdiv[REG_FIELD_EX8(tmr->tccr[ch], TCCR, CKS)];
     next_time *= NANOSECONDS_PER_SECOND;
     next_time /= tmr->input_freq;
     next_time += qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
@@ -107,7 +107,7 @@ static void update_events(RTMRState *tmr, int ch)
 
 static int elapsed_time(RTMRState *tmr, int ch, int64_t delta)
 {
-    int divrate = clkdiv[FIELD_EX8(tmr->tccr[ch], TCCR, CKS)];
+    int divrate = clkdiv[REG_FIELD_EX8(tmr->tccr[ch], TCCR, CKS)];
     int et;
 
     tmr->div_round[ch] += delta;
@@ -132,7 +132,7 @@ static uint16_t read_tcnt(RTMRState *tmr, unsigned size, int ch)
     if (delta > 0) {
         tmr->tick = now;
 
-        switch (FIELD_EX8(tmr->tccr[1], TCCR, CSS)) {
+        switch (REG_FIELD_EX8(tmr->tccr[1], TCCR, CSS)) {
         case CSS_INTERNAL:
             /* timer1 count update */
             elapsed = elapsed_time(tmr, 1, delta);
@@ -149,7 +149,7 @@ static uint16_t read_tcnt(RTMRState *tmr, unsigned size, int ch)
         default:
             g_assert_not_reached();
         }
-        switch (FIELD_EX8(tmr->tccr[0], TCCR, CSS)) {
+        switch (REG_FIELD_EX8(tmr->tccr[0], TCCR, CSS)) {
         case CSS_INTERNAL:
             elapsed = elapsed_time(tmr, 0, delta);
             tcnt[0] = tmr->tcnt[0] + elapsed;
@@ -181,12 +181,12 @@ static uint16_t read_tcnt(RTMRState *tmr, unsigned size, int ch)
 static uint8_t read_tccr(uint8_t r)
 {
     uint8_t tccr = 0;
-    tccr = FIELD_DP8(tccr, TCCR, TMRIS,
-                     FIELD_EX8(r, TCCR, TMRIS));
-    tccr = FIELD_DP8(tccr, TCCR, CSS,
-                     FIELD_EX8(r, TCCR, CSS));
-    tccr = FIELD_DP8(tccr, TCCR, CKS,
-                     FIELD_EX8(r, TCCR, CKS));
+    tccr = REG_FIELD_DP8(tccr, TCCR, TMRIS,
+                     REG_FIELD_EX8(r, TCCR, TMRIS));
+    tccr = REG_FIELD_DP8(tccr, TCCR, CSS,
+                     REG_FIELD_EX8(r, TCCR, CSS));
+    tccr = REG_FIELD_DP8(tccr, TCCR, CKS,
+                     REG_FIELD_EX8(r, TCCR, CKS));
     return tccr;
 }
 
@@ -205,28 +205,28 @@ static uint64_t tmr_read(void *opaque, hwaddr addr, unsigned size)
     switch (addr & 0x0e) {
     case A_TCR:
         ret = 0;
-        ret = FIELD_DP8(ret, TCR, CCLR,
-                        FIELD_EX8(tmr->tcr[ch], TCR, CCLR));
-        ret = FIELD_DP8(ret, TCR, OVIE,
-                        FIELD_EX8(tmr->tcr[ch], TCR, OVIE));
-        ret = FIELD_DP8(ret, TCR, CMIEA,
-                        FIELD_EX8(tmr->tcr[ch], TCR, CMIEA));
-        ret = FIELD_DP8(ret, TCR, CMIEB,
-                        FIELD_EX8(tmr->tcr[ch], TCR, CMIEB));
+        ret = REG_FIELD_DP8(ret, TCR, CCLR,
+                        REG_FIELD_EX8(tmr->tcr[ch], TCR, CCLR));
+        ret = REG_FIELD_DP8(ret, TCR, OVIE,
+                        REG_FIELD_EX8(tmr->tcr[ch], TCR, OVIE));
+        ret = REG_FIELD_DP8(ret, TCR, CMIEA,
+                        REG_FIELD_EX8(tmr->tcr[ch], TCR, CMIEA));
+        ret = REG_FIELD_DP8(ret, TCR, CMIEB,
+                        REG_FIELD_EX8(tmr->tcr[ch], TCR, CMIEB));
         return ret;
     case A_TCSR:
         ret = 0;
-        ret = FIELD_DP8(ret, TCSR, OSA,
-                        FIELD_EX8(tmr->tcsr[ch], TCSR, OSA));
-        ret = FIELD_DP8(ret, TCSR, OSB,
-                        FIELD_EX8(tmr->tcsr[ch], TCSR, OSB));
+        ret = REG_FIELD_DP8(ret, TCSR, OSA,
+                        REG_FIELD_EX8(tmr->tcsr[ch], TCSR, OSA));
+        ret = REG_FIELD_DP8(ret, TCSR, OSB,
+                        REG_FIELD_EX8(tmr->tcsr[ch], TCSR, OSB));
         switch (ch) {
         case 0:
-            ret = FIELD_DP8(ret, TCSR, ADTE,
-                            FIELD_EX8(tmr->tcsr[ch], TCSR, ADTE));
+            ret = REG_FIELD_DP8(ret, TCSR, ADTE,
+                            REG_FIELD_EX8(tmr->tcsr[ch], TCSR, ADTE));
             break;
         case 1: /* CH1 ADTE unimplement always 1 */
-            ret = FIELD_DP8(ret, TCSR, ADTE, 1);
+            ret = REG_FIELD_DP8(ret, TCSR, ADTE, 1);
             break;
         }
         return ret;
@@ -338,14 +338,14 @@ static uint16_t issue_event(RTMRState *tmr, int ch, int sz,
         break;
     case cmia:
         if (tcnt >= tcora) {
-            if (FIELD_EX8(tmr->tcr[ch], TCR, CCLR) == CCLR_A) {
+            if (REG_FIELD_EX8(tmr->tcr[ch], TCR, CCLR) == CCLR_A) {
                 ret = tcnt - tcora;
             }
-            if (FIELD_EX8(tmr->tcr[ch], TCR, CMIEA)) {
+            if (REG_FIELD_EX8(tmr->tcr[ch], TCR, CMIEA)) {
                 qemu_irq_pulse(tmr->cmia[ch]);
             }
             if (sz == 8 && ch == 0 &&
-                FIELD_EX8(tmr->tccr[1], TCCR, CSS) == CSS_CASCADING) {
+                REG_FIELD_EX8(tmr->tccr[1], TCCR, CSS) == CSS_CASCADING) {
                 tmr->tcnt[1]++;
                 timer_events(tmr, 1);
             }
@@ -353,16 +353,16 @@ static uint16_t issue_event(RTMRState *tmr, int ch, int sz,
         break;
     case cmib:
         if (tcnt >= tcorb) {
-            if (FIELD_EX8(tmr->tcr[ch], TCR, CCLR) == CCLR_B) {
+            if (REG_FIELD_EX8(tmr->tcr[ch], TCR, CCLR) == CCLR_B) {
                 ret = tcnt - tcorb;
             }
-            if (FIELD_EX8(tmr->tcr[ch], TCR, CMIEB)) {
+            if (REG_FIELD_EX8(tmr->tcr[ch], TCR, CMIEB)) {
                 qemu_irq_pulse(tmr->cmib[ch]);
             }
         }
         break;
     case ovi:
-        if ((tcnt >= (1 << sz)) && FIELD_EX8(tmr->tcr[ch], TCR, OVIE)) {
+        if ((tcnt >= (1 << sz)) && REG_FIELD_EX8(tmr->tcr[ch], TCR, OVIE)) {
             qemu_irq_pulse(tmr->ovi[ch]);
         }
         break;
@@ -377,7 +377,7 @@ static void timer_events(RTMRState *tmr, int ch)
     uint16_t tcnt;
 
     tmr->tcnt[ch] = read_tcnt(tmr, 1, ch);
-    if (FIELD_EX8(tmr->tccr[0], TCCR, CSS) != CSS_CASCADING) {
+    if (REG_FIELD_EX8(tmr->tccr[0], TCCR, CSS) != CSS_CASCADING) {
         tmr->tcnt[ch] = issue_event(tmr, ch, 8,
                                     tmr->tcnt[ch],
                                     tmr->tcora[ch],

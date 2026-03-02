@@ -95,7 +95,7 @@ static MemTxResult ufs_addr_read(UfsHc *u, hwaddr addr, void *buf, int size)
         return MEMTX_DECODE_ERROR;
     }
 
-    if (!FIELD_EX32(u->reg.cap, CAP, 64AS) && (hi >> 32)) {
+    if (!REG_FIELD_EX32(u->reg.cap, CAP, 64AS) && (hi >> 32)) {
         return MEMTX_DECODE_ERROR;
     }
 
@@ -110,7 +110,7 @@ static MemTxResult ufs_addr_write(UfsHc *u, hwaddr addr, const void *buf,
         return MEMTX_DECODE_ERROR;
     }
 
-    if (!FIELD_EX32(u->reg.cap, CAP, 64AS) && (hi >> 32)) {
+    if (!REG_FIELD_EX32(u->reg.cap, CAP, 64AS) && (hi >> 32)) {
         return MEMTX_DECODE_ERROR;
     }
 
@@ -369,27 +369,27 @@ static void ufs_process_uiccmd(UfsHc *u, uint32_t val)
      */
     switch (val) {
     case UFS_UIC_CMD_DME_LINK_STARTUP:
-        u->reg.hcs = FIELD_DP32(u->reg.hcs, HCS, DP, 1);
-        u->reg.hcs = FIELD_DP32(u->reg.hcs, HCS, UTRLRDY, 1);
-        u->reg.hcs = FIELD_DP32(u->reg.hcs, HCS, UTMRLRDY, 1);
+        u->reg.hcs = REG_FIELD_DP32(u->reg.hcs, HCS, DP, 1);
+        u->reg.hcs = REG_FIELD_DP32(u->reg.hcs, HCS, UTRLRDY, 1);
+        u->reg.hcs = REG_FIELD_DP32(u->reg.hcs, HCS, UTMRLRDY, 1);
         u->reg.ucmdarg2 = UFS_UIC_CMD_RESULT_SUCCESS;
         break;
     /* TODO: Revisit it when Power Management is implemented */
     case UFS_UIC_CMD_DME_HIBER_ENTER:
-        u->reg.is = FIELD_DP32(u->reg.is, IS, UHES, 1);
-        u->reg.hcs = FIELD_DP32(u->reg.hcs, HCS, UPMCRS, UFS_PWR_LOCAL);
+        u->reg.is = REG_FIELD_DP32(u->reg.is, IS, UHES, 1);
+        u->reg.hcs = REG_FIELD_DP32(u->reg.hcs, HCS, UPMCRS, UFS_PWR_LOCAL);
         u->reg.ucmdarg2 = UFS_UIC_CMD_RESULT_SUCCESS;
         break;
     case UFS_UIC_CMD_DME_HIBER_EXIT:
-        u->reg.is = FIELD_DP32(u->reg.is, IS, UHXS, 1);
-        u->reg.hcs = FIELD_DP32(u->reg.hcs, HCS, UPMCRS, UFS_PWR_LOCAL);
+        u->reg.is = REG_FIELD_DP32(u->reg.is, IS, UHXS, 1);
+        u->reg.hcs = REG_FIELD_DP32(u->reg.hcs, HCS, UPMCRS, UFS_PWR_LOCAL);
         u->reg.ucmdarg2 = UFS_UIC_CMD_RESULT_SUCCESS;
         break;
     default:
         u->reg.ucmdarg2 = UFS_UIC_CMD_RESULT_FAILURE;
     }
 
-    u->reg.is = FIELD_DP32(u->reg.is, IS, UCCS, 1);
+    u->reg.is = REG_FIELD_DP32(u->reg.is, IS, UCCS, 1);
 
     ufs_irq_check(u);
 }
@@ -474,9 +474,9 @@ static void ufs_mcq_process_cq(void *opaque)
 
     if (!ufs_mcq_cq_empty(u, cq->cqid)) {
         u->mcq_op_reg[cq->cqid].cq_int.is =
-            FIELD_DP32(u->mcq_op_reg[cq->cqid].cq_int.is, CQIS, TEPS, 1);
+            REG_FIELD_DP32(u->mcq_op_reg[cq->cqid].cq_int.is, CQIS, TEPS, 1);
 
-        u->reg.is = FIELD_DP32(u->reg.is, IS, CQES, 1);
+        u->reg.is = REG_FIELD_DP32(u->reg.is, IS, CQES, 1);
         ufs_irq_check(u);
     }
 }
@@ -485,7 +485,7 @@ static bool ufs_mcq_create_sq(UfsHc *u, uint8_t qid, uint32_t attr)
 {
     UfsMcqReg *reg = &u->mcq_reg[qid];
     UfsSq *sq;
-    uint8_t cqid = FIELD_EX32(attr, SQATTR, CQID);
+    uint8_t cqid = REG_FIELD_EX32(attr, SQATTR, CQID);
 
     if (qid >= u->params.mcq_maxq) {
         trace_ufs_err_mcq_create_sq_invalid_sqid(qid);
@@ -507,7 +507,7 @@ static bool ufs_mcq_create_sq(UfsHc *u, uint8_t qid, uint32_t attr)
     sq->sqid = qid;
     sq->cq = u->cq[cqid];
     sq->addr = ((uint64_t)reg->squba << 32) | reg->sqlba;
-    sq->size = ((FIELD_EX32(attr, SQATTR, SIZE) + 1) << 2) / sizeof(UfsSqEntry);
+    sq->size = ((REG_FIELD_EX32(attr, SQATTR, SIZE) + 1) << 2) / sizeof(UfsSqEntry);
 
     sq->bh = qemu_bh_new_guarded(ufs_mcq_process_sq, sq,
                                  &DEVICE(u)->mem_reentrancy_guard);
@@ -566,7 +566,7 @@ static bool ufs_mcq_create_cq(UfsHc *u, uint8_t qid, uint32_t attr)
     cq->u = u;
     cq->cqid = qid;
     cq->addr = ((uint64_t)reg->cquba << 32) | reg->cqlba;
-    cq->size = ((FIELD_EX32(attr, CQATTR, SIZE) + 1) << 2) / sizeof(UfsCqEntry);
+    cq->size = ((REG_FIELD_EX32(attr, CQATTR, SIZE) + 1) << 2) / sizeof(UfsCqEntry);
 
     cq->bh = qemu_bh_new_guarded(ufs_mcq_process_cq, cq,
                                  &DEVICE(u)->mem_reentrancy_guard);
@@ -619,13 +619,13 @@ static void ufs_write_reg(UfsHc *u, hwaddr offset, uint32_t data, unsigned size)
         ufs_irq_check(u);
         break;
     case A_HCE:
-        if (!FIELD_EX32(u->reg.hce, HCE, HCE) && FIELD_EX32(data, HCE, HCE)) {
-            u->reg.hcs = FIELD_DP32(u->reg.hcs, HCS, UCRDY, 1);
-            u->reg.hce = FIELD_DP32(u->reg.hce, HCE, HCE, 1);
-        } else if (FIELD_EX32(u->reg.hce, HCE, HCE) &&
-                   !FIELD_EX32(data, HCE, HCE)) {
+        if (!REG_FIELD_EX32(u->reg.hce, HCE, HCE) && REG_FIELD_EX32(data, HCE, HCE)) {
+            u->reg.hcs = REG_FIELD_DP32(u->reg.hcs, HCS, UCRDY, 1);
+            u->reg.hce = REG_FIELD_DP32(u->reg.hce, HCE, HCE, 1);
+        } else if (REG_FIELD_EX32(u->reg.hce, HCE, HCE) &&
+                   !REG_FIELD_EX32(data, HCE, HCE)) {
             u->reg.hcs = 0;
-            u->reg.hce = FIELD_DP32(u->reg.hce, HCE, HCE, 0);
+            u->reg.hce = REG_FIELD_DP32(u->reg.hce, HCE, HCE, 0);
         }
         break;
     case A_UTRLBA:
@@ -688,13 +688,13 @@ static void ufs_write_mcq_reg(UfsHc *u, hwaddr offset, uint32_t data,
 
     switch (offset % sizeof(UfsMcqReg)) {
     case A_SQATTR:
-        if (!FIELD_EX32(reg->sqattr, SQATTR, SQEN) &&
-            FIELD_EX32(data, SQATTR, SQEN)) {
+        if (!REG_FIELD_EX32(reg->sqattr, SQATTR, SQEN) &&
+            REG_FIELD_EX32(data, SQATTR, SQEN)) {
             if (!ufs_mcq_create_sq(u, qid, data)) {
                 break;
             }
-        } else if (FIELD_EX32(reg->sqattr, SQATTR, SQEN) &&
-                   !FIELD_EX32(data, SQATTR, SQEN)) {
+        } else if (REG_FIELD_EX32(reg->sqattr, SQATTR, SQEN) &&
+                   !REG_FIELD_EX32(data, SQATTR, SQEN)) {
             if (!ufs_mcq_delete_sq(u, qid)) {
                 break;
             }
@@ -711,13 +711,13 @@ static void ufs_write_mcq_reg(UfsHc *u, hwaddr offset, uint32_t data,
         reg->sqcfg = data;
         break;
     case A_CQATTR:
-        if (!FIELD_EX32(reg->cqattr, CQATTR, CQEN) &&
-            FIELD_EX32(data, CQATTR, CQEN)) {
+        if (!REG_FIELD_EX32(reg->cqattr, CQATTR, CQEN) &&
+            REG_FIELD_EX32(data, CQATTR, CQEN)) {
             if (!ufs_mcq_create_cq(u, qid, data)) {
                 break;
             }
-        } else if (FIELD_EX32(reg->cqattr, CQATTR, CQEN) &&
-                   !FIELD_EX32(data, CQATTR, CQEN)) {
+        } else if (REG_FIELD_EX32(reg->cqattr, CQATTR, CQEN) &&
+                   !REG_FIELD_EX32(data, CQATTR, CQEN)) {
             if (!ufs_mcq_delete_cq(u, qid)) {
                 break;
             }
@@ -1609,7 +1609,7 @@ static void ufs_sendback_req(void *opaque)
          */
         if (le32_to_cpu(req->utrd.header.dword_2) != UFS_OCS_SUCCESS ||
             le32_to_cpu(req->utrd.header.dword_0) & UFS_UTP_REQ_DESC_INT_CMD) {
-            u->reg.is = FIELD_DP32(u->reg.is, IS, UTRCS, 1);
+            u->reg.is = REG_FIELD_DP32(u->reg.is, IS, UTRCS, 1);
         }
 
         u->reg.utrldbr &= ~(1 << slot);
@@ -1692,25 +1692,25 @@ static void ufs_init_hc(UfsHc *u)
     memset(&u->reg, 0, sizeof(u->reg));
     memset(&u->mcq_reg, 0, sizeof(u->mcq_reg));
     memset(&u->mcq_op_reg, 0, sizeof(u->mcq_op_reg));
-    cap = FIELD_DP32(cap, CAP, NUTRS, (u->params.nutrs - 1));
-    cap = FIELD_DP32(cap, CAP, RTT, 2);
-    cap = FIELD_DP32(cap, CAP, NUTMRS, (u->params.nutmrs - 1));
-    cap = FIELD_DP32(cap, CAP, AUTOH8, 0);
-    cap = FIELD_DP32(cap, CAP, 64AS, 1);
-    cap = FIELD_DP32(cap, CAP, OODDS, 0);
-    cap = FIELD_DP32(cap, CAP, UICDMETMS, 0);
-    cap = FIELD_DP32(cap, CAP, CS, 0);
-    cap = FIELD_DP32(cap, CAP, LSDBS, 0);
-    cap = FIELD_DP32(cap, CAP, MCQS, u->params.mcq);
+    cap = REG_FIELD_DP32(cap, CAP, NUTRS, (u->params.nutrs - 1));
+    cap = REG_FIELD_DP32(cap, CAP, RTT, 2);
+    cap = REG_FIELD_DP32(cap, CAP, NUTMRS, (u->params.nutmrs - 1));
+    cap = REG_FIELD_DP32(cap, CAP, AUTOH8, 0);
+    cap = REG_FIELD_DP32(cap, CAP, 64AS, 1);
+    cap = REG_FIELD_DP32(cap, CAP, OODDS, 0);
+    cap = REG_FIELD_DP32(cap, CAP, UICDMETMS, 0);
+    cap = REG_FIELD_DP32(cap, CAP, CS, 0);
+    cap = REG_FIELD_DP32(cap, CAP, LSDBS, 0);
+    cap = REG_FIELD_DP32(cap, CAP, MCQS, u->params.mcq);
     u->reg.cap = cap;
 
     if (u->params.mcq) {
-        mcqconfig = FIELD_DP32(mcqconfig, MCQCONFIG, MAC, 0x1f);
+        mcqconfig = REG_FIELD_DP32(mcqconfig, MCQCONFIG, MAC, 0x1f);
         u->reg.mcqconfig = mcqconfig;
 
-        mcqcap = FIELD_DP32(mcqcap, MCQCAP, MAXQ, u->params.mcq_maxq - 1);
-        mcqcap = FIELD_DP32(mcqcap, MCQCAP, RRP, 1);
-        mcqcap = FIELD_DP32(mcqcap, MCQCAP, QCFGPTR, UFS_MCQ_QCFGPTR);
+        mcqcap = REG_FIELD_DP32(mcqcap, MCQCAP, MAXQ, u->params.mcq_maxq - 1);
+        mcqcap = REG_FIELD_DP32(mcqcap, MCQCAP, RRP, 1);
+        mcqcap = REG_FIELD_DP32(mcqcap, MCQCAP, QCFGPTR, UFS_MCQ_QCFGPTR);
         u->reg.mcqcap = mcqcap;
 
         for (int i = 0; i < ARRAY_SIZE(u->mcq_reg); i++) {

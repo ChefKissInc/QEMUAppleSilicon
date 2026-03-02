@@ -426,7 +426,7 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
             s->clock_muxes[RCC_CLOCK_MUX_PLL_INPUT].src];
 
     /* PLLSAI2ON and update PLLSAI2RDY */
-    val = FIELD_EX32(s->cr, CR, PLLSAI2ON);
+    val = REG_FIELD_EX32(s->cr, CR, PLLSAI2ON);
     pll_set_enable(&s->plls[RCC_PLL_PLLSAI2], val);
     s->cr = (s->cr & ~R_CR_PLLSAI2RDY_MASK) |
             (val << R_CR_PLLSAI2RDY_SHIFT);
@@ -435,7 +435,7 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
     }
 
     /* PLLSAI1ON and update PLLSAI1RDY */
-    val = FIELD_EX32(s->cr, CR, PLLSAI1ON);
+    val = REG_FIELD_EX32(s->cr, CR, PLLSAI1ON);
     pll_set_enable(&s->plls[RCC_PLL_PLLSAI1], val);
     s->cr = (s->cr & ~R_CR_PLLSAI1RDY_MASK) |
             (val << R_CR_PLLSAI1RDY_SHIFT);
@@ -447,8 +447,8 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
      * PLLON and update PLLRDY
      * PLLON cannot be reset if the PLL clock is used as the system clock.
      */
-    val = FIELD_EX32(s->cr, CR, PLLON);
-    if (FIELD_EX32(s->cfgr, CFGR, SWS) != 0b11) {
+    val = REG_FIELD_EX32(s->cr, CR, PLLON);
+    if (REG_FIELD_EX32(s->cfgr, CFGR, SWS) != 0b11) {
         pll_set_enable(&s->plls[RCC_PLL_PLL], val);
         s->cr = (s->cr & ~R_CR_PLLRDY_MASK) |
                 (val << R_CR_PLLRDY_SHIFT);
@@ -467,8 +467,8 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
      * HSEON cannot be reset if the HSE oscillator is used directly or
      * indirectly as the system clock.
      */
-    val = FIELD_EX32(s->cr, CR, HSEON);
-    if (FIELD_EX32(s->cfgr, CFGR, SWS) != 0b10 &&
+    val = REG_FIELD_EX32(s->cr, CR, HSEON);
+    if (REG_FIELD_EX32(s->cfgr, CFGR, SWS) != 0b10 &&
         current_pll_src != RCC_CLOCK_MUX_SRC_HSE) {
         s->cr = (s->cr & ~R_CR_HSERDY_MASK) |
                 (val << R_CR_HSERDY_SHIFT);
@@ -492,7 +492,7 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
      * HSION is set by hardware if the HSI16 is used directly
      * or indirectly as system clock.
      */
-    if (FIELD_EX32(s->cfgr, CFGR, SWS) == 0b01 ||
+    if (REG_FIELD_EX32(s->cfgr, CFGR, SWS) == 0b01 ||
         current_pll_src == RCC_CLOCK_MUX_SRC_HSI) {
         s->cr |= (R_CR_HSION_MASK | R_CR_HSIRDY_MASK);
         clock_update_hz(s->hsi16_rc, HSI_FRQ);
@@ -500,7 +500,7 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
             s->cifr |= R_CIFR_HSIRDYF_MASK;
         }
     } else {
-        val = FIELD_EX32(s->cr, CR, HSION);
+        val = REG_FIELD_EX32(s->cr, CR, HSION);
         if (val) {
             clock_update_hz(s->hsi16_rc, HSI_FRQ);
             s->cr |= R_CR_HSIRDY_MASK;
@@ -519,7 +519,7 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
      * MSION and update MSIRDY
      * Set by hardware when used directly or indirectly as system clock.
      */
-    if (FIELD_EX32(s->cfgr, CFGR, SWS) == 0b00 ||
+    if (REG_FIELD_EX32(s->cfgr, CFGR, SWS) == 0b00 ||
         current_pll_src == RCC_CLOCK_MUX_SRC_MSI) {
             s->cr |= (R_CR_MSION_MASK | R_CR_MSIRDY_MASK);
             if (!(previous_value & R_CR_MSION_MASK) && (s->cier & R_CIER_MSIRDYIE_MASK)) {
@@ -527,7 +527,7 @@ static void rcc_update_cr_register(Stm32l4x5RccState *s, uint32_t previous_value
             }
             rcc_update_msi(s, previous_value);
     } else {
-        val = FIELD_EX32(s->cr, CR, MSION);
+        val = REG_FIELD_EX32(s->cr, CR, MSION);
         if (val) {
             s->cr |= R_CR_MSIRDY_MASK;
             rcc_update_msi(s, previous_value);
@@ -546,7 +546,7 @@ static void rcc_update_cfgr_register(Stm32l4x5RccState *s)
 {
     uint32_t val;
     /* MCOPRE */
-    val = FIELD_EX32(s->cfgr, CFGR, MCOPRE);
+    val = REG_FIELD_EX32(s->cfgr, CFGR, MCOPRE);
     if (val > 0b100) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "%s: Invalid MCOPRE value: 0x%"PRIx32"\n",
@@ -558,7 +558,7 @@ static void rcc_update_cfgr_register(Stm32l4x5RccState *s)
     }
 
     /* MCOSEL */
-    val = FIELD_EX32(s->cfgr, CFGR, MCOSEL);
+    val = REG_FIELD_EX32(s->cfgr, CFGR, MCOSEL);
     if (val > 0b111) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "%s: Invalid MCOSEL value: 0x%"PRIx32"\n",
@@ -578,7 +578,7 @@ static void rcc_update_cfgr_register(Stm32l4x5RccState *s)
     /* TODO */
 
     /* PPRE2 */
-    val = FIELD_EX32(s->cfgr, CFGR, PPRE2);
+    val = REG_FIELD_EX32(s->cfgr, CFGR, PPRE2);
     if (val < 0b100) {
         clock_mux_set_factor(&s->clock_muxes[RCC_CLOCK_MUX_PCLK2],
                              1, 1);
@@ -588,7 +588,7 @@ static void rcc_update_cfgr_register(Stm32l4x5RccState *s)
     }
 
     /* PPRE1 */
-    val = FIELD_EX32(s->cfgr, CFGR, PPRE1);
+    val = REG_FIELD_EX32(s->cfgr, CFGR, PPRE1);
     if (val < 0b100) {
         clock_mux_set_factor(&s->clock_muxes[RCC_CLOCK_MUX_PCLK1],
                              1, 1);
@@ -598,7 +598,7 @@ static void rcc_update_cfgr_register(Stm32l4x5RccState *s)
     }
 
     /* HPRE */
-    val = FIELD_EX32(s->cfgr, CFGR, HPRE);
+    val = REG_FIELD_EX32(s->cfgr, CFGR, HPRE);
     if (val < 0b1000) {
         clock_mux_set_factor(&s->clock_muxes[RCC_CLOCK_MUX_HCLK],
                              1, 1);
@@ -608,7 +608,7 @@ static void rcc_update_cfgr_register(Stm32l4x5RccState *s)
     }
 
     /* Update SWS */
-    val = FIELD_EX32(s->cfgr, CFGR, SW);
+    val = REG_FIELD_EX32(s->cfgr, CFGR, SW);
     clock_mux_set_source(&s->clock_muxes[RCC_CLOCK_MUX_SYSCLK],
                          val);
     s->cfgr &= ~R_CFGR_SWS_MASK;
@@ -619,7 +619,7 @@ static void rcc_update_ahb1enr(Stm32l4x5RccState *s)
 {
     #define AHB1ENR_SET_ENABLE(_peripheral_name) \
         clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_##_peripheral_name], \
-            FIELD_EX32(s->ahb1enr, AHB1ENR, _peripheral_name##EN))
+            REG_FIELD_EX32(s->ahb1enr, AHB1ENR, _peripheral_name##EN))
 
     /* DMA2DEN: reserved for STM32L475xx */
     AHB1ENR_SET_ENABLE(TSC);
@@ -635,7 +635,7 @@ static void rcc_update_ahb2enr(Stm32l4x5RccState *s)
 {
     #define AHB2ENR_SET_ENABLE(_peripheral_name) \
         clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_##_peripheral_name], \
-            FIELD_EX32(s->ahb2enr, AHB2ENR, _peripheral_name##EN))
+            REG_FIELD_EX32(s->ahb2enr, AHB2ENR, _peripheral_name##EN))
 
     AHB2ENR_SET_ENABLE(RNG);
     /* HASHEN: reserved for STM32L475xx */
@@ -660,7 +660,7 @@ static void rcc_update_ahb3enr(Stm32l4x5RccState *s)
 {
     #define AHB3ENR_SET_ENABLE(_peripheral_name) \
         clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_##_peripheral_name], \
-            FIELD_EX32(s->ahb3enr, AHB3ENR, _peripheral_name##EN))
+            REG_FIELD_EX32(s->ahb3enr, AHB3ENR, _peripheral_name##EN))
 
     AHB3ENR_SET_ENABLE(QSPI);
     AHB3ENR_SET_ENABLE(FMC);
@@ -672,10 +672,10 @@ static void rcc_update_apb1enr(Stm32l4x5RccState *s)
 {
     #define APB1ENR1_SET_ENABLE(_peripheral_name) \
         clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_##_peripheral_name], \
-            FIELD_EX32(s->apb1enr1, APB1ENR1, _peripheral_name##EN))
+            REG_FIELD_EX32(s->apb1enr1, APB1ENR1, _peripheral_name##EN))
     #define APB1ENR2_SET_ENABLE(_peripheral_name) \
         clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_##_peripheral_name], \
-            FIELD_EX32(s->apb1enr2, APB1ENR2, _peripheral_name##EN))
+            REG_FIELD_EX32(s->apb1enr2, APB1ENR2, _peripheral_name##EN))
 
     /* APB1ENR1 */
     APB1ENR1_SET_ENABLE(LPTIM1);
@@ -718,7 +718,7 @@ static void rcc_update_apb2enr(Stm32l4x5RccState *s)
 {
     #define APB2ENR_SET_ENABLE(_peripheral_name) \
         clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_##_peripheral_name], \
-            FIELD_EX32(s->apb2enr, APB2ENR, _peripheral_name##EN))
+            REG_FIELD_EX32(s->apb2enr, APB2ENR, _peripheral_name##EN))
 
     APB2ENR_SET_ENABLE(DFSDM1);
     APB2ENR_SET_ENABLE(SAI2);
@@ -762,11 +762,11 @@ static void rcc_update_pllsaixcfgr(Stm32l4x5RccState *s, RccPll pll_id)
     }
 
     /* PLLPDIV */
-    val = FIELD_EX32(reg, PLLCFGR, PLLPDIV);
+    val = REG_FIELD_EX32(reg, PLLCFGR, PLLPDIV);
     /* 1 is a reserved value */
     if (val == 0) {
         /* Get PLLP value */
-        val = FIELD_EX32(reg, PLLCFGR, PLLP);
+        val = REG_FIELD_EX32(reg, PLLCFGR, PLLP);
         pll_set_channel_divider(&s->plls[pll_id], RCC_PLL_COMMON_CHANNEL_P,
             (val ? 17 : 7));
     } else if (val > 1) {
@@ -776,29 +776,29 @@ static void rcc_update_pllsaixcfgr(Stm32l4x5RccState *s, RccPll pll_id)
 
 
     /* PLLR */
-    val = FIELD_EX32(reg, PLLCFGR, PLLR);
+    val = REG_FIELD_EX32(reg, PLLCFGR, PLLR);
     pll_set_channel_divider(&s->plls[pll_id], RCC_PLL_COMMON_CHANNEL_R,
         2 * (val + 1));
 
     /* PLLREN */
-    val = FIELD_EX32(reg, PLLCFGR, PLLREN);
+    val = REG_FIELD_EX32(reg, PLLCFGR, PLLREN);
     pll_set_channel_enable(&s->plls[pll_id], RCC_PLL_COMMON_CHANNEL_R, val);
 
     /* PLLQ */
-    val = FIELD_EX32(reg, PLLCFGR, PLLQ);
+    val = REG_FIELD_EX32(reg, PLLCFGR, PLLQ);
     pll_set_channel_divider(&s->plls[pll_id], RCC_PLL_COMMON_CHANNEL_Q,
         2 * (val + 1));
 
     /* PLLQEN */
-    val = FIELD_EX32(reg, PLLCFGR, PLLQEN);
+    val = REG_FIELD_EX32(reg, PLLCFGR, PLLQEN);
     pll_set_channel_enable(&s->plls[pll_id], RCC_PLL_COMMON_CHANNEL_Q, val);
 
     /* PLLPEN */
-    val = FIELD_EX32(reg, PLLCFGR, PLLPEN);
+    val = REG_FIELD_EX32(reg, PLLCFGR, PLLPEN);
     pll_set_channel_enable(&s->plls[pll_id], RCC_PLL_COMMON_CHANNEL_P, val);
 
     /* PLLN */
-    val = FIELD_EX32(reg, PLLCFGR, PLLN);
+    val = REG_FIELD_EX32(reg, PLLCFGR, PLLN);
     pll_set_vco_multiplier(&s->plls[pll_id], val);
 }
 
@@ -812,11 +812,11 @@ static void rcc_update_pllcfgr(Stm32l4x5RccState *s)
     /* Fetch specific fields for pllcfgr */
 
     /* PLLM */
-    val = FIELD_EX32(s->pllcfgr, PLLCFGR, PLLM);
+    val = REG_FIELD_EX32(s->pllcfgr, PLLCFGR, PLLM);
     clock_mux_set_factor(&s->clock_muxes[RCC_CLOCK_MUX_PLL_INPUT], 1, (val + 1));
 
     /* PLLSRC */
-    val = FIELD_EX32(s->pllcfgr, PLLCFGR, PLLSRC);
+    val = REG_FIELD_EX32(s->pllcfgr, PLLCFGR, PLLSRC);
     if (val == 0) {
         clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_PLL_INPUT], false);
     } else {
@@ -829,7 +829,7 @@ static void rcc_update_ccipr(Stm32l4x5RccState *s)
 {
     #define CCIPR_SET_SOURCE(_peripheral_name) \
         clock_mux_set_source(&s->clock_muxes[RCC_CLOCK_MUX_##_peripheral_name], \
-            FIELD_EX32(s->ccipr, CCIPR, _peripheral_name##SEL))
+            REG_FIELD_EX32(s->ccipr, CCIPR, _peripheral_name##SEL))
 
     CCIPR_SET_SOURCE(DFSDM1);
     CCIPR_SET_SOURCE(SWPMI1);
@@ -857,10 +857,10 @@ static void rcc_update_bdcr(Stm32l4x5RccState *s)
     int val;
 
     /* LSCOSEL */
-    val = FIELD_EX32(s->bdcr, BDCR, LSCOSEL);
+    val = REG_FIELD_EX32(s->bdcr, BDCR, LSCOSEL);
     clock_mux_set_source(&s->clock_muxes[RCC_CLOCK_MUX_LSCO], val);
 
-    val = FIELD_EX32(s->bdcr, BDCR, LSCOEN);
+    val = REG_FIELD_EX32(s->bdcr, BDCR, LSCOEN);
     clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_LSCO], val);
 
     /* BDRST */
@@ -869,10 +869,10 @@ static void rcc_update_bdcr(Stm32l4x5RccState *s)
      * the LCD common mux or if it only affects the RTC.
      * As the LCDEN flag exists, we assume here that it only affects the RTC.
      */
-    val = FIELD_EX32(s->bdcr, BDCR, RTCEN);
+    val = REG_FIELD_EX32(s->bdcr, BDCR, RTCEN);
     clock_mux_set_enable(&s->clock_muxes[RCC_CLOCK_MUX_RTC], val);
     /* LCD and RTC share the same clock */
-    val = FIELD_EX32(s->bdcr, BDCR, RTCSEL);
+    val = REG_FIELD_EX32(s->bdcr, BDCR, RTCSEL);
     clock_mux_set_source(&s->clock_muxes[RCC_CLOCK_MUX_LCD_AND_RTC_COMMON], val);
 
     /* LSECSSON */
@@ -880,7 +880,7 @@ static void rcc_update_bdcr(Stm32l4x5RccState *s)
     /* LSEBYP */
 
     /* LSEON: Update LSERDY at the same time */
-    val = FIELD_EX32(s->bdcr, BDCR, LSEON);
+    val = REG_FIELD_EX32(s->bdcr, BDCR, LSEON);
     if (val) {
         clock_update_hz(s->lse_crystal, LSE_FRQ);
         s->bdcr |= R_BDCR_LSERDY_MASK;
@@ -903,7 +903,7 @@ static void rcc_update_csr(Stm32l4x5RccState *s)
     /* MSISRANGE: Not implemented after reset */
 
     /* LSION: Update LSIRDY at the same time */
-    val = FIELD_EX32(s->csr, CSR, LSION);
+    val = REG_FIELD_EX32(s->csr, CSR, LSION);
     if (val) {
         clock_update_hz(s->lsi_rc, LSI_FRQ);
         s->csr |= R_CSR_LSIRDY_MASK;

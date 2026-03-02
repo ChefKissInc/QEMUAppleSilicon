@@ -118,23 +118,23 @@ static TCGTBCPUState riscv_get_tb_cpu_state(CPUState *cs)
 
         /* lmul encoded as in DisasContext::lmul */
         int8_t lmul = sextract32(FIELD_EX64(env->vtype, VTYPE, VLMUL), 0, 3);
-        uint32_t vsew = FIELD_EX64(env->vtype, VTYPE, VSEW);
+        uint32_t vsew = REG_FIELD_EX64(env->vtype, VTYPE, VSEW);
         uint32_t vlmax = vext_get_vlmax(cpu->cfg.vlenb, vsew, lmul);
         uint32_t maxsz = vlmax << vsew;
         bool vl_eq_vlmax = (env->vstart == 0) && (vlmax == env->vl) &&
                            (maxsz >= 8);
-        flags = FIELD_DP32(flags, TB_FLAGS, VILL, env->vill);
-        flags = FIELD_DP32(flags, TB_FLAGS, SEW, vsew);
-        flags = FIELD_DP32(flags, TB_FLAGS, LMUL,
-                           FIELD_EX64(env->vtype, VTYPE, VLMUL));
-        flags = FIELD_DP32(flags, TB_FLAGS, VL_EQ_VLMAX, vl_eq_vlmax);
-        flags = FIELD_DP32(flags, TB_FLAGS, VTA,
-                           FIELD_EX64(env->vtype, VTYPE, VTA));
-        flags = FIELD_DP32(flags, TB_FLAGS, VMA,
-                           FIELD_EX64(env->vtype, VTYPE, VMA));
-        flags = FIELD_DP32(flags, TB_FLAGS, VSTART_EQ_ZERO, env->vstart == 0);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, VILL, env->vill);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, SEW, vsew);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, LMUL,
+                           REG_FIELD_EX64(env->vtype, VTYPE, VLMUL));
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, VL_EQ_VLMAX, vl_eq_vlmax);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, VTA,
+                           REG_FIELD_EX64(env->vtype, VTYPE, VTA));
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, VMA,
+                           REG_FIELD_EX64(env->vtype, VTYPE, VMA));
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, VSTART_EQ_ZERO, env->vstart == 0);
     } else {
-        flags = FIELD_DP32(flags, TB_FLAGS, VILL, 1);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, VILL, 1);
     }
 
     if (cpu_get_fcfien(env)) {
@@ -143,26 +143,26 @@ static TCGTBCPUState riscv_get_tb_cpu_state(CPUState *cs)
          * the start of the block is tracked via env->elp. env->elp
          * is turned on during jalr translation.
          */
-        flags = FIELD_DP32(flags, TB_FLAGS, FCFI_LP_EXPECTED, env->elp);
-        flags = FIELD_DP32(flags, TB_FLAGS, FCFI_ENABLED, 1);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, FCFI_LP_EXPECTED, env->elp);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, FCFI_ENABLED, 1);
     }
 
     if (cpu_get_bcfien(env)) {
-        flags = FIELD_DP32(flags, TB_FLAGS, BCFI_ENABLED, 1);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, BCFI_ENABLED, 1);
     }
 
 #ifdef CONFIG_USER_ONLY
     fs = EXT_STATUS_DIRTY;
     vs = EXT_STATUS_DIRTY;
 #else
-    flags = FIELD_DP32(flags, TB_FLAGS, PRIV, env->priv);
+    flags = REG_FIELD_DP32(flags, TB_FLAGS, PRIV, env->priv);
 
     flags |= riscv_env_mmu_index(env, 0);
     fs = get_field(env->mstatus, MSTATUS_FS);
     vs = get_field(env->mstatus, MSTATUS_VS);
 
     if (env->virt_enabled) {
-        flags = FIELD_DP32(flags, TB_FLAGS, VIRT_ENABLED, 1);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, VIRT_ENABLED, 1);
         /*
          * Merge DISABLED and !DIRTY states using MIN.
          * We will set both fields when dirtying.
@@ -178,16 +178,16 @@ static TCGTBCPUState riscv_get_tb_cpu_state(CPUState *cs)
     }
 
     if (cpu->cfg.debug && !icount_enabled()) {
-        flags = FIELD_DP32(flags, TB_FLAGS, ITRIGGER, env->itrigger_enabled);
+        flags = REG_FIELD_DP32(flags, TB_FLAGS, ITRIGGER, env->itrigger_enabled);
     }
 #endif
 
-    flags = FIELD_DP32(flags, TB_FLAGS, FS, fs);
-    flags = FIELD_DP32(flags, TB_FLAGS, VS, vs);
-    flags = FIELD_DP32(flags, TB_FLAGS, XL, env->xl);
-    flags = FIELD_DP32(flags, TB_FLAGS, AXL, cpu_address_xl(env));
-    flags = FIELD_DP32(flags, TB_FLAGS, PM_PMM, riscv_pm_get_pmm(env));
-    flags = FIELD_DP32(flags, TB_FLAGS, PM_SIGNEXTEND, pm_signext);
+    flags = REG_FIELD_DP32(flags, TB_FLAGS, FS, fs);
+    flags = REG_FIELD_DP32(flags, TB_FLAGS, VS, vs);
+    flags = REG_FIELD_DP32(flags, TB_FLAGS, XL, env->xl);
+    flags = REG_FIELD_DP32(flags, TB_FLAGS, AXL, cpu_address_xl(env));
+    flags = REG_FIELD_DP32(flags, TB_FLAGS, PM_PMM, riscv_pm_get_pmm(env));
+    flags = REG_FIELD_DP32(flags, TB_FLAGS, PM_SIGNEXTEND, pm_signext);
 
     return (TCGTBCPUState){
         .pc = env->xl == MXL_RV32 ? env->pc & UINT32_MAX : env->pc,
@@ -201,7 +201,7 @@ static void riscv_cpu_synchronize_from_tb(CPUState *cs,
     if (!(tb_cflags(tb) & CF_PCREL)) {
         RISCVCPU *cpu = RISCV_CPU(cs);
         CPURISCVState *env = &cpu->env;
-        RISCVMXL xl = FIELD_EX32(tb->flags, TB_FLAGS, XL);
+        RISCVMXL xl = REG_FIELD_EX32(tb->flags, TB_FLAGS, XL);
 
         tcg_debug_assert(!tcg_cflags_has(cs, CF_PCREL));
 
@@ -219,7 +219,7 @@ static void riscv_restore_state_to_opc(CPUState *cs,
 {
     RISCVCPU *cpu = RISCV_CPU(cs);
     CPURISCVState *env = &cpu->env;
-    RISCVMXL xl = FIELD_EX32(tb->flags, TB_FLAGS, XL);
+    RISCVMXL xl = REG_FIELD_EX32(tb->flags, TB_FLAGS, XL);
     target_ulong pc;
 
     if (tb_cflags(tb) & CF_PCREL) {

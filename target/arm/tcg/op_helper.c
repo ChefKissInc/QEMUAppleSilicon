@@ -823,10 +823,10 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
      */
     if (arm_fgt_active(env, arm_current_el(env))) {
         uint64_t trapword = 0;
-        unsigned int idx = FIELD_EX32(ri->fgt, FGT, IDX);
-        unsigned int bitpos = FIELD_EX32(ri->fgt, FGT, BITPOS);
-        bool rev = FIELD_EX32(ri->fgt, FGT, REV);
-        bool nxs = FIELD_EX32(ri->fgt, FGT, NXS);
+        unsigned int idx = REG_FIELD_EX32(ri->fgt, FGT, IDX);
+        unsigned int bitpos = REG_FIELD_EX32(ri->fgt, FGT, BITPOS);
+        bool rev = REG_FIELD_EX32(ri->fgt, FGT, REV);
+        bool nxs = REG_FIELD_EX32(ri->fgt, FGT, NXS);
         bool trapbit;
 
         if (ri->fgt & FGT_EXEC) {

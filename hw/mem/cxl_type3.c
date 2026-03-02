@@ -423,8 +423,8 @@ static void hdm_decoder_commit(CXLType3Dev *ct3d, int which)
 
     ctrl = ldl_le_p(cache_mem + R_CXL_HDM_DECODER0_CTRL + which * hdm_inc);
     /* TODO: Sanity checks that the decoder is possible */
-    ctrl = FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, ERR, 0);
-    ctrl = FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED, 1);
+    ctrl = REG_FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, ERR, 0);
+    ctrl = REG_FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED, 1);
 
     stl_le_p(cache_mem + R_CXL_HDM_DECODER0_CTRL + which * hdm_inc, ctrl);
 }
@@ -438,8 +438,8 @@ static void hdm_decoder_uncommit(CXLType3Dev *ct3d, int which)
 
     ctrl = ldl_le_p(cache_mem + R_CXL_HDM_DECODER0_CTRL + which * hdm_inc);
 
-    ctrl = FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, ERR, 0);
-    ctrl = FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED, 0);
+    ctrl = REG_FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, ERR, 0);
+    ctrl = REG_FIELD_DP32(ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED, 0);
 
     stl_le_p(cache_mem + R_CXL_HDM_DECODER0_CTRL + which * hdm_inc, ctrl);
 }
@@ -520,29 +520,29 @@ static void ct3d_reg_write(void *opaque, hwaddr offset, uint64_t value,
 
     switch (offset) {
     case A_CXL_HDM_DECODER0_CTRL:
-        should_commit = FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
+        should_commit = REG_FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
         should_uncommit = !should_commit;
         which_hdm = 0;
         break;
     case A_CXL_HDM_DECODER1_CTRL:
-        should_commit = FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
+        should_commit = REG_FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
         should_uncommit = !should_commit;
         which_hdm = 1;
         break;
     case A_CXL_HDM_DECODER2_CTRL:
-        should_commit = FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
+        should_commit = REG_FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
         should_uncommit = !should_commit;
         which_hdm = 2;
         break;
     case A_CXL_HDM_DECODER3_CTRL:
-        should_commit = FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
+        should_commit = REG_FIELD_EX32(value, CXL_HDM_DECODER0_CTRL, COMMIT);
         should_uncommit = !should_commit;
         which_hdm = 3;
         break;
     case A_CXL_RAS_UNC_ERR_STATUS:
     {
         uint32_t capctrl = ldl_le_p(cache_mem + R_CXL_RAS_ERR_CAP_CTRL);
-        uint32_t fe = FIELD_EX32(capctrl, CXL_RAS_ERR_CAP_CTRL,
+        uint32_t fe = REG_FIELD_EX32(capctrl, CXL_RAS_ERR_CAP_CTRL,
                                  FIRST_ERROR_POINTER);
         CXLError *cxl_err;
         uint32_t unc_err;
@@ -588,7 +588,7 @@ static void ct3d_reg_write(void *opaque, hwaddr offset, uint64_t value,
                 for (i = 0; i < CXL_RAS_ERR_HEADER_NUM; i++) {
                     stl_le_p(header_log + i, cxl_err->header[i]);
                 }
-                capctrl = FIELD_DP32(capctrl, CXL_RAS_ERR_CAP_CTRL,
+                capctrl = REG_FIELD_DP32(capctrl, CXL_RAS_ERR_CAP_CTRL,
                                      FIRST_ERROR_POINTER, cxl_err->type);
             } else {
                 /*
@@ -596,7 +596,7 @@ static void ct3d_reg_write(void *opaque, hwaddr offset, uint64_t value,
                  * r6.0 6.2.4.2 to set the first error pointer to a status
                  * bit that will never be used.
                  */
-                capctrl = FIELD_DP32(capctrl, CXL_RAS_ERR_CAP_CTRL,
+                capctrl = REG_FIELD_DP32(capctrl, CXL_RAS_ERR_CAP_CTRL,
                                      FIRST_ERROR_POINTER,
                                      CXL_RAS_UNC_ERR_CXL_UNUSED);
             }
@@ -1084,7 +1084,7 @@ static bool cxl_type3_dpa(CXLType3Dev *ct3d, hwaddr host_addr, uint64_t *dpa)
     int i;
 
     cap = ldl_le_p(cache_mem + R_CXL_HDM_DECODER_CAPABILITY);
-    hdm_count = cxl_decoder_count_dec(FIELD_EX32(cap,
+    hdm_count = cxl_decoder_count_dec(REG_FIELD_EX32(cap,
                                                  CXL_HDM_DECODER_CAPABILITY,
                                                  DECODER_COUNT));
 
@@ -1111,9 +1111,9 @@ static bool cxl_type3_dpa(CXLType3Dev *ct3d, hwaddr host_addr, uint64_t *dpa)
         hpa_offset = (uint64_t)host_addr - decoder_base;
 
         hdm_ctrl = ldl_le_p(cache_mem + R_CXL_HDM_DECODER0_CTRL + i * hdm_inc);
-        iw = FIELD_EX32(hdm_ctrl, CXL_HDM_DECODER0_CTRL, IW);
-        ig = FIELD_EX32(hdm_ctrl, CXL_HDM_DECODER0_CTRL, IG);
-        if (!FIELD_EX32(hdm_ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED)) {
+        iw = REG_FIELD_EX32(hdm_ctrl, CXL_HDM_DECODER0_CTRL, IW);
+        ig = REG_FIELD_EX32(hdm_ctrl, CXL_HDM_DECODER0_CTRL, IG);
+        if (!REG_FIELD_EX32(hdm_ctrl, CXL_HDM_DECODER0_CTRL, COMMITTED)) {
             return false;
         }
         if (((uint64_t)host_addr < decoder_base) ||
@@ -1529,7 +1529,7 @@ void qmp_cxl_inject_uncorrectable_errors(const char *path,
             stl_le_p(header_log + i, cxl_err->header[i]);
         }
 
-        capctrl = FIELD_DP32(capctrl, CXL_RAS_ERR_CAP_CTRL,
+        capctrl = REG_FIELD_DP32(capctrl, CXL_RAS_ERR_CAP_CTRL,
                              FIRST_ERROR_POINTER, cxl_err->type);
         stl_le_p(cache_mem + R_CXL_RAS_ERR_CAP_CTRL, capctrl);
     }

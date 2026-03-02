@@ -90,8 +90,8 @@ static uint64_t cfrm_itr_prew(RegisterInfo *reg, uint64_t val64)
 
 static void cframe_incr_far(XlnxVersalCFrameReg *s)
 {
-    uint32_t faddr = ARRAY_FIELD_EX32(s->regs, FAR0, FRAME_ADDR);
-    uint32_t blktype = ARRAY_FIELD_EX32(s->regs, FAR0, BLOCKTYPE);
+    uint32_t faddr = REG_ARRAY_FIELD_EX32(s->regs, FAR0, FRAME_ADDR);
+    uint32_t blktype = REG_ARRAY_FIELD_EX32(s->regs, FAR0, BLOCKTYPE);
 
     assert(blktype <= MAX_BLOCKTYPE);
 
@@ -103,10 +103,10 @@ static void cframe_incr_far(XlnxVersalCFrameReg *s)
 
         assert(blktype <= MAX_BLOCKTYPE);
 
-        ARRAY_FIELD_DP32(s->regs, FAR0, BLOCKTYPE, blktype);
+        REG_ARRAY_FIELD_DP32(s->regs, FAR0, BLOCKTYPE, blktype);
     }
 
-    ARRAY_FIELD_DP32(s->regs, FAR0, FRAME_ADDR, faddr);
+    REG_ARRAY_FIELD_DP32(s->regs, FAR0, FRAME_ADDR, faddr);
 }
 
 static void cfrm_fdri_post_write(RegisterInfo *reg, uint64_t val)
@@ -186,7 +186,7 @@ static void cfrm_cmd_post_write(RegisterInfo *reg, uint64_t val)
     XlnxVersalCFrameReg *s = XLNX_VERSAL_CFRAME_REG(reg->opaque);
 
     if (s->row_configured) {
-        uint8_t cmd = ARRAY_FIELD_EX32(s->regs, CMD0, CMD);
+        uint8_t cmd = REG_ARRAY_FIELD_EX32(s->regs, CMD0, CMD);
 
         switch (cmd) {
         case CFRAME_CMD_WCFG:
@@ -219,21 +219,21 @@ static uint64_t cfrm_last_frame_bot_post_read(RegisterInfo *reg,
 
     switch (reg->access->addr) {
     case A_LAST_FRAME_BOT0:
-        val = FIELD_DP32(val, LAST_FRAME_BOT0, BLOCKTYPE1_LAST_FRAME_LSB,
+        val = REG_FIELD_DP32(val, LAST_FRAME_BOT0, BLOCKTYPE1_LAST_FRAME_LSB,
                          s->cfg.blktype_num_frames[1]);
-        val = FIELD_DP32(val, LAST_FRAME_BOT0, BLOCKTYPE0_LAST_FRAME,
+        val = REG_FIELD_DP32(val, LAST_FRAME_BOT0, BLOCKTYPE0_LAST_FRAME,
                          s->cfg.blktype_num_frames[0]);
         break;
     case A_LAST_FRAME_BOT1:
-        val = FIELD_DP32(val, LAST_FRAME_BOT1, BLOCKTYPE3_LAST_FRAME_LSB,
+        val = REG_FIELD_DP32(val, LAST_FRAME_BOT1, BLOCKTYPE3_LAST_FRAME_LSB,
                          s->cfg.blktype_num_frames[3]);
-        val = FIELD_DP32(val, LAST_FRAME_BOT1, BLOCKTYPE2_LAST_FRAME,
+        val = REG_FIELD_DP32(val, LAST_FRAME_BOT1, BLOCKTYPE2_LAST_FRAME,
                          s->cfg.blktype_num_frames[2]);
-        val = FIELD_DP32(val, LAST_FRAME_BOT1, BLOCKTYPE1_LAST_FRAME_MSB,
+        val = REG_FIELD_DP32(val, LAST_FRAME_BOT1, BLOCKTYPE1_LAST_FRAME_MSB,
                          (s->cfg.blktype_num_frames[1] >> 12));
         break;
     case A_LAST_FRAME_BOT2:
-        val = FIELD_DP32(val, LAST_FRAME_BOT2, BLOCKTYPE3_LAST_FRAME_MSB,
+        val = REG_FIELD_DP32(val, LAST_FRAME_BOT2, BLOCKTYPE3_LAST_FRAME_MSB,
                          (s->cfg.blktype_num_frames[3] >> 4));
         break;
     case A_LAST_FRAME_BOT3:
@@ -252,15 +252,15 @@ static uint64_t cfrm_last_frame_top_post_read(RegisterInfo *reg,
 
     switch (reg->access->addr) {
     case A_LAST_FRAME_TOP0:
-        val = FIELD_DP32(val, LAST_FRAME_TOP0, BLOCKTYPE5_LAST_FRAME_LSB,
+        val = REG_FIELD_DP32(val, LAST_FRAME_TOP0, BLOCKTYPE5_LAST_FRAME_LSB,
                          s->cfg.blktype_num_frames[5]);
-        val = FIELD_DP32(val, LAST_FRAME_TOP0, BLOCKTYPE4_LAST_FRAME,
+        val = REG_FIELD_DP32(val, LAST_FRAME_TOP0, BLOCKTYPE4_LAST_FRAME,
                          s->cfg.blktype_num_frames[4]);
         break;
     case A_LAST_FRAME_TOP1:
-        val = FIELD_DP32(val, LAST_FRAME_TOP1, BLOCKTYPE6_LAST_FRAME,
+        val = REG_FIELD_DP32(val, LAST_FRAME_TOP1, BLOCKTYPE6_LAST_FRAME,
                          s->cfg.blktype_num_frames[6]);
-        val = FIELD_DP32(val, LAST_FRAME_TOP1, BLOCKTYPE5_LAST_FRAME_MSB,
+        val = REG_FIELD_DP32(val, LAST_FRAME_TOP1, BLOCKTYPE5_LAST_FRAME_MSB,
                          (s->cfg.blktype_num_frames[5] >> 12));
         break;
     case A_LAST_FRAME_TOP2:
@@ -484,7 +484,7 @@ static void cframe_reg_cfi_transfer_packet(XlnxCfiIf *cfi_if,
                        XLNX_VERSAL_CFRAME_REG_ERR_DEBUG);
         break;
     case CFRAME_CMD:
-        ARRAY_FIELD_DP32(s->regs, CMD0, CMD, pkt->data[0]);
+        REG_ARRAY_FIELD_DP32(s->regs, CMD0, CMD, pkt->data[0]);
 
         register_write(&s->regs_info[R_CMD3], 0,
                        we, object_get_typename(OBJECT(s)),

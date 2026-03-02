@@ -23,10 +23,10 @@ static int open_cpuinfo(CPUArchState *cpu_env, int fd)
 
     arch = 8;
     elf_name = "v8" END_SUFFIX;
-    midr_rev = FIELD_EX32(cpu->midr, MIDR_EL1, REVISION);
-    midr_part = FIELD_EX32(cpu->midr, MIDR_EL1, PARTNUM);
-    midr_var = FIELD_EX32(cpu->midr, MIDR_EL1, VARIANT);
-    midr_impl = FIELD_EX32(cpu->midr, MIDR_EL1, IMPLEMENTER);
+    midr_rev = REG_FIELD_EX32(cpu->midr, MIDR_EL1, REVISION);
+    midr_part = REG_FIELD_EX32(cpu->midr, MIDR_EL1, PARTNUM);
+    midr_var = REG_FIELD_EX32(cpu->midr, MIDR_EL1, VARIANT);
+    midr_impl = REG_FIELD_EX32(cpu->midr, MIDR_EL1, IMPLEMENTER);
     len_part = 3;
     len_var = 1;
 

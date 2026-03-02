@@ -267,7 +267,7 @@ static int mmu6xx_get_physical_address(CPUPPCState *env, hwaddr *raddr,
     hwaddr hash;
     target_ulong vsid, sr, pgidx, ptem;
     bool key, ds, nx;
-    bool pr = FIELD_EX64(env->msr, MSR, PR);
+    bool pr = REG_FIELD_EX64(env->msr, MSR, PR);
 
     /* First try to find a BAT entry if there are any */
     if (env->nb_BATs &&
@@ -587,8 +587,8 @@ static bool ppc_real_mode_xlate(PowerPCCPU *cpu, vaddr eaddr,
 {
     CPUPPCState *env = &cpu->env;
 
-    if (access_type == MMU_INST_FETCH ? !FIELD_EX64(env->msr, MSR, IR)
-                                      : !FIELD_EX64(env->msr, MSR, DR)) {
+    if (access_type == MMU_INST_FETCH ? !REG_FIELD_EX64(env->msr, MSR, IR)
+                                      : !REG_FIELD_EX64(env->msr, MSR, DR)) {
         *raddrp = eaddr;
         *protp = PAGE_RWX;
         *psizep = TARGET_PAGE_BITS;

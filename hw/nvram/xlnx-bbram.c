@@ -40,12 +40,12 @@
 #endif
 
 REG32(BBRAM_STATUS, 0x0)
-    FIELD(BBRAM_STATUS, AES_CRC_PASS, 9, 1)
-    FIELD(BBRAM_STATUS, AES_CRC_DONE, 8, 1)
-    FIELD(BBRAM_STATUS, BBRAM_ZEROIZED, 4, 1)
-    FIELD(BBRAM_STATUS, PGM_MODE, 0, 1)
+    REG_FIELD(BBRAM_STATUS, AES_CRC_PASS, 9, 1)
+    REG_FIELD(BBRAM_STATUS, AES_CRC_DONE, 8, 1)
+    REG_FIELD(BBRAM_STATUS, BBRAM_ZEROIZED, 4, 1)
+    REG_FIELD(BBRAM_STATUS, PGM_MODE, 0, 1)
 REG32(BBRAM_CTRL, 0x4)
-    FIELD(BBRAM_CTRL, ZEROIZE, 0, 1)
+    REG_FIELD(BBRAM_CTRL, ZEROIZE, 0, 1)
 REG32(PGM_MODE, 0x8)
 REG32(BBRAM_AES_CRC, 0xc)
 REG32(BBRAM_0, 0x10)
@@ -58,17 +58,17 @@ REG32(BBRAM_6, 0x28)
 REG32(BBRAM_7, 0x2c)
 REG32(BBRAM_8, 0x30)
 REG32(BBRAM_SLVERR, 0x34)
-    FIELD(BBRAM_SLVERR, ENABLE, 0, 1)
+    REG_FIELD(BBRAM_SLVERR, ENABLE, 0, 1)
 REG32(BBRAM_ISR, 0x38)
-    FIELD(BBRAM_ISR, APB_SLVERR, 0, 1)
+    REG_FIELD(BBRAM_ISR, APB_SLVERR, 0, 1)
 REG32(BBRAM_IMR, 0x3c)
-    FIELD(BBRAM_IMR, APB_SLVERR, 0, 1)
+    REG_FIELD(BBRAM_IMR, APB_SLVERR, 0, 1)
 REG32(BBRAM_IER, 0x40)
-    FIELD(BBRAM_IER, APB_SLVERR, 0, 1)
+    REG_FIELD(BBRAM_IER, APB_SLVERR, 0, 1)
 REG32(BBRAM_IDR, 0x44)
-    FIELD(BBRAM_IDR, APB_SLVERR, 0, 1)
+    REG_FIELD(BBRAM_IDR, APB_SLVERR, 0, 1)
 REG32(BBRAM_MSW_LOCK, 0x4c)
-    FIELD(BBRAM_MSW_LOCK, VAL, 0, 1)
+    REG_FIELD(BBRAM_MSW_LOCK, VAL, 0, 1)
 
 #define R_MAX (R_BBRAM_MSW_LOCK + 1)
 
@@ -80,12 +80,12 @@ QEMU_BUILD_BUG_ON(R_MAX != ARRAY_SIZE(((XlnxBBRam *)0)->regs));
 
 static bool bbram_msw_locked(XlnxBBRam *s)
 {
-    return ARRAY_FIELD_EX32(s->regs, BBRAM_MSW_LOCK, VAL) != 0;
+    return REG_ARRAY_FIELD_EX32(s->regs, BBRAM_MSW_LOCK, VAL) != 0;
 }
 
 static bool bbram_pgm_enabled(XlnxBBRam *s)
 {
-    return ARRAY_FIELD_EX32(s->regs, BBRAM_STATUS, PGM_MODE) != 0;
+    return REG_ARRAY_FIELD_EX32(s->regs, BBRAM_STATUS, PGM_MODE) != 0;
 }
 
 static void bbram_bdrv_error(XlnxBBRam *s, int rc, gchar *detail)
@@ -152,7 +152,7 @@ static void bbram_bdrv_sync(XlnxBBRam *s, uint64_t hwaddr)
 
     /* Update zeroized flag */
     if (le32 && (hwaddr != A_BBRAM_8 || s->bbram8_wo)) {
-        ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, BBRAM_ZEROIZED, 0);
+        REG_ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, BBRAM_ZEROIZED, 0);
     }
 
     if (!s->blk || s->blk_ro) {
@@ -170,7 +170,7 @@ static void bbram_bdrv_zero(XlnxBBRam *s)
 {
     int rc;
 
-    ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, BBRAM_ZEROIZED, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, BBRAM_ZEROIZED, 1);
 
     if (!s->blk || s->blk_ro) {
         return;
@@ -223,7 +223,7 @@ static void bbram_pgm_mode_postw(RegisterInfo *reg, uint64_t val64)
         bbram_zeroize(s);
 
         /* The status bit is cleared only by POR */
-        ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, PGM_MODE, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, PGM_MODE, 1);
     }
 }
 
@@ -249,7 +249,7 @@ static void bbram_aes_crc_postw(RegisterInfo *reg, uint64_t val64)
     calc_crc = xlnx_efuse_calc_crc(&s->regs[R_BBRAM_0],
                                    (R_BBRAM_8 - R_BBRAM_0), s->crc_zpads);
 
-    ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, AES_CRC_PASS,
+    REG_ARRAY_FIELD_DP32(s->regs, BBRAM_STATUS, AES_CRC_PASS,
                      (s->regs[R_BBRAM_AES_CRC] == calc_crc));
 }
 

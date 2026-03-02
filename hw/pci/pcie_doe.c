@@ -261,22 +261,22 @@ bool pcie_doe_read_config(DOECap *doe_cap, uint32_t addr, int size,
     *buf = 0;
 
     if (range_covers_byte(PCI_EXP_DOE_CAP, DWORD_BYTE, addr)) {
-        *buf = FIELD_DP32(*buf, PCI_DOE_CAP_REG, INTR_SUPP,
+        *buf = REG_FIELD_DP32(*buf, PCI_DOE_CAP_REG, INTR_SUPP,
                           doe_cap->cap.intr);
-        *buf = FIELD_DP32(*buf, PCI_DOE_CAP_REG, DOE_INTR_MSG_NUM,
+        *buf = REG_FIELD_DP32(*buf, PCI_DOE_CAP_REG, DOE_INTR_MSG_NUM,
                           doe_cap->cap.vec);
     } else if (range_covers_byte(PCI_EXP_DOE_CTRL, DWORD_BYTE, addr)) {
         /* Must return ABORT=0 and GO=0 */
-        *buf = FIELD_DP32(*buf, PCI_DOE_CAP_CONTROL, DOE_INTR_EN,
+        *buf = REG_FIELD_DP32(*buf, PCI_DOE_CAP_CONTROL, DOE_INTR_EN,
                           doe_cap->ctrl.intr);
     } else if (range_covers_byte(PCI_EXP_DOE_STATUS, DWORD_BYTE, addr)) {
-        *buf = FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DOE_BUSY,
+        *buf = REG_FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DOE_BUSY,
                           doe_cap->status.busy);
-        *buf = FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DOE_INTR_STATUS,
+        *buf = REG_FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DOE_INTR_STATUS,
                           doe_cap->status.intr);
-        *buf = FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DOE_ERROR,
+        *buf = REG_FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DOE_ERROR,
                           doe_cap->status.error);
-        *buf = FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DATA_OBJ_RDY,
+        *buf = REG_FIELD_DP32(*buf, PCI_DOE_CAP_STATUS, DATA_OBJ_RDY,
                           doe_cap->status.ready);
     /* Mailbox should be DW accessed */
     } else if (addr == PCI_EXP_DOE_RD_DATA_MBOX && size == DWORD_BYTE) {
@@ -314,18 +314,18 @@ void pcie_doe_write_config(DOECap *doe_cap,
 
     switch (addr) {
     case PCI_EXP_DOE_CTRL:
-        if (FIELD_EX32(val, PCI_DOE_CAP_CONTROL, DOE_ABORT)) {
+        if (REG_FIELD_EX32(val, PCI_DOE_CAP_CONTROL, DOE_ABORT)) {
             pcie_doe_set_ready(doe_cap, 0);
             pcie_doe_set_error(doe_cap, 0);
             pcie_doe_reset_mbox(doe_cap);
             return;
         }
 
-        if (FIELD_EX32(val, PCI_DOE_CAP_CONTROL, DOE_GO)) {
+        if (REG_FIELD_EX32(val, PCI_DOE_CAP_CONTROL, DOE_GO)) {
             pcie_doe_prepare_rsp(doe_cap);
         }
 
-        if (FIELD_EX32(val, PCI_DOE_CAP_CONTROL, DOE_INTR_EN)) {
+        if (REG_FIELD_EX32(val, PCI_DOE_CAP_CONTROL, DOE_INTR_EN)) {
             doe_cap->ctrl.intr = 1;
         /* Clear interrupt bit located within the first byte */
         } else if (shift == 0) {
@@ -333,7 +333,7 @@ void pcie_doe_write_config(DOECap *doe_cap,
         }
         break;
     case PCI_EXP_DOE_STATUS:
-        if (FIELD_EX32(val, PCI_DOE_CAP_STATUS, DOE_INTR_STATUS)) {
+        if (REG_FIELD_EX32(val, PCI_DOE_CAP_STATUS, DOE_INTR_STATUS)) {
             doe_cap->status.intr = 0;
         }
         break;

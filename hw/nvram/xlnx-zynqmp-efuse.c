@@ -38,85 +38,85 @@
 #endif
 
 REG32(WR_LOCK, 0x0)
-    FIELD(WR_LOCK, LOCK, 0, 16)
+    REG_FIELD(WR_LOCK, LOCK, 0, 16)
 REG32(CFG, 0x4)
-    FIELD(CFG, SLVERR_ENABLE, 5, 1)
-    FIELD(CFG, MARGIN_RD, 2, 2)
-    FIELD(CFG, PGM_EN, 1, 1)
-    FIELD(CFG, EFUSE_CLK_SEL, 0, 1)
+    REG_FIELD(CFG, SLVERR_ENABLE, 5, 1)
+    REG_FIELD(CFG, MARGIN_RD, 2, 2)
+    REG_FIELD(CFG, PGM_EN, 1, 1)
+    REG_FIELD(CFG, EFUSE_CLK_SEL, 0, 1)
 REG32(STATUS, 0x8)
-    FIELD(STATUS, AES_CRC_PASS, 7, 1)
-    FIELD(STATUS, AES_CRC_DONE, 6, 1)
-    FIELD(STATUS, CACHE_DONE, 5, 1)
-    FIELD(STATUS, CACHE_LOAD, 4, 1)
-    FIELD(STATUS, EFUSE_3_TBIT, 2, 1)
-    FIELD(STATUS, EFUSE_2_TBIT, 1, 1)
-    FIELD(STATUS, EFUSE_0_TBIT, 0, 1)
+    REG_FIELD(STATUS, AES_CRC_PASS, 7, 1)
+    REG_FIELD(STATUS, AES_CRC_DONE, 6, 1)
+    REG_FIELD(STATUS, CACHE_DONE, 5, 1)
+    REG_FIELD(STATUS, CACHE_LOAD, 4, 1)
+    REG_FIELD(STATUS, EFUSE_3_TBIT, 2, 1)
+    REG_FIELD(STATUS, EFUSE_2_TBIT, 1, 1)
+    REG_FIELD(STATUS, EFUSE_0_TBIT, 0, 1)
 REG32(EFUSE_PGM_ADDR, 0xc)
-    FIELD(EFUSE_PGM_ADDR, EFUSE, 11, 2)
-    FIELD(EFUSE_PGM_ADDR, ROW, 5, 6)
-    FIELD(EFUSE_PGM_ADDR, COLUMN, 0, 5)
+    REG_FIELD(EFUSE_PGM_ADDR, EFUSE, 11, 2)
+    REG_FIELD(EFUSE_PGM_ADDR, ROW, 5, 6)
+    REG_FIELD(EFUSE_PGM_ADDR, COLUMN, 0, 5)
 REG32(EFUSE_RD_ADDR, 0x10)
-    FIELD(EFUSE_RD_ADDR, EFUSE, 11, 2)
-    FIELD(EFUSE_RD_ADDR, ROW, 5, 6)
+    REG_FIELD(EFUSE_RD_ADDR, EFUSE, 11, 2)
+    REG_FIELD(EFUSE_RD_ADDR, ROW, 5, 6)
 REG32(EFUSE_RD_DATA, 0x14)
 REG32(TPGM, 0x18)
-    FIELD(TPGM, VALUE, 0, 16)
+    REG_FIELD(TPGM, VALUE, 0, 16)
 REG32(TRD, 0x1c)
-    FIELD(TRD, VALUE, 0, 8)
+    REG_FIELD(TRD, VALUE, 0, 8)
 REG32(TSU_H_PS, 0x20)
-    FIELD(TSU_H_PS, VALUE, 0, 8)
+    REG_FIELD(TSU_H_PS, VALUE, 0, 8)
 REG32(TSU_H_PS_CS, 0x24)
-    FIELD(TSU_H_PS_CS, VALUE, 0, 8)
+    REG_FIELD(TSU_H_PS_CS, VALUE, 0, 8)
 REG32(TSU_H_CS, 0x2c)
-    FIELD(TSU_H_CS, VALUE, 0, 4)
+    REG_FIELD(TSU_H_CS, VALUE, 0, 4)
 REG32(EFUSE_ISR, 0x30)
-    FIELD(EFUSE_ISR, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_ISR, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_ISR, RD_ERROR, 3, 1)
-    FIELD(EFUSE_ISR, RD_DONE, 2, 1)
-    FIELD(EFUSE_ISR, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_ISR, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_ISR, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_ISR, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_ISR, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_ISR, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_ISR, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_ISR, PGM_DONE, 0, 1)
 REG32(EFUSE_IMR, 0x34)
-    FIELD(EFUSE_IMR, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_IMR, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_IMR, RD_ERROR, 3, 1)
-    FIELD(EFUSE_IMR, RD_DONE, 2, 1)
-    FIELD(EFUSE_IMR, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_IMR, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_IMR, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_IMR, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_IMR, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_IMR, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_IMR, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_IMR, PGM_DONE, 0, 1)
 REG32(EFUSE_IER, 0x38)
-    FIELD(EFUSE_IER, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_IER, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_IER, RD_ERROR, 3, 1)
-    FIELD(EFUSE_IER, RD_DONE, 2, 1)
-    FIELD(EFUSE_IER, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_IER, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_IER, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_IER, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_IER, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_IER, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_IER, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_IER, PGM_DONE, 0, 1)
 REG32(EFUSE_IDR, 0x3c)
-    FIELD(EFUSE_IDR, APB_SLVERR, 31, 1)
-    FIELD(EFUSE_IDR, CACHE_ERROR, 4, 1)
-    FIELD(EFUSE_IDR, RD_ERROR, 3, 1)
-    FIELD(EFUSE_IDR, RD_DONE, 2, 1)
-    FIELD(EFUSE_IDR, PGM_ERROR, 1, 1)
-    FIELD(EFUSE_IDR, PGM_DONE, 0, 1)
+    REG_FIELD(EFUSE_IDR, APB_SLVERR, 31, 1)
+    REG_FIELD(EFUSE_IDR, CACHE_ERROR, 4, 1)
+    REG_FIELD(EFUSE_IDR, RD_ERROR, 3, 1)
+    REG_FIELD(EFUSE_IDR, RD_DONE, 2, 1)
+    REG_FIELD(EFUSE_IDR, PGM_ERROR, 1, 1)
+    REG_FIELD(EFUSE_IDR, PGM_DONE, 0, 1)
 REG32(EFUSE_CACHE_LOAD, 0x40)
-    FIELD(EFUSE_CACHE_LOAD, LOAD, 0, 1)
+    REG_FIELD(EFUSE_CACHE_LOAD, LOAD, 0, 1)
 REG32(EFUSE_PGM_LOCK, 0x44)
-    FIELD(EFUSE_PGM_LOCK, SPK_ID_LOCK, 0, 1)
+    REG_FIELD(EFUSE_PGM_LOCK, SPK_ID_LOCK, 0, 1)
 REG32(EFUSE_AES_CRC, 0x48)
 REG32(EFUSE_TBITS_PRGRMG_EN, 0x100)
-    FIELD(EFUSE_TBITS_PRGRMG_EN, TBITS_PRGRMG_EN, 3, 1)
+    REG_FIELD(EFUSE_TBITS_PRGRMG_EN, TBITS_PRGRMG_EN, 3, 1)
 REG32(DNA_0, 0x100c)
 REG32(DNA_1, 0x1010)
 REG32(DNA_2, 0x1014)
 REG32(IPDISABLE, 0x1018)
-    FIELD(IPDISABLE, VCU_DIS, 8, 1)
-    FIELD(IPDISABLE, GPU_DIS, 5, 1)
-    FIELD(IPDISABLE, APU3_DIS, 3, 1)
-    FIELD(IPDISABLE, APU2_DIS, 2, 1)
-    FIELD(IPDISABLE, APU1_DIS, 1, 1)
-    FIELD(IPDISABLE, APU0_DIS, 0, 1)
+    REG_FIELD(IPDISABLE, VCU_DIS, 8, 1)
+    REG_FIELD(IPDISABLE, GPU_DIS, 5, 1)
+    REG_FIELD(IPDISABLE, APU3_DIS, 3, 1)
+    REG_FIELD(IPDISABLE, APU2_DIS, 2, 1)
+    REG_FIELD(IPDISABLE, APU1_DIS, 1, 1)
+    REG_FIELD(IPDISABLE, APU0_DIS, 0, 1)
 REG32(SYSOSC_CTRL, 0x101c)
-    FIELD(SYSOSC_CTRL, SYSOSC_EN, 0, 1)
+    REG_FIELD(SYSOSC_CTRL, SYSOSC_EN, 0, 1)
 REG32(USER_0, 0x1020)
 REG32(USER_1, 0x1024)
 REG32(USER_2, 0x1028)
@@ -126,47 +126,47 @@ REG32(USER_5, 0x1034)
 REG32(USER_6, 0x1038)
 REG32(USER_7, 0x103c)
 REG32(MISC_USER_CTRL, 0x1040)
-    FIELD(MISC_USER_CTRL, FPD_SC_EN_0, 14, 1)
-    FIELD(MISC_USER_CTRL, LPD_SC_EN_0, 11, 1)
-    FIELD(MISC_USER_CTRL, LBIST_EN, 10, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_7, 7, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_6, 6, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_5, 5, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_4, 4, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_3, 3, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_2, 2, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_1, 1, 1)
-    FIELD(MISC_USER_CTRL, USR_WRLK_0, 0, 1)
+    REG_FIELD(MISC_USER_CTRL, FPD_SC_EN_0, 14, 1)
+    REG_FIELD(MISC_USER_CTRL, LPD_SC_EN_0, 11, 1)
+    REG_FIELD(MISC_USER_CTRL, LBIST_EN, 10, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_7, 7, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_6, 6, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_5, 5, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_4, 4, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_3, 3, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_2, 2, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_1, 1, 1)
+    REG_FIELD(MISC_USER_CTRL, USR_WRLK_0, 0, 1)
 REG32(ROM_RSVD, 0x1044)
-    FIELD(ROM_RSVD, PBR_BOOT_ERROR, 0, 3)
+    REG_FIELD(ROM_RSVD, PBR_BOOT_ERROR, 0, 3)
 REG32(PUF_CHASH, 0x1050)
 REG32(PUF_MISC, 0x1054)
-    FIELD(PUF_MISC, REGISTER_DIS, 31, 1)
-    FIELD(PUF_MISC, SYN_WRLK, 30, 1)
-    FIELD(PUF_MISC, SYN_INVLD, 29, 1)
-    FIELD(PUF_MISC, TEST2_DIS, 28, 1)
-    FIELD(PUF_MISC, UNUSED27, 27, 1)
-    FIELD(PUF_MISC, UNUSED26, 26, 1)
-    FIELD(PUF_MISC, UNUSED25, 25, 1)
-    FIELD(PUF_MISC, UNUSED24, 24, 1)
-    FIELD(PUF_MISC, AUX, 0, 24)
+    REG_FIELD(PUF_MISC, REGISTER_DIS, 31, 1)
+    REG_FIELD(PUF_MISC, SYN_WRLK, 30, 1)
+    REG_FIELD(PUF_MISC, SYN_INVLD, 29, 1)
+    REG_FIELD(PUF_MISC, TEST2_DIS, 28, 1)
+    REG_FIELD(PUF_MISC, UNUSED27, 27, 1)
+    REG_FIELD(PUF_MISC, UNUSED26, 26, 1)
+    REG_FIELD(PUF_MISC, UNUSED25, 25, 1)
+    REG_FIELD(PUF_MISC, UNUSED24, 24, 1)
+    REG_FIELD(PUF_MISC, AUX, 0, 24)
 REG32(SEC_CTRL, 0x1058)
-    FIELD(SEC_CTRL, PPK1_INVLD, 30, 2)
-    FIELD(SEC_CTRL, PPK1_WRLK, 29, 1)
-    FIELD(SEC_CTRL, PPK0_INVLD, 27, 2)
-    FIELD(SEC_CTRL, PPK0_WRLK, 26, 1)
-    FIELD(SEC_CTRL, RSA_EN, 11, 15)
-    FIELD(SEC_CTRL, SEC_LOCK, 10, 1)
-    FIELD(SEC_CTRL, PROG_GATE_2, 9, 1)
-    FIELD(SEC_CTRL, PROG_GATE_1, 8, 1)
-    FIELD(SEC_CTRL, PROG_GATE_0, 7, 1)
-    FIELD(SEC_CTRL, DFT_DIS, 6, 1)
-    FIELD(SEC_CTRL, JTAG_DIS, 5, 1)
-    FIELD(SEC_CTRL, ERROR_DIS, 4, 1)
-    FIELD(SEC_CTRL, BBRAM_DIS, 3, 1)
-    FIELD(SEC_CTRL, ENC_ONLY, 2, 1)
-    FIELD(SEC_CTRL, AES_WRLK, 1, 1)
-    FIELD(SEC_CTRL, AES_RDLK, 0, 1)
+    REG_FIELD(SEC_CTRL, PPK1_INVLD, 30, 2)
+    REG_FIELD(SEC_CTRL, PPK1_WRLK, 29, 1)
+    REG_FIELD(SEC_CTRL, PPK0_INVLD, 27, 2)
+    REG_FIELD(SEC_CTRL, PPK0_WRLK, 26, 1)
+    REG_FIELD(SEC_CTRL, RSA_EN, 11, 15)
+    REG_FIELD(SEC_CTRL, SEC_LOCK, 10, 1)
+    REG_FIELD(SEC_CTRL, PROG_GATE_2, 9, 1)
+    REG_FIELD(SEC_CTRL, PROG_GATE_1, 8, 1)
+    REG_FIELD(SEC_CTRL, PROG_GATE_0, 7, 1)
+    REG_FIELD(SEC_CTRL, DFT_DIS, 6, 1)
+    REG_FIELD(SEC_CTRL, JTAG_DIS, 5, 1)
+    REG_FIELD(SEC_CTRL, ERROR_DIS, 4, 1)
+    REG_FIELD(SEC_CTRL, BBRAM_DIS, 3, 1)
+    REG_FIELD(SEC_CTRL, ENC_ONLY, 2, 1)
+    REG_FIELD(SEC_CTRL, AES_WRLK, 1, 1)
+    REG_FIELD(SEC_CTRL, AES_RDLK, 0, 1)
 REG32(SPK_ID, 0x105c)
 REG32(PPK0_0, 0x10a0)
 REG32(PPK0_1, 0x10a4)
@@ -257,12 +257,12 @@ REG32(PPK1_11, 0x10fc)
 #define EFUSE_PPK1_END        BIT_POS(63, 31)
 
 #define EFUSE_CACHE_FLD(s, reg, field) \
-    ARRAY_FIELD_DP32((s)->regs, reg, field, \
+    REG_ARRAY_FIELD_DP32((s)->regs, reg, field, \
                      (xlnx_efuse_get_row((s->efuse), EFUSE_ ## field) \
                       >> (EFUSE_ ## field % 32)))
 
 #define EFUSE_CACHE_BIT(s, reg, field) \
-    ARRAY_FIELD_DP32((s)->regs, reg, field, xlnx_efuse_get_bit((s->efuse), \
+    REG_ARRAY_FIELD_DP32((s)->regs, reg, field, xlnx_efuse_get_bit((s->efuse), \
                 EFUSE_ ## field))
 
 #define FBIT_UNKNOWN (~0)
@@ -274,9 +274,9 @@ static void update_tbit_status(XlnxZynqMPEFuse *s)
     unsigned int check = xlnx_efuse_tbits_check(s->efuse);
     uint32_t val = s->regs[R_STATUS];
 
-    val = FIELD_DP32(val, STATUS, EFUSE_0_TBIT, !!(check & (1 << 0)));
-    val = FIELD_DP32(val, STATUS, EFUSE_2_TBIT, !!(check & (1 << 1)));
-    val = FIELD_DP32(val, STATUS, EFUSE_3_TBIT, !!(check & (1 << 2)));
+    val = REG_FIELD_DP32(val, STATUS, EFUSE_0_TBIT, !!(check & (1 << 0)));
+    val = REG_FIELD_DP32(val, STATUS, EFUSE_2_TBIT, !!(check & (1 << 1)));
+    val = REG_FIELD_DP32(val, STATUS, EFUSE_3_TBIT, !!(check & (1 << 2)));
 
     s->regs[R_STATUS] = val;
 }
@@ -389,7 +389,7 @@ static void zynqmp_efuse_pgm_addr_postw(RegisterInfo *reg, uint64_t val64)
 {
     XlnxZynqMPEFuse *s = XLNX_ZYNQMP_EFUSE(reg->opaque);
     unsigned bit = val64;
-    unsigned page = FIELD_EX32(bit, EFUSE_PGM_ADDR, EFUSE);
+    unsigned page = REG_FIELD_EX32(bit, EFUSE_PGM_ADDR, EFUSE);
     bool puf_prot = false;
     const char *errmsg = NULL;
 
@@ -398,7 +398,7 @@ static void zynqmp_efuse_pgm_addr_postw(RegisterInfo *reg, uint64_t val64)
     case 0:
         break;
     case 2 ... 3:
-        bit = FIELD_DP32(bit, EFUSE_PGM_ADDR, EFUSE, page - 1);
+        bit = REG_FIELD_DP32(bit, EFUSE_PGM_ADDR, EFUSE, page - 1);
         puf_prot = xlnx_efuse_get_bit(s->efuse, EFUSE_PUF_SYN_WRLK);
         break;
     default:
@@ -406,12 +406,12 @@ static void zynqmp_efuse_pgm_addr_postw(RegisterInfo *reg, uint64_t val64)
         goto pgm_done;
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, WR_LOCK, LOCK)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, WR_LOCK, LOCK)) {
         errmsg = "Array write-locked";
         goto pgm_done;
     }
 
-    if (!ARRAY_FIELD_EX32(s->regs, CFG, PGM_EN)) {
+    if (!REG_ARRAY_FIELD_EX32(s->regs, CFG, PGM_EN)) {
         errmsg = "Array pgm-disabled";
         goto pgm_done;
     }
@@ -421,7 +421,7 @@ static void zynqmp_efuse_pgm_addr_postw(RegisterInfo *reg, uint64_t val64)
         goto pgm_done;
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, SEC_CTRL, AES_WRLK)
+    if (REG_ARRAY_FIELD_EX32(s->regs, SEC_CTRL, AES_WRLK)
         && bit >= EFUSE_AES_START && bit <= EFUSE_AES_END) {
         errmsg = "AES key-store Write-locked";
         goto pgm_done;
@@ -433,17 +433,17 @@ static void zynqmp_efuse_pgm_addr_postw(RegisterInfo *reg, uint64_t val64)
 
  pgm_done:
     if (!errmsg) {
-        ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_ERROR, 0);
+        REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_ERROR, 0);
     } else {
         g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
-        ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_ERROR, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_ERROR, 1);
         qemu_log_mask(LOG_GUEST_ERROR,
                       "%s - eFuse write error: %s; addr=0x%x\n",
                       path, errmsg, (unsigned)val64);
     }
 
-    ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_DONE, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, PGM_DONE, 1);
     zynqmp_efuse_update_irq(s);
 }
 
@@ -511,8 +511,8 @@ static void zynqmp_efuse_rd_addr_postw(RegisterInfo *reg, uint64_t val64)
 #undef COL_MASK
 
     uint32_t efuse_idx = s->regs[R_EFUSE_RD_ADDR];
-    uint32_t efuse_ary = FIELD_EX32(efuse_idx, EFUSE_RD_ADDR, EFUSE);
-    uint32_t efuse_row = FIELD_EX32(efuse_idx, EFUSE_RD_ADDR, ROW);
+    uint32_t efuse_ary = REG_FIELD_EX32(efuse_idx, EFUSE_RD_ADDR, EFUSE);
+    uint32_t efuse_row = REG_FIELD_EX32(efuse_idx, EFUSE_RD_ADDR, ROW);
 
     switch (efuse_ary) {
     case 0:     /* Various */
@@ -527,7 +527,7 @@ static void zynqmp_efuse_rd_addr_postw(RegisterInfo *reg, uint64_t val64)
         break;
     case 2:     /* PUF helper data, adjust for skipped array 1 */
     case 3:
-        val64 = FIELD_DP32(efuse_idx, EFUSE_RD_ADDR, EFUSE, efuse_ary - 1);
+        val64 = REG_FIELD_DP32(efuse_idx, EFUSE_RD_ADDR, EFUSE, efuse_ary - 1);
         break;
     default:
         goto denied;
@@ -535,8 +535,8 @@ static void zynqmp_efuse_rd_addr_postw(RegisterInfo *reg, uint64_t val64)
 
     s->regs[R_EFUSE_RD_DATA] = xlnx_efuse_get_row(s->efuse, val64) & col_mask;
 
-    ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_ERROR, 0);
-    ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_DONE, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_ERROR, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_DONE, 1);
     zynqmp_efuse_update_irq(s);
     return;
 
@@ -548,8 +548,8 @@ static void zynqmp_efuse_rd_addr_postw(RegisterInfo *reg, uint64_t val64)
 
     s->regs[R_EFUSE_RD_DATA] = 0;
 
-    ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_ERROR, 1);
-    ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_DONE, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_ERROR, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, EFUSE_ISR, RD_DONE, 0);
     zynqmp_efuse_update_irq(s);
 }
 
@@ -560,8 +560,8 @@ static void zynqmp_efuse_aes_crc_postw(RegisterInfo *reg, uint64_t val64)
 
     ok = xlnx_efuse_k256_check(s->efuse, (uint32_t)val64, EFUSE_AES_START);
 
-    ARRAY_FIELD_DP32(s->regs, STATUS, AES_CRC_PASS, (ok ? 1 : 0));
-    ARRAY_FIELD_DP32(s->regs, STATUS, AES_CRC_DONE, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS, AES_CRC_PASS, (ok ? 1 : 0));
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS, AES_CRC_DONE, 1);
 
     s->regs[R_EFUSE_AES_CRC] = 0;   /* crc value is write-only */
 }
@@ -573,7 +573,7 @@ static uint64_t zynqmp_efuse_cache_load_prew(RegisterInfo *reg,
 
     if (valu64 & R_EFUSE_CACHE_LOAD_LOAD_MASK) {
         zynqmp_efuse_sync_cache(s, FBIT_UNKNOWN);
-        ARRAY_FIELD_DP32(s->regs, STATUS, CACHE_DONE, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS, CACHE_DONE, 1);
         zynqmp_efuse_update_irq(s);
     }
 
@@ -780,7 +780,7 @@ static void zynqmp_efuse_reset_hold(Object *obj, ResetType type)
     }
 
     zynqmp_efuse_sync_cache(s, FBIT_UNKNOWN);
-    ARRAY_FIELD_DP32(s->regs, STATUS, CACHE_DONE, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS, CACHE_DONE, 1);
     zynqmp_efuse_update_irq(s);
 }
 

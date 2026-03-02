@@ -330,7 +330,7 @@ static bool granule_protection_check(CPUARMState *env, uint64_t paddress,
     MemTxResult result;
     int gpi;
 
-    if (!FIELD_EX64(gpccr, GPCCR, GPC)) {
+    if (!REG_FIELD_EX64(gpccr, GPCCR, GPC)) {
         return true;
     }
 
@@ -344,21 +344,21 @@ static bool granule_protection_check(CPUARMState *env, uint64_t paddress,
      * Configuration of PPS to a value exceeding the implemented
      * physical address size is invalid.
      */
-    pps = FIELD_EX64(gpccr, GPCCR, PPS);
+    pps = REG_FIELD_EX64(gpccr, GPCCR, PPS);
     if (pps > FIELD_EX64_IDREG(&cpu->isar, ID_AA64MMFR0, PARANGE)) {
         goto fault_walk;
     }
     pps = pamax_map[pps];
     pps_mask = MAKE_64BIT_MASK(0, pps);
 
-    switch (FIELD_EX64(gpccr, GPCCR, SH)) {
+    switch (REG_FIELD_EX64(gpccr, GPCCR, SH)) {
     case 0b10: /* outer shareable */
         break;
     case 0b00: /* non-shareable */
     case 0b11: /* inner shareable */
         /* Inner and Outer non-cacheable requires Outer shareable. */
-        if (FIELD_EX64(gpccr, GPCCR, ORGN) == 0 &&
-            FIELD_EX64(gpccr, GPCCR, IRGN) == 0) {
+        if (REG_FIELD_EX64(gpccr, GPCCR, ORGN) == 0 &&
+            REG_FIELD_EX64(gpccr, GPCCR, IRGN) == 0) {
             goto fault_walk;
         }
         break;
@@ -366,7 +366,7 @@ static bool granule_protection_check(CPUARMState *env, uint64_t paddress,
         goto fault_walk;
     }
 
-    switch (FIELD_EX64(gpccr, GPCCR, PGS)) {
+    switch (REG_FIELD_EX64(gpccr, GPCCR, PGS)) {
     case 0b00: /* 4KB */
         pgs = 12;
         break;
@@ -381,7 +381,7 @@ static bool granule_protection_check(CPUARMState *env, uint64_t paddress,
     }
 
     /* Note this field is read-only and fixed at reset. */
-    l0gptsz = 30 + FIELD_EX64(gpccr, GPCCR, L0GPTSZ);
+    l0gptsz = 30 + REG_FIELD_EX64(gpccr, GPCCR, L0GPTSZ);
 
     /*
      * GPC Priority 2: Secure, Realm or Root address exceeds PPS.

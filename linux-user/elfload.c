@@ -1405,23 +1405,23 @@ static uint32_t get_elf_hwcap(void)
 
     hwcaps |= HWCAP_LOONGARCH_CRC32;
 
-    if (FIELD_EX32(cpu->env.cpucfg[1], CPUCFG1, UAL)) {
+    if (REG_FIELD_EX32(cpu->env.cpucfg[1], CPUCFG1, UAL)) {
         hwcaps |= HWCAP_LOONGARCH_UAL;
     }
 
-    if (FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, FP)) {
+    if (REG_FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, FP)) {
         hwcaps |= HWCAP_LOONGARCH_FPU;
     }
 
-    if (FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, LAM)) {
+    if (REG_FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, LAM)) {
         hwcaps |= HWCAP_LOONGARCH_LAM;
     }
 
-    if (FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, LSX)) {
+    if (REG_FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, LSX)) {
         hwcaps |= HWCAP_LOONGARCH_LSX;
     }
 
-    if (FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, LASX)) {
+    if (REG_FIELD_EX32(cpu->env.cpucfg[2], CPUCFG2, LASX)) {
         hwcaps |= HWCAP_LOONGARCH_LASX;
     }
 

@@ -2083,23 +2083,23 @@ static void nvic_writel(NVICState *s, uint32_t offset, uint32_t value,
                 /* Some non-banked bits are configurably writable by NS */
                 fpccr_s = cpu->env.v7m.fpccr[M_REG_S];
                 if (!(fpccr_s & R_V7M_FPCCR_LSPENS_MASK)) {
-                    uint32_t lspen = FIELD_EX32(value, V7M_FPCCR, LSPEN);
-                    fpccr_s = FIELD_DP32(fpccr_s, V7M_FPCCR, LSPEN, lspen);
+                    uint32_t lspen = REG_FIELD_EX32(value, V7M_FPCCR, LSPEN);
+                    fpccr_s = REG_FIELD_DP32(fpccr_s, V7M_FPCCR, LSPEN, lspen);
                 }
                 if (!(fpccr_s & R_V7M_FPCCR_CLRONRETS_MASK)) {
-                    uint32_t cor = FIELD_EX32(value, V7M_FPCCR, CLRONRET);
-                    fpccr_s = FIELD_DP32(fpccr_s, V7M_FPCCR, CLRONRET, cor);
+                    uint32_t cor = REG_FIELD_EX32(value, V7M_FPCCR, CLRONRET);
+                    fpccr_s = REG_FIELD_DP32(fpccr_s, V7M_FPCCR, CLRONRET, cor);
                 }
                 if ((s->cpu->env.v7m.aircr & R_V7M_AIRCR_BFHFNMINS_MASK)) {
-                    uint32_t hfrdy = FIELD_EX32(value, V7M_FPCCR, HFRDY);
-                    uint32_t bfrdy = FIELD_EX32(value, V7M_FPCCR, BFRDY);
-                    fpccr_s = FIELD_DP32(fpccr_s, V7M_FPCCR, HFRDY, hfrdy);
-                    fpccr_s = FIELD_DP32(fpccr_s, V7M_FPCCR, BFRDY, bfrdy);
+                    uint32_t hfrdy = REG_FIELD_EX32(value, V7M_FPCCR, HFRDY);
+                    uint32_t bfrdy = REG_FIELD_EX32(value, V7M_FPCCR, BFRDY);
+                    fpccr_s = REG_FIELD_DP32(fpccr_s, V7M_FPCCR, HFRDY, hfrdy);
+                    fpccr_s = REG_FIELD_DP32(fpccr_s, V7M_FPCCR, BFRDY, bfrdy);
                 }
                 /* TODO MONRDY should RAZ/WI if DEMCR.SDME is set */
                 {
-                    uint32_t monrdy = FIELD_EX32(value, V7M_FPCCR, MONRDY);
-                    fpccr_s = FIELD_DP32(fpccr_s, V7M_FPCCR, MONRDY, monrdy);
+                    uint32_t monrdy = REG_FIELD_EX32(value, V7M_FPCCR, MONRDY);
+                    fpccr_s = REG_FIELD_DP32(fpccr_s, V7M_FPCCR, MONRDY, monrdy);
                 }
 
                 /*

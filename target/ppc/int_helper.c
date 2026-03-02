@@ -785,9 +785,9 @@ static int64_t ger_rank2(uint32_t a, uint32_t b, uint32_t mask)
 static void xviger(CPUPPCState *env, ppc_vsr_t *a, ppc_vsr_t *b, ppc_acc_t  *at,
                    uint32_t mask, bool sat, bool acc, do_ger ger)
 {
-    uint8_t pmsk = FIELD_EX32(mask, GER_MSK, PMSK),
-            xmsk = FIELD_EX32(mask, GER_MSK, XMSK),
-            ymsk = FIELD_EX32(mask, GER_MSK, YMSK);
+    uint8_t pmsk = REG_FIELD_EX32(mask, GER_MSK, PMSK),
+            xmsk = REG_FIELD_EX32(mask, GER_MSK, XMSK),
+            ymsk = REG_FIELD_EX32(mask, GER_MSK, YMSK);
     uint8_t xmsk_bit, ymsk_bit;
     int64_t psum;
     int i, j;

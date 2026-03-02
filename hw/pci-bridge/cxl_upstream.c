@@ -91,7 +91,7 @@ static void latch_registers(CXLUpstreamPort *usp)
 
     cxl_component_register_init_common(reg_state, write_msk,
                                        CXL2_UPSTREAM_PORT);
-    ARRAY_FIELD_DP32(reg_state, CXL_HDM_DECODER_CAPABILITY, TARGET_COUNT, 8);
+    REG_ARRAY_FIELD_DP32(reg_state, CXL_HDM_DECODER_CAPABILITY, TARGET_COUNT, 8);
 }
 
 static void cxl_usp_reset(DeviceState *qdev)

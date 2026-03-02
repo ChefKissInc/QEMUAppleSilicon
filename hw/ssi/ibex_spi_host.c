@@ -35,72 +35,72 @@
 #include "trace.h"
 
 REG32(INTR_STATE, 0x00)
-    FIELD(INTR_STATE, ERROR, 0, 1)
-    FIELD(INTR_STATE, SPI_EVENT, 1, 1)
+    REG_FIELD(INTR_STATE, ERROR, 0, 1)
+    REG_FIELD(INTR_STATE, SPI_EVENT, 1, 1)
 REG32(INTR_ENABLE, 0x04)
-    FIELD(INTR_ENABLE, ERROR, 0, 1)
-    FIELD(INTR_ENABLE, SPI_EVENT, 1, 1)
+    REG_FIELD(INTR_ENABLE, ERROR, 0, 1)
+    REG_FIELD(INTR_ENABLE, SPI_EVENT, 1, 1)
 REG32(INTR_TEST, 0x08)
-    FIELD(INTR_TEST, ERROR, 0, 1)
-    FIELD(INTR_TEST, SPI_EVENT, 1, 1)
+    REG_FIELD(INTR_TEST, ERROR, 0, 1)
+    REG_FIELD(INTR_TEST, SPI_EVENT, 1, 1)
 REG32(ALERT_TEST, 0x0c)
-    FIELD(ALERT_TEST, FETAL_TEST, 0, 1)
+    REG_FIELD(ALERT_TEST, FETAL_TEST, 0, 1)
 REG32(CONTROL, 0x10)
-    FIELD(CONTROL, RX_WATERMARK, 0, 8)
-    FIELD(CONTROL, TX_WATERMARK, 1, 8)
-    FIELD(CONTROL, OUTPUT_EN, 29, 1)
-    FIELD(CONTROL, SW_RST, 30, 1)
-    FIELD(CONTROL, SPIEN, 31, 1)
+    REG_FIELD(CONTROL, RX_WATERMARK, 0, 8)
+    REG_FIELD(CONTROL, TX_WATERMARK, 1, 8)
+    REG_FIELD(CONTROL, OUTPUT_EN, 29, 1)
+    REG_FIELD(CONTROL, SW_RST, 30, 1)
+    REG_FIELD(CONTROL, SPIEN, 31, 1)
 REG32(STATUS, 0x14)
-    FIELD(STATUS, TXQD, 0, 8)
-    FIELD(STATUS, RXQD, 18, 8)
-    FIELD(STATUS, CMDQD, 16, 3)
-    FIELD(STATUS, RXWM, 20, 1)
-    FIELD(STATUS, BYTEORDER, 22, 1)
-    FIELD(STATUS, RXSTALL, 23, 1)
-    FIELD(STATUS, RXEMPTY, 24, 1)
-    FIELD(STATUS, RXFULL, 25, 1)
-    FIELD(STATUS, TXWM, 26, 1)
-    FIELD(STATUS, TXSTALL, 27, 1)
-    FIELD(STATUS, TXEMPTY, 28, 1)
-    FIELD(STATUS, TXFULL, 29, 1)
-    FIELD(STATUS, ACTIVE, 30, 1)
-    FIELD(STATUS, READY, 31, 1)
+    REG_FIELD(STATUS, TXQD, 0, 8)
+    REG_FIELD(STATUS, RXQD, 18, 8)
+    REG_FIELD(STATUS, CMDQD, 16, 3)
+    REG_FIELD(STATUS, RXWM, 20, 1)
+    REG_FIELD(STATUS, BYTEORDER, 22, 1)
+    REG_FIELD(STATUS, RXSTALL, 23, 1)
+    REG_FIELD(STATUS, RXEMPTY, 24, 1)
+    REG_FIELD(STATUS, RXFULL, 25, 1)
+    REG_FIELD(STATUS, TXWM, 26, 1)
+    REG_FIELD(STATUS, TXSTALL, 27, 1)
+    REG_FIELD(STATUS, TXEMPTY, 28, 1)
+    REG_FIELD(STATUS, TXFULL, 29, 1)
+    REG_FIELD(STATUS, ACTIVE, 30, 1)
+    REG_FIELD(STATUS, READY, 31, 1)
 REG32(CONFIGOPTS, 0x18)
-    FIELD(CONFIGOPTS, CLKDIV_0, 0, 16)
-    FIELD(CONFIGOPTS, CSNIDLE_0, 16, 4)
-    FIELD(CONFIGOPTS, CSNTRAIL_0, 20, 4)
-    FIELD(CONFIGOPTS, CSNLEAD_0, 24, 4)
-    FIELD(CONFIGOPTS, FULLCYC_0, 29, 1)
-    FIELD(CONFIGOPTS, CPHA_0, 30, 1)
-    FIELD(CONFIGOPTS, CPOL_0, 31, 1)
+    REG_FIELD(CONFIGOPTS, CLKDIV_0, 0, 16)
+    REG_FIELD(CONFIGOPTS, CSNIDLE_0, 16, 4)
+    REG_FIELD(CONFIGOPTS, CSNTRAIL_0, 20, 4)
+    REG_FIELD(CONFIGOPTS, CSNLEAD_0, 24, 4)
+    REG_FIELD(CONFIGOPTS, FULLCYC_0, 29, 1)
+    REG_FIELD(CONFIGOPTS, CPHA_0, 30, 1)
+    REG_FIELD(CONFIGOPTS, CPOL_0, 31, 1)
 REG32(CSID, 0x1c)
-    FIELD(CSID, CSID, 0, 32)
+    REG_FIELD(CSID, CSID, 0, 32)
 REG32(COMMAND, 0x20)
-    FIELD(COMMAND, LEN, 0, 8)
-    FIELD(COMMAND, CSAAT, 9, 1)
-    FIELD(COMMAND, SPEED, 10, 2)
-    FIELD(COMMAND, DIRECTION, 12, 2)
+    REG_FIELD(COMMAND, LEN, 0, 8)
+    REG_FIELD(COMMAND, CSAAT, 9, 1)
+    REG_FIELD(COMMAND, SPEED, 10, 2)
+    REG_FIELD(COMMAND, DIRECTION, 12, 2)
 REG32(ERROR_ENABLE, 0x2c)
-    FIELD(ERROR_ENABLE, CMDBUSY, 0, 1)
-    FIELD(ERROR_ENABLE, OVERFLOW, 1, 1)
-    FIELD(ERROR_ENABLE, UNDERFLOW, 2, 1)
-    FIELD(ERROR_ENABLE, CMDINVAL, 3, 1)
-    FIELD(ERROR_ENABLE, CSIDINVAL, 4, 1)
+    REG_FIELD(ERROR_ENABLE, CMDBUSY, 0, 1)
+    REG_FIELD(ERROR_ENABLE, OVERFLOW, 1, 1)
+    REG_FIELD(ERROR_ENABLE, UNDERFLOW, 2, 1)
+    REG_FIELD(ERROR_ENABLE, CMDINVAL, 3, 1)
+    REG_FIELD(ERROR_ENABLE, CSIDINVAL, 4, 1)
 REG32(ERROR_STATUS, 0x30)
-    FIELD(ERROR_STATUS, CMDBUSY, 0, 1)
-    FIELD(ERROR_STATUS, OVERFLOW, 1, 1)
-    FIELD(ERROR_STATUS, UNDERFLOW, 2, 1)
-    FIELD(ERROR_STATUS, CMDINVAL, 3, 1)
-    FIELD(ERROR_STATUS, CSIDINVAL, 4, 1)
-    FIELD(ERROR_STATUS, ACCESSINVAL, 5, 1)
+    REG_FIELD(ERROR_STATUS, CMDBUSY, 0, 1)
+    REG_FIELD(ERROR_STATUS, OVERFLOW, 1, 1)
+    REG_FIELD(ERROR_STATUS, UNDERFLOW, 2, 1)
+    REG_FIELD(ERROR_STATUS, CMDINVAL, 3, 1)
+    REG_FIELD(ERROR_STATUS, CSIDINVAL, 4, 1)
+    REG_FIELD(ERROR_STATUS, ACCESSINVAL, 5, 1)
 REG32(EVENT_ENABLE, 0x34)
-    FIELD(EVENT_ENABLE, RXFULL, 0, 1)
-    FIELD(EVENT_ENABLE, TXEMPTY, 1, 1)
-    FIELD(EVENT_ENABLE, RXWM, 2, 1)
-    FIELD(EVENT_ENABLE, TXWM, 3, 1)
-    FIELD(EVENT_ENABLE, READY, 4, 1)
-    FIELD(EVENT_ENABLE, IDLE, 5, 1)
+    REG_FIELD(EVENT_ENABLE, RXFULL, 0, 1)
+    REG_FIELD(EVENT_ENABLE, TXEMPTY, 1, 1)
+    REG_FIELD(EVENT_ENABLE, RXWM, 2, 1)
+    REG_FIELD(EVENT_ENABLE, TXWM, 3, 1)
+    REG_FIELD(EVENT_ENABLE, READY, 4, 1)
+    REG_FIELD(EVENT_ENABLE, IDLE, 5, 1)
 
 static inline uint8_t div4_round_up(uint8_t dividend)
 {
@@ -112,8 +112,8 @@ static void ibex_spi_rxfifo_reset(IbexSPIHostState *s)
     uint32_t data = s->regs[IBEX_SPI_HOST_STATUS];
     /* Empty the RX FIFO and assert RXEMPTY */
     fifo8_reset(&s->rx_fifo);
-    data = FIELD_DP32(data, STATUS, RXFULL, 0);
-    data = FIELD_DP32(data, STATUS, RXEMPTY, 1);
+    data = REG_FIELD_DP32(data, STATUS, RXFULL, 0);
+    data = REG_FIELD_DP32(data, STATUS, RXEMPTY, 1);
     s->regs[IBEX_SPI_HOST_STATUS] = data;
 }
 
@@ -122,8 +122,8 @@ static void ibex_spi_txfifo_reset(IbexSPIHostState *s)
     uint32_t data = s->regs[IBEX_SPI_HOST_STATUS];
     /* Empty the TX FIFO and assert TXEMPTY */
     fifo8_reset(&s->tx_fifo);
-    data = FIELD_DP32(data, STATUS, TXFULL, 0);
-    data = FIELD_DP32(data, STATUS, TXEMPTY, 1);
+    data = REG_FIELD_DP32(data, STATUS, TXFULL, 0);
+    data = REG_FIELD_DP32(data, STATUS, TXEMPTY, 1);
     s->regs[IBEX_SPI_HOST_STATUS] = data;
 }
 
@@ -176,28 +176,28 @@ static void ibex_spi_host_irq(IbexSPIHostState *s)
     uint32_t status_reg = s->regs[IBEX_SPI_HOST_STATUS];
 
 
-    bool error_en = FIELD_EX32(intr_en_reg, INTR_ENABLE, ERROR);
-    bool event_en = FIELD_EX32(intr_en_reg, INTR_ENABLE, SPI_EVENT);
-    bool err_pending = FIELD_EX32(intr_state_reg, INTR_STATE, ERROR);
-    bool status_pending = FIELD_EX32(intr_state_reg, INTR_STATE, SPI_EVENT);
+    bool error_en = REG_FIELD_EX32(intr_en_reg, INTR_ENABLE, ERROR);
+    bool event_en = REG_FIELD_EX32(intr_en_reg, INTR_ENABLE, SPI_EVENT);
+    bool err_pending = REG_FIELD_EX32(intr_state_reg, INTR_STATE, ERROR);
+    bool status_pending = REG_FIELD_EX32(intr_state_reg, INTR_STATE, SPI_EVENT);
 
     int err_irq = 0, event_irq = 0;
 
     /* Error IRQ enabled and Error IRQ Cleared */
     if (error_en && !err_pending) {
         /* Event enabled, Interrupt Test Error */
-        if (FIELD_EX32(intr_test_reg, INTR_TEST,  ERROR)) {
+        if (REG_FIELD_EX32(intr_test_reg, INTR_TEST,  ERROR)) {
             err_irq = 1;
-        } else if (FIELD_EX32(err_en_reg, ERROR_ENABLE,  CMDBUSY) &&
-                   FIELD_EX32(err_status_reg, ERROR_STATUS,  CMDBUSY)) {
+        } else if (REG_FIELD_EX32(err_en_reg, ERROR_ENABLE,  CMDBUSY) &&
+                   REG_FIELD_EX32(err_status_reg, ERROR_STATUS,  CMDBUSY)) {
             /* Wrote to COMMAND when not READY */
             err_irq = 1;
-        } else if (FIELD_EX32(err_en_reg, ERROR_ENABLE,  CMDINVAL)  &&
-                   FIELD_EX32(err_status_reg, ERROR_STATUS,  CMDINVAL)) {
+        } else if (REG_FIELD_EX32(err_en_reg, ERROR_ENABLE,  CMDINVAL)  &&
+                   REG_FIELD_EX32(err_status_reg, ERROR_STATUS,  CMDINVAL)) {
             /* Invalid command segment */
             err_irq = 1;
-        } else if (FIELD_EX32(err_en_reg, ERROR_ENABLE,  CSIDINVAL) &&
-                   FIELD_EX32(err_status_reg, ERROR_STATUS,  CSIDINVAL)) {
+        } else if (REG_FIELD_EX32(err_en_reg, ERROR_ENABLE,  CSIDINVAL) &&
+                   REG_FIELD_EX32(err_status_reg, ERROR_STATUS,  CSIDINVAL)) {
             /* Invalid value for CSID */
             err_irq = 1;
         }
@@ -210,19 +210,19 @@ static void ibex_spi_host_irq(IbexSPIHostState *s)
 
     /* Event IRQ Enabled and Event IRQ Cleared */
     if (event_en && !status_pending) {
-        if (FIELD_EX32(intr_test_reg, INTR_STATE,  SPI_EVENT)) {
+        if (REG_FIELD_EX32(intr_test_reg, INTR_STATE,  SPI_EVENT)) {
             /* Event enabled, Interrupt Test Event */
             event_irq = 1;
-        } else if (FIELD_EX32(event_en_reg, EVENT_ENABLE,  READY) &&
-                   FIELD_EX32(status_reg, STATUS, READY)) {
+        } else if (REG_FIELD_EX32(event_en_reg, EVENT_ENABLE,  READY) &&
+                   REG_FIELD_EX32(status_reg, STATUS, READY)) {
             /* SPI Host ready for next command */
             event_irq = 1;
-        } else if (FIELD_EX32(event_en_reg, EVENT_ENABLE,  TXEMPTY) &&
-                   FIELD_EX32(status_reg, STATUS,  TXEMPTY)) {
+        } else if (REG_FIELD_EX32(event_en_reg, EVENT_ENABLE,  TXEMPTY) &&
+                   REG_FIELD_EX32(status_reg, STATUS,  TXEMPTY)) {
             /* SPI TXEMPTY, TXFIFO drained */
             event_irq = 1;
-        } else if (FIELD_EX32(event_en_reg, EVENT_ENABLE,  RXFULL) &&
-                   FIELD_EX32(status_reg, STATUS,  RXFULL)) {
+        } else if (REG_FIELD_EX32(event_en_reg, EVENT_ENABLE,  RXFULL) &&
+                   REG_FIELD_EX32(status_reg, STATUS,  RXFULL)) {
             /* SPI RXFULL, RXFIFO  full */
             event_irq = 1;
         }
@@ -238,7 +238,7 @@ static void ibex_spi_host_transfer(IbexSPIHostState *s)
 {
     uint32_t rx, tx, data;
     /* Get num of one byte transfers */
-    uint8_t segment_len = FIELD_EX32(s->regs[IBEX_SPI_HOST_COMMAND],
+    uint8_t segment_len = REG_FIELD_EX32(s->regs[IBEX_SPI_HOST_COMMAND],
                                      COMMAND,  LEN);
 
     while (segment_len > 0) {
@@ -269,15 +269,15 @@ static void ibex_spi_host_transfer(IbexSPIHostState *s)
 
     data = s->regs[IBEX_SPI_HOST_STATUS];
     /* Assert Ready */
-    data = FIELD_DP32(data, STATUS, READY, 1);
+    data = REG_FIELD_DP32(data, STATUS, READY, 1);
     /* Set RXQD */
-    data = FIELD_DP32(data, STATUS, RXQD, div4_round_up(segment_len));
+    data = REG_FIELD_DP32(data, STATUS, RXQD, div4_round_up(segment_len));
     /* Set TXQD */
-    data = FIELD_DP32(data, STATUS, TXQD, fifo8_num_used(&s->tx_fifo) / 4);
+    data = REG_FIELD_DP32(data, STATUS, TXQD, fifo8_num_used(&s->tx_fifo) / 4);
     /* Clear TXFULL */
-    data = FIELD_DP32(data, STATUS, TXFULL, 0);
+    data = REG_FIELD_DP32(data, STATUS, TXFULL, 0);
     /* Reset RXEMPTY */
-    data = FIELD_DP32(data, STATUS, RXEMPTY, 0);
+    data = REG_FIELD_DP32(data, STATUS, RXEMPTY, 0);
     /* Update register status */
     s->regs[IBEX_SPI_HOST_STATUS] = data;
     /* Drop remaining bytes that exceed segment_len */
@@ -356,11 +356,11 @@ static void ibex_spi_host_write(void *opaque, hwaddr addr,
     /* Skipping any R/O registers */
     case IBEX_SPI_HOST_INTR_STATE:
         /* rw1c status register */
-        if (FIELD_EX32(val32, INTR_STATE, ERROR)) {
-            data = FIELD_DP32(data, INTR_STATE, ERROR, 0);
+        if (REG_FIELD_EX32(val32, INTR_STATE, ERROR)) {
+            data = REG_FIELD_DP32(data, INTR_STATE, ERROR, 0);
         }
-        if (FIELD_EX32(val32, INTR_STATE, SPI_EVENT)) {
-            data = FIELD_DP32(data, INTR_STATE, SPI_EVENT, 0);
+        if (REG_FIELD_EX32(val32, INTR_STATE, SPI_EVENT)) {
+            data = REG_FIELD_DP32(data, INTR_STATE, SPI_EVENT, 0);
         }
         s->regs[addr] = data;
         break;
@@ -427,7 +427,7 @@ static void ibex_spi_host_write(void *opaque, hwaddr addr,
         /* Assert Not Ready */
         s->regs[IBEX_SPI_HOST_STATUS] &= ~R_STATUS_READY_MASK;
 
-        if (FIELD_EX32(val32, COMMAND, DIRECTION) != BIDIRECTIONAL_TRANSFER) {
+        if (REG_FIELD_EX32(val32, COMMAND, DIRECTION) != BIDIRECTIONAL_TRANSFER) {
             qemu_log_mask(LOG_UNIMP,
                           "%s: Rx Only/Tx Only are not supported\n", __func__);
         }
@@ -469,7 +469,7 @@ static void ibex_spi_host_write(void *opaque, hwaddr addr,
             }
             /* Byte ordering is set by the IP */
             status = s->regs[IBEX_SPI_HOST_STATUS];
-            if (FIELD_EX32(status, STATUS, BYTEORDER) == 0) {
+            if (REG_FIELD_EX32(status, STATUS, BYTEORDER) == 0) {
                 /* LE: LSB transmitted first (default for ibex processor) */
                 shift_mask = 0xff << (i * 8);
             } else {
@@ -482,14 +482,14 @@ static void ibex_spi_host_write(void *opaque, hwaddr addr,
         }
         status = s->regs[IBEX_SPI_HOST_STATUS];
         /* Reset TXEMPTY */
-        status = FIELD_DP32(status, STATUS, TXEMPTY, 0);
+        status = REG_FIELD_DP32(status, STATUS, TXEMPTY, 0);
         /* Update TXQD */
-        txqd_len = FIELD_EX32(status, STATUS, TXQD);
+        txqd_len = REG_FIELD_EX32(status, STATUS, TXQD);
         /* Partial bytes (size < 4) are padded, in words. */
         txqd_len += 1;
-        status = FIELD_DP32(status, STATUS, TXQD, txqd_len);
+        status = REG_FIELD_DP32(status, STATUS, TXQD, txqd_len);
         /* Assert Ready */
-        status = FIELD_DP32(status, STATUS, READY, 1);
+        status = REG_FIELD_DP32(status, STATUS, READY, 1);
         /* Update register status */
         s->regs[IBEX_SPI_HOST_STATUS] = status;
         break;
@@ -509,23 +509,23 @@ static void ibex_spi_host_write(void *opaque, hwaddr addr,
      */
         status = s->regs[addr];
         /* rw1c status register */
-        if (FIELD_EX32(val32, ERROR_STATUS, CMDBUSY)) {
-            status = FIELD_DP32(status, ERROR_STATUS, CMDBUSY, 0);
+        if (REG_FIELD_EX32(val32, ERROR_STATUS, CMDBUSY)) {
+            status = REG_FIELD_DP32(status, ERROR_STATUS, CMDBUSY, 0);
         }
-        if (FIELD_EX32(val32, ERROR_STATUS, OVERFLOW)) {
-            status = FIELD_DP32(status, ERROR_STATUS, OVERFLOW, 0);
+        if (REG_FIELD_EX32(val32, ERROR_STATUS, OVERFLOW)) {
+            status = REG_FIELD_DP32(status, ERROR_STATUS, OVERFLOW, 0);
         }
-        if (FIELD_EX32(val32, ERROR_STATUS, UNDERFLOW)) {
-            status = FIELD_DP32(status, ERROR_STATUS, UNDERFLOW, 0);
+        if (REG_FIELD_EX32(val32, ERROR_STATUS, UNDERFLOW)) {
+            status = REG_FIELD_DP32(status, ERROR_STATUS, UNDERFLOW, 0);
         }
-        if (FIELD_EX32(val32, ERROR_STATUS, CMDINVAL)) {
-            status = FIELD_DP32(status, ERROR_STATUS, CMDINVAL, 0);
+        if (REG_FIELD_EX32(val32, ERROR_STATUS, CMDINVAL)) {
+            status = REG_FIELD_DP32(status, ERROR_STATUS, CMDINVAL, 0);
         }
-        if (FIELD_EX32(val32, ERROR_STATUS, CSIDINVAL)) {
-            status = FIELD_DP32(status, ERROR_STATUS, CSIDINVAL, 0);
+        if (REG_FIELD_EX32(val32, ERROR_STATUS, CSIDINVAL)) {
+            status = REG_FIELD_DP32(status, ERROR_STATUS, CSIDINVAL, 0);
         }
-        if (FIELD_EX32(val32, ERROR_STATUS, ACCESSINVAL)) {
-            status = FIELD_DP32(status, ERROR_STATUS, ACCESSINVAL, 0);
+        if (REG_FIELD_EX32(val32, ERROR_STATUS, ACCESSINVAL)) {
+            status = REG_FIELD_DP32(status, ERROR_STATUS, ACCESSINVAL, 0);
         }
         s->regs[addr] = status;
         break;

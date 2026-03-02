@@ -602,7 +602,7 @@ static void do_ebb(CPUPPCState *env, int ebb_excp)
         env->spr[SPR_BESCR] |= BESCR_EEO;
     }
 
-    if (FIELD_EX64(env->msr, MSR, PR)) {
+    if (REG_FIELD_EX64(env->msr, MSR, PR)) {
         powerpc_excp(cpu, ebb_excp);
     } else {
         ppc_set_irq(cpu, PPC_INTERRUPT_EBB, 1);

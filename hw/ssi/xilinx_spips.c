@@ -130,10 +130,10 @@
 
 #define R_CMND        (0xc0 / 4)
     #define R_CMND_RXFIFO_DRAIN   (1 << 19)
-    FIELD(CMND, PARTIAL_BYTE_LEN, 16, 3)
+    REG_FIELD(CMND, PARTIAL_BYTE_LEN, 16, 3)
 #define R_CMND_EXT_ADD        (1 << 15)
-    FIELD(CMND, RX_DISCARD, 8, 7)
-    FIELD(CMND, DUMMY_CYCLES, 2, 6)
+    REG_FIELD(CMND, RX_DISCARD, 8, 7)
+    REG_FIELD(CMND, DUMMY_CYCLES, 2, 6)
 #define R_CMND_DMA_EN         (1 << 1)
 #define R_CMND_PUSH_WAIT      (1 << 0)
 #define R_TRANSFER_SIZE     (0xc4 / 4)
@@ -145,7 +145,7 @@
 #define R_MOD_ID            (0xFC / 4)
 
 #define R_GQSPI_SELECT          (0x144 / 4)
-    FIELD(GQSPI_SELECT, GENERIC_QSPI_EN, 0, 1)
+    REG_FIELD(GQSPI_SELECT, GENERIC_QSPI_EN, 0, 1)
 #define R_GQSPI_ISR         (0x104 / 4)
 #define R_GQSPI_IER         (0x108 / 4)
 #define R_GQSPI_IDR         (0x10c / 4)
@@ -157,23 +157,23 @@
 #define R_GQSPI_LPBK_DLY_ADJ (0x138 / 4)
 #define R_GQSPI_LPBK_DLY_ADJ_RESET (0x33)
 #define R_GQSPI_CNFG        (0x100 / 4)
-    FIELD(GQSPI_CNFG, MODE_EN, 30, 2)
-    FIELD(GQSPI_CNFG, GEN_FIFO_START_MODE, 29, 1)
-    FIELD(GQSPI_CNFG, GEN_FIFO_START, 28, 1)
-    FIELD(GQSPI_CNFG, ENDIAN, 26, 1)
+    REG_FIELD(GQSPI_CNFG, MODE_EN, 30, 2)
+    REG_FIELD(GQSPI_CNFG, GEN_FIFO_START_MODE, 29, 1)
+    REG_FIELD(GQSPI_CNFG, GEN_FIFO_START, 28, 1)
+    REG_FIELD(GQSPI_CNFG, ENDIAN, 26, 1)
     /* Poll timeout not implemented */
-    FIELD(GQSPI_CNFG, EN_POLL_TIMEOUT, 20, 1)
+    REG_FIELD(GQSPI_CNFG, EN_POLL_TIMEOUT, 20, 1)
     /* QEMU doesn't care about any of these last three */
-    FIELD(GQSPI_CNFG, BR, 3, 3)
-    FIELD(GQSPI_CNFG, CPH, 2, 1)
-    FIELD(GQSPI_CNFG, CPL, 1, 1)
+    REG_FIELD(GQSPI_CNFG, BR, 3, 3)
+    REG_FIELD(GQSPI_CNFG, CPH, 2, 1)
+    REG_FIELD(GQSPI_CNFG, CPL, 1, 1)
 #define R_GQSPI_GEN_FIFO        (0x140 / 4)
 #define R_GQSPI_TXD             (0x11c / 4)
 #define R_GQSPI_RXD             (0x120 / 4)
 #define R_GQSPI_FIFO_CTRL       (0x14c / 4)
-    FIELD(GQSPI_FIFO_CTRL, RX_FIFO_RESET, 2, 1)
-    FIELD(GQSPI_FIFO_CTRL, TX_FIFO_RESET, 1, 1)
-    FIELD(GQSPI_FIFO_CTRL, GENERIC_FIFO_RESET, 0, 1)
+    REG_FIELD(GQSPI_FIFO_CTRL, RX_FIFO_RESET, 2, 1)
+    REG_FIELD(GQSPI_FIFO_CTRL, TX_FIFO_RESET, 1, 1)
+    REG_FIELD(GQSPI_FIFO_CTRL, GENERIC_FIFO_RESET, 0, 1)
 #define R_GQSPI_GFIFO_THRESH    (0x150 / 4)
 #define R_GQSPI_DATA_STS (0x15c / 4)
 /*
@@ -182,16 +182,16 @@
  * for the snapshot register
  */
 #define R_GQSPI_GF_SNAPSHOT (0x160 / 4)
-    FIELD(GQSPI_GF_SNAPSHOT, POLL, 19, 1)
-    FIELD(GQSPI_GF_SNAPSHOT, STRIPE, 18, 1)
-    FIELD(GQSPI_GF_SNAPSHOT, RECIEVE, 17, 1)
-    FIELD(GQSPI_GF_SNAPSHOT, TRANSMIT, 16, 1)
-    FIELD(GQSPI_GF_SNAPSHOT, DATA_BUS_SELECT, 14, 2)
-    FIELD(GQSPI_GF_SNAPSHOT, CHIP_SELECT, 12, 2)
-    FIELD(GQSPI_GF_SNAPSHOT, SPI_MODE, 10, 2)
-    FIELD(GQSPI_GF_SNAPSHOT, EXPONENT, 9, 1)
-    FIELD(GQSPI_GF_SNAPSHOT, DATA_XFER, 8, 1)
-    FIELD(GQSPI_GF_SNAPSHOT, IMMEDIATE_DATA, 0, 8)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, POLL, 19, 1)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, STRIPE, 18, 1)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, RECIEVE, 17, 1)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, TRANSMIT, 16, 1)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, DATA_BUS_SELECT, 14, 2)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, CHIP_SELECT, 12, 2)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, SPI_MODE, 10, 2)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, EXPONENT, 9, 1)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, DATA_XFER, 8, 1)
+    REG_FIELD(GQSPI_GF_SNAPSHOT, IMMEDIATE_DATA, 0, 8)
 #define R_GQSPI_MOD_ID        (0x1fc / 4)
 #define R_GQSPI_MOD_ID_RESET  (0x10a0000)
 
@@ -229,7 +229,7 @@ static void xilinx_spips_update_cs(XilinxSPIPS *s, int field)
 
         if (old_state != new_state) {
             s->cs_lines_state[i] = new_state;
-            s->rx_discard = ARRAY_FIELD_EX32(s->regs, CMND, RX_DISCARD);
+            s->rx_discard = REG_ARRAY_FIELD_EX32(s->regs, CMND, RX_DISCARD);
             DB_PRINT_L(1, "%sselecting peripheral %d\n",
                        new_state ? "" : "de", i);
         }
@@ -248,7 +248,7 @@ static void xilinx_spips_update_cs(XilinxSPIPS *s, int field)
 static void xlnx_zynqmp_qspips_update_cs_lines(XlnxZynqMPQSPIPS *s)
 {
     if (s->regs[R_GQSPI_GF_SNAPSHOT]) {
-        int field = ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, CHIP_SELECT);
+        int field = REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, CHIP_SELECT);
         bool upper_cs_sel = field & (1 << 1);
         bool lower_cs_sel = field & 1;
         bool bus0_enabled;
@@ -256,7 +256,7 @@ static void xlnx_zynqmp_qspips_update_cs_lines(XlnxZynqMPQSPIPS *s)
         uint8_t buses;
         int cs = 0;
 
-        buses = ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_BUS_SELECT);
+        buses = REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_BUS_SELECT);
         bus0_enabled = buses & 1;
         bus1_enabled = buses & (1 << 1);
 
@@ -467,17 +467,17 @@ static void xlnx_zynqmp_qspips_flush_fifo_g(XlnxZynqMPQSPIPS *s)
             }
             xlnx_zynqmp_qspips_update_cs_lines(s);
 
-            imm = ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, IMMEDIATE_DATA);
-            if (!ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_XFER)) {
+            imm = REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, IMMEDIATE_DATA);
+            if (!REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_XFER)) {
                 /* immediate transfer */
-                if (ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, TRANSMIT) ||
-                    ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE)) {
+                if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, TRANSMIT) ||
+                    REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE)) {
                     s->regs[R_GQSPI_DATA_STS] = 1;
                 /* CS setup/hold - do nothing */
                 } else {
                     s->regs[R_GQSPI_DATA_STS] = 0;
                 }
-            } else if (ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, EXPONENT)) {
+            } else if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, EXPONENT)) {
                 if (imm > 31) {
                     qemu_log_mask(LOG_UNIMP, "QSPI exponential transfer too"
                                   " long - 2 ^ %" PRId8 " requested\n", imm);
@@ -491,20 +491,20 @@ static void xlnx_zynqmp_qspips_flush_fifo_g(XlnxZynqMPQSPIPS *s)
         if (!s->regs[R_GQSPI_DATA_STS]) {
             continue;
         }
-        if (ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE) &&
+        if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE) &&
             fifo8_is_full(&s->rx_fifo_g)) {
             /* No space in RX fifo for transfer - try again later */
             return;
         }
-        if (ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, STRIPE) &&
-            (ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, TRANSMIT) ||
-             ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE))) {
+        if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, STRIPE) &&
+            (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, TRANSMIT) ||
+             REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE))) {
             num_stripes = 2;
         }
-        if (!ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_XFER)) {
-            tx_rx[0] = ARRAY_FIELD_EX32(s->regs,
+        if (!REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_XFER)) {
+            tx_rx[0] = REG_ARRAY_FIELD_EX32(s->regs,
                                         GQSPI_GF_SNAPSHOT, IMMEDIATE_DATA);
-        } else if (ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, TRANSMIT)) {
+        } else if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, TRANSMIT)) {
             for (i = 0; i < num_stripes; ++i) {
                 if (!fifo8_is_empty(&s->tx_fifo_g)) {
                     tx_rx[i] = fifo8_pop(&s->tx_fifo_g);
@@ -518,7 +518,7 @@ static void xlnx_zynqmp_qspips_flush_fifo_g(XlnxZynqMPQSPIPS *s)
             /* mirror */
             tx_rx[1] = tx_rx[0];
         }
-        busses = ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_BUS_SELECT);
+        busses = REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, DATA_BUS_SELECT);
         for (i = 0; i < 2; ++i) {
             DB_PRINT_L(1, "bus %d tx = %02x\n", i, tx_rx[i]);
             tx_rx[i] = ssi_transfer(XILINX_SPIPS(s)->spi[i], tx_rx[i]);
@@ -530,7 +530,7 @@ static void xlnx_zynqmp_qspips_flush_fifo_g(XlnxZynqMPQSPIPS *s)
         } else if (s->regs[R_GQSPI_DATA_STS] > 0) {
             s->regs[R_GQSPI_DATA_STS]--;
         }
-        if (ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE)) {
+        if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_GF_SNAPSHOT, RECIEVE)) {
             for (i = 0; i < 2; ++i) {
                 if (busses & (1 << i)) {
                     DB_PRINT_L(1, "bus %d push_byte = %02x\n", i, tx_rx[i]);
@@ -796,9 +796,9 @@ static void xlnx_zynqmp_qspips_check_flush(XlnxZynqMPQSPIPS *s)
     bool gqspi_has_work = s->regs[R_GQSPI_DATA_STS] ||
                           !fifo32_is_empty(&s->fifo_g);
 
-    if (ARRAY_FIELD_EX32(s->regs, GQSPI_SELECT, GENERIC_QSPI_EN)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_SELECT, GENERIC_QSPI_EN)) {
         if (s->man_start_com_g || (gqspi_has_work &&
-             !ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, GEN_FIFO_START_MODE))) {
+             !REG_ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, GEN_FIFO_START_MODE))) {
             xlnx_zynqmp_qspips_flush_fifo_g(s);
         }
     } else {
@@ -841,8 +841,8 @@ static void xlnx_zynqmp_qspips_notify(void *opaque)
     XilinxSPIPS *s = XILINX_SPIPS(rq);
     Fifo8 *recv_fifo;
 
-    if (ARRAY_FIELD_EX32(rq->regs, GQSPI_SELECT, GENERIC_QSPI_EN)) {
-        if (!(ARRAY_FIELD_EX32(rq->regs, GQSPI_CNFG, MODE_EN) == 2)) {
+    if (REG_ARRAY_FIELD_EX32(rq->regs, GQSPI_SELECT, GENERIC_QSPI_EN)) {
+        if (!(REG_ARRAY_FIELD_EX32(rq->regs, GQSPI_CNFG, MODE_EN) == 2)) {
             return;
         }
         recv_fifo = &rq->rx_fifo_g;
@@ -951,10 +951,10 @@ static uint64_t xlnx_zynqmp_qspips_read(void *opaque,
             memset(rx_buf, 0, sizeof(rx_buf));
             shortfall = rx_data_bytes(&s->rx_fifo_g, rx_buf,
                                       XILINX_SPIPS(s)->num_txrx_bytes);
-            ret = ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, ENDIAN) ?
+            ret = REG_ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, ENDIAN) ?
                   cpu_to_be32(*(uint32_t *)rx_buf) :
                   cpu_to_le32(*(uint32_t *)rx_buf);
-            if (!ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, ENDIAN)) {
+            if (!REG_ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, ENDIAN)) {
                 ret <<= 8 * shortfall;
             }
             xlnx_zynqmp_qspips_check_flush(s);
@@ -1081,8 +1081,8 @@ static void xlnx_zynqmp_qspips_write(void *opaque, hwaddr addr,
     } else {
         switch (reg) {
         case R_GQSPI_CNFG:
-            if (FIELD_EX32(value, GQSPI_CNFG, GEN_FIFO_START) &&
-                ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, GEN_FIFO_START_MODE)) {
+            if (REG_FIELD_EX32(value, GQSPI_CNFG, GEN_FIFO_START) &&
+                REG_ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, GEN_FIFO_START_MODE)) {
                 s->man_start_com_g = true;
             }
             s->regs[reg] = value & ~(R_GQSPI_CNFG_GEN_FIFO_START_MASK);
@@ -1094,16 +1094,16 @@ static void xlnx_zynqmp_qspips_write(void *opaque, hwaddr addr,
             break;
         case R_GQSPI_TXD:
             tx_data_bytes(&s->tx_fifo_g, (uint32_t)value, 4,
-                          ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, ENDIAN));
+                          REG_ARRAY_FIELD_EX32(s->regs, GQSPI_CNFG, ENDIAN));
             break;
         case R_GQSPI_FIFO_CTRL:
-            if (FIELD_EX32(value, GQSPI_FIFO_CTRL, GENERIC_FIFO_RESET)) {
+            if (REG_FIELD_EX32(value, GQSPI_FIFO_CTRL, GENERIC_FIFO_RESET)) {
                 fifo32_reset(&s->fifo_g);
             }
-            if (FIELD_EX32(value, GQSPI_FIFO_CTRL, TX_FIFO_RESET)) {
+            if (REG_FIELD_EX32(value, GQSPI_FIFO_CTRL, TX_FIFO_RESET)) {
                 fifo8_reset(&s->tx_fifo_g);
             }
-            if (FIELD_EX32(value, GQSPI_FIFO_CTRL, RX_FIFO_RESET)) {
+            if (REG_FIELD_EX32(value, GQSPI_FIFO_CTRL, RX_FIFO_RESET)) {
                 fifo8_reset(&s->rx_fifo_g);
             }
             break;
@@ -1385,7 +1385,7 @@ static int xlnx_zynqmp_qspips_post_load(void *opaque, int version_id)
     XlnxZynqMPQSPIPS *s = (XlnxZynqMPQSPIPS *)opaque;
     XilinxSPIPS *qs = XILINX_SPIPS(s);
 
-    if (ARRAY_FIELD_EX32(s->regs, GQSPI_SELECT, GENERIC_QSPI_EN) &&
+    if (REG_ARRAY_FIELD_EX32(s->regs, GQSPI_SELECT, GENERIC_QSPI_EN) &&
         fifo8_is_empty(&qs->rx_fifo) && fifo8_is_empty(&qs->tx_fifo)) {
         xlnx_zynqmp_qspips_update_ixr(s);
         xlnx_zynqmp_qspips_update_cs_lines(s);

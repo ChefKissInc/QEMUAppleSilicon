@@ -459,7 +459,7 @@ static inline void vsha2ms_e64(uint64_t *vd, uint64_t *vs1, uint64_t *vs2)
 void HELPER(vsha2ms_vv)(void *vd, void *vs1, void *vs2, CPURISCVState *env,
                         uint32_t desc)
 {
-    uint32_t sew = FIELD_EX64(env->vtype, VTYPE, VSEW);
+    uint32_t sew = REG_FIELD_EX64(env->vtype, VTYPE, VSEW);
     uint32_t esz = sew == MO_32 ? 4 : 8;
     uint32_t total_elems;
     uint32_t vta = vext_vta(desc);
@@ -668,7 +668,7 @@ static inline uint32_t zvksh_w(uint32_t m16, uint32_t m9, uint32_t m3,
 void HELPER(vsm3me_vv)(void *vd_vptr, void *vs1_vptr, void *vs2_vptr,
                        CPURISCVState *env, uint32_t desc)
 {
-    uint32_t esz = memop_size(FIELD_EX64(env->vtype, VTYPE, VSEW));
+    uint32_t esz = memop_size(REG_FIELD_EX64(env->vtype, VTYPE, VSEW));
     uint32_t total_elems = vext_get_total_elems(env, desc, esz);
     uint32_t vta = vext_vta(desc);
     uint32_t *vd = vd_vptr;
@@ -769,7 +769,7 @@ static void sm3c(uint32_t *vd, uint32_t *vs1, uint32_t *vs2, uint32_t uimm)
 void HELPER(vsm3c_vi)(void *vd_vptr, void *vs2_vptr, uint32_t uimm,
                       CPURISCVState *env, uint32_t desc)
 {
-    uint32_t esz = memop_size(FIELD_EX64(env->vtype, VTYPE, VSEW));
+    uint32_t esz = memop_size(REG_FIELD_EX64(env->vtype, VTYPE, VSEW));
     uint32_t total_elems = vext_get_total_elems(env, desc, esz);
     uint32_t vta = vext_vta(desc);
     uint32_t *vd = vd_vptr;

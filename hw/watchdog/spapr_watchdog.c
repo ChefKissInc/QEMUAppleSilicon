@@ -22,7 +22,7 @@
 #include "hw/ppc/spapr.h"
 
 #define FIELD_BE(reg, field, start, len) \
-    FIELD(reg, field, 64 - (start + len), len)
+    REG_FIELD(reg, field, 64 - (start + len), len)
 
 /*
  * Bits 47: "leaveOtherWatchdogsRunningOnTimeout", specified on
@@ -135,11 +135,11 @@ static target_ulong h_watchdog(PowerPCCPU *cpu,
     target_ulong flags = args[0];
     target_ulong watchdogNumber = args[1]; /* 1-Based per PAPR */
     target_ulong timeoutInMs = args[2];
-    unsigned operation = FIELD_EX64(flags, PSERIES_WDTF, OP);
-    unsigned timeoutAction = FIELD_EX64(flags, PSERIES_WDTF, ACTION);
+    unsigned operation = REG_FIELD_EX64(flags, PSERIES_WDTF, OP);
+    unsigned timeoutAction = REG_FIELD_EX64(flags, PSERIES_WDTF, ACTION);
     SpaprWatchdog *w;
 
-    if (FIELD_EX64(flags, PSERIES_WDTF, RESERVED)) {
+    if (REG_FIELD_EX64(flags, PSERIES_WDTF, RESERVED)) {
         return H_PARAMETER;
     }
 
@@ -162,7 +162,7 @@ static target_ulong h_watchdog(PowerPCCPU *cpu,
         default:
             return H_PARAMETER;
         }
-        w->leave_others = FIELD_EX64(flags, PSERIES_WDTF, LEAVE_OTHER);
+        w->leave_others = REG_FIELD_EX64(flags, PSERIES_WDTF, LEAVE_OTHER);
         timer_mod(&w->timer,
                   qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL) + timeoutInMs);
         trace_spapr_watchdog_start(flags, watchdogNumber, timeoutInMs);
@@ -178,8 +178,8 @@ static target_ulong h_watchdog(PowerPCCPU *cpu,
         }
         break;
     case PSERIES_WDTF_OP_QUERY:
-        args[0] = FIELD_DP64(0, PSERIES_WDTQ, MIN_TIMEOUT, WDT_MIN_TIMEOUT);
-        args[0] = FIELD_DP64(args[0], PSERIES_WDTQ, NUM,
+        args[0] = REG_FIELD_DP64(0, PSERIES_WDTQ, MIN_TIMEOUT, WDT_MIN_TIMEOUT);
+        args[0] = REG_FIELD_DP64(args[0], PSERIES_WDTQ, NUM,
                              ARRAY_SIZE(spapr->wds));
         trace_spapr_watchdog_query(args[0]);
         break;

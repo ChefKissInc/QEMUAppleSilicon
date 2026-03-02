@@ -75,7 +75,7 @@ static uint16_t mve_element_mask(CPUARMState *env)
      * Compare pseudocode GetCurInstrBeat(), though that only returns
      * the 4-bit slice of the mask corresponding to a single beat.
      */
-    uint16_t mask = FIELD_EX32(env->v7m.vpr, V7M_VPR, P0);
+    uint16_t mask = REG_FIELD_EX32(env->v7m.vpr, V7M_VPR, P0);
 
     if (!(env->v7m.vpr & R_V7M_VPR_MASK01_MASK)) {
         mask |= 0xff;
@@ -125,8 +125,8 @@ static void mve_advance_vpt(CPUARMState *env)
     }
 
     /* Invert P0 bits if needed, but only for beats we actually executed */
-    mask01 = FIELD_EX32(vpr, V7M_VPR, MASK01);
-    mask23 = FIELD_EX32(vpr, V7M_VPR, MASK23);
+    mask01 = REG_FIELD_EX32(vpr, V7M_VPR, MASK01);
+    mask23 = REG_FIELD_EX32(vpr, V7M_VPR, MASK23);
     /* Start by assuming we invert all bits corresponding to executed beats */
     inv_mask = eci_mask;
     if (mask01 <= 8) {
@@ -140,10 +140,10 @@ static void mve_advance_vpt(CPUARMState *env)
     vpr ^= inv_mask;
     /* Only update MASK01 if beat 1 executed */
     if (eci_mask & 0xf0) {
-        vpr = FIELD_DP32(vpr, V7M_VPR, MASK01, mask01 << 1);
+        vpr = REG_FIELD_DP32(vpr, V7M_VPR, MASK01, mask01 << 1);
     }
     /* Beat 3 always executes, so update MASK23 */
-    vpr = FIELD_DP32(vpr, V7M_VPR, MASK23, mask23 << 1);
+    vpr = REG_FIELD_DP32(vpr, V7M_VPR, MASK23, mask23 << 1);
     env->v7m.vpr = vpr;
 }
 
@@ -2702,7 +2702,7 @@ void HELPER(mve_vpsel)(CPUARMState *env, void *vd, void *vn, void *vm)
      */
     uint64_t *d = vd, *n = vn, *m = vm;
     uint16_t mask = mve_element_mask(env);
-    uint16_t p0 = FIELD_EX32(env->v7m.vpr, V7M_VPR, P0);
+    uint16_t p0 = REG_FIELD_EX32(env->v7m.vpr, V7M_VPR, P0);
     unsigned e;
     for (e = 0; e < 16 / 8; e++, mask >>= 8, p0 >>= 8) {
         uint64_t r = m[H8(e)];

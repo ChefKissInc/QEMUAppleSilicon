@@ -186,12 +186,12 @@ extern RISCVCPUImpliedExtsRule *riscv_multi_ext_implied_rules[];
 #define RV_MAX_MHPMEVENTS 32
 #define RV_MAX_MHPMCOUNTERS 32
 
-FIELD(VTYPE, VLMUL, 0, 3)
-FIELD(VTYPE, VSEW, 3, 3)
-FIELD(VTYPE, VTA, 6, 1)
-FIELD(VTYPE, VMA, 7, 1)
-FIELD(VTYPE, VEDIV, 8, 2)
-FIELD(VTYPE, RESERVED, 10, sizeof(target_ulong) * 8 - 11)
+REG_FIELD(VTYPE, VLMUL, 0, 3)
+REG_FIELD(VTYPE, VSEW, 3, 3)
+REG_FIELD(VTYPE, VTA, 6, 1)
+REG_FIELD(VTYPE, VMA, 7, 1)
+REG_FIELD(VTYPE, VEDIV, 8, 2)
+REG_FIELD(VTYPE, RESERVED, 10, sizeof(target_ulong) * 8 - 11)
 
 typedef struct PMUCTRState {
     /* Current value of a counter */
@@ -672,36 +672,36 @@ G_NORETURN void riscv_raise_exception(CPURISCVState *env,
 target_ulong riscv_cpu_get_fflags(CPURISCVState *env);
 void riscv_cpu_set_fflags(CPURISCVState *env, target_ulong);
 
-FIELD(TB_FLAGS, MEM_IDX, 0, 3)
-FIELD(TB_FLAGS, FS, 3, 2)
+REG_FIELD(TB_FLAGS, MEM_IDX, 0, 3)
+REG_FIELD(TB_FLAGS, FS, 3, 2)
 /* Vector flags */
-FIELD(TB_FLAGS, VS, 5, 2)
-FIELD(TB_FLAGS, LMUL, 7, 3)
-FIELD(TB_FLAGS, SEW, 10, 3)
-FIELD(TB_FLAGS, VL_EQ_VLMAX, 13, 1)
-FIELD(TB_FLAGS, VILL, 14, 1)
-FIELD(TB_FLAGS, VSTART_EQ_ZERO, 15, 1)
+REG_FIELD(TB_FLAGS, VS, 5, 2)
+REG_FIELD(TB_FLAGS, LMUL, 7, 3)
+REG_FIELD(TB_FLAGS, SEW, 10, 3)
+REG_FIELD(TB_FLAGS, VL_EQ_VLMAX, 13, 1)
+REG_FIELD(TB_FLAGS, VILL, 14, 1)
+REG_FIELD(TB_FLAGS, VSTART_EQ_ZERO, 15, 1)
 /* The combination of MXL/SXL/UXL that applies to the current cpu mode. */
-FIELD(TB_FLAGS, XL, 16, 2)
+REG_FIELD(TB_FLAGS, XL, 16, 2)
 /* If PointerMasking should be applied */
-FIELD(TB_FLAGS, PM_MASK_ENABLED, 18, 1)
-FIELD(TB_FLAGS, PM_BASE_ENABLED, 19, 1)
-FIELD(TB_FLAGS, VTA, 18, 1)
-FIELD(TB_FLAGS, VMA, 19, 1)
+REG_FIELD(TB_FLAGS, PM_MASK_ENABLED, 18, 1)
+REG_FIELD(TB_FLAGS, PM_BASE_ENABLED, 19, 1)
+REG_FIELD(TB_FLAGS, VTA, 18, 1)
+REG_FIELD(TB_FLAGS, VMA, 19, 1)
 /* Native debug itrigger */
-FIELD(TB_FLAGS, ITRIGGER, 20, 1)
+REG_FIELD(TB_FLAGS, ITRIGGER, 20, 1)
 /* Virtual mode enabled */
-FIELD(TB_FLAGS, VIRT_ENABLED, 21, 1)
-FIELD(TB_FLAGS, PRIV, 22, 2)
-FIELD(TB_FLAGS, AXL, 24, 2)
+REG_FIELD(TB_FLAGS, VIRT_ENABLED, 21, 1)
+REG_FIELD(TB_FLAGS, PRIV, 22, 2)
+REG_FIELD(TB_FLAGS, AXL, 24, 2)
 /* zicfilp needs a TB flag to track indirect branches */
-FIELD(TB_FLAGS, FCFI_ENABLED, 26, 1)
-FIELD(TB_FLAGS, FCFI_LP_EXPECTED, 27, 1)
+REG_FIELD(TB_FLAGS, FCFI_ENABLED, 26, 1)
+REG_FIELD(TB_FLAGS, FCFI_LP_EXPECTED, 27, 1)
 /* zicfiss needs a TB flag so that correct TB is located based on tb flags */
-FIELD(TB_FLAGS, BCFI_ENABLED, 28, 1)
+REG_FIELD(TB_FLAGS, BCFI_ENABLED, 28, 1)
 /* If pointer masking should be applied and address sign extended */
-FIELD(TB_FLAGS, PM_PMM, 29, 2)
-FIELD(TB_FLAGS, PM_SIGNEXTEND, 31, 1)
+REG_FIELD(TB_FLAGS, PM_PMM, 29, 2)
+REG_FIELD(TB_FLAGS, PM_SIGNEXTEND, 31, 1)
 
 #ifdef TARGET_RISCV32
 #define riscv_cpu_mxl(env)  ((void)(env), MXL_RV32)

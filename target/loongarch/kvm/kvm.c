@@ -561,7 +561,7 @@ static int kvm_loongarch_put_lbt(CPUState *cs)
     int ret;
 
     /* check whether vm support LBT firstly */
-    if (FIELD_EX32(env->cpucfg[2], CPUCFG2, LBT_ALL) != 7) {
+    if (REG_FIELD_EX32(env->cpucfg[2], CPUCFG2, LBT_ALL) != 7) {
         return 0;
     }
 
@@ -589,7 +589,7 @@ static int kvm_loongarch_get_lbt(CPUState *cs)
     int ret;
 
     /* check whether vm support LBT firstly */
-    if (FIELD_EX32(env->cpucfg[2], CPUCFG2, LBT_ALL) != 7) {
+    if (REG_FIELD_EX32(env->cpucfg[2], CPUCFG2, LBT_ALL) != 7) {
         return 0;
     }
 
@@ -689,14 +689,14 @@ static int kvm_check_cpucfg2(CPUState *cs)
         kvm_vcpu_ioctl(cs, KVM_GET_DEVICE_ATTR, &attr);
         env->cpucfg[2] &= val;
 
-        if (FIELD_EX32(env->cpucfg[2], CPUCFG2, FP)) {
+        if (REG_FIELD_EX32(env->cpucfg[2], CPUCFG2, FP)) {
             /* The FP minimal version is 1. */
-            env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, FP_VER, 1);
+            env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, FP_VER, 1);
         }
 
-        if (FIELD_EX32(env->cpucfg[2], CPUCFG2, LLFTP)) {
+        if (REG_FIELD_EX32(env->cpucfg[2], CPUCFG2, LLFTP)) {
             /* The LLFTP minimal version is 1. */
-            env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LLFTP_VER, 1);
+            env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LLFTP_VER, 1);
         }
     }
 
@@ -866,7 +866,7 @@ static bool kvm_feature_supported(CPUState *cs, enum loongarch_features feature)
                 return false;
             }
 
-            ret = FIELD_EX32((uint32_t)val, CPUCFG2, LSX);
+            ret = REG_FIELD_EX32((uint32_t)val, CPUCFG2, LSX);
             return (ret != 0);
         }
         return false;
@@ -892,7 +892,7 @@ static bool kvm_feature_supported(CPUState *cs, enum loongarch_features feature)
                 return false;
             }
 
-            ret = FIELD_EX32((uint32_t)val, CPUCFG2, LASX);
+            ret = REG_FIELD_EX32((uint32_t)val, CPUCFG2, LASX);
             return (ret != 0);
         }
         return false;
@@ -945,16 +945,16 @@ static int kvm_cpu_check_lsx(CPUState *cs, Error **errp)
     bool kvm_supported;
 
     kvm_supported = kvm_feature_supported(cs, LOONGARCH_FEATURE_LSX);
-    env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LSX, 0);
+    env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LSX, 0);
     if (cpu->lsx == ON_OFF_AUTO_ON) {
         if (kvm_supported) {
-            env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LSX, 1);
+            env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LSX, 1);
         } else {
             error_setg(errp, "'lsx' feature not supported by KVM on this host");
             return -ENOTSUP;
         }
     } else if ((cpu->lsx == ON_OFF_AUTO_AUTO) && kvm_supported) {
-        env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LSX, 1);
+        env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LSX, 1);
     }
 
     return 0;
@@ -967,16 +967,16 @@ static int kvm_cpu_check_lasx(CPUState *cs, Error **errp)
     bool kvm_supported;
 
     kvm_supported = kvm_feature_supported(cs, LOONGARCH_FEATURE_LASX);
-    env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LASX, 0);
+    env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LASX, 0);
     if (cpu->lasx == ON_OFF_AUTO_ON) {
         if (kvm_supported) {
-            env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LASX, 1);
+            env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LASX, 1);
         } else {
             error_setg(errp, "'lasx' feature not supported by KVM on host");
             return -ENOTSUP;
         }
     } else if ((cpu->lasx == ON_OFF_AUTO_AUTO) && kvm_supported) {
-        env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LASX, 1);
+        env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LASX, 1);
     }
 
     return 0;
@@ -991,13 +991,13 @@ static int kvm_cpu_check_lbt(CPUState *cs, Error **errp)
     kvm_supported = kvm_feature_supported(cs, LOONGARCH_FEATURE_LBT);
     if (cpu->lbt == ON_OFF_AUTO_ON) {
         if (kvm_supported) {
-            env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LBT_ALL, 7);
+            env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LBT_ALL, 7);
         } else {
             error_setg(errp, "'lbt' feature not supported by KVM on this host");
             return -ENOTSUP;
         }
     } else if ((cpu->lbt == ON_OFF_AUTO_AUTO) && kvm_supported) {
-        env->cpucfg[2] = FIELD_DP32(env->cpucfg[2], CPUCFG2, LBT_ALL, 7);
+        env->cpucfg[2] = REG_FIELD_DP32(env->cpucfg[2], CPUCFG2, LBT_ALL, 7);
     }
 
     return 0;
@@ -1021,10 +1021,10 @@ static int kvm_cpu_check_pmu(CPUState *cs, Error **errp)
     }
 
     if (kvm_supported) {
-        env->cpucfg[6] = FIELD_DP32(env->cpucfg[6], CPUCFG6, PMP, 1);
-        env->cpucfg[6] = FIELD_DP32(env->cpucfg[6], CPUCFG6, PMNUM, 3);
-        env->cpucfg[6] = FIELD_DP32(env->cpucfg[6], CPUCFG6, PMBITS, 63);
-        env->cpucfg[6] = FIELD_DP32(env->cpucfg[6], CPUCFG6, UPM, 1);
+        env->cpucfg[6] = REG_FIELD_DP32(env->cpucfg[6], CPUCFG6, PMP, 1);
+        env->cpucfg[6] = REG_FIELD_DP32(env->cpucfg[6], CPUCFG6, PMNUM, 3);
+        env->cpucfg[6] = REG_FIELD_DP32(env->cpucfg[6], CPUCFG6, PMBITS, 63);
+        env->cpucfg[6] = REG_FIELD_DP32(env->cpucfg[6], CPUCFG6, UPM, 1);
     }
     return 0;
 }

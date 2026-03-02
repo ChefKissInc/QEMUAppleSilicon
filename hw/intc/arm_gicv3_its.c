@@ -112,12 +112,12 @@ static uint64_t baser_base_addr(uint64_t value, uint32_t page_sz)
     switch (page_sz) {
     case GITS_PAGE_SIZE_4K:
     case GITS_PAGE_SIZE_16K:
-        result = FIELD_EX64(value, GITS_BASER, PHYADDR) << 12;
+        result = REG_FIELD_EX64(value, GITS_BASER, PHYADDR) << 12;
         break;
 
     case GITS_PAGE_SIZE_64K:
-        result = FIELD_EX64(value, GITS_BASER, PHYADDRL_64K) << 16;
-        result |= FIELD_EX64(value, GITS_BASER, PHYADDRH_64K) << 48;
+        result = REG_FIELD_EX64(value, GITS_BASER, PHYADDRL_64K) << 16;
+        result |= REG_FIELD_EX64(value, GITS_BASER, PHYADDRH_64K) << 48;
         break;
 
     default:
@@ -194,8 +194,8 @@ static MemTxResult get_cte(GICv3ITSState *s, uint16_t icid, CTEntry *cte)
     if (res != MEMTX_OK) {
         goto out;
     }
-    cte->valid = FIELD_EX64(cteval, CTE, VALID);
-    cte->rdbase = FIELD_EX64(cteval, CTE, RDBASE);
+    cte->valid = REG_FIELD_EX64(cteval, CTE, VALID);
+    cte->rdbase = REG_FIELD_EX64(cteval, CTE, RDBASE);
 out:
     if (res != MEMTX_OK) {
         trace_gicv3_its_cte_read_fault(icid);
@@ -224,12 +224,12 @@ static bool update_ite(GICv3ITSState *s, uint32_t eventid, const DTEntry *dte,
                               ite->vpeid, ite->doorbell);
 
     if (ite->valid) {
-        itel = FIELD_DP64(itel, ITE_L, VALID, 1);
-        itel = FIELD_DP64(itel, ITE_L, INTTYPE, ite->inttype);
-        itel = FIELD_DP64(itel, ITE_L, INTID, ite->intid);
-        itel = FIELD_DP64(itel, ITE_L, ICID, ite->icid);
-        itel = FIELD_DP64(itel, ITE_L, VPEID, ite->vpeid);
-        iteh = FIELD_DP32(iteh, ITE_H, DOORBELL, ite->doorbell);
+        itel = REG_FIELD_DP64(itel, ITE_L, VALID, 1);
+        itel = REG_FIELD_DP64(itel, ITE_L, INTTYPE, ite->inttype);
+        itel = REG_FIELD_DP64(itel, ITE_L, INTID, ite->intid);
+        itel = REG_FIELD_DP64(itel, ITE_L, ICID, ite->icid);
+        itel = REG_FIELD_DP64(itel, ITE_L, VPEID, ite->vpeid);
+        iteh = REG_FIELD_DP32(iteh, ITE_H, DOORBELL, ite->doorbell);
     }
 
     address_space_stq_le(as, iteaddr, itel, MEMTXATTRS_UNSPECIFIED, &res);
@@ -267,12 +267,12 @@ static MemTxResult get_ite(GICv3ITSState *s, uint32_t eventid,
         return res;
     }
 
-    ite->valid = FIELD_EX64(itel, ITE_L, VALID);
-    ite->inttype = FIELD_EX64(itel, ITE_L, INTTYPE);
-    ite->intid = FIELD_EX64(itel, ITE_L, INTID);
-    ite->icid = FIELD_EX64(itel, ITE_L, ICID);
-    ite->vpeid = FIELD_EX64(itel, ITE_L, VPEID);
-    ite->doorbell = FIELD_EX64(iteh, ITE_H, DOORBELL);
+    ite->valid = REG_FIELD_EX64(itel, ITE_L, VALID);
+    ite->inttype = REG_FIELD_EX64(itel, ITE_L, INTTYPE);
+    ite->intid = REG_FIELD_EX64(itel, ITE_L, INTID);
+    ite->icid = REG_FIELD_EX64(itel, ITE_L, ICID);
+    ite->vpeid = REG_FIELD_EX64(itel, ITE_L, VPEID);
+    ite->doorbell = REG_FIELD_EX64(iteh, ITE_H, DOORBELL);
     trace_gicv3_its_ite_read(dte->ittaddr, eventid, ite->valid,
                              ite->inttype, ite->intid, ite->icid,
                              ite->vpeid, ite->doorbell);
@@ -301,10 +301,10 @@ static MemTxResult get_dte(GICv3ITSState *s, uint32_t devid, DTEntry *dte)
     if (res != MEMTX_OK) {
         goto out;
     }
-    dte->valid = FIELD_EX64(dteval, DTE, VALID);
-    dte->size = FIELD_EX64(dteval, DTE, SIZE);
+    dte->valid = REG_FIELD_EX64(dteval, DTE, VALID);
+    dte->size = REG_FIELD_EX64(dteval, DTE, SIZE);
     /* DTE word field stores bits [51:8] of the ITT address */
-    dte->ittaddr = FIELD_EX64(dteval, DTE, ITTADDR) << ITTADDR_SHIFT;
+    dte->ittaddr = REG_FIELD_EX64(dteval, DTE, ITTADDR) << ITTADDR_SHIFT;
 out:
     if (res != MEMTX_OK) {
         trace_gicv3_its_dte_read_fault(devid);
@@ -338,10 +338,10 @@ static MemTxResult get_vte(GICv3ITSState *s, uint32_t vpeid, VTEntry *vte)
         trace_gicv3_its_vte_read_fault(vpeid);
         return res;
     }
-    vte->valid = FIELD_EX64(vteval, VTE, VALID);
-    vte->vptsize = FIELD_EX64(vteval, VTE, VPTSIZE);
-    vte->vptaddr = FIELD_EX64(vteval, VTE, VPTADDR);
-    vte->rdbase = FIELD_EX64(vteval, VTE, RDBASE);
+    vte->valid = REG_FIELD_EX64(vteval, VTE, VALID);
+    vte->vptsize = REG_FIELD_EX64(vteval, VTE, VPTSIZE);
+    vte->vptaddr = REG_FIELD_EX64(vteval, VTE, VPTADDR);
+    vte->rdbase = REG_FIELD_EX64(vteval, VTE, RDBASE);
     trace_gicv3_its_vte_read(vpeid, vte->valid, vte->vptsize,
                              vte->vptaddr, vte->rdbase);
     return res;
@@ -658,15 +658,15 @@ static ItsCmdResult process_vmapti(GICv3ITSState *s, const uint64_t *cmdpkt,
         return CMD_CONTINUE;
     }
 
-    devid = FIELD_EX64(cmdpkt[0], VMAPTI_0, DEVICEID);
-    eventid = FIELD_EX64(cmdpkt[1], VMAPTI_1, EVENTID);
-    vpeid = FIELD_EX64(cmdpkt[1], VMAPTI_1, VPEID);
-    doorbell = FIELD_EX64(cmdpkt[2], VMAPTI_2, DOORBELL);
+    devid = REG_FIELD_EX64(cmdpkt[0], VMAPTI_0, DEVICEID);
+    eventid = REG_FIELD_EX64(cmdpkt[1], VMAPTI_1, EVENTID);
+    vpeid = REG_FIELD_EX64(cmdpkt[1], VMAPTI_1, VPEID);
+    doorbell = REG_FIELD_EX64(cmdpkt[2], VMAPTI_2, DOORBELL);
     if (ignore_vintid) {
         vintid = eventid;
         trace_gicv3_its_cmd_vmapi(devid, eventid, vpeid, doorbell);
     } else {
-        vintid = FIELD_EX64(cmdpkt[2], VMAPTI_2, VINTID);
+        vintid = REG_FIELD_EX64(cmdpkt[2], VMAPTI_2, VINTID);
         trace_gicv3_its_cmd_vmapti(devid, eventid, vpeid, vintid, doorbell);
     }
 
@@ -740,8 +740,8 @@ static bool update_cte(GICv3ITSState *s, uint16_t icid, const CTEntry *cte)
 
     if (cte->valid) {
         /* add mapping entry to collection table */
-        cteval = FIELD_DP64(cteval, CTE, VALID, 1);
-        cteval = FIELD_DP64(cteval, CTE, RDBASE, cte->rdbase);
+        cteval = REG_FIELD_DP64(cteval, CTE, VALID, 1);
+        cteval = REG_FIELD_DP64(cteval, CTE, RDBASE, cte->rdbase);
     }
 
     entry_addr = table_entry_addr(s, &s->ct, icid, &res);
@@ -801,9 +801,9 @@ static bool update_dte(GICv3ITSState *s, uint32_t devid, const DTEntry *dte)
 
     if (dte->valid) {
         /* add mapping entry to device table */
-        dteval = FIELD_DP64(dteval, DTE, VALID, 1);
-        dteval = FIELD_DP64(dteval, DTE, SIZE, dte->size);
-        dteval = FIELD_DP64(dteval, DTE, ITTADDR, dte->ittaddr);
+        dteval = REG_FIELD_DP64(dteval, DTE, VALID, 1);
+        dteval = REG_FIELD_DP64(dteval, DTE, SIZE, dte->size);
+        dteval = REG_FIELD_DP64(dteval, DTE, ITTADDR, dte->ittaddr);
     }
 
     entry_addr = table_entry_addr(s, &s->dt, devid, &res);
@@ -838,7 +838,7 @@ static ItsCmdResult process_mapd(GICv3ITSState *s, const uint64_t *cmdpkt)
         return CMD_CONTINUE;
     }
 
-    if (dte.size > FIELD_EX64(s->typer, GITS_TYPER, IDBITS)) {
+    if (dte.size > REG_FIELD_EX64(s->typer, GITS_TYPER, IDBITS)) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "ITS MAPD: invalid size %d\n", dte.size);
         return CMD_CONTINUE;
@@ -851,8 +851,8 @@ static ItsCmdResult process_movall(GICv3ITSState *s, const uint64_t *cmdpkt)
 {
     uint64_t rd1, rd2;
 
-    rd1 = FIELD_EX64(cmdpkt[2], MOVALL_2, RDBASE1);
-    rd2 = FIELD_EX64(cmdpkt[3], MOVALL_3, RDBASE2);
+    rd1 = REG_FIELD_EX64(cmdpkt[2], MOVALL_2, RDBASE1);
+    rd2 = REG_FIELD_EX64(cmdpkt[3], MOVALL_3, RDBASE2);
 
     trace_gicv3_its_cmd_movall(rd1, rd2);
 
@@ -891,9 +891,9 @@ static ItsCmdResult process_movi(GICv3ITSState *s, const uint64_t *cmdpkt)
     ITEntry old_ite = {};
     ItsCmdResult cmdres;
 
-    devid = FIELD_EX64(cmdpkt[0], MOVI_0, DEVICEID);
-    eventid = FIELD_EX64(cmdpkt[1], MOVI_1, EVENTID);
-    new_icid = FIELD_EX64(cmdpkt[2], MOVI_2, ICID);
+    devid = REG_FIELD_EX64(cmdpkt[0], MOVI_0, DEVICEID);
+    eventid = REG_FIELD_EX64(cmdpkt[1], MOVI_1, EVENTID);
+    new_icid = REG_FIELD_EX64(cmdpkt[2], MOVI_2, ICID);
 
     trace_gicv3_its_cmd_movi(devid, eventid, new_icid);
 
@@ -945,10 +945,10 @@ static bool update_vte(GICv3ITSState *s, uint32_t vpeid, const VTEntry *vte)
                               vte->rdbase);
 
     if (vte->valid) {
-        vteval = FIELD_DP64(vteval, VTE, VALID, 1);
-        vteval = FIELD_DP64(vteval, VTE, VPTSIZE, vte->vptsize);
-        vteval = FIELD_DP64(vteval, VTE, VPTADDR, vte->vptaddr);
-        vteval = FIELD_DP64(vteval, VTE, RDBASE, vte->rdbase);
+        vteval = REG_FIELD_DP64(vteval, VTE, VALID, 1);
+        vteval = REG_FIELD_DP64(vteval, VTE, VPTSIZE, vte->vptsize);
+        vteval = REG_FIELD_DP64(vteval, VTE, VPTADDR, vte->vptaddr);
+        vteval = REG_FIELD_DP64(vteval, VTE, RDBASE, vte->rdbase);
     }
 
     entry_addr = table_entry_addr(s, &s->vpet, vpeid, &res);
@@ -972,11 +972,11 @@ static ItsCmdResult process_vmapp(GICv3ITSState *s, const uint64_t *cmdpkt)
         return CMD_CONTINUE;
     }
 
-    vpeid = FIELD_EX64(cmdpkt[1], VMAPP_1, VPEID);
-    vte.rdbase = FIELD_EX64(cmdpkt[2], VMAPP_2, RDBASE);
-    vte.valid = FIELD_EX64(cmdpkt[2], VMAPP_2, V);
-    vte.vptsize = FIELD_EX64(cmdpkt[3], VMAPP_3, VPTSIZE);
-    vte.vptaddr = FIELD_EX64(cmdpkt[3], VMAPP_3, VPTADDR);
+    vpeid = REG_FIELD_EX64(cmdpkt[1], VMAPP_1, VPEID);
+    vte.rdbase = REG_FIELD_EX64(cmdpkt[2], VMAPP_2, RDBASE);
+    vte.valid = REG_FIELD_EX64(cmdpkt[2], VMAPP_2, V);
+    vte.vptsize = REG_FIELD_EX64(cmdpkt[3], VMAPP_3, VPTSIZE);
+    vte.vptaddr = REG_FIELD_EX64(cmdpkt[3], VMAPP_3, VPTADDR);
 
     trace_gicv3_its_cmd_vmapp(vpeid, vte.rdbase, vte.valid,
                               vte.vptaddr, vte.vptsize);
@@ -987,7 +987,7 @@ static ItsCmdResult process_vmapp(GICv3ITSState *s, const uint64_t *cmdpkt)
      * The range check on VPT_size will catch the cases where
      * the guest set the RES0-in-GICv4.0 bits [7:6].
      */
-    if (vte.vptsize > FIELD_EX64(s->typer, GITS_TYPER, IDBITS)) {
+    if (vte.vptsize > REG_FIELD_EX64(s->typer, GITS_TYPER, IDBITS)) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "%s: invalid VPT_size 0x%x\n", __func__, vte.vptsize);
         return CMD_CONTINUE;
@@ -1061,8 +1061,8 @@ static ItsCmdResult process_vmovp(GICv3ITSState *s, const uint64_t *cmdpkt)
         return CMD_CONTINUE;
     }
 
-    cbdata.vpeid = FIELD_EX64(cmdpkt[1], VMOVP_1, VPEID);
-    cbdata.rdbase = FIELD_EX64(cmdpkt[2], VMOVP_2, RDBASE);
+    cbdata.vpeid = REG_FIELD_EX64(cmdpkt[1], VMOVP_1, VPEID);
+    cbdata.rdbase = REG_FIELD_EX64(cmdpkt[2], VMOVP_2, RDBASE);
 
     trace_gicv3_its_cmd_vmovp(cbdata.vpeid, cbdata.rdbase);
 
@@ -1094,11 +1094,11 @@ static ItsCmdResult process_vmovi(GICv3ITSState *s, const uint64_t *cmdpkt)
         return CMD_CONTINUE;
     }
 
-    devid = FIELD_EX64(cmdpkt[0], VMOVI_0, DEVICEID);
-    eventid = FIELD_EX64(cmdpkt[1], VMOVI_1, EVENTID);
-    vpeid = FIELD_EX64(cmdpkt[1], VMOVI_1, VPEID);
-    doorbell_valid = FIELD_EX64(cmdpkt[2], VMOVI_2, D);
-    doorbell = FIELD_EX64(cmdpkt[2], VMOVI_2, DOORBELL);
+    devid = REG_FIELD_EX64(cmdpkt[0], VMOVI_0, DEVICEID);
+    eventid = REG_FIELD_EX64(cmdpkt[1], VMOVI_1, EVENTID);
+    vpeid = REG_FIELD_EX64(cmdpkt[1], VMOVI_1, VPEID);
+    doorbell_valid = REG_FIELD_EX64(cmdpkt[2], VMOVI_2, D);
+    doorbell = REG_FIELD_EX64(cmdpkt[2], VMOVI_2, DOORBELL);
 
     trace_gicv3_its_cmd_vmovi(devid, eventid, vpeid, doorbell_valid, doorbell);
 
@@ -1170,7 +1170,7 @@ static ItsCmdResult process_vinvall(GICv3ITSState *s, const uint64_t *cmdpkt)
         return CMD_CONTINUE;
     }
 
-    vpeid = FIELD_EX64(cmdpkt[1], VINVALL_1, VPEID);
+    vpeid = REG_FIELD_EX64(cmdpkt[1], VINVALL_1, VPEID);
 
     trace_gicv3_its_cmd_vinvall(vpeid);
 
@@ -1192,8 +1192,8 @@ static ItsCmdResult process_inv(GICv3ITSState *s, const uint64_t *cmdpkt)
     VTEntry vte = {};
     ItsCmdResult cmdres;
 
-    devid = FIELD_EX64(cmdpkt[0], INV_0, DEVICEID);
-    eventid = FIELD_EX64(cmdpkt[1], INV_1, EVENTID);
+    devid = REG_FIELD_EX64(cmdpkt[0], INV_0, DEVICEID);
+    eventid = REG_FIELD_EX64(cmdpkt[1], INV_1, EVENTID);
 
     trace_gicv3_its_cmd_inv(devid, eventid);
 
@@ -1256,7 +1256,7 @@ static void process_cmdq(GICv3ITSState *s)
         return;
     }
 
-    wr_offset = FIELD_EX64(s->cwriter, GITS_CWRITER, OFFSET);
+    wr_offset = REG_FIELD_EX64(s->cwriter, GITS_CWRITER, OFFSET);
 
     if (wr_offset >= s->cq.num_entries) {
         qemu_log_mask(LOG_GUEST_ERROR,
@@ -1265,7 +1265,7 @@ static void process_cmdq(GICv3ITSState *s)
         return;
     }
 
-    rd_offset = FIELD_EX64(s->creadr, GITS_CREADR, OFFSET);
+    rd_offset = REG_FIELD_EX64(s->creadr, GITS_CREADR, OFFSET);
 
     if (rd_offset >= s->cq.num_entries) {
         qemu_log_mask(LOG_GUEST_ERROR,
@@ -1289,7 +1289,7 @@ static void process_cmdq(GICv3ITSState *s)
             if (hostmem) {
                 address_space_unmap(as, hostmem, buflen, false, 0);
             }
-            s->creadr = FIELD_DP64(s->creadr, GITS_CREADR, STALLED, 1);
+            s->creadr = REG_FIELD_DP64(s->creadr, GITS_CREADR, STALLED, 1);
             qemu_log_mask(LOG_GUEST_ERROR,
                           "%s: could not read command at 0x%" PRIx64 "\n",
                           __func__, s->cq.base_addr + cq_offset);
@@ -1395,10 +1395,10 @@ static void process_cmdq(GICv3ITSState *s)
             /* CMD_CONTINUE or CMD_CONTINUE_OK */
             rd_offset++;
             rd_offset %= s->cq.num_entries;
-            s->creadr = FIELD_DP64(s->creadr, GITS_CREADR, OFFSET, rd_offset);
+            s->creadr = REG_FIELD_DP64(s->creadr, GITS_CREADR, OFFSET, rd_offset);
         } else {
             /* CMD_STALL */
-            s->creadr = FIELD_DP64(s->creadr, GITS_CREADR, STALLED, 1);
+            s->creadr = REG_FIELD_DP64(s->creadr, GITS_CREADR, STALLED, 1);
             qemu_log_mask(LOG_GUEST_ERROR,
                           "%s: 0x%x cmd processing failed, stalling\n",
                           __func__, cmd);
@@ -1430,7 +1430,7 @@ static void extract_table_params(GICv3ITSState *s)
             continue;
         }
 
-        page_sz_type = FIELD_EX64(value, GITS_BASER, PAGESIZE);
+        page_sz_type = REG_FIELD_EX64(value, GITS_BASER, PAGESIZE);
 
         switch (page_sz_type) {
         case 0:
@@ -1450,19 +1450,19 @@ static void extract_table_params(GICv3ITSState *s)
             g_assert_not_reached();
         }
 
-        num_pages = FIELD_EX64(value, GITS_BASER, SIZE) + 1;
+        num_pages = REG_FIELD_EX64(value, GITS_BASER, SIZE) + 1;
 
-        type = FIELD_EX64(value, GITS_BASER, TYPE);
+        type = REG_FIELD_EX64(value, GITS_BASER, TYPE);
 
         switch (type) {
         case GITS_BASER_TYPE_DEVICE:
             td = &s->dt;
-            idbits = FIELD_EX64(s->typer, GITS_TYPER, DEVBITS) + 1;
+            idbits = REG_FIELD_EX64(s->typer, GITS_TYPER, DEVBITS) + 1;
             break;
         case GITS_BASER_TYPE_COLLECTION:
             td = &s->ct;
-            if (FIELD_EX64(s->typer, GITS_TYPER, CIL)) {
-                idbits = FIELD_EX64(s->typer, GITS_TYPER, CIDBITS) + 1;
+            if (REG_FIELD_EX64(s->typer, GITS_TYPER, CIL)) {
+                idbits = REG_FIELD_EX64(s->typer, GITS_TYPER, CIDBITS) + 1;
             } else {
                 /* 16-bit CollectionId supported when CIL == 0 */
                 idbits = 16;
@@ -1502,12 +1502,12 @@ static void extract_table_params(GICv3ITSState *s)
          * zero, which will be caught by the bounds checks we have before
          * every table lookup anyway.
          */
-        if (!FIELD_EX64(value, GITS_BASER, VALID)) {
+        if (!REG_FIELD_EX64(value, GITS_BASER, VALID)) {
             continue;
         }
         td->page_sz = page_sz;
-        td->indirect = FIELD_EX64(value, GITS_BASER, INDIRECT);
-        td->entry_sz = FIELD_EX64(value, GITS_BASER, ENTRYSIZE) + 1;
+        td->indirect = REG_FIELD_EX64(value, GITS_BASER, INDIRECT);
+        td->entry_sz = REG_FIELD_EX64(value, GITS_BASER, ENTRYSIZE) + 1;
         td->base_addr = baser_base_addr(value, page_sz);
         if (!td->indirect) {
             td->num_entries = (num_pages * page_sz) / td->entry_sz;
@@ -1525,14 +1525,14 @@ static void extract_cmdq_params(GICv3ITSState *s)
     uint16_t num_pages = 0;
     uint64_t value = s->cbaser;
 
-    num_pages = FIELD_EX64(value, GITS_CBASER, SIZE) + 1;
+    num_pages = REG_FIELD_EX64(value, GITS_CBASER, SIZE) + 1;
 
     memset(&s->cq, 0 , sizeof(s->cq));
 
-    if (FIELD_EX64(value, GITS_CBASER, VALID)) {
+    if (REG_FIELD_EX64(value, GITS_CBASER, VALID)) {
         s->cq.num_entries = (num_pages * GITS_PAGE_SIZE_4K) /
                              GITS_CMDQ_ENTRY_SIZE;
-        s->cq.base_addr = FIELD_EX64(value, GITS_CBASER, PHYADDR);
+        s->cq.base_addr = REG_FIELD_EX64(value, GITS_CBASER, PHYADDR);
         s->cq.base_addr <<= R_GITS_CBASER_PHYADDR_SHIFT;
     }
 }
@@ -1936,17 +1936,17 @@ static void gicv3_arm_its_realize(DeviceState *dev, Error **errp)
     gicv3_its_init_mmio(s, &gicv3_its_control_ops, &gicv3_its_translation_ops);
 
     /* set the ITS default features supported */
-    s->typer = FIELD_DP64(s->typer, GITS_TYPER, PHYSICAL, 1);
-    s->typer = FIELD_DP64(s->typer, GITS_TYPER, ITT_ENTRY_SIZE,
+    s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, PHYSICAL, 1);
+    s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, ITT_ENTRY_SIZE,
                           ITS_ITT_ENTRY_SIZE - 1);
-    s->typer = FIELD_DP64(s->typer, GITS_TYPER, IDBITS, ITS_IDBITS);
-    s->typer = FIELD_DP64(s->typer, GITS_TYPER, DEVBITS, ITS_DEVBITS);
-    s->typer = FIELD_DP64(s->typer, GITS_TYPER, CIL, 1);
-    s->typer = FIELD_DP64(s->typer, GITS_TYPER, CIDBITS, ITS_CIDBITS);
+    s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, IDBITS, ITS_IDBITS);
+    s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, DEVBITS, ITS_DEVBITS);
+    s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, CIL, 1);
+    s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, CIDBITS, ITS_CIDBITS);
     if (s->gicv3->revision >= 4) {
         /* Our VMOVP handles cross-ITS synchronization itself */
-        s->typer = FIELD_DP64(s->typer, GITS_TYPER, VMOVP, 1);
-        s->typer = FIELD_DP64(s->typer, GITS_TYPER, VIRTUAL, 1);
+        s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, VMOVP, 1);
+        s->typer = REG_FIELD_DP64(s->typer, GITS_TYPER, VIRTUAL, 1);
     }
 }
 
@@ -1960,7 +1960,7 @@ static void gicv3_its_reset_hold(Object *obj, ResetType type)
     }
 
     /* Quiescent bit reset to 1 */
-    s->ctlr = FIELD_DP32(s->ctlr, GITS_CTLR, QUIESCENT, 1);
+    s->ctlr = REG_FIELD_DP32(s->ctlr, GITS_CTLR, QUIESCENT, 1);
 
     /*
      * setting GITS_BASER0.Type = 0b001 (Device)
@@ -1970,26 +1970,26 @@ static void gicv3_its_reset_hold(Object *obj, ResetType type)
      *         GITS_BASER<0,1>.Page_Size = 64KB
      * and default translation table entry size to 16 bytes
      */
-    s->baser[0] = FIELD_DP64(s->baser[0], GITS_BASER, TYPE,
+    s->baser[0] = REG_FIELD_DP64(s->baser[0], GITS_BASER, TYPE,
                              GITS_BASER_TYPE_DEVICE);
-    s->baser[0] = FIELD_DP64(s->baser[0], GITS_BASER, PAGESIZE,
+    s->baser[0] = REG_FIELD_DP64(s->baser[0], GITS_BASER, PAGESIZE,
                              GITS_BASER_PAGESIZE_64K);
-    s->baser[0] = FIELD_DP64(s->baser[0], GITS_BASER, ENTRYSIZE,
+    s->baser[0] = REG_FIELD_DP64(s->baser[0], GITS_BASER, ENTRYSIZE,
                              GITS_DTE_SIZE - 1);
 
-    s->baser[1] = FIELD_DP64(s->baser[1], GITS_BASER, TYPE,
+    s->baser[1] = REG_FIELD_DP64(s->baser[1], GITS_BASER, TYPE,
                              GITS_BASER_TYPE_COLLECTION);
-    s->baser[1] = FIELD_DP64(s->baser[1], GITS_BASER, PAGESIZE,
+    s->baser[1] = REG_FIELD_DP64(s->baser[1], GITS_BASER, PAGESIZE,
                              GITS_BASER_PAGESIZE_64K);
-    s->baser[1] = FIELD_DP64(s->baser[1], GITS_BASER, ENTRYSIZE,
+    s->baser[1] = REG_FIELD_DP64(s->baser[1], GITS_BASER, ENTRYSIZE,
                              GITS_CTE_SIZE - 1);
 
     if (its_feature_virtual(s)) {
-        s->baser[2] = FIELD_DP64(s->baser[2], GITS_BASER, TYPE,
+        s->baser[2] = REG_FIELD_DP64(s->baser[2], GITS_BASER, TYPE,
                                  GITS_BASER_TYPE_VPE);
-        s->baser[2] = FIELD_DP64(s->baser[2], GITS_BASER, PAGESIZE,
+        s->baser[2] = REG_FIELD_DP64(s->baser[2], GITS_BASER, PAGESIZE,
                                  GITS_BASER_PAGESIZE_64K);
-        s->baser[2] = FIELD_DP64(s->baser[2], GITS_BASER, ENTRYSIZE,
+        s->baser[2] = REG_FIELD_DP64(s->baser[2], GITS_BASER, ENTRYSIZE,
                                  GITS_VPE_SIZE - 1);
     }
 }

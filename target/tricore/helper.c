@@ -154,30 +154,30 @@ void psw_write(CPUTriCoreState *env, uint32_t val)
 uint32_t NAME(CPUTriCoreState *env)                             \
 {                                                                \
     if (tricore_has_feature(env, TRICORE_FEATURE_##FEATURE)) {   \
-        return FIELD_EX32(env->REG, REG, FIELD ## _ ## FEATURE); \
+        return REG_FIELD_EX32(env->REG, REG, FIELD ## _ ## FEATURE); \
     }                                                            \
-    return FIELD_EX32(env->REG, REG, FIELD ## _13);              \
+    return REG_FIELD_EX32(env->REG, REG, FIELD ## _13);              \
 }
 
 #define FIELD_GETTER(NAME, REG, FIELD)       \
 uint32_t NAME(CPUTriCoreState *env)         \
 {                                            \
-    return FIELD_EX32(env->REG, REG, FIELD); \
+    return REG_FIELD_EX32(env->REG, REG, FIELD); \
 }
 
 #define FIELD_SETTER_WITH_FEATURE(NAME, REG, FIELD, FEATURE)              \
 void NAME(CPUTriCoreState *env, uint32_t val)                            \
 {                                                                         \
     if (tricore_has_feature(env, TRICORE_FEATURE_##FEATURE)) {            \
-        env->REG = FIELD_DP32(env->REG, REG, FIELD ## _ ## FEATURE, val); \
+        env->REG = REG_FIELD_DP32(env->REG, REG, FIELD ## _ ## FEATURE, val); \
     }                                                                     \
-    env->REG = FIELD_DP32(env->REG, REG, FIELD ## _13, val);              \
+    env->REG = REG_FIELD_DP32(env->REG, REG, FIELD ## _13, val);              \
 }
 
 #define FIELD_SETTER(NAME, REG, FIELD)                \
 void NAME(CPUTriCoreState *env, uint32_t val)        \
 {                                                     \
-    env->REG = FIELD_DP32(env->REG, REG, FIELD, val); \
+    env->REG = REG_FIELD_DP32(env->REG, REG, FIELD, val); \
 }
 
 FIELD_GETTER_WITH_FEATURE(pcxi_get_pcpn, PCXI, PCPN, 161)

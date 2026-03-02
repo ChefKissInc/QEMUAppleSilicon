@@ -236,7 +236,7 @@ static inline TCGv rx_load_source(DisasContext *ctx, TCGv mem,
 /* Processor mode check */
 static int is_privileged(DisasContext *ctx, int is_exception)
 {
-    if (FIELD_EX32(ctx->tb_flags, PSW, PM)) {
+    if (REG_FIELD_EX32(ctx->tb_flags, PSW, PM)) {
         if (is_exception) {
             gen_helper_raise_privilege_violation(tcg_env);
         }
@@ -325,7 +325,7 @@ static void move_from_cr(DisasContext *ctx, TCGv ret, int cr, uint32_t pc)
         tcg_gen_movi_i32(ret, pc);
         break;
     case 2:     /* USP */
-        if (FIELD_EX32(ctx->tb_flags, PSW, U)) {
+        if (REG_FIELD_EX32(ctx->tb_flags, PSW, U)) {
             tcg_gen_mov_i32(ret, cpu_sp);
         } else {
             tcg_gen_mov_i32(ret, cpu_usp);
@@ -341,7 +341,7 @@ static void move_from_cr(DisasContext *ctx, TCGv ret, int cr, uint32_t pc)
         tcg_gen_mov_i32(ret, cpu_bpc);
         break;
     case 10:    /* ISP */
-        if (FIELD_EX32(ctx->tb_flags, PSW, U)) {
+        if (REG_FIELD_EX32(ctx->tb_flags, PSW, U)) {
             tcg_gen_mov_i32(ret, cpu_isp);
         } else {
             tcg_gen_mov_i32(ret, cpu_sp);
@@ -379,7 +379,7 @@ static void move_to_cr(DisasContext *ctx, TCGv val, int cr)
         break;
     /* case 1: to PC not supported */
     case 2:     /* USP */
-        if (FIELD_EX32(ctx->tb_flags, PSW, U)) {
+        if (REG_FIELD_EX32(ctx->tb_flags, PSW, U)) {
             tcg_gen_mov_i32(cpu_sp, val);
         } else {
             tcg_gen_mov_i32(cpu_usp, val);
@@ -395,7 +395,7 @@ static void move_to_cr(DisasContext *ctx, TCGv val, int cr)
         tcg_gen_mov_i32(cpu_bpc, val);
         break;
     case 10:    /* ISP */
-        if (FIELD_EX32(ctx->tb_flags, PSW, U)) {
+        if (REG_FIELD_EX32(ctx->tb_flags, PSW, U)) {
             tcg_gen_mov_i32(cpu_isp, val);
         } else {
             tcg_gen_mov_i32(cpu_sp, val);
@@ -2072,8 +2072,8 @@ static inline void clrsetpsw(DisasContext *ctx, int cb, int val)
             ctx->base.is_jmp = DISAS_UPDATE;
             break;
         case PSW_U:
-            if (FIELD_EX32(ctx->tb_flags, PSW, U) != val) {
-                ctx->tb_flags = FIELD_DP32(ctx->tb_flags, PSW, U, val);
+            if (REG_FIELD_EX32(ctx->tb_flags, PSW, U) != val) {
+                ctx->tb_flags = REG_FIELD_DP32(ctx->tb_flags, PSW, U, val);
                 tcg_gen_movi_i32(cpu_psw_u, val);
                 tcg_gen_mov_i32(val ? cpu_isp : cpu_usp, cpu_sp);
                 tcg_gen_mov_i32(cpu_sp, val ? cpu_usp : cpu_isp);

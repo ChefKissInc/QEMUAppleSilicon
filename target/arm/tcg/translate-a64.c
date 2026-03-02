@@ -278,12 +278,12 @@ static TCGv_i64 gen_mte_check1_mmuidx(DisasContext *s, TCGv_i64 addr,
         TCGv_i64 ret;
         int desc = 0;
 
-        desc = FIELD_DP32(desc, MTEDESC, MIDX, core_idx);
-        desc = FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
-        desc = FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
-        desc = FIELD_DP32(desc, MTEDESC, WRITE, is_write);
-        desc = FIELD_DP32(desc, MTEDESC, ALIGN, memop_alignment_bits(memop));
-        desc = FIELD_DP32(desc, MTEDESC, SIZEM1, memop_size(memop) - 1);
+        desc = REG_FIELD_DP32(desc, MTEDESC, MIDX, core_idx);
+        desc = REG_FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
+        desc = REG_FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
+        desc = REG_FIELD_DP32(desc, MTEDESC, WRITE, is_write);
+        desc = REG_FIELD_DP32(desc, MTEDESC, ALIGN, memop_alignment_bits(memop));
+        desc = REG_FIELD_DP32(desc, MTEDESC, SIZEM1, memop_size(memop) - 1);
 
         ret = tcg_temp_new_i64();
         gen_helper_mte_check(ret, tcg_env, tcg_constant_i32(desc), addr);
@@ -310,12 +310,12 @@ TCGv_i64 gen_mte_checkN(DisasContext *s, TCGv_i64 addr, bool is_write,
         TCGv_i64 ret;
         int desc = 0;
 
-        desc = FIELD_DP32(desc, MTEDESC, MIDX, get_mem_index(s));
-        desc = FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
-        desc = FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
-        desc = FIELD_DP32(desc, MTEDESC, WRITE, is_write);
-        desc = FIELD_DP32(desc, MTEDESC, ALIGN, memop_alignment_bits(single_mop));
-        desc = FIELD_DP32(desc, MTEDESC, SIZEM1, total_size - 1);
+        desc = REG_FIELD_DP32(desc, MTEDESC, MIDX, get_mem_index(s));
+        desc = REG_FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
+        desc = REG_FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
+        desc = REG_FIELD_DP32(desc, MTEDESC, WRITE, is_write);
+        desc = REG_FIELD_DP32(desc, MTEDESC, ALIGN, memop_alignment_bits(single_mop));
+        desc = REG_FIELD_DP32(desc, MTEDESC, SIZEM1, total_size - 1);
 
         ret = tcg_temp_new_i64();
         gen_helper_mte_check(ret, tcg_env, tcg_constant_i32(desc), addr);
@@ -1515,12 +1515,12 @@ bool sme_enabled_check_with_svcr(DisasContext *s, unsigned req)
     if (!sme_enabled_check(s)) {
         return false;
     }
-    if (FIELD_EX64(req, SVCR, SM) && !s->pstate_sm) {
+    if (REG_FIELD_EX64(req, SVCR, SM) && !s->pstate_sm) {
         gen_exception_insn(s, 0, EXCP_UDEF,
                            syn_smetrap(SME_ET_NotStreaming, false));
         return false;
     }
-    if (FIELD_EX64(req, SVCR, ZA) && !s->pstate_za) {
+    if (REG_FIELD_EX64(req, SVCR, ZA) && !s->pstate_za) {
         gen_exception_insn(s, 0, EXCP_UDEF,
                            syn_smetrap(SME_ET_InactiveZA, false));
         return false;
@@ -2692,9 +2692,9 @@ static void handle_sys(DisasContext *s, bool isread,
         if (s->mte_active[0]) {
             int desc = 0;
 
-            desc = FIELD_DP32(desc, MTEDESC, MIDX, get_mem_index(s));
-            desc = FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
-            desc = FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
+            desc = REG_FIELD_DP32(desc, MTEDESC, MIDX, get_mem_index(s));
+            desc = REG_FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
+            desc = REG_FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
 
             tcg_rt = tcg_temp_new_i64();
             gen_helper_mte_check_zva(tcg_rt, tcg_env,
@@ -4434,13 +4434,13 @@ static bool do_SET(DisasContext *s, arg_set *a, bool is_epilogue,
 
     if (is_setg ? s->ata[a->unpriv] : s->mte_active[a->unpriv]) {
         /* We may need to do MTE tag checking, so assemble the descriptor */
-        desc = FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
-        desc = FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
-        desc = FIELD_DP32(desc, MTEDESC, WRITE, true);
+        desc = REG_FIELD_DP32(desc, MTEDESC, TBI, s->tbid);
+        desc = REG_FIELD_DP32(desc, MTEDESC, TCMA, s->tcma);
+        desc = REG_FIELD_DP32(desc, MTEDESC, WRITE, true);
         /* SIZEM1 and ALIGN we leave 0 (byte write) */
     }
     /* The helper function always needs the memidx even with MTE disabled */
-    desc = FIELD_DP32(desc, MTEDESC, MIDX, memidx);
+    desc = REG_FIELD_DP32(desc, MTEDESC, MIDX, memidx);
 
     /*
      * The helper needs the register numbers, but since they're in
@@ -4489,17 +4489,17 @@ static bool do_CPY(DisasContext *s, arg_cpy *a, bool is_epilogue, CpyFn fn)
 
     /* If we need to do MTE tag checking, assemble the descriptors */
     if (s->mte_active[runpriv]) {
-        rdesc = FIELD_DP32(rdesc, MTEDESC, TBI, s->tbid);
-        rdesc = FIELD_DP32(rdesc, MTEDESC, TCMA, s->tcma);
+        rdesc = REG_FIELD_DP32(rdesc, MTEDESC, TBI, s->tbid);
+        rdesc = REG_FIELD_DP32(rdesc, MTEDESC, TCMA, s->tcma);
     }
     if (s->mte_active[wunpriv]) {
-        wdesc = FIELD_DP32(wdesc, MTEDESC, TBI, s->tbid);
-        wdesc = FIELD_DP32(wdesc, MTEDESC, TCMA, s->tcma);
-        wdesc = FIELD_DP32(wdesc, MTEDESC, WRITE, true);
+        wdesc = REG_FIELD_DP32(wdesc, MTEDESC, TBI, s->tbid);
+        wdesc = REG_FIELD_DP32(wdesc, MTEDESC, TCMA, s->tcma);
+        wdesc = REG_FIELD_DP32(wdesc, MTEDESC, WRITE, true);
     }
     /* The helper function needs these parts of the descriptor regardless */
-    rdesc = FIELD_DP32(rdesc, MTEDESC, MIDX, rmemidx);
-    wdesc = FIELD_DP32(wdesc, MTEDESC, MIDX, wmemidx);
+    rdesc = REG_FIELD_DP32(rdesc, MTEDESC, MIDX, rmemidx);
+    wdesc = REG_FIELD_DP32(wdesc, MTEDESC, MIDX, wmemidx);
 
     /*
      * The helper needs the register numbers, but since they're in

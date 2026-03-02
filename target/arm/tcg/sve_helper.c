@@ -1977,7 +1977,7 @@ static intptr_t last_active_element(uint64_t *g, intptr_t words, intptr_t esz)
 
 uint32_t HELPER(sve_pfirst)(void *vd, void *vg, uint32_t pred_desc)
 {
-    intptr_t words = DIV_ROUND_UP(FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
+    intptr_t words = DIV_ROUND_UP(REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
     uint32_t flags = PREDTEST_INIT;
     uint64_t *d = vd, *g = vg;
     intptr_t i = 0;
@@ -2001,8 +2001,8 @@ uint32_t HELPER(sve_pfirst)(void *vd, void *vg, uint32_t pred_desc)
 
 uint32_t HELPER(sve_pnext)(void *vd, void *vg, uint32_t pred_desc)
 {
-    intptr_t words = DIV_ROUND_UP(FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
-    intptr_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    intptr_t words = DIV_ROUND_UP(REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
+    intptr_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
     uint32_t flags = PREDTEST_INIT;
     uint64_t *d = vd, *g = vg, esz_mask;
     intptr_t i, next;
@@ -3233,9 +3233,9 @@ static uint64_t compress_bits(uint64_t x, int n)
 
 void HELPER(sve_zip_p)(void *vd, void *vn, void *vm, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    int esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
-    intptr_t high = FIELD_EX32(pred_desc, PREDDESC, DATA);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    int esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    intptr_t high = REG_FIELD_EX32(pred_desc, PREDDESC, DATA);
     int esize = 1 << esz;
     uint64_t *d = vd;
     intptr_t i;
@@ -3297,9 +3297,9 @@ void HELPER(sve_zip_p)(void *vd, void *vn, void *vm, uint32_t pred_desc)
 
 void HELPER(sve_uzp_p)(void *vd, void *vn, void *vm, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    int esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
-    int odd = FIELD_EX32(pred_desc, PREDDESC, DATA) << esz;
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    int esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    int odd = REG_FIELD_EX32(pred_desc, PREDDESC, DATA) << esz;
     uint64_t *d = vd, *n = vn, *m = vm;
     uint64_t l, h;
     intptr_t i;
@@ -3366,9 +3366,9 @@ void HELPER(sve_uzp_p)(void *vd, void *vn, void *vm, uint32_t pred_desc)
 
 void HELPER(sve_trn_p)(void *vd, void *vn, void *vm, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    int esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
-    int odd = FIELD_EX32(pred_desc, PREDDESC, DATA);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    int esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    int odd = REG_FIELD_EX32(pred_desc, PREDDESC, DATA);
     uint64_t *d = vd, *n = vn, *m = vm;
     uint64_t mask;
     int shr, shl;
@@ -3416,8 +3416,8 @@ static uint8_t reverse_bits_8(uint8_t x, int n)
 
 void HELPER(sve_rev_p)(void *vd, void *vn, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    int esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    int esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
     intptr_t i, oprsz_2 = oprsz / 2;
 
     if (oprsz <= 8) {
@@ -3446,8 +3446,8 @@ void HELPER(sve_rev_p)(void *vd, void *vn, uint32_t pred_desc)
 
 void HELPER(sve_punpk_p)(void *vd, void *vn, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    intptr_t high = FIELD_EX32(pred_desc, PREDDESC, DATA);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t high = REG_FIELD_EX32(pred_desc, PREDDESC, DATA);
     uint64_t *d = vd;
     intptr_t i;
 
@@ -3656,8 +3656,8 @@ void HELPER(sve_compact_d)(void *vd, void *vn, void *vg, uint32_t desc)
  */
 int32_t HELPER(sve_last_active_element)(void *vg, uint32_t pred_desc)
 {
-    intptr_t words = DIV_ROUND_UP(FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
-    intptr_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    intptr_t words = DIV_ROUND_UP(REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
+    intptr_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
 
     return last_active_element(vg, words, esz);
 }
@@ -4132,7 +4132,7 @@ static uint32_t compute_brks_m(uint64_t *d, uint64_t *n, uint64_t *g,
 void HELPER(sve_brkpa)(void *vd, void *vn, void *vm, void *vg,
                        uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     if (last_active_pred(vn, vg, oprsz)) {
         compute_brk_z(vd, vm, vg, oprsz, true);
     } else {
@@ -4143,7 +4143,7 @@ void HELPER(sve_brkpa)(void *vd, void *vn, void *vm, void *vg,
 uint32_t HELPER(sve_brkpas)(void *vd, void *vn, void *vm, void *vg,
                             uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     if (last_active_pred(vn, vg, oprsz)) {
         return compute_brks_z(vd, vm, vg, oprsz, true);
     } else {
@@ -4155,7 +4155,7 @@ uint32_t HELPER(sve_brkpas)(void *vd, void *vn, void *vm, void *vg,
 void HELPER(sve_brkpb)(void *vd, void *vn, void *vm, void *vg,
                        uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     if (last_active_pred(vn, vg, oprsz)) {
         compute_brk_z(vd, vm, vg, oprsz, false);
     } else {
@@ -4166,7 +4166,7 @@ void HELPER(sve_brkpb)(void *vd, void *vn, void *vm, void *vg,
 uint32_t HELPER(sve_brkpbs)(void *vd, void *vn, void *vm, void *vg,
                             uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     if (last_active_pred(vn, vg, oprsz)) {
         return compute_brks_z(vd, vm, vg, oprsz, false);
     } else {
@@ -4177,55 +4177,55 @@ uint32_t HELPER(sve_brkpbs)(void *vd, void *vn, void *vm, void *vg,
 
 void HELPER(sve_brka_z)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     compute_brk_z(vd, vn, vg, oprsz, true);
 }
 
 uint32_t HELPER(sve_brkas_z)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     return compute_brks_z(vd, vn, vg, oprsz, true);
 }
 
 void HELPER(sve_brkb_z)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     compute_brk_z(vd, vn, vg, oprsz, false);
 }
 
 uint32_t HELPER(sve_brkbs_z)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     return compute_brks_z(vd, vn, vg, oprsz, false);
 }
 
 void HELPER(sve_brka_m)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     compute_brk_m(vd, vn, vg, oprsz, true);
 }
 
 uint32_t HELPER(sve_brkas_m)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     return compute_brks_m(vd, vn, vg, oprsz, true);
 }
 
 void HELPER(sve_brkb_m)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     compute_brk_m(vd, vn, vg, oprsz, false);
 }
 
 uint32_t HELPER(sve_brkbs_m)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     return compute_brks_m(vd, vn, vg, oprsz, false);
 }
 
 void HELPER(sve_brkn)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     if (!last_active_pred(vn, vg, oprsz)) {
         memset(vd, 0, sizeof(ARMPredicateReg));
     }
@@ -4233,7 +4233,7 @@ void HELPER(sve_brkn)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 
 uint32_t HELPER(sve_brkns)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    intptr_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
     if (last_active_pred(vn, vg, oprsz)) {
         ARMPredicateReg *d = vd;
         uint32_t flags = PREDTEST_INIT;
@@ -4255,8 +4255,8 @@ uint32_t HELPER(sve_brkns)(void *vd, void *vn, void *vg, uint32_t pred_desc)
 
 uint64_t HELPER(sve_cntp)(void *vn, void *vg, uint32_t pred_desc)
 {
-    intptr_t words = DIV_ROUND_UP(FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
-    intptr_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    intptr_t words = DIV_ROUND_UP(REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ), 8);
+    intptr_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
     uint64_t *n = vn, *g = vg, sum = 0, mask = pred_esz_masks[esz];
     intptr_t i;
 
@@ -4269,10 +4269,10 @@ uint64_t HELPER(sve_cntp)(void *vn, void *vg, uint32_t pred_desc)
 
 uint64_t HELPER(sve2p1_cntp_c)(uint32_t png, uint32_t desc)
 {
-    int pl = FIELD_EX32(desc, PREDDESC, OPRSZ);
+    int pl = REG_FIELD_EX32(desc, PREDDESC, OPRSZ);
     int vl = pl * 8;
-    unsigned v_esz = FIELD_EX32(desc, PREDDESC, ESZ);
-    int lg2_width = FIELD_EX32(desc, PREDDESC, DATA) + 1;
+    unsigned v_esz = REG_FIELD_EX32(desc, PREDDESC, ESZ);
+    int lg2_width = REG_FIELD_EX32(desc, PREDDESC, DATA) + 1;
     DecodeCounter p = decode_counter(png, vl, v_esz);
     unsigned maxelem = (vl << lg2_width) >> v_esz;
     unsigned count = p.count;
@@ -4348,8 +4348,8 @@ static void do_whilel(ARMPredicateReg *d, uint64_t esz_mask,
 
 uint32_t HELPER(sve_whilel)(void *vd, uint32_t count, uint32_t pred_desc)
 {
-    uint32_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    uint32_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    uint32_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    uint32_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
     uint32_t oprbits = oprsz * 8;
     uint64_t esz_mask = pred_esz_masks[esz];
     ARMPredicateReg *d = vd;
@@ -4362,8 +4362,8 @@ uint32_t HELPER(sve_whilel)(void *vd, uint32_t count, uint32_t pred_desc)
 
 uint32_t HELPER(sve_while2l)(void *vd, uint32_t count, uint32_t pred_desc)
 {
-    uint32_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    uint32_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    uint32_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    uint32_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
     uint32_t oprbits = oprsz * 8;
     uint64_t esz_mask = pred_esz_masks[esz];
     ARMPredicateReg *d = vd;
@@ -4382,9 +4382,9 @@ uint32_t HELPER(sve_while2l)(void *vd, uint32_t count, uint32_t pred_desc)
 
 uint32_t HELPER(sve_whilecl)(void *vd, uint32_t count, uint32_t pred_desc)
 {
-    uint32_t pl = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    uint32_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
-    uint32_t scale = FIELD_EX32(pred_desc, PREDDESC, DATA);
+    uint32_t pl = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    uint32_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    uint32_t scale = REG_FIELD_EX32(pred_desc, PREDDESC, DATA);
     uint32_t vl = pl * 8;
     uint32_t elements = (vl >> esz) << scale;
     ARMPredicateReg *d = vd;
@@ -4416,8 +4416,8 @@ static void do_whileg(ARMPredicateReg *d, uint64_t esz_mask,
 
 uint32_t HELPER(sve_whileg)(void *vd, uint32_t count, uint32_t pred_desc)
 {
-    uint32_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    uint32_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    uint32_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    uint32_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
     uint32_t oprbits = oprsz * 8;
     uint64_t esz_mask = pred_esz_masks[esz];
     ARMPredicateReg *d = vd;
@@ -4430,8 +4430,8 @@ uint32_t HELPER(sve_whileg)(void *vd, uint32_t count, uint32_t pred_desc)
 
 uint32_t HELPER(sve_while2g)(void *vd, uint32_t count, uint32_t pred_desc)
 {
-    uint32_t oprsz = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    uint32_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    uint32_t oprsz = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    uint32_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
     uint32_t oprbits = oprsz * 8;
     uint64_t esz_mask = pred_esz_masks[esz];
     ARMPredicateReg *d = vd;
@@ -4450,9 +4450,9 @@ uint32_t HELPER(sve_while2g)(void *vd, uint32_t count, uint32_t pred_desc)
 
 uint32_t HELPER(sve_whilecg)(void *vd, uint32_t count, uint32_t pred_desc)
 {
-    uint32_t pl = FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
-    uint32_t esz = FIELD_EX32(pred_desc, PREDDESC, ESZ);
-    uint32_t scale = FIELD_EX32(pred_desc, PREDDESC, DATA);
+    uint32_t pl = REG_FIELD_EX32(pred_desc, PREDDESC, OPRSZ);
+    uint32_t esz = REG_FIELD_EX32(pred_desc, PREDDESC, ESZ);
+    uint32_t scale = REG_FIELD_EX32(pred_desc, PREDDESC, DATA);
     uint32_t vl = pl * 8;
     uint32_t elements = (vl >> esz) << scale;
     ARMPredicateReg *d = vd;
@@ -8603,10 +8603,10 @@ DO_FCVTLT(sve2_fcvtlt_sd, uint64_t, uint32_t, H1_8, H1_4, float32_to_float64)
 
 void HELPER(pext)(void *vd, uint32_t png, uint32_t desc)
 {
-    int pl = FIELD_EX32(desc, PREDDESC, OPRSZ);
+    int pl = REG_FIELD_EX32(desc, PREDDESC, OPRSZ);
     int vl = pl * 8;
-    unsigned v_esz = FIELD_EX32(desc, PREDDESC, ESZ);
-    int part = FIELD_EX32(desc, PREDDESC, DATA);
+    unsigned v_esz = REG_FIELD_EX32(desc, PREDDESC, ESZ);
+    int part = REG_FIELD_EX32(desc, PREDDESC, DATA);
     DecodeCounter p = decode_counter(png, vl, v_esz);
     uint64_t mask = pred_esz_masks[v_esz + p.lg2_stride];
     ARMPredicateReg *d = vd;

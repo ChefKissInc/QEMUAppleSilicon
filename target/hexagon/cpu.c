@@ -262,7 +262,7 @@ static TCGTBCPUState hexagon_get_tb_cpu_state(CPUState *cs)
     uint32_t hex_flags = 0;
 
     if (pc == env->gpr[HEX_REG_SA0]) {
-        hex_flags = FIELD_DP32(hex_flags, TB_FLAGS, IS_TIGHT_LOOP, 1);
+        hex_flags = REG_FIELD_DP32(hex_flags, TB_FLAGS, IS_TIGHT_LOOP, 1);
     }
     if (pc & PCALIGN_MASK) {
         hexagon_raise_exception_err(env, HEX_CAUSE_PC_NOT_ALIGNED, 0);

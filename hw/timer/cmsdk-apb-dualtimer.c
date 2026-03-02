@@ -32,12 +32,12 @@
 REG32(TIMER1LOAD, 0x0)
 REG32(TIMER1VALUE, 0x4)
 REG32(TIMER1CONTROL, 0x8)
-    FIELD(CONTROL, ONESHOT, 0, 1)
-    FIELD(CONTROL, SIZE, 1, 1)
-    FIELD(CONTROL, PRESCALE, 2, 2)
-    FIELD(CONTROL, INTEN, 5, 1)
-    FIELD(CONTROL, MODE, 6, 1)
-    FIELD(CONTROL, ENABLE, 7, 1)
+    REG_FIELD(CONTROL, ONESHOT, 0, 1)
+    REG_FIELD(CONTROL, SIZE, 1, 1)
+    REG_FIELD(CONTROL, PRESCALE, 2, 2)
+    REG_FIELD(CONTROL, INTEN, 5, 1)
+    REG_FIELD(CONTROL, MODE, 6, 1)
+    REG_FIELD(CONTROL, ENABLE, 7, 1)
 #define R_CONTROL_VALID_MASK (R_CONTROL_ONESHOT_MASK | R_CONTROL_SIZE_MASK | \
                               R_CONTROL_PRESCALE_MASK | R_CONTROL_INTEN_MASK | \
                               R_CONTROL_MODE_MASK | R_CONTROL_ENABLE_MASK)
@@ -53,11 +53,11 @@ REG32(TIMER2RIS, 0x30)
 REG32(TIMER2MIS, 0x34)
 REG32(TIMER2BGLOAD, 0x38)
 REG32(TIMERITCR, 0xf00)
-    FIELD(TIMERITCR, ENABLE, 0, 1)
+    REG_FIELD(TIMERITCR, ENABLE, 0, 1)
 #define R_TIMERITCR_VALID_MASK R_TIMERITCR_ENABLE_MASK
 REG32(TIMERITOP, 0xf04)
-    FIELD(TIMERITOP, TIMINT1, 0, 1)
-    FIELD(TIMERITOP, TIMINT2, 1, 1)
+    REG_FIELD(TIMERITOP, TIMINT1, 0, 1)
+    REG_FIELD(TIMERITOP, TIMINT2, 1, 1)
 #define R_TIMERITOP_VALID_MASK (R_TIMERITOP_TIMINT1_MASK | \
                                 R_TIMERITOP_TIMINT2_MASK)
 REG32(PID4, 0xfd0)
@@ -109,7 +109,7 @@ static void cmsdk_apb_dualtimer_update(CMSDKAPBDualTimer *s)
 static int cmsdk_dualtimermod_divisor(CMSDKAPBDualTimerModule *m)
 {
     /* Return the divisor set by the current CONTROL.PRESCALE value */
-    switch (FIELD_EX32(m->control, CONTROL, PRESCALE)) {
+    switch (REG_FIELD_EX32(m->control, CONTROL, PRESCALE)) {
     case 0:
         return 1;
     case 1:
@@ -142,7 +142,7 @@ static void cmsdk_dualtimermod_write_control(CMSDKAPBDualTimerModule *m,
     if (changed & R_CONTROL_PRESCALE_MASK) {
         int divisor;
 
-        switch (FIELD_EX32(newctrl, CONTROL, PRESCALE)) {
+        switch (REG_FIELD_EX32(newctrl, CONTROL, PRESCALE)) {
         case 0:
             divisor = 1;
             break;

@@ -262,7 +262,7 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
     /* FEAT_F64MM requires the existence of a 256-bit vector size. */
     if (max_vq < 2) {
         uint64_t t = GET_IDREG(&cpu->isar, ID_AA64ZFR0);
-        t = FIELD_DP64(t, ID_AA64ZFR0, F64MM, 0);
+        t = REG_FIELD_DP64(t, ID_AA64ZFR0, F64MM, 0);
         SET_IDREG(&cpu->isar, ID_AA64ZFR0, t);
     }
 }
@@ -512,14 +512,14 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
      * Begin by disabling all fields.
      */
     isar1 = GET_IDREG(isar, ID_AA64ISAR1);
-    isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
-    isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
-    isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
-    isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
+    isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
+    isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
+    isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
+    isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
 
     isar2 = GET_IDREG(isar, ID_AA64ISAR2);
-    isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
-    isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
+    isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
+    isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
 
     if (kvm_enabled() || hvf_enabled()) {
         /*
@@ -555,37 +555,37 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
                                !cpu->prop_pauth_impdef;
 
             if (cpu->prop_pauth_noop) { /* NOOP PAC */
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, PauthFeat_NOOP);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, PauthFeat_NOOP);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
             } else if (cpu->prop_pauth_qarma5 ||
                 (use_default &&
                  cpu->backcompat_pauth_default_use_qarma5)) {
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, features);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 1);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, features);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 1);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
             } else if (cpu->prop_pauth_qarma3) {
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, features);
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 1);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, features);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 1);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
             } else if (cpu->prop_pauth_impdef ||
                        (use_default &&
                         !cpu->backcompat_pauth_default_use_qarma5)) {
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
-                isar2 = FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, API, features);
-                isar1 = FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
+                isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, features);
+                isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
             } else {
                 g_assert_not_reached();
             }
@@ -650,10 +650,10 @@ void arm_cpu_lpa2_finalize(ARMCPU *cpu, Error **errp)
     }
 
     t = GET_IDREG(&cpu->isar, ID_AA64MMFR0);
-    t = FIELD_DP64(t, ID_AA64MMFR0, TGRAN16, 2);   /* 16k pages w/ LPA2 */
-    t = FIELD_DP64(t, ID_AA64MMFR0, TGRAN4, 1);    /*  4k pages w/ LPA2 */
-    t = FIELD_DP64(t, ID_AA64MMFR0, TGRAN16_2, 3); /* 16k stage2 w/ LPA2 */
-    t = FIELD_DP64(t, ID_AA64MMFR0, TGRAN4_2, 3);  /*  4k stage2 w/ LPA2 */
+    t = REG_FIELD_DP64(t, ID_AA64MMFR0, TGRAN16, 2);   /* 16k pages w/ LPA2 */
+    t = REG_FIELD_DP64(t, ID_AA64MMFR0, TGRAN4, 1);    /*  4k pages w/ LPA2 */
+    t = REG_FIELD_DP64(t, ID_AA64MMFR0, TGRAN16_2, 3); /* 16k stage2 w/ LPA2 */
+    t = REG_FIELD_DP64(t, ID_AA64MMFR0, TGRAN4_2, 3);  /*  4k stage2 w/ LPA2 */
     SET_IDREG(&cpu->isar, ID_AA64MMFR0, t);
 }
 
@@ -822,7 +822,7 @@ static void aarch64_apple_gxf_initfn(Object *obj)
     ARMCPU *cpu = ARM_CPU(obj);
 
     aarch64_max_initfn(obj);
-    SET_IDREG(&cpu->isar, ID_AA64ISAR1, FIELD_DP64(GET_IDREG(&cpu->isar, ID_AA64ISAR1), ID_AA64ISAR1, APA, PauthFeat_2));
+    SET_IDREG(&cpu->isar, ID_AA64ISAR1, REG_FIELD_DP64(GET_IDREG(&cpu->isar, ID_AA64ISAR1), ID_AA64ISAR1, APA, PauthFeat_2));
 
     if (tcg_enabled()) {
         object_property_set_bool(obj, "pauth-noop", true, NULL);

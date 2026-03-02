@@ -54,201 +54,201 @@
 #undef ERROR
 
 REG32(SOFTWARE_RESET_REGISTER, 0x0)
-    FIELD(SOFTWARE_RESET_REGISTER, CEN, 1, 1)
-    FIELD(SOFTWARE_RESET_REGISTER, SRST, 0, 1)
+    REG_FIELD(SOFTWARE_RESET_REGISTER, CEN, 1, 1)
+    REG_FIELD(SOFTWARE_RESET_REGISTER, SRST, 0, 1)
 REG32(MODE_SELECT_REGISTER, 0x4)
-    FIELD(MODE_SELECT_REGISTER, SNOOP, 2, 1)
-    FIELD(MODE_SELECT_REGISTER, LBACK, 1, 1)
-    FIELD(MODE_SELECT_REGISTER, SLEEP, 0, 1)
+    REG_FIELD(MODE_SELECT_REGISTER, SNOOP, 2, 1)
+    REG_FIELD(MODE_SELECT_REGISTER, LBACK, 1, 1)
+    REG_FIELD(MODE_SELECT_REGISTER, SLEEP, 0, 1)
 REG32(ARBITRATION_PHASE_BAUD_RATE_PRESCALER_REGISTER, 0x8)
-    FIELD(ARBITRATION_PHASE_BAUD_RATE_PRESCALER_REGISTER, BRP, 0, 8)
+    REG_FIELD(ARBITRATION_PHASE_BAUD_RATE_PRESCALER_REGISTER, BRP, 0, 8)
 REG32(ARBITRATION_PHASE_BIT_TIMING_REGISTER, 0xc)
-    FIELD(ARBITRATION_PHASE_BIT_TIMING_REGISTER, SJW, 7, 2)
-    FIELD(ARBITRATION_PHASE_BIT_TIMING_REGISTER, TS2, 4, 3)
-    FIELD(ARBITRATION_PHASE_BIT_TIMING_REGISTER, TS1, 0, 4)
+    REG_FIELD(ARBITRATION_PHASE_BIT_TIMING_REGISTER, SJW, 7, 2)
+    REG_FIELD(ARBITRATION_PHASE_BIT_TIMING_REGISTER, TS2, 4, 3)
+    REG_FIELD(ARBITRATION_PHASE_BIT_TIMING_REGISTER, TS1, 0, 4)
 REG32(ERROR_COUNTER_REGISTER, 0x10)
-    FIELD(ERROR_COUNTER_REGISTER, REC, 8, 8)
-    FIELD(ERROR_COUNTER_REGISTER, TEC, 0, 8)
+    REG_FIELD(ERROR_COUNTER_REGISTER, REC, 8, 8)
+    REG_FIELD(ERROR_COUNTER_REGISTER, TEC, 0, 8)
 REG32(ERROR_STATUS_REGISTER, 0x14)
-    FIELD(ERROR_STATUS_REGISTER, ACKER, 4, 1)
-    FIELD(ERROR_STATUS_REGISTER, BERR, 3, 1)
-    FIELD(ERROR_STATUS_REGISTER, STER, 2, 1)
-    FIELD(ERROR_STATUS_REGISTER, FMER, 1, 1)
-    FIELD(ERROR_STATUS_REGISTER, CRCER, 0, 1)
+    REG_FIELD(ERROR_STATUS_REGISTER, ACKER, 4, 1)
+    REG_FIELD(ERROR_STATUS_REGISTER, BERR, 3, 1)
+    REG_FIELD(ERROR_STATUS_REGISTER, STER, 2, 1)
+    REG_FIELD(ERROR_STATUS_REGISTER, FMER, 1, 1)
+    REG_FIELD(ERROR_STATUS_REGISTER, CRCER, 0, 1)
 REG32(STATUS_REGISTER, 0x18)
-    FIELD(STATUS_REGISTER, SNOOP, 12, 1)
-    FIELD(STATUS_REGISTER, ACFBSY, 11, 1)
-    FIELD(STATUS_REGISTER, TXFLL, 10, 1)
-    FIELD(STATUS_REGISTER, TXBFLL, 9, 1)
-    FIELD(STATUS_REGISTER, ESTAT, 7, 2)
-    FIELD(STATUS_REGISTER, ERRWRN, 6, 1)
-    FIELD(STATUS_REGISTER, BBSY, 5, 1)
-    FIELD(STATUS_REGISTER, BIDLE, 4, 1)
-    FIELD(STATUS_REGISTER, NORMAL, 3, 1)
-    FIELD(STATUS_REGISTER, SLEEP, 2, 1)
-    FIELD(STATUS_REGISTER, LBACK, 1, 1)
-    FIELD(STATUS_REGISTER, CONFIG, 0, 1)
+    REG_FIELD(STATUS_REGISTER, SNOOP, 12, 1)
+    REG_FIELD(STATUS_REGISTER, ACFBSY, 11, 1)
+    REG_FIELD(STATUS_REGISTER, TXFLL, 10, 1)
+    REG_FIELD(STATUS_REGISTER, TXBFLL, 9, 1)
+    REG_FIELD(STATUS_REGISTER, ESTAT, 7, 2)
+    REG_FIELD(STATUS_REGISTER, ERRWRN, 6, 1)
+    REG_FIELD(STATUS_REGISTER, BBSY, 5, 1)
+    REG_FIELD(STATUS_REGISTER, BIDLE, 4, 1)
+    REG_FIELD(STATUS_REGISTER, NORMAL, 3, 1)
+    REG_FIELD(STATUS_REGISTER, SLEEP, 2, 1)
+    REG_FIELD(STATUS_REGISTER, LBACK, 1, 1)
+    REG_FIELD(STATUS_REGISTER, CONFIG, 0, 1)
 REG32(INTERRUPT_STATUS_REGISTER, 0x1c)
-    FIELD(INTERRUPT_STATUS_REGISTER, TXFEMP, 14, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, TXFWMEMP, 13, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, RXFWMFLL, 12, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, WKUP, 11, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, SLP, 10, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, BSOFF, 9, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, ERROR, 8, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, RXNEMP, 7, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, RXOFLW, 6, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, RXUFLW, 5, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, RXOK, 4, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, TXBFLL, 3, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, TXFLL, 2, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, TXOK, 1, 1)
-    FIELD(INTERRUPT_STATUS_REGISTER, ARBLST, 0, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, TXFEMP, 14, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, TXFWMEMP, 13, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, RXFWMFLL, 12, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, WKUP, 11, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, SLP, 10, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, BSOFF, 9, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, ERROR, 8, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, RXNEMP, 7, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, RXOFLW, 6, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, RXUFLW, 5, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, RXOK, 4, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, TXBFLL, 3, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, TXFLL, 2, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, TXOK, 1, 1)
+    REG_FIELD(INTERRUPT_STATUS_REGISTER, ARBLST, 0, 1)
 REG32(INTERRUPT_ENABLE_REGISTER, 0x20)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ETXFEMP, 14, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ETXFWMEMP, 13, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ERXFWMFLL, 12, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, EWKUP, 11, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ESLP, 10, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, EBSOFF, 9, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, EERROR, 8, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ERXNEMP, 7, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ERXOFLW, 6, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ERXUFLW, 5, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ERXOK, 4, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ETXBFLL, 3, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ETXFLL, 2, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, ETXOK, 1, 1)
-    FIELD(INTERRUPT_ENABLE_REGISTER, EARBLST, 0, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ETXFEMP, 14, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ETXFWMEMP, 13, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ERXFWMFLL, 12, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, EWKUP, 11, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ESLP, 10, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, EBSOFF, 9, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, EERROR, 8, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ERXNEMP, 7, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ERXOFLW, 6, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ERXUFLW, 5, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ERXOK, 4, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ETXBFLL, 3, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ETXFLL, 2, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, ETXOK, 1, 1)
+    REG_FIELD(INTERRUPT_ENABLE_REGISTER, EARBLST, 0, 1)
 REG32(INTERRUPT_CLEAR_REGISTER, 0x24)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CTXFEMP, 14, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CTXFWMEMP, 13, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CRXFWMFLL, 12, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CWKUP, 11, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CSLP, 10, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CBSOFF, 9, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CERROR, 8, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CRXNEMP, 7, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CRXOFLW, 6, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CRXUFLW, 5, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CRXOK, 4, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CTXBFLL, 3, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CTXFLL, 2, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CTXOK, 1, 1)
-    FIELD(INTERRUPT_CLEAR_REGISTER, CARBLST, 0, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CTXFEMP, 14, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CTXFWMEMP, 13, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CRXFWMFLL, 12, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CWKUP, 11, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CSLP, 10, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CBSOFF, 9, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CERROR, 8, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CRXNEMP, 7, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CRXOFLW, 6, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CRXUFLW, 5, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CRXOK, 4, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CTXBFLL, 3, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CTXFLL, 2, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CTXOK, 1, 1)
+    REG_FIELD(INTERRUPT_CLEAR_REGISTER, CARBLST, 0, 1)
 REG32(TIMESTAMP_REGISTER, 0x28)
-    FIELD(TIMESTAMP_REGISTER, CTS, 0, 1)
+    REG_FIELD(TIMESTAMP_REGISTER, CTS, 0, 1)
 REG32(WIR, 0x2c)
-    FIELD(WIR, EW, 8, 8)
-    FIELD(WIR, FW, 0, 8)
+    REG_FIELD(WIR, EW, 8, 8)
+    REG_FIELD(WIR, FW, 0, 8)
 REG32(TXFIFO_ID, 0x30)
-    FIELD(TXFIFO_ID, IDH, 21, 11)
-    FIELD(TXFIFO_ID, SRRRTR, 20, 1)
-    FIELD(TXFIFO_ID, IDE, 19, 1)
-    FIELD(TXFIFO_ID, IDL, 1, 18)
-    FIELD(TXFIFO_ID, RTR, 0, 1)
+    REG_FIELD(TXFIFO_ID, IDH, 21, 11)
+    REG_FIELD(TXFIFO_ID, SRRRTR, 20, 1)
+    REG_FIELD(TXFIFO_ID, IDE, 19, 1)
+    REG_FIELD(TXFIFO_ID, IDL, 1, 18)
+    REG_FIELD(TXFIFO_ID, RTR, 0, 1)
 REG32(TXFIFO_DLC, 0x34)
-    FIELD(TXFIFO_DLC, DLC, 28, 4)
+    REG_FIELD(TXFIFO_DLC, DLC, 28, 4)
 REG32(TXFIFO_DATA1, 0x38)
-    FIELD(TXFIFO_DATA1, DB0, 24, 8)
-    FIELD(TXFIFO_DATA1, DB1, 16, 8)
-    FIELD(TXFIFO_DATA1, DB2, 8, 8)
-    FIELD(TXFIFO_DATA1, DB3, 0, 8)
+    REG_FIELD(TXFIFO_DATA1, DB0, 24, 8)
+    REG_FIELD(TXFIFO_DATA1, DB1, 16, 8)
+    REG_FIELD(TXFIFO_DATA1, DB2, 8, 8)
+    REG_FIELD(TXFIFO_DATA1, DB3, 0, 8)
 REG32(TXFIFO_DATA2, 0x3c)
-    FIELD(TXFIFO_DATA2, DB4, 24, 8)
-    FIELD(TXFIFO_DATA2, DB5, 16, 8)
-    FIELD(TXFIFO_DATA2, DB6, 8, 8)
-    FIELD(TXFIFO_DATA2, DB7, 0, 8)
+    REG_FIELD(TXFIFO_DATA2, DB4, 24, 8)
+    REG_FIELD(TXFIFO_DATA2, DB5, 16, 8)
+    REG_FIELD(TXFIFO_DATA2, DB6, 8, 8)
+    REG_FIELD(TXFIFO_DATA2, DB7, 0, 8)
 REG32(TXHPB_ID, 0x40)
-    FIELD(TXHPB_ID, IDH, 21, 11)
-    FIELD(TXHPB_ID, SRRRTR, 20, 1)
-    FIELD(TXHPB_ID, IDE, 19, 1)
-    FIELD(TXHPB_ID, IDL, 1, 18)
-    FIELD(TXHPB_ID, RTR, 0, 1)
+    REG_FIELD(TXHPB_ID, IDH, 21, 11)
+    REG_FIELD(TXHPB_ID, SRRRTR, 20, 1)
+    REG_FIELD(TXHPB_ID, IDE, 19, 1)
+    REG_FIELD(TXHPB_ID, IDL, 1, 18)
+    REG_FIELD(TXHPB_ID, RTR, 0, 1)
 REG32(TXHPB_DLC, 0x44)
-    FIELD(TXHPB_DLC, DLC, 28, 4)
+    REG_FIELD(TXHPB_DLC, DLC, 28, 4)
 REG32(TXHPB_DATA1, 0x48)
-    FIELD(TXHPB_DATA1, DB0, 24, 8)
-    FIELD(TXHPB_DATA1, DB1, 16, 8)
-    FIELD(TXHPB_DATA1, DB2, 8, 8)
-    FIELD(TXHPB_DATA1, DB3, 0, 8)
+    REG_FIELD(TXHPB_DATA1, DB0, 24, 8)
+    REG_FIELD(TXHPB_DATA1, DB1, 16, 8)
+    REG_FIELD(TXHPB_DATA1, DB2, 8, 8)
+    REG_FIELD(TXHPB_DATA1, DB3, 0, 8)
 REG32(TXHPB_DATA2, 0x4c)
-    FIELD(TXHPB_DATA2, DB4, 24, 8)
-    FIELD(TXHPB_DATA2, DB5, 16, 8)
-    FIELD(TXHPB_DATA2, DB6, 8, 8)
-    FIELD(TXHPB_DATA2, DB7, 0, 8)
+    REG_FIELD(TXHPB_DATA2, DB4, 24, 8)
+    REG_FIELD(TXHPB_DATA2, DB5, 16, 8)
+    REG_FIELD(TXHPB_DATA2, DB6, 8, 8)
+    REG_FIELD(TXHPB_DATA2, DB7, 0, 8)
 REG32(RXFIFO_ID, 0x50)
-    FIELD(RXFIFO_ID, IDH, 21, 11)
-    FIELD(RXFIFO_ID, SRRRTR, 20, 1)
-    FIELD(RXFIFO_ID, IDE, 19, 1)
-    FIELD(RXFIFO_ID, IDL, 1, 18)
-    FIELD(RXFIFO_ID, RTR, 0, 1)
+    REG_FIELD(RXFIFO_ID, IDH, 21, 11)
+    REG_FIELD(RXFIFO_ID, SRRRTR, 20, 1)
+    REG_FIELD(RXFIFO_ID, IDE, 19, 1)
+    REG_FIELD(RXFIFO_ID, IDL, 1, 18)
+    REG_FIELD(RXFIFO_ID, RTR, 0, 1)
 REG32(RXFIFO_DLC, 0x54)
-    FIELD(RXFIFO_DLC, DLC, 28, 4)
-    FIELD(RXFIFO_DLC, RXT, 0, 16)
+    REG_FIELD(RXFIFO_DLC, DLC, 28, 4)
+    REG_FIELD(RXFIFO_DLC, RXT, 0, 16)
 REG32(RXFIFO_DATA1, 0x58)
-    FIELD(RXFIFO_DATA1, DB0, 24, 8)
-    FIELD(RXFIFO_DATA1, DB1, 16, 8)
-    FIELD(RXFIFO_DATA1, DB2, 8, 8)
-    FIELD(RXFIFO_DATA1, DB3, 0, 8)
+    REG_FIELD(RXFIFO_DATA1, DB0, 24, 8)
+    REG_FIELD(RXFIFO_DATA1, DB1, 16, 8)
+    REG_FIELD(RXFIFO_DATA1, DB2, 8, 8)
+    REG_FIELD(RXFIFO_DATA1, DB3, 0, 8)
 REG32(RXFIFO_DATA2, 0x5c)
-    FIELD(RXFIFO_DATA2, DB4, 24, 8)
-    FIELD(RXFIFO_DATA2, DB5, 16, 8)
-    FIELD(RXFIFO_DATA2, DB6, 8, 8)
-    FIELD(RXFIFO_DATA2, DB7, 0, 8)
+    REG_FIELD(RXFIFO_DATA2, DB4, 24, 8)
+    REG_FIELD(RXFIFO_DATA2, DB5, 16, 8)
+    REG_FIELD(RXFIFO_DATA2, DB6, 8, 8)
+    REG_FIELD(RXFIFO_DATA2, DB7, 0, 8)
 REG32(AFR, 0x60)
-    FIELD(AFR, UAF4, 3, 1)
-    FIELD(AFR, UAF3, 2, 1)
-    FIELD(AFR, UAF2, 1, 1)
-    FIELD(AFR, UAF1, 0, 1)
+    REG_FIELD(AFR, UAF4, 3, 1)
+    REG_FIELD(AFR, UAF3, 2, 1)
+    REG_FIELD(AFR, UAF2, 1, 1)
+    REG_FIELD(AFR, UAF1, 0, 1)
 REG32(AFMR1, 0x64)
-    FIELD(AFMR1, AMIDH, 21, 11)
-    FIELD(AFMR1, AMSRR, 20, 1)
-    FIELD(AFMR1, AMIDE, 19, 1)
-    FIELD(AFMR1, AMIDL, 1, 18)
-    FIELD(AFMR1, AMRTR, 0, 1)
+    REG_FIELD(AFMR1, AMIDH, 21, 11)
+    REG_FIELD(AFMR1, AMSRR, 20, 1)
+    REG_FIELD(AFMR1, AMIDE, 19, 1)
+    REG_FIELD(AFMR1, AMIDL, 1, 18)
+    REG_FIELD(AFMR1, AMRTR, 0, 1)
 REG32(AFIR1, 0x68)
-    FIELD(AFIR1, AIIDH, 21, 11)
-    FIELD(AFIR1, AISRR, 20, 1)
-    FIELD(AFIR1, AIIDE, 19, 1)
-    FIELD(AFIR1, AIIDL, 1, 18)
-    FIELD(AFIR1, AIRTR, 0, 1)
+    REG_FIELD(AFIR1, AIIDH, 21, 11)
+    REG_FIELD(AFIR1, AISRR, 20, 1)
+    REG_FIELD(AFIR1, AIIDE, 19, 1)
+    REG_FIELD(AFIR1, AIIDL, 1, 18)
+    REG_FIELD(AFIR1, AIRTR, 0, 1)
 REG32(AFMR2, 0x6c)
-    FIELD(AFMR2, AMIDH, 21, 11)
-    FIELD(AFMR2, AMSRR, 20, 1)
-    FIELD(AFMR2, AMIDE, 19, 1)
-    FIELD(AFMR2, AMIDL, 1, 18)
-    FIELD(AFMR2, AMRTR, 0, 1)
+    REG_FIELD(AFMR2, AMIDH, 21, 11)
+    REG_FIELD(AFMR2, AMSRR, 20, 1)
+    REG_FIELD(AFMR2, AMIDE, 19, 1)
+    REG_FIELD(AFMR2, AMIDL, 1, 18)
+    REG_FIELD(AFMR2, AMRTR, 0, 1)
 REG32(AFIR2, 0x70)
-    FIELD(AFIR2, AIIDH, 21, 11)
-    FIELD(AFIR2, AISRR, 20, 1)
-    FIELD(AFIR2, AIIDE, 19, 1)
-    FIELD(AFIR2, AIIDL, 1, 18)
-    FIELD(AFIR2, AIRTR, 0, 1)
+    REG_FIELD(AFIR2, AIIDH, 21, 11)
+    REG_FIELD(AFIR2, AISRR, 20, 1)
+    REG_FIELD(AFIR2, AIIDE, 19, 1)
+    REG_FIELD(AFIR2, AIIDL, 1, 18)
+    REG_FIELD(AFIR2, AIRTR, 0, 1)
 REG32(AFMR3, 0x74)
-    FIELD(AFMR3, AMIDH, 21, 11)
-    FIELD(AFMR3, AMSRR, 20, 1)
-    FIELD(AFMR3, AMIDE, 19, 1)
-    FIELD(AFMR3, AMIDL, 1, 18)
-    FIELD(AFMR3, AMRTR, 0, 1)
+    REG_FIELD(AFMR3, AMIDH, 21, 11)
+    REG_FIELD(AFMR3, AMSRR, 20, 1)
+    REG_FIELD(AFMR3, AMIDE, 19, 1)
+    REG_FIELD(AFMR3, AMIDL, 1, 18)
+    REG_FIELD(AFMR3, AMRTR, 0, 1)
 REG32(AFIR3, 0x78)
-    FIELD(AFIR3, AIIDH, 21, 11)
-    FIELD(AFIR3, AISRR, 20, 1)
-    FIELD(AFIR3, AIIDE, 19, 1)
-    FIELD(AFIR3, AIIDL, 1, 18)
-    FIELD(AFIR3, AIRTR, 0, 1)
+    REG_FIELD(AFIR3, AIIDH, 21, 11)
+    REG_FIELD(AFIR3, AISRR, 20, 1)
+    REG_FIELD(AFIR3, AIIDE, 19, 1)
+    REG_FIELD(AFIR3, AIIDL, 1, 18)
+    REG_FIELD(AFIR3, AIRTR, 0, 1)
 REG32(AFMR4, 0x7c)
-    FIELD(AFMR4, AMIDH, 21, 11)
-    FIELD(AFMR4, AMSRR, 20, 1)
-    FIELD(AFMR4, AMIDE, 19, 1)
-    FIELD(AFMR4, AMIDL, 1, 18)
-    FIELD(AFMR4, AMRTR, 0, 1)
+    REG_FIELD(AFMR4, AMIDH, 21, 11)
+    REG_FIELD(AFMR4, AMSRR, 20, 1)
+    REG_FIELD(AFMR4, AMIDE, 19, 1)
+    REG_FIELD(AFMR4, AMIDL, 1, 18)
+    REG_FIELD(AFMR4, AMRTR, 0, 1)
 REG32(AFIR4, 0x80)
-    FIELD(AFIR4, AIIDH, 21, 11)
-    FIELD(AFIR4, AISRR, 20, 1)
-    FIELD(AFIR4, AIIDE, 19, 1)
-    FIELD(AFIR4, AIIDL, 1, 18)
-    FIELD(AFIR4, AIRTR, 0, 1)
+    REG_FIELD(AFIR4, AIIDH, 21, 11)
+    REG_FIELD(AFIR4, AISRR, 20, 1)
+    REG_FIELD(AFIR4, AIIDE, 19, 1)
+    REG_FIELD(AFIR4, AIIDL, 1, 18)
+    REG_FIELD(AFIR4, AIRTR, 0, 1)
 
 static void can_update_irq(XlnxZynqMPCANState *s)
 {
@@ -256,31 +256,31 @@ static void can_update_irq(XlnxZynqMPCANState *s)
 
     /* Watermark register interrupts. */
     if ((fifo32_num_free(&s->tx_fifo) / CAN_FRAME_SIZE) >
-            ARRAY_FIELD_EX32(s->regs, WIR, EW)) {
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXFWMEMP, 1);
+            REG_ARRAY_FIELD_EX32(s->regs, WIR, EW)) {
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXFWMEMP, 1);
     }
 
     if ((fifo32_num_used(&s->rx_fifo) / CAN_FRAME_SIZE) >
-            ARRAY_FIELD_EX32(s->regs, WIR, FW)) {
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXFWMFLL, 1);
+            REG_ARRAY_FIELD_EX32(s->regs, WIR, FW)) {
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXFWMFLL, 1);
     }
 
     /* RX Interrupts. */
     if (fifo32_num_used(&s->rx_fifo) >= CAN_FRAME_SIZE) {
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXNEMP, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXNEMP, 1);
     }
 
     /* TX interrupts. */
     if (fifo32_is_empty(&s->tx_fifo)) {
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXFEMP, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXFEMP, 1);
     }
 
     if (fifo32_is_full(&s->tx_fifo)) {
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXFLL, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXFLL, 1);
     }
 
     if (fifo32_is_full(&s->txhpb_fifo)) {
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXBFLL, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXBFLL, 1);
     }
 
     irq = s->regs[R_INTERRUPT_STATUS_REGISTER];
@@ -329,50 +329,50 @@ static void can_config_mode(XlnxZynqMPCANState *s)
     register_reset(&s->reg_info[R_ERROR_STATUS_REGISTER]);
 
     /* Put XlnxZynqMPCAN in configuration mode. */
-    ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, CONFIG, 1);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, WKUP, 0);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, SLP, 0);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, BSOFF, 0);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, ERROR, 0);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOFLW, 0);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOK, 0);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXOK, 0);
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, ARBLST, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, CONFIG, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, WKUP, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, SLP, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, BSOFF, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, ERROR, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOFLW, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOK, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXOK, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, ARBLST, 0);
 
     can_update_irq(s);
 }
 
 static void update_status_register_mode_bits(XlnxZynqMPCANState *s)
 {
-    bool sleep_status = ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP);
-    bool sleep_mode = ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, SLEEP);
+    bool sleep_status = REG_ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP);
+    bool sleep_mode = REG_ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, SLEEP);
     /* Wake up interrupt bit. */
     bool wakeup_irq_val = sleep_status && (sleep_mode == 0);
     /* Sleep interrupt bit. */
     bool sleep_irq_val = sleep_mode && (sleep_status == 0);
 
     /* Clear previous core mode status bits. */
-    ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, LBACK, 0);
-    ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SLEEP, 0);
-    ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SNOOP, 0);
-    ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, NORMAL, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, LBACK, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SLEEP, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SNOOP, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, NORMAL, 0);
 
     /* set current mode bit and generate irqs accordingly. */
-    if (ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, LBACK)) {
-        ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, LBACK, 1);
-    } else if (ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, SLEEP)) {
-        ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SLEEP, 1);
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, SLP,
+    if (REG_ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, LBACK)) {
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, LBACK, 1);
+    } else if (REG_ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, SLEEP)) {
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SLEEP, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, SLP,
                          sleep_irq_val);
-    } else if (ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, SNOOP)) {
-        ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SNOOP, 1);
+    } else if (REG_ARRAY_FIELD_EX32(s->regs, MODE_SELECT_REGISTER, SNOOP)) {
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, SNOOP, 1);
     } else {
         /*
          * If all bits are zero then XlnxZynqMPCAN is set in normal mode.
          */
-        ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, NORMAL, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, NORMAL, 1);
         /* Set wakeup interrupt bit. */
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, WKUP,
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, WKUP,
                          wakeup_irq_val);
     }
 
@@ -381,29 +381,29 @@ static void update_status_register_mode_bits(XlnxZynqMPCANState *s)
 
 static void can_exit_sleep_mode(XlnxZynqMPCANState *s)
 {
-    ARRAY_FIELD_DP32(s->regs, MODE_SELECT_REGISTER, SLEEP, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, MODE_SELECT_REGISTER, SLEEP, 0);
     update_status_register_mode_bits(s);
 }
 
 static void generate_frame(qemu_can_frame *frame, uint32_t *data)
 {
     frame->can_id = data[0];
-    frame->can_dlc = FIELD_EX32(data[1], TXFIFO_DLC, DLC);
+    frame->can_dlc = REG_FIELD_EX32(data[1], TXFIFO_DLC, DLC);
 
-    frame->data[0] = FIELD_EX32(data[2], TXFIFO_DATA1, DB3);
-    frame->data[1] = FIELD_EX32(data[2], TXFIFO_DATA1, DB2);
-    frame->data[2] = FIELD_EX32(data[2], TXFIFO_DATA1, DB1);
-    frame->data[3] = FIELD_EX32(data[2], TXFIFO_DATA1, DB0);
+    frame->data[0] = REG_FIELD_EX32(data[2], TXFIFO_DATA1, DB3);
+    frame->data[1] = REG_FIELD_EX32(data[2], TXFIFO_DATA1, DB2);
+    frame->data[2] = REG_FIELD_EX32(data[2], TXFIFO_DATA1, DB1);
+    frame->data[3] = REG_FIELD_EX32(data[2], TXFIFO_DATA1, DB0);
 
-    frame->data[4] = FIELD_EX32(data[3], TXFIFO_DATA2, DB7);
-    frame->data[5] = FIELD_EX32(data[3], TXFIFO_DATA2, DB6);
-    frame->data[6] = FIELD_EX32(data[3], TXFIFO_DATA2, DB5);
-    frame->data[7] = FIELD_EX32(data[3], TXFIFO_DATA2, DB4);
+    frame->data[4] = REG_FIELD_EX32(data[3], TXFIFO_DATA2, DB7);
+    frame->data[5] = REG_FIELD_EX32(data[3], TXFIFO_DATA2, DB6);
+    frame->data[6] = REG_FIELD_EX32(data[3], TXFIFO_DATA2, DB5);
+    frame->data[7] = REG_FIELD_EX32(data[3], TXFIFO_DATA2, DB4);
 }
 
 static bool tx_ready_check(XlnxZynqMPCANState *s)
 {
-    if (ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, SRST)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, SRST)) {
         g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
         qemu_log_mask(LOG_GUEST_ERROR, "%s: Attempting to transfer data while"
@@ -412,7 +412,7 @@ static bool tx_ready_check(XlnxZynqMPCANState *s)
         return false;
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN) == 0) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN) == 0) {
         g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
         qemu_log_mask(LOG_GUEST_ERROR, "%s: Attempting to transfer"
@@ -422,7 +422,7 @@ static bool tx_ready_check(XlnxZynqMPCANState *s)
         return false;
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SNOOP)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SNOOP)) {
         g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
         qemu_log_mask(LOG_GUEST_ERROR, "%s: Attempting to transfer"
@@ -499,7 +499,7 @@ static void transfer_fifo(XlnxZynqMPCANState *s, Fifo32 *fifo)
     while (!fifo32_is_empty(fifo)) {
         read_tx_frame(s, fifo, data);
 
-        if (ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, LBACK)) {
+        if (REG_ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, LBACK)) {
             /*
              * Controller is in loopback. In Loopback mode, the CAN core
              * transmits a recessive bitstream on to the XlnxZynqMPCAN Bus.
@@ -508,13 +508,13 @@ static void transfer_fifo(XlnxZynqMPCANState *s, Fifo32 *fifo)
              * that it transmits.
              */
             if (fifo32_is_full(&s->rx_fifo)) {
-                ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOFLW, 1);
+                REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOFLW, 1);
             } else {
                 for (i = 0; i < CAN_FRAME_SIZE; i++) {
                     fifo32_push(&s->rx_fifo, data[i]);
                 }
 
-                ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOK, 1);
+                REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOK, 1);
             }
         } else {
             /* Normal mode Tx. */
@@ -529,10 +529,10 @@ static void transfer_fifo(XlnxZynqMPCANState *s, Fifo32 *fifo)
         }
     }
 
-    ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXOK, 1);
-    ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, TXBFLL, 0);
+    REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, TXOK, 1);
+    REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, TXBFLL, 0);
 
-    if (ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP)) {
         can_exit_sleep_mode(s);
     }
 
@@ -543,17 +543,17 @@ static uint64_t can_srr_pre_write(RegisterInfo *reg, uint64_t val)
 {
     XlnxZynqMPCANState *s = XLNX_ZYNQMP_CAN(reg->opaque);
 
-    ARRAY_FIELD_DP32(s->regs, SOFTWARE_RESET_REGISTER, CEN,
-                     FIELD_EX32(val, SOFTWARE_RESET_REGISTER, CEN));
+    REG_ARRAY_FIELD_DP32(s->regs, SOFTWARE_RESET_REGISTER, CEN,
+                     REG_FIELD_EX32(val, SOFTWARE_RESET_REGISTER, CEN));
 
-    if (FIELD_EX32(val, SOFTWARE_RESET_REGISTER, SRST)) {
+    if (REG_FIELD_EX32(val, SOFTWARE_RESET_REGISTER, SRST)) {
         trace_xlnx_can_reset(val);
 
         /* First, core will do software reset then will enter in config mode. */
         can_config_reset(s);
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN) == 0) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN) == 0) {
         can_config_mode(s);
     } else {
         /*
@@ -561,7 +561,7 @@ static uint64_t can_srr_pre_write(RegisterInfo *reg, uint64_t val)
          * sleep, snoop or loopback mode depending upon LBACK, SLEEP, SNOOP
          * register states.
          */
-        ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, CONFIG, 0);
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, CONFIG, 0);
 
         ptimer_transaction_begin(s->can_timer);
         ptimer_set_count(s->can_timer, 0);
@@ -586,9 +586,9 @@ static uint64_t can_msr_pre_write(RegisterInfo *reg, uint64_t val)
      * Multiple mode set check. This is done to make sure user doesn't set
      * multiple modes.
      */
-    multi_mode = FIELD_EX32(val, MODE_SELECT_REGISTER, LBACK) +
-                 FIELD_EX32(val, MODE_SELECT_REGISTER, SLEEP) +
-                 FIELD_EX32(val, MODE_SELECT_REGISTER, SNOOP);
+    multi_mode = REG_FIELD_EX32(val, MODE_SELECT_REGISTER, LBACK) +
+                 REG_FIELD_EX32(val, MODE_SELECT_REGISTER, SLEEP) +
+                 REG_FIELD_EX32(val, MODE_SELECT_REGISTER, SNOOP);
 
     if (multi_mode > 1) {
         g_autofree char *path = object_get_canonical_path(OBJECT(s));
@@ -599,21 +599,21 @@ static uint64_t can_msr_pre_write(RegisterInfo *reg, uint64_t val)
                       path);
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN) == 0) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN) == 0) {
         /* We are in configuration mode, any mode can be selected. */
         s->regs[R_MODE_SELECT_REGISTER] = val;
     } else {
-        bool sleep_mode_bit = FIELD_EX32(val, MODE_SELECT_REGISTER, SLEEP);
+        bool sleep_mode_bit = REG_FIELD_EX32(val, MODE_SELECT_REGISTER, SLEEP);
 
-        ARRAY_FIELD_DP32(s->regs, MODE_SELECT_REGISTER, SLEEP, sleep_mode_bit);
+        REG_ARRAY_FIELD_DP32(s->regs, MODE_SELECT_REGISTER, SLEEP, sleep_mode_bit);
 
-        if (FIELD_EX32(val, MODE_SELECT_REGISTER, LBACK)) {
+        if (REG_FIELD_EX32(val, MODE_SELECT_REGISTER, LBACK)) {
             g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
             qemu_log_mask(LOG_GUEST_ERROR, "%s: Attempting to set"
                           " LBACK mode without setting CEN bit as 0.\n",
                           path);
-        } else if (FIELD_EX32(val, MODE_SELECT_REGISTER, SNOOP)) {
+        } else if (REG_FIELD_EX32(val, MODE_SELECT_REGISTER, SNOOP)) {
             g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
             qemu_log_mask(LOG_GUEST_ERROR, "%s: Attempting to set"
@@ -632,7 +632,7 @@ static uint64_t can_brpr_pre_write(RegisterInfo  *reg, uint64_t val)
     XlnxZynqMPCANState *s = XLNX_ZYNQMP_CAN(reg->opaque);
 
     /* Only allow writes when in config mode. */
-    if (ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) {
         return s->regs[R_ARBITRATION_PHASE_BAUD_RATE_PRESCALER_REGISTER];
     }
 
@@ -644,7 +644,7 @@ static uint64_t can_btr_pre_write(RegisterInfo  *reg, uint64_t val)
     XlnxZynqMPCANState *s = XLNX_ZYNQMP_CAN(reg->opaque);
 
     /* Only allow writes when in config mode. */
-    if (ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) {
         return s->regs[R_ARBITRATION_PHASE_BIT_TIMING_REGISTER];
     }
 
@@ -655,7 +655,7 @@ static uint64_t can_tcr_pre_write(RegisterInfo  *reg, uint64_t val)
 {
     XlnxZynqMPCANState *s = XLNX_ZYNQMP_CAN(reg->opaque);
 
-    if (FIELD_EX32(val, TIMESTAMP_REGISTER, CTS)) {
+    if (REG_FIELD_EX32(val, TIMESTAMP_REGISTER, CTS)) {
         ptimer_transaction_begin(s->can_timer);
         ptimer_set_count(s->can_timer, 0);
         ptimer_transaction_commit(s->can_timer);
@@ -670,10 +670,10 @@ static void update_rx_fifo(XlnxZynqMPCANState *s, const qemu_can_frame *frame)
     uint16_t timestamp = 0;
 
     /* If no filter is enabled. Message will be stored in FIFO. */
-    if (!((ARRAY_FIELD_EX32(s->regs, AFR, UAF1)) |
-       (ARRAY_FIELD_EX32(s->regs, AFR, UAF2)) |
-       (ARRAY_FIELD_EX32(s->regs, AFR, UAF3)) |
-       (ARRAY_FIELD_EX32(s->regs, AFR, UAF4)))) {
+    if (!((REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF1)) |
+       (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF2)) |
+       (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF3)) |
+       (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF4)))) {
         filter_pass = true;
     }
 
@@ -681,7 +681,7 @@ static void update_rx_fifo(XlnxZynqMPCANState *s, const qemu_can_frame *frame)
      * Messages that pass any of the acceptance filters will be stored in
      * the RX FIFO.
      */
-    if (ARRAY_FIELD_EX32(s->regs, AFR, UAF1)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF1)) {
         uint32_t id_masked = s->regs[R_AFMR1] & frame->can_id;
         uint32_t filter_id_masked = s->regs[R_AFMR1] & s->regs[R_AFIR1];
 
@@ -690,7 +690,7 @@ static void update_rx_fifo(XlnxZynqMPCANState *s, const qemu_can_frame *frame)
         }
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, AFR, UAF2)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF2)) {
         uint32_t id_masked = s->regs[R_AFMR2] & frame->can_id;
         uint32_t filter_id_masked = s->regs[R_AFMR2] & s->regs[R_AFIR2];
 
@@ -699,7 +699,7 @@ static void update_rx_fifo(XlnxZynqMPCANState *s, const qemu_can_frame *frame)
         }
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, AFR, UAF3)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF3)) {
         uint32_t id_masked = s->regs[R_AFMR3] & frame->can_id;
         uint32_t filter_id_masked = s->regs[R_AFMR3] & s->regs[R_AFIR3];
 
@@ -708,7 +708,7 @@ static void update_rx_fifo(XlnxZynqMPCANState *s, const qemu_can_frame *frame)
         }
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, AFR, UAF4)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF4)) {
         uint32_t id_masked = s->regs[R_AFMR4] & frame->can_id;
         uint32_t filter_id_masked = s->regs[R_AFMR4] & s->regs[R_AFIR4];
 
@@ -726,7 +726,7 @@ static void update_rx_fifo(XlnxZynqMPCANState *s, const qemu_can_frame *frame)
     if (filter_pass && frame->can_dlc <= MAX_DLC) {
 
         if (fifo32_is_full(&s->rx_fifo)) {
-            ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOFLW, 1);
+            REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOFLW, 1);
         } else {
             timestamp = CAN_TIMER_MAX - ptimer_get_count(s->can_timer);
 
@@ -766,7 +766,7 @@ static void update_rx_fifo(XlnxZynqMPCANState *s, const qemu_can_frame *frame)
                                                R_RXFIFO_DATA2_DB4_LENGTH,
                                                frame->data[7]));
 
-            ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOK, 1);
+            REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXOK, 1);
             trace_xlnx_can_rx_data(frame->can_id, frame->can_dlc,
                                    frame->data[0], frame->data[1],
                                    frame->data[2], frame->data[3],
@@ -784,7 +784,7 @@ static uint64_t can_rxfifo_post_read_id(RegisterInfo *reg, uint64_t val)
     unsigned used = fifo32_num_used(&s->rx_fifo);
 
     if (used < CAN_FRAME_SIZE) {
-        ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXUFLW, 1);
+        REG_ARRAY_FIELD_DP32(s->regs, INTERRUPT_STATUS_REGISTER, RXUFLW, 1);
     } else {
         val = s->regs[R_RXFIFO_ID] = fifo32_pop(&s->rx_fifo);
         s->regs[R_RXFIFO_DLC] = fifo32_pop(&s->rx_fifo);
@@ -800,13 +800,13 @@ static void can_filter_enable_post_write(RegisterInfo *reg, uint64_t val)
 {
     XlnxZynqMPCANState *s = XLNX_ZYNQMP_CAN(reg->opaque);
 
-    if (ARRAY_FIELD_EX32(s->regs, AFR, UAF1) &&
-        ARRAY_FIELD_EX32(s->regs, AFR, UAF2) &&
-        ARRAY_FIELD_EX32(s->regs, AFR, UAF3) &&
-        ARRAY_FIELD_EX32(s->regs, AFR, UAF4)) {
-        ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, ACFBSY, 1);
+    if (REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF1) &&
+        REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF2) &&
+        REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF3) &&
+        REG_ARRAY_FIELD_EX32(s->regs, AFR, UAF4)) {
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, ACFBSY, 1);
     } else {
-        ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, ACFBSY, 0);
+        REG_ARRAY_FIELD_DP32(s->regs, STATUS_REGISTER, ACFBSY, 0);
     }
 }
 
@@ -874,7 +874,7 @@ static void can_tx_post_write(RegisterInfo *reg, uint64_t val)
 
     /* Initiate the message send if TX register is written. */
     if (initiate_transfer &&
-        ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) {
+        REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) {
         transfer_fifo(s, f);
     }
 
@@ -1031,7 +1031,7 @@ static bool xlnx_zynqmp_can_can_receive(CanBusClientState *client)
     XlnxZynqMPCANState *s = container_of(client, XlnxZynqMPCANState,
                                          bus_client);
 
-    if (ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, SRST)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, SRST)) {
         g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
         qemu_log_mask(LOG_GUEST_ERROR, "%s: Controller is in reset state.\n",
@@ -1039,7 +1039,7 @@ static bool xlnx_zynqmp_can_can_receive(CanBusClientState *client)
         return false;
     }
 
-    if ((ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) == 0) {
+    if ((REG_ARRAY_FIELD_EX32(s->regs, SOFTWARE_RESET_REGISTER, CEN)) == 0) {
         g_autofree char *path = object_get_canonical_path(OBJECT(s));
 
         qemu_log_mask(LOG_GUEST_ERROR, "%s: Controller is disabled. Incoming"
@@ -1064,17 +1064,17 @@ static ssize_t xlnx_zynqmp_can_receive(CanBusClientState *client,
         return 0;
     }
 
-    if (ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SNOOP)) {
+    if (REG_ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SNOOP)) {
         /* Snoop Mode: Just keep the data. no response back. */
         update_rx_fifo(s, frame);
-    } else if ((ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP))) {
+    } else if ((REG_ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP))) {
         /*
          * XlnxZynqMPCAN is in sleep mode. Any data on bus will bring it to wake
          * up state.
          */
         can_exit_sleep_mode(s);
         update_rx_fifo(s, frame);
-    } else if ((ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP)) == 0) {
+    } else if ((REG_ARRAY_FIELD_EX32(s->regs, STATUS_REGISTER, SLEEP)) == 0) {
         update_rx_fifo(s, frame);
     } else {
         /*

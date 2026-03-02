@@ -75,8 +75,8 @@ static void crl_reset_cpu(XlnxVersalCRL *s, ARMCPU *armcpu,
 }
 
 #define REGFIELD_RESET(type, s, reg, f, new_val, dev) {     \
-    bool old_f = ARRAY_FIELD_EX32((s)->regs, reg, f);       \
-    bool new_f = FIELD_EX32(new_val, reg, f);               \
+    bool old_f = REG_ARRAY_FIELD_EX32((s)->regs, reg, f);       \
+    bool new_f = REG_FIELD_EX32(new_val, reg, f);               \
                                                             \
     /* Detect edges.  */                                    \
     if (dev && old_f != new_f) {                            \

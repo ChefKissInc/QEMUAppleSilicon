@@ -46,159 +46,159 @@
 } while (0)
 
 REG32(NWCTRL, 0x0) /* Network Control reg */
-    FIELD(NWCTRL, LOOPBACK , 0, 1)
-    FIELD(NWCTRL, LOOPBACK_LOCAL , 1, 1)
-    FIELD(NWCTRL, ENABLE_RECEIVE, 2, 1)
-    FIELD(NWCTRL, ENABLE_TRANSMIT, 3, 1)
-    FIELD(NWCTRL, MAN_PORT_EN , 4, 1)
-    FIELD(NWCTRL, CLEAR_ALL_STATS_REGS , 5, 1)
-    FIELD(NWCTRL, INC_ALL_STATS_REGS, 6, 1)
-    FIELD(NWCTRL, STATS_WRITE_EN, 7, 1)
-    FIELD(NWCTRL, BACK_PRESSURE, 8, 1)
-    FIELD(NWCTRL, TRANSMIT_START , 9, 1)
-    FIELD(NWCTRL, TRANSMIT_HALT, 10, 1)
-    FIELD(NWCTRL, TX_PAUSE_FRAME_RE, 11, 1)
-    FIELD(NWCTRL, TX_PAUSE_FRAME_ZE, 12, 1)
-    FIELD(NWCTRL, STATS_TAKE_SNAP, 13, 1)
-    FIELD(NWCTRL, STATS_READ_SNAP, 14, 1)
-    FIELD(NWCTRL, STORE_RX_TS, 15, 1)
-    FIELD(NWCTRL, PFC_ENABLE, 16, 1)
-    FIELD(NWCTRL, PFC_PRIO_BASED, 17, 1)
-    FIELD(NWCTRL, FLUSH_RX_PKT_PCLK , 18, 1)
-    FIELD(NWCTRL, TX_LPI_EN, 19, 1)
-    FIELD(NWCTRL, PTP_UNICAST_ENA, 20, 1)
-    FIELD(NWCTRL, ALT_SGMII_MODE, 21, 1)
-    FIELD(NWCTRL, STORE_UDP_OFFSET, 22, 1)
-    FIELD(NWCTRL, EXT_TSU_PORT_EN, 23, 1)
-    FIELD(NWCTRL, ONE_STEP_SYNC_MO, 24, 1)
-    FIELD(NWCTRL, PFC_CTRL , 25, 1)
-    FIELD(NWCTRL, EXT_RXQ_SEL_EN , 26, 1)
-    FIELD(NWCTRL, OSS_CORRECTION_FIELD, 27, 1)
-    FIELD(NWCTRL, SEL_MII_ON_RGMII, 28, 1)
-    FIELD(NWCTRL, TWO_PT_FIVE_GIG, 29, 1)
-    FIELD(NWCTRL, IFG_EATS_QAV_CREDIT, 30, 1)
+    REG_FIELD(NWCTRL, LOOPBACK , 0, 1)
+    REG_FIELD(NWCTRL, LOOPBACK_LOCAL , 1, 1)
+    REG_FIELD(NWCTRL, ENABLE_RECEIVE, 2, 1)
+    REG_FIELD(NWCTRL, ENABLE_TRANSMIT, 3, 1)
+    REG_FIELD(NWCTRL, MAN_PORT_EN , 4, 1)
+    REG_FIELD(NWCTRL, CLEAR_ALL_STATS_REGS , 5, 1)
+    REG_FIELD(NWCTRL, INC_ALL_STATS_REGS, 6, 1)
+    REG_FIELD(NWCTRL, STATS_WRITE_EN, 7, 1)
+    REG_FIELD(NWCTRL, BACK_PRESSURE, 8, 1)
+    REG_FIELD(NWCTRL, TRANSMIT_START , 9, 1)
+    REG_FIELD(NWCTRL, TRANSMIT_HALT, 10, 1)
+    REG_FIELD(NWCTRL, TX_PAUSE_FRAME_RE, 11, 1)
+    REG_FIELD(NWCTRL, TX_PAUSE_FRAME_ZE, 12, 1)
+    REG_FIELD(NWCTRL, STATS_TAKE_SNAP, 13, 1)
+    REG_FIELD(NWCTRL, STATS_READ_SNAP, 14, 1)
+    REG_FIELD(NWCTRL, STORE_RX_TS, 15, 1)
+    REG_FIELD(NWCTRL, PFC_ENABLE, 16, 1)
+    REG_FIELD(NWCTRL, PFC_PRIO_BASED, 17, 1)
+    REG_FIELD(NWCTRL, FLUSH_RX_PKT_PCLK , 18, 1)
+    REG_FIELD(NWCTRL, TX_LPI_EN, 19, 1)
+    REG_FIELD(NWCTRL, PTP_UNICAST_ENA, 20, 1)
+    REG_FIELD(NWCTRL, ALT_SGMII_MODE, 21, 1)
+    REG_FIELD(NWCTRL, STORE_UDP_OFFSET, 22, 1)
+    REG_FIELD(NWCTRL, EXT_TSU_PORT_EN, 23, 1)
+    REG_FIELD(NWCTRL, ONE_STEP_SYNC_MO, 24, 1)
+    REG_FIELD(NWCTRL, PFC_CTRL , 25, 1)
+    REG_FIELD(NWCTRL, EXT_RXQ_SEL_EN , 26, 1)
+    REG_FIELD(NWCTRL, OSS_CORRECTION_FIELD, 27, 1)
+    REG_FIELD(NWCTRL, SEL_MII_ON_RGMII, 28, 1)
+    REG_FIELD(NWCTRL, TWO_PT_FIVE_GIG, 29, 1)
+    REG_FIELD(NWCTRL, IFG_EATS_QAV_CREDIT, 30, 1)
 
 REG32(NWCFG, 0x4) /* Network Config reg */
-    FIELD(NWCFG, SPEED, 0, 1)
-    FIELD(NWCFG, FULL_DUPLEX, 1, 1)
-    FIELD(NWCFG, DISCARD_NON_VLAN_FRAMES, 2, 1)
-    FIELD(NWCFG, JUMBO_FRAMES, 3, 1)
-    FIELD(NWCFG, PROMISC, 4, 1)
-    FIELD(NWCFG, NO_BROADCAST, 5, 1)
-    FIELD(NWCFG, MULTICAST_HASH_EN, 6, 1)
-    FIELD(NWCFG, UNICAST_HASH_EN, 7, 1)
-    FIELD(NWCFG, RECV_1536_BYTE_FRAMES, 8, 1)
-    FIELD(NWCFG, EXTERNAL_ADDR_MATCH_EN, 9, 1)
-    FIELD(NWCFG, GIGABIT_MODE_ENABLE, 10, 1)
-    FIELD(NWCFG, PCS_SELECT, 11, 1)
-    FIELD(NWCFG, RETRY_TEST, 12, 1)
-    FIELD(NWCFG, PAUSE_ENABLE, 13, 1)
-    FIELD(NWCFG, RECV_BUF_OFFSET, 14, 2)
-    FIELD(NWCFG, LEN_ERR_DISCARD, 16, 1)
-    FIELD(NWCFG, FCS_REMOVE, 17, 1)
-    FIELD(NWCFG, MDC_CLOCK_DIV, 18, 3)
-    FIELD(NWCFG, DATA_BUS_WIDTH, 21, 2)
-    FIELD(NWCFG, DISABLE_COPY_PAUSE_FRAMES, 23, 1)
-    FIELD(NWCFG, RECV_CSUM_OFFLOAD_EN, 24, 1)
-    FIELD(NWCFG, EN_HALF_DUPLEX_RX, 25, 1)
-    FIELD(NWCFG, IGNORE_RX_FCS, 26, 1)
-    FIELD(NWCFG, SGMII_MODE_ENABLE, 27, 1)
-    FIELD(NWCFG, IPG_STRETCH_ENABLE, 28, 1)
-    FIELD(NWCFG, NSP_ACCEPT, 29, 1)
-    FIELD(NWCFG, IGNORE_IPG_RX_ER, 30, 1)
-    FIELD(NWCFG, UNI_DIRECTION_ENABLE, 31, 1)
+    REG_FIELD(NWCFG, SPEED, 0, 1)
+    REG_FIELD(NWCFG, FULL_DUPLEX, 1, 1)
+    REG_FIELD(NWCFG, DISCARD_NON_VLAN_FRAMES, 2, 1)
+    REG_FIELD(NWCFG, JUMBO_FRAMES, 3, 1)
+    REG_FIELD(NWCFG, PROMISC, 4, 1)
+    REG_FIELD(NWCFG, NO_BROADCAST, 5, 1)
+    REG_FIELD(NWCFG, MULTICAST_HASH_EN, 6, 1)
+    REG_FIELD(NWCFG, UNICAST_HASH_EN, 7, 1)
+    REG_FIELD(NWCFG, RECV_1536_BYTE_FRAMES, 8, 1)
+    REG_FIELD(NWCFG, EXTERNAL_ADDR_MATCH_EN, 9, 1)
+    REG_FIELD(NWCFG, GIGABIT_MODE_ENABLE, 10, 1)
+    REG_FIELD(NWCFG, PCS_SELECT, 11, 1)
+    REG_FIELD(NWCFG, RETRY_TEST, 12, 1)
+    REG_FIELD(NWCFG, PAUSE_ENABLE, 13, 1)
+    REG_FIELD(NWCFG, RECV_BUF_OFFSET, 14, 2)
+    REG_FIELD(NWCFG, LEN_ERR_DISCARD, 16, 1)
+    REG_FIELD(NWCFG, FCS_REMOVE, 17, 1)
+    REG_FIELD(NWCFG, MDC_CLOCK_DIV, 18, 3)
+    REG_FIELD(NWCFG, DATA_BUS_WIDTH, 21, 2)
+    REG_FIELD(NWCFG, DISABLE_COPY_PAUSE_FRAMES, 23, 1)
+    REG_FIELD(NWCFG, RECV_CSUM_OFFLOAD_EN, 24, 1)
+    REG_FIELD(NWCFG, EN_HALF_DUPLEX_RX, 25, 1)
+    REG_FIELD(NWCFG, IGNORE_RX_FCS, 26, 1)
+    REG_FIELD(NWCFG, SGMII_MODE_ENABLE, 27, 1)
+    REG_FIELD(NWCFG, IPG_STRETCH_ENABLE, 28, 1)
+    REG_FIELD(NWCFG, NSP_ACCEPT, 29, 1)
+    REG_FIELD(NWCFG, IGNORE_IPG_RX_ER, 30, 1)
+    REG_FIELD(NWCFG, UNI_DIRECTION_ENABLE, 31, 1)
 
 REG32(NWSTATUS, 0x8) /* Network Status reg */
 REG32(USERIO, 0xc) /* User IO reg */
 
 REG32(DMACFG, 0x10) /* DMA Control reg */
-    FIELD(DMACFG, SEND_BCAST_TO_ALL_QS, 31, 1)
-    FIELD(DMACFG, DMA_ADDR_BUS_WIDTH, 30, 1)
-    FIELD(DMACFG, TX_BD_EXT_MODE_EN , 29, 1)
-    FIELD(DMACFG, RX_BD_EXT_MODE_EN , 28, 1)
-    FIELD(DMACFG, FORCE_MAX_AMBA_BURST_TX, 26, 1)
-    FIELD(DMACFG, FORCE_MAX_AMBA_BURST_RX, 25, 1)
-    FIELD(DMACFG, FORCE_DISCARD_ON_ERR, 24, 1)
-    FIELD(DMACFG, RX_BUF_SIZE, 16, 8)
-    FIELD(DMACFG, CRC_ERROR_REPORT, 13, 1)
-    FIELD(DMACFG, INF_LAST_DBUF_SIZE_EN, 12, 1)
-    FIELD(DMACFG, TX_PBUF_CSUM_OFFLOAD, 11, 1)
-    FIELD(DMACFG, TX_PBUF_SIZE, 10, 1)
-    FIELD(DMACFG, RX_PBUF_SIZE, 8, 2)
-    FIELD(DMACFG, ENDIAN_SWAP_PACKET, 7, 1)
-    FIELD(DMACFG, ENDIAN_SWAP_MGNT, 6, 1)
-    FIELD(DMACFG, HDR_DATA_SPLIT_EN, 5, 1)
-    FIELD(DMACFG, AMBA_BURST_LEN , 0, 5)
+    REG_FIELD(DMACFG, SEND_BCAST_TO_ALL_QS, 31, 1)
+    REG_FIELD(DMACFG, DMA_ADDR_BUS_WIDTH, 30, 1)
+    REG_FIELD(DMACFG, TX_BD_EXT_MODE_EN , 29, 1)
+    REG_FIELD(DMACFG, RX_BD_EXT_MODE_EN , 28, 1)
+    REG_FIELD(DMACFG, FORCE_MAX_AMBA_BURST_TX, 26, 1)
+    REG_FIELD(DMACFG, FORCE_MAX_AMBA_BURST_RX, 25, 1)
+    REG_FIELD(DMACFG, FORCE_DISCARD_ON_ERR, 24, 1)
+    REG_FIELD(DMACFG, RX_BUF_SIZE, 16, 8)
+    REG_FIELD(DMACFG, CRC_ERROR_REPORT, 13, 1)
+    REG_FIELD(DMACFG, INF_LAST_DBUF_SIZE_EN, 12, 1)
+    REG_FIELD(DMACFG, TX_PBUF_CSUM_OFFLOAD, 11, 1)
+    REG_FIELD(DMACFG, TX_PBUF_SIZE, 10, 1)
+    REG_FIELD(DMACFG, RX_PBUF_SIZE, 8, 2)
+    REG_FIELD(DMACFG, ENDIAN_SWAP_PACKET, 7, 1)
+    REG_FIELD(DMACFG, ENDIAN_SWAP_MGNT, 6, 1)
+    REG_FIELD(DMACFG, HDR_DATA_SPLIT_EN, 5, 1)
+    REG_FIELD(DMACFG, AMBA_BURST_LEN , 0, 5)
 #define GEM_DMACFG_RBUFSZ_MUL  64         /* DMA RX Buffer Size multiplier */
 
 REG32(TXSTATUS, 0x14) /* TX Status reg */
-    FIELD(TXSTATUS, TX_USED_BIT_READ_MIDFRAME, 12, 1)
-    FIELD(TXSTATUS, TX_FRAME_TOO_LARGE, 11, 1)
-    FIELD(TXSTATUS, TX_DMA_LOCKUP, 10, 1)
-    FIELD(TXSTATUS, TX_MAC_LOCKUP, 9, 1)
-    FIELD(TXSTATUS, RESP_NOT_OK, 8, 1)
-    FIELD(TXSTATUS, LATE_COLLISION, 7, 1)
-    FIELD(TXSTATUS, TRANSMIT_UNDER_RUN, 6, 1)
-    FIELD(TXSTATUS, TRANSMIT_COMPLETE, 5, 1)
-    FIELD(TXSTATUS, AMBA_ERROR, 4, 1)
-    FIELD(TXSTATUS, TRANSMIT_GO, 3, 1)
-    FIELD(TXSTATUS, RETRY_LIMIT, 2, 1)
-    FIELD(TXSTATUS, COLLISION, 1, 1)
-    FIELD(TXSTATUS, USED_BIT_READ, 0, 1)
+    REG_FIELD(TXSTATUS, TX_USED_BIT_READ_MIDFRAME, 12, 1)
+    REG_FIELD(TXSTATUS, TX_FRAME_TOO_LARGE, 11, 1)
+    REG_FIELD(TXSTATUS, TX_DMA_LOCKUP, 10, 1)
+    REG_FIELD(TXSTATUS, TX_MAC_LOCKUP, 9, 1)
+    REG_FIELD(TXSTATUS, RESP_NOT_OK, 8, 1)
+    REG_FIELD(TXSTATUS, LATE_COLLISION, 7, 1)
+    REG_FIELD(TXSTATUS, TRANSMIT_UNDER_RUN, 6, 1)
+    REG_FIELD(TXSTATUS, TRANSMIT_COMPLETE, 5, 1)
+    REG_FIELD(TXSTATUS, AMBA_ERROR, 4, 1)
+    REG_FIELD(TXSTATUS, TRANSMIT_GO, 3, 1)
+    REG_FIELD(TXSTATUS, RETRY_LIMIT, 2, 1)
+    REG_FIELD(TXSTATUS, COLLISION, 1, 1)
+    REG_FIELD(TXSTATUS, USED_BIT_READ, 0, 1)
 
 REG32(RXQBASE, 0x18) /* RX Q Base address reg */
 REG32(TXQBASE, 0x1c) /* TX Q Base address reg */
 REG32(RXSTATUS, 0x20) /* RX Status reg */
-    FIELD(RXSTATUS, RX_DMA_LOCKUP, 5, 1)
-    FIELD(RXSTATUS, RX_MAC_LOCKUP, 4, 1)
-    FIELD(RXSTATUS, RESP_NOT_OK, 3, 1)
-    FIELD(RXSTATUS, RECEIVE_OVERRUN, 2, 1)
-    FIELD(RXSTATUS, FRAME_RECEIVED, 1, 1)
-    FIELD(RXSTATUS, BUF_NOT_AVAILABLE, 0, 1)
+    REG_FIELD(RXSTATUS, RX_DMA_LOCKUP, 5, 1)
+    REG_FIELD(RXSTATUS, RX_MAC_LOCKUP, 4, 1)
+    REG_FIELD(RXSTATUS, RESP_NOT_OK, 3, 1)
+    REG_FIELD(RXSTATUS, RECEIVE_OVERRUN, 2, 1)
+    REG_FIELD(RXSTATUS, FRAME_RECEIVED, 1, 1)
+    REG_FIELD(RXSTATUS, BUF_NOT_AVAILABLE, 0, 1)
 
 REG32(ISR, 0x24) /* Interrupt Status reg */
-    FIELD(ISR, TX_LOCKUP, 31, 1)
-    FIELD(ISR, RX_LOCKUP, 30, 1)
-    FIELD(ISR, TSU_TIMER, 29, 1)
-    FIELD(ISR, WOL, 28, 1)
-    FIELD(ISR, RECV_LPI, 27, 1)
-    FIELD(ISR, TSU_SEC_INCR, 26, 1)
-    FIELD(ISR, PTP_PDELAY_RESP_XMIT, 25, 1)
-    FIELD(ISR, PTP_PDELAY_REQ_XMIT, 24, 1)
-    FIELD(ISR, PTP_PDELAY_RESP_RECV, 23, 1)
-    FIELD(ISR, PTP_PDELAY_REQ_RECV, 22, 1)
-    FIELD(ISR, PTP_SYNC_XMIT, 21, 1)
-    FIELD(ISR, PTP_DELAY_REQ_XMIT, 20, 1)
-    FIELD(ISR, PTP_SYNC_RECV, 19, 1)
-    FIELD(ISR, PTP_DELAY_REQ_RECV, 18, 1)
-    FIELD(ISR, PCS_LP_PAGE_RECV, 17, 1)
-    FIELD(ISR, PCS_AN_COMPLETE, 16, 1)
-    FIELD(ISR, EXT_IRQ, 15, 1)
-    FIELD(ISR, PAUSE_FRAME_XMIT, 14, 1)
-    FIELD(ISR, PAUSE_TIME_ELAPSED, 13, 1)
-    FIELD(ISR, PAUSE_FRAME_RECV, 12, 1)
-    FIELD(ISR, RESP_NOT_OK, 11, 1)
-    FIELD(ISR, RECV_OVERRUN, 10, 1)
-    FIELD(ISR, LINK_CHANGE, 9, 1)
-    FIELD(ISR, USXGMII_INT, 8, 1)
-    FIELD(ISR, XMIT_COMPLETE, 7, 1)
-    FIELD(ISR, AMBA_ERROR, 6, 1)
-    FIELD(ISR, RETRY_EXCEEDED, 5, 1)
-    FIELD(ISR, XMIT_UNDER_RUN, 4, 1)
-    FIELD(ISR, TX_USED, 3, 1)
-    FIELD(ISR, RX_USED, 2, 1)
-    FIELD(ISR, RECV_COMPLETE, 1, 1)
-    FIELD(ISR, MGNT_FRAME_SENT, 0, 1)
+    REG_FIELD(ISR, TX_LOCKUP, 31, 1)
+    REG_FIELD(ISR, RX_LOCKUP, 30, 1)
+    REG_FIELD(ISR, TSU_TIMER, 29, 1)
+    REG_FIELD(ISR, WOL, 28, 1)
+    REG_FIELD(ISR, RECV_LPI, 27, 1)
+    REG_FIELD(ISR, TSU_SEC_INCR, 26, 1)
+    REG_FIELD(ISR, PTP_PDELAY_RESP_XMIT, 25, 1)
+    REG_FIELD(ISR, PTP_PDELAY_REQ_XMIT, 24, 1)
+    REG_FIELD(ISR, PTP_PDELAY_RESP_RECV, 23, 1)
+    REG_FIELD(ISR, PTP_PDELAY_REQ_RECV, 22, 1)
+    REG_FIELD(ISR, PTP_SYNC_XMIT, 21, 1)
+    REG_FIELD(ISR, PTP_DELAY_REQ_XMIT, 20, 1)
+    REG_FIELD(ISR, PTP_SYNC_RECV, 19, 1)
+    REG_FIELD(ISR, PTP_DELAY_REQ_RECV, 18, 1)
+    REG_FIELD(ISR, PCS_LP_PAGE_RECV, 17, 1)
+    REG_FIELD(ISR, PCS_AN_COMPLETE, 16, 1)
+    REG_FIELD(ISR, EXT_IRQ, 15, 1)
+    REG_FIELD(ISR, PAUSE_FRAME_XMIT, 14, 1)
+    REG_FIELD(ISR, PAUSE_TIME_ELAPSED, 13, 1)
+    REG_FIELD(ISR, PAUSE_FRAME_RECV, 12, 1)
+    REG_FIELD(ISR, RESP_NOT_OK, 11, 1)
+    REG_FIELD(ISR, RECV_OVERRUN, 10, 1)
+    REG_FIELD(ISR, LINK_CHANGE, 9, 1)
+    REG_FIELD(ISR, USXGMII_INT, 8, 1)
+    REG_FIELD(ISR, XMIT_COMPLETE, 7, 1)
+    REG_FIELD(ISR, AMBA_ERROR, 6, 1)
+    REG_FIELD(ISR, RETRY_EXCEEDED, 5, 1)
+    REG_FIELD(ISR, XMIT_UNDER_RUN, 4, 1)
+    REG_FIELD(ISR, TX_USED, 3, 1)
+    REG_FIELD(ISR, RX_USED, 2, 1)
+    REG_FIELD(ISR, RECV_COMPLETE, 1, 1)
+    REG_FIELD(ISR, MGNT_FRAME_SENT, 0, 1)
 REG32(IER, 0x28) /* Interrupt Enable reg */
 REG32(IDR, 0x2c) /* Interrupt Disable reg */
 REG32(IMR, 0x30) /* Interrupt Mask reg */
 
 REG32(PHYMNTNC, 0x34) /* Phy Maintenance reg */
-    FIELD(PHYMNTNC, DATA, 0, 16)
-    FIELD(PHYMNTNC, REG_ADDR, 18, 5)
-    FIELD(PHYMNTNC, PHY_ADDR, 23, 5)
-    FIELD(PHYMNTNC, OP, 28, 2)
-    FIELD(PHYMNTNC, ST, 30, 2)
+    REG_FIELD(PHYMNTNC, DATA, 0, 16)
+    REG_FIELD(PHYMNTNC, REG_ADDR, 18, 5)
+    REG_FIELD(PHYMNTNC, PHY_ADDR, 23, 5)
+    REG_FIELD(PHYMNTNC, OP, 28, 2)
+    REG_FIELD(PHYMNTNC, ST, 30, 2)
 #define MDIO_OP_READ    0x2
 #define MDIO_OP_WRITE   0x1
 
@@ -291,7 +291,7 @@ REG32(DESCONF3, 0x288)
 REG32(DESCONF4, 0x28c)
 REG32(DESCONF5, 0x290)
 REG32(DESCONF6, 0x294)
-    FIELD(DESCONF6, DMA_ADDR_64B, 23, 1)
+    REG_FIELD(DESCONF6, DMA_ADDR_64B, 23, 1)
 REG32(DESCONF7, 0x298)
 
 REG32(INT_Q1_STATUS, 0x400)
@@ -313,38 +313,38 @@ REG32(INT_Q1_DISABLE, 0x620)
 REG32(INT_Q7_DISABLE, 0x638)
 
 REG32(SCREENING_TYPE1_REG0, 0x500)
-    FIELD(SCREENING_TYPE1_REG0, QUEUE_NUM, 0, 4)
-    FIELD(SCREENING_TYPE1_REG0, DSTC_MATCH, 4, 8)
-    FIELD(SCREENING_TYPE1_REG0, UDP_PORT_MATCH, 12, 16)
-    FIELD(SCREENING_TYPE1_REG0, DSTC_ENABLE, 28, 1)
-    FIELD(SCREENING_TYPE1_REG0, UDP_PORT_MATCH_EN, 29, 1)
-    FIELD(SCREENING_TYPE1_REG0, DROP_ON_MATCH, 30, 1)
+    REG_FIELD(SCREENING_TYPE1_REG0, QUEUE_NUM, 0, 4)
+    REG_FIELD(SCREENING_TYPE1_REG0, DSTC_MATCH, 4, 8)
+    REG_FIELD(SCREENING_TYPE1_REG0, UDP_PORT_MATCH, 12, 16)
+    REG_FIELD(SCREENING_TYPE1_REG0, DSTC_ENABLE, 28, 1)
+    REG_FIELD(SCREENING_TYPE1_REG0, UDP_PORT_MATCH_EN, 29, 1)
+    REG_FIELD(SCREENING_TYPE1_REG0, DROP_ON_MATCH, 30, 1)
 
 REG32(SCREENING_TYPE2_REG0, 0x540)
-    FIELD(SCREENING_TYPE2_REG0, QUEUE_NUM, 0, 4)
-    FIELD(SCREENING_TYPE2_REG0, VLAN_PRIORITY, 4, 3)
-    FIELD(SCREENING_TYPE2_REG0, VLAN_ENABLE, 8, 1)
-    FIELD(SCREENING_TYPE2_REG0, ETHERTYPE_REG_INDEX, 9, 3)
-    FIELD(SCREENING_TYPE2_REG0, ETHERTYPE_ENABLE, 12, 1)
-    FIELD(SCREENING_TYPE2_REG0, COMPARE_A, 13, 5)
-    FIELD(SCREENING_TYPE2_REG0, COMPARE_A_ENABLE, 18, 1)
-    FIELD(SCREENING_TYPE2_REG0, COMPARE_B, 19, 5)
-    FIELD(SCREENING_TYPE2_REG0, COMPARE_B_ENABLE, 24, 1)
-    FIELD(SCREENING_TYPE2_REG0, COMPARE_C, 25, 5)
-    FIELD(SCREENING_TYPE2_REG0, COMPARE_C_ENABLE, 30, 1)
-    FIELD(SCREENING_TYPE2_REG0, DROP_ON_MATCH, 31, 1)
+    REG_FIELD(SCREENING_TYPE2_REG0, QUEUE_NUM, 0, 4)
+    REG_FIELD(SCREENING_TYPE2_REG0, VLAN_PRIORITY, 4, 3)
+    REG_FIELD(SCREENING_TYPE2_REG0, VLAN_ENABLE, 8, 1)
+    REG_FIELD(SCREENING_TYPE2_REG0, ETHERTYPE_REG_INDEX, 9, 3)
+    REG_FIELD(SCREENING_TYPE2_REG0, ETHERTYPE_ENABLE, 12, 1)
+    REG_FIELD(SCREENING_TYPE2_REG0, COMPARE_A, 13, 5)
+    REG_FIELD(SCREENING_TYPE2_REG0, COMPARE_A_ENABLE, 18, 1)
+    REG_FIELD(SCREENING_TYPE2_REG0, COMPARE_B, 19, 5)
+    REG_FIELD(SCREENING_TYPE2_REG0, COMPARE_B_ENABLE, 24, 1)
+    REG_FIELD(SCREENING_TYPE2_REG0, COMPARE_C, 25, 5)
+    REG_FIELD(SCREENING_TYPE2_REG0, COMPARE_C_ENABLE, 30, 1)
+    REG_FIELD(SCREENING_TYPE2_REG0, DROP_ON_MATCH, 31, 1)
 
 REG32(SCREENING_TYPE2_ETHERTYPE_REG0, 0x6e0)
 
 REG32(TYPE2_COMPARE_0_WORD_0, 0x700)
-    FIELD(TYPE2_COMPARE_0_WORD_0, MASK_VALUE, 0, 16)
-    FIELD(TYPE2_COMPARE_0_WORD_0, COMPARE_VALUE, 16, 16)
+    REG_FIELD(TYPE2_COMPARE_0_WORD_0, MASK_VALUE, 0, 16)
+    REG_FIELD(TYPE2_COMPARE_0_WORD_0, COMPARE_VALUE, 16, 16)
 
 REG32(TYPE2_COMPARE_0_WORD_1, 0x704)
-    FIELD(TYPE2_COMPARE_0_WORD_1, OFFSET_VALUE, 0, 7)
-    FIELD(TYPE2_COMPARE_0_WORD_1, COMPARE_OFFSET, 7, 2)
-    FIELD(TYPE2_COMPARE_0_WORD_1, DISABLE_MASK, 9, 1)
-    FIELD(TYPE2_COMPARE_0_WORD_1, COMPARE_VLAN_ID, 10, 1)
+    REG_FIELD(TYPE2_COMPARE_0_WORD_1, OFFSET_VALUE, 0, 7)
+    REG_FIELD(TYPE2_COMPARE_0_WORD_1, COMPARE_OFFSET, 7, 2)
+    REG_FIELD(TYPE2_COMPARE_0_WORD_1, DISABLE_MASK, 9, 1)
+    REG_FIELD(TYPE2_COMPARE_0_WORD_1, COMPARE_VLAN_ID, 10, 1)
 
 /*****************************************/
 
@@ -426,7 +426,7 @@ static inline uint64_t tx_desc_get_buffer(CadenceGEMState *s, uint32_t *desc)
 {
     uint64_t ret = desc[0];
 
-    if (FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
+    if (REG_FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
         ret |= (uint64_t)desc[2] << 32;
     }
     return ret;
@@ -471,7 +471,7 @@ static inline uint64_t rx_desc_get_buffer(CadenceGEMState *s, uint32_t *desc)
 {
     uint64_t ret = desc[0] & ~0x3UL;
 
-    if (FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
+    if (REG_FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
         ret |= (uint64_t)desc[2] << 32;
     }
     return ret;
@@ -481,7 +481,7 @@ static inline int gem_get_desc_len(CadenceGEMState *s, bool rx_n_tx)
 {
     int ret = 2;
 
-    if (FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
+    if (REG_FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
         ret += 2;
     }
     if (s->regs[R_DMACFG] & (rx_n_tx ? R_DMACFG_RX_BD_EXT_MODE_EN_MASK
@@ -557,7 +557,7 @@ static const uint8_t broadcast_addr[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static uint32_t gem_get_max_buf_len(CadenceGEMState *s, bool tx)
 {
     uint32_t size;
-    if (FIELD_EX32(s->regs[R_NWCFG], NWCFG, JUMBO_FRAMES)) {
+    if (REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, JUMBO_FRAMES)) {
         size = s->regs[R_JUMBO_MAX_LEN];
         if (size > s->jumbo_max_len) {
             size = s->jumbo_max_len;
@@ -567,7 +567,7 @@ static uint32_t gem_get_max_buf_len(CadenceGEMState *s, bool tx)
     } else if (tx) {
         size = 1518;
     } else {
-        size = FIELD_EX32(s->regs[R_NWCFG],
+        size = REG_FIELD_EX32(s->regs[R_NWCFG],
                           NWCFG, RECV_1536_BYTE_FRAMES) ? 1538 : 1518;
     }
     return size;
@@ -663,7 +663,7 @@ static bool gem_can_receive(NetClientState *nc)
     s = qemu_get_nic_opaque(nc);
 
     /* Do nothing if receive is not enabled. */
-    if (!FIELD_EX32(s->regs[R_NWCTRL], NWCTRL, ENABLE_RECEIVE)) {
+    if (!REG_FIELD_EX32(s->regs[R_NWCTRL], NWCTRL, ENABLE_RECEIVE)) {
         if (s->can_rx_state != 1) {
             s->can_rx_state = 1;
             DB_PRINT("can't receive - no enable\n");
@@ -808,13 +808,13 @@ static int gem_mac_address_filter(CadenceGEMState *s, const uint8_t *packet)
     int i, is_mc;
 
     /* Promiscuous mode? */
-    if (FIELD_EX32(s->regs[R_NWCFG], NWCFG, PROMISC)) {
+    if (REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, PROMISC)) {
         return GEM_RX_PROMISCUOUS_ACCEPT;
     }
 
     if (!memcmp(packet, broadcast_addr, 6)) {
         /* Reject broadcast packets? */
-        if (FIELD_EX32(s->regs[R_NWCFG], NWCFG, NO_BROADCAST)) {
+        if (REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, NO_BROADCAST)) {
             return GEM_RX_REJECT;
         }
         return GEM_RX_BROADCAST_ACCEPT;
@@ -822,8 +822,8 @@ static int gem_mac_address_filter(CadenceGEMState *s, const uint8_t *packet)
 
     /* Accept packets -w- hash match? */
     is_mc = is_multicast_ether_addr(packet);
-    if ((is_mc && (FIELD_EX32(s->regs[R_NWCFG], NWCFG, MULTICAST_HASH_EN))) ||
-        (!is_mc && FIELD_EX32(s->regs[R_NWCFG], NWCFG, UNICAST_HASH_EN))) {
+    if ((is_mc && (REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, MULTICAST_HASH_EN))) ||
+        (!is_mc && REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, UNICAST_HASH_EN))) {
         uint64_t buckets;
         unsigned hash_index;
 
@@ -861,9 +861,9 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
         mismatched = false;
 
         /* Screening is based on UDP Port */
-        if (FIELD_EX32(reg, SCREENING_TYPE1_REG0, UDP_PORT_MATCH_EN)) {
+        if (REG_FIELD_EX32(reg, SCREENING_TYPE1_REG0, UDP_PORT_MATCH_EN)) {
             uint16_t udp_port = rxbuf_ptr[14 + 22] << 8 | rxbuf_ptr[14 + 23];
-            if (udp_port == FIELD_EX32(reg, SCREENING_TYPE1_REG0, UDP_PORT_MATCH)) {
+            if (udp_port == REG_FIELD_EX32(reg, SCREENING_TYPE1_REG0, UDP_PORT_MATCH)) {
                 matched = true;
             } else {
                 mismatched = true;
@@ -871,9 +871,9 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
         }
 
         /* Screening is based on DS/TC */
-        if (FIELD_EX32(reg, SCREENING_TYPE1_REG0, DSTC_ENABLE)) {
+        if (REG_FIELD_EX32(reg, SCREENING_TYPE1_REG0, DSTC_ENABLE)) {
             uint8_t dscp = rxbuf_ptr[14 + 1];
-            if (dscp == FIELD_EX32(reg, SCREENING_TYPE1_REG0, DSTC_MATCH)) {
+            if (dscp == REG_FIELD_EX32(reg, SCREENING_TYPE1_REG0, DSTC_MATCH)) {
                 matched = true;
             } else {
                 mismatched = true;
@@ -881,7 +881,7 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
         }
 
         if (matched && !mismatched) {
-            return FIELD_EX32(reg, SCREENING_TYPE1_REG0, QUEUE_NUM);
+            return REG_FIELD_EX32(reg, SCREENING_TYPE1_REG0, QUEUE_NUM);
         }
     }
 
@@ -890,9 +890,9 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
         matched = false;
         mismatched = false;
 
-        if (FIELD_EX32(reg, SCREENING_TYPE2_REG0, ETHERTYPE_ENABLE)) {
+        if (REG_FIELD_EX32(reg, SCREENING_TYPE2_REG0, ETHERTYPE_ENABLE)) {
             uint16_t type = rxbuf_ptr[12] << 8 | rxbuf_ptr[13];
-            int et_idx = FIELD_EX32(reg, SCREENING_TYPE2_REG0,
+            int et_idx = REG_FIELD_EX32(reg, SCREENING_TYPE2_REG0,
                                     ETHERTYPE_REG_INDEX);
 
             if (et_idx > s->num_type2_screeners) {
@@ -927,9 +927,9 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
 
             cr0 = s->regs[R_TYPE2_COMPARE_0_WORD_0 + cr_idx * 2];
             cr1 = s->regs[R_TYPE2_COMPARE_0_WORD_1 + cr_idx * 2];
-            offset = FIELD_EX32(cr1, TYPE2_COMPARE_0_WORD_1, OFFSET_VALUE);
+            offset = REG_FIELD_EX32(cr1, TYPE2_COMPARE_0_WORD_1, OFFSET_VALUE);
 
-            switch (FIELD_EX32(cr1, TYPE2_COMPARE_0_WORD_1, COMPARE_OFFSET)) {
+            switch (REG_FIELD_EX32(cr1, TYPE2_COMPARE_0_WORD_1, COMPARE_OFFSET)) {
             case 3: /* Skip UDP header */
                 qemu_log_mask(LOG_UNIMP, "TCP compare offsets"
                               "unimplemented - assuming UDP\n");
@@ -947,7 +947,7 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
             }
 
             disable_mask =
-                FIELD_EX32(cr1, TYPE2_COMPARE_0_WORD_1, DISABLE_MASK);
+                REG_FIELD_EX32(cr1, TYPE2_COMPARE_0_WORD_1, DISABLE_MASK);
             if (disable_mask) {
                 /*
                  * If disable_mask is set, mask_value is used as an
@@ -961,9 +961,9 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
                 compare = cr0;
             } else {
                 rx_cmp = lduw_le_p(rxbuf_ptr + offset);
-                mask = FIELD_EX32(cr0, TYPE2_COMPARE_0_WORD_0, MASK_VALUE);
+                mask = REG_FIELD_EX32(cr0, TYPE2_COMPARE_0_WORD_0, MASK_VALUE);
                 compare =
-                    FIELD_EX32(cr0, TYPE2_COMPARE_0_WORD_0, COMPARE_VALUE);
+                    REG_FIELD_EX32(cr0, TYPE2_COMPARE_0_WORD_0, COMPARE_VALUE);
             }
 
             if ((rx_cmp & mask) == (compare & mask)) {
@@ -974,7 +974,7 @@ static int get_queue_from_screen(CadenceGEMState *s, uint8_t *rxbuf_ptr,
         }
 
         if (matched && !mismatched) {
-            return FIELD_EX32(reg, SCREENING_TYPE2_REG0, QUEUE_NUM);
+            return REG_FIELD_EX32(reg, SCREENING_TYPE2_REG0, QUEUE_NUM);
         }
     }
 
@@ -1015,7 +1015,7 @@ static hwaddr gem_get_desc_addr(CadenceGEMState *s, bool tx, int q)
 {
     hwaddr desc_addr = 0;
 
-    if (FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
+    if (REG_FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
         desc_addr = s->regs[tx ? R_TBQPH : R_RBQPH];
     }
     desc_addr <<= 32;
@@ -1075,7 +1075,7 @@ static ssize_t gem_receive(NetClientState *nc, const uint8_t *buf, size_t size)
     }
 
     /* Discard packets with receive length error enabled ? */
-    if (FIELD_EX32(s->regs[R_NWCFG], NWCFG, LEN_ERR_DISCARD)) {
+    if (REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, LEN_ERR_DISCARD)) {
         unsigned type_len;
 
         /* Fish the ethertype / length field out of the RX packet */
@@ -1092,12 +1092,12 @@ static ssize_t gem_receive(NetClientState *nc, const uint8_t *buf, size_t size)
     /*
      * Determine configured receive buffer offset (probably 0)
      */
-    rxbuf_offset = FIELD_EX32(s->regs[R_NWCFG], NWCFG, RECV_BUF_OFFSET);
+    rxbuf_offset = REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, RECV_BUF_OFFSET);
 
     /* The configure size of each receive buffer.  Determines how many
      * buffers needed to hold this packet.
      */
-    rxbufsize = FIELD_EX32(s->regs[R_DMACFG], DMACFG, RX_BUF_SIZE);
+    rxbufsize = REG_FIELD_EX32(s->regs[R_DMACFG], DMACFG, RX_BUF_SIZE);
     rxbufsize *= GEM_DMACFG_RBUFSZ_MUL;
 
     bytes_to_copy = size;
@@ -1118,7 +1118,7 @@ static ssize_t gem_receive(NetClientState *nc, const uint8_t *buf, size_t size)
     }
 
     /* Strip of FCS field ? (usually yes) */
-    if (FIELD_EX32(s->regs[R_NWCFG], NWCFG, FCS_REMOVE)) {
+    if (REG_FIELD_EX32(s->regs[R_NWCFG], NWCFG, FCS_REMOVE)) {
         rxbuf_ptr = (void *)buf;
     } else {
         uint32_t crc_val;
@@ -1292,7 +1292,7 @@ static void gem_transmit(CadenceGEMState *s)
     int q = 0;
 
     /* Do nothing if transmit is not enabled. */
-    if (!FIELD_EX32(s->regs[R_NWCTRL], NWCTRL, ENABLE_TRANSMIT)) {
+    if (!REG_FIELD_EX32(s->regs[R_NWCTRL], NWCTRL, ENABLE_TRANSMIT)) {
         return;
     }
 
@@ -1317,7 +1317,7 @@ static void gem_transmit(CadenceGEMState *s)
         while (tx_desc_get_used(desc) == 0) {
 
             /* Do nothing if transmit is not enabled. */
-            if (!FIELD_EX32(s->regs[R_NWCTRL], NWCTRL, ENABLE_TRANSMIT)) {
+            if (!REG_FIELD_EX32(s->regs[R_NWCTRL], NWCTRL, ENABLE_TRANSMIT)) {
                 return;
             }
             print_gem_tx_desc(desc, q);
@@ -1382,7 +1382,7 @@ static void gem_transmit(CadenceGEMState *s)
                 gem_update_int_status(s);
 
                 /* Is checksum offload enabled? */
-                if (FIELD_EX32(s->regs[R_DMACFG], DMACFG, TX_PBUF_CSUM_OFFLOAD)) {
+                if (REG_FIELD_EX32(s->regs[R_DMACFG], DMACFG, TX_PBUF_CSUM_OFFLOAD)) {
                     net_checksum_calculate(s->tx_packet, total_bytes, CSUM_ALL);
                 }
 
@@ -1390,7 +1390,7 @@ static void gem_transmit(CadenceGEMState *s)
                 gem_transmit_updatestats(s, s->tx_packet, total_bytes);
 
                 /* Send the packet somewhere */
-                if (s->phy_loop || FIELD_EX32(s->regs[R_NWCTRL], NWCTRL,
+                if (s->phy_loop || REG_FIELD_EX32(s->regs[R_NWCTRL], NWCTRL,
                                               LOOPBACK_LOCAL)) {
                     qemu_receive_packet(qemu_get_queue(s->nic), s->tx_packet,
                                         total_bytes);
@@ -1406,7 +1406,7 @@ static void gem_transmit(CadenceGEMState *s)
 
             /* read next descriptor */
             if (tx_desc_get_wrap(desc)) {
-                if (FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
+                if (REG_FIELD_EX32(s->regs[R_DMACFG], DMACFG, DMA_ADDR_BUS_WIDTH)) {
                     packet_desc_addr = s->regs[R_TBQPH];
                     packet_desc_addr <<= 32;
                 } else {
@@ -1542,21 +1542,21 @@ static void gem_handle_phy_access(CadenceGEMState *s)
     uint32_t val = s->regs[R_PHYMNTNC];
     uint32_t phy_addr, reg_num;
 
-    phy_addr = FIELD_EX32(val, PHYMNTNC, PHY_ADDR);
+    phy_addr = REG_FIELD_EX32(val, PHYMNTNC, PHY_ADDR);
 
     if (phy_addr != s->phy_addr) {
         /* no phy at this address */
-        if (FIELD_EX32(val, PHYMNTNC, OP) == MDIO_OP_READ) {
-            s->regs[R_PHYMNTNC] = FIELD_DP32(val, PHYMNTNC, DATA, 0xffff);
+        if (REG_FIELD_EX32(val, PHYMNTNC, OP) == MDIO_OP_READ) {
+            s->regs[R_PHYMNTNC] = REG_FIELD_DP32(val, PHYMNTNC, DATA, 0xffff);
         }
         return;
     }
 
-    reg_num = FIELD_EX32(val, PHYMNTNC, REG_ADDR);
+    reg_num = REG_FIELD_EX32(val, PHYMNTNC, REG_ADDR);
 
-    switch (FIELD_EX32(val, PHYMNTNC, OP)) {
+    switch (REG_FIELD_EX32(val, PHYMNTNC, OP)) {
     case MDIO_OP_READ:
-        s->regs[R_PHYMNTNC] = FIELD_DP32(val, PHYMNTNC, DATA,
+        s->regs[R_PHYMNTNC] = REG_FIELD_DP32(val, PHYMNTNC, DATA,
                                          gem_phy_read(s, reg_num));
         break;
 
@@ -1630,15 +1630,15 @@ static void gem_write(void *opaque, hwaddr offset, uint64_t val,
     /* Handle register write side effects */
     switch (offset) {
     case R_NWCTRL:
-        if (FIELD_EX32(val, NWCTRL, ENABLE_RECEIVE)) {
+        if (REG_FIELD_EX32(val, NWCTRL, ENABLE_RECEIVE)) {
             for (i = 0; i < s->num_priority_queues; ++i) {
                 gem_get_rx_desc(s, i);
             }
         }
-        if (FIELD_EX32(val, NWCTRL, TRANSMIT_START)) {
+        if (REG_FIELD_EX32(val, NWCTRL, TRANSMIT_START)) {
             gem_transmit(s);
         }
-        if (!(FIELD_EX32(val, NWCTRL, ENABLE_TRANSMIT))) {
+        if (!(REG_FIELD_EX32(val, NWCTRL, ENABLE_TRANSMIT))) {
             /* Reset to start of Q when transmit disabled. */
             for (i = 0; i < s->num_priority_queues; i++) {
                 s->tx_desc_addr[i] = gem_get_tx_queue_base_addr(s, i);

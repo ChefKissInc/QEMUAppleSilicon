@@ -686,18 +686,18 @@ AppleA13State *apple_a13_create(const char *name, uint32_t cpu_id,
 
     mpidr = acpu->phys_id | (1LL << 31);
 
-    cpu->midr = FIELD_DP64(0, MIDR_EL1, IMPLEMENTER, 0x61); // Apple
+    cpu->midr = REG_FIELD_DP64(0, MIDR_EL1, IMPLEMENTER, 0x61); // Apple
     /* chip-revision = (variant << 4) | (revision) */
-    cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, VARIANT, 0x1);
-    cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, REVISION, 0x1);
+    cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, VARIANT, 0x1);
+    cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, REVISION, 0x1);
 
     switch (cluster_type) {
     case 'P': // Lightning
         mpidr |= (1 << ARM_AFF2_SHIFT);
-        cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, PARTNUM, 0x12);
+        cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, PARTNUM, 0x12);
         break;
     case 'E': // Thunder
-        cpu->midr = FIELD_DP64(cpu->midr, MIDR_EL1, PARTNUM, 0x13);
+        cpu->midr = REG_FIELD_DP64(cpu->midr, MIDR_EL1, PARTNUM, 0x13);
         break;
     default:
         break;

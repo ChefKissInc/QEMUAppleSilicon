@@ -985,7 +985,7 @@ int kvm_arch_put_registers(CPUState *cs, int level, Error **errp)
         }
 
 #ifdef TARGET_PPC64
-        if (FIELD_EX64(env->msr, MSR, TS)) {
+        if (REG_FIELD_EX64(env->msr, MSR, TS)) {
             for (i = 0; i < ARRAY_SIZE(env->tm_gpr); i++) {
                 kvm_set_one_reg(cs, KVM_REG_PPC_TM_GPR(i), &env->tm_gpr[i]);
             }
@@ -1285,7 +1285,7 @@ int kvm_arch_get_registers(CPUState *cs, Error **errp)
         }
 
 #ifdef TARGET_PPC64
-        if (FIELD_EX64(env->msr, MSR, TS)) {
+        if (REG_FIELD_EX64(env->msr, MSR, TS)) {
             for (i = 0; i < ARRAY_SIZE(env->tm_gpr); i++) {
                 kvm_get_one_reg(cs, KVM_REG_PPC_TM_GPR(i), &env->tm_gpr[i]);
             }
@@ -1355,7 +1355,7 @@ static int kvmppc_handle_halt(PowerPCCPU *cpu)
     CPUPPCState *env = &cpu->env;
 
     if (!(cs->interrupt_request & CPU_INTERRUPT_HARD) &&
-        FIELD_EX64(env->msr, MSR, EE)) {
+        REG_FIELD_EX64(env->msr, MSR, EE)) {
         cs->halted = 1;
         cs->exception_index = EXCP_HLT;
     }

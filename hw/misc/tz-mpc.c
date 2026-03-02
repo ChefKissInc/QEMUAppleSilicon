@@ -32,26 +32,26 @@ enum {
 
 /* Config registers */
 REG32(CTRL, 0x00)
-    FIELD(CTRL, SEC_RESP, 4, 1)
-    FIELD(CTRL, AUTOINC, 8, 1)
-    FIELD(CTRL, LOCKDOWN, 31, 1)
+    REG_FIELD(CTRL, SEC_RESP, 4, 1)
+    REG_FIELD(CTRL, AUTOINC, 8, 1)
+    REG_FIELD(CTRL, LOCKDOWN, 31, 1)
 REG32(BLK_MAX, 0x10)
 REG32(BLK_CFG, 0x14)
 REG32(BLK_IDX, 0x18)
 REG32(BLK_LUT, 0x1c)
 REG32(INT_STAT, 0x20)
-    FIELD(INT_STAT, IRQ, 0, 1)
+    REG_FIELD(INT_STAT, IRQ, 0, 1)
 REG32(INT_CLEAR, 0x24)
-    FIELD(INT_CLEAR, IRQ, 0, 1)
+    REG_FIELD(INT_CLEAR, IRQ, 0, 1)
 REG32(INT_EN, 0x28)
-    FIELD(INT_EN, IRQ, 0, 1)
+    REG_FIELD(INT_EN, IRQ, 0, 1)
 REG32(INT_INFO1, 0x2c)
 REG32(INT_INFO2, 0x30)
-    FIELD(INT_INFO2, HMASTER, 0, 16)
-    FIELD(INT_INFO2, HNONSEC, 16, 1)
-    FIELD(INT_INFO2, CFG_NS, 17, 1)
+    REG_FIELD(INT_INFO2, HMASTER, 0, 16)
+    REG_FIELD(INT_INFO2, HNONSEC, 16, 1)
+    REG_FIELD(INT_INFO2, CFG_NS, 17, 1)
 REG32(INT_SET, 0x34)
-    FIELD(INT_SET, IRQ, 0, 1)
+    REG_FIELD(INT_SET, IRQ, 0, 1)
 REG32(PIDR4, 0xfd0)
 REG32(PIDR5, 0xfd4)
 REG32(PIDR6, 0xfd8)
@@ -371,11 +371,11 @@ static MemTxResult tz_mpc_handle_block(TZMPC *s, hwaddr addr, MemTxAttrs attrs)
 
         s->int_info1 = addr;
         s->int_info2 = 0;
-        s->int_info2 = FIELD_DP32(s->int_info2, INT_INFO2, HMASTER,
+        s->int_info2 = REG_FIELD_DP32(s->int_info2, INT_INFO2, HMASTER,
                                   attrs.requester_id & 0xffff);
-        s->int_info2 = FIELD_DP32(s->int_info2, INT_INFO2, HNONSEC,
+        s->int_info2 = REG_FIELD_DP32(s->int_info2, INT_INFO2, HNONSEC,
                                   ~attrs.secure);
-        s->int_info2 = FIELD_DP32(s->int_info2, INT_INFO2, CFG_NS,
+        s->int_info2 = REG_FIELD_DP32(s->int_info2, INT_INFO2, CFG_NS,
                                   tz_mpc_cfg_ns(s, addr));
         s->int_stat |= R_INT_STAT_IRQ_MASK;
         tz_mpc_irq_update(s);

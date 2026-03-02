@@ -29,7 +29,7 @@ void HELPER(loaded_fr0)(CPUHPPAState *env)
 
     env->fr0_shadow = shadow;
 
-    switch (FIELD_EX32(shadow, FPSR, RM)) {
+    switch (REG_FIELD_EX32(shadow, FPSR, RM)) {
     default:
         rm = float_round_nearest_even;
         break;
@@ -45,7 +45,7 @@ void HELPER(loaded_fr0)(CPUHPPAState *env)
     }
     set_float_rounding_mode(rm, &env->fp_status);
 
-    d = FIELD_EX32(shadow, FPSR, D);
+    d = REG_FIELD_EX32(shadow, FPSR, D);
     set_flush_to_zero(d, &env->fp_status);
     set_flush_inputs_to_zero(d, &env->fp_status);
 
@@ -110,13 +110,13 @@ static void update_fr0_op(CPUHPPAState *env, uintptr_t ra)
     hard_exp |= CONVERT_BIT(soft_exp, float_flag_divbyzero, R_FPSR_ENA_Z_MASK);
     hard_exp |= CONVERT_BIT(soft_exp, float_flag_invalid,   R_FPSR_ENA_V_MASK);
     if (hard_exp & shadow) {
-        shadow = FIELD_DP32(shadow, FPSR, T, 1);
+        shadow = REG_FIELD_DP32(shadow, FPSR, T, 1);
         /* fill exception register #1, which is lower 32-bits of fr[0] */
 #if !defined(CONFIG_USER_ONLY)
         if (hard_exp & (R_FPSR_ENA_O_MASK | R_FPSR_ENA_U_MASK)) {
             /* over- and underflow both set overflow flag only */
-            fr1 = FIELD_DP32(fr1, FPSR, C, 1);
-            fr1 = FIELD_DP32(fr1, FPSR, FLG_O, 1);
+            fr1 = REG_FIELD_DP32(fr1, FPSR, C, 1);
+            fr1 = REG_FIELD_DP32(fr1, FPSR, FLG_O, 1);
         } else
 #endif
         {
@@ -432,9 +432,9 @@ static void update_fr0_cmp(CPUHPPAState *env, uint32_t y,
         /* shift cq right by one place */
         shadow = (shadow & ~R_FPSR_CQ_MASK) | ((shadow >> 1) & R_FPSR_CQ_MASK);
         /* move fpsr[c] to fpsr[cq[0]] */
-        shadow = FIELD_DP32(shadow, FPSR, CQ0, FIELD_EX32(shadow, FPSR, C));
+        shadow = REG_FIELD_DP32(shadow, FPSR, CQ0, REG_FIELD_EX32(shadow, FPSR, C));
         /* set fpsr[c] to current compare */
-        shadow = FIELD_DP32(shadow, FPSR, C, c);
+        shadow = REG_FIELD_DP32(shadow, FPSR, C, c);
     }
 
     env->fr0_shadow = shadow;

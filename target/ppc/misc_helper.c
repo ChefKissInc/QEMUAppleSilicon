@@ -116,7 +116,7 @@ void helper_hfscr_facility_check(CPUPPCState *env, uint32_t bit,
                                  const char *caller, uint32_t cause)
 {
 #ifdef TARGET_PPC64
-    if ((env->msr_mask & MSR_HVB) && !FIELD_EX64(env->msr, MSR, HV) &&
+    if ((env->msr_mask & MSR_HVB) && !REG_FIELD_EX64(env->msr, MSR, HV) &&
                                      !(env->spr[SPR_HFSCR] & (1UL << bit))) {
         raise_hv_fu_exception(env, bit, caller, cause, GETPC());
     }
@@ -153,7 +153,7 @@ void helper_msr_facility_check(CPUPPCState *env, uint32_t bit,
 static void helper_mmcr0_facility_check(CPUPPCState *env, uint32_t bit,
                                  uint32_t sprn, uint32_t cause)
 {
-    if (FIELD_EX64(env->msr, MSR, PR) &&
+    if (REG_FIELD_EX64(env->msr, MSR, PR) &&
         !(env->spr[SPR_POWER_MMCR0] & (1ULL << bit))) {
         raise_fu_exception(env, bit, sprn, cause, GETPC());
     }

@@ -40,23 +40,23 @@
  * Shift bits and filed mask
  */
 
-FIELD(TOY, MON, 26, 6)
-FIELD(TOY, DAY, 21, 5)
-FIELD(TOY, HOUR, 16, 5)
-FIELD(TOY, MIN, 10, 6)
-FIELD(TOY, SEC, 4, 6)
-FIELD(TOY, MSEC, 0, 4)
+REG_FIELD(TOY, MON, 26, 6)
+REG_FIELD(TOY, DAY, 21, 5)
+REG_FIELD(TOY, HOUR, 16, 5)
+REG_FIELD(TOY, MIN, 10, 6)
+REG_FIELD(TOY, SEC, 4, 6)
+REG_FIELD(TOY, MSEC, 0, 4)
 
-FIELD(TOY_MATCH, YEAR, 26, 6)
-FIELD(TOY_MATCH, MON, 22, 4)
-FIELD(TOY_MATCH, DAY, 17, 5)
-FIELD(TOY_MATCH, HOUR, 12, 5)
-FIELD(TOY_MATCH, MIN, 6, 6)
-FIELD(TOY_MATCH, SEC, 0, 6)
+REG_FIELD(TOY_MATCH, YEAR, 26, 6)
+REG_FIELD(TOY_MATCH, MON, 22, 4)
+REG_FIELD(TOY_MATCH, DAY, 17, 5)
+REG_FIELD(TOY_MATCH, HOUR, 12, 5)
+REG_FIELD(TOY_MATCH, MIN, 6, 6)
+REG_FIELD(TOY_MATCH, SEC, 0, 6)
 
-FIELD(RTC_CTRL, RTCEN, 13, 1)
-FIELD(RTC_CTRL, TOYEN, 11, 1)
-FIELD(RTC_CTRL, EO, 8, 1)
+REG_FIELD(RTC_CTRL, RTCEN, 13, 1)
+REG_FIELD(RTC_CTRL, TOYEN, 11, 1)
+REG_FIELD(RTC_CTRL, EO, 8, 1)
 
 #define TYPE_LS7A_RTC "ls7a_rtc"
 OBJECT_DECLARE_SIMPLE_TYPE(LS7ARtcState, LS7A_RTC)
@@ -99,14 +99,14 @@ static uint64_t ticks_to_ns(uint64_t ticks)
 
 static bool toy_enabled(LS7ARtcState *s)
 {
-    return FIELD_EX32(s->cntrctl, RTC_CTRL, TOYEN) &&
-           FIELD_EX32(s->cntrctl, RTC_CTRL, EO);
+    return REG_FIELD_EX32(s->cntrctl, RTC_CTRL, TOYEN) &&
+           REG_FIELD_EX32(s->cntrctl, RTC_CTRL, EO);
 }
 
 static bool rtc_enabled(LS7ARtcState *s)
 {
-    return FIELD_EX32(s->cntrctl, RTC_CTRL, RTCEN) &&
-           FIELD_EX32(s->cntrctl, RTC_CTRL, EO);
+    return REG_FIELD_EX32(s->cntrctl, RTC_CTRL, RTCEN) &&
+           REG_FIELD_EX32(s->cntrctl, RTC_CTRL, EO);
 }
 
 /* parse struct tm to toy value */
@@ -114,23 +114,23 @@ static uint64_t toy_time_to_val_mon(const struct tm *tm)
 {
     uint64_t val = 0;
 
-    val = FIELD_DP32(val, TOY, MON, tm->tm_mon + 1);
-    val = FIELD_DP32(val, TOY, DAY, tm->tm_mday);
-    val = FIELD_DP32(val, TOY, HOUR, tm->tm_hour);
-    val = FIELD_DP32(val, TOY, MIN, tm->tm_min);
-    val = FIELD_DP32(val, TOY, SEC, tm->tm_sec);
+    val = REG_FIELD_DP32(val, TOY, MON, tm->tm_mon + 1);
+    val = REG_FIELD_DP32(val, TOY, DAY, tm->tm_mday);
+    val = REG_FIELD_DP32(val, TOY, HOUR, tm->tm_hour);
+    val = REG_FIELD_DP32(val, TOY, MIN, tm->tm_min);
+    val = REG_FIELD_DP32(val, TOY, SEC, tm->tm_sec);
     return val;
 }
 
 static void toymatch_val_to_time(LS7ARtcState *s, uint64_t val, struct tm *tm)
 {
     qemu_get_timedate(tm, s->offset_toy);
-    tm->tm_sec = FIELD_EX32(val, TOY_MATCH, SEC);
-    tm->tm_min = FIELD_EX32(val, TOY_MATCH, MIN);
-    tm->tm_hour = FIELD_EX32(val, TOY_MATCH, HOUR);
-    tm->tm_mday = FIELD_EX32(val, TOY_MATCH, DAY);
-    tm->tm_mon = FIELD_EX32(val, TOY_MATCH, MON) - 1;
-    tm->tm_year += (FIELD_EX32(val, TOY_MATCH, YEAR) - (tm->tm_year & 0x3f));
+    tm->tm_sec = REG_FIELD_EX32(val, TOY_MATCH, SEC);
+    tm->tm_min = REG_FIELD_EX32(val, TOY_MATCH, MIN);
+    tm->tm_hour = REG_FIELD_EX32(val, TOY_MATCH, HOUR);
+    tm->tm_mday = REG_FIELD_EX32(val, TOY_MATCH, DAY);
+    tm->tm_mon = REG_FIELD_EX32(val, TOY_MATCH, MON) - 1;
+    tm->tm_year += (REG_FIELD_EX32(val, TOY_MATCH, YEAR) - (tm->tm_year & 0x3f));
 }
 
 static void toymatch_write(LS7ARtcState *s, uint64_t val, int num)
@@ -283,11 +283,11 @@ static void ls7a_rtc_write(void *opaque, hwaddr addr,
         /* it do not support write when toy disabled */
         if (toy_enabled(s)) {
             qemu_get_timedate(&tm, s->offset_toy);
-            tm.tm_sec = FIELD_EX32(val, TOY, SEC);
-            tm.tm_min = FIELD_EX32(val, TOY, MIN);
-            tm.tm_hour = FIELD_EX32(val, TOY, HOUR);
-            tm.tm_mday = FIELD_EX32(val, TOY, DAY);
-            tm.tm_mon = FIELD_EX32(val, TOY, MON) - 1;
+            tm.tm_sec = REG_FIELD_EX32(val, TOY, SEC);
+            tm.tm_min = REG_FIELD_EX32(val, TOY, MIN);
+            tm.tm_hour = REG_FIELD_EX32(val, TOY, HOUR);
+            tm.tm_mday = REG_FIELD_EX32(val, TOY, DAY);
+            tm.tm_mon = REG_FIELD_EX32(val, TOY, MON) - 1;
             s->offset_toy = qemu_timedate_diff(&tm);
         }
     break;
