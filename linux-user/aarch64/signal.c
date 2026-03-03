@@ -485,7 +485,7 @@ static bool target_restore_zt_record(CPUARMState *env,
     uint16_t nregs;
     uint64_t *z;
 
-    if (!(FIELD_EX64(svcr, SVCR, ZA))) {
+    if (!(REG_FIELD_EX64(svcr, SVCR, ZA))) {
         return false;
     }
 
