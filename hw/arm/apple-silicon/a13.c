@@ -120,12 +120,12 @@ static QTAILQ_HEAD(, AppleA13Cluster) clusters =
 static uint64_t ipi_cr = kDeferredIPITimerDefault;
 static QEMUTimer *ipicr_timer = NULL;
 
-bool apple_a13_is_asleep(AppleA13State *acpu)
+bool apple_a13_is_asleep(const AppleA13State *acpu)
 {
     return CPU(acpu)->halted;
 }
 
-bool apple_a13_is_off(AppleA13State *acpu)
+bool apple_a13_is_off(const AppleA13State *acpu)
 {
     return acpu->parent_obj.power_state == PSCI_OFF;
 }
@@ -213,15 +213,21 @@ static void apple_a13_cluster_cpreg_write(CPUARMState *env,
 }
 
 /* Deliver IPI */
-static void apple_a13_cluster_deliver_ipi(AppleA13Cluster *c, uint64_t cpu_id,
-                                          uint64_t src_cpu, uint64_t flag)
+static void apple_a13_deliver_ipi(AppleA13State *cpu, uint64_t src_cpu,
+                                  uint64_t flag)
 {
-    if (c->cpus[cpu_id]->ipi_sr) {
+    if (cpu->ipi_sr) {
         return;
     }
 
-    c->cpus[cpu_id]->ipi_sr = 1LL | (src_cpu << IPI_SR_SRC_CPU_SHIFT) | flag;
-    qemu_irq_raise(c->cpus[cpu_id]->fast_ipi);
+    cpu->ipi_sr = 1LL | (src_cpu << IPI_SR_SRC_CPU_SHIFT) | flag;
+    qemu_irq_raise(cpu->fast_ipi);
+}
+
+static void apple_a13_cluster_deliver_ipi(AppleA13Cluster *c, uint64_t cpu_id,
+                                          uint64_t src_cpu, uint64_t flag)
+{
+    apple_a13_deliver_ipi(c->cpus[cpu_id], src_cpu, flag);
 }
 
 static int apple_a13_cluster_pre_save(void *opaque)
@@ -248,17 +254,14 @@ static void apple_a13_cluster_reset(DeviceState *dev)
 static int add_cpu_to_cluster(Object *obj, void *opaque)
 {
     AppleA13Cluster *cluster = opaque;
-    CPUState *cpu = (CPUState *)object_dynamic_cast(obj, TYPE_CPU);
     AppleA13State *acpu =
         (AppleA13State *)object_dynamic_cast(obj, TYPE_APPLE_A13);
 
-    if (!cpu) {
-        return 0;
-    }
-    cpu->cluster_index = cluster->parent_obj.cluster_id;
     if (!acpu) {
         return 0;
     }
+
+    acpu->parent_obj.parent_obj.cluster_index = cluster->parent_obj.cluster_id;
     cluster->cpus[acpu->cpu_id] = acpu;
     return 0;
 }
@@ -271,28 +274,40 @@ static void apple_a13_cluster_realize(DeviceState *dev, Error **errp)
 
 static void apple_a13_cluster_tick(AppleA13Cluster *c)
 {
-    int i;
-    int j;
+    uint32_t on = 0, awake = 0;
 
-    for (i = 0; i < A13_MAX_CPU; i++) { /* source */
-        for (j = 0; j < A13_MAX_CPU; j++) { /* target */
-            if (c->cpus[j] && c->deferredIPI[i][j] &&
-                !apple_a13_is_off(c->cpus[j])) {
-                apple_a13_cluster_deliver_ipi(c, j, i, IPI_RR_TYPE_DEFERRED);
-                break;
-            }
+    for (uint32_t i = 0; i < A13_MAX_CPU; ++i) {
+        const AppleA13State *cpu = c->cpus[i];
+        if (!cpu || apple_a13_is_off(cpu)) {
+            continue;
+        }
+        on |= BIT32(i);
+        if (!apple_a13_is_asleep(cpu)) {
+            awake |= BIT32(i);
         }
     }
 
-    for (i = 0; i < A13_MAX_CPU; i++) { /* source */
-        for (j = 0; j < A13_MAX_CPU; j++) { /* target */
-            if (c->cpus[j] && c->noWakeIPI[i][j] &&
-                !apple_a13_is_asleep(c->cpus[j]) &&
-                !apple_a13_is_off(c->cpus[j])) {
-                apple_a13_cluster_deliver_ipi(c, j, i, IPI_RR_TYPE_NOWAKE);
-                break;
-            }
+    if (!on) {
+        return;
+    }
+
+    for (uint32_t src = 0; src < A13_MAX_CPU; ++src) {
+        if (!c->cpus[src]) {
+            continue;
         }
+
+        const uint32_t noWakeCandidates = c->noWakeIPI[src] & awake;
+        const uint32_t candidates =
+            noWakeCandidates | (c->deferredIPI[src] & on);
+        if (!candidates) {
+            continue;
+        }
+
+        const uint32_t dest = ctz32(candidates);
+        const uint32_t type = (noWakeCandidates & BIT32(dest)) ?
+                                  IPI_RR_TYPE_NOWAKE :
+                                  IPI_RR_TYPE_DEFERRED;
+        apple_a13_cluster_deliver_ipi(c, dest, src, type);
     }
 }
 
@@ -310,14 +325,14 @@ static void apple_a13_cluster_ipicr_tick(void *opaque)
 
 static void apple_a13_cluster_reset_handler(void *opaque)
 {
+    ipi_cr = kDeferredIPITimerDefault;
     if (ipicr_timer) {
         timer_del(ipicr_timer);
-        ipicr_timer = NULL;
+    } else {
+        ipicr_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL,
+                                   apple_a13_cluster_ipicr_tick, NULL);
     }
-    ipicr_timer =
-        timer_new_ns(QEMU_CLOCK_VIRTUAL, apple_a13_cluster_ipicr_tick, NULL);
-    timer_mod_ns(ipicr_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
-                                  kDeferredIPITimerDefault);
+    timer_mod_ns(ipicr_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + ipi_cr);
 }
 
 static void apple_a13_cluster_instance_init(Object *obj)
@@ -339,19 +354,18 @@ static void apple_a13_ipi_rr_local(CPUARMState *env, const ARMCPRegInfo *ri,
 
     uint32_t phys_id = (value & 0xFF) | (acpu->cluster_id << 8);
     AppleA13Cluster *c = apple_a13_find_cluster(acpu->cluster_id);
-    uint32_t cpu_id = -1U;
-    int i;
+    uint32_t dst_cpu_id = -1U;
+    AppleA13State *dst_acpu;
 
-    for (i = 0; i < A13_MAX_CPU; i++) {
-        if (c->cpus[i]) {
-            if (c->cpus[i]->phys_id == phys_id) {
-                cpu_id = i;
-                break;
-            }
+    for (uint32_t i = 0; i < A13_MAX_CPU; i++) {
+        if (c->cpus[i] != NULL && c->cpus[i]->phys_id == phys_id) {
+            dst_cpu_id = i;
+            dst_acpu = c->cpus[dst_cpu_id];
+            break;
         }
     }
 
-    if (cpu_id == -1U || c->cpus[cpu_id] == NULL) {
+    if (dst_cpu_id == -1U) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "CPU %x failed to send fast IPI to local CPU %x: value: "
                       "0x" HWADDR_FMT_plx "\n",
@@ -361,27 +375,25 @@ static void apple_a13_ipi_rr_local(CPUARMState *env, const ARMCPRegInfo *ri,
 
     switch (value & IPI_RR_TYPE_MASK) {
     case IPI_RR_TYPE_NOWAKE:
-        if (apple_a13_is_asleep(c->cpus[cpu_id])) {
-            c->noWakeIPI[acpu->cpu_id][cpu_id] = 1;
+        if (apple_a13_is_asleep(dst_acpu)) {
+            c->noWakeIPI[acpu->cpu_id] |= BIT32(dst_cpu_id);
         } else {
-            apple_a13_cluster_deliver_ipi(c, cpu_id, acpu->cpu_id,
-                                          IPI_RR_TYPE_IMMEDIATE);
+            apple_a13_deliver_ipi(dst_acpu, acpu->cpu_id,
+                                  IPI_RR_TYPE_IMMEDIATE);
         }
         break;
     case IPI_RR_TYPE_DEFERRED:
-        c->deferredIPI[acpu->cpu_id][cpu_id] = 1;
+        c->deferredIPI[acpu->cpu_id] |= BIT32(dst_cpu_id);
         break;
     case IPI_RR_TYPE_RETRACT:
-        c->deferredIPI[acpu->cpu_id][cpu_id] = 0;
-        c->noWakeIPI[acpu->cpu_id][cpu_id] = 0;
+        c->deferredIPI[acpu->cpu_id] &= ~BIT32(dst_cpu_id);
+        c->noWakeIPI[acpu->cpu_id] &= ~BIT32(dst_cpu_id);
         break;
     case IPI_RR_TYPE_IMMEDIATE:
-        apple_a13_cluster_deliver_ipi(c, cpu_id, acpu->cpu_id,
-                                      IPI_RR_TYPE_IMMEDIATE);
+        apple_a13_deliver_ipi(dst_acpu, acpu->cpu_id, IPI_RR_TYPE_IMMEDIATE);
         break;
     default:
         g_assert_not_reached();
-        break;
     }
 }
 
@@ -392,27 +404,24 @@ static void apple_a13_ipi_rr_global(CPUARMState *env, const ARMCPRegInfo *ri,
     AppleA13State *acpu =
         container_of(env_archcpu(env), AppleA13State, parent_obj);
     uint32_t cluster_id = (value >> IPI_RR_TARGET_CLUSTER_SHIFT) & 0xFF;
-    AppleA13Cluster *c = apple_a13_find_cluster(cluster_id);
-
-    if (!c) {
+    AppleA13Cluster *cluster = apple_a13_find_cluster(cluster_id);
+    if (!cluster) {
         return;
     }
 
     uint32_t phys_id = (value & 0xFF) | (cluster_id << 8);
-    uint32_t cpu_id = -1;
-    int i;
+    uint32_t dst_cpu_id = -1;
+    AppleA13State *dst_acpu;
 
-    for (i = 0; i < A13_MAX_CPU; i++) {
-        if (c->cpus[i] == NULL) {
-            continue;
-        }
-        if (c->cpus[i]->phys_id == phys_id) {
-            cpu_id = i;
+    for (uint32_t i = 0; i < A13_MAX_CPU; i++) {
+        if (cluster->cpus[i] != NULL && cluster->cpus[i]->phys_id == phys_id) {
+            dst_cpu_id = i;
+            dst_acpu = cluster->cpus[dst_cpu_id];
             break;
         }
     }
 
-    if (cpu_id == -1U || c->cpus[cpu_id] == NULL) {
+    if (dst_cpu_id == -1U) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "CPU %x failed to send fast IPI to global CPU %x: value: "
                       "0x" HWADDR_FMT_plx "\n",
@@ -422,27 +431,25 @@ static void apple_a13_ipi_rr_global(CPUARMState *env, const ARMCPRegInfo *ri,
 
     switch (value & IPI_RR_TYPE_MASK) {
     case IPI_RR_TYPE_NOWAKE:
-        if (apple_a13_is_asleep(c->cpus[cpu_id])) {
-            c->noWakeIPI[acpu->cpu_id][cpu_id] = 1;
+        if (apple_a13_is_asleep(dst_acpu)) {
+            cluster->noWakeIPI[acpu->cpu_id] |= BIT32(dst_cpu_id);
         } else {
-            apple_a13_cluster_deliver_ipi(c, cpu_id, acpu->cpu_id,
-                                          IPI_RR_TYPE_IMMEDIATE);
+            apple_a13_deliver_ipi(dst_acpu, acpu->cpu_id,
+                                  IPI_RR_TYPE_IMMEDIATE);
         }
         break;
     case IPI_RR_TYPE_DEFERRED:
-        c->deferredIPI[acpu->cpu_id][cpu_id] = 1;
+        cluster->deferredIPI[acpu->cpu_id] |= BIT32(dst_cpu_id);
         break;
     case IPI_RR_TYPE_RETRACT:
-        c->deferredIPI[acpu->cpu_id][cpu_id] = 0;
-        c->noWakeIPI[acpu->cpu_id][cpu_id] = 0;
+        cluster->deferredIPI[acpu->cpu_id] &= ~BIT32(dst_cpu_id);
+        cluster->noWakeIPI[acpu->cpu_id] &= ~BIT32(dst_cpu_id);
         break;
     case IPI_RR_TYPE_IMMEDIATE:
-        apple_a13_cluster_deliver_ipi(c, cpu_id, acpu->cpu_id,
-                                      IPI_RR_TYPE_IMMEDIATE);
+        apple_a13_deliver_ipi(dst_acpu, acpu->cpu_id, IPI_RR_TYPE_IMMEDIATE);
         break;
     default:
         g_assert_not_reached();
-        break;
     }
 }
 
@@ -469,10 +476,10 @@ static void apple_a13_ipi_write_sr(CPUARMState *env, const ARMCPRegInfo *ri,
 
     switch (value & IPI_RR_TYPE_MASK) {
     case IPI_RR_TYPE_NOWAKE:
-        c->noWakeIPI[src_cpu][acpu->cpu_id] = 0;
+        c->noWakeIPI[src_cpu] &= ~BIT32(acpu->cpu_id);
         break;
     case IPI_RR_TYPE_DEFERRED:
-        c->deferredIPI[src_cpu][acpu->cpu_id] = 0;
+        c->deferredIPI[src_cpu] &= ~BIT32(acpu->cpu_id);
         break;
     default:
         break;
@@ -482,7 +489,7 @@ static void apple_a13_ipi_write_sr(CPUARMState *env, const ARMCPRegInfo *ri,
 /* Read deferred interrupt timeout (global) */
 static uint64_t apple_a13_ipi_read_cr(CPUARMState *env, const ARMCPRegInfo *ri)
 {
-    uint64_t abstime;
+    uint64_t abstime = 0;
 
     nanoseconds_to_absolutetime(ipi_cr, &abstime);
     return abstime;
@@ -492,18 +499,18 @@ static uint64_t apple_a13_ipi_read_cr(CPUARMState *env, const ARMCPRegInfo *ri)
 static void apple_a13_ipi_write_cr(CPUARMState *env, const ARMCPRegInfo *ri,
                                    uint64_t value)
 {
-    uint64_t nanosec = kDeferredIPITimerDefault;
-    uint64_t ct;
+    uint64_t nanosec = 0;
+    uint64_t ct = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
 
     if (value != 0) {
-        absolutetime_to_nanoseconds(value, &nanosec);
-        if (nanosec == 0) {
-            nanosec = kDeferredIPITimerDefault;
-        }
+        absolutetime_to_nanoseconds(value & 0xFFFF, &nanosec);
     }
 
-    ct = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
-    timer_mod_ns(ipicr_timer, ((ct / ipi_cr) * ipi_cr) + nanosec);
+    if (nanosec == 0) {
+        timer_del(ipicr_timer);
+    } else {
+        timer_mod_ns(ipicr_timer, ct + nanosec);
+    }
     ipi_cr = nanosec;
 }
 
@@ -751,7 +758,7 @@ static const Property apple_a13_cluster_properties[] = {
 };
 
 static const VMStateDescription vmstate_apple_a13 = {
-    .name = "apple_a13",
+    .name = "AppleA13State",
     .version_id = 1,
     .minimum_version_id = 1,
     .fields =
@@ -799,18 +806,15 @@ static const VMStateDescription vmstate_apple_a13 = {
 };
 
 static const VMStateDescription vmstate_apple_a13_cluster = {
-    .name = "apple_a13_cluster",
+    .name = "AppleA13Cluster",
     .version_id = 1,
     .minimum_version_id = 1,
     .pre_save = apple_a13_cluster_pre_save,
     .post_load = apple_a13_cluster_post_load,
     .fields =
         (const VMStateField[]){
-            VMSTATE_UINT32_2DARRAY(deferredIPI, AppleA13Cluster, A13_MAX_CPU,
-                                   A13_MAX_CPU),
-            VMSTATE_UINT32_2DARRAY(noWakeIPI, AppleA13Cluster, A13_MAX_CPU,
-                                   A13_MAX_CPU),
-            VMSTATE_UINT64(tick, AppleA13Cluster),
+            VMSTATE_UINT32_ARRAY(deferredIPI, AppleA13Cluster, A13_MAX_CPU),
+            VMSTATE_UINT32_ARRAY(noWakeIPI, AppleA13Cluster, A13_MAX_CPU),
             VMSTATE_UINT64(ipi_cr, AppleA13Cluster),
             VMSTATE_A13_CLUSTER_CPREG(CTRR_A_LWR_EL1),
             VMSTATE_A13_CLUSTER_CPREG(CTRR_A_UPR_EL1),

@@ -111,9 +111,8 @@ typedef struct AppleA13Cluster {
     uint32_t cluster_type;
     MemoryRegion mr;
     AppleA13State *cpus[A13_MAX_CPU];
-    uint32_t deferredIPI[A13_MAX_CPU][A13_MAX_CPU];
-    uint32_t noWakeIPI[A13_MAX_CPU][A13_MAX_CPU];
-    uint64_t tick;
+    uint32_t deferredIPI[A13_MAX_CPU];
+    uint32_t noWakeIPI[A13_MAX_CPU];
     uint64_t ipi_cr;
     QTAILQ_ENTRY(AppleA13Cluster) next;
     A13_CPREG_VAR_DEF(CTRR_A_LWR_EL1);
@@ -128,8 +127,8 @@ AppleA13State *apple_a13_create(const char *name, uint32_t cpu_id,
                                 uint32_t phys_id, uint32_t cluster_id,
                                 uint16_t cluster_type);
 AppleA13State *apple_a13_from_node(AppleDTNode *node);
-bool apple_a13_is_asleep(AppleA13State *acpu);
-bool apple_a13_is_off(AppleA13State *acpu);
+bool apple_a13_is_asleep(const AppleA13State *acpu);
+bool apple_a13_is_off(const AppleA13State *acpu);
 void apple_a13_set_on(AppleA13State *acpu);
 void apple_a13_reset(AppleA13State *acpu);
 void apple_a13_set_off(AppleA13State *acpu);
