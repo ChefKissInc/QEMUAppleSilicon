@@ -258,9 +258,9 @@ int aarch64_gdb_get_sme_reg(CPUState *cs, GByteArray *buf, int reg)
     case 0: /* svg register */
     {
         int vq = 0;
-        if (FIELD_EX64(env->svcr, SVCR, SM)) {
+        if (REG_FIELD_EX64(env->svcr, SVCR, SM)) {
             vq = sve_vqm1_for_el_sm(env, arm_current_el(env),
-                                    FIELD_EX64(env->svcr, SVCR, SM)) + 1;
+                                    REG_FIELD_EX64(env->svcr, SVCR, SM)) + 1;
         }
         /* svg = vector granules (2 * vector quardwords) in streaming mode */
         return gdb_get_reg64(buf, vq * 2);
