@@ -582,7 +582,7 @@ struct TypeInfo
  * specific class type.
  */
 #ifdef CONFIG_QOM_CAST_DEBUG
-#define OBJECT_CLASS_CHECK(class_type, class, name) \
+#define OBJECT_CLASS_CHECK(class_type, class, objname, name) \
     ((class_type *)object_class_dynamic_cast_assert(OBJECT_CLASS(class), (name), \
                                                __FILE__, __LINE__, __func__))
 #else
