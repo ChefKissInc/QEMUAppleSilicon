@@ -16,6 +16,7 @@
 #ifndef NPCM7XX_OTP_H
 #define NPCM7XX_OTP_H
 
+#include "qom/object.h"
 #include "system/memory.h"
 #include "hw/sysbus.h"
 
@@ -57,6 +58,7 @@ typedef struct NPCM7xxOTPState {
 
 #define TYPE_NPCM7XX_OTP "npcm7xx-otp"
 #define NPCM7XX_OTP(obj) OBJECT_CHECK(NPCM7xxOTPState, (obj), TYPE_NPCM7XX_OTP)
+DO_OBJECT_INTERFACE_INFO(NPCM7XX_OTP, false);
 
 #define TYPE_NPCM7XX_KEY_STORAGE "npcm7xx-key-storage"
 #define TYPE_NPCM7XX_FUSE_ARRAY "npcm7xx-fuse-array"

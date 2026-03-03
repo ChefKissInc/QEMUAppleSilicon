@@ -153,7 +153,7 @@ typedef struct XiveNotifier XiveNotifier;
 #define XIVE_NOTIFIER(obj)                                     \
     INTERFACE_CHECK(XiveNotifier, (obj), TYPE_XIVE_NOTIFIER)
 typedef struct XiveNotifierClass XiveNotifierClass;
-DECLARE_CLASS_CHECKERS(XiveNotifierClass, XIVE_NOTIFIER,
+DECLARE_CLASS_CHECKERS_IF(XiveNotifierClass, XIVE_NOTIFIER,
                        TYPE_XIVE_NOTIFIER)
 
 struct XiveNotifierClass {
@@ -435,7 +435,7 @@ typedef struct XiveTCTXMatch {
 #define XIVE_PRESENTER(obj)                                     \
     INTERFACE_CHECK(XivePresenter, (obj), TYPE_XIVE_PRESENTER)
 typedef struct XivePresenterClass XivePresenterClass;
-DECLARE_CLASS_CHECKERS(XivePresenterClass, XIVE_PRESENTER,
+DECLARE_CLASS_CHECKERS_IF(XivePresenterClass, XIVE_PRESENTER,
                        TYPE_XIVE_PRESENTER)
 
 #define XIVE_PRESENTER_GEN1_TIMA_OS     0x1
@@ -474,7 +474,7 @@ uint8_t xive_get_group_level(bool crowd, bool ignore,
 #define XIVE_FABRIC(obj)                                     \
     INTERFACE_CHECK(XiveFabric, (obj), TYPE_XIVE_FABRIC)
 typedef struct XiveFabricClass XiveFabricClass;
-DECLARE_CLASS_CHECKERS(XiveFabricClass, XIVE_FABRIC,
+DECLARE_CLASS_CHECKERS_IF(XiveFabricClass, XIVE_FABRIC,
                        TYPE_XIVE_FABRIC)
 
 struct XiveFabricClass {

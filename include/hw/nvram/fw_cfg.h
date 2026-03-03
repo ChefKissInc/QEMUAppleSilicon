@@ -17,7 +17,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(FWCfgIoState, FW_CFG_IO)
 OBJECT_DECLARE_SIMPLE_TYPE(FWCfgMemState, FW_CFG_MEM)
 
 typedef struct FWCfgDataGeneratorClass FWCfgDataGeneratorClass;
-DECLARE_CLASS_CHECKERS(FWCfgDataGeneratorClass, FW_CFG_DATA_GENERATOR,
+DECLARE_CLASS_CHECKERS_IF(FWCfgDataGeneratorClass, FW_CFG_DATA_GENERATOR,
                        TYPE_FW_CFG_DATA_GENERATOR_INTERFACE)
 
 struct FWCfgDataGeneratorClass {

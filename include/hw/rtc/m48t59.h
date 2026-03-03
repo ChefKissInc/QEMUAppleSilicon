@@ -32,7 +32,7 @@
 #define TYPE_NVRAM "nvram"
 
 typedef struct NvramClass NvramClass;
-DECLARE_CLASS_CHECKERS(NvramClass, NVRAM,
+DECLARE_CLASS_CHECKERS_IF(NvramClass, NVRAM,
                        TYPE_NVRAM)
 #define NVRAM(obj) \
     INTERFACE_CHECK(Nvram, (obj), TYPE_NVRAM)

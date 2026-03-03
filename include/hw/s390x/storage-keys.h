@@ -129,7 +129,7 @@ void hmp_info_skeys(Monitor *mon, const QDict *qdict);
 #define TYPE_DUMP_SKEYS_INTERFACE "dump-skeys-interface"
 
 typedef struct DumpSKeysInterface DumpSKeysInterface;
-DECLARE_CLASS_CHECKERS(DumpSKeysInterface, DUMP_SKEYS_INTERFACE,
+DECLARE_CLASS_CHECKERS_IF(DumpSKeysInterface, DUMP_SKEYS_INTERFACE,
                        TYPE_DUMP_SKEYS_INTERFACE)
 
 struct DumpSKeysInterface {

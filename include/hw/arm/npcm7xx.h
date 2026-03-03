@@ -74,9 +74,9 @@ typedef struct NPCM7xxMachineClass {
 } NPCM7xxMachineClass;
 
 #define NPCM7XX_MACHINE_CLASS(klass)                                    \
-    OBJECT_CLASS_CHECK(NPCM7xxMachineClass, (klass), TYPE_NPCM7XX_MACHINE)
+    OBJECT_CLASS_CHECK(NPCM7xxMachineClass, (klass), NPCM7XX_MACHINE, TYPE_NPCM7XX_MACHINE)
 #define NPCM7XX_MACHINE_GET_CLASS(obj)                                  \
-    OBJECT_GET_CLASS(NPCM7xxMachineClass, (obj), TYPE_NPCM7XX_MACHINE)
+    OBJECT_GET_CLASS(NPCM7xxMachineClass, (obj), NPCM7XX_MACHINE, TYPE_NPCM7XX_MACHINE)
 
 struct NPCM7xxState {
     DeviceState         parent;

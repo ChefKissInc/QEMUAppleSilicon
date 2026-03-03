@@ -140,7 +140,7 @@ struct ICSIRQState {
 #define XICS_FABRIC(obj)                                     \
     INTERFACE_CHECK(XICSFabric, (obj), TYPE_XICS_FABRIC)
 typedef struct XICSFabricClass XICSFabricClass;
-DECLARE_CLASS_CHECKERS(XICSFabricClass, XICS_FABRIC,
+DECLARE_CLASS_CHECKERS_IF(XICSFabricClass, XICS_FABRIC,
                        TYPE_XICS_FABRIC)
 
 struct XICSFabricClass {

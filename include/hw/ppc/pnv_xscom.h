@@ -29,7 +29,7 @@ typedef struct PnvChip PnvChip;
 #define PNV_XSCOM_INTERFACE(obj) \
     INTERFACE_CHECK(PnvXScomInterface, (obj), TYPE_PNV_XSCOM_INTERFACE)
 typedef struct PnvXScomInterfaceClass PnvXScomInterfaceClass;
-DECLARE_CLASS_CHECKERS(PnvXScomInterfaceClass, PNV_XSCOM_INTERFACE,
+DECLARE_CLASS_CHECKERS_IF(PnvXScomInterfaceClass, PNV_XSCOM_INTERFACE,
                        TYPE_PNV_XSCOM_INTERFACE)
 
 struct PnvXScomInterfaceClass {

@@ -73,9 +73,9 @@ struct NPCM7xxOTPClass {
 };
 
 #define NPCM7XX_OTP_CLASS(klass) \
-    OBJECT_CLASS_CHECK(NPCM7xxOTPClass, (klass), TYPE_NPCM7XX_OTP)
+    OBJECT_CLASS_CHECK(NPCM7xxOTPClass, (klass), NPCM7XX_OTP, TYPE_NPCM7XX_OTP)
 #define NPCM7XX_OTP_GET_CLASS(obj) \
-    OBJECT_GET_CLASS(NPCM7xxOTPClass, (obj), TYPE_NPCM7XX_OTP)
+    OBJECT_GET_CLASS(NPCM7xxOTPClass, (obj), NPCM7XX_OTP, TYPE_NPCM7XX_OTP)
 
 static uint8_t ecc_encode_nibble(uint8_t n)
 {

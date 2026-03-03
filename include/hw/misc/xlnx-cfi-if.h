@@ -15,7 +15,7 @@
 
 #define TYPE_XLNX_CFI_IF "xlnx-cfi-if"
 typedef struct XlnxCfiIfClass XlnxCfiIfClass;
-DECLARE_CLASS_CHECKERS(XlnxCfiIfClass, XLNX_CFI_IF, TYPE_XLNX_CFI_IF)
+DECLARE_CLASS_CHECKERS_IF(XlnxCfiIfClass, XLNX_CFI_IF, TYPE_XLNX_CFI_IF)
 
 #define XLNX_CFI_IF(obj) \
      INTERFACE_CHECK(XlnxCfiIf, (obj), TYPE_XLNX_CFI_IF)

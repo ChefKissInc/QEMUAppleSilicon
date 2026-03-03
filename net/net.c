@@ -966,7 +966,7 @@ GPtrArray *qemu_get_nic_models(const char *device_type)
 
     while (list) {
         DeviceClass *dc = OBJECT_CLASS_CHECK(DeviceClass, list->data,
-                                             TYPE_DEVICE);
+                                             DEVICE, TYPE_DEVICE);
         GSList *next;
         if (test_bit(DEVICE_CATEGORY_NETWORK, dc->categories) &&
             dc->user_creatable) {

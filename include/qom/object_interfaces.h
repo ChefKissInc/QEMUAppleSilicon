@@ -8,7 +8,7 @@
 #define TYPE_USER_CREATABLE "user-creatable"
 
 typedef struct UserCreatableClass UserCreatableClass;
-DECLARE_CLASS_CHECKERS(UserCreatableClass, USER_CREATABLE,
+DECLARE_CLASS_CHECKERS_IF(UserCreatableClass, USER_CREATABLE,
                        TYPE_USER_CREATABLE)
 #define USER_CREATABLE(obj) \
      INTERFACE_CHECK(UserCreatable, (obj), \

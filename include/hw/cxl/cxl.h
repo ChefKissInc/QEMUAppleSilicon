@@ -63,12 +63,14 @@ OBJECT_DECLARE_SIMPLE_TYPE(CXLHost, PXB_CXL_HOST)
 #define TYPE_CXL_USP "cxl-upstream"
 
 typedef struct CXLUpstreamPort CXLUpstreamPort;
+DO_OBJECT_INTERFACE_INFO(CXL_USP, false);
 DECLARE_INSTANCE_CHECKER(CXLUpstreamPort, CXL_USP, TYPE_CXL_USP)
 CXLComponentState *cxl_usp_to_cstate(CXLUpstreamPort *usp);
 
 #define TYPE_CXL_DSP "cxl-downstream"
 
 typedef struct CXLDownstreamPort CXLDownstreamPort;
+DO_OBJECT_INTERFACE_INFO(CXL_DSP, false);
 DECLARE_INSTANCE_CHECKER(CXLDownstreamPort, CXL_DSP, TYPE_CXL_DSP)
 
 #endif

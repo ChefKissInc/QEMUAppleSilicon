@@ -44,7 +44,7 @@ DECLARE_OBJ_CHECKERS(IOMMUMemoryRegion, IOMMUMemoryRegionClass,
 #define TYPE_RAM_DISCARD_MANAGER "ram-discard-manager"
 typedef struct RamDiscardManagerClass RamDiscardManagerClass;
 typedef struct RamDiscardManager RamDiscardManager;
-DECLARE_OBJ_CHECKERS(RamDiscardManager, RamDiscardManagerClass,
+DECLARE_OBJ_CHECKERS_IF(RamDiscardManager, RamDiscardManagerClass,
                      RAM_DISCARD_MANAGER, TYPE_RAM_DISCARD_MANAGER);
 
 /* Possible bits for global_dirty_log_{start|stop} */

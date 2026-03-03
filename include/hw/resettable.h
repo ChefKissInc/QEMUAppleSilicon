@@ -18,7 +18,7 @@
 #define TYPE_RESETTABLE_INTERFACE "resettable"
 
 typedef struct ResettableClass ResettableClass;
-DECLARE_CLASS_CHECKERS(ResettableClass, RESETTABLE,
+DECLARE_CLASS_CHECKERS_IF(ResettableClass, RESETTABLE,
                        TYPE_RESETTABLE_INTERFACE)
 
 

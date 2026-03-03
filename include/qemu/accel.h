@@ -34,12 +34,13 @@ typedef struct AccelClass AccelClass;
 #define ACCEL_CLASS_SUFFIX  "-" TYPE_ACCEL
 #define ACCEL_CLASS_NAME(a) (a ACCEL_CLASS_SUFFIX)
 
+DO_OBJECT_INTERFACE_INFO(ACCEL, false);
 #define ACCEL_CLASS(klass) \
-    OBJECT_CLASS_CHECK(AccelClass, (klass), TYPE_ACCEL)
+    OBJECT_CLASS_CHECK(AccelClass, (klass), ACCEL, TYPE_ACCEL)
 #define ACCEL(obj) \
     OBJECT_CHECK(AccelState, (obj), TYPE_ACCEL)
 #define ACCEL_GET_CLASS(obj) \
-    OBJECT_GET_CLASS(AccelClass, (obj), TYPE_ACCEL)
+    OBJECT_GET_CLASS(AccelClass, (obj), ACCEL, TYPE_ACCEL)
 
 AccelClass *accel_find(const char *opt_name);
 AccelState *current_accel(void);

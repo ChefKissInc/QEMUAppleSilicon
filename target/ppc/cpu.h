@@ -1566,7 +1566,7 @@ struct PPCVirtualHypervisorClass {
 };
 
 #define TYPE_PPC_VIRTUAL_HYPERVISOR "ppc-virtual-hypervisor"
-DECLARE_OBJ_CHECKERS(PPCVirtualHypervisor, PPCVirtualHypervisorClass,
+DECLARE_OBJ_CHECKERS_IF(PPCVirtualHypervisor, PPCVirtualHypervisorClass,
                      PPC_VIRTUAL_HYPERVISOR, TYPE_PPC_VIRTUAL_HYPERVISOR)
 
 static inline bool vhyp_cpu_in_nested(PowerPCCPU *cpu)

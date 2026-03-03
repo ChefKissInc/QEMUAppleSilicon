@@ -670,7 +670,7 @@ void dump_vmstate_json_to_file(FILE *out_file)
     list = object_class_get_list(TYPE_DEVICE, true);
     for (elt = list; elt; elt = elt->next) {
         DeviceClass *dc = OBJECT_CLASS_CHECK(DeviceClass, elt->data,
-                                             TYPE_DEVICE);
+                                             DEVICE, TYPE_DEVICE);
         const char *name;
         int indent = 2;
 

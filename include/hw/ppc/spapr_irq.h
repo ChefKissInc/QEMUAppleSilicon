@@ -49,7 +49,7 @@ typedef struct SpaprInterruptController SpaprInterruptController;
 #define SPAPR_INTC(obj)                                     \
     INTERFACE_CHECK(SpaprInterruptController, (obj), TYPE_SPAPR_INTC)
 typedef struct SpaprInterruptControllerClass SpaprInterruptControllerClass;
-DECLARE_CLASS_CHECKERS(SpaprInterruptControllerClass, SPAPR_INTC,
+DECLARE_CLASS_CHECKERS_IF(SpaprInterruptControllerClass, SPAPR_INTC,
                        TYPE_SPAPR_INTC)
 
 struct SpaprInterruptControllerClass {

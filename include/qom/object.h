@@ -217,45 +217,28 @@ struct Object
     OBJ_NAME(const void *obj) \
     { return OBJECT_CHECK(InstanceType, obj, TYPENAME); }
 
-/**
- * DECLARE_CLASS_CHECKERS:
- * @ClassType: class struct name
- * @OBJ_NAME: the object name in uppercase with underscore separators
- * @TYPENAME: type name
- *
- * Direct usage of this macro should be avoided, and the complete
- * OBJECT_DECLARE_TYPE macro is recommended instead.
- *
- * This macro will provide the class type cast functions for a
- * QOM type.
- */
-#define DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME) \
+#define DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME) \
     static inline G_GNUC_UNUSED ClassType * \
     OBJ_NAME##_GET_CLASS(const void *obj) \
-    { return OBJECT_GET_CLASS(ClassType, obj, TYPENAME); } \
+    { return OBJECT_GET_CLASS(ClassType, obj, OBJ_NAME, TYPENAME); } \
     \
     static inline G_GNUC_UNUSED ClassType * \
     OBJ_NAME##_CLASS(const void *klass) \
-    { return OBJECT_CLASS_CHECK(ClassType, klass, TYPENAME); }
+    { return OBJECT_CLASS_CHECK(ClassType, klass, OBJ_NAME, TYPENAME); }
 
-/**
- * DECLARE_OBJ_CHECKERS:
- * @InstanceType: instance struct name
- * @ClassType: class struct name
- * @OBJ_NAME: the object name in uppercase with underscore separators
- * @TYPENAME: type name
- *
- * Direct usage of this macro should be avoided, and the complete
- * OBJECT_DECLARE_TYPE macro is recommended instead.
- *
- * This macro will provide the three standard type cast functions for a
- * QOM type.
- */
-#define DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME) \
+#define DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME) \
     DECLARE_INSTANCE_CHECKER(InstanceType, OBJ_NAME, TYPENAME) \
     \
-    DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)
+    DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)
 
+#define DO_OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME) \
+    typedef struct InstanceType InstanceType; \
+    typedef struct ClassType ClassType; \
+    \
+    G_DEFINE_AUTOPTR_CLEANUP_FUNC(InstanceType, object_unref) \
+    \
+    DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, \
+                         MODULE_OBJ_NAME, TYPE_##MODULE_OBJ_NAME)
 /**
  * OBJECT_DECLARE_TYPE:
  * @InstanceType: instance struct name
@@ -271,13 +254,25 @@ struct Object
  * The object struct and class struct need to be declared manually.
  */
 #define OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME) \
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, false); \
+    DO_OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME)
+
+/**
+ * OBJECT_DECLARE_INTERFACE:
+ * Same as OBJECT_DECLARE_TYPE,
+ * but gives knowledge on whether it contains interfaces,
+ * to not optimise out casts on non-debug builds.
+ */
+#define OBJECT_DECLARE_INTERFACE(InstanceType, ClassType, MODULE_OBJ_NAME) \
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, true); \
+    DO_OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME)
+
+#define DO_OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME) \
     typedef struct InstanceType InstanceType; \
-    typedef struct ClassType ClassType; \
     \
     G_DEFINE_AUTOPTR_CLEANUP_FUNC(InstanceType, object_unref) \
     \
-    DECLARE_OBJ_CHECKERS(InstanceType, ClassType, \
-                         MODULE_OBJ_NAME, TYPE_##MODULE_OBJ_NAME)
+    DECLARE_INSTANCE_CHECKER(InstanceType, MODULE_OBJ_NAME, TYPE_##MODULE_OBJ_NAME)
 
 /**
  * OBJECT_DECLARE_SIMPLE_TYPE:
@@ -291,12 +286,18 @@ struct Object
  * virtual methods declared.
  */
 #define OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME) \
-    typedef struct InstanceType InstanceType; \
-    \
-    G_DEFINE_AUTOPTR_CLEANUP_FUNC(InstanceType, object_unref) \
-    \
-    DECLARE_INSTANCE_CHECKER(InstanceType, MODULE_OBJ_NAME, TYPE_##MODULE_OBJ_NAME)
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, false); \
+    DO_OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME)
 
+/**
+ * OBJECT_DECLARE_SIMPLE_INTERFACE:
+ * Same as OBJECT_DECLARE_SIMPLE_TYPE,
+ * but gives knowledge on it is an interface,
+ * to not optimise out casts on non-debug builds.
+ */
+#define OBJECT_DECLARE_SIMPLE_INTERFACE(InstanceType, MODULE_OBJ_NAME) \
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, true); \
+    DO_OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME)
 
 /**
  * DO_OBJECT_DEFINE_TYPE_EXTENDED:
@@ -580,9 +581,75 @@ struct TypeInfo
  * typically wrapped by each type to perform type safe casts of a class to a
  * specific class type.
  */
+#ifdef CONFIG_QOM_CAST_DEBUG
 #define OBJECT_CLASS_CHECK(class_type, class, name) \
     ((class_type *)object_class_dynamic_cast_assert(OBJECT_CLASS(class), (name), \
                                                __FILE__, __LINE__, __func__))
+#else
+#define OBJECT_CLASS_CHECK(class_type, class, objname, name) \
+    (objname##_IS_INTERFACE()) ? \
+        ((class_type *)object_class_dynamic_cast_assert(OBJECT_CLASS(class), (name), \
+                                                   __FILE__, __LINE__, __func__)) \
+    : ((class_type *)OBJECT_CLASS(class))
+#endif
+
+#ifdef CONFIG_QOM_CAST_DEBUG
+#define DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, is)
+#else
+#define DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, is) \
+    static inline G_GNUC_UNUSED bool MODULE_OBJ_NAME##_IS_INTERFACE(void) { return is; }
+#endif
+
+/**
+ * DECLARE_CLASS_CHECKERS:
+ * @ClassType: class struct name
+ * @OBJ_NAME: the object name in uppercase with underscore separators
+ * @TYPENAME: type name
+ *
+ * Direct usage of this macro should be avoided, and the complete
+ * OBJECT_DECLARE_TYPE macro is recommended instead.
+ *
+ * This macro will provide the class type cast functions for a
+ * QOM type.
+ */
+#define DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME) \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, false); \
+    DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)
+
+/**
+ * DECLARE_CLASS_CHECKERS_IF:
+ * Same as DECLARE_CLASS_CHECKERS but also does
+ * DO_OBJECT_INTERFACE_INFO(..., true)
+ */
+#define DECLARE_CLASS_CHECKERS_IF(ClassType, OBJ_NAME, TYPENAME) \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, true); \
+    DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)
+
+/**
+ * DECLARE_OBJ_CHECKERS:
+ * @InstanceType: instance struct name
+ * @ClassType: class struct name
+ * @OBJ_NAME: the object name in uppercase with underscore separators
+ * @TYPENAME: type name
+ *
+ * Direct usage of this macro should be avoided, and the complete
+ * OBJECT_DECLARE_TYPE macro is recommended instead.
+ *
+ * This macro will provide the three standard type cast functions for a
+ * QOM type.
+ */
+#define DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME) \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, false); \
+    DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME)
+
+/**
+ * DECLARE_OBJ_CHECKERS_IF:
+ * Same as DECLARE_OBJ_CHECKERS but also does
+ * DO_OBJECT_INTERFACE_INFO(..., true)
+ */
+#define DECLARE_OBJ_CHECKERS_IF(InstanceType, ClassType, OBJ_NAME, TYPENAME) \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, true); \
+    DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME)
 
 /**
  * OBJECT_GET_CLASS:
@@ -594,8 +661,8 @@ struct TypeInfo
  * used by each type to provide a type safe macro to get a specific class type
  * from an object.
  */
-#define OBJECT_GET_CLASS(class, obj, name) \
-    OBJECT_CLASS_CHECK(class, object_get_class(OBJECT(obj)), name)
+#define OBJECT_GET_CLASS(class, obj, objname, name) \
+    OBJECT_CLASS_CHECK(class, object_get_class(OBJECT(obj)), objname, name)
 
 /**
  * struct InterfaceInfo:

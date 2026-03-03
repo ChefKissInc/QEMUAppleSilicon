@@ -6,7 +6,7 @@
 #define TYPE_INTERRUPT_STATS_PROVIDER "intctrl"
 
 typedef struct InterruptStatsProviderClass InterruptStatsProviderClass;
-DECLARE_CLASS_CHECKERS(InterruptStatsProviderClass, INTERRUPT_STATS_PROVIDER,
+DECLARE_CLASS_CHECKERS_IF(InterruptStatsProviderClass, INTERRUPT_STATS_PROVIDER,
                        TYPE_INTERRUPT_STATS_PROVIDER)
 #define INTERRUPT_STATS_PROVIDER(obj) \
     INTERFACE_CHECK(InterruptStatsProvider, (obj), \

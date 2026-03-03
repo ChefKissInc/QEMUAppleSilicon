@@ -930,12 +930,53 @@ out:
 }
 #endif
 
+static ObjectClass *object_class_dynamic_cast_type(ObjectClass *class,
+                                       TypeImpl *target_type)
+{
+    ObjectClass *ret = NULL;
+    TypeImpl *type;
+
+    g_assert(class);
+    g_assert(target_type);
+
+    type = class->type;
+
+    if (likely(type_is_ancestor(type, target_type))) {
+        return class;
+    } else if (type->class->interfaces &&
+            unlikely(type_is_ancestor(target_type, type_interface))) {
+#ifndef NDEBUG
+        int found = 0;
+#endif
+        GSList *i;
+
+        for (i = class->interfaces; i; i = i->next) {
+            ObjectClass *target_class = i->data;
+
+            if (type_is_ancestor(target_class->type, target_type)) {
+#ifndef NDEBUG
+                ret = target_class;
+                found++;
+
+                /* The match was ambiguous, don't allow a cast */
+                if (found > 1) {
+                    return NULL;
+                }
+#else
+                return target_class;
+#endif
+            }
+         }
+    }
+
+    return ret;
+}
+
 ObjectClass *object_class_dynamic_cast(ObjectClass *class,
                                        const char *typename)
 {
-    ObjectClass *ret = NULL;
-    TypeImpl *target_type;
     TypeImpl *type;
+    TypeImpl *target_type;
 
     if (!class) {
         return NULL;
@@ -953,29 +994,7 @@ ObjectClass *object_class_dynamic_cast(ObjectClass *class,
         return NULL;
     }
 
-    if (type->class->interfaces &&
-            type_is_ancestor(target_type, type_interface)) {
-        int found = 0;
-        GSList *i;
-
-        for (i = class->interfaces; i; i = i->next) {
-            ObjectClass *target_class = i->data;
-
-            if (type_is_ancestor(target_class->type, target_type)) {
-                ret = target_class;
-                found++;
-            }
-         }
-
-        /* The match was ambiguous, don't allow a cast */
-        if (found > 1) {
-            ret = NULL;
-        }
-    } else if (type_is_ancestor(type, target_type)) {
-        ret = class;
-    }
-
-    return ret;
+    return object_class_dynamic_cast_type(class, target_type);
 }
 
 ObjectClass *object_class_dynamic_cast_assert(ObjectClass *class,
@@ -984,11 +1003,20 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *class,
                                               const char *func)
 {
     ObjectClass *ret;
+    TypeImpl *type;
 
 #ifdef CONFIG_QOM_CAST_DEBUG
     trace_object_class_dynamic_cast_assert(class ? class->type->name : "(null)",
                                            typename, file, line, func);
+#endif
 
+    /* A simple fast path that can trigger a lot for leaf classes.  */
+    type = class->type;
+    if (type->name == typename) {
+        return class;
+    }
+
+#ifdef CONFIG_QOM_CAST_DEBUG
     int i;
 
     for (i = 0; class && i < OBJECT_CLASS_CAST_CACHE; i++) {
@@ -997,11 +1025,6 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *class,
             goto out;
         }
     }
-#else
-    if (!class || !class->interfaces) {
-        return class;
-    }
-#endif
 
     ret = object_class_dynamic_cast(class, typename);
     if (!ret && class) {
@@ -1010,7 +1033,6 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *class,
         abort();
     }
 
-#ifdef CONFIG_QOM_CAST_DEBUG
     if (class && ret == class) {
         for (i = 1; i < OBJECT_CLASS_CAST_CACHE; i++) {
             qatomic_set(&class->class_cast_cache[i - 1],
@@ -1019,7 +1041,31 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *class,
         qatomic_set(&class->class_cast_cache[i - 1], typename);
     }
 out:
+#else
+    TypeImpl *target_type;
+
+    if (!class->interfaces) {
+        return class;
+    }
+
+    target_type = type_get_by_name_noload(typename);
+    if (!target_type) {
+        /* target class type unknown, so fail the cast */
+        return NULL;
+    }
+
+    if (likely(!type_is_ancestor(target_type, type_interface))) {
+        return class;
+    }
+
+    ret = object_class_dynamic_cast_type(class, target_type);
+    if (!ret && class) {
+        fprintf(stderr, "%s:%d:%s: Object %p is not an instance of type %s\n",
+                file, line, func, class, typename);
+        abort();
+    }
 #endif
+
     return ret;
 }
 

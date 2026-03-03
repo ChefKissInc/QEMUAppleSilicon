@@ -193,7 +193,7 @@ static void qdev_print_devinfos(bool show_no_user)
         cat_printed = false;
         for (elt = list; elt; elt = elt->next) {
             DeviceClass *dc = OBJECT_CLASS_CHECK(DeviceClass, elt->data,
-                                                 TYPE_DEVICE);
+                                                 DEVICE, TYPE_DEVICE);
             if ((i < DEVICE_CATEGORY_MAX
                  ? !test_bit(i, dc->categories)
                  : !bitmap_empty(dc->categories, DEVICE_CATEGORY_MAX))
@@ -1033,7 +1033,7 @@ void device_add_completion(ReadLineState *rs, int nb_args, const char *str)
     list = elt = object_class_get_list(TYPE_DEVICE, false);
     while (elt) {
         DeviceClass *dc = OBJECT_CLASS_CHECK(DeviceClass, elt->data,
-                                             TYPE_DEVICE);
+                                             DEVICE, TYPE_DEVICE);
 
         if (dc->user_creatable) {
             readline_add_completion_of(rs, str,

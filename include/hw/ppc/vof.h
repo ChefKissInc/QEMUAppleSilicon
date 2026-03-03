@@ -33,7 +33,7 @@ uint32_t vof_client_open_store(void *fdt, Vof *vof, const char *nodename,
 #define TYPE_VOF_MACHINE_IF "vof-machine-if"
 
 typedef struct VofMachineIfClass VofMachineIfClass;
-DECLARE_CLASS_CHECKERS(VofMachineIfClass, VOF_MACHINE, TYPE_VOF_MACHINE_IF)
+DECLARE_CLASS_CHECKERS_IF(VofMachineIfClass, VOF_MACHINE, TYPE_VOF_MACHINE_IF)
 
 struct VofMachineIfClass {
     InterfaceClass parent;

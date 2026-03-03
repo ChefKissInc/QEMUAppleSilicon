@@ -19,7 +19,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(ISABus, ISA_BUS)
 #define TYPE_ISADMA "isa-dma"
 
 typedef struct IsaDmaClass IsaDmaClass;
-DECLARE_CLASS_CHECKERS(IsaDmaClass, ISADMA,
+DECLARE_CLASS_CHECKERS_IF(IsaDmaClass, ISADMA,
                        TYPE_ISADMA)
 #define ISADMA(obj) \
     INTERFACE_CHECK(IsaDma, (obj), TYPE_ISADMA)

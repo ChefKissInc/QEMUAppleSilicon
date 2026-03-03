@@ -6,7 +6,7 @@
 #define TYPE_STREAM_SINK "stream-sink"
 
 typedef struct StreamSinkClass StreamSinkClass;
-DECLARE_CLASS_CHECKERS(StreamSinkClass, STREAM_SINK,
+DECLARE_CLASS_CHECKERS_IF(StreamSinkClass, STREAM_SINK,
                        TYPE_STREAM_SINK)
 #define STREAM_SINK(obj) \
      INTERFACE_CHECK(StreamSink, (obj), TYPE_STREAM_SINK)
