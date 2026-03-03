@@ -17,8 +17,8 @@
 #include "qapi/qapi-builtin-types.h"
 #include "qemu/module.h"
 
-struct TypeImpl;
-typedef struct TypeImpl *Type;
+typedef struct TypeImpl TypeImpl;
+typedef TypeImpl *Type;
 
 typedef struct TypeInfo TypeInfo;
 
@@ -139,6 +139,43 @@ struct ObjectClass
     ObjectUnparent *unparent;
 
     GHashTable *properties;
+};
+
+typedef struct InterfaceImpl InterfaceImpl;
+struct InterfaceImpl
+{
+    const char *typename;
+};
+
+#define MAX_INTERFACES 32
+
+struct TypeImpl
+{
+    const char *name;
+
+    size_t class_size;
+
+    size_t instance_size;
+    size_t instance_align;
+
+    void (*class_init)(ObjectClass *klass, const void *data);
+    void (*class_base_init)(ObjectClass *klass, const void *data);
+
+    const void *class_data;
+
+    void (*instance_init)(Object *obj);
+    void (*instance_post_init)(Object *obj);
+    void (*instance_finalize)(Object *obj);
+
+    bool abstract;
+
+    const char *parent;
+    TypeImpl *parent_type;
+
+    ObjectClass *class;
+
+    int num_interfaces;
+    InterfaceImpl interfaces[MAX_INTERFACES];
 };
 
 /**
@@ -881,7 +918,10 @@ inline Object *object_dynamic_cast_assert(Object *obj, const char *typename,
  *
  * Returns: The #ObjectClass of the type associated with @obj.
  */
-ObjectClass *object_get_class(Object *obj);
+inline ObjectClass *object_get_class(Object *obj)
+{
+    return obj->class;
+}
 
 /**
  * object_get_typename:
@@ -889,7 +929,10 @@ ObjectClass *object_get_class(Object *obj);
  *
  * Returns: The QOM typename of @obj.
  */
-const char *object_get_typename(const Object *obj);
+inline const char *object_get_typename(const Object *obj)
+{
+    return obj->class->type->name;
+}
 
 /**
  * type_register_static:
@@ -996,7 +1039,10 @@ ObjectClass *object_class_get_parent(ObjectClass *klass);
  *
  * Returns: The QOM typename for @klass.
  */
-const char *object_class_get_name(ObjectClass *klass);
+inline const char *object_class_get_name(ObjectClass *klass)
+{
+    return klass->type->name;
+}
 
 /**
  * object_class_is_abstract:
@@ -1004,7 +1050,10 @@ const char *object_class_get_name(ObjectClass *klass);
  *
  * Returns: %true if @klass is abstract, %false otherwise.
  */
-bool object_class_is_abstract(ObjectClass *klass);
+inline bool object_class_is_abstract(ObjectClass *klass)
+{
+    return klass->type->abstract;
+}
 
 /**
  * object_class_by_name:

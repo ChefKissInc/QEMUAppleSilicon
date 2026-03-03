@@ -36,45 +36,6 @@
 #include "qobject/qstring.h"
 #include "qemu/error-report.h"
 
-#define MAX_INTERFACES 32
-
-typedef struct InterfaceImpl InterfaceImpl;
-typedef struct TypeImpl TypeImpl;
-
-struct InterfaceImpl
-{
-    const char *typename;
-};
-
-struct TypeImpl
-{
-    const char *name;
-
-    size_t class_size;
-
-    size_t instance_size;
-    size_t instance_align;
-
-    void (*class_init)(ObjectClass *klass, const void *data);
-    void (*class_base_init)(ObjectClass *klass, const void *data);
-
-    const void *class_data;
-
-    void (*instance_init)(Object *obj);
-    void (*instance_post_init)(Object *obj);
-    void (*instance_finalize)(Object *obj);
-
-    bool abstract;
-
-    const char *parent;
-    TypeImpl *parent_type;
-
-    ObjectClass *class;
-
-    int num_interfaces;
-    InterfaceImpl interfaces[MAX_INTERFACES];
-};
-
 static Type type_interface;
 
 static const char empty_str[] = "(null)";
@@ -1060,26 +1021,6 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *class,
 out:
 #endif
     return ret;
-}
-
-const char *object_get_typename(const Object *obj)
-{
-    return obj->class->type->name;
-}
-
-ObjectClass *object_get_class(Object *obj)
-{
-    return obj->class;
-}
-
-bool object_class_is_abstract(ObjectClass *klass)
-{
-    return klass->type->abstract;
-}
-
-const char *object_class_get_name(ObjectClass *klass)
-{
-    return klass->type->name;
 }
 
 ObjectClass *object_class_by_name(const char *typename)
