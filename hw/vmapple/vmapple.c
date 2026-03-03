@@ -222,7 +222,7 @@ static void create_aes(VMAppleMachineState *vms, MemoryRegion *mem)
     int irq = vms->irqmap[VMAPPLE_AES_1];
     SysBusDevice *aes;
 
-    aes = SYS_BUS_DEVICE(qdev_new(TYPE_APPLE_AES));
+    aes = SYS_BUS_DEVICE(qdev_new(TYPE_VMAPPLE_AES));
     sysbus_mmio_map(aes, 0, vms->memmap[VMAPPLE_AES_1].base);
     sysbus_mmio_map(aes, 1, vms->memmap[VMAPPLE_AES_2].base);
     sysbus_connect_irq(aes, 0, qdev_get_gpio_in(vms->gic, irq));

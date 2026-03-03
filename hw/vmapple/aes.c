@@ -23,7 +23,7 @@
 #include "qemu/module.h"
 #include "system/dma.h"
 
-OBJECT_DECLARE_SIMPLE_TYPE(AESState, APPLE_AES)
+OBJECT_DECLARE_SIMPLE_TYPE(AESState, VMAPPLE_AES)
 
 #define MAX_FIFO_SIZE     9
 
@@ -537,7 +537,7 @@ static const MemoryRegionOps aes2_ops = {
 
 static void aes_reset(Object *obj, ResetType type)
 {
-    AESState *s = APPLE_AES(obj);
+    AESState *s = VMAPPLE_AES(obj);
 
     s->status = 0x3f80;
     s->q_status = 2;
@@ -548,7 +548,7 @@ static void aes_reset(Object *obj, ResetType type)
 
 static void aes_init(Object *obj)
 {
-    AESState *s = APPLE_AES(obj);
+    AESState *s = VMAPPLE_AES(obj);
 
     memory_region_init_io(&s->iomem1, obj, &aes1_ops, s, TYPE_VMAPPLE_AES, 0x4000);
     memory_region_init_io(&s->iomem2, obj, &aes2_ops, s, TYPE_VMAPPLE_AES, 0x4000);
