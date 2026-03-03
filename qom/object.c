@@ -1010,6 +1010,10 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *class,
                                            typename, file, line, func);
 #endif
 
+    if (!class) {
+        return NULL;
+    }
+
     /* A simple fast path that can trigger a lot for leaf classes.  */
     type = class->type;
     if (type->name == typename) {
