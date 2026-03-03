@@ -269,7 +269,7 @@ static void ats1h_write(CPUARMState *env, const ARMCPRegInfo *ri,
     bool guarded = arm_is_guarded(env);
 
     /* There is no SecureEL2 for AArch32. */
-    par64 = do_ats_write(env, value, access_type, (guarded ? ARMMMUIdx_GE2 : ARMMMUIdx_E2),
+    par64 = do_ats_write(env, value, access_perm, (guarded ? ARMMMUIdx_GE2 : ARMMMUIdx_E2),
                          ARMSS_NonSecure);
 
     A32_BANKED_CURRENT_REG_SET(env, par, par64);
