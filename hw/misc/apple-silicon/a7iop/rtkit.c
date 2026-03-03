@@ -235,8 +235,8 @@ static void apple_rtkit_mgmt_rollcall_v11(AppleRTKit *s)
     AppleRTKitEPTable_it_t it;
     const AppleRTKitEPTable_pair_ct *cref;
     uint32_t ep;
-    uint32_t mask;
-    uint32_t last_block;
+    uint32_t mask = 0;
+    uint32_t last_block = 0;
 
     g_assert_true(QTAILQ_EMPTY(&s->rollcall));
 
