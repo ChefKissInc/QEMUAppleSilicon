@@ -3705,18 +3705,7 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
 #endif
     switch (addr) {
     case 0x4:
-        // iBoot would send those requests. iOS warns about the
-        // responses, because it doesn't expect them.
-        if (data == 0xF2E31133) {
-            apple_sep_send_message(s, 0xFF, 0x67, 3, 0x00, 0x00);
-            DPRINTF("SEP Progress: Sent fake GenerateNonce\n");
-            // we have no damn idea what this opcode is, but if tz0
-            // isn't large enough compared to the value derived from this data,
-            // it whines. this value is for t8030, straight from the decompiler.
-            // INTEGRITY_TREE_SIZE/arms
-            apple_sep_send_message(s, 0xFF, 0x0, 17, 0x00, 0x8000);
-            DPRINTF("SEP Progress: Sent fake Opcode17/INTEGRITY_TREE_SIZE\n");
-        } else if ((data == 0xFC4A2CAC || data == 0xEEE6BA79) &&
+        if ((data == 0xFC4A2CAC || data == 0xEEE6BA79) &&
                    (s->chip_id >= 0x8020)) // Enable Trace Buffer
         {
 #ifdef SEP_ENABLE_TRACE_BUFFER
@@ -4439,6 +4428,18 @@ static void apple_sep_reset_hold(Object *obj, ResetType type)
     // apple_ssc_reset is being called, but not here.
     run_on_cpu(CPU(s->cpu), apple_sep_cpu_reset_work, RUN_ON_CPU_HOST_PTR(s));
     map_sepfw(s);
+
+    // iBoot would send those requests. iOS warns about the
+    // responses, because it doesn't expect them.
+    // SEP's mailbox inbox clearing is really happening before, I checked.
+    apple_sep_send_message(s, 0xFF, 0x67, 3, 0x00, 0x00);
+    DPRINTF("SEP Progress: Sent fake GenerateNonce\n");
+    // we have no damn idea what this opcode is, but if tz0
+    // isn't large enough compared to the value derived from this data,
+    // it whines. this value is for t8030, straight from the decompiler.
+    // INTEGRITY_TREE_SIZE/arms
+    apple_sep_send_message(s, 0xFF, 0x0, 17, 0x00, 0x8000);
+    DPRINTF("SEP Progress: Sent fake Opcode17/INTEGRITY_TREE_SIZE\n");
 }
 
 static void apple_sep_class_init(ObjectClass *klass, const void *data)
