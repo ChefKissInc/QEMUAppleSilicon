@@ -175,7 +175,7 @@ void GUS_dmarequest (GUSEmuState *emu)
 {
     GUSState *s = emu->opaque;
     IsaDmaClass *k = ISADMA_GET_CLASS(s->isa_dma);
-    ldebug ("dma request %d\n", der->gusdma);
+    ldebug ("dma request %d\n", s->emu.gusdma);
     k->hold_DREQ(s->isa_dma, s->emu.gusdma);
 }
 
