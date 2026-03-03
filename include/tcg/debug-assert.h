@@ -12,7 +12,7 @@
 # define tcg_debug_assert(X) do { assert(X); } while (0)
 # define tcg_debug_assert_not_reached() g_assert_not_reached()
 #else
-#if NDEBUG
+#ifdef NDEBUG
 # define tcg_debug_assert(X) (void)0
 #else
 # define tcg_debug_assert(X) \
