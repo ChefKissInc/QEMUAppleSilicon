@@ -9,5 +9,5 @@ include ../arm-softmmu/default.mak
 # CONFIG_XLNX_VERSAL=n
 # CONFIG_SBSA_REF=n
 # CONFIG_NPCM8XX=n
-CONFIG_VMAPPLE=n
+# CONFIG_VMAPPLE=n
 # CONFIG_APPLE_SOC=n
