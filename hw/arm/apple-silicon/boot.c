@@ -149,6 +149,7 @@ static const char *KEEP_COMP[] = {
     "vtempctl,t8030\0$",
     "aod,t8030\0aod,s5l8960x\0$",
     "mic-temp-sens,ica60\0$",
+    "aapl,spmi\0$",
 };
 
 static const char *REM_NAMES[] = {
