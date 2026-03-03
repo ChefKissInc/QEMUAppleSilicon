@@ -550,8 +550,8 @@ static void aes_init(Object *obj)
 {
     AESState *s = APPLE_AES(obj);
 
-    memory_region_init_io(&s->iomem1, obj, &aes1_ops, s, TYPE_APPLE_AES, 0x4000);
-    memory_region_init_io(&s->iomem2, obj, &aes2_ops, s, TYPE_APPLE_AES, 0x4000);
+    memory_region_init_io(&s->iomem1, obj, &aes1_ops, s, TYPE_VMAPPLE_AES, 0x4000);
+    memory_region_init_io(&s->iomem2, obj, &aes2_ops, s, TYPE_VMAPPLE_AES, 0x4000);
     sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->iomem1);
     sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->iomem2);
     sysbus_init_irq(SYS_BUS_DEVICE(s), &s->irq);
@@ -566,7 +566,7 @@ static void aes_class_init(ObjectClass *klass, const void *data)
 }
 
 static const TypeInfo aes_info = {
-    .name          = TYPE_APPLE_AES,
+    .name          = TYPE_VMAPPLE_AES,
     .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(AESState),
     .class_init    = aes_class_init,

@@ -12,7 +12,7 @@
 #ifndef HW_VMAPPLE_VMAPPLE_H
 #define HW_VMAPPLE_VMAPPLE_H
 
-#define TYPE_APPLE_AES "apple-aes"
+#define TYPE_VMAPPLE_AES "vmapple-aes"
 
 #define TYPE_VMAPPLE_BDIF "vmapple-bdif"
 
