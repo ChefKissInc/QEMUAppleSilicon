@@ -492,13 +492,14 @@ static uint64_t apple_a13_ipi_read_cr(CPUARMState *env, const ARMCPRegInfo *ri)
 static void apple_a13_ipi_write_cr(CPUARMState *env, const ARMCPRegInfo *ri,
                                    uint64_t value)
 {
-    uint64_t nanosec = 0;
+    uint64_t nanosec = kDeferredIPITimerDefault;
     uint64_t ct;
 
-    absolutetime_to_nanoseconds(value, &nanosec);
-
-    if (value == 0) {
-        value = kDeferredIPITimerDefault;
+    if (value != 0) {
+        absolutetime_to_nanoseconds(value, &nanosec);
+        if (nanosec == 0) {
+            nanosec = kDeferredIPITimerDefault;
+        }
     }
 
     ct = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
