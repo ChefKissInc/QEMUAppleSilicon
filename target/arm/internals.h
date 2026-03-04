@@ -1029,9 +1029,9 @@ static inline int arm_mmu_idx_to_el(ARMMMUIdx mmu_idx)
     }
 }
 
-static inline int arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx)
+static inline bool arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx)
 {
-    return (mmu_idx & ARM_MMU_IDX_M) == 0 && (mmu_idx & ARM_MMU_IDX_A_GXF) != 0;
+    return (mmu_idx & ARM_MMU_IDX_A_GXF) != 0;
 }
 
 /* Return the MMU index for a v7M CPU in the specified security state */
