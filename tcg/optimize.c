@@ -2012,16 +2012,18 @@ static bool fold_extract2(OptContext *ctx, TCGOp *op)
     uint64_t o2 = t2->o_mask;
     int shr = op->args[3];
 
-    if (ctx->type == TCG_TYPE_I32) {
-        z1 = (uint32_t)z1 >> shr;
-        o1 = (uint32_t)o1 >> shr;
-        z2 = (uint64_t)((int32_t)z2 << (32 - shr));
-        o2 = (uint64_t)((int32_t)o2 << (32 - shr));
-    } else {
-        z1 >>= shr;
-        o1 >>= shr;
-        z2 <<= 64 - shr;
-        o2 <<= 64 - shr;
+    if (shr != 0) {
+        if (ctx->type == TCG_TYPE_I32) {
+            z1 = (uint32_t)z1 >> shr;
+            o1 = (uint32_t)o1 >> shr;
+            z2 = (uint64_t)((int32_t)z2 << (32 - shr));
+            o2 = (uint64_t)((int32_t)o2 << (32 - shr));
+        } else {
+            z1 >>= shr;
+            o1 >>= shr;
+            z2 <<= 64 - shr;
+            o2 <<= 64 - shr;
+        }
     }
 
     return fold_masks_zo(ctx, op, z1 | z2, o1 | o2);
