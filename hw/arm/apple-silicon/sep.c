@@ -3787,29 +3787,37 @@ static void progress_reg_write(void *opaque, hwaddr addr, uint64_t data,
                 " with value 0x%" PRIX64 "\n",
                 addr, data);
         if (data == 0xDEADBEE0) {
-            qemu_irq_lower(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_IRQ));
+            qemu_irq_lower(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_IRQ));
         }
         if (data == 0xDEADBEE1) {
-            qemu_irq_lower(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_FIQ));
+            qemu_irq_lower(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_FIQ));
         }
         if (data == 0xDEADBEE2) {
-            qemu_irq_lower(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_VIRQ));
+            qemu_irq_lower(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_VIRQ));
         }
         if (data == 0xDEADBEE3) {
-            qemu_irq_lower(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_VFIQ));
+            qemu_irq_lower(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_VFIQ));
         }
 
         if (data == 0xDEADBEE4) {
-            qemu_irq_raise(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_IRQ));
+            qemu_irq_raise(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_IRQ));
         }
         if (data == 0xDEADBEE5) {
-            qemu_irq_raise(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_FIQ));
+            qemu_irq_raise(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_FIQ));
         }
         if (data == 0xDEADBEE6) {
-            qemu_irq_raise(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_VIRQ));
+            qemu_irq_raise(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_VIRQ));
         }
         if (data == 0xDEADBEE7) {
-            qemu_irq_raise(qdev_get_gpio_in((DeviceState*)s->cpu, ARM_CPU_VFIQ));
+            qemu_irq_raise(
+                qdev_get_gpio_in((DeviceState *)s->cpu, ARM_CPU_VFIQ));
         }
         if (data == 0xCAFE1334) {
             uint32_t i = 0;
