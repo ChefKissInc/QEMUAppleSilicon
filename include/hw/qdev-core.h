@@ -961,7 +961,7 @@ void device_class_set_props_n(DeviceClass *dc, const Property *props, size_t n);
  * instance structure) so you can eventually call
  * dc->parent_realize(dev, errp)
  */
-inline void device_class_set_parent_realize(DeviceClass *dc,
+static inline void device_class_set_parent_realize(DeviceClass *dc,
                                      DeviceRealize dev_realize,
                                      DeviceRealize *parent_realize)
 {
@@ -995,9 +995,10 @@ void device_class_set_legacy_reset(DeviceClass *dc,
  * (usually in the instance structure) so you can eventually call
  * dc->parent_unrealize(dev);
  */
-inline void device_class_set_parent_unrealize(DeviceClass *dc,
-                                       DeviceUnrealize dev_unrealize,
-                                       DeviceUnrealize *parent_unrealize)
+static inline void
+device_class_set_parent_unrealize(DeviceClass *dc,
+                                  DeviceUnrealize dev_unrealize,
+                                  DeviceUnrealize *parent_unrealize)
 {
     *parent_unrealize = dc->unrealize;
     dc->unrealize = dev_unrealize;

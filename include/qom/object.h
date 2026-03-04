@@ -972,8 +972,10 @@ Object *object_dynamic_cast(Object *obj, const char *typename);
 Object *object_dynamic_cast_assert(Object *obj, const char *typename,
                                    const char *file, int line, const char *func);
 #else
-inline Object *object_dynamic_cast_assert(Object *obj, const char *typename,
-                                   const char *file, int line, const char *func)
+static inline Object *object_dynamic_cast_assert(Object *obj,
+                                                 const char *typename,
+                                                 const char *file, int line,
+                                                 const char *func)
 {
     return obj;
 }
@@ -985,7 +987,7 @@ inline Object *object_dynamic_cast_assert(Object *obj, const char *typename,
  *
  * Returns: The #ObjectClass of the type associated with @obj.
  */
-inline ObjectClass *object_get_class(Object *obj)
+static inline ObjectClass *object_get_class(Object *obj)
 {
     return obj->class;
 }
@@ -996,7 +998,7 @@ inline ObjectClass *object_get_class(Object *obj)
  *
  * Returns: The QOM typename of @obj.
  */
-inline const char *object_get_typename(const Object *obj)
+static inline const char *object_get_typename(const Object *obj)
 {
     return obj->class->type->name;
 }
@@ -1106,7 +1108,7 @@ ObjectClass *object_class_get_parent(ObjectClass *klass);
  *
  * Returns: The QOM typename for @klass.
  */
-inline const char *object_class_get_name(ObjectClass *klass)
+static inline const char *object_class_get_name(ObjectClass *klass)
 {
     return klass->type->name;
 }
@@ -1117,7 +1119,7 @@ inline const char *object_class_get_name(ObjectClass *klass)
  *
  * Returns: %true if @klass is abstract, %false otherwise.
  */
-inline bool object_class_is_abstract(ObjectClass *klass)
+static inline bool object_class_is_abstract(ObjectClass *klass)
 {
     return klass->type->abstract;
 }
