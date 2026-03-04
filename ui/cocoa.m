@@ -56,9 +56,9 @@
 #define MAC_OS_VERSION_14_0 140000
 #endif
 
-//#define COCOA_DEBUG
+//#define COCOA_DO_DEBUG
 
-#ifdef COCOA_DEBUG
+#ifdef COCOA_DO_DEBUG
 #define COCOA_DEBUG(...)  { (void) fprintf (stdout, __VA_ARGS__); }
 #else
 #define COCOA_DEBUG(...)  ((void) 0)
