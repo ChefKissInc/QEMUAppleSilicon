@@ -1924,7 +1924,7 @@ static void tcg_out_cmov(TCGContext *s, int jcc, int rexw,
 static void tgen_movcond(TCGContext *s, TCGType type, TCGCond cond,
                          TCGReg dest, TCGReg c1, TCGArg c2, bool const_c2,
                          TCGArg vt, bool const_vt,
-                         TCGArg vf, bool consf_vf)
+                         TCGArg vf, bool const_vf)
 {
     int rexw = type == TCG_TYPE_I32 ? 0 : P_REXW;
     int jcc = tcg_out_cmp(s, cond, c1, c2, const_c2, rexw);

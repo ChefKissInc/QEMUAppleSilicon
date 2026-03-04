@@ -1034,7 +1034,7 @@ static const TCGOutOpBrcond outop_brcond = {
 
 static void tgen_movcond(TCGContext *s, TCGType type, TCGCond cond,
                          TCGReg ret, TCGReg c1, TCGArg c2, bool const_c2,
-                         TCGArg vt, bool const_vt, TCGArg vf, bool consf_vf)
+                         TCGArg vt, bool const_vt, TCGArg vf, bool const_vf)
 {
     TCGOpcode opc = (type == TCG_TYPE_I32
                      ? INDEX_op_tci_movcond32

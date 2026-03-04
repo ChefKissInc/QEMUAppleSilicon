@@ -1061,7 +1061,7 @@ typedef struct TCGOutOpMovcond {
     TCGOutOp base;
     void (*out)(TCGContext *s, TCGType type, TCGCond cond,
                 TCGReg ret, TCGReg c1, TCGArg c2, bool const_c2,
-                TCGArg vt, bool const_vt, TCGArg vf, bool consf_vf);
+                TCGArg vt, bool const_vt, TCGArg vf, bool const_vf);
 } TCGOutOpMovcond;
 
 typedef struct TCGOutOpMul2 {

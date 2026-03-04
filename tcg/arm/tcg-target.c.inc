@@ -2487,7 +2487,7 @@ static const TCGOutOpSetcond outop_negsetcond = {
 
 static void tgen_movcond(TCGContext *s, TCGType type, TCGCond cond,
                          TCGReg ret, TCGReg c1, TCGArg c2, bool const_c2,
-                         TCGArg vt, bool const_vt, TCGArg vf, bool consf_vf)
+                         TCGArg vt, bool const_vt, TCGArg vf, bool const_vf)
 {
     cond = tcg_out_cmp(s, cond, c1, c2, const_c2);
     tcg_out_dat_rIK(s, tcg_cond_to_arm_cond[cond], ARITH_MOV, ARITH_MVN,
