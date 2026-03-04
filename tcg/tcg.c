@@ -2916,7 +2916,7 @@ static const char * const plugin_from_name[] = {
 
 static inline bool tcg_regset_single(TCGRegSet d)
 {
-    return (d & (d - 1)) == 0;
+    return d != 0 && (d & (d - 1)) == 0;
 }
 
 static inline TCGReg tcg_regset_first(TCGRegSet d)
