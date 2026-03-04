@@ -1305,12 +1305,12 @@ void tcg_register_thread(void)
     /* Claim an entry in tcg_ctxs */
     n = qatomic_fetch_inc(&tcg_cur_ctxs);
     g_assert(n < tcg_max_ctxs);
-    qatomic_set(&tcg_ctxs[n], s);
 
     if (n > 0) {
         tcg_region_initial_alloc(s);
     }
 
+    qatomic_set(&tcg_ctxs[n], s);
     tcg_ctx = s;
 }
 #endif /* !CONFIG_USER_ONLY */
