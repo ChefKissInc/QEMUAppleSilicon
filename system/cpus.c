@@ -492,8 +492,6 @@ void cpus_kick_thread(CPUState *cpu)
         fprintf(stderr, "qemu:%s: %s", __func__, strerror(err));
         exit(1);
     }
-#else
-    qemu_sem_post(&cpu->sem);
 #endif
 }
 
