@@ -4224,11 +4224,18 @@ liveness_pass_1(TCGContext *s)
             op_prev->args[0] = op->args[0];
             op_prev->args[1] = op->args[1];
             op_prev->args[2] = op->args[2];
-            op->opc = opc = INDEX_op_add;
             op->args[1] = op->args[0];
             ts = arg_temp(op->args[0]);
             ts = tcg_constant_internal(ts->type, 1);
+            if (ts->state_ptr == NULL) {
+                tcg_debug_assert(temp_idx(ts) == nb_temps);
+                nb_temps++;
+                ts->state_ptr = tcg_malloc(sizeof(TCGRegSet));
+                ts->state = TS_DEAD;
+                la_reset_pref(ts);
+            }
             op->args[2] = temp_arg(ts);
+            op->opc = opc = INDEX_op_add;
             goto do_default;
 
         case INDEX_op_subb1o:
