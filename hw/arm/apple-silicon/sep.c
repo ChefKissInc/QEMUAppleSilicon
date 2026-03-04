@@ -3949,9 +3949,7 @@ static void apple_sep_cpu_moni_jump(CPUState *cpu, run_on_cpu_data data)
     // possible workaround for intermittent sep boot errors
     if (tcg_enabled()) {
         arm_rebuild_hflags(&arm_cpu->env);
-        tlb_flush(cpu);
-        tb_flush(cpu);
-        smp_wmb();
+        tb_flush__exclusive_or_serial();
     }
 }
 
@@ -3962,8 +3960,8 @@ static void apple_sep_iop_start(AppleA7IOP *s)
     trace_apple_sep_iop_start(s->iop_mailbox->role);
 
     if (sep->modern) {
-        async_run_on_cpu(CPU(sep->cpu), apple_sep_cpu_moni_jump,
-                         RUN_ON_CPU_HOST_PTR(sep));
+        async_safe_run_on_cpu(CPU(sep->cpu), apple_sep_cpu_moni_jump,
+                              RUN_ON_CPU_HOST_PTR(sep));
     }
 }
 
