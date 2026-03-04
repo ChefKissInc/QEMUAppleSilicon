@@ -3939,8 +3939,6 @@ static void apple_sep_cpu_moni_jump(CPUState *cpu, run_on_cpu_data data)
     ARMCPU *arm_cpu = container_of(cpu, ARMCPU, parent_obj);
     AppleSEPState *sep = data.host_ptr;
 
-    assert(bql_locked());
-
     hwaddr load_addr = ((hwaddr *)sep->boot_monitor_regs)[0x20 / 8];
 
     DPRINTF("%s: have load_addr 0x" HWADDR_FMT_plx "\n", __func__, load_addr);
