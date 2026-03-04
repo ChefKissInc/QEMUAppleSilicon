@@ -229,7 +229,7 @@ void resettable_cold_reset_fn(void *opaque);
  * Each phase is overridden only if the new one is not NULL allowing to
  * override a subset of phases.
  */
-static inline void resettable_class_set_parent_phases(ResettableClass *rc,
+static inline void resettable_class_set_parent_phases(
     ResettableClass *rc, ResettableEnterPhase enter, ResettableHoldPhase hold,
     ResettableExitPhase exit, ResettablePhases *parent_phases)
 {
