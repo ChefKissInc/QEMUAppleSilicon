@@ -9627,40 +9627,6 @@ int fp_exception_el(CPUARMState *env, int cur_el)
     return 0;
 }
 
-/* Return the exception level we're running at if this is our mmu_idx */
-int arm_mmu_idx_to_el(ARMMMUIdx mmu_idx)
-{
-    if (mmu_idx & ARM_MMU_IDX_M) {
-        return mmu_idx & ARM_MMU_IDX_M_PRIV;
-    }
-
-    switch (mmu_idx) {
-    case ARMMMUIdx_E10_0:
-    case ARMMMUIdx_E20_0:
-    case ARMMMUIdx_E30_0:
-        return 0;
-    case ARMMMUIdx_E10_1:
-    case ARMMMUIdx_E10_1_PAN:
-    case ARMMMUIdx_GE10_1:
-    case ARMMMUIdx_GE10_1_PAN:
-        return 1;
-    case ARMMMUIdx_E2:
-    case ARMMMUIdx_E20_2:
-    case ARMMMUIdx_E20_2_PAN:
-    case ARMMMUIdx_GE2:
-    case ARMMMUIdx_GE20_2:
-    case ARMMMUIdx_GE20_2_PAN:
-        return 2;
-    case ARMMMUIdx_E3:
-    case ARMMMUIdx_E30_3_PAN:
-    case ARMMMUIdx_GE3:
-    case ARMMMUIdx_GE30_3_PAN:
-        return 3;
-    default:
-        g_assert_not_reached();
-    }
-}
-
 int arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx)
 {
     if (mmu_idx & ARM_MMU_IDX_M) {
