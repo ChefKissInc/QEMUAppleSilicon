@@ -31,6 +31,7 @@
 #include "accel/tcg/tb-cpu-state.h"
 #include "hw/registerfields.h"
 #include "qemu/error-report.h"
+#include "tcg/debug-assert.h"
 #include "tcg/tcg-gvec-desc.h"
 #include "system/memory.h"
 #include "syndrome.h"
@@ -1028,7 +1029,10 @@ static inline int arm_mmu_idx_to_el(ARMMMUIdx mmu_idx)
     }
 }
 
-int arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx);
+static inline int arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx)
+{
+    return mmu_idx & ARM_MMU_IDX_A_GXF;
+}
 
 /* Return the MMU index for a v7M CPU in the specified security state */
 ARMMMUIdx arm_v7m_mmu_idx_for_secstate(CPUARMState *env, bool secstate);

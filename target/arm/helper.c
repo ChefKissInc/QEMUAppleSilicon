@@ -9627,29 +9627,6 @@ int fp_exception_el(CPUARMState *env, int cur_el)
     return 0;
 }
 
-int arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx)
-{
-    if (mmu_idx & ARM_MMU_IDX_M) {
-        return false;
-    }
-
-    switch (mmu_idx) {
-    case ARMMMUIdx_GE10_1:
-    case ARMMMUIdx_GE10_1_PAN:
-    case ARMMMUIdx_GE2:
-    case ARMMMUIdx_GE20_2:
-    case ARMMMUIdx_GE20_2_PAN:
-    case ARMMMUIdx_GE3:
-    case ARMMMUIdx_GE30_3_PAN:
-        return true;
-    case ARMMMUIdx_Stage1_GE1:
-    case ARMMMUIdx_Stage1_GE1_PAN:
-        g_assert_not_reached();
-    default:
-        return false;
-    }
-}
-
 #ifndef CONFIG_TCG
 ARMMMUIdx arm_v7m_mmu_idx_for_secstate(CPUARMState *env, bool secstate)
 {
