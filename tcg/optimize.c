@@ -2923,7 +2923,7 @@ static bool fold_subbio(OptContext *ctx, TCGOp *op)
     if (ti_is_const(t1)) {
         uint64_t v = ti_const_val(t1);
         if (v != 0) {
-            op->args[2] = arg_new_constant(ctx, v - 1);
+            op->args[1] = arg_new_constant(ctx, v - 1);
             goto do_subbo;
         }
     }
