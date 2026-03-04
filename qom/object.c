@@ -55,7 +55,7 @@ static inline const char *oor_set(int n)
 DICT_OA_DEF2(TypeTable, const char *,
              M_OPEXTEND(M_CSTR_OPLIST, OOR_EQUAL(oor_equal_p),
                         OOR_SET(API_4(oor_set))),
-             TypeImpl, M_POD_OPLIST)
+             TypeImpl*, M_PTR_OPLIST)
 
 static TypeTable_ptr type_table_get(void)
 {
@@ -74,7 +74,8 @@ static bool enumerating_types;
 
 static TypeImpl *type_table_lookup(const char *name)
 {
-    return TypeTable_get(type_table_get(), name);
+    TypeImpl** ref = TypeTable_get(type_table_get(), name);
+    return ref == NULL ? NULL : *ref;
 }
 
 static void type_construct(TypeImpl *ti, const TypeInfo *info)
@@ -113,13 +114,15 @@ static void type_construct(TypeImpl *ti, const TypeInfo *info)
 
 static TypeImpl *type_table_add(const TypeInfo *info)
 {
-    TypeImpl ti;
+    TypeImpl *ti;
 
     assert(!enumerating_types);
 
-    type_construct(&ti, info);
-    TypeTable_set_at(type_table_get(), ti.name, ti);
-    return TypeTable_get(type_table_get(), ti.name);
+    ti = g_new0(TypeImpl, 1);
+
+    type_construct(ti, info);
+    TypeTable_set_at(type_table_get(), ti->name, ti);
+    return ti;
 }
 
 static TypeImpl *type_new(const TypeInfo *info)
@@ -1124,10 +1127,10 @@ void object_class_foreach(void (*fn)(ObjectClass *klass, void *opaque),
     for (TypeTable_it(it, type_table_get()); !TypeTable_end_p(it); TypeTable_next(it))
     {
         ref = TypeTable_ref(it);
-        type_initialize(&ref->value);
-        k = ref->value.class;
+        type_initialize(ref->value);
+        k = ref->value->class;
 
-        if (!include_abstract && ref->value.abstract) {
+        if (!include_abstract && ref->value->abstract) {
             continue;
         }
 
