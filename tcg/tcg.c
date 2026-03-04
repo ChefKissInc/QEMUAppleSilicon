@@ -6390,6 +6390,7 @@ static void tcg_out_helper_load_slots(TCGContext *s,
         tcg_debug_assert(parm->ntmp >= 2);
 
         dst3 = mov[3].dst;
+        bool conflict = false;
         for (unsigned j = 0; j < 3; ++j) {
             if (dst3 == mov[j].src) {
                 /*
@@ -6402,12 +6403,15 @@ static void tcg_out_helper_load_slots(TCGContext *s,
                 tcg_out_mov(s, mov[3].src_type, scratch, mov[3].src);
                 tcg_out_movext3(s, mov, mov + 1, mov + 2, parm->tmp[0]);
                 tcg_out_movext1_new_src(s, &mov[3], scratch);
+                conflict = true;
                 break;
             }
         }
 
         /* No conflicts: perform this move and continue. */
-        tcg_out_movext1(s, &mov[3]);
+        if (!conflict) {
+            tcg_out_movext1(s, &mov[3]);
+        }
         /* fall through */
 
     case 3:
