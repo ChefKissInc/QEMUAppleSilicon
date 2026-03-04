@@ -246,24 +246,6 @@ void resettable_cold_reset_fn(void *opaque)
     resettable_reset((Object *) opaque, RESET_TYPE_COLD);
 }
 
-void resettable_class_set_parent_phases(ResettableClass *rc,
-                                        ResettableEnterPhase enter,
-                                        ResettableHoldPhase hold,
-                                        ResettableExitPhase exit,
-                                        ResettablePhases *parent_phases)
-{
-    *parent_phases = rc->phases;
-    if (enter) {
-        rc->phases.enter = enter;
-    }
-    if (hold) {
-        rc->phases.hold = hold;
-    }
-    if (exit) {
-        rc->phases.exit = exit;
-    }
-}
-
 static const TypeInfo resettable_interface_info = {
     .name       = TYPE_RESETTABLE_INTERFACE,
     .parent     = TYPE_INTERFACE,
