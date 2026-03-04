@@ -995,9 +995,13 @@ void device_class_set_legacy_reset(DeviceClass *dc,
  * (usually in the instance structure) so you can eventually call
  * dc->parent_unrealize(dev);
  */
-void device_class_set_parent_unrealize(DeviceClass *dc,
+inline void device_class_set_parent_unrealize(DeviceClass *dc,
                                        DeviceUnrealize dev_unrealize,
-                                       DeviceUnrealize *parent_unrealize);
+                                       DeviceUnrealize *parent_unrealize)
+{
+    *parent_unrealize = dc->unrealize;
+    dc->unrealize = dev_unrealize;
+}
 
 const VMStateDescription *qdev_get_vmsd(DeviceState *dev);
 
