@@ -2419,7 +2419,7 @@ static int fold_setcond_zmask(OptContext *ctx, TCGOp *op, bool neg)
     TCGCond cond;
 
     if (!arg_is_const(op->args[2])) {
-        return false;
+        return 0;
     }
 
     a_zmask = arg_info(op->args[1])->z_mask;
