@@ -3777,13 +3777,27 @@ static inline TCGRegSet *la_temp_pref(TCGTemp *ts)
     return ts->state_ptr;
 }
 
+static inline void la_set_pref(TCGTemp *ts, TCGRegSet value)
+{
+    TCGRegSet *temp_pref;
+    
+    temp_pref = la_temp_pref(ts);
+    tcg_debug_assert(temp_pref);
+    
+    *temp_pref = value;
+}
+
+static inline void la_dead_pref(TCGTemp *ts)
+{
+    la_set_pref(ts, 0);
+}
+
 /* For liveness_pass_1, reset the preferences for a given temp to the
  * maximal regset for its type.
  */
 static inline void la_reset_pref(TCGTemp *ts)
 {
-    *la_temp_pref(ts)
-        = (ts->state == TS_DEAD ? 0 : tcg_target_available_regs[ts->type]);
+    la_set_pref(ts, (ts->state & TS_DEAD) ? 0 : tcg_target_available_regs[ts->type]);
 }
 
 /* liveness analysis: end of function: all temps are dead, and globals
@@ -3791,14 +3805,17 @@ static inline void la_reset_pref(TCGTemp *ts)
 static void la_func_end(TCGContext *s, int ng, int nt)
 {
     int i;
+    TCGTemp *ts;
 
     for (i = 0; i < ng; ++i) {
-        s->temps[i].state = TS_DEAD | TS_MEM;
-        la_reset_pref(&s->temps[i]);
+        ts = &s->temps[i];
+        ts->state = TS_DEAD | TS_MEM;
+        la_dead_pref(ts);
     }
     for (i = ng; i < nt; ++i) {
-        s->temps[i].state = TS_DEAD;
-        la_reset_pref(&s->temps[i]);
+        ts = &s->temps[i];
+        ts->state = TS_DEAD;
+        la_dead_pref(ts);
     }
 }
 
@@ -3826,7 +3843,7 @@ static void la_bb_end(TCGContext *s, int ng, int nt)
             g_assert_not_reached();
         }
         ts->state = state;
-        la_reset_pref(ts);
+        la_dead_pref(ts);
     }
 }
 
@@ -3834,13 +3851,15 @@ static void la_bb_end(TCGContext *s, int ng, int nt)
 static void la_global_sync(TCGContext *s, int ng)
 {
     int i;
+    TCGTemp *ts;
 
     for (i = 0; i < ng; ++i) {
-        int state = s->temps[i].state;
-        s->temps[i].state = state | TS_MEM;
-        if (state == TS_DEAD) {
+        ts = &s->temps[i];
+        uintptr_t state = ts->state;
+        ts->state = state | TS_MEM;
+        if (state & TS_DEAD) {
             /* If the global was previously dead, reset prefs.  */
-            la_reset_pref(&s->temps[i]);
+            la_reset_pref(ts);
         }
     }
 }
@@ -3862,7 +3881,7 @@ static void la_bb_sync(TCGContext *s, int ng, int nt)
         case TEMP_TB:
             state = ts->state;
             ts->state = state | TS_MEM;
-            if (state != TS_DEAD) {
+            if (!(state & TS_DEAD)) {
                 continue;
             }
             break;
@@ -3872,7 +3891,7 @@ static void la_bb_sync(TCGContext *s, int ng, int nt)
         default:
             g_assert_not_reached();
         }
-        la_reset_pref(&s->temps[i]);
+        la_reset_pref(ts);
     }
 }
 
@@ -3880,10 +3899,12 @@ static void la_bb_sync(TCGContext *s, int ng, int nt)
 static void la_global_kill(TCGContext *s, int ng)
 {
     int i;
+    TCGTemp *ts;
 
     for (i = 0; i < ng; i++) {
-        s->temps[i].state = TS_DEAD | TS_MEM;
-        la_reset_pref(&s->temps[i]);
+        ts = &s->temps[i];
+        ts->state = TS_DEAD | TS_MEM;
+        la_dead_pref(ts);
     }
 }
 
@@ -4005,8 +4026,8 @@ liveness_pass_1(TCGContext *s)
         s->temps[i].state_ptr = prefs + i;
     }
 
-    /* ??? Should be redundant with the exit_tb that ends the TB.  */
-    la_func_end(s, nb_globals, nb_temps);
+    // /* ??? Should be redundant with the exit_tb that ends the TB.  */
+    // la_func_end(s, nb_globals, nb_temps);
 
     s->carry_live = false;
     QTAILQ_FOREACH_REVERSE_SAFE(op, &s->ops, link, op_prev) {
@@ -4050,7 +4071,7 @@ liveness_pass_1(TCGContext *s)
                         arg_life |= SYNC_ARG << i;
                     }
                     ts->state = TS_DEAD;
-                    la_reset_pref(ts);
+                    la_dead_pref(ts);
                 }
 
                 /* Not used -- it will be tcg_target_call_oarg_reg().  */
@@ -4094,13 +4115,13 @@ liveness_pass_1(TCGContext *s)
                         case TCG_CALL_ARG_EXTEND_U:
                         case TCG_CALL_ARG_EXTEND_S:
                             if (arg_slot_reg_p(loc->arg_slot)) {
-                                *la_temp_pref(ts) = 0;
+                                la_dead_pref(ts);
                                 break;
                             }
                             /* fall through */
                         default:
-                            *la_temp_pref(ts) =
-                                tcg_target_available_regs[ts->type];
+                            la_set_pref(ts,
+                                tcg_target_available_regs[ts->type]);
                             break;
                         }
                         ts->state &= ~TS_DEAD;
@@ -4138,7 +4159,7 @@ liveness_pass_1(TCGContext *s)
             /* mark the temporary as dead */
             ts = arg_temp(op->args[0]);
             ts->state = TS_DEAD;
-            la_reset_pref(ts);
+            la_dead_pref(ts);
             break;
 
         case INDEX_op_muls2:
@@ -4150,8 +4171,8 @@ liveness_pass_1(TCGContext *s)
             opc_new2 = INDEX_op_muluh;
         do_mul2:
             assert_carry_dead(s);
-            if (arg_temp(op->args[1])->state == TS_DEAD) {
-                if (arg_temp(op->args[0])->state == TS_DEAD) {
+            if ((arg_temp(op->args[1])->state & TS_DEAD)) {
+                if ((arg_temp(op->args[0])->state & TS_DEAD)) {
                     /* Both parts of the operation are dead.  */
                     goto do_remove;
                 }
@@ -4159,7 +4180,7 @@ liveness_pass_1(TCGContext *s)
                 op->opc = opc = opc_new;
                 op->args[1] = op->args[2];
                 op->args[2] = op->args[3];
-            } else if (arg_temp(op->args[0])->state == TS_DEAD &&
+            } else if ((arg_temp(op->args[0])->state & TS_DEAD) &&
                        tcg_op_supported(opc_new2, TCGOP_TYPE(op), 0)) {
                 /* The low part of the operation is dead; generate the high. */
                 op->opc = opc = opc_new2;
@@ -4200,7 +4221,7 @@ liveness_pass_1(TCGContext *s)
                     nb_temps++;
                     ts->state_ptr = tcg_malloc(sizeof(TCGRegSet));
                     ts->state = TS_DEAD;
-                    la_reset_pref(ts);
+                    la_dead_pref(ts);
                 }
                 op->args[2] = temp_arg(ts);
                 op->opc = opc = INDEX_op_add;
@@ -4232,7 +4253,7 @@ liveness_pass_1(TCGContext *s)
                 nb_temps++;
                 ts->state_ptr = tcg_malloc(sizeof(TCGRegSet));
                 ts->state = TS_DEAD;
-                la_reset_pref(ts);
+                la_dead_pref(ts);
             }
             op->args[2] = temp_arg(ts);
             op->opc = opc = INDEX_op_add;
@@ -4256,7 +4277,7 @@ liveness_pass_1(TCGContext *s)
                 nb_temps++;
                 ts->state_ptr = tcg_malloc(sizeof(TCGRegSet));
                 ts->state = TS_DEAD;
-                la_reset_pref(ts);
+                la_dead_pref(ts);
             }
             op->args[2] = temp_arg(ts);
             op->opc = opc = INDEX_op_add;
@@ -4305,7 +4326,7 @@ liveness_pass_1(TCGContext *s)
                     arg_life |= SYNC_ARG << i;
                 }
                 ts->state = TS_DEAD;
-                la_reset_pref(ts);
+                la_dead_pref(ts);
             }
 
             /* If end of basic block, update.  */
@@ -4459,7 +4480,7 @@ liveness_pass_2(TCGContext *s)
         for (i = nb_oargs; i < nb_iargs + nb_oargs; i++) {
             arg_ts = arg_temp(op->args[i]);
             dir_ts = arg_ts->state_ptr;
-            if (dir_ts && arg_ts->state == TS_DEAD) {
+            if (dir_ts && (arg_ts->state & TS_DEAD)) {
                 TCGOp *lop = tcg_op_insert_before(s, op, INDEX_op_ld,
                                                   arg_ts->type, 3);
 
@@ -4505,7 +4526,7 @@ liveness_pass_2(TCGContext *s)
                    that is, TS_DEAD, waiting to be reloaded.  */
                 arg_ts = &s->temps[i];
                 tcg_debug_assert(arg_ts->state_ptr == 0
-                                 || arg_ts->state == TS_DEAD);
+                                 || (arg_ts->state & TS_DEAD));
             }
         }
 
