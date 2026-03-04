@@ -795,14 +795,6 @@ void device_class_set_legacy_reset(DeviceClass *dc, DeviceReset dev_reset)
     dc->legacy_reset = dev_reset;
 }
 
-void device_class_set_parent_realize(DeviceClass *dc,
-                                     DeviceRealize dev_realize,
-                                     DeviceRealize *parent_realize)
-{
-    *parent_realize = dc->realize;
-    dc->realize = dev_realize;
-}
-
 void device_class_set_parent_unrealize(DeviceClass *dc,
                                        DeviceUnrealize dev_unrealize,
                                        DeviceUnrealize *parent_unrealize)
