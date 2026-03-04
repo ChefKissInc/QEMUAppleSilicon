@@ -936,7 +936,7 @@ static int do_constant_folding_cond2(OptContext *ctx, TCGOp *op, TCGArg *args)
         op2->args[0] = t2;
         op2->args[1] = ah;
         op2->args[2] = bh;
-        fold_and(ctx, op1);
+        fold_and(ctx, op2);
 
         args[0] = t1;
         args[1] = t2;
