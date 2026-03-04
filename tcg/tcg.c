@@ -7113,12 +7113,13 @@ static int find_string(const char *strtab, const char *str)
 {
     const char *p = strtab + 1;
 
-    while (1) {
+    while (*p != '\0') {
         if (strcmp(p, str) == 0) {
             return p - strtab;
         }
         p += strlen(p) + 1;
     }
+    g_assert_not_reached();
 }
 
 static void tcg_register_jit_int(const void *buf_ptr, size_t buf_size,
