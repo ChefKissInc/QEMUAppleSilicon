@@ -130,7 +130,7 @@ static coroutine_fn int cbw_do_copy_before_write(BlockDriverState *bs,
      * running block_copy calls.
      */
     bdrv_inc_in_flight(bs);
-    ret = block_copy(s->bcs, off, end - off, true, s->cbw_timeout_ns,
+    ret = block_copy(s->bcs, off, end - off, s->cbw_timeout_ns,
                      block_copy_cb, bs);
     if (ret < 0 && s->on_cbw_error == ON_CBW_ERROR_BREAK_GUEST_WRITE) {
         return ret;

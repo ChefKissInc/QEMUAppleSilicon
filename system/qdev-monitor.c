@@ -38,85 +38,16 @@
 #include "qemu/qemu-print.h"
 #include "qemu/option_int.h"
 #include "system/block-backend.h"
-#include "migration/misc.h"
 #include "qemu/cutils.h"
 #include "hw/qdev-properties.h"
 #include "hw/clock.h"
 #include "hw/boards.h"
-
-/*
- * Aliases were a bad idea from the start.  Let's keep them
- * from spreading further.
- */
-typedef struct QDevAlias
-{
-    const char *typename;
-    const char *alias;
-    uint32_t arch_mask;
-} QDevAlias;
-
-/* default virtio transport per architecture */
-#define QEMU_ARCH_VIRTIO_PCI (QEMU_ARCH_ARM | \
-                              QEMU_ARCH_I386)
-
-/* Please keep this table sorted by typename. */
-static const QDevAlias qdev_alias_table[] = {
-    { "AC97", "ac97" }, /* -soundhw name */
-    { "e1000", "e1000-82540em" },
-    { "ES1370", "es1370" }, /* -soundhw name */
-    { "ich9-ahci", "ahci" },
-    { "lsi53c895a", "lsi" },
-    { "virtio-9p-pci", "virtio-9p", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-balloon-pci", "virtio-balloon", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-blk-pci", "virtio-blk", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-gpu-pci", "virtio-gpu", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-gpu-gl-pci", "virtio-gpu-gl", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-gpu-rutabaga-pci", "virtio-gpu-rutabaga", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-input-host-pci", "virtio-input-host", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-iommu-pci", "virtio-iommu", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-keyboard-pci", "virtio-keyboard", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-mouse-pci", "virtio-mouse", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-net-pci", "virtio-net", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-rng-pci", "virtio-rng", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-scsi-pci", "virtio-scsi", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-serial-pci", "virtio-serial", QEMU_ARCH_VIRTIO_PCI},
-    { "virtio-sound-pci", "virtio-sound", QEMU_ARCH_VIRTIO_PCI },
-    { "virtio-tablet-pci", "virtio-tablet", QEMU_ARCH_VIRTIO_PCI },
-    { }
-};
-
-static const char *qdev_class_get_alias(DeviceClass *dc)
-{
-    const char *typename = object_class_get_name(OBJECT_CLASS(dc));
-    int i;
-
-    for (i = 0; qdev_alias_table[i].typename; i++) {
-        if (qdev_alias_table[i].arch_mask &&
-            !qemu_arch_available(qdev_alias_table[i].arch_mask)) {
-            continue;
-        }
-
-        if (strcmp(qdev_alias_table[i].typename, typename) == 0) {
-            return qdev_alias_table[i].alias;
-        }
-    }
-
-    return NULL;
-}
-
-static bool qdev_class_has_alias(DeviceClass *dc)
-{
-    return (qdev_class_get_alias(dc) != NULL);
-}
 
 static void qdev_print_devinfo(DeviceClass *dc)
 {
     qemu_printf("name \"%s\"", object_class_get_name(OBJECT_CLASS(dc)));
     if (dc->bus_type) {
         qemu_printf(", bus %s", dc->bus_type);
-    }
-    if (qdev_class_has_alias(dc)) {
-        qemu_printf(", alias \"%s\"", qdev_class_get_alias(dc));
     }
     if (dc->desc) {
         qemu_printf(", desc \"%s\"", dc->desc);
@@ -172,24 +103,6 @@ static void qdev_print_devinfos(bool show_no_user)
     g_slist_free(list);
 }
 
-static const char *find_typename_by_alias(const char *alias)
-{
-    int i;
-
-    for (i = 0; qdev_alias_table[i].alias; i++) {
-        if (qdev_alias_table[i].arch_mask &&
-            !qemu_arch_available(qdev_alias_table[i].arch_mask)) {
-            continue;
-        }
-
-        if (strcmp(qdev_alias_table[i].alias, alias) == 0) {
-            return qdev_alias_table[i].typename;
-        }
-    }
-
-    return NULL;
-}
-
 static DeviceClass *qdev_get_device_class(const char **driver, Error **errp)
 {
     ObjectClass *oc;
@@ -197,15 +110,6 @@ static DeviceClass *qdev_get_device_class(const char **driver, Error **errp)
     const char *original_name = *driver;
 
     oc = module_object_class_by_name(*driver);
-    if (!oc) {
-        const char *typename = find_typename_by_alias(*driver);
-
-        if (typename) {
-            *driver = typename;
-            oc = module_object_class_by_name(*driver);
-        }
-    }
-
     if (!object_class_dynamic_cast(oc, TYPE_DEVICE)) {
         if (*driver != original_name) {
             error_setg(errp, "'%s' (alias '%s') is not a valid device model"
@@ -260,14 +164,6 @@ int qdev_device_help(QemuOpts *opts)
 
     if (!driver || !qemu_opt_has_help_opt(opts)) {
         return 0;
-    }
-
-    if (!object_class_by_name(driver)) {
-        const char *typename = find_typename_by_alias(driver);
-
-        if (typename) {
-            driver = typename;
-        }
     }
 
     prop_list = qmp_device_list_properties(driver, &local_err);
@@ -389,15 +285,6 @@ static DeviceState *qbus_find_dev(BusState *bus, char *elem)
     QTAILQ_FOREACH(kid, &bus->children, sibling) {
         DeviceState *dev = kid->child;
         if (strcmp(object_get_typename(OBJECT(dev)), elem) == 0) {
-            return dev;
-        }
-    }
-    QTAILQ_FOREACH(kid, &bus->children, sibling) {
-        DeviceState *dev = kid->child;
-        DeviceClass *dc = DEVICE_GET_CLASS(dev);
-
-        if (qdev_class_has_alias(dc) &&
-            strcmp(qdev_class_get_alias(dc), elem) == 0) {
             return dev;
         }
     }
@@ -635,11 +522,6 @@ DeviceState *qdev_device_add_from_qdict(const QDict *opts,
         return NULL;
     }
 
-    if (migration_is_running()) {
-        error_setg(errp, "device_add not allowed while migrating");
-        return NULL;
-    }
-
     /* create device */
     dev = qdev_new(driver);
 
@@ -857,11 +739,6 @@ void qdev_unplug(DeviceState *dev, Error **errp)
         return;
     }
 
-    if (migration_is_running() && !dev->allow_unplug_during_migration) {
-        error_setg(errp, "device_del not allowed while migrating");
-        return;
-    }
-
     qdev_hot_removed = true;
 
     hotplug_ctrl = qdev_get_hotplug_handler(dev);
@@ -915,18 +792,6 @@ int qdev_sync_config(DeviceState *dev, Error **errp)
 void qmp_device_sync_config(const char *id, Error **errp)
 {
     DeviceState *dev;
-
-    /*
-     * During migration there is a race between syncing`configuration
-     * and migrating it (if migrate first, that target would get
-     * outdated version), so let's just not allow it.
-     */
-
-    if (migration_is_running()) {
-        error_setg(errp, "Config synchronization is not allowed "
-                   "during migration");
-        return;
-    }
 
     dev = find_device_state(id, true, errp);
     if (!dev) {

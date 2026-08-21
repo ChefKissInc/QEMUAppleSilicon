@@ -134,13 +134,4 @@ SPMISlave *spmi_slave_create_simple(SPMIBus *bus, const char *name,
  */
 bool spmi_slave_realize_and_unref(SPMISlave *dev, SPMIBus *bus, Error **errp);
 
-extern const VMStateDescription vmstate_spmi_slave;
-
-#define VMSTATE_SPMI_SLAVE(_field, _state)                         \
-    {                                                              \
-        .name = (stringify(_field)), .size = sizeof(SPMISlave),    \
-        .vmsd = &vmstate_spmi_slave, .flags = VMS_STRUCT,          \
-        .offset = vmstate_offset_value(_state, _field, SPMISlave), \
-    }
-
 #endif

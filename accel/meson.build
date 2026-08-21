@@ -6,6 +6,5 @@ subdir('tcg')
 if have_system
   subdir('hvf')
   subdir('kvm')
-  subdir('xen')
   subdir('stubs')
 endif

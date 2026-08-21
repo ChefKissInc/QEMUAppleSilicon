@@ -197,15 +197,3 @@ static void apple_a7iop_register_types(void)
 }
 
 type_init(apple_a7iop_register_types);
-
-const VMStateDescription vmstate_apple_a7iop = {
-    .name = "AppleA7IOP",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(cpu_status, AppleA7IOP),
-            VMSTATE_UINT32(cpu_ctrl, AppleA7IOP),
-            VMSTATE_END_OF_LIST(),
-        },
-};

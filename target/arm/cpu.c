@@ -35,10 +35,8 @@
 #include "cpu-features.h"
 #include "exec/target_page.h"
 #include "hw/qdev-properties.h"
-#include "hw/loader.h"
 #include "hw/boards.h"
 #ifdef CONFIG_TCG
-#include "hw/intc/armv7m_nvic.h"
 #endif /* CONFIG_TCG */
 #include "system/tcg.h"
 #include "system/hw_accel.h"
@@ -298,158 +296,11 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
 
     env->vfp.xregs[ARM_VFP_FPEXC] = 0;
 
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        uint32_t initial_msp; /* Loaded from 0x0 */
-        uint32_t initial_pc; /* Loaded from 0x4 */
-        uint8_t *rom;
-        uint32_t vecbase;
-
-        if (cpu_isar_feature(aa32_lob, cpu)) {
-            /*
-             * LTPSIZE is constant 4 if MVE not implemented, and resets
-             * to an UNKNOWN value if MVE is implemented. We choose to
-             * always reset to 4.
-             */
-            env->v7m.ltpsize = 4;
-            /* The LTPSIZE field in FPDSCR is constant and reads as 4. */
-            env->v7m.fpdscr[M_REG_NS] = 4 << FPCR_LTPSIZE_SHIFT;
-            env->v7m.fpdscr[M_REG_S] = 4 << FPCR_LTPSIZE_SHIFT;
-        }
-
-        if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-            env->v7m.secure = true;
-        } else {
-            /* This bit resets to 0 if security is supported, but 1 if
-             * it is not. The bit is not present in v7M, but we set it
-             * here so we can avoid having to make checks on it conditional
-             * on ARM_FEATURE_V8 (we don't let the guest see the bit).
-             */
-            env->v7m.aircr = R_V7M_AIRCR_BFHFNMINS_MASK;
-            /*
-             * Set NSACR to indicate "NS access permitted to everything";
-             * this avoids having to have all the tests of it being
-             * conditional on ARM_FEATURE_M_SECURITY. Note also that from
-             * v8.1M the guest-visible value of NSACR in a CPU without the
-             * Security Extension is 0xcff.
-             */
-            env->v7m.nsacr = 0xcff;
-        }
-
-        /* In v7M the reset value of this bit is IMPDEF, but ARM recommends
-         * that it resets to 1, so QEMU always does that rather than making
-         * it dependent on CPU model. In v8M it is RES1.
-         */
-        env->v7m.ccr[M_REG_NS] = R_V7M_CCR_STKALIGN_MASK;
-        env->v7m.ccr[M_REG_S] = R_V7M_CCR_STKALIGN_MASK;
-        if (arm_feature(env, ARM_FEATURE_V8)) {
-            /* in v8M the NONBASETHRDENA bit [0] is RES1 */
-            env->v7m.ccr[M_REG_NS] |= R_V7M_CCR_NONBASETHRDENA_MASK;
-            env->v7m.ccr[M_REG_S] |= R_V7M_CCR_NONBASETHRDENA_MASK;
-        }
-        if (!arm_feature(env, ARM_FEATURE_M_MAIN)) {
-            env->v7m.ccr[M_REG_NS] |= R_V7M_CCR_UNALIGN_TRP_MASK;
-            env->v7m.ccr[M_REG_S] |= R_V7M_CCR_UNALIGN_TRP_MASK;
-        }
-
-        if (cpu_isar_feature(aa32_vfp_simd, cpu)) {
-            env->v7m.fpccr[M_REG_NS] = R_V7M_FPCCR_ASPEN_MASK;
-            env->v7m.fpccr[M_REG_S] = R_V7M_FPCCR_ASPEN_MASK |
-                R_V7M_FPCCR_LSPEN_MASK | R_V7M_FPCCR_S_MASK;
-        }
-
-        /* Unlike A/R profile, M profile defines the reset LR value */
-        env->regs[14] = 0xffffffff;
-
-        env->v7m.vecbase[M_REG_S] = cpu->init_svtor & 0xffffff80;
-        env->v7m.vecbase[M_REG_NS] = cpu->init_nsvtor & 0xffffff80;
-
-        /* Load the initial SP and PC from offset 0 and 4 in the vector table */
-        vecbase = env->v7m.vecbase[env->v7m.secure];
-        rom = rom_ptr_for_as(cs->as, vecbase, 8);
-        if (rom) {
-            /* Address zero is covered by ROM which hasn't yet been
-             * copied into physical memory.
-             */
-            initial_msp = ldl_p(rom);
-            initial_pc = ldl_p(rom + 4);
-        } else {
-            /* Address zero not covered by a ROM blob, or the ROM blob
-             * is in non-modifiable memory and this is a second reset after
-             * it got copied into memory. In the latter case, rom_ptr
-             * will return a NULL pointer and we should use ldl_phys instead.
-             */
-            initial_msp = ldl_phys(cs->as, vecbase);
-            initial_pc = ldl_phys(cs->as, vecbase + 4);
-        }
-
-        qemu_log_mask(CPU_LOG_INT,
-                      "Loaded reset SP 0x%x PC 0x%x from vector table\n",
-                      initial_msp, initial_pc);
-
-        env->regs[13] = initial_msp & 0xFFFFFFFC;
-        env->regs[15] = initial_pc & ~1;
-        env->thumb = initial_pc & 1;
-    }
-
     /* M profile requires that reset clears the exclusive monitor;
      * A profile does not, but clearing it makes more sense than having it
      * set with an exclusive access on address zero.
      */
     arm_clear_exclusive(env);
-
-    if (arm_feature(env, ARM_FEATURE_PMSA)) {
-        if (cpu->pmsav7_dregion > 0) {
-            if (arm_feature(env, ARM_FEATURE_V8)) {
-                memset(env->pmsav8.rbar[M_REG_NS], 0,
-                       sizeof(*env->pmsav8.rbar[M_REG_NS])
-                       * cpu->pmsav7_dregion);
-                memset(env->pmsav8.rlar[M_REG_NS], 0,
-                       sizeof(*env->pmsav8.rlar[M_REG_NS])
-                       * cpu->pmsav7_dregion);
-                if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-                    memset(env->pmsav8.rbar[M_REG_S], 0,
-                           sizeof(*env->pmsav8.rbar[M_REG_S])
-                           * cpu->pmsav7_dregion);
-                    memset(env->pmsav8.rlar[M_REG_S], 0,
-                           sizeof(*env->pmsav8.rlar[M_REG_S])
-                           * cpu->pmsav7_dregion);
-                }
-            } else if (arm_feature(env, ARM_FEATURE_V7)) {
-                memset(env->pmsav7.drbar, 0,
-                       sizeof(*env->pmsav7.drbar) * cpu->pmsav7_dregion);
-                memset(env->pmsav7.drsr, 0,
-                       sizeof(*env->pmsav7.drsr) * cpu->pmsav7_dregion);
-                memset(env->pmsav7.dracr, 0,
-                       sizeof(*env->pmsav7.dracr) * cpu->pmsav7_dregion);
-            }
-        }
-
-        if (cpu->pmsav8r_hdregion > 0) {
-            memset(env->pmsav8.hprbar, 0,
-                   sizeof(*env->pmsav8.hprbar) * cpu->pmsav8r_hdregion);
-            memset(env->pmsav8.hprlar, 0,
-                   sizeof(*env->pmsav8.hprlar) * cpu->pmsav8r_hdregion);
-        }
-
-        env->pmsav7.rnr[M_REG_NS] = 0;
-        env->pmsav7.rnr[M_REG_S] = 0;
-        env->pmsav8.mair0[M_REG_NS] = 0;
-        env->pmsav8.mair0[M_REG_S] = 0;
-        env->pmsav8.mair1[M_REG_NS] = 0;
-        env->pmsav8.mair1[M_REG_S] = 0;
-    }
-
-    if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-        if (cpu->sau_sregion > 0) {
-            memset(env->sau.rbar, 0, sizeof(*env->sau.rbar) * cpu->sau_sregion);
-            memset(env->sau.rlar, 0, sizeof(*env->sau.rlar) * cpu->sau_sregion);
-        }
-        env->sau.rnr = 0;
-        /* SAU_CTRL reset value is IMPDEF; we choose 0, which is what
-         * the Cortex-M33 does.
-         */
-        env->sau.ctrl = 0;
-    }
 
     set_flush_to_zero(1, &env->vfp.fp_status[FPST_STD]);
     set_flush_inputs_to_zero(1, &env->vfp.fp_status[FPST_STD]);
@@ -631,15 +482,6 @@ static void arm_cpu_set_irq(void *opaque, int irq, int level)
     default:
         assert_not_reached();
     }
-}
-
-static bool arm_cpu_virtio_is_big_endian(CPUState *cs)
-{
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
-
-    cpu_synchronize_state(cs);
-    return arm_cpu_data_is_big_endian(env);
 }
 
 #ifdef CONFIG_TCG
@@ -850,53 +692,23 @@ static void arm_cpu_dump_state(CPUState *cs, FILE *f, int flags)
         }
     }
 
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        uint32_t xpsr = xpsr_read(env);
-        const char *mode;
-        const char *ns_status = "";
+    uint32_t psr = cpsr_read(env);
+    const char *ns_status = "";
 
-        if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-            ns_status = env->v7m.secure ? "S " : "NS ";
-        }
-
-        if (xpsr & XPSR_EXCP) {
-            mode = "handler";
-        } else {
-            if (env->v7m.control[env->v7m.secure] & R_V7M_CONTROL_NPRIV_MASK) {
-                mode = "unpriv-thread";
-            } else {
-                mode = "priv-thread";
-            }
-        }
-
-        qemu_fprintf(f, "XPSR=%08x %c%c%c%c %c %s%s\n",
-                     xpsr,
-                     xpsr & XPSR_N ? 'N' : '-',
-                     xpsr & XPSR_Z ? 'Z' : '-',
-                     xpsr & XPSR_C ? 'C' : '-',
-                     xpsr & XPSR_V ? 'V' : '-',
-                     xpsr & XPSR_T ? 'T' : 'A',
-                     ns_status,
-                     mode);
-    } else {
-        uint32_t psr = cpsr_read(env);
-        const char *ns_status = "";
-
-        if (arm_feature(env, ARM_FEATURE_EL3) &&
-            (psr & CPSR_M) != ARM_CPU_MODE_MON) {
-            ns_status = env->cp15.scr_el3 & SCR_NS ? "NS " : "S ";
-        }
-
-        qemu_fprintf(f, "PSR=%08x %c%c%c%c %c %s%s%d\n",
-                     psr,
-                     psr & CPSR_N ? 'N' : '-',
-                     psr & CPSR_Z ? 'Z' : '-',
-                     psr & CPSR_C ? 'C' : '-',
-                     psr & CPSR_V ? 'V' : '-',
-                     psr & CPSR_T ? 'T' : 'A',
-                     ns_status,
-                     aarch32_mode_name(psr), (psr & 0x10) ? 32 : 26);
+    if (arm_feature(env, ARM_FEATURE_EL3) &&
+        (psr & CPSR_M) != ARM_CPU_MODE_MON) {
+        ns_status = env->cp15.scr_el3 & SCR_NS ? "NS " : "S ";
     }
+
+    qemu_fprintf(f, "PSR=%08x %c%c%c%c %c %s%s%d\n",
+                 psr,
+                 psr & CPSR_N ? 'N' : '-',
+                 psr & CPSR_Z ? 'Z' : '-',
+                 psr & CPSR_C ? 'C' : '-',
+                 psr & CPSR_V ? 'V' : '-',
+                 psr & CPSR_T ? 'T' : 'A',
+                 ns_status,
+                 aarch32_mode_name(psr), (psr & 0x10) ? 32 : 26);
 
     if (flags & CPU_DUMP_FPU) {
         int numvfpregs = 0;
@@ -913,9 +725,6 @@ static void arm_cpu_dump_state(CPUState *cs, FILE *f, int flags)
                          i, v);
         }
         qemu_fprintf(f, "FPSCR: %08x\n", vfp_get_fpscr(env));
-        if (cpu_isar_feature(aa32_mve, cpu)) {
-            qemu_fprintf(f, "VPR: %08x\n", env->v7m.vpr);
-        }
     }
 }
 
@@ -1004,22 +813,6 @@ static const Property arm_cpu_has_vfp_d32_property =
 static const Property arm_cpu_has_neon_property =
             DEFINE_PROP_BOOL("neon", ARMCPU, has_neon, true);
 
-static const Property arm_cpu_has_dsp_property =
-            DEFINE_PROP_BOOL("dsp", ARMCPU, has_dsp, true);
-
-static const Property arm_cpu_has_mpu_property =
-            DEFINE_PROP_BOOL("has-mpu", ARMCPU, has_mpu, true);
-
-/* This is like DEFINE_PROP_UINT32 but it doesn't set the default value,
- * because the CPU initfn will have already set cpu->pmsav7_dregion to
- * the right value for that particular CPU type, and we don't want
- * to override that with an incorrect constant value.
- */
-static const Property arm_cpu_pmsav7_dregion_property =
-            DEFINE_PROP_UNSIGNED_NODEFAULT("pmsav7-dregion", ARMCPU,
-                                           pmsav7_dregion,
-                                           qdev_prop_uint32, uint32_t);
-
 static bool arm_get_pmu(Object *obj, Error **errp)
 {
     ARMCPU *cpu = ARM_CPU(obj);
@@ -1106,16 +899,8 @@ static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
      * bits explicitly for these cases.
      */
 
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        set_feature(env, ARM_FEATURE_PMSA);
-    }
-
     if (arm_feature(env, ARM_FEATURE_V8)) {
-        if (arm_feature(env, ARM_FEATURE_M)) {
-            set_feature(env, ARM_FEATURE_V7);
-        } else {
-            set_feature(env, ARM_FEATURE_V7VE);
-        }
+        set_feature(env, ARM_FEATURE_V7VE);
     }
 
     /*
@@ -1149,11 +934,7 @@ static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
         set_feature(env, ARM_FEATURE_VAPA);
         set_feature(env, ARM_FEATURE_THUMB2);
         set_feature(env, ARM_FEATURE_MPIDR);
-        if (!arm_feature(env, ARM_FEATURE_M)) {
-            set_feature(env, ARM_FEATURE_V6K);
-        } else {
-            set_feature(env, ARM_FEATURE_V6);
-        }
+        set_feature(env, ARM_FEATURE_V6K);
 
         /*
          * Always define VBAR for V7 CPUs even if it doesn't exist in
@@ -1167,11 +948,9 @@ static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
     }
     if (arm_feature(env, ARM_FEATURE_V6)) {
         set_feature(env, ARM_FEATURE_V5);
-        if (!arm_feature(env, ARM_FEATURE_M)) {
-            assert(!tcg_enabled() || no_aa32 ||
-                   cpu_isar_feature(aa32_jazelle, cpu));
-            set_feature(env, ARM_FEATURE_AUXCR);
-        }
+        assert(!tcg_enabled() || no_aa32 ||
+               cpu_isar_feature(aa32_jazelle, cpu));
+        set_feature(env, ARM_FEATURE_AUXCR);
     }
     if (arm_feature(env, ARM_FEATURE_V5)) {
         set_feature(env, ARM_FEATURE_V4T);
@@ -1182,8 +961,7 @@ static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
     if (arm_feature(env, ARM_FEATURE_CBAR_RO)) {
         set_feature(env, ARM_FEATURE_CBAR);
     }
-    if (arm_feature(env, ARM_FEATURE_THUMB2) &&
-        !arm_feature(env, ARM_FEATURE_M)) {
+    if (arm_feature(env, ARM_FEATURE_THUMB2)) {
         set_feature(env, ARM_FEATURE_THUMB_DSP);
     }
 }
@@ -1212,9 +990,7 @@ static void arm_cpu_post_init(Object *obj)
         qdev_property_add_static(DEVICE(obj), &arm_cpu_reset_cbar_property);
     }
 
-    if (!arm_feature(&cpu->env, ARM_FEATURE_M)) {
-        qdev_property_add_static(DEVICE(obj), &arm_cpu_reset_hivecs_property);
-    }
+    qdev_property_add_static(DEVICE(obj), &arm_cpu_reset_hivecs_property);
 
     if (arm_feature(&cpu->env, ARM_FEATURE_V8)) {
         object_property_add_uint64_ptr(obj, "rvbar",
@@ -1272,8 +1048,7 @@ static void arm_cpu_post_init(Object *obj)
              * make sure that has_vfp_d32 can not be set to false.
              */
             if ((tcg_enabled())
-                && !(arm_feature(&cpu->env, ARM_FEATURE_V8)
-                     && !arm_feature(&cpu->env, ARM_FEATURE_M))) {
+                && !(arm_feature(&cpu->env, ARM_FEATURE_V8))) {
                 qdev_property_add_static(DEVICE(obj),
                                          &arm_cpu_has_vfp_d32_property);
             }
@@ -1285,42 +1060,6 @@ static void arm_cpu_post_init(Object *obj)
         if (tcg_enabled()) {
             qdev_property_add_static(DEVICE(obj), &arm_cpu_has_neon_property);
         }
-    }
-
-    if (arm_feature(&cpu->env, ARM_FEATURE_M) &&
-        arm_feature(&cpu->env, ARM_FEATURE_THUMB_DSP)) {
-        qdev_property_add_static(DEVICE(obj), &arm_cpu_has_dsp_property);
-    }
-
-    if (arm_feature(&cpu->env, ARM_FEATURE_PMSA)) {
-        qdev_property_add_static(DEVICE(obj), &arm_cpu_has_mpu_property);
-        if (arm_feature(&cpu->env, ARM_FEATURE_V7)) {
-            qdev_property_add_static(DEVICE(obj),
-                                     &arm_cpu_pmsav7_dregion_property);
-        }
-    }
-
-    if (arm_feature(&cpu->env, ARM_FEATURE_M_SECURITY)) {
-        object_property_add_link(obj, "idau", TYPE_IDAU_INTERFACE, &cpu->idau,
-                                 qdev_prop_allow_set_link_before_realize,
-                                 OBJ_PROP_LINK_STRONG);
-        /*
-         * M profile: initial value of the Secure VTOR. We can't just use
-         * a simple DEFINE_PROP_UINT32 for this because we want to permit
-         * the property to be set after realize.
-         */
-        object_property_add_uint32_ptr(obj, "init-svtor",
-                                       &cpu->init_svtor,
-                                       OBJ_PROP_FLAG_READWRITE);
-    }
-    if (arm_feature(&cpu->env, ARM_FEATURE_M)) {
-        /*
-         * Initial value of the NS VTOR (for cores without the Security
-         * extension, this is the only VTOR)
-         */
-        object_property_add_uint32_ptr(obj, "init-nsvtor",
-                                       &cpu->init_nsvtor,
-                                       OBJ_PROP_FLAG_READWRITE);
     }
 
     /* Not DEFINE_PROP_UINT32: we want this to be settable after realize */
@@ -1456,22 +1195,6 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         return;
     }
 
-    /* The NVIC and M-profile CPU are two halves of a single piece of
-     * hardware; trying to use one without the other is a command line
-     * error and will result in segfaults if not caught here.
-     */
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        if (!env->nvic) {
-            error_setg(errp, "This board cannot be used with Cortex-M CPUs");
-            return;
-        }
-    } else {
-        if (env->nvic) {
-            error_setg(errp, "This board can only be used with Cortex-M CPUs");
-            return;
-        }
-    }
-
     if (!tcg_enabled()) {
         /*
          * We assume that no accelerator except TCG can handle these features,
@@ -1481,12 +1204,6 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
          * address space for the CPU (otherwise we will assert() later in
          * cpu_address_space_init()).
          */
-        if (arm_feature(env, ARM_FEATURE_M)) {
-            error_setg(errp,
-                       "Cannot enable %s when using an M-profile guest CPU",
-                       current_accel_name());
-            return;
-        }
         if (cpu->has_el3) {
             error_setg(errp,
                        "Cannot enable %s when guest CPU has EL3 enabled",
@@ -1514,22 +1231,8 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
     }
 
     if (!cpu->gt_cntfrq_hz) {
-        /*
-         * 0 means "the board didn't set a value, use the default".
-         * ARMv8.6 and later CPUs architecturally must use a 1GHz timer; before
-         * that it was an IMPDEF choice, and QEMU initially picked 62.5MHz,
-         * which gives a 16ns tick period.
-         *
-         * We will use the back-compat value:
-         *  - for QEMU CPU types added before we standardized on 1GHz
-         *  - for versioned machine types with a version of 9.0 or earlier
-         */
-        if (arm_feature(env, ARM_FEATURE_BACKCOMPAT_CNTFRQ) ||
-            cpu->backcompat_cntfrq) {
-            cpu->gt_cntfrq_hz = GTIMER_BACKCOMPAT_HZ;
-        } else {
-            cpu->gt_cntfrq_hz = GTIMER_DEFAULT_HZ;
-        }
+        error_setg(errp, "The CPU has no GTimer frequency set.");
+        return;
     }
 
     {
@@ -1593,19 +1296,14 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         u = REG_FIELD_DP32(u, MVFR0, FPDIVIDE, 0);
         u = REG_FIELD_DP32(u, MVFR0, FPSQRT, 0);
         u = REG_FIELD_DP32(u, MVFR0, FPROUND, 0);
-        if (!arm_feature(env, ARM_FEATURE_M)) {
-            u = REG_FIELD_DP32(u, MVFR0, FPTRAP, 0);
-            u = REG_FIELD_DP32(u, MVFR0, FPSHVEC, 0);
-        }
+        u = REG_FIELD_DP32(u, MVFR0, FPTRAP, 0);
+        u = REG_FIELD_DP32(u, MVFR0, FPSHVEC, 0);
         cpu->isar.mvfr0 = u;
 
         u = cpu->isar.mvfr1;
         u = REG_FIELD_DP32(u, MVFR1, FPFTZ, 0);
         u = REG_FIELD_DP32(u, MVFR1, FPDNAN, 0);
         u = REG_FIELD_DP32(u, MVFR1, FPHP, 0);
-        if (arm_feature(env, ARM_FEATURE_M)) {
-            u = REG_FIELD_DP32(u, MVFR1, FP16, 0);
-        }
         cpu->isar.mvfr1 = u;
 
         u = cpu->isar.mvfr2;
@@ -1652,18 +1350,16 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         u = REG_FIELD_DP32(u, ID_ISAR6, I8MM, 0);
         SET_IDREG(isar, ID_ISAR6, u);
 
-        if (!arm_feature(env, ARM_FEATURE_M)) {
-            u = cpu->isar.mvfr1;
-            u = REG_FIELD_DP32(u, MVFR1, SIMDLS, 0);
-            u = REG_FIELD_DP32(u, MVFR1, SIMDINT, 0);
-            u = REG_FIELD_DP32(u, MVFR1, SIMDSP, 0);
-            u = REG_FIELD_DP32(u, MVFR1, SIMDHP, 0);
-            cpu->isar.mvfr1 = u;
+        u = cpu->isar.mvfr1;
+        u = REG_FIELD_DP32(u, MVFR1, SIMDLS, 0);
+        u = REG_FIELD_DP32(u, MVFR1, SIMDINT, 0);
+        u = REG_FIELD_DP32(u, MVFR1, SIMDSP, 0);
+        u = REG_FIELD_DP32(u, MVFR1, SIMDHP, 0);
+        cpu->isar.mvfr1 = u;
 
-            u = cpu->isar.mvfr2;
-            u = REG_FIELD_DP32(u, MVFR2, SIMDMISC, 0);
-            cpu->isar.mvfr2 = u;
-        }
+        u = cpu->isar.mvfr2;
+        u = REG_FIELD_DP32(u, MVFR2, SIMDMISC, 0);
+        cpu->isar.mvfr2 = u;
     }
 
     if (!cpu->has_neon && !cpu->has_vfp) {
@@ -1683,33 +1379,9 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         cpu->isar.mvfr1 = u;
     }
 
-    if (arm_feature(env, ARM_FEATURE_M) && !cpu->has_dsp) {
-        uint32_t u;
-
-        unset_feature(env, ARM_FEATURE_THUMB_DSP);
-
-        FIELD_DP32_IDREG(isar, ID_ISAR1, EXTEND, 1);
-
-        u = GET_IDREG(isar, ID_ISAR2);
-        u = REG_FIELD_DP32(u, ID_ISAR2, MULTU, 1);
-        u = REG_FIELD_DP32(u, ID_ISAR2, MULTS, 1);
-        SET_IDREG(isar, ID_ISAR2, u);
-
-        u = GET_IDREG(isar, ID_ISAR3);
-        u = REG_FIELD_DP32(u, ID_ISAR3, SIMD, 1);
-        u = REG_FIELD_DP32(u, ID_ISAR3, SATURATE, 0);
-        SET_IDREG(isar, ID_ISAR3, u);
-    }
-
     if (!TARGET_PAGE_BITS) {
         int pagebits;
-        if (arm_feature(env, ARM_FEATURE_V7) &&
-            !arm_feature(env, ARM_FEATURE_M) &&
-            !arm_feature(env, ARM_FEATURE_PMSA)) {
-            /*
-             * v7VMSA drops support for the old ARMv5 tiny pages,
-             * so we can use 4K pages.
-             */
+        if (arm_feature(env, ARM_FEATURE_V7)) {
             pagebits = 12;
         } else {
             /*
@@ -1752,7 +1424,7 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         }
     }
 
-    if (!arm_feature(env, ARM_FEATURE_M) && !cpu->has_el3) {
+    if (!cpu->has_el3) {
         /* If the has_el3 CPU property is disabled then we need to disable the
          * feature.
          */
@@ -1861,68 +1533,6 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         FIELD_DP64_IDREG(isar, ID_AA64PFR0, MPAM, 0);
     }
 
-    /* MPU can be configured out of a PMSA CPU either by setting has-mpu
-     * to false or by setting pmsav7-dregion to 0.
-     */
-    if (!cpu->has_mpu || cpu->pmsav7_dregion == 0) {
-        cpu->has_mpu = false;
-        cpu->pmsav7_dregion = 0;
-        cpu->pmsav8r_hdregion = 0;
-    }
-
-    if (arm_feature(env, ARM_FEATURE_PMSA) &&
-        arm_feature(env, ARM_FEATURE_V7)) {
-        uint32_t nr = cpu->pmsav7_dregion;
-
-        if (nr > 0xff) {
-            error_setg(errp, "PMSAv7 MPU #regions invalid %" PRIu32, nr);
-            return;
-        }
-
-        if (nr) {
-            if (arm_feature(env, ARM_FEATURE_V8)) {
-                /* PMSAv8 */
-                env->pmsav8.rbar[M_REG_NS] = g_new0(uint32_t, nr);
-                env->pmsav8.rlar[M_REG_NS] = g_new0(uint32_t, nr);
-                if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-                    env->pmsav8.rbar[M_REG_S] = g_new0(uint32_t, nr);
-                    env->pmsav8.rlar[M_REG_S] = g_new0(uint32_t, nr);
-                }
-            } else {
-                env->pmsav7.drbar = g_new0(uint32_t, nr);
-                env->pmsav7.drsr = g_new0(uint32_t, nr);
-                env->pmsav7.dracr = g_new0(uint32_t, nr);
-            }
-        }
-
-        if (cpu->pmsav8r_hdregion > 0xff) {
-            error_setg(errp, "PMSAv8 MPU EL2 #regions invalid %" PRIu32,
-                              cpu->pmsav8r_hdregion);
-            return;
-        }
-
-        if (cpu->pmsav8r_hdregion) {
-            env->pmsav8.hprbar = g_new0(uint32_t,
-                                        cpu->pmsav8r_hdregion);
-            env->pmsav8.hprlar = g_new0(uint32_t,
-                                        cpu->pmsav8r_hdregion);
-        }
-    }
-
-    if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-        uint32_t nr = cpu->sau_sregion;
-
-        if (nr > 0xff) {
-            error_setg(errp, "v8M SAU #regions invalid %" PRIu32, nr);
-            return;
-        }
-
-        if (nr) {
-            env->sau.rbar = g_new0(uint32_t, nr);
-            env->sau.rlar = g_new0(uint32_t, nr);
-        }
-    }
-
     if (arm_feature(env, ARM_FEATURE_EL3)) {
         set_feature(env, ARM_FEATURE_VBAR);
     }
@@ -1939,7 +1549,7 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
 
     MachineState *ms = MACHINE(qdev_get_machine());
     unsigned int smp_cpus = ms->smp.cpus;
-    bool has_secure = cpu->has_el3 || arm_feature(env, ARM_FEATURE_M_SECURITY);
+    bool has_secure = cpu->has_el3;
 
     /*
      * We must set cs->num_ases to the final value before
@@ -2026,7 +1636,6 @@ static const Property arm_cpu_properties[] = {
     DEFINE_PROP_UINT64("midr", ARMCPU, midr, 0),
     DEFINE_PROP_UINT64("mp-affinity", ARMCPU,
                         mp_affinity, ARM64_AFFINITY_INVALID),
-    DEFINE_PROP_INT32("node-id", ARMCPU, node_id, CPU_UNSET_NUMA_NODE_ID),
     DEFINE_PROP_INT32("core-count", ARMCPU, core_count, -1),
     /* True to default to the backward-compat old CNTFRQ rather than 1Ghz */
     DEFINE_PROP_BOOL("backcompat-cntfrq", ARMCPU, backcompat_cntfrq, false),
@@ -2051,13 +1660,9 @@ static const gchar *arm_gdb_arch_name(CPUState *cs)
 static const char *arm_gdb_get_core_xml_file(CPUState *cs)
 {
     ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
 
     if (arm_gdbstub_is_aarch64(cpu)) {
         return "aarch64-core.xml";
-    }
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        return "arm-m-profile.xml";
     }
     return "arm-core.xml";
 }
@@ -2068,10 +1673,6 @@ static const struct SysemuCPUOps arm_sysemu_ops = {
     .has_work = arm_cpu_has_work,
     .get_phys_page_attrs_debug = arm_cpu_get_phys_page_attrs_debug,
     .asidx_from_attrs = arm_asidx_from_attrs,
-    .write_elf32_note = arm_cpu_write_elf32_note,
-    .write_elf64_note = arm_cpu_write_elf64_note,
-    .virtio_is_big_endian = arm_cpu_virtio_is_big_endian,
-    .legacy_vmsd = &vmstate_arm_cpu,
 };
 
 #ifdef CONFIG_TCG

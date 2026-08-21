@@ -6,8 +6,6 @@
 
 #include "config-poison.h"
 
-#pragma GCC poison TARGET_I386
-#pragma GCC poison TARGET_X86_64
 #pragma GCC poison TARGET_AARCH64
 #pragma GCC poison TARGET_ARM
 #pragma GCC poison TARGET_ABI32

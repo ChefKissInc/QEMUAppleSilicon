@@ -1,27 +1,7 @@
-config HEATHROW_PIC
-    bool
-
-config I8259
-    bool
-    select ISA_BUS
-
-config PL190
-    bool
-
-config IOAPIC
-    bool
-    select I8259
-
-config APIC
-    bool
-    select MSI_NONBROKEN
-    select I8259
-
 config ARM_GIC
     bool
     select ARM_GICV3 if TCG
     select ARM_GIC_KVM if KVM
-    select MSI_NONBROKEN
 
 config ARM_GICV3
     bool
@@ -30,12 +10,3 @@ config ARM_GICV3
 config ARM_GIC_KVM
     bool
     depends on ARM_GIC && KVM
-
-config ALLWINNER_A10_PIC
-    bool
-
-config OMPIC
-    bool
-
-config GOLDFISH_PIC
-    bool

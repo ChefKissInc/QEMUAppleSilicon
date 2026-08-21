@@ -26,8 +26,6 @@
 #include "qemu/osdep.h"
 #include "qemu/lockable.h"
 #include "system/tcg.h"
-#include "system/replay.h"
-#include "exec/icount.h"
 #include "qemu/main-loop.h"
 #include "qemu/notify.h"
 #include "qemu/guest-random.h"
@@ -35,7 +33,6 @@
 #include "tcg/startup.h"
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-rr.h"
-#include "tcg-accel-ops-icount.h"
 
 /* Kick all RR vCPUs */
 void rr_kick_vcpu_thread(CPUState *unused)
@@ -212,9 +209,6 @@ static void *rr_cpu_thread_fn(void *arg)
     cpu = first_cpu;
 
     while (1) {
-        /* Only used for icount_enabled() */
-        int64_t cpu_budget = 0;
-
         if (cpu) {
             /*
              * This could even reset exit_request for all CPUs, but in practice
@@ -224,36 +218,8 @@ static void *rr_cpu_thread_fn(void *arg)
             qatomic_set(&cpu->exit_request, false);
         }
 
-        if (icount_enabled() && all_cpu_threads_idle()) {
-            /*
-             * When all cpus are sleeping (e.g in WFI), to avoid a deadlock
-             * in the main_loop, wake it up in order to start the warp timer.
-             */
-            qemu_notify_event();
-        }
-
         rr_wait_io_event();
         rr_deal_with_unplugged_cpus();
-
-        bql_unlock();
-        replay_mutex_lock();
-        bql_lock();
-
-        if (icount_enabled()) {
-            int cpu_count = rr_cpu_count();
-
-            /* Account partial waits to QEMU_CLOCK_VIRTUAL.  */
-            icount_account_warp_timer();
-            /*
-             * Run the timers here.  This is much more efficient than
-             * waking up the I/O thread and waiting for completion.
-             */
-            icount_handle_deadline();
-
-            cpu_budget = icount_percpu_budget(cpu_count);
-        }
-
-        replay_mutex_unlock();
 
         if (!cpu) {
             cpu = first_cpu;
@@ -279,13 +245,7 @@ static void *rr_cpu_thread_fn(void *arg)
                 int r;
 
                 bql_unlock();
-                if (icount_enabled()) {
-                    icount_prepare_for_run(cpu, cpu_budget);
-                }
                 r = tcg_cpu_exec(cpu);
-                if (icount_enabled()) {
-                    icount_process_data(cpu);
-                }
                 bql_lock();
 
                 if (r == EXCP_DEBUG) {

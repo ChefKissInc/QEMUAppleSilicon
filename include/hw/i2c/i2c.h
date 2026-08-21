@@ -213,14 +213,4 @@ bool i2c_slave_realize_and_unref(I2CSlave *dev, I2CBus *bus, Error **errp);
  */
 void i2c_slave_set_address(I2CSlave *dev, uint8_t address);
 
-extern const VMStateDescription vmstate_i2c_slave;
-
-#define VMSTATE_I2C_SLAVE(_field, _state) {                          \
-    .name       = (stringify(_field)),                               \
-    .size       = sizeof(I2CSlave),                                  \
-    .vmsd       = &vmstate_i2c_slave,                                \
-    .flags      = VMS_STRUCT,                                        \
-    .offset     = vmstate_offset_value(_state, _field, I2CSlave),    \
-}
-
 #endif

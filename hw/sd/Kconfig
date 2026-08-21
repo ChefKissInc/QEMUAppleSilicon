@@ -1,7 +1,3 @@
-config PL181
-    bool
-    select SD
-
 config SSI_SD
     bool
     depends on SSI
@@ -18,8 +14,4 @@ config SDHCI_PCI
     bool
     default y if PCI_DEVICES
     depends on PCI
-    select SDHCI
-
-config CADENCE_SDHCI
-    bool
     select SDHCI

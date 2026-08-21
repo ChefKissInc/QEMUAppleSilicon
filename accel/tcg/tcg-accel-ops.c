@@ -29,8 +29,6 @@
 #include "accel/accel-ops.h"
 #include "accel/accel-cpu-ops.h"
 #include "system/tcg.h"
-#include "system/replay.h"
-#include "exec/icount.h"
 #include "qemu/main-loop.h"
 #include "qemu/guest-random.h"
 #include "qemu/timer.h"
@@ -46,7 +44,6 @@
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-mttcg.h"
 #include "tcg-accel-ops-rr.h"
-#include "tcg-accel-ops-icount.h"
 
 /* common functionality among all TCG variants */
 
@@ -65,7 +62,6 @@ void tcg_cpu_init_cflags(CPUState *cpu, bool parallel)
     cflags = cpu->cluster_index << CF_CLUSTER_SHIFT;
 
     cflags |= parallel ? CF_PARALLEL : 0;
-    cflags |= icount_enabled() ? CF_USE_ICOUNT : 0;
     tcg_cflags_set(cpu, cflags);
 }
 
@@ -209,14 +205,7 @@ static void tcg_accel_ops_init(AccelClass *ac)
     } else {
         ops->create_vcpu_thread = rr_start_vcpu_thread;
         ops->kick_vcpu_thread = rr_kick_vcpu_thread;
-
-        if (icount_enabled()) {
-            ops->handle_interrupt = icount_handle_interrupt;
-            ops->get_virtual_clock = icount_get;
-            ops->get_elapsed_ticks = icount_get;
-        } else {
-            ops->handle_interrupt = tcg_handle_interrupt;
-        }
+        ops->handle_interrupt = tcg_handle_interrupt;
     }
 
     ops->cpu_reset_hold = tcg_cpu_reset_hold;

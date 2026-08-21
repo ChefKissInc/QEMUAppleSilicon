@@ -21,7 +21,6 @@
 #include "qemu/osdep.h"
 #include "hw/misc/apple-silicon/a7iop/rtkit.h"
 #include "hw/misc/apple-silicon/smc.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/memalign.h"
 #include "qemu/queue.h"
@@ -690,74 +689,6 @@ SysBusDevice *apple_smc_create(AppleDTNode *node, AppleA7IOPVersion version,
     return sbd;
 }
 
-static const VMStateDescription vmstate_apple_smc_key_data = {
-    .name = "SMCKeyData",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(key, SMCKeyData),
-            VMSTATE_UINT32(size, SMCKeyData),
-            VMSTATE_VBUFFER_ALLOC_UINT32(data, SMCKeyData, 0, NULL, size),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static int vmstate_apple_smc_post_load(void *opaque, int version_id)
-{
-    AppleSMCState *s = opaque;
-    SMCKey *key;
-    SMCKey *key_next;
-    SMCKeyData *data;
-    SMCKeyData *data_next;
-
-    QTAILQ_FOREACH_SAFE (data, &s->key_data, next, data_next) {
-        key = apple_smc_get_key(s, data->key);
-        if (key == NULL) {
-            fprintf(stderr,
-                    "Key `%c%c%c%c` was removed, state cannot be loaded.\n",
-                    SMC_KEY_FORMAT(data->key));
-            return -1;
-        }
-
-        if (key->info.size != data->size) {
-            fprintf(stderr,
-                    "Key `%c%c%c%c` has mismatched length, state cannot be "
-                    "loaded.\n",
-                    SMC_KEY_FORMAT(key->key));
-            return -1;
-        }
-    }
-
-    QTAILQ_FOREACH_SAFE (key, &s->keys, next, key_next) {
-        if (apple_smc_get_key_data(s, key->key) == NULL) {
-            fprintf(stderr,
-                    "New key `%c%c%c%c` encountered, state cannot be loaded.\n",
-                    SMC_KEY_FORMAT(key->key));
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
-static const VMStateDescription vmstate_apple_smc = {
-    .name = "AppleSMCState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .post_load = vmstate_apple_smc_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_APPLE_RTKIT(parent_obj, AppleSMCState),
-            VMSTATE_QTAILQ_V(key_data, AppleSMCState, 0,
-                             vmstate_apple_smc_key_data, SMCKeyData, next),
-            VMSTATE_UINT32(sram_size, AppleSMCState),
-            VMSTATE_VBUFFER_ALLOC_UINT32(sram, AppleSMCState, 0, NULL,
-                                         sram_size),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_smc_reset_hold(Object *obj, ResetType type)
 {
     AppleRTKitClass *rtkc;
@@ -788,7 +719,6 @@ static void apple_smc_class_init(ObjectClass *klass, const void *data)
                                        &smcc->parent_phases);
 
     dc->desc = "Apple System Management Controller IOP";
-    dc->vmsd = &vmstate_apple_smc;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
 

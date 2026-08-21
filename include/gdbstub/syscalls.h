@@ -92,15 +92,6 @@ typedef void (*gdb_syscall_complete_cb)(CPUState *cpu, uint64_t ret, int err);
 void gdb_do_syscall(gdb_syscall_complete_cb cb, const char *fmt, ...);
 
 /**
- * use_gdb_syscalls() - report if GDB should be used for syscalls
- *
- * This is mostly driven by the semihosting mode the user configures
- * but assuming GDB is allowed by that we report true if GDB is
- * connected to the stub.
- */
-int use_gdb_syscalls(void);
-
-/**
  * gdb_exit: exit gdb session, reporting inferior status
  * @code: exit code reported
  *

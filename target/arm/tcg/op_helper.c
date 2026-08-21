@@ -108,22 +108,6 @@ uint64_t HELPER(neon_tbl)(CPUARMState *env, uint32_t desc,
     return val;
 }
 
-void HELPER(v8m_stackcheck)(CPUARMState *env, uint32_t newvalue)
-{
-    /*
-     * Perform the v8M stack limit check for SP updates from translated code,
-     * raising an exception if the limit is breached.
-     */
-    if (newvalue < v7m_sp_limit(env)) {
-        /*
-         * Stack limit exceptions are a rare case, so rather than syncing
-         * PC/condbits before the call, we use raise_exception_ra() so
-         * that cpu_restore_state() will sort them out.
-         */
-        raise_exception_ra(env, EXCP_STKOF, 0, 1, GETPC());
-    }
-}
-
 /* Sign/zero extend */
 uint32_t HELPER(sxtb16)(uint32_t x)
 {
@@ -131,18 +115,6 @@ uint32_t HELPER(sxtb16)(uint32_t x)
     res = (uint16_t)(int8_t)x;
     res |= (uint32_t)(int8_t)(x >> 16) << 16;
     return res;
-}
-
-static void handle_possible_div0_trap(CPUARMState *env, uintptr_t ra)
-{
-    /*
-     * Take a division-by-zero exception if necessary; otherwise return
-     * to get the usual non-trapping division behaviour (result of 0)
-     */
-    if (arm_feature(env, ARM_FEATURE_M)
-        && (env->v7m.ccr[env->v7m.secure] & R_V7M_CCR_DIV_0_TRP_MASK)) {
-        raise_exception_ra(env, EXCP_DIVBYZERO, 0, 1, ra);
-    }
 }
 
 uint32_t HELPER(uxtb16)(uint32_t x)
@@ -156,7 +128,6 @@ uint32_t HELPER(uxtb16)(uint32_t x)
 int32_t HELPER(sdiv)(CPUARMState *env, int32_t num, int32_t den)
 {
     if (den == 0) {
-        handle_possible_div0_trap(env, GETPC());
         return 0;
     }
     if (num == INT_MIN && den == -1) {
@@ -168,7 +139,6 @@ int32_t HELPER(sdiv)(CPUARMState *env, int32_t num, int32_t den)
 uint32_t HELPER(udiv)(CPUARMState *env, uint32_t num, uint32_t den)
 {
     if (den == 0) {
-        handle_possible_div0_trap(env, GETPC());
         return 0;
     }
     return num / den;
@@ -327,11 +297,6 @@ static inline int check_wfx_trap(CPUARMState *env, bool is_wfe, uint32_t *excp)
     uint64_t mask;
 
     *excp = EXCP_UDEF;
-
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        /* M profile cores can never trap WFI/WFE. */
-        return 0;
-    }
 
     /* If we are currently in EL0 then we need to check if SCTLR is set up for
      * WFx instructions being trapped to EL1. These trap bits don't exist in v7.

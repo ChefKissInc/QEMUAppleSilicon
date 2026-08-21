@@ -28,7 +28,6 @@
 
 #include "hw/pci/pci_device.h"
 #include "hw/pci/pci_bus.h"
-#include "hw/cxl/cxl.h"
 #include "qom/object.h"
 
 typedef struct PCIBridgeWindows PCIBridgeWindows;
@@ -95,7 +94,6 @@ typedef struct PXBDev {
     /*< public >*/
 
     uint8_t bus_nr;
-    uint16_t numa_node;
     bool bypass_iommu;
 } PXBDev;
 

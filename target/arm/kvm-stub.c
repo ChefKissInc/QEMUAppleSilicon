@@ -114,13 +114,3 @@ void arm_cpu_kvm_set_irq(void *arm_cpu, int irq, int level)
 {
     assert_not_reached();
 }
-
-void kvm_arm_cpu_pre_save(ARMCPU *cpu)
-{
-    assert_not_reached();
-}
-
-bool kvm_arm_cpu_post_load(ARMCPU *cpu)
-{
-    assert_not_reached();
-}

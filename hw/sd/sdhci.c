@@ -34,7 +34,6 @@
 #include "qemu/timer.h"
 #include "qemu/bitops.h"
 #include "hw/sd/sdhci.h"
-#include "migration/vmstate.h"
 #include "sdhci-internal.h"
 #include "qemu/log.h"
 #include "trace.h"
@@ -1487,71 +1486,11 @@ void sdhci_common_unrealize(SDHCIState *s)
     s->fifo_buffer = NULL;
 }
 
-static bool sdhci_pending_insert_vmstate_needed(void *opaque)
-{
-    SDHCIState *s = opaque;
-
-    return s->pending_insert_state;
-}
-
-static const VMStateDescription sdhci_pending_insert_vmstate = {
-    .name = "sdhci/pending-insert",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = sdhci_pending_insert_vmstate_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_BOOL(pending_insert_state, SDHCIState),
-        VMSTATE_END_OF_LIST()
-    },
-};
-
-const VMStateDescription sdhci_vmstate = {
-    .name = "sdhci",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(sdmasysad, SDHCIState),
-        VMSTATE_UINT16(blksize, SDHCIState),
-        VMSTATE_UINT16(blkcnt, SDHCIState),
-        VMSTATE_UINT32(argument, SDHCIState),
-        VMSTATE_UINT16(trnmod, SDHCIState),
-        VMSTATE_UINT16(cmdreg, SDHCIState),
-        VMSTATE_UINT32_ARRAY(rspreg, SDHCIState, 4),
-        VMSTATE_UINT32(prnsts, SDHCIState),
-        VMSTATE_UINT8(hostctl1, SDHCIState),
-        VMSTATE_UINT8(pwrcon, SDHCIState),
-        VMSTATE_UINT8(blkgap, SDHCIState),
-        VMSTATE_UINT8(wakcon, SDHCIState),
-        VMSTATE_UINT16(clkcon, SDHCIState),
-        VMSTATE_UINT8(timeoutcon, SDHCIState),
-        VMSTATE_UINT8(admaerr, SDHCIState),
-        VMSTATE_UINT16(norintsts, SDHCIState),
-        VMSTATE_UINT16(errintsts, SDHCIState),
-        VMSTATE_UINT16(norintstsen, SDHCIState),
-        VMSTATE_UINT16(errintstsen, SDHCIState),
-        VMSTATE_UINT16(norintsigen, SDHCIState),
-        VMSTATE_UINT16(errintsigen, SDHCIState),
-        VMSTATE_UINT16(acmd12errsts, SDHCIState),
-        VMSTATE_UINT16(data_count, SDHCIState),
-        VMSTATE_UINT64(admasysaddr, SDHCIState),
-        VMSTATE_UINT8(stopped_state, SDHCIState),
-        VMSTATE_VBUFFER_UINT32(fifo_buffer, SDHCIState, 1, NULL, buf_maxsz),
-        VMSTATE_TIMER_PTR(insert_timer, SDHCIState),
-        VMSTATE_TIMER_PTR(transfer_timer, SDHCIState),
-        VMSTATE_END_OF_LIST()
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &sdhci_pending_insert_vmstate,
-        NULL
-    },
-};
-
 void sdhci_common_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
-    dc->vmsd = &sdhci_vmstate;
     device_class_set_legacy_reset(dc, sdhci_poweron_reset);
 }
 

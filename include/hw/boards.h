@@ -34,14 +34,9 @@ const char *machine_class_default_cpu_type(MachineClass *mc);
 void machine_add_audiodev_property(MachineClass *mc);
 void machine_run_board_init(MachineState *machine, const char *mem_path, Error **errp);
 bool machine_usb(MachineState *machine);
-int machine_phandle_start(MachineState *machine);
 bool machine_dump_guest_core(MachineState *machine);
 bool machine_mem_merge(MachineState *machine);
-bool machine_require_guest_memfd(MachineState *machine);
 HotpluggableCPUList *machine_query_hotpluggable_cpus(MachineState *machine);
-void machine_set_cpu_numa_node(MachineState *machine,
-                               const CpuInstanceProperties *props,
-                               Error **errp);
 void machine_parse_smp_config(MachineState *ms,
                               const SMPConfiguration *config, Error **errp);
 bool machine_parse_smp_cache(MachineState *ms,
@@ -54,7 +49,6 @@ CpuTopologyLevel machine_get_cache_topo_level(const MachineState *ms,
 void machine_set_cache_topo_level(MachineState *ms, CacheLevelAndType cache,
                                   CpuTopologyLevel level);
 bool machine_check_smp_cache(const MachineState *ms, Error **errp);
-void machine_memory_devices_init(MachineState *ms, hwaddr base, uint64_t size);
 
 /**
  * machine_class_allow_dynamic_sysbus_dev: Add type to list of valid devices
@@ -234,8 +228,6 @@ typedef struct {
  *    Returns the physical address range in bits to use for the HVF virtual
  *    machine based on the current boards memory map. This may be NULL if it
  *    is not needed.
- * @numa_mem_supported:
- *    true if '--numa node.mem' option is supported and false otherwise
  * @hotplug_allowed:
  *    If the hook is provided, then it'll be called for each device
  *    hotplug to check whether the device hotplug is allowed.  Return
@@ -256,9 +248,6 @@ typedef struct {
  *    purposes only.
  *    Applies only to default memory backend, i.e., explicit memory backend
  *    wasn't used.
- * @smbios_memory_device_size:
- *    Default size of memory device,
- *    SMBIOS 3.1.0 "7.18 Memory Device (Type 17)"
  */
 struct MachineClass {
     /*< private >*/
@@ -282,12 +271,6 @@ struct MachineClass {
     int max_cpus;
     int min_cpus;
     int default_cpus;
-    unsigned int no_serial:1,
-        no_parallel:1,
-        no_floppy:1,
-        no_cdrom:1,
-        pci_allow_0_address:1;
-    bool auto_create_sdcard;
     bool is_default;
     const char *default_machine_opts;
     const char *default_boot_order;
@@ -303,17 +286,10 @@ struct MachineClass {
     int minimum_page_bits;
     bool has_hotpluggable_cpus;
     bool ignore_memory_transaction_failures;
-    int numa_mem_align_shift;
     const char * const *valid_cpu_types;
     strList *allowed_dynamic_sysbus_devices;
-    bool auto_enable_numa_with_memhp;
-    bool auto_enable_numa_with_memdev;
     bool ignore_boot_device_suffixes;
     bool smbus_no_migration_support;
-    bool nvdimm_supported;
-    bool numa_mem_supported;
-    bool auto_enable_numa;
-    bool cpu_cluster_has_numa_boundary;
     SMPCompatProps smp_props;
     const char *default_ram_id;
 
@@ -326,7 +302,6 @@ struct MachineClass {
     const CPUArchIdList *(*possible_cpu_arch_ids)(MachineState *machine);
     int64_t (*get_default_cpu_node_id)(const MachineState *ms, int idx);
     ram_addr_t (*fixup_ram_size)(ram_addr_t size);
-    uint64_t smbios_memory_device_size;
     bool (*create_default_memdev)(MachineState *ms, const char *path,
                                   Error **errp);
 };
@@ -397,36 +372,20 @@ struct MachineState {
 
     /*< public >*/
 
-    void *fdt;
     char *dtb;
-    char *dumpdtb;
-    int phandle_start;
-    char *dt_compatible;
     bool dump_guest_core;
     bool mem_merge;
     bool usb;
     bool usb_disabled;
     char *firmware;
-    bool iommu;
-    bool suppress_vmdesc;
     bool enable_graphics;
-    ConfidentialGuestSupport *cgs;
     HostMemoryBackend *memdev;
     bool aux_ram_share;
     /*
      * convenience alias to ram_memdev_id backend memory region
-     * or to numa container memory region
      */
     MemoryRegion *ram;
     DeviceMemoryState *device_memory;
-
-    /*
-     * Included in MachineState for simplicity, but not supported
-     * unless machine_add_audiodev_property is called.  Boards
-     * that have embedded audio devices can call it from the
-     * machine init function and forward the property to the device.
-     */
-    char *audiodev;
 
     ram_addr_t ram_size;
     ram_addr_t maxram_size;
@@ -434,16 +393,12 @@ struct MachineState {
     BootConfiguration boot_config;
     char *kernel_filename;
     char *kernel_cmdline;
-    char *shim_filename;
     char *initrd_filename;
     const char *cpu_type;
     AccelState *accelerator;
     CPUArchIdList *possible_cpus;
     CpuTopology smp;
     SmpCache smp_cache;
-    struct NVDIMMState *nvdimms_state;
-    struct NumaState *numa_state;
-    bool acpi_spcr_enabled;
 };
 
 /*

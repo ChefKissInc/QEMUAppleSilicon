@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/i2c/i2c.h"
 #include "hw/misc/apple-silicon/roswell.h"
-#include "migration/vmstate.h"
 #include "qemu/log.h"
 
 #if 0
@@ -162,18 +161,6 @@ static int apple_roswell_tx(I2CSlave *s, uint8_t data)
     return 0;
 }
 
-static const VMStateDescription vmstate_apple_roswell = {
-    .name = "AppleRoswellState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_I2C_SLAVE(i2c, AppleRoswellState),
-            VMSTATE_UINT8(command, AppleRoswellState),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_roswell_reset_enter(Object *obj, ResetType type)
 {
     AppleRoswellState *roswell = APPLE_ROSWELL(obj);
@@ -190,7 +177,6 @@ static void apple_roswell_class_init(ObjectClass *klass, const void *data)
 
     dc->desc = "Apple Roswell";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_apple_roswell;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 
     c->recv = apple_roswell_rx;

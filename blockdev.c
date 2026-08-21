@@ -37,7 +37,6 @@
 #include "block/blockjob.h"
 #include "block/dirty-bitmap.h"
 #include "block/qdict.h"
-#include "block/throttle-groups.h"
 #include "monitor/monitor.h"
 #include "qemu/error-report.h"
 #include "qemu/option.h"
@@ -58,11 +57,9 @@
 #include "block/block_int.h"
 #include "block/trace.h"
 #include "system/runstate.h"
-#include "system/replay.h"
 #include "qemu/cutils.h"
 #include "qemu/help_option.h"
 #include "qemu/main-loop.h"
-#include "qemu/throttle-options.h"
 
 /* Protected by BQL */
 QTAILQ_HEAD(, BlockDriverState) monitor_bdrv_states =
@@ -76,33 +73,12 @@ void bdrv_set_monitor_owned(BlockDriverState *bs)
 
 static const char *const if_name[IF_COUNT] = {
     [IF_NONE] = "none",
-    [IF_IDE] = "ide",
-    [IF_SCSI] = "scsi",
-    [IF_FLOPPY] = "floppy",
     [IF_PFLASH] = "pflash",
     [IF_MTD] = "mtd",
     [IF_SD] = "sd",
-    [IF_VIRTIO] = "virtio",
-    [IF_XEN] = "xen",
 };
 
 static int if_max_devs[IF_COUNT] = {
-    /*
-     * Do not change these numbers!  They govern how drive option
-     * index maps to unit and bus.  That mapping is ABI.
-     *
-     * All controllers used to implement if=T drives need to support
-     * if_max_devs[T] units, for any T with if_max_devs[T] != 0.
-     * Otherwise, some index values map to "impossible" bus, unit
-     * values.
-     *
-     * For instance, if you change [IF_SCSI] to 255, -drive
-     * if=scsi,index=12 no longer means bus=1,unit=5, but
-     * bus=0,unit=12.  With an lsi53c895a controller (7 units max),
-     * the drive can't be set up.  Regression.
-     */
-    [IF_IDE] = 2,
-    [IF_SCSI] = 7,
 };
 
 /**
@@ -255,13 +231,10 @@ void drive_check_orphaned(void)
          * Ignore default drives, because we create certain default
          * drives unconditionally, then leave them unclaimed.  Not the
          * users fault.
-         * Ignore IF_VIRTIO or IF_XEN, because it gets desugared into
-         * -device, so we can leave failing to -device.
          * Ignore IF_NONE, because leaving unclaimed IF_NONE remains
          * available for device_add is a feature.
          */
-        if (dinfo->is_default || dinfo->type == IF_VIRTIO
-            || dinfo->type == IF_XEN || dinfo->type == IF_NONE) {
+        if (dinfo->is_default || dinfo->type == IF_NONE) {
             continue;
         }
         if (!blk_get_attached_dev(blk)) {
@@ -378,7 +351,6 @@ typedef enum { MEDIA_DISK, MEDIA_CDROM } DriveMediaType;
 
 /* All parameters but @opts are optional and may be set to NULL. */
 static void extract_common_blockdev_options(QemuOpts *opts, int *bdrv_flags,
-    const char **throttling_group, ThrottleConfig *throttle_cfg,
     BlockdevDetectZeroesOptions *detect_zeroes, Error **errp)
 {
     Error *local_error = NULL;
@@ -394,60 +366,6 @@ static void extract_common_blockdev_options(QemuOpts *opts, int *bdrv_flags,
                 error_setg(errp, "invalid aio option");
                 return;
             }
-        }
-    }
-
-    /* disk I/O throttling */
-    if (throttling_group) {
-        *throttling_group = qemu_opt_get(opts, "throttling.group");
-    }
-
-    if (throttle_cfg) {
-        throttle_config_init(throttle_cfg);
-        throttle_cfg->buckets[THROTTLE_BPS_TOTAL].avg =
-            qemu_opt_get_number(opts, "throttling.bps-total", 0);
-        throttle_cfg->buckets[THROTTLE_BPS_READ].avg  =
-            qemu_opt_get_number(opts, "throttling.bps-read", 0);
-        throttle_cfg->buckets[THROTTLE_BPS_WRITE].avg =
-            qemu_opt_get_number(opts, "throttling.bps-write", 0);
-        throttle_cfg->buckets[THROTTLE_OPS_TOTAL].avg =
-            qemu_opt_get_number(opts, "throttling.iops-total", 0);
-        throttle_cfg->buckets[THROTTLE_OPS_READ].avg =
-            qemu_opt_get_number(opts, "throttling.iops-read", 0);
-        throttle_cfg->buckets[THROTTLE_OPS_WRITE].avg =
-            qemu_opt_get_number(opts, "throttling.iops-write", 0);
-
-        throttle_cfg->buckets[THROTTLE_BPS_TOTAL].max =
-            qemu_opt_get_number(opts, "throttling.bps-total-max", 0);
-        throttle_cfg->buckets[THROTTLE_BPS_READ].max  =
-            qemu_opt_get_number(opts, "throttling.bps-read-max", 0);
-        throttle_cfg->buckets[THROTTLE_BPS_WRITE].max =
-            qemu_opt_get_number(opts, "throttling.bps-write-max", 0);
-        throttle_cfg->buckets[THROTTLE_OPS_TOTAL].max =
-            qemu_opt_get_number(opts, "throttling.iops-total-max", 0);
-        throttle_cfg->buckets[THROTTLE_OPS_READ].max =
-            qemu_opt_get_number(opts, "throttling.iops-read-max", 0);
-        throttle_cfg->buckets[THROTTLE_OPS_WRITE].max =
-            qemu_opt_get_number(opts, "throttling.iops-write-max", 0);
-
-        throttle_cfg->buckets[THROTTLE_BPS_TOTAL].burst_length =
-            qemu_opt_get_number(opts, "throttling.bps-total-max-length", 1);
-        throttle_cfg->buckets[THROTTLE_BPS_READ].burst_length  =
-            qemu_opt_get_number(opts, "throttling.bps-read-max-length", 1);
-        throttle_cfg->buckets[THROTTLE_BPS_WRITE].burst_length =
-            qemu_opt_get_number(opts, "throttling.bps-write-max-length", 1);
-        throttle_cfg->buckets[THROTTLE_OPS_TOTAL].burst_length =
-            qemu_opt_get_number(opts, "throttling.iops-total-max-length", 1);
-        throttle_cfg->buckets[THROTTLE_OPS_READ].burst_length =
-            qemu_opt_get_number(opts, "throttling.iops-read-max-length", 1);
-        throttle_cfg->buckets[THROTTLE_OPS_WRITE].burst_length =
-            qemu_opt_get_number(opts, "throttling.iops-write-max-length", 1);
-
-        throttle_cfg->op_size =
-            qemu_opt_get_number(opts, "throttling.iops-size", 0);
-
-        if (!throttle_is_valid(throttle_cfg, errp)) {
-            return;
         }
     }
 
@@ -486,7 +404,6 @@ static BlockBackend *blockdev_init(const char *file, QDict *bs_opts,
     bool writethrough, read_only;
     BlockBackend *blk;
     BlockDriverState *bs;
-    ThrottleConfig cfg;
     int snapshot = 0;
     Error *error = NULL;
     QemuOpts *opts;
@@ -495,7 +412,6 @@ static BlockBackend *blockdev_init(const char *file, QDict *bs_opts,
     const char *id;
     BlockdevDetectZeroesOptions detect_zeroes =
         BLOCKDEV_DETECT_ZEROES_OPTIONS_OFF;
-    const char *throttling_group = NULL;
 
     /* Check common options by copying from bs_opts to opts, all other options
      * stay in bs_opts for processing by bdrv_open(). */
@@ -532,7 +448,7 @@ static BlockBackend *blockdev_init(const char *file, QDict *bs_opts,
         goto early_err;
     }
 
-    extract_common_blockdev_options(opts, &bdrv_flags, &throttling_group, &cfg,
+    extract_common_blockdev_options(opts, &bdrv_flags,
                                     &detect_zeroes, &error);
     if (error) {
         error_propagate(errp, error);
@@ -605,10 +521,6 @@ static BlockBackend *blockdev_init(const char *file, QDict *bs_opts,
         qdict_set_default_str(bs_opts, BDRV_OPT_AUTO_READ_ONLY, "on");
         assert((bdrv_flags & BDRV_O_CACHE_MASK) == 0);
 
-        if (runstate_check(RUN_STATE_INMIGRATE)) {
-            bdrv_flags |= BDRV_O_INACTIVE;
-        }
-
         blk = blk_new_open(file, NULL, bs_opts, bdrv_flags, errp);
         if (!blk) {
             goto err_no_bs_opts;
@@ -624,15 +536,6 @@ static BlockBackend *blockdev_init(const char *file, QDict *bs_opts,
             blk = NULL;
             goto err_no_bs_opts;
         }
-    }
-
-    /* disk I/O throttling */
-    if (throttle_enabled(&cfg)) {
-        if (!throttling_group) {
-            throttling_group = id;
-        }
-        blk_io_limits_enable(blk, throttling_group);
-        blk_set_io_limits(blk, &cfg);
     }
 
     blk_set_enable_write_cache(blk, !writethrough);
@@ -671,10 +574,6 @@ BlockDriverState *bds_tree_init(QDict *bs_opts, Error **errp)
     qdict_set_default_str(bs_opts, BDRV_OPT_CACHE_DIRECT, "off");
     qdict_set_default_str(bs_opts, BDRV_OPT_CACHE_NO_FLUSH, "off");
     qdict_set_default_str(bs_opts, BDRV_OPT_READ_ONLY, "off");
-
-    if (runstate_check(RUN_STATE_INMIGRATE)) {
-        bdrv_flags |= BDRV_O_INACTIVE;
-    }
 
     return bdrv_open(NULL, NULL, bs_opts, bdrv_flags, errp);
 }
@@ -742,7 +641,7 @@ QemuOptsList qemu_legacy_drive_opts = {
         },{
             .name = "if",
             .type = QEMU_OPT_STRING,
-            .help = "interface (ide, scsi, sd, mtd, floppy, pflash, virtio)",
+            .help = "interface (sd, mtd, pflash)",
         },{
             .name = "file",
             .type = QEMU_OPT_STRING,
@@ -945,38 +844,15 @@ DriveInfo *drive_new(QemuOpts *all_opts, BlockInterfaceType block_default_type,
     /* no id supplied -> create one */
     if (qemu_opts_id(all_opts) == NULL) {
         char *new_id;
-        const char *mediastr = "";
-        if (type == IF_IDE || type == IF_SCSI) {
-            mediastr = (media == MEDIA_CDROM) ? "-cd" : "-hd";
-        }
         if (max_devs) {
-            new_id = g_strdup_printf("%s%i%s%i", if_name[type], bus_id,
-                                     mediastr, unit_id);
+            new_id = g_strdup_printf("%s%i%i", if_name[type], bus_id,
+                                     unit_id);
         } else {
-            new_id = g_strdup_printf("%s%s%i", if_name[type],
-                                     mediastr, unit_id);
+            new_id = g_strdup_printf("%s%i", if_name[type],
+                                     unit_id);
         }
         qdict_put_str(bs_opts, "id", new_id);
         g_free(new_id);
-    }
-
-    /* Add virtio block device */
-    if (type == IF_VIRTIO) {
-        QemuOpts *devopts;
-        devopts = qemu_opts_create(qemu_find_opts("device"), NULL, 0,
-                                   &error_abort);
-        qemu_opt_set(devopts, "driver", "virtio-blk", &error_abort);
-        qemu_opt_set(devopts, "drive", qdict_get_str(bs_opts, "id"),
-                     &error_abort);
-    } else if (type == IF_XEN) {
-        QemuOpts *devopts;
-        devopts = qemu_opts_create(qemu_find_opts("device"), NULL, 0,
-                                   &error_abort);
-        qemu_opt_set(devopts, "driver",
-                     (media == MEDIA_CDROM) ? "xen-cdrom" : "xen-disk",
-                     &error_abort);
-        qemu_opt_set(devopts, "drive", qdict_get_str(bs_opts, "id"),
-                     &error_abort);
     }
 
     filename = qemu_opt_get(legacy_opts, "file");
@@ -984,8 +860,7 @@ DriveInfo *drive_new(QemuOpts *all_opts, BlockInterfaceType block_default_type,
     /* Check werror/rerror compatibility with if=... */
     werror = qemu_opt_get(legacy_opts, "werror");
     if (werror != NULL) {
-        if (type != IF_IDE && type != IF_SCSI && type != IF_VIRTIO &&
-            type != IF_NONE) {
+        if (type != IF_NONE) {
             error_setg(errp, "werror is not supported by this bus type");
             goto fail;
         }
@@ -994,8 +869,7 @@ DriveInfo *drive_new(QemuOpts *all_opts, BlockInterfaceType block_default_type,
 
     rerror = qemu_opt_get(legacy_opts, "rerror");
     if (rerror != NULL) {
-        if (type != IF_IDE && type != IF_VIRTIO && type != IF_SCSI &&
-            type != IF_NONE) {
+        if (type != IF_NONE) {
             error_setg(errp, "rerror is not supported by this bus type");
             goto fail;
         }
@@ -1020,9 +894,6 @@ DriveInfo *drive_new(QemuOpts *all_opts, BlockInterfaceType block_default_type,
     blk_set_legacy_dinfo(blk, dinfo);
 
     switch(type) {
-    case IF_IDE:
-    case IF_SCSI:
-    case IF_XEN:
     case IF_NONE:
         dinfo->media_cd = media == MEDIA_CDROM;
         break;
@@ -1177,10 +1048,6 @@ SnapshotInfo *qmp_blockdev_snapshot_delete_internal_sync(const char *device,
     info->vm_state_size = sn.vm_state_size;
     info->vm_clock_nsec = sn.vm_clock_nsec % 1000000000;
     info->vm_clock_sec = sn.vm_clock_nsec / 1000000000;
-    if (sn.icount != -1ULL) {
-        info->icount = sn.icount;
-        info->has_icount = true;
-    }
 
 error:
     bdrv_graph_rdunlock_main_loop();
@@ -1289,11 +1156,6 @@ static void internal_snapshot_action(BlockdevSnapshotInternal *internal,
     sn->date_sec = rt / G_USEC_PER_SEC;
     sn->date_nsec = (rt % G_USEC_PER_SEC) * 1000;
     sn->vm_clock_nsec = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
-    if (replay_mode != REPLAY_MODE_NONE) {
-        sn->icount = replay_get_current_icount();
-    } else {
-        sn->icount = -1ULL;
-    }
 
     ret1 = bdrv_snapshot_create(bs, sn);
     if (ret1 < 0) {
@@ -2353,7 +2215,6 @@ void qmp_block_stream(const char *job_id, const char *device,
                       bool has_backing_mask_protocol,
                       bool backing_mask_protocol,
                       const char *bottom,
-                      bool has_speed, int64_t speed,
                       bool has_on_error, BlockdevOnError on_error,
                       const char *filter_node_name,
                       bool has_auto_finalize, bool auto_finalize,
@@ -2479,7 +2340,7 @@ void qmp_block_stream(const char *job_id, const char *device,
 
     stream_start(job_id, bs, base_bs, backing_file,
                  backing_mask_protocol,
-                 bottom_bs, job_flags, has_speed ? speed : 0, on_error,
+                 bottom_bs, job_flags, on_error,
                  filter_node_name, &local_err);
     if (local_err) {
         error_propagate(errp, local_err);
@@ -2501,7 +2362,6 @@ void qmp_block_commit(const char *job_id, const char *device,
                       const char *backing_file,
                       bool has_backing_mask_protocol,
                       bool backing_mask_protocol,
-                      bool has_speed, int64_t speed,
                       bool has_on_error, BlockdevOnError on_error,
                       const char *filter_node_name,
                       bool has_auto_finalize, bool auto_finalize,
@@ -2519,9 +2379,6 @@ void qmp_block_commit(const char *job_id, const char *device,
     /* TODO We'll eventually have to take a writer lock in this function */
     GRAPH_RDLOCK_GUARD_MAINLOOP();
 
-    if (!has_speed) {
-        speed = 0;
-    }
     if (!has_on_error) {
         on_error = BLOCKDEV_ON_ERROR_REPORT;
     }
@@ -2666,7 +2523,7 @@ void qmp_block_commit(const char *job_id, const char *device,
              */
             job_id = bdrv_get_device_name(bs);
         }
-        commit_active_start(job_id, top_bs, base_bs, job_flags, speed, on_error,
+        commit_active_start(job_id, top_bs, base_bs, job_flags, on_error,
                             filter_node_name, NULL, NULL, false, &local_err);
     } else {
         BlockDriverState *overlay_bs = bdrv_find_overlay(bs, top_bs);
@@ -2674,7 +2531,7 @@ void qmp_block_commit(const char *job_id, const char *device,
             return;
         }
         commit_start(job_id, bs, base_bs, top_bs, job_flags,
-                     speed, on_error, backing_file,
+                     on_error, backing_file,
                      backing_mask_protocol,
                      filter_node_name, &local_err);
     }
@@ -2697,9 +2554,6 @@ static BlockJob *do_backup_common(BackupCommon *backup,
     int job_flags = JOB_DEFAULT;
     OnCbwError on_cbw_error = ON_CBW_ERROR_BREAK_GUEST_WRITE;
 
-    if (!backup->has_speed) {
-        backup->speed = 0;
-    }
     if (!backup->has_on_source_error) {
         backup->on_source_error = BLOCKDEV_ON_ERROR_REPORT;
     }
@@ -2804,7 +2658,7 @@ static BlockJob *do_backup_common(BackupCommon *backup,
         on_cbw_error = backup->on_cbw_error;
     }
 
-    job = backup_job_create(backup->job_id, bs, target_bs, backup->speed,
+    job = backup_job_create(backup->job_id, bs, target_bs,
                             backup->sync, bmap, backup->bitmap_mode,
                             backup->compress, backup->discard_source,
                             backup->filter_node_name,
@@ -2859,7 +2713,6 @@ static void blockdev_mirror_common(const char *job_id, BlockDriverState *bs,
                                    enum MirrorSyncMode sync,
                                    BlockMirrorBackingMode backing_mode,
                                    bool target_is_zero,
-                                   bool has_speed, int64_t speed,
                                    bool has_granularity, uint32_t granularity,
                                    bool has_buf_size, int64_t buf_size,
                                    bool has_on_source_error,
@@ -2879,9 +2732,6 @@ static void blockdev_mirror_common(const char *job_id, BlockDriverState *bs,
     GLOBAL_STATE_CODE();
     GRAPH_RDLOCK_GUARD_MAINLOOP();
 
-    if (!has_speed) {
-        speed = 0;
-    }
     if (!has_on_source_error) {
         on_source_error = BLOCKDEV_ON_ERROR_REPORT;
     }
@@ -2966,7 +2816,7 @@ static void blockdev_mirror_common(const char *job_id, BlockDriverState *bs,
      * and will allow to check whether the node still exist at mirror completion
      */
     mirror_start(job_id, bs, target, replaces, job_flags,
-                 speed, granularity, buf_size, sync, backing_mode,
+                 granularity, buf_size, sync, backing_mode,
                  target_is_zero, on_source_error, on_target_error, unmap,
                  filter_node_name, copy_mode, errp);
 }
@@ -3110,7 +2960,6 @@ void qmp_drive_mirror(DriveMirror *arg, Error **errp)
     blockdev_mirror_common(arg->job_id, bs, target_bs,
                            arg->replaces, arg->sync,
                            backing_mode, target_is_zero,
-                           arg->has_speed, arg->speed,
                            arg->has_granularity, arg->granularity,
                            arg->has_buf_size, arg->buf_size,
                            arg->has_on_source_error, arg->on_source_error,
@@ -3128,7 +2977,6 @@ void qmp_blockdev_mirror(const char *job_id,
                          const char *device, const char *target,
                          const char *replaces,
                          MirrorSyncMode sync,
-                         bool has_speed, int64_t speed,
                          bool has_granularity, uint32_t granularity,
                          bool has_buf_size, int64_t buf_size,
                          bool has_on_source_error,
@@ -3168,7 +3016,6 @@ void qmp_blockdev_mirror(const char *job_id,
     blockdev_mirror_common(job_id, bs, target_bs,
                            replaces, sync, backing_mode,
                            has_target_is_zero && target_is_zero,
-                           has_speed, speed,
                            has_granularity, granularity,
                            has_buf_size, buf_size,
                            has_on_source_error, on_source_error,
@@ -3198,20 +3045,6 @@ static BlockJob *find_block_job_locked(const char *id, Error **errp)
     }
 
     return job;
-}
-
-void qmp_block_job_set_speed(const char *device, int64_t speed, Error **errp)
-{
-    BlockJob *job;
-
-    JOB_LOCK_GUARD();
-    job = find_block_job_locked(device, errp);
-
-    if (!job) {
-        return;
-    }
-
-    block_job_set_speed_locked(job, speed, errp);
 }
 
 void qmp_block_job_cancel(const char *device,
@@ -3725,14 +3558,6 @@ QemuOptsList qemu_common_drive_opts = {
             .name = BDRV_OPT_READ_ONLY,
             .type = QEMU_OPT_BOOL,
             .help = "open drive file as read-only",
-        },
-
-        THROTTLE_OPTS,
-
-        {
-            .name = "throttling.group",
-            .type = QEMU_OPT_STRING,
-            .help = "name of the block throttling group",
         },{
             .name = "copy-on-read",
             .type = QEMU_OPT_BOOL,

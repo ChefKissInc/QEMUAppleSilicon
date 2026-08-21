@@ -160,12 +160,7 @@ struct KVMState
     uint64_t kvm_eager_split_size;  /* Eager Page Splitting chunk size */
     struct KVMDirtyRingReaper reaper;
     struct KVMMsrEnergy msr_energy;
-    NotifyVmexitOption notify_vmexit;
     uint32_t notify_window;
-    uint32_t xen_version;
-    uint32_t xen_caps;
-    uint16_t xen_gnttab_max_frames;
-    uint16_t xen_evtchn_max_pirq;
     char *device;
 };
 

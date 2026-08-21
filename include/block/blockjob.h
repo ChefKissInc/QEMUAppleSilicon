@@ -28,7 +28,6 @@
 
 #include "qapi/qapi-types-block-core.h"
 #include "qemu/job.h"
-#include "qemu/ratelimit.h"
 
 #define BLOCK_JOB_SLICE_TIME 100000000ULL /* ns */
 
@@ -51,18 +50,6 @@ typedef struct BlockJob {
      * Protected by job mutex.
      */
     BlockDeviceIoStatus iostatus;
-
-    /**
-     * Speed that was set with @block_job_set_speed.
-     * Always modified and read under the BQL (GLOBAL_STATE_CODE).
-     */
-    int64_t speed;
-
-    /**
-     * Rate limiting data structure for implementing @speed.
-     * RateLimit API is thread-safe.
-     */
-    RateLimit limit;
 
     /**
      * Block other operations when block job is running.
@@ -161,19 +148,6 @@ void GRAPH_UNLOCKED block_job_remove_all_bdrv(BlockJob *job);
  * job.
  */
 bool block_job_has_bdrv(BlockJob *job, BlockDriverState *bs);
-
-/**
- * block_job_set_speed_locked:
- * @job: The job to set the speed for.
- * @speed: The new value
- * @errp: Error object.
- *
- * Set a rate-limiting parameter for the job; the actual meaning may
- * vary depending on the job type.
- *
- * Called with job lock held, but might release it temporarily.
- */
-bool block_job_set_speed_locked(BlockJob *job, int64_t speed, Error **errp);
 
 /**
  * block_job_change_locked:

@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/misc/apple-silicon/buttons.h"
 #include "hw/misc/apple-silicon/smc.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/lockable.h"
 #include "system/runstate.h"
@@ -180,17 +179,6 @@ static void apple_buttons_unrealize(DeviceState *dev)
 {
 }
 
-static const VMStateDescription vmstate_apple_buttons = {
-    .name = "AppleButtonsState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT16(states, AppleButtonsState),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_buttons_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -201,7 +189,6 @@ static void apple_buttons_class_init(ObjectClass *klass, const void *data)
     dc->realize = apple_buttons_realize;
     dc->unrealize = apple_buttons_unrealize;
     dc->desc = "Apple Buttons";
-    dc->vmsd = &vmstate_apple_buttons;
     set_bit(DEVICE_CATEGORY_INPUT, dc->categories);
 }
 

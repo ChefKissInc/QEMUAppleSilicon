@@ -12,7 +12,6 @@
 
 #include "qemu/osdep.h"
 #include "qemu/error-report.h"
-#include "semihosting/semihost.h"
 #include "system/runstate.h"
 #include "gdbstub/syscalls.h"
 #include "gdbstub/commands.h"
@@ -41,26 +40,6 @@ static enum {
     GDB_SYS_ENABLED,
     GDB_SYS_DISABLED,
 } gdb_syscall_mode;
-
-/* Decide if either remote gdb syscalls or native file IO should be used. */
-int use_gdb_syscalls(void)
-{
-    SemihostingTarget target = semihosting_get_target();
-    if (target == SEMIHOSTING_TARGET_NATIVE) {
-        /* -semihosting-config target=native */
-        return false;
-    } else if (target == SEMIHOSTING_TARGET_GDB) {
-        /* -semihosting-config target=gdb */
-        return true;
-    }
-
-    /* -semihosting-config target=auto */
-    /* On the first call check if gdb is connected and remember. */
-    if (gdb_syscall_mode == GDB_SYS_UNKNOWN) {
-        gdb_syscall_mode = gdb_attached() ? GDB_SYS_ENABLED : GDB_SYS_DISABLED;
-    }
-    return gdb_syscall_mode == GDB_SYS_ENABLED;
-}
 
 /* called when the stub detaches */
 void gdb_disable_syscalls(void)

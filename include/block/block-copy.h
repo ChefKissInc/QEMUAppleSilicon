@@ -44,7 +44,7 @@ int64_t coroutine_fn GRAPH_RDLOCK
 block_copy_reset_unallocated(BlockCopyState *s, int64_t offset, int64_t *count);
 
 int coroutine_fn block_copy(BlockCopyState *s, int64_t offset, int64_t bytes,
-                            bool ignore_ratelimit, uint64_t timeout_ns,
+                            uint64_t timeout_ns,
                             BlockCopyAsyncCallbackFunc cb,
                             void *cb_opaque);
 
@@ -82,7 +82,6 @@ bool block_copy_call_failed(BlockCopyCallState *call_state);
 bool block_copy_call_cancelled(BlockCopyCallState *call_state);
 int block_copy_call_status(BlockCopyCallState *call_state, bool *error_is_read);
 
-void block_copy_set_speed(BlockCopyState *s, uint64_t speed);
 void block_copy_kick(BlockCopyCallState *call_state);
 
 /*

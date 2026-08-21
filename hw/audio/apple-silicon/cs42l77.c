@@ -21,7 +21,6 @@
 #include "hw/audio/apple-silicon/cs42l77.h"
 #include "hw/qdev-core.h"
 #include "hw/ssi/ssi.h"
-#include "migration/vmstate.h"
 #include "qemu/bswap.h"
 #include "qemu/lockable.h"
 
@@ -251,25 +250,6 @@ static uint32_t apple_cs42l77_transfer(SSIPeripheral *dev, uint32_t val)
     return ret;
 }
 
-static const VMStateDescription vmstate_apple_cs42l77 = {
-    .name = "AppleCS42L77State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_SSI_PERIPHERAL(parent_obj, AppleCS42L77State),
-            VMSTATE_UINT64(start_addr, AppleCS42L77State),
-            VMSTATE_UINT64(address, AppleCS42L77State),
-            VMSTATE_UINT32(pos, AppleCS42L77State),
-            VMSTATE_UINT32(end_pos, AppleCS42L77State),
-            VMSTATE_UINT16(length, AppleCS42L77State),
-            VMSTATE_UINT8(cur_cmd, AppleCS42L77State),
-            VMSTATE_BOOL(data_ready, AppleCS42L77State),
-            VMSTATE_BUFFER(regs, AppleCS42L77State),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_cs42l77_reset(DeviceState *dev)
 {
     AppleCS42L77State *s;
@@ -298,7 +278,6 @@ static void apple_cs42l77_class_init(ObjectClass *klass, const void *data)
 
     dc->desc = "Apple CS42L77 Amp";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_apple_cs42l77;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 
     c->realize = apple_cs42l77_realize;

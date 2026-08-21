@@ -24,7 +24,6 @@
 #include "exec/page-protection.h"
 #include "exec/translation-block.h"
 #include "system/tcg.h"
-#include "system/replay.h"
 #include "accel/tcg/cpu-ops.h"
 #include "hw/core/cpu.h"
 #include "internal-common.h"
@@ -93,25 +92,6 @@ void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
         int hit_flags = wp->flags & flags;
 
         if (hit_flags && watchpoint_address_matches(wp, addr, len)) {
-            if (replay_running_debug()) {
-                /*
-                 * replay_breakpoint reads icount.
-                 * Force recompile to succeed, because icount may
-                 * be read only at the end of the block.
-                 */
-                if (!cpu->neg.can_do_io) {
-                    /* Force execution of one insn next time.  */
-                    cpu->cflags_next_tb = 1 | CF_NOIRQ | curr_cflags(cpu);
-                    cpu_loop_exit_restore(cpu, ra);
-                }
-                /*
-                 * Don't process the watchpoints when we are
-                 * in a reverse debugging operation.
-                 */
-                replay_breakpoint();
-                return;
-            }
-
             wp->flags |= hit_flags << BP_HIT_SHIFT;
             wp->hitaddr = MAX(addr, wp->vaddr);
             wp->hitattrs = attrs;

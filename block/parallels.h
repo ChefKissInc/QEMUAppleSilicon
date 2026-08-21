@@ -87,7 +87,6 @@ typedef struct BDRVParallelsState {
     unsigned int cluster_size;
 
     unsigned int off_multiplier;
-    Error *migration_blocker;
 } BDRVParallelsState;
 
 int GRAPH_RDLOCK

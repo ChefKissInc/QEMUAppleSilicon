@@ -43,7 +43,6 @@ struct PCIHostState {
     MemoryRegion data_mem;
     MemoryRegion mmcfg;
     uint32_t config_reg;
-    bool mig_enabled;
     PCIBus *bus;
     bool bypass_iommu;
 

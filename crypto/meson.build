@@ -28,27 +28,16 @@ if gnutls.found()
   crypto_ss.add(files('x509-utils.c'))
 endif
 
-if nettle.found()
-  crypto_ss.add(nettle, files('hash-nettle.c', 'hmac-nettle.c', 'pbkdf-nettle.c'))
-  if hogweed.found()
-    crypto_ss.add(gmp, hogweed)
-  endif
-  if xts == 'private'
-    crypto_ss.add(files('xts.c'))
-  endif
-elif gcrypt.found()
-  crypto_ss.add(gcrypt, files('hash-gcrypt.c', 'hmac-gcrypt.c', 'pbkdf-gcrypt.c'))
-elif gnutls_crypto.found()
-  crypto_ss.add(gnutls, files('hash-gnutls.c', 'hmac-gnutls.c', 'pbkdf-gnutls.c'))
-else
-  crypto_ss.add(files('hash-glib.c', 'hmac-glib.c', 'pbkdf-stub.c'))
+crypto_ss.add(nettle, files('hash-nettle.c', 'hmac-nettle.c', 'pbkdf-nettle.c'))
+if hogweed.found()
+  crypto_ss.add(gmp, hogweed)
+endif
+if xts == 'private'
+  crypto_ss.add(files('xts.c'))
 endif
 
 if have_keyring
   crypto_ss.add(files('secret_keyring.c'))
-endif
-if have_afalg
-  crypto_ss.add(if_true: files('afalg.c', 'cipher-afalg.c', 'hash-afalg.c'))
 endif
 
 system_ss.add(when: gnutls, if_true: files('tls-cipher-suites.c'))
@@ -63,9 +52,7 @@ if gnutls.found()
   util_ss.add(gnutls)
 endif
 
-if gcrypt.found()
-  util_ss.add(gcrypt, files('random-gcrypt.c'))
-elif gnutls.found()
+if gnutls.found()
   util_ss.add(gnutls, files('random-gnutls.c'))
 elif get_option('rng_none')
   util_ss.add(files('random-none.c'))

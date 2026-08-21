@@ -23,7 +23,6 @@
 #include "hw/intc/apple_aic.h"
 #include "hw/irq.h"
 #include "hw/pci/msi.h"
-#include "migration/vmstate.h"
 #include "qemu/bitops.h"
 #include "qemu/lockable.h"
 #include "qemu/log.h"
@@ -573,43 +572,6 @@ SysBusDevice *apple_aic_create(uint32_t numCPU, AppleDTNode *node,
     return SYS_BUS_DEVICE(dev);
 }
 
-static const VMStateDescription vmstate_apple_aic_cpu = {
-    .name = "apple_aic_cpu",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(cpu_id, AppleAICCPU),
-            VMSTATE_UINT32(pendingIPI, AppleAICCPU),
-            VMSTATE_UINT32(deferredIPI, AppleAICCPU),
-            VMSTATE_UINT32(ipi_mask, AppleAICCPU),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
-static const VMStateDescription vmstate_apple_aic = {
-    .name = "apple_aic",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(numEIR, AppleAICState),
-            VMSTATE_UINT32(numIRQ, AppleAICState),
-            VMSTATE_UINT32(numCPU, AppleAICState),
-            VMSTATE_UINT32(global_cfg, AppleAICState),
-            VMSTATE_VARRAY_UINT32_ALLOC(eir_mask, AppleAICState, numEIR, 1,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_VARRAY_UINT32_ALLOC(eir_dest, AppleAICState, numIRQ, 1,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_VARRAY_UINT32_ALLOC(eir_state, AppleAICState, numEIR, 1,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_STRUCT_VARRAY_POINTER_UINT32(cpus, AppleAICState, numCPU,
-                                                 vmstate_apple_aic_cpu,
-                                                 AppleAICCPU),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_aic_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -618,7 +580,6 @@ static void apple_aic_class_init(ObjectClass *klass, const void *data)
     dc->unrealize = apple_aic_unrealize;
     device_class_set_legacy_reset(dc, apple_aic_reset);
     dc->desc = "Apple Interrupt Controller";
-    dc->vmsd = &vmstate_apple_aic;
 }
 
 static const TypeInfo apple_aic_info = {

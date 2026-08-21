@@ -50,7 +50,6 @@
  *                         'backing file format' header
  * @creation_flags: Flags that control the behavior of the Job lifetime.
  *                  See @BlockJobCreateFlags
- * @speed: The maximum speed, in bytes per second, or 0 for unlimited.
  * @on_error: The action to take upon error.
  * @filter_node_name: The node name that should be assigned to the filter
  *                    driver that the stream job inserts into the graph above
@@ -68,7 +67,7 @@ void stream_start(const char *job_id, BlockDriverState *bs,
                   BlockDriverState *base, const char *backing_file_str,
                   bool backing_mask_protocol,
                   BlockDriverState *bottom,
-                  int creation_flags, int64_t speed,
+                  int creation_flags,
                   BlockdevOnError on_error,
                   const char *filter_node_name,
                   Error **errp);
@@ -82,7 +81,6 @@ void stream_start(const char *job_id, BlockDriverState *bs,
  * @base: Block device that will be written into, and become the new top.
  * @creation_flags: Flags that control the behavior of the Job lifetime.
  *                  See @BlockJobCreateFlags
- * @speed: The maximum speed, in bytes per second, or 0 for unlimited.
  * @on_error: The action to take upon error.
  * @backing_file_str: String to use as the backing file in @top's overlay
  * @backing_mask_protocol: Replace potential protocol name with 'raw' in
@@ -95,7 +93,7 @@ void stream_start(const char *job_id, BlockDriverState *bs,
  */
 void commit_start(const char *job_id, BlockDriverState *bs,
                   BlockDriverState *base, BlockDriverState *top,
-                  int creation_flags, int64_t speed,
+                  int creation_flags,
                   BlockdevOnError on_error, const char *backing_file_str,
                   bool backing_mask_protocol,
                   const char *filter_node_name, Error **errp);
@@ -107,7 +105,6 @@ void commit_start(const char *job_id, BlockDriverState *bs,
  * @base: Block device that will be written into, and become the new top.
  * @creation_flags: Flags that control the behavior of the Job lifetime.
  *                  See @BlockJobCreateFlags
- * @speed: The maximum speed, in bytes per second, or 0 for unlimited.
  * @on_error: The action to take upon error.
  * @filter_node_name: The node name that should be assigned to the filter
  * driver that the commit job inserts into the graph above @bs. NULL means that
@@ -120,7 +117,7 @@ void commit_start(const char *job_id, BlockDriverState *bs,
  */
 BlockJob *commit_active_start(const char *job_id, BlockDriverState *bs,
                               BlockDriverState *base, int creation_flags,
-                              int64_t speed, BlockdevOnError on_error,
+                              BlockdevOnError on_error,
                               const char *filter_node_name,
                               BlockCompletionFunc *cb, void *opaque,
                               bool auto_complete, Error **errp);
@@ -134,7 +131,6 @@ BlockJob *commit_active_start(const char *job_id, BlockDriverState *bs,
  *            only be used when full mirroring is selected.
  * @creation_flags: Flags that control the behavior of the Job lifetime.
  *                  See @BlockJobCreateFlags
- * @speed: The maximum speed, in bytes per second, or 0 for unlimited.
  * @granularity: The chosen granularity for the dirty bitmap.
  * @buf_size: The amount of data that can be in flight at one time.
  * @mode: Whether to collapse all images in the chain to the target.
@@ -156,7 +152,7 @@ BlockJob *commit_active_start(const char *job_id, BlockDriverState *bs,
  */
 void mirror_start(const char *job_id, BlockDriverState *bs,
                   BlockDriverState *target, const char *replaces,
-                  int creation_flags, int64_t speed,
+                  int creation_flags,
                   uint32_t granularity, int64_t buf_size,
                   MirrorSyncMode mode, BlockMirrorBackingMode backing_mode,
                   bool target_is_zero,
@@ -171,7 +167,6 @@ void mirror_start(const char *job_id, BlockDriverState *bs,
  * device name of @bs.
  * @bs: Block device to operate on.
  * @target: Block device to write to.
- * @speed: The maximum speed, in bytes per second, or 0 for unlimited.
  * @sync_mode: What parts of the disk image should be copied to the destination.
  * @sync_bitmap: The dirty bitmap if sync_mode is 'bitmap' or 'incremental'
  * @bitmap_mode: The bitmap synchronization policy to use.
@@ -190,7 +185,7 @@ void mirror_start(const char *job_id, BlockDriverState *bs,
  * until the job is cancelled or manually completed.
  */
 BlockJob *backup_job_create(const char *job_id, BlockDriverState *bs,
-                            BlockDriverState *target, int64_t speed,
+                            BlockDriverState *target,
                             MirrorSyncMode sync_mode,
                             BdrvDirtyBitmap *sync_bitmap,
                             BitmapSyncMode bitmap_mode,

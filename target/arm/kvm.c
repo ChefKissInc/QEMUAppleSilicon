@@ -37,10 +37,7 @@
 #include "hw/irq.h"
 #include "qapi/visitor.h"
 #include "qemu/log.h"
-#include "hw/acpi/acpi.h"
-#include "hw/acpi/ghes.h"
 #include "target/arm/gtimer.h"
-#include "migration/blocker.h"
 
 const KVMCapabilityInfo kvm_arch_required_capabilities[] = {
     KVM_CAP_INFO(DEVICE_CTRL),
@@ -1010,34 +1007,6 @@ bool write_list_to_kvmstate(ARMCPU *cpu, int level)
         }
     }
     return ok;
-}
-
-void kvm_arm_cpu_pre_save(ARMCPU *cpu)
-{
-    /* KVM virtual time adjustment */
-    if (cpu->kvm_vtime_dirty) {
-        *kvm_arm_get_cpreg_ptr(cpu, KVM_REG_ARM_TIMER_CNT) = cpu->kvm_vtime;
-    }
-}
-
-bool kvm_arm_cpu_post_load(ARMCPU *cpu)
-{
-    if (!write_list_to_kvmstate(cpu, KVM_PUT_FULL_STATE)) {
-        return false;
-    }
-    /* Note that it's OK for the TCG side not to know about
-     * every register in the list; KVM is authoritative if
-     * we're using it.
-     */
-    write_list_to_cpustate(cpu);
-
-    /* KVM virtual time adjustment */
-    if (cpu->kvm_adjvtime) {
-        cpu->kvm_vtime = *kvm_arm_get_cpreg_ptr(cpu, KVM_REG_ARM_TIMER_CNT);
-        cpu->kvm_vtime_dirty = true;
-    }
-
-    return true;
 }
 
 void kvm_arm_reset_vcpu(ARMCPU *cpu)
@@ -2502,7 +2471,6 @@ void kvm_arm_enable_mte(Object *cpuobj, Error **errp)
 {
     static bool tried_to_enable;
     static bool succeeded_to_enable;
-    Error *mte_migration_blocker = NULL;
     ARMCPU *cpu = ARM_CPU(cpuobj);
     int ret;
 
@@ -2516,14 +2484,6 @@ void kvm_arm_enable_mte(Object *cpuobj, Error **errp)
         ret = kvm_vm_enable_cap(kvm_state, KVM_CAP_ARM_MTE, 0);
         if (ret) {
             error_setg_errno(errp, -ret, "Failed to enable KVM_CAP_ARM_MTE");
-            return;
-        }
-
-        /* TODO: Add migration support with MTE enabled */
-        error_setg(&mte_migration_blocker,
-                   "Live migration disabled due to MTE enabled");
-        if (migrate_add_blocker(&mte_migration_blocker, errp)) {
-            error_free(mte_migration_blocker);
             return;
         }
 

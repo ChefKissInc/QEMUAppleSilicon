@@ -23,7 +23,6 @@
 #include "hw/irq.h"
 #include "hw/registerfields.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "monitor/hmp-target.h"
 #include "monitor/monitor.h"
 #include "qapi/error.h"
@@ -913,33 +912,6 @@ void hmp_info_dart(Monitor *mon, const QDict *qdict)
     }
 }
 
-// static const VMStateDescription vmstate_apple_dart_instance = {
-//     .name = "AppleDARTInstance",
-//     .version_id = 1,
-//     .minimum_version_id = 1,
-//     .fields =
-//         (const VMStateField[]){
-//             VMSTATE_UINT32_ARRAY(base_reg, AppleDARTInstance,
-//                                  0x4000 / sizeof(uint32_t)),
-//             VMSTATE_END_OF_LIST(),
-//         }
-// };
-//
-// static const VMStateDescription vmstate_apple_dart = {
-//     .name = "AppleDARTState",
-//     .version_id = 1,
-//     .minimum_version_id = 1,
-//     .priority = MIG_PRI_IOMMU,
-//     .fields =
-//         (const VMStateField[]){
-//             VMSTATE_STRUCT_ARRAY(instances, AppleDARTState,
-//             DART_MAX_INSTANCE,
-//                                  1, vmstate_apple_dart_instance,
-//                                  AppleDARTInstance),
-//             VMSTATE_END_OF_LIST(),
-//         }
-// };
-
 static void apple_dart_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -947,7 +919,6 @@ static void apple_dart_class_init(ObjectClass *klass, const void *data)
     dc->realize = apple_dart_realize;
     device_class_set_legacy_reset(dc, apple_dart_reset);
     dc->desc = "Apple DART IOMMU";
-    // dc->vmsd = &vmstate_apple_dart;
 }
 
 static void apple_dart_iommu_memory_region_class_init(ObjectClass *klass,

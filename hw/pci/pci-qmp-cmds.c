@@ -26,6 +26,7 @@
 #include "hw/pci/pci.h"
 #include "hw/pci/pci_bridge.h"
 #include "pci-internal.h"
+#include "hw/pci/pci_host.h"
 #include "qapi/qapi-commands-pci.h"
 
 static PciDeviceInfoList *qmp_query_pci_devices(PCIBus *bus, int bus_num);

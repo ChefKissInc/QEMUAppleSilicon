@@ -23,7 +23,6 @@
 #include "hw/usb/apple_otg.h"
 #include "hw/usb/hcd-dwc2.h"
 #include "hw/usb/hcd-tcp.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "qemu/log.h"
@@ -241,38 +240,12 @@ DeviceState *apple_otg_from_node(AppleDTNode *node)
     return dev;
 }
 
-static int apple_otg_post_load(void *opaque, int version_id)
-{
-    AppleOTGState *s = opaque;
-
-    if (!s->dart) {
-        memory_region_set_alias_offset(s->dma_mr, s->high_addr);
-    }
-    return 0;
-}
-
-static const VMStateDescription vmstate_apple_otg = {
-    .name = "apple_otg",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .post_load = apple_otg_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT8_ARRAY(phy_reg, AppleOTGState, 0x20),
-            VMSTATE_UINT8_ARRAY(usbctl_reg, AppleOTGState, 0x1000),
-            VMSTATE_UINT8_ARRAY(widget_reg, AppleOTGState, 0x100),
-            VMSTATE_UINT64(high_addr, AppleOTGState),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_otg_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     dc->realize = apple_otg_realize;
     device_class_set_legacy_reset(dc, apple_otg_reset);
     dc->desc = "Apple Synopsys USB OTG Controller";
-    dc->vmsd = &vmstate_apple_otg;
 }
 
 static const TypeInfo apple_otg_info = {

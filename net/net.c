@@ -52,8 +52,6 @@
 #include "qapi/error.h"
 #include "qapi/opts-visitor.h"
 #include "system/runstate.h"
-#include "net/colo-compare.h"
-#include "net/filter.h"
 #include "qapi/string-output-visitor.h"
 #include "qapi/qobject-input-visitor.h"
 #include "standard-headers/linux/virtio_net.h"
@@ -286,7 +284,6 @@ static void qemu_net_client_setup(NetClientState *nc,
     nc->incoming_queue = qemu_new_net_queue(qemu_deliver_packet_iov, nc);
     nc->destructor = destructor;
     nc->is_datapath = is_datapath;
-    QTAILQ_INIT(&nc->filters);
 }
 
 NetClientState *qemu_new_net_client(NetClientInfo *info,
@@ -412,7 +409,6 @@ void qemu_del_net_client(NetClientState *nc)
 {
     NetClientState *ncs[MAX_QUEUE_NUM];
     int queues, i;
-    NetFilterState *nf, *next;
 
     assert(nc->info->type != NET_CLIENT_DRIVER_NIC);
 
@@ -423,10 +419,6 @@ void qemu_del_net_client(NetClientState *nc)
                                           NET_CLIENT_DRIVER_NIC,
                                           MAX_QUEUE_NUM);
     assert(queues != 0);
-
-    QTAILQ_FOREACH_SAFE(nf, &nc->filters, next, next) {
-        object_unparent(OBJECT(nf));
-    }
 
     /*
      * If there is a peer NIC, transfer ownership to it.  Delete the client
@@ -634,54 +626,6 @@ int qemu_can_send_packet(NetClientState *sender)
     return qemu_can_receive_packet(sender->peer);
 }
 
-static ssize_t filter_receive_iov(NetClientState *nc,
-                                  NetFilterDirection direction,
-                                  NetClientState *sender,
-                                  unsigned flags,
-                                  const struct iovec *iov,
-                                  int iovcnt,
-                                  NetPacketSent *sent_cb)
-{
-    ssize_t ret = 0;
-    NetFilterState *nf = NULL;
-
-    if (direction == NET_FILTER_DIRECTION_TX) {
-        QTAILQ_FOREACH(nf, &nc->filters, next) {
-            ret = qemu_netfilter_receive(nf, direction, sender, flags, iov,
-                                         iovcnt, sent_cb);
-            if (ret) {
-                return ret;
-            }
-        }
-    } else {
-        QTAILQ_FOREACH_REVERSE(nf, &nc->filters, next) {
-            ret = qemu_netfilter_receive(nf, direction, sender, flags, iov,
-                                         iovcnt, sent_cb);
-            if (ret) {
-                return ret;
-            }
-        }
-    }
-
-    return ret;
-}
-
-static ssize_t filter_receive(NetClientState *nc,
-                              NetFilterDirection direction,
-                              NetClientState *sender,
-                              unsigned flags,
-                              const uint8_t *data,
-                              size_t size,
-                              NetPacketSent *sent_cb)
-{
-    struct iovec iov = {
-        .iov_base = (void *)data,
-        .iov_len = size
-    };
-
-    return filter_receive_iov(nc, direction, sender, flags, &iov, 1, sent_cb);
-}
-
 void qemu_purge_queued_packets(NetClientState *nc)
 {
     if (!nc->peer) {
@@ -731,19 +675,6 @@ static ssize_t qemu_send_packet_async_with_flags(NetClientState *sender,
 
     if (sender->link_down || !sender->peer) {
         return size;
-    }
-
-    /* Let filters handle the packet first */
-    ret = filter_receive(sender, NET_FILTER_DIRECTION_TX,
-                         sender, flags, buf, size, sent_cb);
-    if (ret) {
-        return ret;
-    }
-
-    ret = filter_receive(sender->peer, NET_FILTER_DIRECTION_RX,
-                         sender, flags, buf, size, sent_cb);
-    if (ret) {
-        return ret;
     }
 
     queue = sender->peer->incoming_queue;
@@ -885,19 +816,6 @@ ssize_t qemu_sendv_packet_async(NetClientState *sender,
 
     if (sender->link_down || !sender->peer) {
         return size;
-    }
-
-    /* Let filters handle the packet first */
-    ret = filter_receive_iov(sender, NET_FILTER_DIRECTION_TX, sender,
-                             QEMU_NET_PACKET_FLAG_NONE, iov, iovcnt, sent_cb);
-    if (ret) {
-        return ret;
-    }
-
-    ret = filter_receive_iov(sender->peer, NET_FILTER_DIRECTION_RX, sender,
-                             QEMU_NET_PACKET_FLAG_NONE, iov, iovcnt, sent_cb);
-    if (ret) {
-        return ret;
     }
 
     queue = sender->peer->incoming_queue;
@@ -1267,9 +1185,6 @@ static int (* const net_client_init_fun[NET_CLIENT_DRIVER__MAX])(
     const char *name,
     NetClientState *peer, Error **errp) = {
         [NET_CLIENT_DRIVER_NIC]       = net_init_nic,
-#ifdef CONFIG_PASST
-        [NET_CLIENT_DRIVER_PASST]     = net_init_passt,
-#endif
 #ifdef CONFIG_SLIRP
         [NET_CLIENT_DRIVER_USER]      = net_init_slirp,
 #endif
@@ -1283,16 +1198,10 @@ static int (* const net_client_init_fun[NET_CLIENT_DRIVER__MAX])(
 #ifdef CONFIG_NETMAP
         [NET_CLIENT_DRIVER_NETMAP]    = net_init_netmap,
 #endif
-#ifdef CONFIG_AF_XDP
-        [NET_CLIENT_DRIVER_AF_XDP]    = net_init_af_xdp,
-#endif
 #ifdef CONFIG_NET_BRIDGE
         [NET_CLIENT_DRIVER_BRIDGE]    = net_init_bridge,
 #endif
         [NET_CLIENT_DRIVER_HUBPORT]   = net_init_hubport,
-#ifdef CONFIG_VHOST_NET_VDPA
-        [NET_CLIENT_DRIVER_VHOST_VDPA] = net_init_vhost_vdpa,
-#endif
 #ifdef CONFIG_L2TPV3
         [NET_CLIENT_DRIVER_L2TPV3]    = net_init_l2tpv3,
 #endif
@@ -1372,7 +1281,6 @@ void show_netdevs(void)
         "dgram",
         "hubport",
         "tap",
-        "passt",
 #ifdef CONFIG_SLIRP
         "user",
 #endif
@@ -1387,12 +1295,6 @@ void show_netdevs(void)
 #endif
 #ifdef CONFIG_NETMAP
         "netmap",
-#endif
-#ifdef CONFIG_AF_XDP
-        "af-xdp",
-#endif
-#ifdef CONFIG_VHOST_VDPA
-        "vhost-vdpa",
 #endif
 #ifdef CONFIG_VMNET
         "vmnet-host",
@@ -1507,115 +1409,12 @@ void qmp_netdev_del(const char *id, Error **errp)
     }
 }
 
-static void netfilter_print_info(Monitor *mon, NetFilterState *nf)
-{
-    char *str;
-    ObjectProperty *prop;
-    ObjectPropertyIterator iter;
-    Visitor *v;
-
-    /* generate info str */
-    object_property_iter_init(&iter, OBJECT(nf));
-    while ((prop = object_property_iter_next(&iter))) {
-        if (!strcmp(prop->name, "type")) {
-            continue;
-        }
-        v = string_output_visitor_new(false, &str);
-        object_property_get(OBJECT(nf), prop->name, v, NULL);
-        visit_complete(v, &str);
-        visit_free(v);
-        monitor_printf(mon, ",%s=%s", prop->name, str);
-        g_free(str);
-    }
-    monitor_printf(mon, "\n");
-}
-
 void print_net_client(Monitor *mon, NetClientState *nc)
 {
-    NetFilterState *nf;
-
     monitor_printf(mon, "%s: index=%d,type=%s,%s\n", nc->name,
                    nc->queue_index,
                    NetClientDriver_str(nc->info->type),
                    nc->info_str);
-    if (!QTAILQ_EMPTY(&nc->filters)) {
-        monitor_printf(mon, "filters:\n");
-    }
-    QTAILQ_FOREACH(nf, &nc->filters, next) {
-        monitor_printf(mon, "  - %s: type=%s",
-                       object_get_canonical_path_component(OBJECT(nf)),
-                       object_get_typename(OBJECT(nf)));
-        netfilter_print_info(mon, nf);
-    }
-}
-
-RxFilterInfoList *qmp_query_rx_filter(const char *name, Error **errp)
-{
-    NetClientState *nc;
-    RxFilterInfoList *filter_list = NULL, **tail = &filter_list;
-
-    QTAILQ_FOREACH(nc, &net_clients, next) {
-        RxFilterInfo *info;
-
-        if (name && strcmp(nc->name, name) != 0) {
-            continue;
-        }
-
-        /* only query rx-filter information of NIC */
-        if (nc->info->type != NET_CLIENT_DRIVER_NIC) {
-            if (name) {
-                error_setg(errp, "net client(%s) isn't a NIC", name);
-                assert(!filter_list);
-                return NULL;
-            }
-            continue;
-        }
-
-        /* only query information on queue 0 since the info is per nic,
-         * not per queue
-         */
-        if (nc->queue_index != 0)
-            continue;
-
-        if (nc->info->query_rx_filter) {
-            info = nc->info->query_rx_filter(nc);
-            QAPI_LIST_APPEND(tail, info);
-        } else if (name) {
-            error_setg(errp, "net client(%s) doesn't support"
-                       " rx-filter querying", name);
-            assert(!filter_list);
-            return NULL;
-        }
-
-        if (name) {
-            break;
-        }
-    }
-
-    if (filter_list == NULL && name) {
-        error_setg(errp, "invalid net client name: %s", name);
-    }
-
-    return filter_list;
-}
-
-void colo_notify_filters_event(int event, Error **errp)
-{
-    NetClientState *nc;
-    NetFilterState *nf;
-    NetFilterClass *nfc = NULL;
-    Error *local_err = NULL;
-
-    QTAILQ_FOREACH(nc, &net_clients, next) {
-        QTAILQ_FOREACH(nf, &nc->filters, next) {
-            nfc = NETFILTER_GET_CLASS(OBJECT(nf));
-            nfc->handle_event(nf, event, &local_err);
-            if (local_err) {
-                error_propagate(errp, local_err);
-                return;
-            }
-        }
-    }
 }
 
 void net_client_set_link(NetClientState **ncs, int queues, bool up)
@@ -1695,9 +1494,6 @@ static void net_vm_change_state_handler(void *opaque, bool running,
 void net_cleanup(void)
 {
     NetClientState *nc, **p = &QTAILQ_FIRST(&net_clients);
-
-    /*cleanup colo compare module for COLO*/
-    colo_compare_cleanup();
 
     /*
      * Walk the net_clients list and remove the netdevs but *not* any

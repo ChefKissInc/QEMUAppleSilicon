@@ -33,7 +33,6 @@
 #include "qemu/option.h"
 #include "qemu/bswap.h"
 #include "qemu/memalign.h"
-#include "migration/blocker.h"
 #include "qemu/cutils.h"
 #include <zlib.h>
 
@@ -173,7 +172,6 @@ typedef struct BDRVVmdkState {
     int num_extents;
     /* Extent array with num_extents entries, ascend ordered by address */
     VmdkExtent *extents;
-    Error *migration_blocker;
     char *create_type;
 } BDRVVmdkState;
 
@@ -1402,15 +1400,6 @@ static int vmdk_open(BlockDriverState *bs, QDict *options, int flags,
         goto fail;
     }
     qemu_co_mutex_init(&s->lock);
-
-    /* Disable migration when VMDK images are used */
-    error_setg(&s->migration_blocker, "The vmdk format used by node '%s' "
-               "does not support live migration",
-               bdrv_get_device_or_node_name(bs));
-    ret = migrate_add_blocker_normal(&s->migration_blocker, errp);
-    if (ret < 0) {
-        goto fail;
-    }
 
     g_free(buf);
     return 0;
@@ -2890,8 +2879,6 @@ static void vmdk_close(BlockDriverState *bs)
 
     vmdk_free_extents(bs);
     g_free(s->create_type);
-
-    migrate_del_blocker(&s->migration_blocker);
 }
 
 static int64_t coroutine_fn GRAPH_RDLOCK

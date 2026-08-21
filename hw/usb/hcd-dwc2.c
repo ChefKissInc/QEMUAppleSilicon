@@ -35,7 +35,6 @@
 #include "hw/qdev-properties.h"
 #include "hw/usb/dwc2-regs.h"
 #include "hw/usb/hcd-dwc2.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/cutils.h"
 #include "qemu/error-report.h"
@@ -2386,67 +2385,6 @@ static void dwc2_usb_device_handle_packet(USBDevice *dev, USBPacket *p)
     }
 }
 
-static const VMStateDescription vmstate_dwc2_state_packet = {
-    .name = "dwc2/packet",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (VMStateField[]){
-            VMSTATE_UINT32(devadr, DWC2Packet),
-            VMSTATE_UINT32(epnum, DWC2Packet),
-            VMSTATE_UINT32(epdir, DWC2Packet),
-            VMSTATE_UINT32(mps, DWC2Packet),
-            VMSTATE_UINT32(pid, DWC2Packet),
-            VMSTATE_UINT32(index, DWC2Packet),
-            VMSTATE_UINT32(pcnt, DWC2Packet),
-            VMSTATE_UINT32(len, DWC2Packet),
-            VMSTATE_INT32(async, DWC2Packet),
-            VMSTATE_BOOL(small, DWC2Packet),
-            VMSTATE_BOOL(needs_service, DWC2Packet),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-const VMStateDescription vmstate_dwc2_state = {
-    .name = "dwc2",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (VMStateField[]){
-            VMSTATE_UINT32_ARRAY(glbreg, DWC2State,
-                                 DWC2_GLBREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(fszreg, DWC2State,
-                                 DWC2_FSZREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(hreg0, DWC2State,
-                                 DWC2_HREG0_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(hreg1, DWC2State,
-                                 DWC2_HREG1_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(dreg, DWC2State,
-                                 DWC2_DREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(diepreg, DWC2State,
-                                 DWC2_DIEPREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(doepreg, DWC2State,
-                                 DWC2_DOEPREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(pcgreg, DWC2State,
-                                 DWC2_PCGREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_TIMER_PTR(eof_timer, DWC2State),
-            VMSTATE_TIMER_PTR(frame_timer, DWC2State),
-            VMSTATE_INT64(sof_time, DWC2State),
-            VMSTATE_INT64(usb_frame_time, DWC2State),
-            VMSTATE_INT64(usb_bit_time, DWC2State),
-            VMSTATE_UINT32(usb_version, DWC2State),
-            VMSTATE_UINT16(frame_number, DWC2State),
-            VMSTATE_UINT16(fi, DWC2State),
-            VMSTATE_UINT16(next_chan, DWC2State),
-            VMSTATE_BOOL(working, DWC2State),
-            VMSTATE_STRUCT_ARRAY(packet, DWC2State, DWC2_NB_CHAN, 1,
-                                 vmstate_dwc2_state_packet, DWC2Packet),
-            VMSTATE_UINT8_2DARRAY(usb_buf, DWC2State, DWC2_NB_CHAN,
-                                  DWC2_MAX_XFER_SIZE),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static const Property dwc2_usb_properties[] = {
     DEFINE_PROP_UINT32("usb_version", DWC2State, usb_version, 2),
 };
@@ -2482,7 +2420,6 @@ static void dwc2_class_init(ObjectClass *klass, const void *data)
     ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     dc->realize = dwc2_realize;
-    dc->vmsd = &vmstate_dwc2_state;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
     device_class_set_props(dc, dwc2_usb_properties);
     resettable_class_set_parent_phases(rc, dwc2_reset_enter, dwc2_reset_hold,

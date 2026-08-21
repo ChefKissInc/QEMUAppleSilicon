@@ -30,7 +30,6 @@
 #include "system/block-backend.h"
 #include "qemu/module.h"
 #include "qemu/option.h"
-#include "migration/blocker.h"
 #include "qemu/bswap.h"
 #include "qemu/uuid.h"
 #include "qemu/memalign.h"
@@ -155,8 +154,6 @@ typedef struct BDRVVPCState {
 
     uint64_t last_bitmap;
 #endif
-
-    Error *migration_blocker;
 } BDRVVPCState;
 
 #define VPC_OPT_SIZE_CALC "force_size_calc"
@@ -450,16 +447,6 @@ static int vpc_open(BlockDriverState *bs, QDict *options, int flags,
         s->pageentry_u16 = s->pageentry_u8;
         s->last_pagetable = -1;
 #endif
-    }
-
-    /* Disable migration when VHD images are used */
-    error_setg(&s->migration_blocker, "The vpc format used by node '%s' "
-               "does not support live migration",
-               bdrv_get_device_or_node_name(bs));
-
-    ret = migrate_add_blocker_normal(&s->migration_blocker, errp);
-    if (ret < 0) {
-        goto fail;
     }
 
     qemu_co_mutex_init(&s->lock);
@@ -1193,8 +1180,6 @@ static void vpc_close(BlockDriverState *bs)
 #ifdef CACHE
     g_free(s->pageentry_u8);
 #endif
-
-    migrate_del_blocker(&s->migration_blocker);
 }
 
 static QemuOptsList vpc_create_opts = {

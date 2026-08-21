@@ -1,8 +1,0 @@
-
-config SEMIHOSTING
-       bool
-       depends on TCG
-
-config ARM_COMPATIBLE_SEMIHOSTING
-       bool
-       select SEMIHOSTING

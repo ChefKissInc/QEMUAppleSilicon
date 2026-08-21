@@ -8,7 +8,6 @@
 
 /* vl.c */
 
-extern int only_migratable;
 extern const char *qemu_name;
 extern QemuUUID qemu_uuid;
 extern bool qemu_uuid_set;
@@ -28,19 +27,9 @@ void qemu_init_subsystems(void);
 
 extern int autostart;
 
-typedef enum {
-    VGA_NONE, VGA_STD, VGA_CIRRUS, VGA_VMWARE, VGA_XENFB, VGA_QXL,
-    VGA_TCX, VGA_CG3, VGA_DEVICE, VGA_VIRTIO,
-    VGA_TYPE_MAX,
-} VGAInterfaceType;
-
-extern int vga_interface_type;
-extern bool vga_interface_created;
-
 extern int graphic_width;
 extern int graphic_height;
 extern int graphic_depth;
-extern int display_opengl;
 extern const char *keyboard_layout;
 extern uint8_t *boot_splash_filedata;
 extern bool enable_cpu_pm;
@@ -119,6 +108,5 @@ extern QemuOptsList qemu_netdev_opts;
 extern QemuOptsList qemu_nic_opts;
 extern QemuOptsList qemu_net_opts;
 extern QemuOptsList qemu_global_opts;
-extern QemuOptsList qemu_semihosting_config_opts;
 
 #endif

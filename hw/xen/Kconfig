@@ -1,3 +1,0 @@
-config XEN_BUS
-    bool
-    default y if (XEN || XEN_EMU)

@@ -362,48 +362,6 @@
   'base': 'ChardevCommon' }
 
 ##
-# @ChardevSpiceChannel:
-#
-# Configuration info for spice vm channel chardevs.
-#
-# @type: kind of channel (for example vdagent).
-#
-# Since: 1.5
-##
-{ 'struct': 'ChardevSpiceChannel',
-  'data': { 'type': 'str' },
-  'base': 'ChardevCommon',
-  'if': 'CONFIG_SPICE' }
-
-##
-# @ChardevSpicePort:
-#
-# Configuration info for spice port chardevs.
-#
-# @fqdn: name of the channel (see docs/spice-port-fqdn.txt)
-#
-# Since: 1.5
-##
-{ 'struct': 'ChardevSpicePort',
-  'data': { 'fqdn': 'str' },
-  'base': 'ChardevCommon',
-  'if': 'CONFIG_SPICE' }
-
-##
-# @ChardevDBus:
-#
-# Configuration info for DBus chardevs.
-#
-# @name: name of the channel (following docs/spice-port-fqdn.txt)
-#
-# Since: 7.0
-##
-{ 'struct': 'ChardevDBus',
-  'data': { 'name': 'str' },
-  'base': 'ChardevCommon',
-  'if': 'CONFIG_DBUS_DISPLAY' }
-
-##
 # @ChardevVC:
 #
 # Configuration info for virtual console chardevs.
@@ -441,23 +399,6 @@
 { 'struct': 'ChardevRingbuf',
   'data': { '*size': 'int' },
   'base': 'ChardevCommon' }
-
-##
-# @ChardevQemuVDAgent:
-#
-# Configuration info for QEMU vdagent implementation.
-#
-# @mouse: enable/disable mouse, default is enabled.
-#
-# @clipboard: enable/disable clipboard, default is disabled.
-#
-# Since: 6.1
-##
-{ 'struct': 'ChardevQemuVDAgent',
-  'data': { '*mouse': 'bool',
-            '*clipboard': 'bool' },
-  'base': 'ChardevCommon',
-  'if': 'CONFIG_SPICE_PROTOCOL' }
 
 ##
 # @ChardevPty:
@@ -508,14 +449,6 @@
 #
 # @console: Windows console (since 1.5)
 #
-# @spicevmc: spice vm channel (since 1.5)
-#
-# @spiceport: Spice port channel (since 1.5)
-#
-# @qemu-vdagent: Spice vdagent (since 6.1)
-#
-# @dbus: D-Bus channel (since 7.0)
-#
 # @vc: virtual console (since 1.5)
 #
 # @ringbuf: memory ring buffer (since 1.6)
@@ -545,10 +478,6 @@
             'testdev',
             'stdio',
             { 'name': 'console', 'if': 'CONFIG_WIN32' },
-            { 'name': 'spicevmc', 'if': 'CONFIG_SPICE' },
-            { 'name': 'spiceport', 'if': 'CONFIG_SPICE' },
-            { 'name': 'qemu-vdagent', 'if': 'CONFIG_SPICE_PROTOCOL' },
-            { 'name': 'dbus', 'if': 'CONFIG_DBUS_DISPLAY' },
             'vc',
             'ringbuf',
             { 'name': 'memory', 'features': [ 'deprecated' ] } ] }
@@ -634,50 +563,6 @@
   'data': { 'data': 'ChardevStdio' } }
 
 ##
-# @ChardevSpiceChannelWrapper:
-#
-# @data: Configuration info for spice vm channel chardevs
-#
-# Since: 1.5
-##
-{ 'struct': 'ChardevSpiceChannelWrapper',
-  'data': { 'data': 'ChardevSpiceChannel' },
-  'if': 'CONFIG_SPICE' }
-
-##
-# @ChardevSpicePortWrapper:
-#
-# @data: Configuration info for spice port chardevs
-#
-# Since: 1.5
-##
-{ 'struct': 'ChardevSpicePortWrapper',
-  'data': { 'data': 'ChardevSpicePort' },
-  'if': 'CONFIG_SPICE' }
-
-##
-# @ChardevQemuVDAgentWrapper:
-#
-# @data: Configuration info for QEMU vdagent implementation
-#
-# Since: 6.1
-##
-{ 'struct': 'ChardevQemuVDAgentWrapper',
-  'data': { 'data': 'ChardevQemuVDAgent' },
-  'if': 'CONFIG_SPICE_PROTOCOL' }
-
-##
-# @ChardevDBusWrapper:
-#
-# @data: Configuration info for DBus chardevs
-#
-# Since: 7.0
-##
-{ 'struct': 'ChardevDBusWrapper',
-  'data': { 'data': 'ChardevDBus' },
-  'if': 'CONFIG_DBUS_DISPLAY' }
-
-##
 # @ChardevVCWrapper:
 #
 # @data: Configuration info for virtual console chardevs
@@ -740,14 +625,6 @@
             'stdio': 'ChardevStdioWrapper',
             'console': { 'type': 'ChardevCommonWrapper',
                          'if': 'CONFIG_WIN32' },
-            'spicevmc': { 'type': 'ChardevSpiceChannelWrapper',
-                          'if': 'CONFIG_SPICE' },
-            'spiceport': { 'type': 'ChardevSpicePortWrapper',
-                           'if': 'CONFIG_SPICE' },
-            'qemu-vdagent': { 'type': 'ChardevQemuVDAgentWrapper',
-                              'if': 'CONFIG_SPICE_PROTOCOL' },
-            'dbus': { 'type': 'ChardevDBusWrapper',
-                      'if': 'CONFIG_DBUS_DISPLAY' },
             'vc': 'ChardevVCWrapper',
             'ringbuf': 'ChardevRingbufWrapper',
             'memory': 'ChardevRingbufWrapper' } }

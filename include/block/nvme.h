@@ -617,7 +617,6 @@ enum NvmeAdminCommands {
     NVME_ADM_CMD_TUNNEL         = 0xd8,
     NVME_ADM_CMD_NS_ATTACHMENT  = 0x15,
     NVME_ADM_CMD_DIRECTIVE_SEND = 0x19,
-    NVME_ADM_CMD_VIRT_MNGMT     = 0x1c,
     NVME_ADM_CMD_DIRECTIVE_RECV = 0x1a,
     NVME_ADM_CMD_DBBUF_CONFIG   = 0x7c,
     NVME_ADM_CMD_FORMAT_NVM     = 0x80,
@@ -1130,7 +1129,6 @@ enum NvmeIdCns {
     NVME_ID_CNS_NS_ATTACHED_CTRL_LIST = 0x12,
     NVME_ID_CNS_CTRL_LIST             = 0x13,
     NVME_ID_CNS_PRIMARY_CTRL_CAP      = 0x14,
-    NVME_ID_CNS_SECONDARY_CTRL_LIST   = 0x15,
     NVME_ID_CNS_ENDURANCE_GROUP_LIST  = 0x19,
     NVME_ID_CNS_CS_NS_PRESENT_LIST    = 0x1a,
     NVME_ID_CNS_CS_NS_PRESENT         = 0x1b,
@@ -1751,35 +1749,6 @@ typedef enum NvmePriCtrlCapCrt {
     NVME_CRT_VI             = 1 << 1,
 } NvmePriCtrlCapCrt;
 
-typedef struct QEMU_PACKED NvmeSecCtrlEntry {
-    uint16_t    scid;
-    uint16_t    pcid;
-    uint8_t     scs;
-    uint8_t     rsvd5[3];
-    uint16_t    vfn;
-    uint16_t    nvq;
-    uint16_t    nvi;
-    uint8_t     rsvd14[18];
-} NvmeSecCtrlEntry;
-
-typedef struct QEMU_PACKED NvmeSecCtrlList {
-    uint8_t             numcntl;
-    uint8_t             rsvd1[31];
-    NvmeSecCtrlEntry    sec[127];
-} NvmeSecCtrlList;
-
-typedef enum NvmeVirtMngmtAction {
-    NVME_VIRT_MNGMT_ACTION_PRM_ALLOC    = 0x01,
-    NVME_VIRT_MNGMT_ACTION_SEC_OFFLINE  = 0x07,
-    NVME_VIRT_MNGMT_ACTION_SEC_ASSIGN   = 0x08,
-    NVME_VIRT_MNGMT_ACTION_SEC_ONLINE   = 0x09,
-} NvmeVirtMngmtAction;
-
-typedef enum NvmeVirtualResourceType {
-    NVME_VIRT_RES_QUEUE         = 0x00,
-    NVME_VIRT_RES_INTERRUPT     = 0x01,
-} NvmeVirtualResourceType;
-
 typedef struct NvmeDirectiveIdentify {
     uint8_t supported;
     uint8_t unused1[31];
@@ -1981,8 +1950,6 @@ static inline void _nvme_check_size(void)
     QEMU_BUILD_BUG_ON(sizeof(NvmeZoneDescr) != 64);
     QEMU_BUILD_BUG_ON(sizeof(NvmeDifTuple) != 16);
     QEMU_BUILD_BUG_ON(sizeof(NvmePriCtrlCap) != 4096);
-    QEMU_BUILD_BUG_ON(sizeof(NvmeSecCtrlEntry) != 32);
-    QEMU_BUILD_BUG_ON(sizeof(NvmeSecCtrlList) != 4096);
     QEMU_BUILD_BUG_ON(sizeof(NvmeEndGrpLog) != 512);
     QEMU_BUILD_BUG_ON(sizeof(NvmeDirectiveIdentify) != 4096);
 }

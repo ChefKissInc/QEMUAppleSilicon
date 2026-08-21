@@ -14,9 +14,6 @@
  */
 
 #include "qemu/osdep.h"
-#ifdef CONFIG_SPICE
-#include <spice/enums.h>
-#endif
 #include "monitor/hmp.h"
 #include "monitor/monitor-internal.h"
 #include "qapi/error.h"
@@ -183,78 +180,6 @@ void hmp_info_vnc(Monitor *mon, const QDict *qdict)
 
     qapi_free_VncInfo2List(info2l_head);
 
-}
-#endif
-
-#ifdef CONFIG_SPICE
-void hmp_info_spice(Monitor *mon, const QDict *qdict)
-{
-    SpiceChannelList *chan;
-    SpiceInfo *info;
-    const char *channel_name;
-    static const char *const channel_names[] = {
-        [SPICE_CHANNEL_MAIN] = "main",
-        [SPICE_CHANNEL_DISPLAY] = "display",
-        [SPICE_CHANNEL_INPUTS] = "inputs",
-        [SPICE_CHANNEL_CURSOR] = "cursor",
-        [SPICE_CHANNEL_PLAYBACK] = "playback",
-        [SPICE_CHANNEL_RECORD] = "record",
-        [SPICE_CHANNEL_TUNNEL] = "tunnel",
-        [SPICE_CHANNEL_SMARTCARD] = "smartcard",
-        [SPICE_CHANNEL_USBREDIR] = "usbredir",
-        [SPICE_CHANNEL_PORT] = "port",
-        [SPICE_CHANNEL_WEBDAV] = "webdav",
-    };
-
-    info = qmp_query_spice(NULL);
-
-    if (!info->enabled) {
-        monitor_printf(mon, "Server: disabled\n");
-        goto out;
-    }
-
-    monitor_printf(mon, "Server:\n");
-    if (info->has_port) {
-        monitor_printf(mon, "     address: %s:%" PRId64 "\n",
-                       info->host, info->port);
-    }
-    if (info->has_tls_port) {
-        monitor_printf(mon, "     address: %s:%" PRId64 " [tls]\n",
-                       info->host, info->tls_port);
-    }
-    monitor_printf(mon, "    migrated: %s\n",
-                   info->migrated ? "true" : "false");
-    monitor_printf(mon, "        auth: %s\n", info->auth);
-    monitor_printf(mon, "    compiled: %s\n", info->compiled_version);
-    monitor_printf(mon, "  mouse-mode: %s\n",
-                   SpiceQueryMouseMode_str(info->mouse_mode));
-
-    if (!info->has_channels || info->channels == NULL) {
-        monitor_printf(mon, "Channels: none\n");
-    } else {
-        for (chan = info->channels; chan; chan = chan->next) {
-            monitor_printf(mon, "Channel:\n");
-            monitor_printf(mon, "     address: %s:%s%s\n",
-                           chan->value->host, chan->value->port,
-                           chan->value->tls ? " [tls]" : "");
-            monitor_printf(mon, "     session: %" PRId64 "\n",
-                           chan->value->connection_id);
-            monitor_printf(mon, "     channel: %" PRId64 ":%" PRId64 "\n",
-                           chan->value->channel_type, chan->value->channel_id);
-
-            channel_name = "unknown";
-            if (chan->value->channel_type > 0 &&
-                chan->value->channel_type < ARRAY_SIZE(channel_names) &&
-                channel_names[chan->value->channel_type]) {
-                channel_name = channel_names[chan->value->channel_type];
-            }
-
-            monitor_printf(mon, "     channel name: %s\n", channel_name);
-        }
-    }
-
-out:
-    qapi_free_SpiceInfo(info);
 }
 #endif
 
@@ -460,20 +385,3 @@ end:
     hmp_handle_error(mon, err);
 }
 #endif
-
-void hmp_client_migrate_info(Monitor *mon, const QDict *qdict)
-{
-    Error *err = NULL;
-    const char *protocol = qdict_get_str(qdict, "protocol");
-    const char *hostname = qdict_get_str(qdict, "hostname");
-    bool has_port        = qdict_haskey(qdict, "port");
-    int port             = qdict_get_try_int(qdict, "port", -1);
-    bool has_tls_port    = qdict_haskey(qdict, "tls-port");
-    int tls_port         = qdict_get_try_int(qdict, "tls-port", -1);
-    const char *cert_subject = qdict_get_try_str(qdict, "cert-subject");
-
-    qmp_client_migrate_info(protocol, hostname,
-                            has_port, port, has_tls_port, tls_port,
-                            cert_subject, &err);
-    hmp_handle_error(mon, err);
-}

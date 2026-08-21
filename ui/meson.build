@@ -4,7 +4,6 @@ system_ss.add(files(
   'clipboard.c',
   'console.c',
   'cursor.c',
-  'dmabuf.c',
   'input-keymap.c',
   'input-legacy.c',
   'input-barrier.c',
@@ -17,15 +16,7 @@ system_ss.add(files(
   'util.c',
 ))
 system_ss.add(when: pixman, if_true: files('console-vc.c'), if_false: files('console-vc-stubs.c'))
-if dbus_display
-  system_ss.add(files('dbus-module.c'))
-endif
-system_ss.add([spice_headers, files('spice-module.c')])
-system_ss.add(when: spice_protocol, if_true: files('vdagent.c'))
 
-if host_os == 'linux'
-  system_ss.add(files('input-linux.c', 'udmabuf.c'))
-endif
 system_ss.add(when: cocoa, if_true: files('cocoa.m'))
 
 vnc_ss = ss.source_set()
@@ -54,52 +45,6 @@ if curses.found()
   ui_modules += {'curses' : curses_ss}
 endif
 
-system_ss.add(opengl)
-if opengl.found()
-  opengl_ss = ss.source_set()
-  opengl_ss.add(gbm, pixman)
-  opengl_ss.add(when: [opengl],
-               if_true: files('shader.c', 'console-gl.c', 'egl-helpers.c', 'egl-context.c'))
-  ui_modules += {'opengl' : opengl_ss}
-endif
-
-if opengl.found()
-  egl_headless_ss = ss.source_set()
-  egl_headless_ss.add(when: [opengl, pixman],
-                      if_true: [files('egl-headless.c'), gbm])
-  ui_modules += {'egl-headless' : egl_headless_ss}
-endif
-
-if dbus_display
-  dbus_ss = ss.source_set()
-  env = environment()
-  env.set('HOST_OS', host_os)
-  xml = custom_target('dbus-display preprocess',
-                      input: 'dbus-display1.xml',
-                      output: 'dbus-display1.xml',
-                      env: env,
-                      command: [xml_pp, '@INPUT@', '@OUTPUT@'])
-  dbus_display1 = custom_target('dbus-display gdbus-codegen',
-                                output: ['dbus-display1.h', 'dbus-display1.c'],
-                                input: xml,
-                                command: [gdbus_codegen, '@INPUT@',
-                                          '--glib-min-required', '2.64',
-                                          '--output-directory', meson.current_build_dir(),
-                                          '--interface-prefix', 'org.qemu.',
-                                          '--c-namespace', 'QemuDBus',
-                                          '--generate-c-code', '@BASENAME@'])
-  dbus_ss.add(when: gio,
-              if_true: [files(
-                'dbus-chardev.c',
-                'dbus-clipboard.c',
-                'dbus-console.c',
-                'dbus-error.c',
-                'dbus-listener.c',
-                'dbus.c',
-              ), opengl, gbm, pixman, dbus_display1])
-  ui_modules += {'dbus' : dbus_ss}
-endif
-
 if gtk.found()
   if host_os == 'windows'
     system_ss.add(files('win32-kbd-hook.c'))
@@ -111,8 +56,6 @@ if gtk.found()
     gtk_ss.add(files('gtk-clipboard.c'))
   endif
   gtk_ss.add(when: x11, if_true: files('x_keymap.c'))
-  gtk_ss.add(when: opengl, if_true: files('gtk-gl-area.c'))
-  gtk_ss.add(when: [x11, opengl], if_true: files('gtk-egl.c'))
   ui_modules += {'gtk' : gtk_ss}
 endif
 
@@ -123,25 +66,8 @@ if sdl.found()
     'sdl2-input.c',
     'sdl2.c',
   ))
-  sdl_ss.add(when: opengl, if_true: files('sdl2-gl.c'))
   sdl_ss.add(when: x11, if_true: files('x_keymap.c'))
   ui_modules += {'sdl' : sdl_ss}
-endif
-
-if spice.found()
-  spice_core_ss = ss.source_set()
-  spice_core_ss.add(spice, pixman, files(
-    'spice-core.c',
-    'spice-input.c',
-    'spice-display.c'
-  ))
-  ui_modules += {'spice-core' : spice_core_ss}
-
-  if gio.found()
-    spice_ss = ss.source_set()
-    spice_ss.add(spice, gio, pixman, files('spice-app.c'))
-    ui_modules += {'spice-app': spice_ss}
-  endif
 endif
 
 keymaps = [
@@ -178,8 +104,6 @@ if have_system or xkbcommon.found()
                             '@INPUT0@', e[0], e[1]])
   endforeach
 endif
-
-subdir('shader')
 
 if have_system
   subdir('icons')

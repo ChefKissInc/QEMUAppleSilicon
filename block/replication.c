@@ -15,7 +15,6 @@
 #include "qemu/osdep.h"
 #include "qemu/module.h"
 #include "qemu/option.h"
-#include "block/nbd.h"
 #include "block/blockjob.h"
 #include "block/block_int.h"
 #include "block/block_backup.h"
@@ -581,7 +580,7 @@ static void replication_start(ReplicationState *rs, ReplicationMode mode,
 
         s->backup_job = backup_job_create(
                                 NULL, s->secondary_disk->bs, s->hidden_disk->bs,
-                                0, MIRROR_SYNC_MODE_NONE, NULL, 0, false, false,
+                                MIRROR_SYNC_MODE_NONE, NULL, 0, false, false,
                                 NULL, &perf,
                                 BLOCKDEV_ON_ERROR_REPORT,
                                 BLOCKDEV_ON_ERROR_REPORT,
@@ -711,7 +710,7 @@ static void replication_stop(ReplicationState *rs, bool failover, Error **errp)
         s->stage = BLOCK_REPLICATION_FAILOVER;
         s->commit_job = commit_active_start(
                             NULL, bs->file->bs, s->secondary_disk->bs,
-                            JOB_INTERNAL, 0, BLOCKDEV_ON_ERROR_REPORT,
+                            JOB_INTERNAL, BLOCKDEV_ON_ERROR_REPORT,
                             NULL, replication_done, bs, true, errp);
         bdrv_graph_rdunlock_main_loop();
         break;

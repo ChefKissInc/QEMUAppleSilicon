@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/audio/apple-silicon/cs35l27.h"
 #include "hw/i2c/i2c.h"
-#include "migration/vmstate.h"
 
 #if 0
 #define DPRINTF(v, ...) fprintf(stderr, v, ##__VA_ARGS__)
@@ -164,20 +163,6 @@ static int apple_cs35l27_event(I2CSlave *i2c, enum i2c_event event)
     return 0;
 }
 
-static const VMStateDescription vmstate_apple_cs35l27 = {
-    .name = "AppleCS35L27State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_I2C_SLAVE(i2c, AppleCS35L27State),
-            VMSTATE_UINT32(addr, AppleCS35L27State),
-            VMSTATE_UINT32(tx_bytes, AppleCS35L27State),
-            VMSTATE_BUFFER(regs, AppleCS35L27State),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_cs35l27_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -185,7 +170,6 @@ static void apple_cs35l27_class_init(ObjectClass *klass, const void *data)
 
     dc->desc = "Apple CS35L27 Amp";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_apple_cs35l27;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 
     c->recv = apple_cs35l27_rx;

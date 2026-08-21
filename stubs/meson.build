@@ -8,7 +8,6 @@ stub_ss.add(files('fdset.c'))
 stub_ss.add(files('iothread-lock.c'))
 stub_ss.add(files('is-daemonized.c'))
 stub_ss.add(files('monitor-core.c'))
-stub_ss.add(files('replay-mode.c'))
 stub_ss.add(files('trace-control.c'))
 
 if have_block
@@ -19,18 +18,15 @@ if have_block
   stub_ss.add(files('change-state-handler.c'))
   stub_ss.add(files('get-vm-name.c'))
   stub_ss.add(files('iothread-lock-block.c'))
-  stub_ss.add(files('migr-blocker.c'))
   stub_ss.add(files('physmem.c'))
   stub_ss.add(files('ram-block.c'))
   stub_ss.add(files('runstate-check.c'))
   stub_ss.add(files('uuid.c'))
 endif
 
-if have_block or have_ga
-  stub_ss.add(files('replay-tools.c'))
+if have_block
   # stubs for hooks in util/main-loop.c, util/async.c etc.
   stub_ss.add(files('cpus-virtual-clock.c'))
-  stub_ss.add(files('icount.c'))
   stub_ss.add(files('graph-lock.c'))
   if linux_io_uring.found()
     stub_ss.add(files('io_uring.c'))
@@ -48,7 +44,6 @@ endif
 
 if have_block
   stub_ss.add(files('vm-stop.c'))
-  stub_ss.add(files('vmstate.c'))
 endif
 
 if have_system
@@ -57,25 +52,15 @@ if have_system
   # in particular, consider defining a preprocessor macro via
   # Kconfig or configs/targets/.
   stub_ss.add(files('dump.c'))
-  stub_ss.add(files('cmos.c'))
-  stub_ss.add(files('fw_cfg.c'))
   stub_ss.add(files('target-get-monitor-def.c'))
   stub_ss.add(files('target-monitor-defs.c'))
   stub_ss.add(files('win32-kbd-hook.c'))
-  stub_ss.add(files('xen-hw-stub.c'))
   stub_ss.add(files('monitor-arm-gic.c'))
-  stub_ss.add(files('monitor-i386-rtc.c'))
-  stub_ss.add(files('monitor-i386-sev.c'))
-  stub_ss.add(files('monitor-i386-sgx.c'))
-  stub_ss.add(files('monitor-i386-xen.c'))
   stub_ss.add(files('monitor-cpu.c'))
 endif
 
 if have_system
   stub_ss.add(files('gdbstub.c'))
-
-  # Also included in have_system for --disable-tcg builds
-  stub_ss.add(files('replay.c'))
 
   # Also included in have_system for tests/unit/test-qdev-global-props
   stub_ss.add(files('hotplug-stubs.c'))

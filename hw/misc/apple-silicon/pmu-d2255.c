@@ -21,7 +21,6 @@
 #include "hw/i2c/i2c.h"
 #include "hw/irq.h"
 #include "hw/misc/apple-silicon/pmu-d2255.h"
-#include "migration/vmstate.h"
 #include "qemu/error-report.h"
 #include "qemu/log.h"
 #include "qemu/timer.h"
@@ -421,31 +420,12 @@ static void pmu_d2255_reset(DeviceState *device)
            REG_DEVICE_ID7 - REG_MASK_REV_CODE);
 }
 
-static const VMStateDescription pmu_d2255_vmstate = {
-    .name = "Apple PMU D2255",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_I2C_SLAVE(i2c, PMUD2255State),
-            VMSTATE_UINT8_ARRAY(reg, PMUD2255State, REG_SIZE),
-            VMSTATE_TIMER_PTR(timer, PMUD2255State),
-            VMSTATE_UINT32(tick_period, PMUD2255State),
-            VMSTATE_UINT64(rtc_offset, PMUD2255State),
-            VMSTATE_UINT32(op_state, PMUD2255State),
-            VMSTATE_UINT16(address, PMUD2255State),
-            VMSTATE_UINT32(address_state, PMUD2255State),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void pmu_d2255_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     I2CSlaveClass *c = I2C_SLAVE_CLASS(klass);
 
     dc->desc = "Apple PMU D2255";
-    dc->vmsd = &pmu_d2255_vmstate;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
     device_class_set_legacy_reset(dc, pmu_d2255_reset);
 

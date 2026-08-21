@@ -14,7 +14,6 @@
  */
 
 #include "qemu/osdep.h"
-#include "migration/misc.h"
 #include "monitor/hmp.h"
 #include "monitor/monitor.h"
 #include "net/net.h"
@@ -63,21 +62,6 @@ void hmp_set_link(Monitor *mon, const QDict *qdict)
     hmp_handle_error(mon, err);
 }
 
-
-void hmp_announce_self(Monitor *mon, const QDict *qdict)
-{
-    const char *interfaces_str = qdict_get_try_str(qdict, "interfaces");
-    const char *id = qdict_get_try_str(qdict, "id");
-    AnnounceParameters *params = QAPI_CLONE(AnnounceParameters,
-                                            migrate_announce_params());
-
-    qapi_free_strList(params->interfaces);
-    params->interfaces = hmp_split_at_comma(interfaces_str);
-    params->has_interfaces = params->interfaces != NULL;
-    params->id = g_strdup(id);
-    qmp_announce_self(params, NULL);
-    qapi_free_AnnounceParameters(params);
-}
 
 void hmp_netdev_add(Monitor *mon, const QDict *qdict)
 {

@@ -37,17 +37,10 @@
 #include "hw/boards.h"
 #include "hw/sysbus.h"
 #include "hw/qdev-clock.h"
-#include "migration/vmstate.h"
 #include "trace.h"
 
 static bool qdev_hot_added = false;
 bool qdev_hot_removed = false;
-
-const VMStateDescription *qdev_get_vmsd(DeviceState *dev)
-{
-    DeviceClass *dc = DEVICE_GET_CLASS(dev);
-    return dc->vmsd;
-}
 
 static void bus_free_bus_child(BusChild *kid)
 {
@@ -437,20 +430,6 @@ static bool device_get_realized(Object *obj, Error **errp)
     return dev->realized;
 }
 
-static bool check_only_migratable(Object *obj, Error **errp)
-{
-    DeviceClass *dc = DEVICE_GET_CLASS(obj);
-
-    if (!vmstate_check_only_migratable(dc->vmsd)) {
-        error_setg(errp, "Device %s is not migratable, but "
-                   "--only-migratable was specified",
-                   object_get_typename(obj));
-        return false;
-    }
-
-    return true;
-}
-
 static void device_set_realized(Object *obj, bool value, Error **errp)
 {
     DeviceState *dev = DEVICE(obj);
@@ -469,10 +448,6 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
     }
 
     if (value && !dev->realized) {
-        if (!check_only_migratable(obj, errp)) {
-            goto fail;
-        }
-
         if (!obj->parent) {
             gchar *name = g_strdup_printf("device[%d]", unattached_count++);
 
@@ -510,17 +485,6 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
                 continue;
             } else {
                 clock_setup_canonical_path(ncl->clock);
-            }
-        }
-
-        if (qdev_get_vmsd(dev)) {
-            if (vmstate_register_with_alias_id(VMSTATE_IF(dev),
-                                               VMSTATE_INSTANCE_ID_ANY,
-                                               qdev_get_vmsd(dev), dev,
-                                               dev->instance_id_alias,
-                                               dev->alias_required_for_version,
-                                               &local_err) < 0) {
-                goto post_realize_fail;
             }
         }
 
@@ -576,9 +540,6 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
         QLIST_FOREACH(bus, &dev->child_bus, sibling) {
             qbus_unrealize(bus);
         }
-        if (qdev_get_vmsd(dev)) {
-            vmstate_unregister(VMSTATE_IF(dev), qdev_get_vmsd(dev), dev);
-        }
         if (dc->unrealize) {
             dc->unrealize(dev);
         }
@@ -594,11 +555,6 @@ child_realize_fail:
         qbus_unrealize(bus);
     }
 
-    if (qdev_get_vmsd(dev)) {
-        vmstate_unregister(VMSTATE_IF(dev), qdev_get_vmsd(dev), dev);
-    }
-
-post_realize_fail:
     g_free(dev->canonical_path);
     dev->canonical_path = NULL;
     if (dc->unrealize) {
@@ -723,18 +679,9 @@ static void device_unparent(Object *obj)
     }
 }
 
-static char *
-device_vmstate_if_get_id(VMStateIf *obj)
-{
-    DeviceState *dev = DEVICE(obj);
-
-    return qdev_get_dev_path(dev);
-}
-
 static void device_class_init(ObjectClass *class, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(class);
-    VMStateIfClass *vc = VMSTATE_IF_CLASS(class);
     ResettableClass *rc = RESETTABLE_CLASS(class);
 
     class->unparent = device_unparent;
@@ -747,7 +694,6 @@ static void device_class_init(ObjectClass *class, const void *data)
      */
     dc->hotpluggable = true;
     dc->user_creatable = true;
-    vc->get_id = device_vmstate_if_get_id;
     rc->get_state = device_get_reset_state;
     rc->child_foreach = device_reset_child_foreach;
 
@@ -855,7 +801,6 @@ static const TypeInfo device_type_info = {
     .abstract = true,
     .class_size = sizeof(DeviceClass),
     .interfaces = (const InterfaceInfo[]) {
-        { TYPE_VMSTATE_IF },
         { TYPE_RESETTABLE_INTERFACE },
         { }
     }

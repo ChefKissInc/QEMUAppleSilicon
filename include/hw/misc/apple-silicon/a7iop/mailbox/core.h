@@ -25,7 +25,6 @@
 #include "block/aio.h"
 #include "hw/misc/apple-silicon/a7iop/base.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "qemu/queue.h"
 
 #define TYPE_APPLE_A7IOP_MAILBOX "apple-a7iop-mailbox"
@@ -76,17 +75,10 @@ typedef struct AppleA7IOPMessage {
     QTAILQ_ENTRY(AppleA7IOPMessage) next;
 } AppleA7IOPMessage;
 
-extern const VMStateDescription vmstate_apple_a7iop_message;
-
-#define VMSTATE_APPLE_A7IOP_MESSAGE(_field, _state)                  \
-    VMSTATE_QTAILQ_V(_field, _state, 0, vmstate_apple_a7iop_message, \
-                     AppleA7IOPMessage, next)
-
 typedef struct AppleA7IOPInterruptStatusMessage {
     uint32_t status;
     QTAILQ_ENTRY(AppleA7IOPInterruptStatusMessage) entry;
 } AppleA7IOPInterruptStatusMessage;
-
 
 struct AppleA7IOPMailbox {
     /*< private >*/

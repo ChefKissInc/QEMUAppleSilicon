@@ -24,7 +24,6 @@
 #include "qemu/osdep.h"
 #include "qemu/error-report.h"
 #include "qapi/error.h"
-#include "system/replay.h"
 
 #include "chardev/char-fe.h"
 #include "chardev/char-io.h"
@@ -62,10 +61,6 @@ int qemu_chr_fe_read_all(CharBackend *be, uint8_t *buf, int len)
         return 0;
     }
 
-    if (qemu_chr_replay(s) && replay_mode == REPLAY_MODE_PLAY) {
-        return replay_char_read_all_load(buf);
-    }
-
     while (offset < len) {
     retry:
         res = CHARDEV_GET_CLASS(s)->chr_sync_read(s, buf + offset,
@@ -80,18 +75,12 @@ int qemu_chr_fe_read_all(CharBackend *be, uint8_t *buf, int len)
         }
 
         if (res < 0) {
-            if (qemu_chr_replay(s) && replay_mode == REPLAY_MODE_RECORD) {
-                replay_char_read_all_save_error(res);
-            }
             return res;
         }
 
         offset += res;
     }
 
-    if (qemu_chr_replay(s) && replay_mode == REPLAY_MODE_RECORD) {
-        replay_char_read_all_save_buf(buf, offset);
-    }
     return offset;
 }
 
@@ -100,7 +89,7 @@ int qemu_chr_fe_ioctl(CharBackend *be, int cmd, void *arg)
     Chardev *s = be->chr;
     int res;
 
-    if (!s || !CHARDEV_GET_CLASS(s)->chr_ioctl || qemu_chr_replay(s)) {
+    if (!s || !CHARDEV_GET_CLASS(s)->chr_ioctl) {
         res = -ENOTSUP;
     } else {
         res = CHARDEV_GET_CLASS(s)->chr_ioctl(s, cmd, arg);
@@ -111,15 +100,8 @@ int qemu_chr_fe_ioctl(CharBackend *be, int cmd, void *arg)
 
 int qemu_chr_fe_get_msgfd(CharBackend *be)
 {
-    Chardev *s = be->chr;
     int fd;
-    int res = (qemu_chr_fe_get_msgfds(be, &fd, 1) == 1) ? fd : -1;
-    if (s && qemu_chr_replay(s)) {
-        error_report("Replay: get msgfd is not supported "
-                     "for serial devices yet");
-        exit(1);
-    }
-    return res;
+    return (qemu_chr_fe_get_msgfds(be, &fd, 1) == 1) ? fd : -1;
 }
 
 int qemu_chr_fe_get_msgfds(CharBackend *be, int *fds, int len)

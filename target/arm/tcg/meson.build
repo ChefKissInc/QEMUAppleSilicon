@@ -11,8 +11,6 @@ gen_a32 = [
   decodetree.process('neon-ls.decode', extra_args: '--decode=disas_neon_ls'),
   decodetree.process('vfp.decode', extra_args: '--decode=disas_vfp'),
   decodetree.process('vfp-uncond.decode', extra_args: '--decode=disas_vfp_uncond'),
-  decodetree.process('m-nocp.decode', extra_args: '--decode=disas_m_nocp'),
-  decodetree.process('mve.decode', extra_args: '--decode=disas_mve'),
   decodetree.process('a32.decode', extra_args: '--static-decode=disas_a32'),
   decodetree.process('a32-uncond.decode', extra_args: '--static-decode=disas_a32_uncond'),
   decodetree.process('t32.decode', extra_args: '--static-decode=disas_t32'),
@@ -26,12 +24,8 @@ arm_ss.add(files(
   'cpu32.c',
   'gengvec.c',
   'translate.c',
-  'translate-m-nocp.c',
-  'translate-mve.c',
   'translate-neon.c',
   'translate-vfp.c',
-  'm_helper.c',
-  'mve_helper.c',
   'op_helper.c',
   'vec_helper.c',
 ))
@@ -54,8 +48,6 @@ arm_ss.add(when: 'TARGET_AARCH64', if_true: files(
 arm_system_ss.add(files(
   'psci.c',
 ))
-
-arm_system_ss.add(when: 'CONFIG_ARM_V7M', if_true: files('cpu-v7m.c'))
 
 arm_common_ss.add(zlib)
 

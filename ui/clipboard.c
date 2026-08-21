@@ -12,32 +12,6 @@ static VMChangeStateEntry *cb_change_state_entry = NULL;
 
 static bool cb_reset_serial_on_resume = false;
 
-static const VMStateDescription vmstate_cbcontent = {
-    .name = "clipboard/content",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields = (const VMStateField[]) {
-        VMSTATE_BOOL(available, QemuClipboardContent),
-        VMSTATE_BOOL(requested, QemuClipboardContent),
-        VMSTATE_UINT32(size, QemuClipboardContent),
-        VMSTATE_VBUFFER_ALLOC_UINT32(data, QemuClipboardContent, 0, 0, size),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-const VMStateDescription vmstate_cbinfo = {
-    .name = "clipboard",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields = (const VMStateField[]) {
-        VMSTATE_INT32(selection, QemuClipboardInfo),
-        VMSTATE_BOOL(has_serial, QemuClipboardInfo),
-        VMSTATE_UINT32(serial, QemuClipboardInfo),
-        VMSTATE_STRUCT_ARRAY(types, QemuClipboardInfo, QEMU_CLIPBOARD_TYPE__COUNT, 0, vmstate_cbcontent, QemuClipboardContent),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static void qemu_clipboard_change_state(void *opaque, bool running, RunState state)
 {
     int i;

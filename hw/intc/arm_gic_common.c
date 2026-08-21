@@ -23,110 +23,8 @@
 #include "qemu/module.h"
 #include "qemu/error-report.h"
 #include "gic_internal.h"
-#include "hw/arm/linux-boot-if.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "system/kvm.h"
-
-static int gic_pre_save(void *opaque)
-{
-    GICState *s = (GICState *)opaque;
-    ARMGICCommonClass *c = ARM_GIC_COMMON_GET_CLASS(s);
-
-    if (c->pre_save) {
-        c->pre_save(s);
-    }
-
-    return 0;
-}
-
-static int gic_post_load(void *opaque, int version_id)
-{
-    GICState *s = (GICState *)opaque;
-    ARMGICCommonClass *c = ARM_GIC_COMMON_GET_CLASS(s);
-
-    if (c->post_load) {
-        c->post_load(s);
-    }
-    return 0;
-}
-
-static bool gic_virt_state_needed(void *opaque)
-{
-    GICState *s = (GICState *)opaque;
-
-    return s->virt_extn;
-}
-
-static const VMStateDescription vmstate_gic_irq_state = {
-    .name = "arm_gic_irq_state",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8(enabled, gic_irq_state),
-        VMSTATE_UINT8(pending, gic_irq_state),
-        VMSTATE_UINT8(active, gic_irq_state),
-        VMSTATE_UINT8(level, gic_irq_state),
-        VMSTATE_BOOL(model, gic_irq_state),
-        VMSTATE_BOOL(edge_trigger, gic_irq_state),
-        VMSTATE_UINT8(group, gic_irq_state),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static const VMStateDescription vmstate_gic_virt_state = {
-    .name = "arm_gic_virt_state",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = gic_virt_state_needed,
-    .fields = (const VMStateField[]) {
-        /* Virtual interface */
-        VMSTATE_UINT32_ARRAY(h_hcr, GICState, GIC_NCPU),
-        VMSTATE_UINT32_ARRAY(h_misr, GICState, GIC_NCPU),
-        VMSTATE_UINT32_2DARRAY(h_lr, GICState, GIC_MAX_LR, GIC_NCPU),
-        VMSTATE_UINT32_ARRAY(h_apr, GICState, GIC_NCPU),
-
-        /* Virtual CPU interfaces */
-        VMSTATE_UINT32_SUB_ARRAY(cpu_ctlr, GICState, GIC_NCPU, GIC_NCPU),
-        VMSTATE_UINT16_SUB_ARRAY(priority_mask, GICState, GIC_NCPU, GIC_NCPU),
-        VMSTATE_UINT16_SUB_ARRAY(running_priority, GICState, GIC_NCPU, GIC_NCPU),
-        VMSTATE_UINT16_SUB_ARRAY(current_pending, GICState, GIC_NCPU, GIC_NCPU),
-        VMSTATE_UINT8_SUB_ARRAY(bpr, GICState, GIC_NCPU, GIC_NCPU),
-        VMSTATE_UINT8_SUB_ARRAY(abpr, GICState, GIC_NCPU, GIC_NCPU),
-
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static const VMStateDescription vmstate_gic = {
-    .name = "arm_gic",
-    .version_id = 12,
-    .minimum_version_id = 12,
-    .pre_save = gic_pre_save,
-    .post_load = gic_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(ctlr, GICState),
-        VMSTATE_UINT32_SUB_ARRAY(cpu_ctlr, GICState, 0, GIC_NCPU),
-        VMSTATE_STRUCT_ARRAY(irq_state, GICState, GIC_MAXIRQ, 1,
-                             vmstate_gic_irq_state, gic_irq_state),
-        VMSTATE_UINT8_ARRAY(irq_target, GICState, GIC_MAXIRQ),
-        VMSTATE_UINT8_2DARRAY(priority1, GICState, GIC_INTERNAL, GIC_NCPU),
-        VMSTATE_UINT8_ARRAY(priority2, GICState, GIC_MAXIRQ - GIC_INTERNAL),
-        VMSTATE_UINT8_2DARRAY(sgi_pending, GICState, GIC_NR_SGIS, GIC_NCPU),
-        VMSTATE_UINT16_SUB_ARRAY(priority_mask, GICState, 0, GIC_NCPU),
-        VMSTATE_UINT16_SUB_ARRAY(running_priority, GICState, 0, GIC_NCPU),
-        VMSTATE_UINT16_SUB_ARRAY(current_pending, GICState, 0, GIC_NCPU),
-        VMSTATE_UINT8_SUB_ARRAY(bpr, GICState, 0, GIC_NCPU),
-        VMSTATE_UINT8_SUB_ARRAY(abpr, GICState, 0, GIC_NCPU),
-        VMSTATE_UINT32_2DARRAY(apr, GICState, GIC_NR_APRS, GIC_NCPU),
-        VMSTATE_UINT32_2DARRAY(nsapr, GICState, GIC_NR_APRS, GIC_NCPU),
-        VMSTATE_END_OF_LIST()
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &vmstate_gic_virt_state,
-        NULL
-    }
-};
 
 void gic_init_irqs_and_mmio(GICState *s, qemu_irq_handler handler,
                             const MemoryRegionOps *ops,
@@ -331,23 +229,6 @@ static void arm_gic_common_reset_hold(Object *obj, ResetType type)
     s->ctlr = 0;
 }
 
-static void arm_gic_common_linux_init(ARMLinuxBootIf *obj,
-                                      bool secure_boot)
-{
-    GICState *s = ARM_GIC_COMMON(obj);
-
-    if (s->security_extn && !secure_boot) {
-        /* We're directly booting a kernel into NonSecure. If this GIC
-         * implements the security extensions then we must configure it
-         * to have all the interrupts be NonSecure (this is a job that
-         * is done by the Secure boot firmware in real hardware, and in
-         * this mode QEMU is acting as a minimalist firmware-and-bootloader
-         * equivalent).
-         */
-        s->irq_reset_nonsecure = true;
-    }
-}
-
 static const Property arm_gic_common_properties[] = {
     DEFINE_PROP_UINT32("num-cpu", GICState, num_cpu, 1),
     DEFINE_PROP_UINT32("first-cpu-index", GICState, first_cpu_index, 0),
@@ -367,13 +248,10 @@ static void arm_gic_common_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);
-    ARMLinuxBootIfClass *albifc = ARM_LINUX_BOOT_IF_CLASS(klass);
 
     rc->phases.hold = arm_gic_common_reset_hold;
     dc->realize = arm_gic_common_realize;
     device_class_set_props(dc, arm_gic_common_properties);
-    dc->vmsd = &vmstate_gic;
-    albifc->arm_linux_init = arm_gic_common_linux_init;
 }
 
 static const TypeInfo arm_gic_common_type = {
@@ -383,10 +261,6 @@ static const TypeInfo arm_gic_common_type = {
     .class_size = sizeof(ARMGICCommonClass),
     .class_init = arm_gic_common_class_init,
     .abstract = true,
-    .interfaces = (const InterfaceInfo[]) {
-        { TYPE_ARM_LINUX_BOOT_IF },
-        { },
-    },
 };
 
 static void register_types(void)

@@ -24,7 +24,6 @@
 #include "qemu/module.h"
 #include "qemu/timer.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "hw/i2c/i2c.h"
 #include "hw/irq.h"
 #include "qom/object.h"
@@ -269,21 +268,6 @@ static const MemoryRegionOps exynos4210_i2c_ops = {
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
-static const VMStateDescription exynos4210_i2c_vmstate = {
-    .name = "exynos4210.i2c",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8(i2ccon, Exynos4210I2CState),
-        VMSTATE_UINT8(i2cstat, Exynos4210I2CState),
-        VMSTATE_UINT8(i2cds, Exynos4210I2CState),
-        VMSTATE_UINT8(i2cadd, Exynos4210I2CState),
-        VMSTATE_UINT8(i2clc, Exynos4210I2CState),
-        VMSTATE_BOOL(scl_free, Exynos4210I2CState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static void exynos4210_i2c_reset(DeviceState *d)
 {
     Exynos4210I2CState *s = EXYNOS4_I2C(d);
@@ -313,7 +297,6 @@ static void exynos4210_i2c_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
-    dc->vmsd = &exynos4210_i2c_vmstate;
     device_class_set_legacy_reset(dc, exynos4210_i2c_reset);
 }
 

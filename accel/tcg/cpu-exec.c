@@ -33,8 +33,6 @@
 #include "qemu/rcu.h"
 #include "exec/log.h"
 #include "qemu/main-loop.h"
-#include "exec/icount.h"
-#include "exec/replay-core.h"
 #include "system/tcg.h"
 #include "exec/helper-proto-common.h"
 #include "tcg-accel-ops.h"
@@ -48,7 +46,6 @@
 
 typedef struct SyncClocks {
     int64_t diff_clk;
-    int64_t last_cpu_icount;
     int64_t realtime_clock;
 } SyncClocks;
 
@@ -63,78 +60,6 @@ typedef struct SyncClocks {
 
 int64_t max_delay;
 int64_t max_advance;
-
-static void align_clocks(SyncClocks *sc, CPUState *cpu)
-{
-    int64_t cpu_icount;
-
-    if (!icount_align_option) {
-        return;
-    }
-
-    cpu_icount = cpu->icount_extra + cpu->neg.icount_decr.u16.low;
-    sc->diff_clk += icount_to_ns(sc->last_cpu_icount - cpu_icount);
-    sc->last_cpu_icount = cpu_icount;
-
-    if (sc->diff_clk > VM_CLOCK_ADVANCE) {
-#ifndef _WIN32
-        struct timespec sleep_delay, rem_delay;
-        sleep_delay.tv_sec = sc->diff_clk / 1000000000LL;
-        sleep_delay.tv_nsec = sc->diff_clk % 1000000000LL;
-        if (nanosleep(&sleep_delay, &rem_delay) < 0) {
-            sc->diff_clk = rem_delay.tv_sec * 1000000000LL + rem_delay.tv_nsec;
-        } else {
-            sc->diff_clk = 0;
-        }
-#else
-        Sleep(sc->diff_clk / SCALE_MS);
-        sc->diff_clk = 0;
-#endif
-    }
-}
-
-static void print_delay(const SyncClocks *sc)
-{
-    static float threshold_delay;
-    static int64_t last_realtime_clock;
-    static int nb_prints;
-
-    if (icount_align_option &&
-        sc->realtime_clock - last_realtime_clock >= MAX_DELAY_PRINT_RATE &&
-        nb_prints < MAX_NB_PRINTS) {
-        if ((-sc->diff_clk / (float)1000000000LL > threshold_delay) ||
-            (-sc->diff_clk / (float)1000000000LL <
-             (threshold_delay - THRESHOLD_REDUCE))) {
-            threshold_delay = (-sc->diff_clk / 1000000000LL) + 1;
-            qemu_printf("Warning: The guest is now late by %.1f to %.1f seconds\n",
-                        threshold_delay - 1,
-                        threshold_delay);
-            nb_prints++;
-            last_realtime_clock = sc->realtime_clock;
-        }
-    }
-}
-
-static void init_delay_params(SyncClocks *sc, CPUState *cpu)
-{
-    if (!icount_align_option) {
-        return;
-    }
-    sc->realtime_clock = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL_RT);
-    sc->diff_clk = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) - sc->realtime_clock;
-    sc->last_cpu_icount
-        = cpu->icount_extra + cpu->neg.icount_decr.u16.low;
-    if (sc->diff_clk < max_delay) {
-        max_delay = sc->diff_clk;
-    }
-    if (sc->diff_clk > max_advance) {
-        max_advance = sc->diff_clk;
-    }
-
-    /* Print every 2s max if the guest is late. We limit the number
-       of printed messages to NB_PRINT_MAX(currently 100) */
-    print_delay(sc);
-}
 
 struct tb_desc {
     TCGTBCPUState s;
@@ -663,13 +588,6 @@ static inline void cpu_handle_debug_exception(CPUState *cpu)
 static inline bool cpu_handle_exception(CPUState *cpu, int *ret)
 {
     if (cpu->exception_index < 0) {
-        if (replay_has_exception()
-            && cpu->neg.icount_decr.u16.low + cpu->icount_extra == 0) {
-            /* Execute just one insn to trigger exception pending in the log */
-            cpu->cflags_next_tb = (curr_cflags(cpu) & ~CF_USE_ICOUNT)
-                | CF_NOIRQ | 1;
-        }
-
         return false;
     }
 
@@ -683,27 +601,21 @@ static inline bool cpu_handle_exception(CPUState *cpu, int *ret)
         return true;
     }
 
-    if (replay_exception()) {
-        const TCGCPUOps *tcg_ops = cpu->cc->tcg_ops;
+    const TCGCPUOps *tcg_ops = cpu->cc->tcg_ops;
 
-        bql_lock();
-        tcg_ops->do_interrupt(cpu);
-        bql_unlock();
-        cpu->exception_index = -1;
+    bql_lock();
+    tcg_ops->do_interrupt(cpu);
+    bql_unlock();
+    cpu->exception_index = -1;
 
-        if (unlikely(cpu->singlestep_enabled)) {
-            /*
-             * After processing the exception, ensure an EXCP_DEBUG is
-             * raised when single-stepping so that GDB doesn't miss the
-             * next instruction.
-             */
-            *ret = EXCP_DEBUG;
-            cpu_handle_debug_exception(cpu);
-            return true;
-        }
-    } else if (!replay_has_interrupt()) {
-        /* give a chance to iothread in replay mode */
-        *ret = EXCP_INTERRUPT;
+    if (unlikely(cpu->singlestep_enabled)) {
+        /*
+         * After processing the exception, ensure an EXCP_DEBUG is
+         * raised when single-stepping so that GDB doesn't miss the
+         * next instruction.
+         */
+        *ret = EXCP_DEBUG;
+        cpu_handle_debug_exception(cpu);
         return true;
     }
 
@@ -722,17 +634,6 @@ void tcg_kick_vcpu_thread(CPUState *cpu)
 
     /* Ensure cpu_exec will see the exit request after TCG has exited.  */
     qatomic_store_release(&cpu->neg.icount_decr.u16.high, -1);
-}
-
-static inline bool icount_exit_request(CPUState *cpu)
-{
-    if (!icount_enabled()) {
-        return false;
-    }
-    if (cpu->cflags_next_tb != -1 && !(cpu->cflags_next_tb & CF_USE_ICOUNT)) {
-        return false;
-    }
-    return cpu->neg.icount_decr.u16.low + cpu->icount_extra == 0;
 }
 
 static inline bool cpu_handle_interrupt(CPUState *cpu,
@@ -763,10 +664,7 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
             bql_unlock();
             return true;
         }
-        if (replay_mode == REPLAY_MODE_PLAY && !replay_has_interrupt()) {
-            /* Do nothing */
-        } else if (cpu_test_interrupt(cpu, CPU_INTERRUPT_HALT)) {
-            replay_interrupt();
+        if (cpu_test_interrupt(cpu, CPU_INTERRUPT_HALT)) {
             cpu_reset_interrupt(cpu, CPU_INTERRUPT_HALT);
             cpu->halted = 1;
             cpu->exception_index = EXCP_HLT;
@@ -777,7 +675,6 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
             int interrupt_request = cpu->interrupt_request;
 
             if (cpu_test_interrupt(cpu, CPU_INTERRUPT_RESET)) {
-                replay_interrupt();
                 tcg_ops->cpu_exec_reset(cpu);
                 bql_unlock();
                 return true;
@@ -795,10 +692,6 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
              * and via longjmp via cpu_loop_exit.
              */
             if (tcg_ops->cpu_exec_interrupt(cpu, interrupt_request)) {
-                if (!tcg_ops->need_replay_interrupt ||
-                    tcg_ops->need_replay_interrupt(interrupt_request)) {
-                    replay_interrupt();
-                }
                 /*
                  * After processing the interrupt, ensure an EXCP_DEBUG is
                  * raised when single-stepping so that GDB doesn't miss the
@@ -828,7 +721,7 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
      * Finally, check if we need to exit to the main loop.
      * The corresponding store-release is in cpu_exit.
      */
-    if (unlikely(qatomic_load_acquire(&cpu->exit_request)) || icount_exit_request(cpu)) {
+    if (unlikely(qatomic_load_acquire(&cpu->exit_request))) {
         if (cpu->exception_index == -1) {
             cpu->exception_index = EXCP_INTERRUPT;
         }
@@ -863,26 +756,7 @@ static inline void cpu_loop_exec_tb(CPUState *cpu, TranslationBlock *tb,
         return;
     }
 
-    /* Instruction counter expired.  */
-    assert(icount_enabled());
-
-    /* Ensure global icount has gone forward */
-    icount_update(cpu);
-    /* Refill decrementer and continue execution.  */
-    int32_t insns_left = MIN(0xffff, cpu->icount_budget);
-    cpu->neg.icount_decr.u16.low = insns_left;
-    cpu->icount_extra = cpu->icount_budget - insns_left;
-
-    /*
-     * If the next tb has more instructions than we have left to
-     * execute we need to ensure we find/generate a TB with exactly
-     * insns_left instructions in it.
-     */
-    if (insns_left > 0 && insns_left < tb->icount)  {
-        assert(insns_left <= CF_COUNT_MASK);
-        assert(cpu->icount_extra == 0);
-        cpu->cflags_next_tb = (tb->cflags & ~CF_COUNT_MASK) | insns_left;
-    }
+    assert_not_reached();
 }
 
 /* main execution loop */
@@ -952,10 +826,6 @@ cpu_exec_loop(CPUState *cpu, SyncClocks *sc)
             }
 
             cpu_loop_exec_tb(cpu, tb, s.pc, &last_tb, &tb_exit);
-
-            /* Try to align the host and virtual clocks
-               if the guest is in advance */
-            align_clocks(sc, cpu);
         }
     }
     return ret;
@@ -985,14 +855,6 @@ int cpu_exec(CPUState *cpu)
 
     RCU_READ_LOCK_GUARD();
     cpu_exec_enter(cpu);
-
-    /*
-     * Calculate difference between guest clock and host clock.
-     * This delay includes the delay of the last cycle, so
-     * what we have to do is sleep until it is 0. As for the
-     * advance/delay we gain here, we try to fix it next time.
-     */
-    init_delay_params(&sc, cpu);
 
     ret = cpu_exec_setjmp(cpu, &sc);
 

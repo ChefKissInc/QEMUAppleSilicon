@@ -19,8 +19,8 @@
 # If the FD associated with @fdname is not a socket, the command will
 # fail and the FD will be closed.
 #
-# @protocol: protocol name.  Valid names are "vnc", "spice",
-#     "@dbus-display" or the name of a character device (e.g. from
+# @protocol: protocol name.  Valid names are "vnc", "spice"
+#     or the name of a character device (e.g. from
 #     -chardev id=XXXX)
 #
 # @fdname: file descriptor name previously passed via `getfd` command

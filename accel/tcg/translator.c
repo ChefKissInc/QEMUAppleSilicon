@@ -38,26 +38,15 @@ bool translator_io_start(DisasContextBase *db)
     return true;
 }
 
-static TCGOp *gen_tb_start(DisasContextBase *db, uint32_t cflags)
+static void gen_tb_start(DisasContextBase *db, uint32_t cflags)
 {
     TCGv_i32 count = NULL;
-    TCGOp *icount_start_insn = NULL;
 
-    if ((cflags & CF_USE_ICOUNT) || !(cflags & CF_NOIRQ)) {
+    if (!(cflags & CF_NOIRQ)) {
         count = tcg_temp_new_i32();
         tcg_gen_ld_i32(count, tcg_env,
                        offsetof(CPUState, neg.icount_decr.u32) -
                        sizeof(CPUState));
-    }
-
-    if (cflags & CF_USE_ICOUNT) {
-        /*
-         * We emit a sub with a dummy immediate argument. Keep the insn index
-         * of the sub so that we later (when we know the actual insn count)
-         * can update the argument with the actual insn count.
-         */
-        tcg_gen_sub_i32(count, count, tcg_constant_i32(0));
-        icount_start_insn = tcg_last_op();
     }
 
     /*
@@ -73,28 +62,10 @@ static TCGOp *gen_tb_start(DisasContextBase *db, uint32_t cflags)
         tcg_ctx->exitreq_label = gen_new_label();
         tcg_gen_brcondi_i32(TCG_COND_LT, count, 0, tcg_ctx->exitreq_label);
     }
-
-    if (cflags & CF_USE_ICOUNT) {
-        tcg_gen_st16_i32(count, tcg_env,
-                         offsetof(CPUState, neg.icount_decr.u16.low) -
-                         sizeof(CPUState));
-    }
-
-    return icount_start_insn;
 }
 
-static void gen_tb_end(const TranslationBlock *tb, uint32_t cflags,
-                       TCGOp *icount_start_insn, int num_insns)
+static void gen_tb_end(const TranslationBlock *tb, uint32_t cflags, int num_insns)
 {
-    if (cflags & CF_USE_ICOUNT) {
-        /*
-         * Update the num_insn immediate parameter now that we know
-         * the actual insn count.
-         */
-        tcg_set_insn_param(icount_start_insn, 2,
-                           tcgv_i32_arg(tcg_constant_i32(num_insns)));
-    }
-
     if (tcg_ctx->exitreq_label) {
         gen_set_label(tcg_ctx->exitreq_label);
         tcg_gen_exit_tb(tb, TB_EXIT_REQUESTED);
@@ -122,7 +93,6 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
                      DisasContextBase *db)
 {
     uint32_t cflags = tb_cflags(tb);
-    TCGOp *icount_start_insn;
     TCGOp *first_insn_start = NULL;
 
     /* Initialize DisasContext */
@@ -144,7 +114,7 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
     tcg_debug_assert(db->is_jmp == DISAS_NEXT);  /* no early exit */
 
     /* Start translating.  */
-    icount_start_insn = gen_tb_start(db, cflags);
+    gen_tb_start(db, cflags);
     ops->tb_start(db, cpu);
     tcg_debug_assert(db->is_jmp == DISAS_NEXT);  /* no early exit */
 
@@ -180,7 +150,7 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
 
     /* Emit code to exit the TB, as indicated by db->is_jmp.  */
     ops->tb_stop(db, cpu);
-    gen_tb_end(tb, cflags, icount_start_insn, db->num_insns);
+    gen_tb_end(tb, cflags, db->num_insns);
 
     /*
      * Manage can_do_io for the translation block: set to false before

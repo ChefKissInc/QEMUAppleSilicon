@@ -705,8 +705,7 @@ static int blkio_virtio_blk_connect(BlockDriverState *bs, QDict *options,
      */
     if (fd_supported) {
         /*
-         * `path` can contain the path of a character device
-         * (e.g. /dev/vhost-vdpa-0 or /dev/vfio/vfio) or a unix socket.
+         * `path` can contain the path of a character device or a unix socket.
          *
          * So, we should always open it with O_RDWR flag, also if BDRV_O_RDWR
          * is not set in the open flags, because the exchange of IOCTL commands
@@ -818,12 +817,6 @@ static int blkio_open(BlockDriverState *bs, QDict *options, int flags,
         ret = blkio_io_uring_connect(bs, options, flags, errp);
     } else if (strcmp(blkio_driver, "nvme-io_uring") == 0) {
         ret = blkio_nvme_io_uring_connect(bs, options, flags, errp);
-    } else if (strcmp(blkio_driver, "virtio-blk-vfio-pci") == 0) {
-        ret = blkio_virtio_blk_connect(bs, options, flags, errp);
-    } else if (strcmp(blkio_driver, "virtio-blk-vhost-user") == 0) {
-        ret = blkio_virtio_blk_connect(bs, options, flags, errp);
-    } else if (strcmp(blkio_driver, "virtio-blk-vhost-vdpa") == 0) {
-        ret = blkio_virtio_blk_connect(bs, options, flags, errp);
     } else {
         assert_not_reached();
     }
@@ -1123,24 +1116,10 @@ static BlockDriver bdrv_nvme_io_uring = {
     BLKIO_DRIVER_COMMON
 };
 
-static BlockDriver bdrv_virtio_blk_vfio_pci = {
-    .format_name         = "virtio-blk-vfio-pci",
-    .protocol_name       = "virtio-blk-vfio-pci",
-    BLKIO_DRIVER_COMMON
-};
-
-static BlockDriver bdrv_virtio_blk_vhost_vdpa = {
-    .format_name         = "virtio-blk-vhost-vdpa",
-    .protocol_name       = "virtio-blk-vhost-vdpa",
-    BLKIO_DRIVER_COMMON
-};
-
 static void bdrv_blkio_init(void)
 {
     bdrv_register(&bdrv_io_uring);
     bdrv_register(&bdrv_nvme_io_uring);
-    bdrv_register(&bdrv_virtio_blk_vfio_pci);
-    bdrv_register(&bdrv_virtio_blk_vhost_vdpa);
 }
 
 block_init(bdrv_blkio_init);

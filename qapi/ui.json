@@ -202,266 +202,6 @@
   'if': 'CONFIG_PIXMAN' }
 
 ##
-# Spice
-# =====
-##
-
-##
-# @SpiceBasicInfo:
-#
-# The basic information for SPICE network connection
-#
-# @host: IP address
-#
-# @port: port number
-#
-# @family: address family
-#
-# Since: 2.1
-##
-{ 'struct': 'SpiceBasicInfo',
-  'data': { 'host': 'str',
-            'port': 'str',
-            'family': 'NetworkAddressFamily' },
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SpiceServerInfo:
-#
-# Information about a SPICE server
-#
-# @auth: authentication method
-#
-# Since: 2.1
-##
-{ 'struct': 'SpiceServerInfo',
-  'base': 'SpiceBasicInfo',
-  'data': { '*auth': 'str' },
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SpiceChannel:
-#
-# Information about a SPICE client channel.
-#
-# @connection-id: SPICE connection id number.  All channels with the
-#     same id belong to the same SPICE session.
-#
-# @channel-type: SPICE channel type number.  "1" is the main control
-#     channel, filter for this one if you want to track spice sessions
-#     only
-#
-# @channel-id: SPICE channel ID number.  Usually "0", might be
-#     different when multiple channels of the same type exist, such as
-#     multiple display channels in a multihead setup
-#
-# @tls: true if the channel is encrypted, false otherwise.
-#
-# Since: 0.14
-##
-{ 'struct': 'SpiceChannel',
-  'base': 'SpiceBasicInfo',
-  'data': {'connection-id': 'int', 'channel-type': 'int', 'channel-id': 'int',
-           'tls': 'bool'},
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SpiceQueryMouseMode:
-#
-# An enumeration of Spice mouse states.
-#
-# @client: Mouse cursor position is determined by the client.
-#
-# @server: Mouse cursor position is determined by the server.
-#
-# @unknown: No information is available about mouse mode used by the
-#     spice server.
-#
-# Since: 1.1
-##
-{ 'enum': 'SpiceQueryMouseMode',
-  'data': [ 'client', 'server', 'unknown' ],
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SpiceInfo:
-#
-# Information about the SPICE session.
-#
-# @enabled: true if the SPICE server is enabled, false otherwise
-#
-# @migrated: true if the last guest migration completed and spice
-#     migration had completed as well, false otherwise (since 1.4)
-#
-# @host: The hostname the SPICE server is bound to.  This depends on
-#     the name resolution on the host and may be an IP address.
-#
-# @port: The SPICE server's port number.
-#
-# @compiled-version: SPICE server version.
-#
-# @tls-port: The SPICE server's TLS port number.
-#
-# @auth: the current authentication type used by the server
-#
-#     - 'none' if no authentication is being used
-#     - 'spice' uses SASL or direct TLS authentication, depending on
-#       command line options
-#
-# @mouse-mode: The mode in which the mouse cursor is displayed
-#     currently.  Can be determined by the client or the server, or
-#     unknown if spice server doesn't provide this information.
-#     (since: 1.1)
-#
-# @channels: a list of `SpiceChannel` for each active spice channel
-#
-# Since: 0.14
-##
-{ 'struct': 'SpiceInfo',
-  'data': {'enabled': 'bool', 'migrated': 'bool', '*host': 'str', '*port': 'int',
-           '*tls-port': 'int', '*auth': 'str', '*compiled-version': 'str',
-           'mouse-mode': 'SpiceQueryMouseMode', '*channels': ['SpiceChannel']},
-  'if': 'CONFIG_SPICE' }
-
-##
-# @query-spice:
-#
-# Return information about the current SPICE server
-#
-# Since: 0.14
-#
-# .. qmp-example::
-#
-#     -> { "execute": "query-spice" }
-#     <- { "return": {
-#              "enabled": true,
-#              "auth": "spice",
-#              "port": 5920,
-#              "migrated":false,
-#              "tls-port": 5921,
-#              "host": "0.0.0.0",
-#              "mouse-mode":"client",
-#              "channels": [
-#                 {
-#                    "port": "54924",
-#                    "family": "ipv4",
-#                    "channel-type": 1,
-#                    "connection-id": 1804289383,
-#                    "host": "127.0.0.1",
-#                    "channel-id": 0,
-#                    "tls": true
-#                 },
-#                 {
-#                    "port": "36710",
-#                    "family": "ipv4",
-#                    "channel-type": 4,
-#                    "connection-id": 1804289383,
-#                    "host": "127.0.0.1",
-#                    "channel-id": 0,
-#                    "tls": false
-#                 },
-#                 ...
-#              ]
-#           }
-#        }
-##
-{ 'command': 'query-spice', 'returns': 'SpiceInfo',
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SPICE_CONNECTED:
-#
-# Emitted when a SPICE client establishes a connection
-#
-# @server: server information
-#
-# @client: client information
-#
-# Since: 0.14
-#
-# .. qmp-example::
-#
-#     <- { "timestamp": {"seconds": 1290688046, "microseconds": 388707},
-#          "event": "SPICE_CONNECTED",
-#          "data": {
-#            "server": { "port": "5920", "family": "ipv4", "host": "127.0.0.1"},
-#            "client": {"port": "52873", "family": "ipv4", "host": "127.0.0.1"}
-#        }}
-##
-{ 'event': 'SPICE_CONNECTED',
-  'data': { 'server': 'SpiceBasicInfo',
-            'client': 'SpiceBasicInfo' },
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SPICE_INITIALIZED:
-#
-# Emitted after initial handshake and authentication takes place (if
-# any) and the SPICE channel is up and running
-#
-# @server: server information
-#
-# @client: client information
-#
-# Since: 0.14
-#
-# .. qmp-example::
-#
-#     <- { "timestamp": {"seconds": 1290688046, "microseconds": 417172},
-#          "event": "SPICE_INITIALIZED",
-#          "data": {"server": {"auth": "spice", "port": "5921",
-#                              "family": "ipv4", "host": "127.0.0.1"},
-#                   "client": {"port": "49004", "family": "ipv4", "channel-type": 3,
-#                              "connection-id": 1804289383, "host": "127.0.0.1",
-#                              "channel-id": 0, "tls": true}
-#        }}
-##
-{ 'event': 'SPICE_INITIALIZED',
-  'data': { 'server': 'SpiceServerInfo',
-            'client': 'SpiceChannel' },
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SPICE_DISCONNECTED:
-#
-# Emitted when the SPICE connection is closed
-#
-# @server: server information
-#
-# @client: client information
-#
-# Since: 0.14
-#
-# .. qmp-example::
-#
-#     <- { "timestamp": {"seconds": 1290688046, "microseconds": 388707},
-#          "event": "SPICE_DISCONNECTED",
-#          "data": {
-#            "server": { "port": "5920", "family": "ipv4", "host": "127.0.0.1"},
-#            "client": {"port": "52873", "family": "ipv4", "host": "127.0.0.1"}
-#        }}
-##
-{ 'event': 'SPICE_DISCONNECTED',
-  'data': { 'server': 'SpiceBasicInfo',
-            'client': 'SpiceBasicInfo' },
-  'if': 'CONFIG_SPICE' }
-
-##
-# @SPICE_MIGRATE_COMPLETED:
-#
-# Emitted when SPICE migration has completed
-#
-# Since: 1.3
-#
-# .. qmp-example::
-#
-#     <- { "timestamp": {"seconds": 1290688046, "microseconds": 417172},
-#          "event": "SPICE_MIGRATE_COMPLETED" }
-##
-{ 'event': 'SPICE_MIGRATE_COMPLETED',
-  'if': 'CONFIG_SPICE' }
-
-##
 # VNC
 # ===
 ##
@@ -1351,62 +1091,6 @@
                 '*scale'             : 'number'  } }
 
 ##
-# @DisplayEGLHeadless:
-#
-# EGL headless display options.
-#
-# @rendernode: Which DRM render node should be used.  Default is the
-#     first available node on the host.
-#
-# Since: 3.1
-##
-{ 'struct'  : 'DisplayEGLHeadless',
-  'data'    : { '*rendernode' : 'str' } }
-
-##
-# @DisplayDBus:
-#
-# DBus display options.
-#
-# @addr: The D-Bus bus address (default to the session bus).
-#
-# @rendernode: Which DRM render node should be used.  Default is the
-#     first available node on the host.
-#
-# @p2p: Whether to use peer-to-peer connections (accepted through
-#     `add_client`).
-#
-# @audiodev: Use the specified DBus audiodev to export audio.
-#
-# Since: 7.0
-##
-{ 'struct'  : 'DisplayDBus',
-  'data'    : { '*rendernode' : 'str',
-                '*addr': 'str',
-                '*p2p': 'bool',
-                '*audiodev': 'str' } }
-
-##
-# @DisplayGLMode:
-#
-# Display OpenGL mode.
-#
-# @off: Disable OpenGL (default).
-#
-# @on: Use OpenGL, pick context type automatically.  Would better be
-#     named 'auto' but is called 'on' for backward compatibility with
-#     bool type.
-#
-# @core: Use OpenGL with Core (desktop) Context.
-#
-# @es: Use OpenGL with ES (embedded systems) Context.
-#
-# Since: 3.0
-##
-{ 'enum'    : 'DisplayGLMode',
-  'data'    : [ 'off', 'on', 'core', 'es' ] }
-
-##
 # @DisplayCurses:
 #
 # Curses display options.
@@ -1493,10 +1177,6 @@
 #
 # @sdl: The SDL user interface.
 #
-# @egl-headless: No user interface, offload GL operations to a local
-#     DRI device.  Graphical display need to be paired with VNC or
-#     Spice.  (Since 3.1)
-#
 # @curses: Display video output via curses.  For graphics device
 #     models which support a text mode, QEMU can display this output
 #     using a curses/ncurses interface.  Nothing is displayed when the
@@ -1506,12 +1186,6 @@
 #
 # @cocoa: The Cocoa user interface.
 #
-# @spice-app: Set up a Spice server and run the default associated
-#     application to connect to it.  The server will redirect the
-#     serial console and QEMU monitors.  (Since 4.0)
-#
-# @dbus: Start a D-Bus service for the display.  (Since 7.0)
-#
 # Since: 2.12
 ##
 { 'enum'    : 'DisplayType',
@@ -1520,11 +1194,8 @@
     { 'name': 'none' },
     { 'name': 'gtk', 'if': 'CONFIG_GTK' },
     { 'name': 'sdl', 'if': 'CONFIG_SDL' },
-    { 'name': 'egl-headless', 'if': 'CONFIG_OPENGL' },
     { 'name': 'curses', 'if': 'CONFIG_CURSES' },
-    { 'name': 'cocoa', 'if': 'CONFIG_COCOA' },
-    { 'name': 'spice-app', 'if': 'CONFIG_SPICE' },
-    { 'name': 'dbus', 'if': 'CONFIG_DBUS_DISPLAY' }
+    { 'name': 'cocoa', 'if': 'CONFIG_COCOA' }
   ]
 }
 
@@ -1544,24 +1215,18 @@
 # @show-cursor: Force showing the mouse cursor (default: off).
 #     (since: 5.0)
 #
-# @gl: Enable OpenGL support (default: off).
-#
 # Since: 2.12
 ##
 { 'union'   : 'DisplayOptions',
   'base'    : { 'type'           : 'DisplayType',
                 '*full-screen'   : 'bool',
                 '*window-close'  : 'bool',
-                '*show-cursor'   : 'bool',
-                '*gl'            : 'DisplayGLMode' },
+                '*show-cursor'   : 'bool' },
   'discriminator' : 'type',
   'data'    : {
       'gtk': { 'type': 'DisplayGTK', 'if': 'CONFIG_GTK' },
       'cocoa': { 'type': 'DisplayCocoa', 'if': 'CONFIG_COCOA' },
       'curses': { 'type': 'DisplayCurses', 'if': 'CONFIG_CURSES' },
-      'egl-headless': { 'type': 'DisplayEGLHeadless',
-                        'if': 'CONFIG_OPENGL' },
-      'dbus': { 'type': 'DisplayDBus', 'if': 'CONFIG_DBUS_DISPLAY' },
       'sdl': { 'type': 'DisplaySDL', 'if': 'CONFIG_SDL' }
   }
 }
@@ -1689,34 +1354,3 @@
 { 'command': 'display-update',
   'data': 'DisplayUpdateOptions',
   'boxed' : true }
-
-##
-# @client_migrate_info:
-#
-# Set migration information for remote display.  This makes the server
-# ask the client to automatically reconnect using the new parameters
-# once migration finished successfully.  Only implemented for SPICE.
-#
-# @protocol: must be "spice"
-#
-# @hostname: migration target hostname
-#
-# @port: spice tcp port for plaintext channels
-#
-# @tls-port: spice tcp port for tls-secured channels
-#
-# @cert-subject: server certificate subject
-#
-# Since: 0.14
-#
-# .. qmp-example::
-#
-#     -> { "execute": "client_migrate_info",
-#          "arguments": { "protocol": "spice",
-#                         "hostname": "virt42.lab.kraxel.org",
-#                         "port": 1234 } }
-#     <- { "return": {} }
-##
-{ 'command': 'client_migrate_info',
-  'data': { 'protocol': 'str', 'hostname': 'str', '*port': 'int',
-            '*tls-port': 'int', '*cert-subject': 'str' } }

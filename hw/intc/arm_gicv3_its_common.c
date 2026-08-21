@@ -20,50 +20,10 @@
 
 #include "qemu/osdep.h"
 #include "hw/pci/msi.h"
-#include "migration/vmstate.h"
 #include "hw/intc/arm_gicv3_its_common.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
 #include "system/kvm.h"
-
-static int gicv3_its_pre_save(void *opaque)
-{
-    GICv3ITSState *s = (GICv3ITSState *)opaque;
-    GICv3ITSCommonClass *c = ARM_GICV3_ITS_COMMON_GET_CLASS(s);
-
-    if (c->pre_save) {
-        c->pre_save(s);
-    }
-
-    return 0;
-}
-
-static int gicv3_its_post_load(void *opaque, int version_id)
-{
-    GICv3ITSState *s = (GICv3ITSState *)opaque;
-    GICv3ITSCommonClass *c = ARM_GICV3_ITS_COMMON_GET_CLASS(s);
-
-    if (c->post_load) {
-        c->post_load(s);
-    }
-    return 0;
-}
-
-static const VMStateDescription vmstate_its = {
-    .name = "arm_gicv3_its",
-    .pre_save = gicv3_its_pre_save,
-    .post_load = gicv3_its_post_load,
-    .priority = MIG_PRI_GICV3_ITS,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(ctlr, GICv3ITSState),
-        VMSTATE_UINT32(iidr, GICv3ITSState),
-        VMSTATE_UINT64(cbaser, GICv3ITSState),
-        VMSTATE_UINT64(cwriter, GICv3ITSState),
-        VMSTATE_UINT64(creadr, GICv3ITSState),
-        VMSTATE_UINT64_ARRAY(baser, GICv3ITSState, 8),
-        VMSTATE_END_OF_LIST()
-    },
-};
 
 static MemTxResult gicv3_its_trans_read(void *opaque, hwaddr offset,
                                         uint64_t *data, unsigned size,
@@ -141,7 +101,6 @@ static void gicv3_its_common_class_init(ObjectClass *klass, const void *data)
     ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     rc->phases.hold = gicv3_its_common_reset_hold;
-    dc->vmsd = &vmstate_its;
 }
 
 static const TypeInfo gicv3_its_common_info = {

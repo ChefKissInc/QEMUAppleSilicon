@@ -145,7 +145,6 @@ SectionEnd
 Section "Tools" SectionTools
     SetOutPath "$INSTDIR"
     File "${BINDIR}\qemu-img.exe"
-    File "${BINDIR}\qemu-io.exe"
 SectionEnd
 
 SectionGroup "System Emulations" SectionSystem
@@ -201,7 +200,6 @@ Section "Uninstall"
     Delete "$INSTDIR\*.rom"
     Delete "$INSTDIR\openbios-*"
     Delete "$INSTDIR\qemu-img.exe"
-    Delete "$INSTDIR\qemu-io.exe"
     Delete "$INSTDIR\qemu.exe"
     Delete "$INSTDIR\qemu-system-*.exe"
     RMDir /r "$INSTDIR\dtb"

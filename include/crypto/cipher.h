@@ -36,7 +36,7 @@ typedef struct QCryptoCipherDriver QCryptoCipherDriver;
  * and decryption of data, with a standard API, regardless of the
  * algorithm used. It further isolates the calling code from the
  * details of the specific underlying implementation, whether
- * built-in, libgcrypt or nettle.
+ * built-in or nettle.
  *
  * Each QCryptoCipher object is capable of performing both
  * encryption and decryption, and can operate in a number

@@ -20,10 +20,8 @@ system_ss.add_all(tcg_ss)
 
 system_ss.add(files(
   'cputlb.c',
-  'icount-common.c',
   'monitor.c',
   'tcg-accel-ops.c',
-  'tcg-accel-ops-icount.c',
   'tcg-accel-ops-mttcg.c',
   'tcg-accel-ops-rr.c',
   'watchpoint.c',

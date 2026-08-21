@@ -205,19 +205,11 @@ typedef struct IOMMUTLBEvent {
 /* RAM is mmap-ed with MAP_SHARED */
 #define RAM_SHARED     (1 << 1)
 
-/* Only a portion of RAM (used_length) is actually used, and migrated.
- * Resizing RAM while migrating can result in the migration being canceled.
- */
-#define RAM_RESIZEABLE (1 << 2)
-
 /* UFFDIO_ZEROPAGE is available on this RAMBlock to atomically
  * zero the page and wake waiting processes.
  * (Set during postcopy)
  */
 #define RAM_UF_ZEROPAGE (1 << 3)
-
-/* RAM can be migrated */
-#define RAM_MIGRATABLE (1 << 4)
 
 /* RAM is a persistent kind memory */
 #define RAM_PMEM (1 << 5)
@@ -248,9 +240,6 @@ typedef struct IOMMUTLBEvent {
 
 /* RAM FD is opened read-only */
 #define RAM_READONLY_FD (1 << 11)
-
-/* RAM can be private that has kvm guest memfd backend */
-#define RAM_GUEST_MEMFD   (1 << 12)
 
 /*
  * In RAMBlock creation functions, if MAP_SHARED is 0 in the flags parameter,
@@ -607,13 +596,6 @@ typedef int (*ReplayRamDiscardState)(MemoryRegionSection *section,
  * remain discarded from silently getting populated and consuming memory.
  * Technologies that support discarding of RAM don't have to bother and can
  * simply map the whole #MemoryRegion.
- *
- * An example #RamDiscardManager is virtio-mem, which logically (un)plugs
- * memory within an assigned RAM #MemoryRegion, coordinated with the VM.
- * Logically unplugging memory consists of discarding RAM. The VM agreed to not
- * access unplugged (discarded) memory - especially via DMA. virtio-mem will
- * properly coordinate with listeners before memory is plugged (populated),
- * and after memory is unplugged (discarded).
  *
  * Listeners are called in multiples of the minimum granularity (unless it
  * would exceed the registered range) and changes are aligned to the minimum
@@ -1354,8 +1336,7 @@ void memory_region_init_io(MemoryRegion *mr,
  * @name: Region name, becomes part of RAMBlock name used in migration stream
  *        must be unique within any device
  * @size: size of the region.
- * @ram_flags: RamBlock flags. Supported flags: RAM_SHARED, RAM_NORESERVE,
- *             RAM_GUEST_MEMFD.
+ * @ram_flags: RamBlock flags. Supported flags: RAM_SHARED, RAM_NORESERVE.
  * @errp: pointer to Error*, to store an error if it happens.
  *
  * Note that this function does not do anything to cause the data in the
@@ -1370,38 +1351,6 @@ bool memory_region_init_ram_flags_nomigrate(MemoryRegion *mr,
                                             uint32_t ram_flags,
                                             Error **errp);
 
-/**
- * memory_region_init_resizeable_ram:  Initialize memory region with resizable
- *                                     RAM.  Accesses into the region will
- *                                     modify memory directly.  Only an initial
- *                                     portion of this RAM is actually used.
- *                                     Changing the size while migrating
- *                                     can result in the migration being
- *                                     canceled.
- *
- * @mr: the #MemoryRegion to be initialized.
- * @owner: the object that tracks the region's reference count
- * @name: Region name, becomes part of RAMBlock name used in migration stream
- *        must be unique within any device
- * @size: used size of the region.
- * @max_size: max size of the region.
- * @resized: callback to notify owner about used size change.
- * @errp: pointer to Error*, to store an error if it happens.
- *
- * Note that this function does not do anything to cause the data in the
- * RAM memory region to be migrated; that is the responsibility of the caller.
- *
- * Return: true on success, else false setting @errp with error.
- */
-bool memory_region_init_resizeable_ram(MemoryRegion *mr,
-                                       Object *owner,
-                                       const char *name,
-                                       uint64_t size,
-                                       uint64_t max_size,
-                                       void (*resized)(const char*,
-                                                       uint64_t length,
-                                                       void *host),
-                                       Error **errp);
 #ifdef CONFIG_POSIX
 
 /**
@@ -1417,7 +1366,7 @@ bool memory_region_init_resizeable_ram(MemoryRegion *mr,
  *         (getpagesize()) will be used.
  * @ram_flags: RamBlock flags. Supported flags: RAM_SHARED, RAM_PMEM,
  *             RAM_NORESERVE, RAM_PROTECTED, RAM_NAMED_FILE, RAM_READONLY,
- *             RAM_READONLY_FD, RAM_GUEST_MEMFD
+ *             RAM_READONLY_FD
  * @path: the path in which to allocate the RAM.
  * @offset: offset within the file referenced by path
  * @errp: pointer to Error*, to store an error if it happens.
@@ -1447,7 +1396,7 @@ bool memory_region_init_ram_from_file(MemoryRegion *mr,
  * @size: size of the region.
  * @ram_flags: RamBlock flags. Supported flags: RAM_SHARED, RAM_PMEM,
  *             RAM_NORESERVE, RAM_PROTECTED, RAM_NAMED_FILE, RAM_READONLY,
- *             RAM_READONLY_FD, RAM_GUEST_MEMFD
+ *             RAM_READONLY_FD
  * @fd: the fd to mmap.
  * @offset: offset within the file referenced by fd
  * @errp: pointer to Error*, to store an error if it happens.
@@ -1575,10 +1524,7 @@ void memory_region_init_iommu(void *_iommu_mr,
  * @size: size of the region in bytes
  * @errp: pointer to Error*, to store an error if it happens.
  *
- * This function allocates RAM for a board model or device, and
- * arranges for it to be migrated (by calling vmstate_register_ram()
- * if @owner is a DeviceState, or vmstate_register_ram_global() if
- * @owner is NULL).
+ * This function allocates RAM for a board model or device.
  *
  * TODO: Currently we restrict @owner to being either NULL (for
  * global RAM regions with no owner) or devices, so that we can
@@ -1593,12 +1539,6 @@ bool memory_region_init_ram(MemoryRegion *mr,
                             const char *name,
                             uint64_t size,
                             Error **errp);
-
-bool memory_region_init_ram_guest_memfd(MemoryRegion *mr,
-                                        Object *owner,
-                                        const char *name,
-                                        uint64_t size,
-                                        Error **errp);
 
 /**
  * memory_region_init_rom: Initialize a ROM memory region.
@@ -1634,10 +1574,7 @@ bool memory_region_init_rom(MemoryRegion *mr,
  *                                 Writes are handled via callbacks.
  *
  * This function initializes a memory region backed by RAM for reads
- * and callbacks for writes, and arranges for the RAM backing to
- * be migrated (by calling vmstate_register_ram()
- * if @owner is a DeviceState, or vmstate_register_ram_global() if
- * @owner is NULL).
+ * and callbacks for writes.
  *
  * TODO: Currently we restrict @owner to being either NULL (for
  * global RAM regions with no owner) or devices, so that we can
@@ -1993,18 +1930,6 @@ MemoryRegion *memory_region_from_host(void *ptr, ram_addr_t *offset);
  * @mr: the memory region being queried.
  */
 void *memory_region_get_ram_ptr(const MemoryRegion *mr);
-
-/* memory_region_ram_resize: Resize a RAM region.
- *
- * Resizing RAM while migrating can result in the migration being canceled.
- * Care has to be taken if the guest might have already detected the memory.
- *
- * @mr: a memory region created with @memory_region_init_resizeable_ram.
- * @newsize: the new size the region
- * @errp: pointer to Error*, to store an error if it happens.
- */
-void memory_region_ram_resize(MemoryRegion *mr, ram_addr_t newsize,
-                              Error **errp);
 
 /**
  * memory_region_msync: Synchronize selected address range of
@@ -3167,8 +3092,7 @@ MemTxResult address_space_set(AddressSpace *as, hwaddr addr,
  * - Discarding parts of a RAM blocks will result in integrity issues (e.g.,
  *   encrypted VMs).
  * Technologies that only temporarily pin the current working set of a
- * driver are fine, because we don't expect such pages to be discarded
- * (esp. based on guest action like balloon inflation).
+ * driver are fine, because we don't expect such pages to be discarded.
  *
  * This is *not* to be used to protect from concurrent discards (esp.,
  * postcopy).
@@ -3209,8 +3133,5 @@ bool ram_block_discard_is_disabled(void);
  * Test if any discarding of memory in ram blocks is required to work reliably.
  */
 bool ram_block_discard_is_required(void);
-
-void ram_block_add_cpr_blocker(RAMBlock *rb, Error **errp);
-void ram_block_del_cpr_blocker(RAMBlock *rb);
 
 #endif

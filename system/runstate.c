@@ -30,14 +30,10 @@
 #include "crypto/cipher.h"
 #include "crypto/init.h"
 #include "exec/cpu-common.h"
-#include "gdbstub/syscalls.h"
 #include "hw/boards.h"
 #include "hw/resettable.h"
-#include "migration/misc.h"
-#include "migration/postcopy-ram.h"
 #include "monitor/monitor.h"
 #include "net/net.h"
-#include "net/vhost_net.h"
 #include "qapi/error.h"
 #include "qapi/qapi-commands-run-state.h"
 #include "qapi/qapi-events-run-state.h"
@@ -52,12 +48,11 @@
 #include "qom/object.h"
 #include "qom/object_interfaces.h"
 #include "system/cpus.h"
-#include "system/replay.h"
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "system/runstate-action.h"
 #include "system/system.h"
-#include "system/tpm.h"
+#include "gdbstub/syscalls.h"
 #include "trace.h"
 
 static NotifierList exit_notifiers =
@@ -75,114 +70,46 @@ typedef struct {
 } RunStateTransition;
 
 static const RunStateTransition runstate_transitions_def[] = {
-    { RUN_STATE_PRELAUNCH, RUN_STATE_INMIGRATE },
     { RUN_STATE_PRELAUNCH, RUN_STATE_SUSPENDED },
 
     { RUN_STATE_DEBUG, RUN_STATE_RUNNING },
-    { RUN_STATE_DEBUG, RUN_STATE_FINISH_MIGRATE },
     { RUN_STATE_DEBUG, RUN_STATE_PRELAUNCH },
 
-    { RUN_STATE_INMIGRATE, RUN_STATE_INTERNAL_ERROR },
-    { RUN_STATE_INMIGRATE, RUN_STATE_IO_ERROR },
-    { RUN_STATE_INMIGRATE, RUN_STATE_PAUSED },
-    { RUN_STATE_INMIGRATE, RUN_STATE_RUNNING },
-    { RUN_STATE_INMIGRATE, RUN_STATE_SHUTDOWN },
-    { RUN_STATE_INMIGRATE, RUN_STATE_SUSPENDED },
-    { RUN_STATE_INMIGRATE, RUN_STATE_WATCHDOG },
-    { RUN_STATE_INMIGRATE, RUN_STATE_GUEST_PANICKED },
-    { RUN_STATE_INMIGRATE, RUN_STATE_FINISH_MIGRATE },
-    { RUN_STATE_INMIGRATE, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_INMIGRATE, RUN_STATE_POSTMIGRATE },
-    { RUN_STATE_INMIGRATE, RUN_STATE_COLO },
-
     { RUN_STATE_INTERNAL_ERROR, RUN_STATE_PAUSED },
-    { RUN_STATE_INTERNAL_ERROR, RUN_STATE_FINISH_MIGRATE },
     { RUN_STATE_INTERNAL_ERROR, RUN_STATE_PRELAUNCH },
 
     { RUN_STATE_IO_ERROR, RUN_STATE_RUNNING },
-    { RUN_STATE_IO_ERROR, RUN_STATE_FINISH_MIGRATE },
     { RUN_STATE_IO_ERROR, RUN_STATE_PRELAUNCH },
 
     { RUN_STATE_PAUSED, RUN_STATE_RUNNING },
-    { RUN_STATE_PAUSED, RUN_STATE_FINISH_MIGRATE },
-    { RUN_STATE_PAUSED, RUN_STATE_POSTMIGRATE },
     { RUN_STATE_PAUSED, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_PAUSED, RUN_STATE_COLO},
     { RUN_STATE_PAUSED, RUN_STATE_SUSPENDED},
 
-    { RUN_STATE_POSTMIGRATE, RUN_STATE_RUNNING },
-    { RUN_STATE_POSTMIGRATE, RUN_STATE_FINISH_MIGRATE },
-    { RUN_STATE_POSTMIGRATE, RUN_STATE_PRELAUNCH },
-
     { RUN_STATE_PRELAUNCH, RUN_STATE_RUNNING },
-    { RUN_STATE_PRELAUNCH, RUN_STATE_FINISH_MIGRATE },
-    { RUN_STATE_PRELAUNCH, RUN_STATE_INMIGRATE },
-
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_RUNNING },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_PAUSED },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_POSTMIGRATE },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_COLO },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_INTERNAL_ERROR },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_IO_ERROR },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_SHUTDOWN },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_SUSPENDED },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_WATCHDOG },
-    { RUN_STATE_FINISH_MIGRATE, RUN_STATE_GUEST_PANICKED },
-
-    { RUN_STATE_RESTORE_VM, RUN_STATE_RUNNING },
-    { RUN_STATE_RESTORE_VM, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_RESTORE_VM, RUN_STATE_SUSPENDED },
-
-    { RUN_STATE_COLO, RUN_STATE_RUNNING },
-    { RUN_STATE_COLO, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_COLO, RUN_STATE_SHUTDOWN},
 
     { RUN_STATE_RUNNING, RUN_STATE_DEBUG },
     { RUN_STATE_RUNNING, RUN_STATE_INTERNAL_ERROR },
     { RUN_STATE_RUNNING, RUN_STATE_IO_ERROR },
     { RUN_STATE_RUNNING, RUN_STATE_PAUSED },
-    { RUN_STATE_RUNNING, RUN_STATE_FINISH_MIGRATE },
-    { RUN_STATE_RUNNING, RUN_STATE_RESTORE_VM },
-    { RUN_STATE_RUNNING, RUN_STATE_SAVE_VM },
     { RUN_STATE_RUNNING, RUN_STATE_SHUTDOWN },
     { RUN_STATE_RUNNING, RUN_STATE_WATCHDOG },
     { RUN_STATE_RUNNING, RUN_STATE_GUEST_PANICKED },
-    { RUN_STATE_RUNNING, RUN_STATE_COLO},
-
-    { RUN_STATE_SAVE_VM, RUN_STATE_RUNNING },
-    { RUN_STATE_SAVE_VM, RUN_STATE_SUSPENDED },
 
     { RUN_STATE_SHUTDOWN, RUN_STATE_PAUSED },
-    { RUN_STATE_SHUTDOWN, RUN_STATE_FINISH_MIGRATE },
     { RUN_STATE_SHUTDOWN, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_SHUTDOWN, RUN_STATE_COLO },
 
     { RUN_STATE_DEBUG, RUN_STATE_SUSPENDED },
     { RUN_STATE_RUNNING, RUN_STATE_SUSPENDED },
     { RUN_STATE_SUSPENDED, RUN_STATE_RUNNING },
-    { RUN_STATE_SUSPENDED, RUN_STATE_FINISH_MIGRATE },
     { RUN_STATE_SUSPENDED, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_SUSPENDED, RUN_STATE_COLO},
     { RUN_STATE_SUSPENDED, RUN_STATE_PAUSED},
-    { RUN_STATE_SUSPENDED, RUN_STATE_SAVE_VM },
-    { RUN_STATE_SUSPENDED, RUN_STATE_RESTORE_VM },
     { RUN_STATE_SUSPENDED, RUN_STATE_SHUTDOWN },
 
     { RUN_STATE_WATCHDOG, RUN_STATE_RUNNING },
-    { RUN_STATE_WATCHDOG, RUN_STATE_FINISH_MIGRATE },
     { RUN_STATE_WATCHDOG, RUN_STATE_PRELAUNCH },
-    { RUN_STATE_WATCHDOG, RUN_STATE_COLO},
 
     { RUN_STATE_GUEST_PANICKED, RUN_STATE_RUNNING },
-    { RUN_STATE_GUEST_PANICKED, RUN_STATE_FINISH_MIGRATE },
     { RUN_STATE_GUEST_PANICKED, RUN_STATE_PRELAUNCH },
-
-    { RUN_STATE__MAX, RUN_STATE__MAX },
-};
-
-static const RunStateTransition replay_play_runstate_transitions_def[] = {
-    { RUN_STATE_SHUTDOWN, RUN_STATE_RUNNING},
 
     { RUN_STATE__MAX, RUN_STATE__MAX },
 };
@@ -200,19 +127,6 @@ static void transitions_set_valid(const RunStateTransition *rst)
 
     for (p = rst; p->from != RUN_STATE__MAX; p++) {
         runstate_valid_transitions[p->from][p->to] = true;
-    }
-}
-
-void runstate_replay_enable(void)
-{
-    assert(replay_mode != REPLAY_MODE_NONE);
-
-    if (replay_mode == REPLAY_MODE_PLAY) {
-        /*
-         * When reverse-debugging, it is possible to move state from
-         * shutdown to running.
-         */
-        transitions_set_valid(&replay_play_runstate_transitions_def[0]);
     }
 }
 
@@ -466,7 +380,7 @@ static ShutdownCause qemu_reset_requested(void)
 {
     ShutdownCause r = reset_requested;
 
-    if (r && replay_checkpoint(CHECKPOINT_RESET_REQUESTED)) {
+    if (r) {
         reset_requested = SHUTDOWN_CAUSE_NONE;
         return r;
     }
@@ -476,7 +390,7 @@ static ShutdownCause qemu_reset_requested(void)
 static int qemu_suspend_requested(void)
 {
     int r = suspend_requested;
-    if (r && replay_checkpoint(CHECKPOINT_SUSPEND_REQUESTED)) {
+    if (r) {
         suspend_requested = 0;
         return r;
     }
@@ -787,7 +701,6 @@ void qemu_system_shutdown_request_with_code(ShutdownCause reason,
 void qemu_system_shutdown_request(ShutdownCause reason)
 {
     trace_qemu_system_shutdown_request(reason);
-    replay_shutdown_request(reason);
     shutdown_requested = reason;
     if (reason == SHUTDOWN_CAUSE_HOST_QMP_QUIT) {
         force_shutdown = true;
@@ -866,9 +779,7 @@ static bool main_loop_should_exit(int *status)
          * runstate can change in pause_all_vcpus()
          * as iothread mutex is unlocked
          */
-        if (!runstate_check(RUN_STATE_RUNNING) &&
-                !runstate_check(RUN_STATE_INMIGRATE) &&
-                !runstate_check(RUN_STATE_FINISH_MIGRATE)) {
+        if (!runstate_check(RUN_STATE_RUNNING)) {
             runstate_set(RUN_STATE_PRELAUNCH);
         }
     }
@@ -934,8 +845,6 @@ void qemu_init_subsystems(void)
     module_call_init(MODULE_INIT_MIGRATION);
 
     runstate_init();
-    precopy_infrastructure_init();
-    postcopy_infrastructure_init();
     monitor_init_globals();
 
     if (qcrypto_init(&err) < 0) {
@@ -955,12 +864,6 @@ void qemu_cleanup(int status)
     gdb_exit(status);
 
     /*
-     * cleaning up the migration object cancels any existing migration
-     * try to do this early so that it also stops using devices.
-     */
-    migration_shutdown();
-
-    /*
      * Close the exports before draining the block layer. The export
      * drivers may have coroutines yielding on it, so we need to clean
      * them up before the drain, as otherwise they may be get stuck in
@@ -971,7 +874,6 @@ void qemu_cleanup(int status)
 
     /* No more vcpu or device emulation activity beyond this point */
     vm_shutdown();
-    replay_finish();
 
     /*
      * We must cancel all block jobs while the block layer is drained,
@@ -986,7 +888,6 @@ void qemu_cleanup(int status)
     job_cancel_sync_all();
     bdrv_close_all();
 
-    tpm_cleanup();
     net_cleanup();
     audio_cleanup();
     monitor_cleanup();

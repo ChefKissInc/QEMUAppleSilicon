@@ -312,22 +312,6 @@ static void coroutine_fn backup_pause(Job *job)
     }
 }
 
-static void backup_set_speed(BlockJob *job, int64_t speed)
-{
-    BackupBlockJob *s = container_of(job, BackupBlockJob, common);
-
-    /*
-     * block_job_set_speed() is called first from block_job_create(), when we
-     * don't yet have s->bcs.
-     */
-    if (s->bcs) {
-        block_copy_set_speed(s->bcs, speed);
-        if (s->bg_bcs_call) {
-            block_copy_kick(s->bg_bcs_call);
-        }
-    }
-}
-
 static bool backup_cancel(Job *job, bool force)
 {
     BackupBlockJob *s = container_of(job, BackupBlockJob, common.job);
@@ -349,11 +333,10 @@ static const BlockJobDriver backup_job_driver = {
         .pause                  = backup_pause,
         .cancel                 = backup_cancel,
     },
-    .set_speed = backup_set_speed,
 };
 
 BlockJob *backup_job_create(const char *job_id, BlockDriverState *bs,
-                  BlockDriverState *target, int64_t speed,
+                  BlockDriverState *target,
                   MirrorSyncMode sync_mode, BdrvDirtyBitmap *sync_bitmap,
                   BitmapSyncMode bitmap_mode,
                   bool compress, bool discard_source,
@@ -475,7 +458,7 @@ BlockJob *backup_job_create(const char *job_id, BlockDriverState *bs,
     /* job->len is fixed, so we can't allow resize */
     job = block_job_create(job_id, &backup_job_driver, txn, cbw,
                            0, BLK_PERM_ALL,
-                           speed, creation_flags, cb, opaque, errp);
+                           creation_flags, cb, opaque, errp);
     if (!job) {
         goto error;
     }
@@ -495,7 +478,6 @@ BlockJob *backup_job_create(const char *job_id, BlockDriverState *bs,
 
     block_copy_set_copy_opts(bcs, perf->use_copy_range, compress);
     block_copy_set_progress_meter(bcs, &job->common.job.progress);
-    block_copy_set_speed(bcs, speed);
 
     /* Required permissions are taken by copy-before-write filter target */
     bdrv_graph_wrlock_drained();

@@ -24,7 +24,6 @@
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/registerfields.h"
-#include "migration/vmstate.h"
 #include "qemu/cutils.h"
 #include "qemu/log.h"
 #include "system/dma.h"
@@ -115,45 +114,9 @@ typedef struct {
     ADPV4GenPipeState state;
 } ADPV4GenPipe;
 
-static const VMStateDescription vmstate_adp_v4_gp = {
-    .name = "ADPV4GenPipe",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT8(index, ADPV4GenPipe),
-            VMSTATE_UINT32(state.config_control, ADPV4GenPipe),
-            VMSTATE_UINT32(state.pixel_format, ADPV4GenPipe),
-            VMSTATE_UINT16(state.dest_width, ADPV4GenPipe),
-            VMSTATE_UINT16(state.dest_height, ADPV4GenPipe),
-            VMSTATE_UINT32(state.data_start, ADPV4GenPipe),
-            VMSTATE_UINT32(state.data_end, ADPV4GenPipe),
-            VMSTATE_UINT32(state.stride, ADPV4GenPipe),
-            VMSTATE_UINT16(state.src_width, ADPV4GenPipe),
-            VMSTATE_UINT16(state.src_height, ADPV4GenPipe),
-            VMSTATE_UINT32(state.buf_len, ADPV4GenPipe),
-            VMSTATE_UINT32(state.buf_capacity, ADPV4GenPipe),
-            VMSTATE_VBUFFER_ALLOC_UINT32(state.buf, ADPV4GenPipe, 0, NULL,
-                                         state.buf_capacity),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 typedef struct {
     uint32_t layer_config[ADP_V4_LAYER_COUNT];
 } ADPV4BlendUnitState;
-
-static const VMStateDescription vmstate_adp_v4_blend_unit = {
-    .name = "ADPV4BlendUnitState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32_ARRAY(layer_config, ADPV4BlendUnitState,
-                                 ADP_V4_LAYER_COUNT),
-            VMSTATE_END_OF_LIST(),
-        },
-};
 
 struct AppleDisplayPipeV4State {
     /*< private >*/
@@ -177,26 +140,6 @@ struct AppleDisplayPipeV4State {
     QemuConsole *console;
     QEMUBH *update_disp_image_bh;
     QEMUTimer *boot_splash_timer;
-};
-
-static const VMStateDescription vmstate_adp_v4 = {
-    .name = "AppleDisplayPipeV4State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(width, AppleDisplayPipeV4State),
-            VMSTATE_UINT32(height, AppleDisplayPipeV4State),
-            VMSTATE_UINT32(int_status, AppleDisplayPipeV4State),
-            VMSTATE_UINT32(int_enable, AppleDisplayPipeV4State),
-            VMSTATE_STRUCT_ARRAY(genpipe, AppleDisplayPipeV4State,
-                                 ADP_V4_GP_COUNT, 0, vmstate_adp_v4_gp,
-                                 ADPV4GenPipe),
-            VMSTATE_STRUCT(blend_unit, AppleDisplayPipeV4State, 0,
-                           vmstate_adp_v4_blend_unit, ADPV4BlendUnitState),
-            VMSTATE_TIMER_PTR(boot_splash_timer, AppleDisplayPipeV4State),
-            VMSTATE_END_OF_LIST(),
-        },
 };
 
 // clang-format off
@@ -871,7 +814,6 @@ static void adp_v4_class_init(ObjectClass *klass, const void *data)
     dc->desc = "Apple Display Pipe V4";
     device_class_set_props(dc, adp_v4_props);
     dc->realize = adp_v4_realize;
-    dc->vmsd = &vmstate_adp_v4;
     set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
 }
 

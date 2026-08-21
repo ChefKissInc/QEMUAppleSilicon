@@ -3,18 +3,11 @@
 
 #include "hw/pci/pci.h"
 #include "hw/pci/pcie.h"
-#include "hw/pci/pcie_doe.h"
 
 #define TYPE_PCI_DEVICE "pci-device"
 typedef struct PCIDeviceClass PCIDeviceClass;
 DECLARE_OBJ_CHECKERS(PCIDevice, PCIDeviceClass,
                      PCI_DEVICE, TYPE_PCI_DEVICE)
-
-/*
- * Implemented by devices that can be plugged on CXL buses. In the spec, this is
- * actually a "CXL Component, but we name it device to match the PCI naming.
- */
-#define INTERFACE_CXL_DEVICE "cxl-device"
 
 /* Implemented by devices that can be plugged on PCI Express buses */
 #define INTERFACE_PCIE_DEVICE "pci-express-device"
@@ -38,8 +31,6 @@ struct PCIDeviceClass {
     uint16_t subsystem_id;              /* only for header type = 0 */
 
     const char *romfile;                /* rom bar */
-
-    bool sriov_vf_user_creatable;
 };
 
 enum PCIReqIDType {
@@ -137,8 +128,6 @@ struct PCIDevice {
     unsigned *msix_entry_used;
     /* MSIX function mask set or MSIX disabled */
     bool msix_function_masked;
-    /* Version id needed for VMState */
-    int32_t version_id;
 
     /* Offset of MSI capability in config space */
     uint8_t msi_cap;
@@ -149,13 +138,6 @@ struct PCIDevice {
     /* SHPC */
     SHPCDevice *shpc;
 
-    /* Location of option rom */
-    char *romfile;
-    uint32_t romsize;
-    bool has_rom;
-    MemoryRegion rom;
-    int32_t rom_bar;
-
     /* INTx routing notifier */
     PCIINTxRoutingNotifier intx_routing_notifier;
 
@@ -163,12 +145,6 @@ struct PCIDevice {
     MSIVectorUseNotifier msix_vector_use_notifier;
     MSIVectorReleaseNotifier msix_vector_release_notifier;
     MSIVectorPollNotifier msix_vector_poll_notifier;
-
-    /* SPDM */
-    uint16_t spdm_port;
-
-    /* DOE */
-    DOECap doe_spdm;
 
     /* ID of standby device in net_failover pair */
     char *failover_pair_id;
@@ -180,18 +156,11 @@ struct PCIDevice {
      * realizing the device.
      */
     uint32_t max_bounce_buffer_size;
-
-    char *sriov_pf;
 };
 
 static inline int pci_intx(PCIDevice *pci_dev)
 {
     return pci_get_byte(pci_dev->config + PCI_INTERRUPT_PIN) - 1;
-}
-
-static inline bool pci_is_cxl(const PCIDevice *d)
-{
-    return (d->cap_present & QEMU_PCIE_CAP_CXL) != 0;
 }
 
 static inline bool pci_is_express(const PCIDevice *d)
@@ -210,11 +179,6 @@ static inline bool pci_is_express_downstream_port(const PCIDevice *d)
     type = pcie_cap_get_type(d);
 
     return type == PCI_EXP_TYPE_DOWNSTREAM || type == PCI_EXP_TYPE_ROOT_PORT;
-}
-
-static inline bool pci_is_vf(const PCIDevice *d)
-{
-    return d->sriov_pf || d->exp.sriov_vf.pf != NULL;
 }
 
 static inline uint32_t pci_config_size(const PCIDevice *d)
@@ -349,24 +313,6 @@ static inline void pci_dma_sglist_init(QEMUSGList *qsg, PCIDevice *dev,
                                        int alloc_hint)
 {
     qemu_sglist_init(qsg, DEVICE(dev), alloc_hint, pci_get_address_space(dev));
-}
-
-extern const VMStateDescription vmstate_pci_device;
-
-#define VMSTATE_PCI_DEVICE(_field, _state) {                         \
-    .name       = (stringify(_field)),                               \
-    .size       = sizeof(PCIDevice),                                 \
-    .vmsd       = &vmstate_pci_device,                               \
-    .flags      = VMS_STRUCT,                                        \
-    .offset     = vmstate_offset_value(_state, _field, PCIDevice),   \
-}
-
-#define VMSTATE_PCI_DEVICE_POINTER(_field, _state) {                 \
-    .name       = (stringify(_field)),                               \
-    .size       = sizeof(PCIDevice),                                 \
-    .vmsd       = &vmstate_pci_device,                               \
-    .flags      = VMS_STRUCT | VMS_POINTER,                          \
-    .offset     = vmstate_offset_pointer(_state, _field, PCIDevice), \
 }
 
 #endif

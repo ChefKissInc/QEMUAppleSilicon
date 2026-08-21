@@ -353,10 +353,6 @@ AudiodevPerDirectionOptions *glue(audio_get_pdo_, TYPE)(Audiodev *dev)
         return qapi_AudiodevCoreaudioPerDirectionOptions_base(
             dev->u.coreaudio.TYPE);
 #endif
-#ifdef CONFIG_DBUS_DISPLAY
-    case AUDIODEV_DRIVER_DBUS:
-        return dev->u.dbus.TYPE;
-#endif
 #ifdef CONFIG_AUDIO_DSOUND
     case AUDIODEV_DRIVER_DSOUND:
         return dev->u.dsound.TYPE;
@@ -384,10 +380,6 @@ AudiodevPerDirectionOptions *glue(audio_get_pdo_, TYPE)(Audiodev *dev)
 #ifdef CONFIG_AUDIO_SNDIO
     case AUDIODEV_DRIVER_SNDIO:
         return dev->u.sndio.TYPE;
-#endif
-#ifdef CONFIG_SPICE
-    case AUDIODEV_DRIVER_SPICE:
-        return dev->u.spice.TYPE;
 #endif
     case AUDIODEV_DRIVER_WAV:
         return dev->u.wav.TYPE;

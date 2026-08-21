@@ -108,106 +108,6 @@ static inline long vfp_f16_offset(unsigned reg, bool top)
 }
 
 /*
- * Generate code for M-profile lazy FP state preservation if needed;
- * this corresponds to the pseudocode PreserveFPState() function.
- */
-static void gen_preserve_fp_state(DisasContext *s, bool skip_context_update)
-{
-    if (s->v7m_lspact) {
-        /*
-         * Lazy state saving affects external memory and also the NVIC,
-         * so we must mark it as an IO operation for icount (and cause
-         * this to be the last insn in the TB).
-         */
-        if (translator_io_start(&s->base)) {
-            s->base.is_jmp = DISAS_UPDATE_EXIT;
-        }
-        gen_helper_v7m_preserve_fp_state(tcg_env);
-        /*
-         * If the preserve_fp_state helper doesn't throw an exception
-         * then it will clear LSPACT; we don't need to repeat this for
-         * any further FP insns in this TB.
-         */
-        s->v7m_lspact = false;
-        /*
-         * The helper might have zeroed VPR, so we do not know the
-         * correct value for the MVE_NO_PRED TB flag any more.
-         * If we're about to create a new fp context then that
-         * will precisely determine the MVE_NO_PRED value (see
-         * gen_update_fp_context()). Otherwise, we must:
-         *  - set s->mve_no_pred to false, so this instruction
-         *    is generated to use helper functions
-         *  - end the TB now, without chaining to the next TB
-         */
-        if (skip_context_update || !s->v7m_new_fp_ctxt_needed) {
-            s->mve_no_pred = false;
-            s->base.is_jmp = DISAS_UPDATE_NOCHAIN;
-        }
-    }
-}
-
-/*
- * Generate code for M-profile FP context handling: update the
- * ownership of the FP context, and create a new context if
- * necessary. This corresponds to the parts of the pseudocode
- * ExecuteFPCheck() after the initial PreserveFPState() call.
- */
-static void gen_update_fp_context(DisasContext *s)
-{
-    /* Update ownership of FP context: set FPCCR.S to match current state */
-    if (s->v8m_fpccr_s_wrong) {
-        TCGv_i32 tmp;
-
-        tmp = load_cpu_field(v7m.fpccr[M_REG_S]);
-        if (s->v8m_secure) {
-            tcg_gen_ori_i32(tmp, tmp, R_V7M_FPCCR_S_MASK);
-        } else {
-            tcg_gen_andi_i32(tmp, tmp, ~R_V7M_FPCCR_S_MASK);
-        }
-        store_cpu_field(tmp, v7m.fpccr[M_REG_S]);
-        /* Don't need to do this for any further FP insns in this TB */
-        s->v8m_fpccr_s_wrong = false;
-    }
-
-    if (s->v7m_new_fp_ctxt_needed) {
-        /*
-         * Create new FP context by updating CONTROL.FPCA, CONTROL.SFPA,
-         * the FPSCR, and VPR.
-         */
-        TCGv_i32 control, fpscr;
-        uint32_t bits = R_V7M_CONTROL_FPCA_MASK;
-
-        fpscr = load_cpu_field(v7m.fpdscr[s->v8m_secure]);
-        gen_helper_vfp_set_fpscr(tcg_env, fpscr);
-        if (dc_isar_feature(aa32_mve, s)) {
-            store_cpu_field(tcg_constant_i32(0), v7m.vpr);
-        }
-        /*
-         * We just updated the FPSCR and VPR. Some of this state is cached
-         * in the MVE_NO_PRED TB flag. We want to avoid having to end the
-         * TB here, which means we need the new value of the MVE_NO_PRED
-         * flag to be exactly known here and the same for all executions.
-         * Luckily FPDSCR.LTPSIZE is always constant 4 and the VPR is
-         * always set to 0, so the new MVE_NO_PRED flag is always 1
-         * if and only if we have MVE.
-         *
-         * (The other FPSCR state cached in TB flags is VECLEN and VECSTRIDE,
-         * but those do not exist for M-profile, so are not relevant here.)
-         */
-        s->mve_no_pred = dc_isar_feature(aa32_mve, s);
-
-        if (s->v8m_secure) {
-            bits |= R_V7M_CONTROL_SFPA_MASK;
-        }
-        control = load_cpu_field(v7m.control[M_REG_S]);
-        tcg_gen_ori_i32(control, control, bits);
-        store_cpu_field(control, v7m.control[M_REG_S]);
-        /* Don't need to do this for any further FP insns in this TB */
-        s->v7m_new_fp_ctxt_needed = false;
-    }
-}
-
-/*
  * Check that VFP access is enabled, A-profile specific version.
  *
  * If VFP is enabled, return true. If not, emit code to generate an
@@ -247,46 +147,9 @@ static bool vfp_access_check_a(DisasContext *s, bool ignore_vfp_enabled)
     }
 
     if (!s->vfp_enabled && !ignore_vfp_enabled) {
-        assert(!arm_dc_feature(s, ARM_FEATURE_M));
         unallocated_encoding(s);
         return false;
     }
-    return true;
-}
-
-/*
- * Check that VFP access is enabled, M-profile specific version.
- *
- * If VFP is enabled, do the necessary M-profile lazy-FP handling and then
- * return true. If not, emit code to generate an appropriate exception and
- * return false.
- * skip_context_update is true to skip the "update FP context" part of this.
- */
-bool vfp_access_check_m(DisasContext *s, bool skip_context_update)
-{
-    if (s->fp_excp_el) {
-        /*
-         * M-profile mostly catches the "FPU disabled" case early, in
-         * disas_m_nocp(), but a few insns (eg LCTP, WLSTP, DLSTP)
-         * which do coprocessor-checks are outside the large ranges of
-         * the encoding space handled by the patterns in m-nocp.decode,
-         * and for them we may need to raise NOCP here.
-         */
-        gen_exception_insn_el(s, 0, EXCP_NOCP,
-                              syn_uncategorized(), s->fp_excp_el);
-        return false;
-    }
-
-    /* Handle M-profile lazy FP state mechanics */
-
-    /* Trigger lazy-state preservation if necessary */
-    gen_preserve_fp_state(s, skip_context_update);
-
-    if (!skip_context_update) {
-        /* Update ownership of FP context and create new FP context if needed */
-        gen_update_fp_context(s);
-    }
-
     return true;
 }
 
@@ -296,11 +159,7 @@ bool vfp_access_check_m(DisasContext *s, bool skip_context_update)
  */
 bool vfp_access_check(DisasContext *s)
 {
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        return vfp_access_check_m(s, false);
-    } else {
-        return vfp_access_check_a(s, false);
-    }
+    return vfp_access_check_a(s, false);
 }
 
 static bool trans_VSEL(DisasContext *s, arg_VSEL *a)
@@ -574,63 +433,18 @@ static bool trans_VCVT(DisasContext *s, arg_VCVT *a)
     return true;
 }
 
-bool mve_skip_vmov(DisasContext *s, int vn, int index, int size)
-{
-    /*
-     * In a CPU with MVE, the VMOV (vector lane to general-purpose register)
-     * and VMOV (general-purpose register to vector lane) insns are not
-     * predicated, but they are subject to beatwise execution if they are
-     * not in an IT block.
-     *
-     * Since our implementation always executes all 4 beats in one tick,
-     * this means only that if PSR.ECI says we should not be executing
-     * the beat corresponding to the lane of the vector register being
-     * accessed then we should skip performing the move, and that we need
-     * to do the usual check for bad ECI state and advance of ECI state.
-     *
-     * Note that if PSR.ECI is non-zero then we cannot be in an IT block.
-     *
-     * Return true if this VMOV scalar <-> gpreg should be skipped because
-     * the MVE PSR.ECI state says we skip the beat where the store happens.
-     */
-
-    /* Calculate the byte offset into Qn which we're going to access */
-    int ofs = (index << size) + ((vn & 1) * 8);
-
-    if (!dc_isar_feature(aa32_mve, s)) {
-        return false;
-    }
-
-    switch (s->eci) {
-    case ECI_NONE:
-        return false;
-    case ECI_A0:
-        return ofs < 4;
-    case ECI_A0A1:
-        return ofs < 8;
-    case ECI_A0A1A2:
-    case ECI_A0A1A2B0:
-        return ofs < 12;
-    default:
-        assert_not_reached();
-    }
-}
-
 static bool trans_VMOV_to_gp(DisasContext *s, arg_VMOV_to_gp *a)
 {
     /* VMOV scalar to general purpose register */
     TCGv_i32 tmp;
 
     /*
-     * SIZE == MO_32 is a VFP instruction; otherwise NEON. MVE has
-     * all sizes, whether the CPU has fp or not.
+     * SIZE == MO_32 is a VFP instruction; otherwise NEON.
      */
-    if (!dc_isar_feature(aa32_mve, s)) {
-        if (a->size == MO_32
-            ? !dc_isar_feature(aa32_fpsp_v2, s)
-            : !arm_dc_feature(s, ARM_FEATURE_NEON)) {
-            return false;
-        }
+    if (a->size == MO_32
+        ? !dc_isar_feature(aa32_fpsp_v2, s)
+        : !arm_dc_feature(s, ARM_FEATURE_NEON)) {
+        return false;
     }
 
     /* UNDEF accesses to D16-D31 if they don't exist */
@@ -638,26 +452,15 @@ static bool trans_VMOV_to_gp(DisasContext *s, arg_VMOV_to_gp *a)
         return false;
     }
 
-    if (dc_isar_feature(aa32_mve, s)) {
-        if (!mve_eci_check(s)) {
-            return true;
-        }
-    }
-
     if (!vfp_access_check(s)) {
         return true;
     }
 
-    if (!mve_skip_vmov(s, a->vn, a->index, a->size)) {
-        tmp = tcg_temp_new_i32();
-        read_neon_element32(tmp, a->vn, a->index,
-                            a->size | (a->u ? 0 : MO_SIGN));
-        store_reg(s, a->rt, tmp);
-    }
+    tmp = tcg_temp_new_i32();
+    read_neon_element32(tmp, a->vn, a->index,
+                        a->size | (a->u ? 0 : MO_SIGN));
+    store_reg(s, a->rt, tmp);
 
-    if (dc_isar_feature(aa32_mve, s)) {
-        mve_update_and_store_eci(s);
-    }
     return true;
 }
 
@@ -670,12 +473,10 @@ static bool trans_VMOV_from_gp(DisasContext *s, arg_VMOV_from_gp *a)
      * SIZE == MO_32 is a VFP instruction; otherwise NEON. MVE has
      * all sizes, whether the CPU has fp or not.
      */
-    if (!dc_isar_feature(aa32_mve, s)) {
-        if (a->size == MO_32
-            ? !dc_isar_feature(aa32_fpsp_v2, s)
-            : !arm_dc_feature(s, ARM_FEATURE_NEON)) {
-            return false;
-        }
+    if (a->size == MO_32
+        ? !dc_isar_feature(aa32_fpsp_v2, s)
+        : !arm_dc_feature(s, ARM_FEATURE_NEON)) {
+        return false;
     }
 
     /* UNDEF accesses to D16-D31 if they don't exist */
@@ -683,24 +484,13 @@ static bool trans_VMOV_from_gp(DisasContext *s, arg_VMOV_from_gp *a)
         return false;
     }
 
-    if (dc_isar_feature(aa32_mve, s)) {
-        if (!mve_eci_check(s)) {
-            return true;
-        }
-    }
-
     if (!vfp_access_check(s)) {
         return true;
     }
 
-    if (!mve_skip_vmov(s, a->vn, a->index, a->size)) {
-        tmp = load_reg(s, a->rt);
-        write_neon_element32(tmp, a->vn, a->index, a->size);
-    }
+    tmp = load_reg(s, a->rt);
+    write_neon_element32(tmp, a->vn, a->index, a->size);
 
-    if (dc_isar_feature(aa32_mve, s)) {
-        mve_update_and_store_eci(s);
-    }
     return true;
 }
 
@@ -750,11 +540,6 @@ static bool trans_VMSR_VMRS(DisasContext *s, arg_VMSR_VMRS *a)
 {
     TCGv_i32 tmp;
     bool ignore_vfp_enabled = false;
-
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        /* M profile version was already handled in m-nocp.decode */
-        return false;
-    }
 
     if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
@@ -924,7 +709,7 @@ static bool trans_VMOV_single(DisasContext *s, arg_VMOV_single *a)
 {
     TCGv_i32 tmp;
 
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -955,7 +740,7 @@ static bool trans_VMOV_64_sp(DisasContext *s, arg_VMOV_64_sp *a)
 {
     TCGv_i32 tmp;
 
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -995,7 +780,7 @@ static bool trans_VMOV_64_dp(DisasContext *s, arg_VMOV_64_dp *a)
      * floating point register.  Note that this does not require support
      * for double precision arithmetic.
      */
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -1032,7 +817,7 @@ static bool trans_VLDR_VSTR_hp(DisasContext *s, arg_VLDR_VSTR_sp *a)
     uint32_t offset;
     TCGv_i32 addr, tmp;
 
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -1064,7 +849,7 @@ static bool trans_VLDR_VSTR_sp(DisasContext *s, arg_VLDR_VSTR_sp *a)
     uint32_t offset;
     TCGv_i32 addr, tmp;
 
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -1097,7 +882,7 @@ static bool trans_VLDR_VSTR_dp(DisasContext *s, arg_VLDR_VSTR_dp *a)
     TCGv_i64 tmp;
 
     /* Note that this does not require support for double arithmetic.  */
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -1134,7 +919,7 @@ static bool trans_VLDM_VSTM_sp(DisasContext *s, arg_VLDM_VSTM_sp *a)
     TCGv_i32 addr, tmp;
     int i, n;
 
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -1163,18 +948,6 @@ static bool trans_VLDM_VSTM_sp(DisasContext *s, arg_VLDM_VSTM_sp *a)
     if (a->p) {
         /* pre-decrement */
         tcg_gen_addi_i32(addr, addr, -(a->imm << 2));
-    }
-
-    if (s->v8m_stackcheck && a->rn == 13 && a->w) {
-        /*
-         * Here 'addr' is the lowest address we will store to,
-         * and is either the old SP (if post-increment) or
-         * the new SP (if pre-decrement). For post-increment
-         * where the old value is below the limit and the new
-         * value is above, it is UNKNOWN whether the limit check
-         * triggers; we choose to trigger.
-         */
-        gen_helper_v8m_stackcheck(tcg_env, addr);
     }
 
     offset = 4;
@@ -1212,7 +985,7 @@ static bool trans_VLDM_VSTM_dp(DisasContext *s, arg_VLDM_VSTM_dp *a)
     int i, n;
 
     /* Note that this does not require support for double arithmetic.  */
-    if (!dc_isar_feature(aa32_fpsp_v2, s) && !dc_isar_feature(aa32_mve, s)) {
+    if (!dc_isar_feature(aa32_fpsp_v2, s)) {
         return false;
     }
 
@@ -1246,18 +1019,6 @@ static bool trans_VLDM_VSTM_dp(DisasContext *s, arg_VLDM_VSTM_dp *a)
     if (a->p) {
         /* pre-decrement */
         tcg_gen_addi_i32(addr, addr, -(a->imm << 2));
-    }
-
-    if (s->v8m_stackcheck && a->rn == 13 && a->w) {
-        /*
-         * Here 'addr' is the lowest address we will store to,
-         * and is either the old SP (if post-increment) or
-         * the new SP (if pre-decrement). For post-increment
-         * where the old value is below the limit and the new
-         * value is above, it is UNKNOWN whether the limit check
-         * triggers; we choose to trigger.
-         */
-        gen_helper_v8m_stackcheck(tcg_env, addr);
     }
 
     offset = 8;
@@ -2404,8 +2165,7 @@ static bool trans_VMOV_imm_dp(DisasContext *s, arg_VMOV_imm_dp *a)
     static bool trans_##INSN##_##PREC(DisasContext *s,          \
                                       arg_##INSN##_##PREC *a)   \
     {                                                           \
-        if (!dc_isar_feature(aa32_fp##PREC##_v2, s) &&          \
-            !dc_isar_feature(aa32_mve, s)) {                    \
+        if (!dc_isar_feature(aa32_fp##PREC##_v2, s)) {          \
             return false;                                       \
         }                                                       \
         return do_vfp_2op_##PREC(s, FN, a->vd, a->vm);          \

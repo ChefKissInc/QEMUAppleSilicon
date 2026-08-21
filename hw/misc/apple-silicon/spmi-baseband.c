@@ -1,7 +1,6 @@
 #include "qemu/osdep.h"
 #include "hw/irq.h"
 #include "hw/misc/apple-silicon/spmi-baseband.h"
-#include "migration/vmstate.h"
 #include "qemu/module.h"
 
 // AppleBasebandI19::spmiTimerCallback says that the only thing being
@@ -95,25 +94,12 @@ DeviceState *apple_spmi_baseband_create(AppleDTNode *node)
     return dev;
 }
 
-static const VMStateDescription vmstate_apple_spmi_baseband = {
-    .name = "apple_spmi_baseband",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT16(addr, AppleSPMIBasebandState),
-            VMSTATE_UINT8_ARRAY(reg, AppleSPMIBasebandState, 0xFFFF),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_spmi_baseband_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     SPMISlaveClass *sc = SPMI_SLAVE_CLASS(klass);
 
     dc->desc = "Apple SPMI Baseband";
-    dc->vmsd = &vmstate_apple_spmi_baseband;
 
     sc->send = apple_spmi_baseband_send;
     sc->recv = apple_spmi_baseband_recv;

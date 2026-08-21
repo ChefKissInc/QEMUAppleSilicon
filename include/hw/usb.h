@@ -201,7 +201,6 @@ typedef struct USBDescIface USBDescIface;
 typedef struct USBDescEndpoint USBDescEndpoint;
 typedef struct USBDescOther USBDescOther;
 typedef struct USBDescString USBDescString;
-typedef struct USBDescMSOS USBDescMSOS;
 
 struct USBDescString {
     uint8_t index;
@@ -227,9 +226,6 @@ struct USBEndpoint {
 
 enum USBDeviceFlags {
     USB_DEV_FLAG_IS_HOST,
-    USB_DEV_FLAG_MSOS_DESC_ENABLE,
-    USB_DEV_FLAG_MSOS_DESC_IN_USE,
-    USB_DEV_FLAG_IS_SCSI_STORAGE,
 };
 
 /* definition of a USB device */
@@ -545,16 +541,6 @@ static inline USBBus *usb_bus_from_device(USBDevice *d)
     return DO_UPCAST(USBBus, qbus, d->qdev.parent_bus);
 }
 
-extern const VMStateDescription vmstate_usb_device;
-
-#define VMSTATE_USB_DEVICE(_field, _state) {                         \
-    .name       = (stringify(_field)),                               \
-    .size       = sizeof(USBDevice),                                 \
-    .vmsd       = &vmstate_usb_device,                               \
-    .flags      = VMS_STRUCT,                                        \
-    .offset     = vmstate_offset_value(_state, _field, USBDevice),   \
-}
-
 USBDevice *usb_device_find_device(USBDevice *dev, uint8_t addr);
 
 void usb_device_cancel_packet(USBDevice *dev, USBPacket *p);
@@ -588,11 +574,6 @@ void usb_device_free_streams(USBDevice *dev, USBEndpoint **eps, int nr_eps);
 const char *usb_device_get_product_desc(USBDevice *dev);
 
 const USBDesc *usb_device_get_usb_desc(USBDevice *dev);
-
-static inline bool usb_device_is_scsi_storage(USBDevice *dev)
-{
-    return dev->flags & (1 << USB_DEV_FLAG_IS_SCSI_STORAGE);
-}
 
 /* quirks.c */
 

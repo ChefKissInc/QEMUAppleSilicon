@@ -1,4 +1,0 @@
-config SMBIOS
-    bool
-config SMBIOS_LEGACY
-    bool

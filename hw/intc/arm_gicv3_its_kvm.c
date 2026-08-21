@@ -27,7 +27,6 @@
 #include "system/runstate.h"
 #include "system/kvm.h"
 #include "kvm_arm.h"
-#include "migration/blocker.h"
 #include "qom/object.h"
 
 #define TYPE_KVM_ARM_ITS "arm-its-kvm"
@@ -111,90 +110,14 @@ static void kvm_arm_its_realize(DeviceState *dev, Error **errp)
 
     gicv3_its_init_mmio(s, NULL, NULL);
 
-    if (!kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
+    if (kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
         GITS_CTLR)) {
-        error_setg(&s->migration_blocker, "This operating system kernel "
-                   "does not support vITS migration");
-        if (migrate_add_blocker(&s->migration_blocker, errp) < 0) {
-            return;
-        }
-    } else {
         qemu_add_vm_change_state_handler(vm_change_state_handler, s);
     }
 
     kvm_msi_use_devid = true;
     kvm_gsi_direct_mapping = false;
     kvm_msi_via_irqfd_allowed = true;
-}
-
-/**
- * kvm_arm_its_pre_save - handles the saving of ITS registers.
- * ITS tables are flushed into guest RAM separately and earlier,
- * through the VM change state handler, since at the moment pre_save()
- * is called, the guest RAM has already been saved.
- */
-static void kvm_arm_its_pre_save(GICv3ITSState *s)
-{
-    int i;
-
-    for (i = 0; i < 8; i++) {
-        kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                          GITS_BASER + i * 8, &s->baser[i], false,
-                          &error_abort);
-    }
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CTLR, &s->ctlr, false, &error_abort);
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CBASER, &s->cbaser, false, &error_abort);
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CREADR, &s->creadr, false, &error_abort);
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CWRITER, &s->cwriter, false, &error_abort);
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_IIDR, &s->iidr, false, &error_abort);
-}
-
-/**
- * kvm_arm_its_post_load - Restore both the ITS registers and tables
- */
-static void kvm_arm_its_post_load(GICv3ITSState *s)
-{
-    int i;
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_IIDR, &s->iidr, true, &error_abort);
-
-    /*
-     * must be written before GITS_CREADR since GITS_CBASER write
-     * access resets GITS_CREADR.
-     */
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CBASER, &s->cbaser, true, &error_abort);
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CREADR, &s->creadr, true, &error_abort);
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CWRITER, &s->cwriter, true, &error_abort);
-
-
-    for (i = 0; i < 8; i++) {
-        kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                          GITS_BASER + i * 8, &s->baser[i], true,
-                          &error_abort);
-    }
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
-                      KVM_DEV_ARM_ITS_RESTORE_TABLES, NULL, true,
-                      &error_abort);
-
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ITS_REGS,
-                      GITS_CTLR, &s->ctlr, true, &error_abort);
 }
 
 static void kvm_arm_its_reset_hold(Object *obj, ResetType type)
@@ -251,8 +174,6 @@ static void kvm_arm_its_class_init(ObjectClass *klass, const void *data)
     resettable_class_set_parent_phases(rc, NULL, kvm_arm_its_reset_hold, NULL,
                                        &ic->parent_phases);
     icc->send_msi = kvm_its_send_msi;
-    icc->pre_save = kvm_arm_its_pre_save;
-    icc->post_load = kvm_arm_its_post_load;
 }
 
 static const TypeInfo kvm_arm_its_info = {

@@ -79,7 +79,7 @@ void qcrypto_akcipher_rsakey_export_p8info(const uint8_t *key,
     qcrypto_der_encode_ctx_flush_and_free(ctx, *dst);
 }
 
-#if defined(CONFIG_NETTLE) && defined(CONFIG_HOGWEED)
+#if defined(CONFIG_HOGWEED)
 #include "rsakey-nettle.c.inc"
 #else
 #include "rsakey-builtin.c.inc"

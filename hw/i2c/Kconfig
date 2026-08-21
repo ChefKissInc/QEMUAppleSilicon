@@ -6,51 +6,6 @@ config I2C_DEVICES
     # to any board's i2c bus
     bool
 
-config SMBUS
-    bool
-    select I2C
-
-config SMBUS_EEPROM
-    bool
-    select SMBUS
-
-config ARM_SBCON_I2C
-    bool
-    select BITBANG_I2C
-
-config ACPI_SMBUS
-    bool
-    select SMBUS
-
-config BITBANG_I2C
-    bool
-    select I2C
-
-config IMX_I2C
-    bool
-    select I2C
-
-config MPC_I2C
-    bool
-    select I2C
-
-config ALLWINNER_I2C
-    bool
-    select I2C
-
-config PCA954X
-    bool
-    select I2C
-
-config PMBUS
-    bool
-    select SMBUS
-
-config BCM2835_I2C
-    bool
-    select I2C
-
 config APPLE_I2C
     bool
-    select BITBANG_I2C
     depends on APPLE_SOC

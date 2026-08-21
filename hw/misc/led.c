@@ -7,7 +7,6 @@
  */
 #include "qemu/osdep.h"
 #include "qapi/error.h"
-#include "migration/vmstate.h"
 #include "hw/qdev-properties.h"
 #include "hw/misc/led.h"
 #include "trace.h"
@@ -73,16 +72,6 @@ static void led_reset(DeviceState *dev)
     led_set_state(s, s->gpio_active_high);
 }
 
-static const VMStateDescription vmstate_led = {
-    .name = TYPE_LED,
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8(intensity_percent, LEDState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static void led_realize(DeviceState *dev, Error **errp)
 {
     LEDState *s = LED(dev);
@@ -112,7 +101,6 @@ static void led_class_init(ObjectClass *klass, const void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->desc = "LED";
-    dc->vmsd = &vmstate_led;
     device_class_set_legacy_reset(dc, led_reset);
     dc->realize = led_realize;
     set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);

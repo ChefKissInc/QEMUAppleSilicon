@@ -153,8 +153,6 @@ CPUState *gdb_first_attached_cpu(void);
 void gdb_append_thread_id(CPUState *cpu, GString *buf);
 int gdb_get_cpu_index(CPUState *cpu);
 unsigned int gdb_get_max_cpus(void); /* both */
-bool gdb_can_reverse(void); /* system emulation, stub for user */
-int gdb_target_sigtrap(void); /* user */
 
 void gdb_create_default_process(GDBState *s);
 

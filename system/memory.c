@@ -32,7 +32,6 @@
 #include "qemu/accel.h"
 #include "accel/accel-ops.h"
 #include "hw/boards.h"
-#include "migration/vmstate.h"
 #include "system/address-spaces.h"
 
 #include "memory-internal.h"
@@ -1599,23 +1598,6 @@ bool memory_region_init_ram_flags_nomigrate(MemoryRegion *mr, Object *owner,
     return memory_region_set_ram_block(mr, rb);
 }
 
-bool memory_region_init_resizeable_ram(MemoryRegion *mr,
-                                       Object *owner,
-                                       const char *name,
-                                       uint64_t size,
-                                       uint64_t max_size,
-                                       void (*resized)(const char*,
-                                                       uint64_t length,
-                                                       void *host),
-                                       Error **errp)
-{
-    RAMBlock *rb;
-
-    memory_region_init(mr, owner, name, size);
-    rb = qemu_ram_alloc_resizeable(size, max_size, resized, mr, errp);
-    return memory_region_set_ram_block(mr, rb);
-}
-
 #if defined(CONFIG_POSIX) && !defined(EMSCRIPTEN)
 bool memory_region_init_ram_from_file(MemoryRegion *mr, Object *owner,
                                       const char *name, uint64_t size,
@@ -1641,7 +1623,7 @@ bool memory_region_init_ram_from_fd(MemoryRegion *mr, Object *owner,
 
     memory_region_init(mr, owner, name, size);
     mr->readonly = !!(ram_flags & RAM_READONLY);
-    rb = qemu_ram_alloc_from_fd(size, size, NULL, mr, ram_flags, fd, offset,
+    rb = qemu_ram_alloc_from_fd(size, size, mr, ram_flags, fd, offset,
                                 false, errp);
     return memory_region_set_ram_block(mr, rb);
 }
@@ -1815,8 +1797,7 @@ uint8_t memory_region_get_dirty_log_mask(const MemoryRegion *mr)
     uint8_t mask = mr->dirty_log_mask;
     const RAMBlock *rb = mr->ram_block;
 
-    if (global_dirty_tracking && ((rb && qemu_ram_is_migratable(rb)) ||
-                             memory_region_is_iommu(mr))) {
+    if (global_dirty_tracking && (rb || memory_region_is_iommu(mr))) {
         mask |= (1 << DIRTY_MEMORY_MIGRATION);
     }
 
@@ -2137,13 +2118,10 @@ MemoryRegion *memory_translate_iotlb(IOMMUTLBEntry *iotlb, hwaddr *xlat_p,
         };
         /*
          * Malicious VMs can map memory into the IOMMU, which is expected
-         * to remain discarded. vfio will pin all pages, populating memory.
-         * Disallow that. vmstate priorities make sure any RamDiscardManager
-         * were already restored before IOMMUs are restored.
+         * to remain discarded.
          */
         if (!ram_discard_manager_is_populated(rdm, &tmp)) {
-            error_setg(errp, "iommu map to discarded memory (e.g., unplugged"
-                         " via virtio-mem): %" HWADDR_PRIx "",
+            error_setg(errp, "iommu map to discarded memory: %" HWADDR_PRIx "",
                          iotlb->translated_addr);
             return NULL;
         }
@@ -2376,13 +2354,6 @@ MemoryRegion *memory_region_from_host(void *ptr, ram_addr_t *offset)
 ram_addr_t memory_region_get_ram_addr(const MemoryRegion *mr)
 {
     return mr->ram_block ? mr->ram_block->offset : RAM_ADDR_INVALID;
-}
-
-void memory_region_ram_resize(MemoryRegion *mr, ram_addr_t newsize, Error **errp)
-{
-    assert(mr->ram_block);
-
-    qemu_ram_resize(mr->ram_block, newsize, errp);
 }
 
 void memory_region_msync(MemoryRegion *mr, hwaddr addr, hwaddr size)
@@ -2989,13 +2960,6 @@ static void listener_add_address_space(MemoryListener *listener,
         listener->begin(listener);
     }
     if (global_dirty_tracking) {
-        /*
-         * Currently only VFIO can fail log_global_start(), and it's not
-         * yet allowed to hotplug any PCI device during migration. So this
-         * should never fail when invoked, guard it with error_abort.  If
-         * it can start to fail in the future, we need to be able to fail
-         * the whole listener_add_address_space() and its callers.
-         */
         if (listener->log_global_start) {
             listener->log_global_start(listener, &error_abort);
         }
@@ -3637,20 +3601,6 @@ void mtree_info(bool flatview, bool dispatch_tree, bool owner, bool disabled)
     }
 }
 
-static void memory_region_register_ram(MemoryRegion *mr, Object *owner)
-{
-    DeviceState *owner_dev;
-
-    /* This will assert if owner is neither NULL nor a DeviceState.
-     * We only want the owner here for the purposes of defining a
-     * unique name for migration. TODO: Ideally we should implement
-     * a naming scheme for Objects which are not DeviceStates, in
-     * which case we can relax this restriction.
-     */
-    owner_dev = DEVICE(owner);
-    vmstate_register_ram(mr, owner_dev);
-}
-
 bool memory_region_init_ram(MemoryRegion *mr, Object *owner,
                             const char *name, uint64_t size,
                             Error **errp)
@@ -3659,19 +3609,6 @@ bool memory_region_init_ram(MemoryRegion *mr, Object *owner,
                                                 errp)) {
         return false;
     }
-    memory_region_register_ram(mr, owner);
-    return true;
-}
-
-bool memory_region_init_ram_guest_memfd(MemoryRegion *mr, Object *owner,
-                                        const char *name, uint64_t size,
-                                        Error **errp)
-{
-    if (!memory_region_init_ram_flags_nomigrate(mr, owner, name, size,
-                                                RAM_GUEST_MEMFD, errp)) {
-        return false;
-    }
-    memory_region_register_ram(mr, owner);
     return true;
 }
 
@@ -3684,7 +3621,6 @@ bool memory_region_init_rom(MemoryRegion *mr, Object *owner,
         return false;
     }
     mr->readonly = true;
-    memory_region_register_ram(mr, owner);
     return true;
 }
 
@@ -3701,7 +3637,6 @@ bool memory_region_init_rom_device(MemoryRegion *mr, Object *owner,
     if (memory_region_set_ram_block(mr, rb)) {
         mr->ram = false;
         mr->rom_device = true;
-        memory_region_register_ram(mr, owner);
         return true;
     }
     return false;

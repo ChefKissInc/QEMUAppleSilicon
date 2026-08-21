@@ -46,7 +46,6 @@
 #endif
 
 #include "qapi/error.h"
-#include "migration/vmstate.h"
 #include "monitor/monitor.h"
 #include "qemu/error-report.h"
 #include "qemu/main-loop.h"
@@ -114,8 +113,6 @@ struct USBHostDevice {
 
     /* callbacks & friends */
     QEMUBH                           *bh_nodev;
-    QEMUBH                           *bh_postld;
-    bool                             bh_postld_pending;
     Notifier                         exit;
 
     /* request queues */
@@ -802,12 +799,6 @@ static void usb_host_speed_compat(USBHostDevice *s)
             for (a = 0; a < conf->interface[i].num_altsetting; a++) {
                 intf = &conf->interface[i].altsetting[a];
 
-                if (intf->bInterfaceClass == LIBUSB_CLASS_MASS_STORAGE &&
-                    intf->bInterfaceSubClass == 6) { /* SCSI */
-                    udev->flags |= (1 << USB_DEV_FLAG_IS_SCSI_STORAGE);
-                    break;
-                }
-
                 for (e = 0; e < intf->bNumEndpoints; e++) {
                     endp = &intf->endpoint[e];
                     type = endp->bmAttributes & 0x3;
@@ -954,9 +945,6 @@ static int usb_host_open(USBHostDevice *s, libusb_device *dev, int hostfd)
     int rc;
     Error *local_err = NULL;
 
-    if (s->bh_postld_pending) {
-        return -1;
-    }
     if (s->dh != NULL) {
         goto fail;
     }
@@ -1703,61 +1691,6 @@ static void usb_host_free_streams(USBDevice *udev, USBEndpoint **eps,
 #endif
 }
 
-/*
- * This is *NOT* about restoring state.  We have absolutely no idea
- * what state the host device is in at the moment and whenever it is
- * still present in the first place.  Attempting to continue where we
- * left off is impossible.
- *
- * What we are going to do here is emulate a surprise removal of
- * the usb device passed through, then kick host scan so the device
- * will get re-attached (and re-initialized by the guest) in case it
- * is still present.
- *
- * As the device removal will change the state of other devices (usb
- * host controller, most likely interrupt controller too) we have to
- * wait with it until *all* vmstate is loaded.  Thus post_load just
- * kicks a bottom half which then does the actual work.
- */
-static void usb_host_post_load_bh(void *opaque)
-{
-    USBHostDevice *dev = opaque;
-    USBDevice *udev = USB_DEVICE(dev);
-
-    if (dev->dh != NULL) {
-        usb_host_close(dev);
-    }
-    if (udev->attached) {
-        usb_device_detach(udev);
-    }
-    dev->bh_postld_pending = false;
-    usb_host_auto_check(NULL);
-}
-
-static int usb_host_post_load(void *opaque, int version_id)
-{
-    USBHostDevice *dev = opaque;
-
-    if (!dev->bh_postld) {
-        dev->bh_postld = qemu_bh_new_guarded(usb_host_post_load_bh, dev,
-                                             &DEVICE(dev)->mem_reentrancy_guard);
-    }
-    qemu_bh_schedule(dev->bh_postld);
-    dev->bh_postld_pending = true;
-    return 0;
-}
-
-static const VMStateDescription vmstate_usb_host = {
-    .name = "usb-host",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .post_load = usb_host_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_USB_DEVICE(parent_obj, USBHostDevice),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static const Property usb_host_dev_properties[] = {
     DEFINE_PROP_UINT32("hostbus",  USBHostDevice, match.bus_num,    0),
     DEFINE_PROP_UINT32("hostaddr", USBHostDevice, match.addr,       0),
@@ -1796,7 +1729,6 @@ static void usb_host_class_initfn(ObjectClass *klass, const void *data)
     uc->flush_ep_queue = usb_host_flush_ep_queue;
     uc->alloc_streams  = usb_host_alloc_streams;
     uc->free_streams   = usb_host_free_streams;
-    dc->vmsd = &vmstate_usb_host;
     device_class_set_props(dc, usb_host_dev_properties);
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
 }

@@ -238,10 +238,8 @@ struct GICv3State {
     bool security_extn;
     bool force_8bit_prio;
     bool irq_reset_nonsecure;
-    bool gicd_no_migration_shift_bug;
 
     int dev_fd; /* kvm device fd if backed by kvm vgic support */
-    Error *migration_blocker;
 
     MemoryRegion *dma;
     AddressSpace dma_as;
@@ -272,8 +270,6 @@ struct GICv3State {
     GICv3CPUState *cpu;
     /* List of all ITSes connected to this GIC */
     GPtrArray *itslist;
-
-    NotifierWithReturn cpr_notifier;
 };
 
 #define GICV3_BITMAP_ACCESSORS(BMP)                                     \
@@ -313,9 +309,6 @@ struct ARMGICv3CommonClass {
     /*< private >*/
     SysBusDeviceClass parent_class;
     /*< public >*/
-
-    void (*pre_save)(GICv3State *s);
-    void (*post_load)(GICv3State *s);
 };
 
 void gicv3_init_irqs_and_mmio(GICv3State *s, qemu_irq_handler handler,

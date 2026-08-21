@@ -744,12 +744,6 @@ struct BlockDriver {
         BlockDriverState *bs, Error **errp);
     BlockStatsSpecific *(*bdrv_get_specific_stats)(BlockDriverState *bs);
 
-    int coroutine_fn GRAPH_RDLOCK_PTR (*bdrv_co_save_vmstate)(
-        BlockDriverState *bs, QEMUIOVector *qiov, int64_t pos);
-
-    int coroutine_fn GRAPH_RDLOCK_PTR (*bdrv_co_load_vmstate)(
-        BlockDriverState *bs, QEMUIOVector *qiov, int64_t pos);
-
     int coroutine_fn (*bdrv_co_zone_report)(BlockDriverState *bs,
             int64_t offset, unsigned int *nr_zones,
             BlockZoneDescriptor *zones);

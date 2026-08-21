@@ -1,5 +1,3 @@
-# See docs/devel/tracing.rst for syntax documentation.
-
 # core.c
 usb_packet_state_change(int bus, const char *port, int ep, void *p, const char *o, const char *n) "bus %d, port %s, ep %d, packet %p, state %s -> %s"
 usb_packet_state_fault(int bus, const char *port, int ep, void *p, const char *o, const char *n) "bus %d, port %s, ep %d, packet %p, state %s, expected %s"
@@ -9,9 +7,6 @@ usb_port_claim(int bus, const char *port) "bus %d, port %s"
 usb_port_attach(int bus, const char *port, const char *devspeed, const char *portspeed) "bus %d, port %s, devspeed %s, portspeed %s"
 usb_port_detach(int bus, const char *port) "bus %d, port %s"
 usb_port_release(int bus, const char *port) "bus %d, port %s"
-
-# hcd-ohci-pci.c
-usb_ohci_exit(const char *s) "%s"
 
 # hcd-ohci.c
 usb_ohci_iso_td_read_failed(uint32_t addr) "ISO_TD read error at 0x%x"
@@ -152,11 +147,6 @@ usb_xhci_oper_write(uint32_t off, uint32_t val) "off 0x%04x, val 0x%08x"
 usb_xhci_port_write(uint32_t port, uint32_t off, uint32_t val) "port %d, off 0x%04x, val 0x%08x"
 usb_xhci_runtime_write(uint32_t off, uint32_t val) "off 0x%04x, val 0x%08x"
 usb_xhci_doorbell_write(uint32_t off, uint32_t val) "off 0x%04x, val 0x%08x"
-usb_xhci_irq_intx(uint32_t level) "level %d"
-usb_xhci_irq_msi(uint32_t nr) "nr %d"
-usb_xhci_irq_msix(uint32_t nr) "nr %d"
-usb_xhci_irq_msix_use(uint32_t nr) "nr %d"
-usb_xhci_irq_msix_unuse(uint32_t nr) "nr %d"
 usb_xhci_queue_event(uint32_t vector, uint32_t idx, const char *trb, const char *evt, uint64_t param, uint32_t status, uint32_t control) "v %d, idx %d, %s, %s, p 0x%016" PRIx64 ", s 0x%08x, c 0x%08x"
 usb_xhci_fetch_trb(uint64_t addr, const char *name, uint64_t param, uint32_t status, uint32_t control) "addr 0x%016" PRIx64 ", %s, p 0x%016" PRIx64 ", s 0x%08x, c 0x%08x"
 usb_xhci_port_reset(uint32_t port, bool warm) "port %d, warm %d"
@@ -249,7 +239,6 @@ usb_desc_config(int addr, int index, int len, int ret) "dev %d query config %d, 
 usb_desc_other_speed_config(int addr, int index, int len, int ret) "dev %d query config %d, len %d, ret %d"
 usb_desc_string(int addr, int index, int len, int ret) "dev %d query string %d, len %d, ret %d"
 usb_desc_bos(int addr, int len, int ret) "dev %d bos, len %d, ret %d"
-usb_desc_msos(int addr, int index, int len, int ret) "dev %d msos, index 0x%x, len %d, ret %d"
 usb_set_addr(int addr) "dev %d"
 usb_set_config(int addr, int config, int ret) "dev %d, config %d, ret %d"
 usb_set_interface(int addr, int iface, int alt, int ret) "dev %d, interface %d, altsetting %d, ret %d"
@@ -265,58 +254,6 @@ usb_hub_clear_port_feature(int addr, int nr, const char *f) "dev %d, port %d, fe
 usb_hub_attach(int addr, int nr) "dev %d, port %d"
 usb_hub_detach(int addr, int nr) "dev %d, port %d"
 usb_hub_status_report(int addr, int status) "dev %d, status 0x%x"
-
-# dev-storage.c
-usb_msd_reset(void) ""
-usb_msd_maxlun(unsigned maxlun) "%d"
-usb_msd_send_status(unsigned status, unsigned tag, size_t size) "status %d, tag 0x%x, len %zd"
-usb_msd_data_in(unsigned packet, unsigned remaining, unsigned total) "%d/%d (scsi %d)"
-usb_msd_data_out(unsigned packet, unsigned remaining) "%d/%d"
-usb_msd_packet_async(void) ""
-usb_msd_packet_complete(void) ""
-usb_msd_cmd_submit(unsigned lun, unsigned tag, unsigned flags, unsigned len, unsigned data_len) "lun %u, tag 0x%x, flags 0x%08x, len %d, data-len %d"
-usb_msd_cmd_complete(unsigned status, unsigned tag) "status %d, tag 0x%x"
-usb_msd_cmd_cancel(unsigned tag) "tag 0x%x"
-usb_msd_fatal_error(void) ""
-
-# dev-uas.c
-usb_uas_reset(int addr) "dev %d"
-usb_uas_command(int addr, uint16_t tag, int lun, uint32_t lun64_1, uint32_t lun64_2) "dev %d, tag 0x%x, lun %d, lun64 0x%08x-0x%08x"
-usb_uas_response(int addr, uint16_t tag, uint8_t code) "dev %d, tag 0x%x, code 0x%x"
-usb_uas_sense(int addr, uint16_t tag, uint8_t status) "dev %d, tag 0x%x, status 0x%x"
-usb_uas_read_ready(int addr, uint16_t tag) "dev %d, tag 0x%x"
-usb_uas_write_ready(int addr, uint16_t tag) "dev %d, tag 0x%x"
-usb_uas_xfer_data(int addr, uint16_t tag, uint32_t copy, uint32_t uoff, uint32_t usize, uint32_t soff, uint32_t ssize) "dev %d, tag 0x%x, copy %d, usb-pkt %d/%d, scsi-buf %d/%d"
-usb_uas_scsi_data(int addr, uint16_t tag, uint32_t bytes) "dev %d, tag 0x%x, bytes %d"
-usb_uas_scsi_complete(int addr, uint16_t tag, uint32_t status, uint32_t resid) "dev %d, tag 0x%x, status 0x%x, residue %d"
-usb_uas_tmf_abort_task(int addr, uint16_t tag, uint16_t task_tag) "dev %d, tag 0x%x, task-tag 0x%x"
-usb_uas_tmf_logical_unit_reset(int addr, uint16_t tag, int lun) "dev %d, tag 0x%x, lun %d"
-usb_uas_tmf_unsupported(int addr, uint16_t tag, uint32_t function) "dev %d, tag 0x%x, function 0x%x"
-
-# dev-mtp.c
-usb_mtp_reset(int addr) "dev %d"
-usb_mtp_command(int dev, uint16_t code, uint32_t trans, uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4) "dev %d, code 0x%x, trans 0x%x, args 0x%x, 0x%x, 0x%x, 0x%x, 0x%x"
-usb_mtp_success(int dev, uint32_t trans, uint32_t arg0, uint32_t arg1) "dev %d, trans 0x%x, args 0x%x, 0x%x"
-usb_mtp_error(int dev, uint16_t code, uint32_t trans, uint32_t arg0, uint32_t arg1) "dev %d, code 0x%x, trans 0x%x, args 0x%x, 0x%x"
-usb_mtp_data_in(int dev, uint32_t trans, uint32_t len) "dev %d, trans 0x%x, len %d"
-usb_mtp_xfer(int dev, uint32_t ep, uint32_t dlen, uint32_t plen) "dev %d, ep %d, %d/%d"
-usb_mtp_nak(int dev, uint32_t ep) "dev %d, ep %d"
-usb_mtp_stall(int dev, const char *reason) "dev %d, reason: %s"
-usb_mtp_op_get_device_info(int dev) "dev %d"
-usb_mtp_op_open_session(int dev) "dev %d"
-usb_mtp_op_close_session(int dev) "dev %d"
-usb_mtp_op_get_storage_ids(int dev) "dev %d"
-usb_mtp_op_get_storage_info(int dev) "dev %d"
-usb_mtp_op_get_num_objects(int dev, uint32_t handle, const char *path) "dev %d, handle 0x%x, path %s"
-usb_mtp_op_get_object_handles(int dev, uint32_t handle, const char *path) "dev %d, handle 0x%x, path %s"
-usb_mtp_op_get_object_info(int dev, uint32_t handle, const char *path) "dev %d, handle 0x%x, path %s"
-usb_mtp_op_get_object(int dev, uint32_t handle, const char *path) "dev %d, handle 0x%x, path %s"
-usb_mtp_op_get_partial_object(int dev, uint32_t handle, const char *path, uint32_t offset, uint32_t length) "dev %d, handle 0x%x, path %s, off %d, len %d"
-usb_mtp_op_unknown(int dev, uint32_t code) "dev %d, command code 0x%x"
-usb_mtp_object_alloc(int dev, uint32_t handle, const char *path) "dev %d, handle 0x%x, path %s"
-usb_mtp_object_free(int dev, uint32_t handle, const char *path) "dev %d, handle 0x%x, path %s"
-usb_mtp_add_child(int dev, uint32_t handle, const char *path) "dev %d, handle 0x%x, path %s"
-usb_mtp_file_monitor_event(int dev, const char *path, const char *s) "dev %d, path %s event %s"
 
 # host-libusb.c
 usb_host_open_started(int bus, int addr) "dev %d:%d"
@@ -341,38 +278,9 @@ usb_host_iso_stop(int bus, int addr, int ep) "dev %d:%d, ep %d"
 usb_host_iso_out_of_bufs(int bus, int addr, int ep) "dev %d:%d, ep %d"
 usb_host_reset(int bus, int addr) "dev %d:%d"
 usb_host_auto_scan_enabled(void)
-usb_host_auto_scan_disabled(void)
 usb_host_parse_config(int bus, int addr, int value, int active) "dev %d:%d, value %d, active %d"
 usb_host_parse_interface(int bus, int addr, int num, int alt, int active) "dev %d:%d, num %d, alt %d, active %d"
 usb_host_parse_endpoint(int bus, int addr, int ep, const char *dir, const char *type, int active) "dev %d:%d, ep %d, %s, %s, active %d"
 usb_host_parse_error(int bus, int addr, const char *errmsg) "dev %d:%d, msg %s"
 usb_host_remote_wakeup_removed(int bus, int addr) "dev %d:%d"
 
-# dev-serial.c
-usb_serial_reset(int bus, int addr) "dev %d:%u reset"
-usb_serial_handle_control(int bus, int addr, int request, int value) "dev %d:%u got control 0x%x, value 0x%x"
-usb_serial_unsupported_parity(int bus, int addr, int value) "dev %d:%u unsupported parity %d"
-usb_serial_unsupported_stopbits(int bus, int addr, int value) "dev %d:%u unsupported stop bits %d"
-usb_serial_unsupported_control(int bus, int addr, int request, int value) "dev %d:%u got unsupported/bogus control 0x%x, value 0x%x"
-usb_serial_unsupported_data_bits(int bus, int addr, int value) "dev %d:%u unsupported data bits %d, falling back to 8"
-usb_serial_bad_token(int bus, int addr) "dev %d:%u bad token"
-usb_serial_set_baud(int bus, int addr, int baud) "dev %d:%u baud rate %d"
-usb_serial_set_data(int bus, int addr, int parity, int data, int stop) "dev %d:%u parity %c, data bits %d, stop bits %d"
-usb_serial_set_flow_control(int bus, int addr, int index) "dev %d:%u flow control %d"
-usb_serial_set_xonxoff(int bus, int addr, uint8_t xon, uint8_t xoff) "dev %d:%u xon 0x%x xoff 0x%x"
-
-# canokey.c
-canokey_emu_stall_ep(uint8_t ep) "ep %d"
-canokey_emu_set_address(uint8_t addr) "addr %d"
-canokey_emu_prepare_receive(uint8_t ep, uint16_t size) "ep %d size %d"
-canokey_emu_transmit(uint8_t ep, uint16_t size) "ep %d size %d"
-canokey_thread_start(void)
-canokey_thread_stop(void)
-canokey_handle_reset(void)
-canokey_handle_control_setup(int request, int value, int index, int length) "request 0x%04X value 0x%04X index 0x%04X length 0x%04X"
-canokey_handle_control_out(void)
-canokey_handle_control_in(int actual_len) "len %d"
-canokey_handle_data_out(uint8_t ep_out, uint32_t out_len) "ep %d len %d"
-canokey_handle_data_in(uint8_t ep_in, uint32_t in_len) "ep %d len %d"
-canokey_realize(void)
-canokey_unrealize(void)

@@ -19,7 +19,6 @@ block_ss.add(files(
   'graph-lock.c',
   'io.c',
   'mirror.c',
-  'nbd.c',
   'null.c',
   'preallocate.c',
   'progress_meter.c',
@@ -36,13 +35,8 @@ block_ss.add(files(
   'reqlist.c',
   'snapshot.c',
   'snapshot-access.c',
-  'throttle.c',
-  'throttle-groups.c',
   'write-threshold.c',
 ), zstd, zlib)
-
-system_ss.add(when: 'CONFIG_TCG', if_true: files('blkreplay.c'))
-system_ss.add(files('block-ram-registrar.c'))
 
 if get_option('qcow1').allowed()
   block_ss.add(files('qcow.c'))
@@ -93,7 +87,6 @@ if host_os == 'windows'
 else
   block_ss.add(files('file-posix.c'), coref, iokit)
 endif
-block_ss.add(when: libiscsi, if_true: files('iscsi-opts.c'))
 if host_os == 'linux'
   block_ss.add(files('nvme.c'))
 endif
@@ -110,7 +103,6 @@ foreach m : [
   [blkio, 'blkio', files('blkio.c')],
   [curl, 'curl', files('curl.c')],
   [glusterfs, 'gluster', files('gluster.c')],
-  [libiscsi, 'iscsi', files('iscsi.c')],
   [libnfs, 'nfs', files('nfs.c')],
   [libssh, 'ssh', files('ssh.c')],
   [rbd, 'rbd', files('rbd.c')],

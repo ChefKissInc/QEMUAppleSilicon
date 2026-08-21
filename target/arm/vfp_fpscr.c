@@ -24,17 +24,9 @@
 
 uint32_t vfp_get_fpcr(CPUARMState *env)
 {
-    uint32_t fpcr = env->vfp.fpcr
+    return env->vfp.fpcr
         | (env->vfp.vec_len << 16)
         | (env->vfp.vec_stride << 20);
-
-    /*
-     * M-profile LTPSIZE is the same bits [18:16] as A-profile Len; whichever
-     * of the two is not applicable to this CPU will always be zero.
-     */
-    fpcr |= env->v7m.ltpsize << 16;
-
-    return fpcr;
 }
 
 uint32_t vfp_get_fpsr(CPUARMState *env)
@@ -57,10 +49,7 @@ uint32_t vfp_get_fpscr(CPUARMState *env)
 
 void vfp_set_fpsr(CPUARMState *env, uint32_t val)
 {
-    ARMCPU *cpu = env_archcpu(env);
-
-    if (arm_feature(env, ARM_FEATURE_NEON) ||
-        cpu_isar_feature(aa32_mve, cpu)) {
+    if (arm_feature(env, ARM_FEATURE_NEON)) {
         /*
          * The bit we set within vfp.qc[] is arbitrary; the array as a
          * whole being zero/non-zero is what counts.
@@ -110,21 +99,16 @@ static void vfp_set_fpcr_masked(CPUARMState *env, uint32_t val, uint32_t mask)
     vfp_set_fpcr_to_host(env, val, mask);
 
     if (mask & (FPCR_LEN_MASK | FPCR_STRIDE_MASK)) {
-        if (!arm_feature(env, ARM_FEATURE_M)) {
-            /*
-             * Short-vector length and stride; on M-profile these bits
-             * are used for different purposes.
-             * We can't make this conditional be "if MVFR0.FPShVec != 0",
-             * because in v7A no-short-vector-support cores still had to
-             * allow Stride/Len to be written with the only effect that
-             * some insns are required to UNDEF if the guest sets them.
-             */
-            env->vfp.vec_len = extract32(val, 16, 3);
-            env->vfp.vec_stride = extract32(val, 20, 2);
-        } else if (cpu_isar_feature(aa32_mve, cpu)) {
-            env->v7m.ltpsize = extract32(val, FPCR_LTPSIZE_SHIFT,
-                                         FPCR_LTPSIZE_LENGTH);
-        }
+        /*
+         * Short-vector length and stride; on M-profile these bits
+         * are used for different purposes.
+         * We can't make this conditional be "if MVFR0.FPShVec != 0",
+         * because in v7A no-short-vector-support cores still had to
+         * allow Stride/Len to be written with the only effect that
+         * some insns are required to UNDEF if the guest sets them.
+         */
+        env->vfp.vec_len = extract32(val, 16, 3);
+        env->vfp.vec_stride = extract32(val, 20, 2);
     }
 
     /*

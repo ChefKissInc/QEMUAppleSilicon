@@ -15,7 +15,6 @@
 #include "qemu/osdep.h"
 #include "hw/qdev-properties.h"
 #include "hw/ssi/ssi.h"
-#include "migration/vmstate.h"
 #include "qemu/module.h"
 #include "qapi/error.h"
 #include "qom/object.h"
@@ -166,16 +165,6 @@ uint32_t ssi_transfer(SSIBus *bus, uint32_t val)
 
     return r;
 }
-
-const VMStateDescription vmstate_ssi_peripheral = {
-    .name = "SSISlave",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_BOOL(cs, SSIPeripheral),
-        VMSTATE_END_OF_LIST()
-    }
-};
 
 static void ssi_peripheral_register_types(void)
 {

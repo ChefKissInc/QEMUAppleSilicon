@@ -39,14 +39,6 @@ static bool aprofile_require_alignment(CPUARMState *env, int el, uint64_t sctlr)
     }
 
     /*
-     * With PMSA, when the MPU is disabled, all memory types in the
-     * default map are Normal, so don't need aligment enforcing.
-     */
-    if (arm_feature(env, ARM_FEATURE_PMSA)) {
-        return false;
-    }
-
-    /*
      * With VMSA, if translation is disabled, then the default memory type
      * is Device(-nGnRnE) instead of Normal, which requires that alignment
      * be enforced.  Since this affects all ram, it is most efficient
@@ -101,39 +93,6 @@ static CPUARMTBFlags rebuild_hflags_common_32(CPUARMState *env, int fp_el,
     DP_TBFLAG_A32(flags, NS, !access_secure_reg(env));
 
     return rebuild_hflags_common(env, fp_el, mmu_idx, flags);
-}
-
-static CPUARMTBFlags rebuild_hflags_m32(CPUARMState *env, int fp_el,
-                                        ARMMMUIdx mmu_idx)
-{
-    CPUARMTBFlags flags = {};
-    uint32_t ccr = env->v7m.ccr[env->v7m.secure];
-
-    /* Without HaveMainExt, CCR.UNALIGN_TRP is RES1. */
-    if (ccr & R_V7M_CCR_UNALIGN_TRP_MASK) {
-        DP_TBFLAG_ANY(flags, ALIGN_MEM, 1);
-    }
-
-    if (arm_v7m_is_handler_mode(env)) {
-        DP_TBFLAG_M32(flags, HANDLER, 1);
-    }
-
-    /*
-     * v8M always applies stack limit checks unless CCR.STKOFHFNMIGN
-     * is suppressing them because the requested execution priority
-     * is less than 0.
-     */
-    if (arm_feature(env, ARM_FEATURE_V8) &&
-        !((mmu_idx & ARM_MMU_IDX_M_NEGPRI) &&
-          (ccr & R_V7M_CCR_STKOFHFNMIGN_MASK))) {
-        DP_TBFLAG_M32(flags, STACKCHECK, 1);
-    }
-
-    if (arm_feature(env, ARM_FEATURE_M_SECURITY) && env->v7m.secure) {
-        DP_TBFLAG_M32(flags, SECURE, 1);
-    }
-
-    return rebuild_hflags_common_32(env, fp_el, mmu_idx, flags);
 }
 
 /* This corresponds to the ARM pseudocode function IsFullA64Enabled(). */
@@ -473,8 +432,6 @@ static CPUARMTBFlags rebuild_hflags_internal(CPUARMState *env)
 
     if (is_a64(env)) {
         return rebuild_hflags_a64(env, el, fp_el, mmu_idx);
-    } else if (arm_feature(env, ARM_FEATURE_M)) {
-        return rebuild_hflags_m32(env, fp_el, mmu_idx);
     } else {
         return rebuild_hflags_a32(env, fp_el, mmu_idx);
     }
@@ -483,27 +440,6 @@ static CPUARMTBFlags rebuild_hflags_internal(CPUARMState *env)
 void arm_rebuild_hflags(CPUARMState *env)
 {
     env->hflags = rebuild_hflags_internal(env);
-}
-
-/*
- * If we have triggered a EL state change we can't rely on the
- * translator having passed it to us, we need to recompute.
- */
-void HELPER(rebuild_hflags_m32_newel)(CPUARMState *env)
-{
-    int el = arm_current_el(env);
-    int fp_el = fp_exception_el(env, el);
-    ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, el);
-
-    env->hflags = rebuild_hflags_m32(env, fp_el, mmu_idx);
-}
-
-void HELPER(rebuild_hflags_m32)(CPUARMState *env, int el)
-{
-    int fp_el = fp_exception_el(env, el);
-    ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, el);
-
-    env->hflags = rebuild_hflags_m32(env, fp_el, mmu_idx);
 }
 
 /*
@@ -550,35 +486,6 @@ static void assert_hflags_rebuild_correctly(CPUARMState *env)
 #endif
 }
 
-static bool mve_no_pred(CPUARMState *env)
-{
-    /*
-     * Return true if there is definitely no predication of MVE
-     * instructions by VPR or LTPSIZE. (Returning false even if there
-     * isn't any predication is OK; generated code will just be
-     * a little worse.)
-     * If the CPU does not implement MVE then this TB flag is always 0.
-     *
-     * NOTE: if you change this logic, the "recalculate s->mve_no_pred"
-     * logic in gen_update_fp_context() needs to be updated to match.
-     *
-     * We do not include the effect of the ECI bits here -- they are
-     * tracked in other TB flags. This simplifies the logic for
-     * "when did we emit code that changes the MVE_NO_PRED TB flag
-     * and thus need to end the TB?".
-     */
-    if (cpu_isar_feature(aa32_mve, env_archcpu(env))) {
-        return false;
-    }
-    if (env->v7m.vpr) {
-        return false;
-    }
-    if (env->v7m.ltpsize < 4) {
-        return false;
-    }
-    return true;
-}
-
 TCGTBCPUState arm_get_tb_cpu_state(CPUState *cs)
 {
     CPUARMState *env = cpu_env(cs);
@@ -596,44 +503,14 @@ TCGTBCPUState arm_get_tb_cpu_state(CPUState *cs)
     } else {
         pc = env->regs[15];
 
-        if (arm_feature(env, ARM_FEATURE_M)) {
-            if (arm_feature(env, ARM_FEATURE_M_SECURITY) &&
-                REG_FIELD_EX32(env->v7m.fpccr[M_REG_S], V7M_FPCCR, S)
-                != env->v7m.secure) {
-                DP_TBFLAG_M32(flags, FPCCR_S_WRONG, 1);
-            }
-
-            if ((env->v7m.fpccr[env->v7m.secure] & R_V7M_FPCCR_ASPEN_MASK) &&
-                (!(env->v7m.control[M_REG_S] & R_V7M_CONTROL_FPCA_MASK) ||
-                 (env->v7m.secure &&
-                  !(env->v7m.control[M_REG_S] & R_V7M_CONTROL_SFPA_MASK)))) {
-                /*
-                 * ASPEN is set, but FPCA/SFPA indicate that there is no
-                 * active FP context; we must create a new FP context before
-                 * executing any FP insn.
-                 */
-                DP_TBFLAG_M32(flags, NEW_FP_CTXT_NEEDED, 1);
-            }
-
-            bool is_secure = env->v7m.fpccr[M_REG_S] & R_V7M_FPCCR_S_MASK;
-            if (env->v7m.fpccr[is_secure] & R_V7M_FPCCR_LSPACT_MASK) {
-                DP_TBFLAG_M32(flags, LSPACT, 1);
-            }
-
-            if (mve_no_pred(env)) {
-                DP_TBFLAG_M32(flags, MVE_NO_PRED, 1);
-            }
-        } else {
-            /* Note that VECLEN+VECSTRIDE are RES0 for M-profile. */
-            DP_TBFLAG_A32(flags, VECLEN, env->vfp.vec_len);
-            DP_TBFLAG_A32(flags, VECSTRIDE, env->vfp.vec_stride);
-            if (env->vfp.xregs[ARM_VFP_FPEXC] & (1 << 30)) {
-                DP_TBFLAG_A32(flags, VFPEN, 1);
-            }
+        DP_TBFLAG_A32(flags, VECLEN, env->vfp.vec_len);
+        DP_TBFLAG_A32(flags, VECSTRIDE, env->vfp.vec_stride);
+        if (env->vfp.xregs[ARM_VFP_FPEXC] & (1 << 30)) {
+            DP_TBFLAG_A32(flags, VFPEN, 1);
         }
 
-        DP_TBFLAG_AM32(flags, THUMB, env->thumb);
-        DP_TBFLAG_AM32(flags, CONDEXEC, env->condexec_bits);
+        DP_TBFLAG_A32(flags, THUMB, env->thumb);
+        DP_TBFLAG_A32(flags, CONDEXEC, env->condexec_bits);
     }
 
     /*

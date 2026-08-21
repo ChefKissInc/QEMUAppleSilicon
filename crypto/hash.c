@@ -33,9 +33,7 @@ static size_t qcrypto_hash_alg_size[QCRYPTO_HASH_ALGO__MAX] = {
     [QCRYPTO_HASH_ALGO_SHA384]    = QCRYPTO_HASH_DIGEST_LEN_SHA384,
     [QCRYPTO_HASH_ALGO_SHA512]    = QCRYPTO_HASH_DIGEST_LEN_SHA512,
     [QCRYPTO_HASH_ALGO_RIPEMD160] = QCRYPTO_HASH_DIGEST_LEN_RIPEMD160,
-#ifdef CONFIG_CRYPTO_SM3
     [QCRYPTO_HASH_ALGO_SM3] = QCRYPTO_HASH_DIGEST_LEN_SM3,
-#endif
 };
 
 size_t qcrypto_hash_digest_len(QCryptoHashAlgo alg)
@@ -107,14 +105,6 @@ QCryptoHash *qcrypto_hash_new(QCryptoHashAlgo alg, Error **errp)
                    QCryptoHashAlgo_str(alg));
         return NULL;
    }
-
-#ifdef CONFIG_AF_ALG
-    hash = qcrypto_hash_afalg_driver.hash_new(alg, NULL);
-    if (hash) {
-        hash->driver = &qcrypto_hash_afalg_driver;
-        return hash;
-    }
-#endif
 
     hash = qcrypto_hash_lib_driver.hash_new(alg, errp);
     if (!hash) {

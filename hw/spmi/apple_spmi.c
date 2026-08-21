@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/irq.h"
 #include "hw/spmi/apple_spmi.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/bitops.h"
 #include "qemu/log.h"
@@ -600,30 +599,6 @@ SysBusDevice *apple_spmi_from_node(AppleDTNode *node)
     return sbd;
 }
 
-static const VMStateDescription vmstate_apple_spmi = {
-    .name = "apple_spmi",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_FIFO32(resp_fifo, AppleSPMIState),
-            VMSTATE_UINT32_ARRAY(control_reg, AppleSPMIState,
-                                 0x100 / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(queue_reg, AppleSPMIState,
-                                 0x100 / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(fault_reg, AppleSPMIState,
-                                 0x100 / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(fault_counter_reg, AppleSPMIState,
-                                 0x64 / sizeof(uint32_t)),
-            VMSTATE_UINT32(data_length, AppleSPMIState),
-            VMSTATE_UINT32(data_filled, AppleSPMIState),
-            VMSTATE_UINT32(command, AppleSPMIState),
-            VMSTATE_VARRAY_UINT32_ALLOC(data, AppleSPMIState, data_length, 0,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_spmi_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -632,7 +607,6 @@ static void apple_spmi_class_init(ObjectClass *klass, const void *data)
 
     dc->realize = apple_spmi_realize;
     dc->desc = "Apple SPMI Controller";
-    dc->vmsd = &vmstate_apple_spmi;
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
     resettable_class_set_parent_phases(rc, apple_spmi_reset_enter, NULL,
                                        apple_spmi_reset_exit,

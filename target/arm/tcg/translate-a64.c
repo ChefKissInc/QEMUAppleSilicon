@@ -23,7 +23,6 @@
 #include "translate-a64.h"
 #include "qemu/log.h"
 #include "arm_ldst.h"
-#include "semihosting/semihost.h"
 #include "cpregs.h"
 
 static TCGv_i64 cpu_X[32];
@@ -411,13 +410,6 @@ static void a64_test_cc(DisasCompare64 *c64, int cc)
 static void gen_rebuild_hflags(DisasContext *s)
 {
     gen_helper_rebuild_hflags_a64(tcg_env, tcg_constant_i32(s->current_el));
-}
-
-static void gen_exception_internal_insn(DisasContext *s, int excp)
-{
-    gen_a64_update_pc(s, 0);
-    gen_exception_internal(excp);
-    s->base.is_jmp = DISAS_NORETURN;
 }
 
 static void gen_exception_bkpt_insn(DisasContext *s, uint32_t syndrome)
@@ -2840,18 +2832,7 @@ static bool trans_BRK(DisasContext *s, arg_i *a)
 
 static bool trans_HLT(DisasContext *s, arg_i *a)
 {
-    /*
-     * HLT. This has two purposes.
-     * Architecturally, it is an external halting debug instruction.
-     * Since QEMU doesn't implement external debug, we treat this as
-     * it is required for halting debug disabled: it will UNDEF.
-     * Secondly, "HLT 0xf000" is the A64 semihosting syscall instruction.
-     */
-    if (semihosting_enabled(s->current_el == 0) && a->imm == 0xf000) {
-        gen_exception_internal_insn(s, EXCP_SEMIHOST);
-    } else {
-        unallocated_encoding(s);
-    }
+    unallocated_encoding(s);
     return true;
 }
 

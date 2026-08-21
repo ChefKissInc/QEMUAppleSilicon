@@ -22,7 +22,6 @@
 #include "qemu/osdep.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
-#include "migration/blocker.h"
 #include "system/kvm.h"
 #include "kvm_arm.h"
 #include "gic_internal.h"
@@ -513,14 +512,6 @@ static void kvm_arm_gic_realize(DeviceState *dev, Error **errp)
         return;
     }
 
-    if (!kvm_arm_gic_can_save_restore(s)) {
-        error_setg(&s->migration_blocker, "This operating system kernel does "
-                                          "not support vGICv2 migration");
-        if (migrate_add_blocker(&s->migration_blocker, errp) < 0) {
-            return;
-        }
-    }
-
     gic_init_irqs_and_mmio(s, kvm_arm_gicv2_set_irq, NULL, NULL);
 
     for (i = 0; i < s->num_irq - GIC_INTERNAL; i++) {
@@ -591,8 +582,6 @@ static void kvm_arm_gic_class_init(ObjectClass *klass, const void *data)
     ARMGICCommonClass *agcc = ARM_GIC_COMMON_CLASS(klass);
     KVMARMGICClass *kgc = KVM_ARM_GIC_CLASS(klass);
 
-    agcc->pre_save = kvm_arm_gic_get;
-    agcc->post_load = kvm_arm_gic_put;
     device_class_set_parent_realize(dc, kvm_arm_gic_realize,
                                     &kgc->parent_realize);
     resettable_class_set_parent_phases(rc, NULL, kvm_arm_gic_reset_hold, NULL,

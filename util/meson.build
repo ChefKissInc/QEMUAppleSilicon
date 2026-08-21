@@ -1,5 +1,5 @@
 util_ss.add(files('osdep.c', 'cutils.c', 'unicode.c', 'qemu-timer-common.c'))
-util_ss.add(files('thread-context.c'), numa)
+util_ss.add(files('thread-context.c'))
 if not config_host_data.get('CONFIG_ATOMIC64')
   util_ss.add(files('atomic64.c'))
 endif
@@ -71,7 +71,6 @@ util_ss.add(files('lockcnt.c'))
 
 if have_system
   util_ss.add(files('crc-ccitt.c'))
-  util_ss.add(when: gio, if_true: files('dbus.c'))
   if host_os == 'linux'
     util_ss.add(files('userfaultfd.c'))
   endif
@@ -96,13 +95,11 @@ if have_block
   util_ss.add(files('hexdump.c'))
   util_ss.add(files('iova-tree.c'))
   util_ss.add(files('iov.c'))
-  util_ss.add(files('nvdimm-utils.c'))
   util_ss.add(files('block-helpers.c'))
   util_ss.add(files('qemu-coroutine-sleep.c'))
   util_ss.add(files('qemu-co-shared-resource.c'))
   util_ss.add(files('qemu-co-timeout.c'))
   util_ss.add(files('readline.c'))
-  util_ss.add(files('throttle.c'))
   util_ss.add(files('timed-average.c'))
   if config_host_data.get('CONFIG_INOTIFY1')
     freebsd_dep = []
@@ -114,7 +111,6 @@ if have_block
     util_ss.add(files('filemonitor-stub.c'))
   endif
   if host_os == 'linux'
-    util_ss.add(files('vfio-helpers.c'))
     util_ss.add(files('chardev_open.c'))
   endif
   util_ss.add(files('yank.c'))
@@ -130,6 +126,4 @@ elif cpu in ['ppc', 'ppc64']
   util_ss.add(files('cpuinfo-ppc.c'))
 elif cpu in ['riscv32', 'riscv64']
   util_ss.add(files('cpuinfo-riscv.c'))
-elif cpu == 's390x'
-  util_ss.add(files('s390x_pci_mmio.c'))
 endif

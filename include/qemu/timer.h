@@ -161,22 +161,6 @@ bool qemu_clock_has_timers(QEMUClockType type);
 bool qemu_clock_expired(QEMUClockType type);
 
 /**
- * qemu_clock_use_for_deadline:
- * @type: the clock type
- *
- * Determine whether a clock should be used for deadline
- * calculations. Some clocks, for instance vm_clock with
- * icount_enabled() set, do not count in nanoseconds.
- * Such clocks are not used for deadline calculations, and are presumed
- * to interrupt any poll using qemu_notify/aio_notify
- * etc.
- *
- * Returns: true if the clock runs in nanoseconds and
- * should be used for a deadline.
- */
-bool qemu_clock_use_for_deadline(QEMUClockType type);
-
-/**
  * qemu_clock_deadline_ns_all:
  * @type: the clock type
  * @attr_mask: mask for the timer attributes that are included

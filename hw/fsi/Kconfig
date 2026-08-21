@@ -1,7 +1,0 @@
-config FSI_APB2OPB_ASPEED
-    bool
-    depends on ASPEED_SOC
-    select FSI
-
-config FSI
-    bool

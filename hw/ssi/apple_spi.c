@@ -24,7 +24,6 @@
 #include "hw/irq.h"
 #include "hw/ssi/apple_spi.h"
 #include "hw/ssi/ssi.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "qemu/fifo32.h"
@@ -570,19 +569,6 @@ static void apple_spi_instance_init(Object *obj)
     fifo32_create(&spi->rx_fifo, REG_FIFO_DEPTH);
 }
 
-static const VMStateDescription vmstate_apple_spi = {
-    .name = "apple_spi",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32_ARRAY(regs, AppleSPIState, APPLE_SPI_MMIO_SIZE >> 2),
-            VMSTATE_FIFO32(rx_fifo, AppleSPIState),
-            VMSTATE_FIFO32(tx_fifo, AppleSPIState),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_spi_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -591,7 +577,6 @@ static void apple_spi_class_init(ObjectClass *klass, const void *data)
 
     device_class_set_legacy_reset(dc, apple_spi_reset);
     dc->realize = apple_spi_realize;
-    dc->vmsd = &vmstate_apple_spi;
 }
 
 static const TypeInfo apple_spi_type_info = {

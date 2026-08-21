@@ -24,7 +24,6 @@
 #include "hw/misc/apple-silicon/a7iop/rtkit.h"
 #include "hw/nvme/nvme.h"
 #include "hw/pci/msi.h"
-#include "migration/vmstate.h"
 #include "qemu/log.h"
 
 #if 0
@@ -327,28 +326,6 @@ static void apple_ans_reset(DeviceState *qdev)
     pcie_cap_deverr_reset(d);
 }
 
-static int apple_ans_post_load(void *opaque, int version_id)
-{
-    AppleANSState *s = opaque;
-    if (s->started) {
-        apple_ans_start(s);
-    }
-    return 0;
-}
-
-static const VMStateDescription vmstate_apple_ans = {
-    .name = "apple_ans",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .post_load = apple_ans_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(nvme_interrupt_idx, AppleANSState),
-            VMSTATE_BOOL(started, AppleANSState),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_ans_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -357,7 +334,6 @@ static void apple_ans_class_init(ObjectClass *klass, const void *data)
     dc->unrealize = apple_ans_unrealize;
     device_class_set_legacy_reset(dc, apple_ans_reset);
     dc->desc = "Apple NAND Storage (ANS)";
-    dc->vmsd = &vmstate_apple_ans;
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
 }
 

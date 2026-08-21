@@ -5,9 +5,6 @@
 #include "system/dma.h"
 #include "system/host_iommu_device.h"
 
-/* PCI includes legacy ISA access.  */
-#include "hw/isa/isa.h"
-
 extern bool pci_available;
 
 /* PCI bus */
@@ -221,8 +218,6 @@ enum {
     QEMU_PCIE_LNKSTA_DLLLA = (1 << QEMU_PCIE_LNKSTA_DLLLA_BITNR),
 #define QEMU_PCIE_EXTCAP_INIT_BITNR 9
     QEMU_PCIE_EXTCAP_INIT = (1 << QEMU_PCIE_EXTCAP_INIT_BITNR),
-#define QEMU_PCIE_CXL_BITNR 10
-    QEMU_PCIE_CAP_CXL = (1 << QEMU_PCIE_CXL_BITNR),
 #define QEMU_PCIE_ERR_UNC_MASK_BITNR 11
     QEMU_PCIE_ERR_UNC_MASK = (1 << QEMU_PCIE_ERR_UNC_MASK_BITNR),
 #define QEMU_PCIE_ARI_NEXTFN_1_BITNR 12
@@ -272,8 +267,6 @@ uint32_t pci_default_read_config(PCIDevice *d,
                                  uint32_t address, int len);
 void pci_default_write_config(PCIDevice *d,
                               uint32_t address, uint32_t val, int len);
-void pci_device_save(PCIDevice *s, QEMUFile *f);
-int pci_device_load(PCIDevice *s, QEMUFile *f);
 MemoryRegion *pci_address_space(PCIDevice *dev);
 MemoryRegion *pci_address_space_io(PCIDevice *dev);
 
@@ -290,7 +283,6 @@ typedef PCIINTxRoute (*pci_route_irq_fn)(void *opaque, int pin);
 #define TYPE_PCI_BUS "PCI"
 OBJECT_DECLARE_TYPE(PCIBus, PCIBusClass, PCI_BUS)
 #define TYPE_PCIE_BUS "PCIE"
-#define TYPE_CXL_BUS "CXL"
 
 typedef void (*pci_bus_dev_fn)(PCIBus *b, PCIDevice *d, void *opaque);
 typedef void (*pci_bus_fn)(PCIBus *b, void *opaque);
@@ -338,10 +330,8 @@ void pci_device_set_intx_routing_notifier(PCIDevice *dev,
                                           PCIINTxRoutingNotifier notifier);
 void pci_device_reset(PCIDevice *dev);
 
-void pci_init_nic_devices(PCIBus *bus, const char *default_model);
 bool pci_init_nic_in_slot(PCIBus *rootbus, const char *default_model,
                           const char *alias, const char *devaddr);
-PCIDevice *pci_vga_init(PCIBus *bus);
 
 static inline PCIBus *pci_get_bus(const PCIDevice *dev)
 {
@@ -354,7 +344,6 @@ static inline int pci_dev_bus_num(const PCIDevice *dev)
     return pci_bus_num(pci_get_bus(dev));
 }
 
-int pci_bus_numa_node(PCIBus *bus);
 void pci_for_each_device(PCIBus *bus, int bus_num,
                          pci_bus_dev_fn fn,
                          void *opaque);

@@ -2,7 +2,6 @@
 #define QEMU_CLIPBOARD_H
 
 #include "qemu/notify.h"
-#include "migration/vmstate.h"
 
 /**
  * DOC: Introduction
@@ -27,8 +26,6 @@ typedef struct QemuClipboardPeer QemuClipboardPeer;
 typedef struct QemuClipboardNotify QemuClipboardNotify;
 typedef struct QemuClipboardInfo QemuClipboardInfo;
 typedef struct QemuClipboardContent QemuClipboardContent;
-
-extern const VMStateDescription vmstate_cbinfo;
 
 /**
  * enum QemuClipboardType

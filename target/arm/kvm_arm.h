@@ -71,15 +71,6 @@ bool write_list_to_kvmstate(ARMCPU *cpu, int level);
 bool write_kvmstate_to_list(ARMCPU *cpu);
 
 /**
- * kvm_arm_cpu_pre_save:
- * @cpu: ARMCPU
- *
- * Called after write_kvmstate_to_list() from cpu_pre_save() to update
- * the cpreg list with KVM CPU state.
- */
-void kvm_arm_cpu_pre_save(ARMCPU *cpu);
-
-/**
  * kvm_arm_cpu_post_load:
  * @cpu: ARMCPU
  *

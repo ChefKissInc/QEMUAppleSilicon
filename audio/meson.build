@@ -1,4 +1,4 @@
-system_ss.add([spice_headers, files('audio.c')])
+system_ss.add(files('audio.c'))
 system_ss.add(files(
   'audio-hmp-cmds.c',
   'mixeng.c',
@@ -19,7 +19,6 @@ foreach m : [
   ['jack', jack, files('jackaudio.c')],
   ['sndio', sndio, files('sndioaudio.c')],
   ['pipewire', pipewire, files('pwaudio.c')],
-  ['spice', spice, files('spiceaudio.c')]
 ]
   if m[1].found()
     module_ss = ss.source_set()
@@ -27,12 +26,5 @@ foreach m : [
     audio_modules += {m[0] : module_ss}
   endif
 endforeach
-
-if dbus_display
-    module_ss = ss.source_set()
-    module_ss.add(when: [gio, pixman],
-                  if_true: [dbus_display1, files('dbusaudio.c')])
-    audio_modules += {'dbus': module_ss}
-endif
 
 modules += {'audio': audio_modules}

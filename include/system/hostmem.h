@@ -13,7 +13,6 @@
 #ifndef SYSTEM_HOSTMEM_H
 #define SYSTEM_HOSTMEM_H
 
-#include "system/numa.h"
 #include "qapi/qapi-types-machine.h"
 #include "qom/object.h"
 #include "system/memory.h"
@@ -76,11 +75,9 @@ struct HostMemoryBackend {
     uint64_t size;
     bool merge, dump, use_canonical_path;
     bool prealloc, is_mapped, share, reserve;
-    bool guest_memfd, aligned;
+    bool aligned;
     uint32_t prealloc_threads;
     ThreadContext *prealloc_context;
-    DECLARE_BITMAP(host_nodes, MAX_NODES + 1);
-    HostMemPolicy policy;
 
     MemoryRegion mr;
 };

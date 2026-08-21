@@ -91,8 +91,8 @@ ERST
 
     {
         .name       = "block_stream",
-        .args_type  = "device:B,speed:o?,base:s?",
-        .params     = "device [speed [base]]",
+        .args_type  = "device:B,base:s?",
+        .params     = "device [base]",
         .help       = "copy data from a backing file into a block device",
         .cmd        = hmp_block_stream,
         .flags      = "p",
@@ -101,20 +101,6 @@ ERST
 SRST
 ``block_stream``
   Copy data from a backing file into a block device.
-ERST
-
-    {
-        .name       = "block_job_set_speed",
-        .args_type  = "device:B,speed:o",
-        .params     = "device speed",
-        .help       = "set maximum speed for a background block operation",
-        .cmd        = hmp_block_job_set_speed,
-        .flags      = "p",
-    },
-
-SRST
-``block_job_set_speed``
-  Set maximum speed for a background block operation.
 ERST
 
     {
@@ -325,59 +311,6 @@ ERST
 SRST
 ``log`` *item1*\ [,...]
   Activate logging of the specified items.
-ERST
-
-    {
-        .name       = "savevm",
-        .args_type  = "name:s?",
-        .params     = "tag",
-        .help       = "save a VM snapshot. If no tag is provided, a new snapshot is created",
-        .cmd        = hmp_savevm,
-    },
-
-SRST
-``savevm`` *tag*
-  Create a snapshot of the whole virtual machine. If *tag* is
-  provided, it is used as human readable identifier. If there is already
-  a snapshot with the same tag, it is replaced. More info at
-  :ref:`vm_005fsnapshots`.
-
-  Since 4.0, savevm stopped allowing the snapshot id to be set, accepting
-  only *tag* as parameter.
-ERST
-
-    {
-        .name       = "loadvm",
-        .args_type  = "name:s",
-        .params     = "tag",
-        .help       = "restore a VM snapshot from its tag",
-        .cmd        = hmp_loadvm,
-        .command_completion = loadvm_completion,
-    },
-
-SRST
-``loadvm`` *tag*
-  Set the whole virtual machine to the snapshot identified by the tag
-  *tag*.
-
-  Since 4.0, loadvm stopped accepting snapshot id as parameter.
-ERST
-
-    {
-        .name       = "delvm",
-        .args_type  = "name:s",
-        .params     = "tag",
-        .help       = "delete a VM snapshot from its tag",
-        .cmd        = hmp_delvm,
-        .command_completion = delvm_completion,
-    },
-
-SRST
-``delvm`` *tag*
-  Delete the snapshot identified by *tag*.
-
-  Since 4.0, delvm stopped deleting snapshots by snapshot id, accepting
-  only *tag* as parameter.
 ERST
 
     {
@@ -890,242 +823,6 @@ SRST
 ERST
 
     {
-        .name       = "announce_self",
-        .args_type  = "interfaces:s?,id:s?",
-        .params     = "[interfaces] [id]",
-        .help       = "Trigger GARP/RARP announcements",
-        .cmd        = hmp_announce_self,
-    },
-
-SRST
-``announce_self``
-  Trigger a round of GARP/RARP broadcasts; this is useful for explicitly
-  updating the network infrastructure after a reconfiguration or some forms
-  of migration. The timings of the round are set by the migration announce
-  parameters. An optional comma separated *interfaces* list restricts the
-  announce to the named set of interfaces. An optional *id* can be used to
-  start a separate announce timer and to change the parameters of it later.
-ERST
-
-    {
-        .name       = "migrate",
-        .args_type  = "detach:-d,resume:-r,uri:s",
-        .params     = "[-d] [-r] uri",
-        .help       = "migrate to URI (using -d to not wait for completion)"
-		      "\n\t\t\t -r to resume a paused postcopy migration",
-        .cmd        = hmp_migrate,
-    },
-
-
-SRST
-``migrate [-d] [-r]`` *uri*
-  Migrate the VM to *uri*.
-
-  ``-d``
-    Start the migration process, but do not wait for its completion.  To
-    query an ongoing migration process, use "info migrate".
-  ``-r``
-    Resume a paused postcopy migration.
-ERST
-
-    {
-        .name       = "migrate_cancel",
-        .args_type  = "",
-        .params     = "",
-        .help       = "cancel the current VM migration",
-        .cmd        = hmp_migrate_cancel,
-    },
-
-SRST
-``migrate_cancel``
-  Cancel the current VM migration.
-ERST
-
-    {
-        .name       = "migrate_continue",
-        .args_type  = "state:s",
-        .params     = "state",
-        .help       = "Continue migration from the given paused state",
-        .cmd        = hmp_migrate_continue,
-    },
-SRST
-``migrate_continue`` *state*
-  Continue migration from the paused state *state*
-ERST
-
-    {
-        .name       = "migrate_incoming",
-        .args_type  = "uri:s",
-        .params     = "uri",
-        .help       = "Continue an incoming migration from an -incoming defer",
-        .cmd        = hmp_migrate_incoming,
-    },
-
-SRST
-``migrate_incoming`` *uri*
-  Continue an incoming migration using the *uri* (that has the same syntax
-  as the ``-incoming`` option).
-ERST
-
-    {
-        .name       = "migrate_recover",
-        .args_type  = "uri:s",
-        .params     = "uri",
-        .help       = "Continue a paused incoming postcopy migration",
-        .cmd        = hmp_migrate_recover,
-    },
-
-SRST
-``migrate_recover`` *uri*
-  Continue a paused incoming postcopy migration using the *uri*.
-ERST
-
-    {
-        .name       = "migrate_pause",
-        .args_type  = "",
-        .params     = "",
-        .help       = "Pause an ongoing migration (postcopy-only)",
-        .cmd        = hmp_migrate_pause,
-    },
-
-SRST
-``migrate_pause``
-  Pause an ongoing migration.  Currently it only supports postcopy.
-ERST
-
-    {
-        .name       = "migrate_set_capability",
-        .args_type  = "capability:s,state:b",
-        .params     = "capability state",
-        .help       = "Enable/Disable the usage of a capability for migration",
-        .cmd        = hmp_migrate_set_capability,
-        .command_completion = migrate_set_capability_completion,
-    },
-
-SRST
-``migrate_set_capability`` *capability* *state*
-  Enable/Disable the usage of a capability *capability* for migration.
-ERST
-
-    {
-        .name       = "migrate_set_parameter",
-        .args_type  = "parameter:s,value:s",
-        .params     = "parameter value",
-        .help       = "Set the parameter for migration",
-        .cmd        = hmp_migrate_set_parameter,
-        .command_completion = migrate_set_parameter_completion,
-    },
-
-SRST
-``migrate_set_parameter`` *parameter* *value*
-  Set the parameter *parameter* for migration.
-ERST
-
-    {
-        .name       = "migrate_start_postcopy",
-        .args_type  = "",
-        .params     = "",
-        .help       = "Followup to a migration command to switch the migration"
-                      " to postcopy mode. The postcopy-ram capability must "
-                      "be set on both source and destination before the "
-                      "original migration command .",
-        .cmd        = hmp_migrate_start_postcopy,
-    },
-
-SRST
-``migrate_start_postcopy``
-  Switch in-progress migration to postcopy mode. Ignored after the end of
-  migration (or once already in postcopy).
-ERST
-
-#ifdef CONFIG_REPLICATION
-    {
-        .name       = "x_colo_lost_heartbeat",
-        .args_type  = "",
-        .params     = "",
-        .help       = "Tell COLO that heartbeat is lost,\n\t\t\t"
-                      "a failover or takeover is needed.",
-        .cmd = hmp_x_colo_lost_heartbeat,
-    },
-#endif
-
-SRST
-``x_colo_lost_heartbeat``
-  Tell COLO that heartbeat is lost, a failover or takeover is needed.
-ERST
-
-    {
-        .name       = "client_migrate_info",
-        .args_type  = "protocol:s,hostname:s,port:i?,tls-port:i?,cert-subject:s?",
-        .params     = "protocol hostname port tls-port cert-subject",
-        .help       = "set migration information for remote display",
-        .cmd        = hmp_client_migrate_info,
-    },
-
-SRST
-``client_migrate_info`` *protocol* *hostname* *port* *tls-port* *cert-subject*
-  Set migration information for remote display.  This makes the server
-  ask the client to automatically reconnect using the new parameters
-  once migration finished successfully.  Only implemented for SPICE.
-ERST
-
-    {
-        .name       = "dump-guest-memory",
-        .args_type  = "paging:-p,detach:-d,windmp:-w,zlib:-z,lzo:-l,snappy:-s,raw:-R,filename:F,begin:l?,length:l?",
-        .params     = "[-p] [-d] [-z|-l|-s|-w] [-R] filename [begin length]",
-        .help       = "dump guest memory into file 'filename'.\n\t\t\t"
-                      "-p: do paging to get guest's memory mapping.\n\t\t\t"
-                      "-d: return immediately (do not wait for completion).\n\t\t\t"
-                      "-z: dump in kdump-compressed format, with zlib compression.\n\t\t\t"
-                      "-l: dump in kdump-compressed format, with lzo compression.\n\t\t\t"
-                      "-s: dump in kdump-compressed format, with snappy compression.\n\t\t\t"
-                      "-R: when using kdump (-z, -l, -s), use raw rather than makedumpfile-flattened\n\t\t\t"
-                      "    format\n\t\t\t"
-                      "-w: dump in Windows crashdump format (can be used instead of ELF-dump converting),\n\t\t\t"
-                      "    for Windows x86 and x64 guests with vmcoreinfo driver only.\n\t\t\t"
-                      "begin: the starting physical address.\n\t\t\t"
-                      "length: the memory size, in bytes.",
-        .cmd        = hmp_dump_guest_memory,
-    },
-
-SRST
-``dump-guest-memory [-p]`` *filename* *begin* *length*
-  \
-``dump-guest-memory [-z|-l|-s|-w]`` *filename*
-  Dump guest memory to *protocol*. The file can be processed with crash or
-  gdb. Without ``-z|-l|-s|-w``, the dump format is ELF.
-
-  ``-p``
-    do paging to get guest's memory mapping.
-  ``-z``
-    dump in kdump-compressed format, with zlib compression.
-  ``-l``
-    dump in kdump-compressed format, with lzo compression.
-  ``-s``
-    dump in kdump-compressed format, with snappy compression.
-  ``-R``
-    when using kdump (-z, -l, -s), use raw rather than makedumpfile-flattened
-    format
-  ``-w``
-    dump in Windows crashdump format (can be used instead of ELF-dump converting),
-    for Windows x64 guests with vmcoreinfo driver only
-  *filename*
-    dump file name.
-  *begin*
-    the starting physical address. It's optional, and should be
-    specified together with *length*.
-  *length*
-    the memory size, in bytes. It's optional, and should be specified
-    together with *begin*.
-
-ERST
-
-SRST
-``migration_mode`` *mode*
-  Enables or disables migration mode.
-ERST
-
-    {
         .name       = "snapshot_blkdev",
         .args_type  = "reuse:-n,device:B,snapshot-file:s?,format:s?",
         .params     = "[-n] device [new-image-file] [format]",
@@ -1262,12 +959,6 @@ ERST
         .name       = "netdev_add",
         .args_type  = "netdev:O",
         .params     = "[user|tap|socket|stream|dgram|vde|bridge|hubport|netmap"
-#ifdef CONFIG_PASST
-                      "|passt"
-#endif
-#ifdef CONFIG_AF_XDP
-                      "|af-xdp"
-#endif
 #ifdef CONFIG_VMNET
                       "|vmnet-host|vmnet-shared|vmnet-bridged"
 #endif
@@ -1357,28 +1048,6 @@ SRST
   Remove host-to-guest TCP or UDP redirection.
 ERST
 
-    {
-        .name       = "balloon",
-        .args_type  = "value:M",
-        .params     = "target",
-        .help       = "request VM to change its memory allocation (in MB)",
-        .cmd        = hmp_balloon,
-    },
-
-SRST
-``balloon`` *value*
-  Request VM to change its memory allocation to *value* (in MB).
-ERST
-
-    {
-        .name       = "set_link",
-        .args_type  = "name:s,up:b",
-        .params     = "name on|off",
-        .help       = "change the link status of a network adapter",
-        .cmd        = hmp_set_link,
-        .command_completion = set_link_completion,
-    },
-
 SRST
 ``set_link`` *name* ``[on|off]``
   Switch link *name* on (i.e. up) or off (i.e. down).
@@ -1396,85 +1065,6 @@ ERST
 SRST
 ``watchdog_action``
   Change watchdog action.
-ERST
-
-    {
-        .name       = "nbd_server_start",
-        .args_type  = "all:-a,writable:-w,uri:s",
-        .params     = "nbd_server_start [-a] [-w] host:port",
-        .help       = "serve block devices on the given host and port",
-        .cmd        = hmp_nbd_server_start,
-        .flags      = "p",
-    },
-SRST
-``nbd_server_start`` *host*:*port*
-  Start an NBD server on the given host and/or port.  If the ``-a``
-  option is included, all of the virtual machine's block devices that
-  have an inserted media on them are automatically exported; in this case,
-  the ``-w`` option makes the devices writable too.
-ERST
-
-    {
-        .name       = "nbd_server_add",
-        .args_type  = "writable:-w,device:B,name:s?",
-        .params     = "nbd_server_add [-w] device [name]",
-        .help       = "export a block device via NBD",
-        .cmd        = hmp_nbd_server_add,
-        .flags      = "p",
-    },
-SRST
-``nbd_server_add`` *device* [ *name* ]
-  Export a block device through QEMU's NBD server, which must be started
-  beforehand with ``nbd_server_start``.  The ``-w`` option makes the
-  exported device writable too.  The export name is controlled by *name*,
-  defaulting to *device*.
-ERST
-
-    {
-        .name       = "nbd_server_remove",
-        .args_type  = "force:-f,name:s",
-        .params     = "nbd_server_remove [-f] name",
-        .help       = "remove an export previously exposed via NBD",
-        .cmd        = hmp_nbd_server_remove,
-        .flags      = "p",
-    },
-SRST
-``nbd_server_remove [-f]`` *name*
-  Stop exporting a block device through QEMU's NBD server, which was
-  previously started with ``nbd_server_add``.  The ``-f``
-  option forces the server to drop the export immediately even if
-  clients are connected; otherwise the command fails unless there are no
-  clients.
-ERST
-
-    {
-        .name       = "nbd_server_stop",
-        .args_type  = "",
-        .params     = "nbd_server_stop",
-        .help       = "stop serving block devices using the NBD protocol",
-        .cmd        = hmp_nbd_server_stop,
-        .flags      = "p",
-    },
-SRST
-``nbd_server_stop``
-  Stop the QEMU embedded NBD server.
-ERST
-
-
-#if defined(TARGET_I386)
-
-    {
-        .name       = "mce",
-        .args_type  = "broadcast:-b,cpu_index:i,bank:i,status:l,mcg_status:l,addr:l,misc:l",
-        .params     = "[-b] cpu bank status mcgstatus addr misc",
-        .help       = "inject a MCE on the given CPU [and broadcast to other CPUs with -b option]",
-        .cmd        = hmp_mce,
-    },
-
-#endif
-SRST
-``mce`` *cpu* *bank* *status* *mcgstatus* *addr* *misc*
-  Inject an MCE on the given CPU (x86 only).
 ERST
 
 #ifdef CONFIG_POSIX
@@ -1512,32 +1102,16 @@ SRST
 ERST
 
     {
-        .name       = "block_set_io_throttle",
-        .args_type  = "device:B,bps:l,bps_rd:l,bps_wr:l,iops:l,iops_rd:l,iops_wr:l",
-        .params     = "device bps bps_rd bps_wr iops iops_rd iops_wr",
-        .help       = "change I/O throttle limits for a block drive",
-        .cmd        = hmp_block_set_io_throttle,
-        .flags      = "p",
-    },
-
-SRST
-``block_set_io_throttle`` *device* *bps* *bps_rd* *bps_wr* *iops* *iops_rd* *iops_wr*
-  Change I/O throttle limits for a block drive to
-  *bps* *bps_rd* *bps_wr* *iops* *iops_rd* *iops_wr*.
-  *device* can be a block device name, a qdev ID or a QOM path.
-ERST
-
-    {
         .name       = "set_password",
         .args_type  = "protocol:s,password:s,display:-ds,connected:s?",
         .params     = "protocol password [-d display] [action-if-connected]",
-        .help       = "set spice/vnc password",
+        .help       = "set vnc password",
         .cmd        = hmp_set_password,
     },
 
 SRST
-``set_password [ vnc | spice ] password [ -d display ] [ action-if-connected ]``
-  Change spice/vnc password.  *display* can be used with 'vnc' to specify
+``set_password [ vnc ] password [ -d display ] [ action-if-connected ]``
+  Change vnc password.  *display* can be used with 'vnc' to specify
   which display to set the password on.  *action-if-connected* specifies
   what should happen in case a connection is established: *fail* makes
   the password change fail.  *disconnect* changes the password and
@@ -1549,13 +1123,13 @@ ERST
         .name       = "expire_password",
         .args_type  = "protocol:s,time:s,display:-ds",
         .params     = "protocol time [-d display]",
-        .help       = "set spice/vnc password expire-time",
+        .help       = "set vnc password expire-time",
         .cmd        = hmp_expire_password,
     },
 
 SRST
-``expire_password [ vnc | spice ] expire-time [ -d display ]``
-  Specify when a password for spice/vnc becomes invalid.
+``expire_password [ vnc ] expire-time [ -d display ]``
+  Specify when a password for vnc becomes invalid.
   *display* behaves the same as in ``set_password``.
   *expire-time* accepts:
 
@@ -1628,21 +1202,6 @@ SRST
 ERST
 
     {
-        .name       = "qemu-io",
-        .args_type  = "qdev:-d,device:B,command:s",
-        .params     = "[-d] [device] \"[command]\"",
-        .help       = "run a qemu-io command on a block device\n\t\t\t"
-                      "-d: [device] is a device ID rather than a "
-                      "drive ID or node name",
-        .cmd        = hmp_qemu_io,
-    },
-
-SRST
-``qemu-io`` *device* *command*
-  Executes a qemu-io command on the given block device.
-ERST
-
-    {
         .name       = "qom-list",
         .args_type  = "path:s?",
         .params     = "path",
@@ -1686,105 +1245,6 @@ SRST
 ERST
 
     {
-        .name       = "replay_break",
-        .args_type  = "icount:l",
-        .params     = "icount",
-        .help       = "set breakpoint at the specified instruction count",
-        .cmd        = hmp_replay_break,
-    },
-
-SRST
-``replay_break`` *icount*
-  Set replay breakpoint at instruction count *icount*.
-  Execution stops when the specified instruction is reached.
-  There can be at most one breakpoint. When breakpoint is set, any prior
-  one is removed.  The breakpoint may be set only in replay mode and only
-  "in the future", i.e. at instruction counts greater than the current one.
-  The current instruction count can be observed with ``info replay``.
-ERST
-
-    {
-        .name       = "replay_delete_break",
-        .args_type  = "",
-        .params     = "",
-        .help       = "remove replay breakpoint",
-        .cmd        = hmp_replay_delete_break,
-    },
-
-SRST
-``replay_delete_break``
-  Remove replay breakpoint which was previously set with ``replay_break``.
-  The command is ignored when there are no replay breakpoints.
-ERST
-
-    {
-        .name       = "replay_seek",
-        .args_type  = "icount:l",
-        .params     = "icount",
-        .help       = "replay execution to the specified instruction count",
-        .cmd        = hmp_replay_seek,
-    },
-
-SRST
-``replay_seek`` *icount*
-  Automatically proceed to the instruction count *icount*, when
-  replaying the execution. The command automatically loads nearest
-  snapshot and replays the execution to find the desired instruction.
-  When there is no preceding snapshot or the execution is not replayed,
-  then the command fails.
-  *icount* for the reference may be observed with ``info replay`` command.
-ERST
-
-    {
-        .name       = "calc_dirty_rate",
-        .args_type  = "dirty_ring:-r,dirty_bitmap:-b,second:l,sample_pages_per_GB:l?",
-        .params     = "[-r] [-b] second [sample_pages_per_GB]",
-        .help       = "start a round of guest dirty rate measurement (using -r to"
-                      "\n\t\t\t specify dirty ring as the method of calculation and"
-                      "\n\t\t\t -b to specify dirty bitmap as method of calculation)",
-        .cmd        = hmp_calc_dirty_rate,
-    },
-
-SRST
-``calc_dirty_rate`` *second*
-  Start a round of dirty rate measurement with the period specified in *second*.
-  The result of the dirty rate measurement may be observed with ``info
-  dirty_rate`` command.
-ERST
-
-    {
-        .name       = "set_vcpu_dirty_limit",
-        .args_type  = "dirty_rate:l,cpu_index:l?",
-        .params     = "dirty_rate [cpu_index]",
-        .help       = "set dirty page rate limit, use cpu_index to set limit"
-                      "\n\t\t\t\t\t on a specified virtual cpu",
-        .cmd        = hmp_set_vcpu_dirty_limit,
-    },
-
-SRST
-``set_vcpu_dirty_limit``
-  Set dirty page rate limit on virtual CPU, the information about all the
-  virtual CPU dirty limit status can be observed with ``info vcpu_dirty_limit``
-  command.
-ERST
-
-    {
-        .name       = "cancel_vcpu_dirty_limit",
-        .args_type  = "cpu_index:l?",
-        .params     = "[cpu_index]",
-        .help       = "cancel dirty page rate limit, use cpu_index to cancel"
-                      "\n\t\t\t\t\t limit on a specified virtual cpu",
-        .cmd        = hmp_cancel_vcpu_dirty_limit,
-    },
-
-SRST
-``cancel_vcpu_dirty_limit``
-  Cancel dirty page rate limit on virtual CPU, the information about all the
-  virtual CPU dirty limit status can be observed with ``info vcpu_dirty_limit``
-  command.
-ERST
-
-    {
         .name       = "info",
         .args_type  = "item:s?",
         .params     = "[subcommand]",
@@ -1793,47 +1253,3 @@ ERST
         .sub_table  = hmp_info_cmds,
         .flags      = "p",
     },
-
-#if defined(CONFIG_FDT)
-    {
-        .name       = "dumpdtb",
-        .args_type  = "filename:F",
-        .params     = "filename",
-        .help       = "dump the FDT in dtb format to 'filename'",
-        .cmd        = hmp_dumpdtb,
-    },
-
-SRST
-``dumpdtb`` *filename*
-  Dump the FDT in dtb format to *filename*.
-ERST
-#endif
-
-#if defined(CONFIG_XEN_EMU)
-    {
-        .name       = "xen-event-inject",
-        .args_type  = "port:i",
-        .params     = "port",
-        .help       = "inject event channel",
-        .cmd        = hmp_xen_event_inject,
-    },
-
-SRST
-``xen-event-inject`` *port*
-  Notify guest via event channel on port *port*.
-ERST
-
-
-    {
-        .name       = "xen-event-list",
-        .args_type  = "",
-        .params     = "",
-        .help       = "list event channel state",
-        .cmd        = hmp_xen_event_list,
-    },
-
-SRST
-``xen-event-list``
-  List event channels in the guest
-ERST
-#endif

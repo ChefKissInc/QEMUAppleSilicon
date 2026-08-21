@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/misc/apple-silicon/mic_tempsensor.h"
 #include "hw/registerfields.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 
 // clang-format off
@@ -110,17 +109,6 @@ static int apple_mic_temp_sensor_event(I2CSlave *s, enum i2c_event event)
     return 0;
 }
 
-static const VMStateDescription vmstate_apple_mic_temp_sensor = {
-    .name = "AppleMicTempSensorState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_I2C_SLAVE(i2c, AppleMicTempSensorState),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_mic_temp_sensor_class_init(ObjectClass *klass,
                                              const void *data)
 {
@@ -129,7 +117,6 @@ static void apple_mic_temp_sensor_class_init(ObjectClass *klass,
 
     dc->desc = "Apple Mic/ICA60 Temp Sensor";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_apple_mic_temp_sensor;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 
     c->recv = apple_mic_temp_sensor_rx;

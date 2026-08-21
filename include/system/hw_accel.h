@@ -15,7 +15,6 @@
 #include "system/kvm.h"
 #include "system/hvf.h"
 #include "system/whpx.h"
-#include "system/nvmm.h"
 
 /**
  * cpu_synchronize_state:

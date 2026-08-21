@@ -392,8 +392,6 @@ typedef struct BDRVVHDXState {
     VHDXParentLocatorHeader parent_header;
     VHDXParentLocatorEntry *parent_entries;
 
-    Error *migration_blocker;
-
     bool log_replayed_on_open;
 
     QLIST_HEAD(, VHDXRegionEntry) regions;

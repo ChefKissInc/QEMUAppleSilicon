@@ -97,37 +97,13 @@ void sdl2_window_create(struct sdl2_console *scon)
     if (scon->hidden) {
         flags |= SDL_WINDOW_HIDDEN;
     }
-#ifdef CONFIG_OPENGL
-    if (scon->opengl) {
-        flags |= SDL_WINDOW_OPENGL;
-    }
-#endif
 
     scon->real_window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED,
                                          SDL_WINDOWPOS_UNDEFINED,
                                          surface_width(scon->surface),
                                          surface_height(scon->surface),
                                          flags);
-    if (scon->opengl) {
-        const char *driver = "opengl";
-
-        if (scon->opts->gl == DISPLAY_GL_MODE_ES) {
-            driver = "opengles2";
-        }
-
-        SDL_SetHint(SDL_HINT_RENDER_DRIVER, driver);
-        SDL_SetHint(SDL_HINT_RENDER_BATCHING, "1");
-
-        scon->winctx = SDL_GL_CreateContext(scon->real_window);
-        SDL_GL_SetSwapInterval(0);
-    } else {
-        /* The SDL renderer is only used by sdl2-2D, when OpenGL is disabled */
-        scon->real_renderer = SDL_CreateRenderer(scon->real_window, -1, 0);
-    }
-
-#ifdef CONFIG_OPENGL
-    qemu_egl_display = eglGetCurrentDisplay();
-#endif
+    scon->real_renderer = SDL_CreateRenderer(scon->real_window, -1, 0);
 
     sdl_update_caption(scon);
 }
@@ -138,10 +114,6 @@ void sdl2_window_destroy(struct sdl2_console *scon)
         return;
     }
 
-    if (scon->winctx) {
-        SDL_GL_DeleteContext(scon->winctx);
-        scon->winctx = NULL;
-    }
     if (scon->real_renderer) {
         SDL_DestroyRenderer(scon->real_renderer);
         scon->real_renderer = NULL;
@@ -163,13 +135,7 @@ void sdl2_window_resize(struct sdl2_console *scon)
 
 static void sdl2_redraw(struct sdl2_console *scon)
 {
-    if (scon->opengl) {
-#ifdef CONFIG_OPENGL
-        sdl2_gl_redraw(scon);
-#endif
-    } else {
-        sdl2_2d_redraw(scon);
-    }
+    sdl2_2d_redraw(scon);
 }
 
 static void sdl_update_caption(struct sdl2_console *scon)
@@ -432,10 +398,8 @@ static void handle_keydown(SDL_Event *ev)
             break;
         case SDL_SCANCODE_U:
             sdl2_window_resize(scon);
-            if (!scon->opengl) {
-                /* re-create scon->texture */
-                sdl2_2d_switch(&scon->dcl, scon->surface);
-            }
+            /* re-create scon->texture */
+            sdl2_2d_switch(&scon->dcl, scon->surface);
             scon->gui_keysym = true;
             break;
 #if 0
@@ -804,79 +768,9 @@ static const DisplayChangeListenerOps dcl_2d_ops = {
     .dpy_cursor_define    = sdl_mouse_define,
 };
 
-#ifdef CONFIG_OPENGL
-static const DisplayChangeListenerOps dcl_gl_ops = {
-    .dpy_name                = "sdl2-gl",
-    .dpy_gfx_update          = sdl2_gl_update,
-    .dpy_gfx_switch          = sdl2_gl_switch,
-    .dpy_gfx_check_format    = console_gl_check_format,
-    .dpy_refresh             = sdl2_gl_refresh,
-    .dpy_mouse_set           = sdl_mouse_warp,
-    .dpy_cursor_define       = sdl_mouse_define,
-
-    .dpy_gl_scanout_disable  = sdl2_gl_scanout_disable,
-    .dpy_gl_scanout_texture  = sdl2_gl_scanout_texture,
-    .dpy_gl_update           = sdl2_gl_scanout_flush,
-
-#ifdef CONFIG_GBM
-    .dpy_gl_scanout_dmabuf   = sdl2_gl_scanout_dmabuf,
-    .dpy_gl_release_dmabuf   = sdl2_gl_release_dmabuf,
-    .dpy_has_dmabuf          = sdl2_gl_has_dmabuf,
-#endif
-};
-
-static bool
-sdl2_gl_is_compatible_dcl(DisplayGLCtx *dgc,
-                          DisplayChangeListener *dcl)
-{
-    return dcl->ops == &dcl_gl_ops;
-}
-
-static const DisplayGLCtxOps gl_ctx_ops = {
-    .dpy_gl_ctx_is_compatible_dcl = sdl2_gl_is_compatible_dcl,
-    .dpy_gl_ctx_create       = sdl2_gl_create_context,
-    .dpy_gl_ctx_destroy      = sdl2_gl_destroy_context,
-    .dpy_gl_ctx_make_current = sdl2_gl_make_context_current,
-};
-#endif
-
 static void sdl2_display_early_init(DisplayOptions *o)
 {
     assert(o->type == DISPLAY_TYPE_SDL);
-    if (o->has_gl && o->gl) {
-#ifdef CONFIG_OPENGL
-        display_opengl = 1;
-#endif
-    }
-}
-
-static void sdl2_set_hint_x11_force_egl(void)
-{
-#if defined(SDL_HINT_VIDEO_X11_FORCE_EGL) && defined(CONFIG_OPENGL) && \
-    defined(CONFIG_X11)
-    Display *x_disp = XOpenDisplay(NULL);
-    EGLDisplay egl_display;
-
-    if (!x_disp) {
-        return;
-    }
-
-    /* Prefer EGL over GLX to get dma-buf support. */
-    egl_display = eglGetDisplay((EGLNativeDisplayType)x_disp);
-
-    if (egl_display != EGL_NO_DISPLAY) {
-        /*
-         * Setting X11_FORCE_EGL hint doesn't make SDL to prefer X11 over
-         * Wayland. SDL will use Wayland driver even if XWayland presents.
-         * It's always safe to set the hint even if X11 is not used by SDL.
-         * SDL will work regardless of the hint.
-         */
-        SDL_SetHint(SDL_HINT_VIDEO_X11_FORCE_EGL, "1");
-        eglTerminate(egl_display);
-    }
-
-    XCloseDisplay(x_disp);
-#endif
 }
 
 static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
@@ -906,7 +800,6 @@ static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
     SDL_SetHint(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "0");
 #endif
     SDL_SetHint(SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1");
-    sdl2_set_hint_x11_force_egl();
     SDL_EnableScreenSaver();
     memset(&info, 0, sizeof(info));
     SDL_VERSION(&info.version);
@@ -941,22 +834,9 @@ static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
         }
         sdl2_console[i].idx = i;
         sdl2_console[i].opts = o;
-#ifdef CONFIG_OPENGL
-        sdl2_console[i].opengl = display_opengl;
-        sdl2_console[i].dcl.ops = display_opengl ? &dcl_gl_ops : &dcl_2d_ops;
-        sdl2_console[i].dgc.ops = display_opengl ? &gl_ctx_ops : NULL;
-#else
-        sdl2_console[i].opengl = 0;
         sdl2_console[i].dcl.ops = &dcl_2d_ops;
-#endif
         sdl2_console[i].dcl.con = con;
         sdl2_console[i].kbd = qkbd_state_init(con);
-#ifdef CONFIG_OPENGL
-        if (display_opengl) {
-            qemu_console_set_display_gl_ctx(con, &sdl2_console[i].dgc);
-            sdl2_gl_console_init(&sdl2_console[i]);
-        }
-#endif
         register_displaychangelistener(&sdl2_console[i].dcl);
 
 #if defined(SDL_VIDEO_DRIVER_WINDOWS) || defined(SDL_VIDEO_DRIVER_X11)
@@ -1015,7 +895,3 @@ static void register_sdl1(void)
 }
 
 type_init(register_sdl1);
-
-#ifdef CONFIG_OPENGL
-module_dep("ui-opengl");
-#endif

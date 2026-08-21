@@ -26,7 +26,6 @@
 #include "hw/misc/apple-silicon/spmi-baseband.h"
 #include "hw/pci/msi.h"
 #include "hw/pci/pci_device.h"
-#include "migration/vmstate.h"
 #include "qemu/cutils.h"
 #include "qemu/log.h"
 #include "qemu/units.h"
@@ -1240,16 +1239,6 @@ static void apple_baseband_unrealize(DeviceState *dev)
     AppleBasebandState *s = APPLE_BASEBAND(dev);
 }
 
-static const VMStateDescription vmstate_apple_baseband = {
-    .name = "apple_baseband",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_baseband_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -1257,7 +1246,6 @@ static void apple_baseband_class_init(ObjectClass *klass, const void *data)
     dc->realize = apple_baseband_realize;
     dc->unrealize = apple_baseband_unrealize;
     dc->desc = "Apple Baseband";
-    dc->vmsd = &vmstate_apple_baseband;
     set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
 }
 

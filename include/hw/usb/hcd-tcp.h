@@ -46,7 +46,6 @@ struct USBTCPHostState {
     USBPort ports[3];
     QIOChannel *ioc;
     CoMutex write_mutex;
-    Error *migration_blocker;
     bool closed;
     bool stopped;
     USBTCPRemoteConnType conn_type;

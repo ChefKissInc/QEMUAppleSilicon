@@ -21,7 +21,6 @@
 
 #include "qemu/osdep.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "qemu/module.h"
@@ -29,7 +28,7 @@
 #include "chardev/char-fe.h"
 #include "chardev/char-serial.h"
 
-#include "hw/arm/exynos4210.h"
+#include "hw/char/exynos4210_uart.h"
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/qdev-properties-system.h"
@@ -614,42 +613,6 @@ static void exynos4210_uart_reset(DeviceState *dev)
     trace_exynos_uart_rxsize(s->channel, s->rx.size);
 }
 
-static int exynos4210_uart_post_load(void *opaque, int version_id)
-{
-    Exynos4210UartState *s = (Exynos4210UartState *)opaque;
-
-    exynos4210_uart_update_parameters(s);
-    exynos4210_uart_rx_timeout_set(s);
-
-    return 0;
-}
-
-static const VMStateDescription vmstate_exynos4210_uart_fifo = {
-    .name = "exynos4210.uart.fifo",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(sp, Exynos4210UartFIFO),
-        VMSTATE_UINT32(rp, Exynos4210UartFIFO),
-        VMSTATE_VBUFFER_UINT32(data, Exynos4210UartFIFO, 1, NULL, size),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static const VMStateDescription vmstate_exynos4210_uart = {
-    .name = "exynos4210.uart",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .post_load = exynos4210_uart_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_STRUCT(rx, Exynos4210UartState, 1,
-                       vmstate_exynos4210_uart_fifo, Exynos4210UartFIFO),
-        VMSTATE_UINT32_ARRAY(reg, Exynos4210UartState,
-                             EXYNOS4210_UART_REGS_MEM_SIZE / sizeof(uint32_t)),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 DeviceState *exynos4210_uart_create(hwaddr addr,
                                     int fifo_size,
                                     int channel,
@@ -718,7 +681,6 @@ static void exynos4210_uart_class_init(ObjectClass *klass, const void *data)
     dc->realize = exynos4210_uart_realize;
     device_class_set_legacy_reset(dc, exynos4210_uart_reset);
     device_class_set_props(dc, exynos4210_uart_properties);
-    dc->vmsd = &vmstate_exynos4210_uart;
 }
 
 static const TypeInfo exynos4210_uart_info = {

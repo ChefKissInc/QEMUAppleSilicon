@@ -37,7 +37,6 @@
 #include "system/system.h"
 #include "system/runstate.h"
 #include "system/runstate-action.h"
-#include "system/cpu-throttle.h"
 #include "qapi/error.h"
 #include "qapi/qapi-commands-block.h"
 #include "qapi/qapi-commands-machine.h"
@@ -50,7 +49,6 @@
 #include "qemu/error-report.h"
 #include <Carbon/Carbon.h>
 #include "hw/core/cpu.h"
-#include "system/replay.h"
 
 #ifndef MAC_OS_VERSION_14_0
 #define MAC_OS_VERSION_14_0 140000
@@ -120,12 +118,10 @@ static void with_bql(CodeBlock block)
 {
     bool locked = bql_locked();
     if (!locked) {
-        replay_mutex_lock();
         bql_lock();
     }
     block();
     if (!locked) {
-        replay_mutex_unlock();
         bql_unlock();
     }
 }
@@ -136,12 +132,10 @@ static bool bool_with_bql(BoolCodeBlock block)
     bool val;
 
     if (!locked) {
-        replay_mutex_lock();
         bql_lock();
     }
     val = block();
     if (!locked) {
-        replay_mutex_unlock();
         bql_unlock();
     }
     return val;
@@ -1279,7 +1273,6 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 - (BOOL)verifyQuit;
 - (void)openDocumentation:(NSString *)filename;
 - (IBAction) do_about_menu_item: (id) sender;
-- (void)adjustSpeed:(id)sender;
 @end
 
 @implementation QemuCocoaAppController
@@ -1656,7 +1649,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     g_free(icon_path_c);
     NSImage *icon = [[NSImage alloc] initWithContentsOfFile:icon_path];
     NSString *version = @"ChefKiss Inferno emulator version " QEMU_FULL_VERSION;
-    NSString *copyright = @QEMU_COPYRIGHT "\n\nChefKiss Inferno\nCopyright (c) 2023-2026 Visual Ehrmanntraut and Inferno team";
+    NSString *copyright = @QEMU_COPYRIGHT "\n\nChefKiss Inferno\nCopyright (c) 2023-2026 Visual Ehrmanntraut and Inferno team\n\n";
     NSDictionary *options;
     if (icon) {
         options = @{
@@ -1673,36 +1666,6 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     }
     [NSApp orderFrontStandardAboutPanelWithOptions:options];
     [pool release];
-}
-
-/* Used by the Speed menu items */
-- (void)adjustSpeed:(id)sender
-{
-    int throttle_pct; /* throttle percentage */
-    NSMenu *menu;
-
-    menu = [sender menu];
-    if (menu != nil)
-    {
-        /* Unselect the currently selected item */
-        for (NSMenuItem *item in [menu itemArray]) {
-            if (item.state == NSControlStateValueOn) {
-                [item setState: NSControlStateValueOff];
-                break;
-            }
-        }
-    }
-
-    // check the menu item
-    [sender setState: NSControlStateValueOn];
-
-    // get the throttle percentage
-    throttle_pct = [sender tag];
-
-    with_bql(^{
-        cpu_throttle_set(throttle_pct);
-    });
-    COCOA_DEBUG("cpu throttling at %d%c\n", cpu_throttle_get_percentage(), '%');
 }
 
 @end
@@ -1771,32 +1734,6 @@ static void create_initial_menus(void)
     [menuItem setState: zoom_interpolation == kCGInterpolationLow ? NSControlStateValueOn : NSControlStateValueOff];
     [menu addItem: menuItem];
     menuItem = [[[NSMenuItem alloc] initWithTitle:@"View" action:nil keyEquivalent:@""] autorelease];
-    [menuItem setSubmenu:menu];
-    [[NSApp mainMenu] addItem:menuItem];
-
-    // Speed menu
-    menu = [[NSMenu alloc] initWithTitle:@"Speed"];
-
-    // Add the rest of the Speed menu items
-    int p, percentage, throttle_pct;
-    for (p = 10; p >= 0; p--)
-    {
-        percentage = p * 10 > 1 ? p * 10 : 1; // prevent a 0% menu item
-
-        menuItem = [[[NSMenuItem alloc]
-                   initWithTitle: [NSString stringWithFormat: @"%d%%", percentage] action:@selector(adjustSpeed:) keyEquivalent:@""] autorelease];
-
-        if (percentage == 100) {
-            [menuItem setState: NSControlStateValueOn];
-        }
-
-        /* Calculate the throttle percentage */
-        throttle_pct = -1 * percentage + 100;
-
-        [menuItem setTag: throttle_pct];
-        [menu addItem: menuItem];
-    }
-    menuItem = [[[NSMenuItem alloc] initWithTitle:@"Speed" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
 

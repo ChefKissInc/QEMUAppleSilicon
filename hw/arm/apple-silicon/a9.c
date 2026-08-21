@@ -23,15 +23,11 @@
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/or-irq.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "system/address-spaces.h"
 #include "target/arm/cpregs.h"
 #include "arm-powerctl.h"
-
-#define VMSTATE_A9_CPREG(name) \
-    VMSTATE_UINT64(A9_CPREG_VAR_NAME(name), AppleA9State)
 
 #define A9_CPREG_DEF(p_name, p_op0, p_op1, p_crn, p_crm, p_op2, p_access,  \
                      p_reset)                                              \
@@ -223,31 +219,6 @@ AppleA9State *apple_a9_from_node(AppleDTNode *node)
     return acpu;
 }
 
-static const VMStateDescription vmstate_apple_a9 = {
-    .name = "apple_a9",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_A9_CPREG(HID11),       VMSTATE_A9_CPREG(HID3),
-            VMSTATE_A9_CPREG(HID4),        VMSTATE_A9_CPREG(HID5),
-            VMSTATE_A9_CPREG(HID7),        VMSTATE_A9_CPREG(HID8),
-            VMSTATE_A9_CPREG(PMCR0),       VMSTATE_A9_CPREG(PMCR1),
-            VMSTATE_A9_CPREG(PMCR2),       VMSTATE_A9_CPREG(PMCR4),
-            VMSTATE_A9_CPREG(PMESR0),      VMSTATE_A9_CPREG(PMESR1),
-            VMSTATE_A9_CPREG(OPMAT0),      VMSTATE_A9_CPREG(OPMAT1),
-            VMSTATE_A9_CPREG(OPMSK0),      VMSTATE_A9_CPREG(OPMSK1),
-            VMSTATE_A9_CPREG(PMSR),        VMSTATE_A9_CPREG(PMC0),
-            VMSTATE_A9_CPREG(PMC1),        VMSTATE_A9_CPREG(PMTRHLD6),
-            VMSTATE_A9_CPREG(PMTRHLD4),    VMSTATE_A9_CPREG(PMTRHLD2),
-            VMSTATE_A9_CPREG(PMMMAP),      VMSTATE_A9_CPREG(SYS_LSU_ERR_STS),
-            VMSTATE_A9_CPREG(LSU_ERR_STS), VMSTATE_A9_CPREG(LSU_ERR_ADR),
-            VMSTATE_A9_CPREG(L2C_ERR_INF), VMSTATE_A9_CPREG(FED_ERR_STS),
-            VMSTATE_A9_CPREG(CYC_CFG),     VMSTATE_A9_CPREG(RMR_EL3),
-            VMSTATE_A9_CPREG(MMU_ERR_STS), VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_a9_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -256,7 +227,6 @@ static void apple_a9_class_init(ObjectClass *klass, const void *data)
     device_class_set_parent_realize(dc, apple_a9_realize, &tc->parent_realize);
     // device_class_set_parent_reset(dc, apple_a9_reset, &tc->parent_reset);
     dc->desc = "Apple A9 CPU";
-    dc->vmsd = &vmstate_apple_a9;
     set_bit(DEVICE_CATEGORY_CPU, dc->categories);
 }
 

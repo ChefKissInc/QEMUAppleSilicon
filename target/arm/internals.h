@@ -62,8 +62,7 @@ static inline bool excp_is_internal(int excp)
         || excp == EXCP_DEBUG
         || excp == EXCP_HALTED
         || excp == EXCP_EXCEPTION_EXIT
-        || excp == EXCP_KERNEL_TRAP
-        || excp == EXCP_SEMIHOST;
+        || excp == EXCP_KERNEL_TRAP;
 }
 
 /*
@@ -78,30 +77,6 @@ static inline bool excp_is_internal(int excp)
  * In any case, the machine model may override via the cntfrq property.
  */
 #define GTIMER_DEFAULT_HZ 1000000000
-#define GTIMER_BACKCOMPAT_HZ 62500000
-
-/* Bit definitions for the v7M CONTROL register */
-REG_FIELD(V7M_CONTROL, NPRIV, 0, 1)
-REG_FIELD(V7M_CONTROL, SPSEL, 1, 1)
-REG_FIELD(V7M_CONTROL, FPCA, 2, 1)
-REG_FIELD(V7M_CONTROL, SFPA, 3, 1)
-
-/* Bit definitions for v7M exception return payload */
-REG_FIELD(V7M_EXCRET, ES, 0, 1)
-REG_FIELD(V7M_EXCRET, RES0, 1, 1)
-REG_FIELD(V7M_EXCRET, SPSEL, 2, 1)
-REG_FIELD(V7M_EXCRET, MODE, 3, 1)
-REG_FIELD(V7M_EXCRET, FTYPE, 4, 1)
-REG_FIELD(V7M_EXCRET, DCRS, 5, 1)
-REG_FIELD(V7M_EXCRET, S, 6, 1)
-REG_FIELD(V7M_EXCRET, RES1, 7, 25) /* including the must-be-1 prefix */
-
-/* Minimum value which is a magic number for exception return */
-#define EXC_RETURN_MIN_MAGIC 0xff000000
-/* Minimum number which is a magic number for function or exception return
- * when using v8M security extension
- */
-#define FNC_RETURN_MIN_MAGIC 0xfefffffe
 
 /* Bit definitions for DBGWCRn and DBGWCRn_EL1 */
 REG_FIELD(DBGWCR, E, 0, 1)
@@ -460,11 +435,6 @@ static inline bool arm_el_is_aa64(CPUARMState *env, int el)
  */
 static inline int arm_current_el(CPUARMState *env)
 {
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        return arm_v7m_is_handler_mode(env) ||
-            !(env->v7m.control[env->v7m.secure] & 1);
-    }
-
     if (is_a64(env)) {
         return extract32(env->pstate, 2, 2);
     }
@@ -603,10 +573,6 @@ uint8_t round_down_to_parange_bit_size(uint8_t bit_size);
 static inline bool extended_addresses_enabled(CPUARMState *env)
 {
     uint64_t tcr = env->cp15.tcr_el[arm_is_secure(env) ? 3 : 1];
-    if (arm_feature(env, ARM_FEATURE_PMSA) &&
-        arm_feature(env, ARM_FEATURE_V8)) {
-        return true;
-    }
     return arm_el_is_aa64(env, 1) ||
            (arm_feature(env, ARM_FEATURE_LPAE) && (tcr & TTBCR_EAE));
 }
@@ -950,11 +916,7 @@ static inline int arm_to_core_mmu_idx(ARMMMUIdx mmu_idx)
 
 static inline ARMMMUIdx core_to_arm_mmu_idx(CPUARMState *env, int mmu_idx)
 {
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        return mmu_idx | ARM_MMU_IDX_M;
-    } else {
-        return mmu_idx | ARM_MMU_IDX_A;
-    }
+    return mmu_idx | ARM_MMU_IDX_A;
 }
 
 static inline ARMMMUIdx core_to_aa64_mmu_idx(int mmu_idx)
@@ -966,10 +928,6 @@ static inline ARMMMUIdx core_to_aa64_mmu_idx(int mmu_idx)
 /* Return the exception level we're running at if this is our mmu_idx */
 static inline int arm_mmu_idx_to_el(ARMMMUIdx mmu_idx)
 {
-    if (mmu_idx & ARM_MMU_IDX_M) {
-        return mmu_idx & ARM_MMU_IDX_M_PRIV;
-    }
-
     switch (mmu_idx) {
     case ARMMMUIdx_E10_0:
     case ARMMMUIdx_E20_0:
@@ -1001,9 +959,6 @@ static inline bool arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx)
 {
     return (mmu_idx & ARM_MMU_IDX_A_GXF) != 0;
 }
-
-/* Return the MMU index for a v7M CPU in the specified security state */
-ARMMMUIdx arm_v7m_mmu_idx_for_secstate(CPUARMState *env, bool secstate);
 
 /*
  * Return true if the stage 1 translation regime is using LPAE
@@ -1128,14 +1083,6 @@ static inline uint32_t regime_el(CPUARMState *env, ARMMMUIdx mmu_idx)
     case ARMMMUIdx_E10_1_PAN:
     case ARMMMUIdx_GE10_1:
     case ARMMMUIdx_GE10_1_PAN:
-    case ARMMMUIdx_MPrivNegPri:
-    case ARMMMUIdx_MUserNegPri:
-    case ARMMMUIdx_MPriv:
-    case ARMMMUIdx_MUser:
-    case ARMMMUIdx_MSPrivNegPri:
-    case ARMMMUIdx_MSUserNegPri:
-    case ARMMMUIdx_MSPriv:
-    case ARMMMUIdx_MSUser:
         return 1;
     default:
         assert_not_reached();
@@ -1149,10 +1096,6 @@ static inline bool regime_is_user(CPUARMState *env, ARMMMUIdx mmu_idx)
     case ARMMMUIdx_E20_0:
     case ARMMMUIdx_E30_0:
     case ARMMMUIdx_Stage1_E0:
-    case ARMMMUIdx_MUser:
-    case ARMMMUIdx_MSUser:
-    case ARMMMUIdx_MUserNegPri:
-    case ARMMMUIdx_MSUserNegPri:
         return true;
     case ARMMMUIdx_E10_1:
     case ARMMMUIdx_E10_1_PAN:
@@ -1209,10 +1152,6 @@ static inline bool regime_using_lpae_format(CPUARMState *env, ARMMMUIdx mmu_idx)
     if (el == 2 || arm_el_is_aa64(env, el)) {
         return true;
     }
-    if (arm_feature(env, ARM_FEATURE_PMSA) &&
-        arm_feature(env, ARM_FEATURE_V8)) {
-        return true;
-    }
     if (arm_feature(env, ARM_FEATURE_LPAE)
         && (regime_tcr(env, mmu_idx) & TTBCR_EAE)) {
         return true;
@@ -1259,57 +1198,6 @@ static inline int arm_num_ctx_cmps(ARMCPU *cpu)
         return FIELD_EX64_IDREG(&cpu->isar, ID_AA64DFR0, CTX_CMPS) + 1;
     } else {
         return REG_FIELD_EX32(cpu->isar.dbgdidr, DBGDIDR, CTX_CMPS) + 1;
-    }
-}
-
-/**
- * v7m_using_psp: Return true if using process stack pointer
- * Return true if the CPU is currently using the process stack
- * pointer, or false if it is using the main stack pointer.
- */
-static inline bool v7m_using_psp(CPUARMState *env)
-{
-    /* Handler mode always uses the main stack; for thread mode
-     * the CONTROL.SPSEL bit determines the answer.
-     * Note that in v7M it is not possible to be in Handler mode with
-     * CONTROL.SPSEL non-zero, but in v8M it is, so we must check both.
-     */
-    return !arm_v7m_is_handler_mode(env) &&
-        env->v7m.control[env->v7m.secure] & R_V7M_CONTROL_SPSEL_MASK;
-}
-
-/**
- * v7m_sp_limit: Return SP limit for current CPU state
- * Return the SP limit value for the current CPU security state
- * and stack pointer.
- */
-static inline uint32_t v7m_sp_limit(CPUARMState *env)
-{
-    if (v7m_using_psp(env)) {
-        return env->v7m.psplim[env->v7m.secure];
-    } else {
-        return env->v7m.msplim[env->v7m.secure];
-    }
-}
-
-/**
- * v7m_cpacr_pass:
- * Return true if the v7M CPACR permits access to the FPU for the specified
- * security state and privilege level.
- */
-static inline bool v7m_cpacr_pass(CPUARMState *env,
-                                  bool is_secure, bool is_priv)
-{
-    switch (extract32(env->v7m.cpacr[is_secure], 20, 2)) {
-    case 0:
-    case 2: /* UNPREDICTABLE: we treat like 0 */
-        return false;
-    case 1:
-        return is_priv;
-    case 3:
-        return true;
-    default:
-        assert_not_reached();
     }
 }
 
@@ -1847,19 +1735,6 @@ static inline bool arm_gdbstub_is_aarch64(ARMCPU *cpu)
 {
     return arm_feature(&cpu->env, ARM_FEATURE_AARCH64);
 }
-
-/* Read the CONTROL register as the MRS instruction would. */
-uint32_t arm_v7m_mrs_control(CPUARMState *env, uint32_t secure);
-
-/*
- * Return a pointer to the location where we currently store the
- * stack pointer for the requested security state and thread mode.
- * This pointer will become invalid if the CPU state is updated
- * such that the stack pointers are switched around (eg changing
- * the SPSEL control bit).
- */
-uint32_t *arm_v7m_get_sp_ptr(CPUARMState *env, bool secure,
-                             bool threadmode, bool spsel);
 
 bool el_is_in_host(CPUARMState *env, int el);
 

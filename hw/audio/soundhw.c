@@ -28,7 +28,6 @@
 #include "qapi/error.h"
 #include "qom/object.h"
 #include "hw/qdev-properties.h"
-#include "hw/isa/isa.h"
 #include "hw/pci/pci.h"
 #include "hw/audio/soundhw.h"
 
@@ -36,7 +35,6 @@ struct soundhw {
     const char *name;
     const char *descr;
     const char *typename;
-    int isa;
     int (*init_pci) (PCIBus *bus, const char *audiodev);
 };
 
@@ -49,19 +47,7 @@ void pci_register_soundhw(const char *name, const char *descr,
     assert(soundhw_count < ARRAY_SIZE(soundhw) - 1);
     soundhw[soundhw_count].name = name;
     soundhw[soundhw_count].descr = descr;
-    soundhw[soundhw_count].isa = 0;
     soundhw[soundhw_count].init_pci = init_pci;
-    soundhw_count++;
-}
-
-void deprecated_register_soundhw(const char *name, const char *descr,
-                                 int isa, const char *typename)
-{
-    assert(soundhw_count < ARRAY_SIZE(soundhw) - 1);
-    soundhw[soundhw_count].name = name;
-    soundhw[soundhw_count].descr = descr;
-    soundhw[soundhw_count].isa = isa;
-    soundhw[soundhw_count].typename = typename;
     soundhw_count++;
 }
 
@@ -110,33 +96,23 @@ void select_soundhw(const char *name, const char *audiodev)
 void soundhw_init(void)
 {
     struct soundhw *c = selected;
-    ISABus *isa_bus = (ISABus *) object_resolve_path_type("", TYPE_ISA_BUS, NULL);
     PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
     BusState *bus;
 
     if (!c) {
         return;
     }
-    if (c->isa) {
-        if (!isa_bus) {
-            error_report("ISA bus not available for %s", c->name);
-            exit(1);
-        }
-        bus = BUS(isa_bus);
-    } else {
-        if (!pci_bus) {
-            error_report("PCI bus not available for %s", c->name);
-            exit(1);
-        }
-        bus = BUS(pci_bus);
+    if (!pci_bus) {
+        error_report("PCI bus not available for %s", c->name);
+        exit(1);
     }
+    bus = BUS(pci_bus);
 
     if (c->typename) {
         DeviceState *dev = qdev_new(c->typename);
         qdev_prop_set_string(dev, "audiodev", audiodev_id);
         qdev_realize_and_unref(dev, bus, &error_fatal);
     } else {
-        assert(!c->isa);
         c->init_pci(pci_bus, audiodev_id);
     }
 }

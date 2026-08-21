@@ -19,7 +19,6 @@
  */
 
 #include "qemu/osdep.h"
-#include "migration/vmstate.h"
 #include "hw/pci/pci_bridge.h"
 #include "hw/pci/pcie.h"
 #include "hw/pci/msix.h"
@@ -792,41 +791,6 @@ void pcie_aer_root_write_config(PCIDevice *dev,
 
     pcie_aer_root_notify(dev);
 }
-
-static const VMStateDescription vmstate_pcie_aer_err = {
-    .name = "PCIE_AER_ERROR",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(status, PCIEAERErr),
-        VMSTATE_UINT16(source_id, PCIEAERErr),
-        VMSTATE_UINT16(flags, PCIEAERErr),
-        VMSTATE_UINT32_ARRAY(header, PCIEAERErr, 4),
-        VMSTATE_UINT32_ARRAY(prefix, PCIEAERErr, 4),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static bool pcie_aer_state_log_num_valid(void *opaque, int version_id)
-{
-    PCIEAERLog *s = opaque;
-
-    return s->log_num <= s->log_max;
-}
-
-const VMStateDescription vmstate_pcie_aer_log = {
-    .name = "PCIE_AER_ERROR_LOG",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT16(log_num, PCIEAERLog),
-        VMSTATE_UINT16_EQUAL(log_max, PCIEAERLog, NULL),
-        VMSTATE_VALIDATE("log_num <= log_max", pcie_aer_state_log_num_valid),
-        VMSTATE_STRUCT_VARRAY_POINTER_UINT16(log, PCIEAERLog, log_num,
-                              vmstate_pcie_aer_err, PCIEAERErr),
-        VMSTATE_END_OF_LIST()
-    }
-};
 
 typedef struct PCIEAERErrorName {
     const char *name;

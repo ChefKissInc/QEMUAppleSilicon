@@ -1289,8 +1289,7 @@ void define_tlb_insn_regs(ARMCPU *cpu)
     } else {
         define_arm_cp_regs(cpu, tlbi_v7_cp_reginfo);
     }
-    if (arm_feature(env, ARM_FEATURE_V7MP) &&
-        !arm_feature(env, ARM_FEATURE_PMSA)) {
+    if (arm_feature(env, ARM_FEATURE_V7MP)) {
         define_arm_cp_regs(cpu, tlbi_v7mp_cp_reginfo);
     }
     if (arm_feature(env, ARM_FEATURE_V8)) {

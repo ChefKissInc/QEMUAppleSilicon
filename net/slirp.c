@@ -45,9 +45,6 @@
 #include "qapi/error.h"
 #include "qobject/qdict.h"
 #include "util.h"
-#include "migration/register.h"
-#include "migration/vmstate.h"
-#include "migration/qemu-file-types.h"
 
 static int get_str_sep(char *buf, int buf_size, const char **pp, int sep)
 {
@@ -159,7 +156,6 @@ static void net_slirp_cleanup(NetClientState *nc)
 
     g_slist_free_full(s->fwd, slirp_free_fwd);
     main_loop_poll_remove_notifier(&s->poll_notifier);
-    unregister_savevm(NULL, "slirp", s->slirp);
     slirp_cleanup(s->slirp);
     if (s->exit_notifier.notify) {
         qemu_remove_exit_notifier(&s->exit_notifier);
@@ -382,46 +378,6 @@ static void net_slirp_poll_notify(Notifier *notifier, void *data)
         assert_not_reached();
     }
 }
-
-static ssize_t
-net_slirp_stream_read(void *buf, size_t size, void *opaque)
-{
-    QEMUFile *f = opaque;
-
-    return qemu_get_buffer(f, buf, size);
-}
-
-static ssize_t
-net_slirp_stream_write(const void *buf, size_t size, void *opaque)
-{
-    QEMUFile *f = opaque;
-
-    qemu_put_buffer(f, buf, size);
-    if (qemu_file_get_error(f)) {
-        return -1;
-    }
-
-    return size;
-}
-
-static int net_slirp_state_load(QEMUFile *f, void *opaque, int version_id)
-{
-    Slirp *slirp = opaque;
-
-    return slirp_state_load(slirp, version_id, net_slirp_stream_read, f);
-}
-
-static void net_slirp_state_save(QEMUFile *f, void *opaque)
-{
-    Slirp *slirp = opaque;
-
-    slirp_state_save(slirp, net_slirp_stream_write, f);
-}
-
-static SaveVMHandlers savevm_slirp_state = {
-    .save_state = net_slirp_state_save,
-    .load_state = net_slirp_state_load,
-};
 
 static int net_slirp_init(NetClientState *peer, const char *model,
                           const char *name, int restricted,
@@ -659,18 +615,6 @@ static int net_slirp_init(NetClientState *peer, const char *model,
     cfg.vdomainname = vdomainname;
     s->slirp = slirp_new(&cfg, &slirp_cb, s);
     QTAILQ_INSERT_TAIL(&slirp_stacks, s, entry);
-
-    /*
-     * Make sure the current bitstream version of slirp is 4, to avoid
-     * QEMU migration incompatibilities, if upstream slirp bumped the
-     * version.
-     *
-     * FIXME: use bitfields of features? teach libslirp to save with
-     * specific version?
-     */
-    assert(slirp_state_version() == 4);
-    register_savevm_live("slirp", VMSTATE_INSTANCE_ID_ANY,
-                         slirp_state_version(), &savevm_slirp_state, s->slirp);
 
     s->poll_notifier.notify = net_slirp_poll_notify;
     main_loop_poll_add_notifier(&s->poll_notifier);

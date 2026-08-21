@@ -33,9 +33,7 @@
 #ifndef CONFIG_QEMU_PRIVATE_XTS
 #include <nettle/xts.h>
 #endif
-#ifdef CONFIG_CRYPTO_SM4
 #include <nettle/sm4.h>
-#endif
 
 static inline bool qcrypto_length_check(size_t len, size_t blocksize,
                                         Error **errp)
@@ -457,7 +455,6 @@ DEFINE_ECB_CBC_CTR_XTS(qcrypto_nettle_twofish,
                        QCryptoNettleTwofish, TWOFISH_BLOCK_SIZE,
                        twofish_encrypt_native, twofish_decrypt_native)
 
-#ifdef CONFIG_CRYPTO_SM4
 typedef struct QCryptoNettleSm4 {
     QCryptoCipher base;
     struct sm4_ctx key[2];
@@ -480,7 +477,6 @@ static void sm4_decrypt_native(void *ctx, size_t length,
 DEFINE_ECB(qcrypto_nettle_sm4,
            QCryptoNettleSm4, SM4_BLOCK_SIZE,
            sm4_encrypt_native, sm4_decrypt_native)
-#endif
 
 bool qcrypto_cipher_supports(QCryptoCipherAlgo alg,
                              QCryptoCipherMode mode)
@@ -498,9 +494,7 @@ bool qcrypto_cipher_supports(QCryptoCipherAlgo alg,
     case QCRYPTO_CIPHER_ALGO_TWOFISH_128:
     case QCRYPTO_CIPHER_ALGO_TWOFISH_192:
     case QCRYPTO_CIPHER_ALGO_TWOFISH_256:
-#ifdef CONFIG_CRYPTO_SM4
     case QCRYPTO_CIPHER_ALGO_SM4:
-#endif
         break;
     default:
         return false;
@@ -765,7 +759,6 @@ static QCryptoCipher *qcrypto_cipher_ctx_new(QCryptoCipherAlgo alg,
 
             return &ctx->base;
         }
-#ifdef CONFIG_CRYPTO_SM4
     case QCRYPTO_CIPHER_ALGO_SM4:
         {
             QCryptoNettleSm4 *ctx;
@@ -790,7 +783,6 @@ static QCryptoCipher *qcrypto_cipher_ctx_new(QCryptoCipherAlgo alg,
 
             return &ctx->base;
         }
-#endif
 
     default:
         error_setg(errp, "Unsupported cipher algorithm %s",

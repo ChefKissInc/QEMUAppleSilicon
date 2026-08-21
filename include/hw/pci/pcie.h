@@ -24,7 +24,6 @@
 #include "hw/pci/pci_regs.h"
 #include "hw/pci/pcie_regs.h"
 #include "hw/pci/pcie_aer.h"
-#include "hw/pci/pcie_sriov.h"
 #include "hw/hotplug.h"
 
 typedef struct PCIEPort PCIEPort;
@@ -77,11 +76,6 @@ struct PCIExpressDevice {
 
     /* ACS */
     uint16_t acs_cap;
-
-    /* SR/IOV */
-    uint16_t sriov_cap;
-    PCIESriovPF sriov_pf;
-    PCIESriovVF sriov_vf;
 };
 
 #define COMPAT_PROP_PCP "power_controller_present"

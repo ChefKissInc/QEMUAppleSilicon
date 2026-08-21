@@ -605,7 +605,8 @@ qcrypto_tls_session_handshake(QCryptoTLSSession *session,
     ret = gnutls_handshake(session->handle);
 
     if (!ret) {
-#ifdef CONFIG_GNUTLS_BUG1717_WORKAROUND
+// #ifdef CONFIG_GNUTLS_BUG1717_WORKAROUND
+#if 1
         gnutls_cipher_algorithm_t cipher =
             gnutls_cipher_get(session->handle);
 

@@ -190,8 +190,6 @@ SUB_rri         1011 0000 1 .......             @addsub_sp_i
 
 BX              0100 0111 0 .... 000            @branchr
 BLX_r           0100 0111 1 .... 000            @branchr
-BXNS            0100 0111 0 .... 100            @branchr
-BLXNS           0100 0111 1 .... 100            @branchr
 
 # Extend
 
@@ -209,7 +207,6 @@ UXTAB           1011 0010 11 ... ...            @extend
 SETEND          1011 0110 010 1 E:1 000         &setend
 {
   CPS           1011 0110 011 . 0 A:1 I:1 F:1   &cps mode=0 M=0 %imod
-  CPS_v7m       1011 0110 011 im:1 00 I:1 F:1
 }
 
 # Reverse bytes

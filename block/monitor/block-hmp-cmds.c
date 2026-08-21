@@ -52,11 +52,9 @@
 #include "system/system.h"
 #include "monitor/monitor.h"
 #include "monitor/hmp.h"
-#include "block/nbd.h"
 #include "block/qapi.h"
 #include "block/block_int.h"
 #include "block/block-hmp-cmds.h"
-#include "qemu-io.h"
 
 static void hmp_drive_add_node(Monitor *mon, const char *optstr)
 {
@@ -288,17 +286,6 @@ end:
     hmp_handle_error(mon, err);
 }
 
-void hmp_block_job_set_speed(Monitor *mon, const QDict *qdict)
-{
-    Error *error = NULL;
-    const char *device = qdict_get_str(qdict, "device");
-    int64_t value = qdict_get_int(qdict, "speed");
-
-    qmp_block_job_set_speed(device, value, &error);
-
-    hmp_handle_error(mon, error);
-}
-
 void hmp_block_job_cancel(Monitor *mon, const QDict *qdict)
 {
     Error *error = NULL;
@@ -386,105 +373,6 @@ void hmp_snapshot_delete_blkdev_internal(Monitor *mon, const QDict *qdict)
     hmp_handle_error(mon, err);
 }
 
-void hmp_nbd_server_start(Monitor *mon, const QDict *qdict)
-{
-    const char *uri = qdict_get_str(qdict, "uri");
-    bool writable = qdict_get_try_bool(qdict, "writable", false);
-    bool all = qdict_get_try_bool(qdict, "all", false);
-    Error *local_err = NULL;
-    BlockInfoList *block_list, *info;
-    SocketAddress *addr;
-    NbdServerAddOptions export;
-
-    if (writable && !all) {
-        error_setg(&local_err, "-w only valid together with -a");
-        goto exit;
-    }
-
-    /* First check if the address is valid and start the server.  */
-    addr = socket_parse(uri, &local_err);
-    if (local_err != NULL) {
-        goto exit;
-    }
-
-    nbd_server_start(addr, NBD_DEFAULT_HANDSHAKE_MAX_SECS, NULL, NULL,
-                     NBD_DEFAULT_MAX_CONNECTIONS, &local_err);
-    qapi_free_SocketAddress(addr);
-    if (local_err != NULL) {
-        goto exit;
-    }
-
-    if (!all) {
-        return;
-    }
-
-    /* Then try adding all block devices.  If one fails, close all and
-     * exit.
-     */
-    block_list = qmp_query_block(NULL);
-
-    for (info = block_list; info; info = info->next) {
-        if (!info->value->inserted) {
-            continue;
-        }
-
-        export = (NbdServerAddOptions) {
-            .device         = info->value->device,
-            .has_writable   = true,
-            .writable       = writable,
-        };
-
-        qmp_nbd_server_add(&export, &local_err);
-
-        if (local_err != NULL) {
-            qmp_nbd_server_stop(NULL);
-            break;
-        }
-    }
-
-    qapi_free_BlockInfoList(block_list);
-
-exit:
-    hmp_handle_error(mon, local_err);
-}
-
-void hmp_nbd_server_add(Monitor *mon, const QDict *qdict)
-{
-    const char *device = qdict_get_str(qdict, "device");
-    const char *name = qdict_get_try_str(qdict, "name");
-    bool writable = qdict_get_try_bool(qdict, "writable", false);
-    Error *local_err = NULL;
-
-    NbdServerAddOptions export = {
-        .device         = (char *) device,
-        .name           = (char *) name,
-        .has_writable   = true,
-        .writable       = writable,
-    };
-
-    qmp_nbd_server_add(&export, &local_err);
-    hmp_handle_error(mon, local_err);
-}
-
-void hmp_nbd_server_remove(Monitor *mon, const QDict *qdict)
-{
-    const char *name = qdict_get_str(qdict, "name");
-    bool force = qdict_get_try_bool(qdict, "force", false);
-    Error *err = NULL;
-
-    /* Rely on BLOCK_EXPORT_REMOVE_MODE_SAFE being the default */
-    qmp_nbd_server_remove(name, force, BLOCK_EXPORT_REMOVE_MODE_HARD, &err);
-    hmp_handle_error(mon, err);
-}
-
-void hmp_nbd_server_stop(Monitor *mon, const QDict *qdict)
-{
-    Error *err = NULL;
-
-    qmp_nbd_server_stop(&err);
-    hmp_handle_error(mon, err);
-}
-
 void coroutine_fn hmp_block_resize(Monitor *mon, const QDict *qdict)
 {
     const char *device = qdict_get_str(qdict, "device");
@@ -500,42 +388,12 @@ void hmp_block_stream(Monitor *mon, const QDict *qdict)
     Error *error = NULL;
     const char *device = qdict_get_str(qdict, "device");
     const char *base = qdict_get_try_str(qdict, "base");
-    int64_t speed = qdict_get_try_int(qdict, "speed", 0);
 
     qmp_block_stream(device, device, base, NULL, NULL, false, false, NULL,
-                     qdict_haskey(qdict, "speed"), speed,
                      true, BLOCKDEV_ON_ERROR_REPORT, NULL,
                      false, false, false, false, &error);
 
     hmp_handle_error(mon, error);
-}
-
-void hmp_block_set_io_throttle(Monitor *mon, const QDict *qdict)
-{
-    Error *err = NULL;
-    char *device = (char *) qdict_get_str(qdict, "device");
-    BlockIOThrottle throttle = {
-        .bps = qdict_get_int(qdict, "bps"),
-        .bps_rd = qdict_get_int(qdict, "bps_rd"),
-        .bps_wr = qdict_get_int(qdict, "bps_wr"),
-        .iops = qdict_get_int(qdict, "iops"),
-        .iops_rd = qdict_get_int(qdict, "iops_rd"),
-        .iops_wr = qdict_get_int(qdict, "iops_wr"),
-    };
-
-    /*
-     * qmp_block_set_io_throttle has separate parameters for the
-     * (deprecated) block device name and the qdev ID but the HMP
-     * version has only one, so we must decide which one to pass.
-     */
-    if (blk_by_name(device)) {
-        throttle.device = device;
-    } else {
-        throttle.id = device;
-    }
-
-    qmp_block_set_io_throttle(&throttle, &err);
-    hmp_handle_error(mon, err);
 }
 
 void hmp_eject(Monitor *mon, const QDict *qdict)
@@ -545,72 +403,6 @@ void hmp_eject(Monitor *mon, const QDict *qdict)
     Error *err = NULL;
 
     qmp_eject(device, NULL, true, force, &err);
-    hmp_handle_error(mon, err);
-}
-
-void hmp_qemu_io(Monitor *mon, const QDict *qdict)
-{
-    BlockBackend *blk = NULL;
-    BlockDriverState *bs = NULL;
-    BlockBackend *local_blk = NULL;
-    bool qdev = qdict_get_try_bool(qdict, "qdev", false);
-    const char *device = qdict_get_str(qdict, "device");
-    const char *command = qdict_get_str(qdict, "command");
-    Error *err = NULL;
-    int ret;
-
-    if (qdev) {
-        blk = blk_by_qdev_id(device, &err);
-        if (!blk) {
-            goto fail;
-        }
-    } else {
-        blk = blk_by_name(device);
-        if (!blk) {
-            bs = bdrv_lookup_bs(NULL, device, &err);
-            if (!bs) {
-                goto fail;
-            }
-        }
-    }
-
-    if (bs) {
-        blk = local_blk = blk_new(bdrv_get_aio_context(bs), 0, BLK_PERM_ALL);
-        ret = blk_insert_bs(blk, bs, &err);
-        if (ret < 0) {
-            goto fail;
-        }
-    }
-
-    /*
-     * Notably absent: Proper permission management. This is sad, but it seems
-     * almost impossible to achieve without changing the semantics and thereby
-     * limiting the use cases of the qemu-io HMP command.
-     *
-     * In an ideal world we would unconditionally create a new BlockBackend for
-     * qemuio_command(), but we have commands like 'reopen' and want them to
-     * take effect on the exact BlockBackend whose name the user passed instead
-     * of just on a temporary copy of it.
-     *
-     * Another problem is that deleting the temporary BlockBackend involves
-     * draining all requests on it first, but some qemu-iotests cases want to
-     * issue multiple aio_read/write requests and expect them to complete in
-     * the background while the monitor has already returned.
-     *
-     * This is also what prevents us from saving the original permissions and
-     * restoring them later: We can't revoke permissions until all requests
-     * have completed, and we don't know when that is nor can we really let
-     * anything else run before we have revoken them to avoid race conditions.
-     *
-     * What happens now is that command() in qemu-io-cmds.c can extend the
-     * permissions if necessary for the qemu-io command. And they simply stay
-     * extended, possibly resulting in a read-only guest device keeping write
-     * permissions. Ugly, but it appears to be the lesser evil.
-     */
-    qemuio_command(blk, command);
-
-fail:
-    blk_unref(local_blk);
     hmp_handle_error(mon, err);
 }
 
@@ -698,7 +490,7 @@ static void print_block_info(Monitor *mon, BlockInfo *info,
                         " iops_rd_max=%" PRId64
                         " iops_wr_max=%" PRId64
                         " iops_size=%" PRId64
-                        " group=%s\n",
+                        "\n",
                         inserted->bps,
                         inserted->bps_rd,
                         inserted->bps_wr,
@@ -711,8 +503,7 @@ static void print_block_info(Monitor *mon, BlockInfo *info,
                         inserted->iops_max,
                         inserted->iops_rd_max,
                         inserted->iops_wr_max,
-                        inserted->iops_size,
-                        inserted->group);
+                        inserted->iops_size);
     }
 
     if (verbose) {
@@ -836,21 +627,17 @@ void hmp_info_block_jobs(Monitor *mon, const QDict *qdict)
     while (list) {
         if (list->value->type == JOB_TYPE_STREAM) {
             monitor_printf(mon, "Streaming device %s: Completed %" PRId64
-                           " of %" PRId64 " bytes, speed limit %" PRId64
-                           " bytes/s\n",
+                           " of %" PRId64 " bytes\n",
                            list->value->device,
                            list->value->offset,
-                           list->value->len,
-                           list->value->speed);
+                           list->value->len);
         } else {
             monitor_printf(mon, "Type %s, device %s: Completed %" PRId64
-                           " of %" PRId64 " bytes, speed limit %" PRId64
-                           " bytes/s\n",
+                           " of %" PRId64 " bytes\n",
                            JobType_str(list->value->type),
                            list->value->device,
                            list->value->offset,
-                           list->value->len,
-                           list->value->speed);
+                           list->value->len);
         }
         list = list->next;
     }

@@ -7,7 +7,7 @@
 /* ------------------------------------------------------------------ */
 
 int usb_desc_device(const USBDescID *id, const USBDescDevice *dev,
-                    bool msos, uint8_t *dest, size_t len)
+                    uint8_t *dest, size_t len)
 {
     uint8_t bLength = 0x12;
     USBDescriptor *d = (void *)dest;
@@ -19,18 +19,9 @@ int usb_desc_device(const USBDescID *id, const USBDescDevice *dev,
     d->bLength                     = bLength;
     d->bDescriptorType             = USB_DT_DEVICE;
 
-    if (msos && dev->bcdUSB < 0x0200) {
-        /*
-         * Version 2.0+ required for microsoft os descriptors to work.
-         * Done this way so msos-desc compat property will handle both
-         * the version and the new descriptors being present.
-         */
-        d->u.device.bcdUSB_lo          = usb_lo(0x0200);
-        d->u.device.bcdUSB_hi          = usb_hi(0x0200);
-    } else {
-        d->u.device.bcdUSB_lo          = usb_lo(dev->bcdUSB);
-        d->u.device.bcdUSB_hi          = usb_hi(dev->bcdUSB);
-    }
+    d->u.device.bcdUSB_lo          = usb_lo(dev->bcdUSB);
+    d->u.device.bcdUSB_hi          = usb_hi(dev->bcdUSB);
+
     d->u.device.bDeviceClass       = dev->bDeviceClass;
     d->u.device.bDeviceSubClass    = dev->bDeviceSubClass;
     d->u.device.bDeviceProtocol    = dev->bDeviceProtocol;
@@ -509,10 +500,6 @@ void usb_desc_init(USBDevice *dev)
     if (desc->super) {
         dev->speedmask |= USB_SPEED_MASK_SUPER;
     }
-    if (desc->msos && (dev->flags & (1 << USB_DEV_FLAG_MSOS_DESC_ENABLE))) {
-        dev->flags |= (1 << USB_DEV_FLAG_MSOS_DESC_IN_USE);
-        usb_desc_set_string(dev, 0xee, "MSFT100Q");
-    }
     usb_desc_setdefaults(dev);
 }
 
@@ -629,7 +616,6 @@ int usb_desc_string(USBDevice *dev, int index, uint8_t *dest, size_t len)
 int usb_desc_get_descriptor(USBDevice *dev, USBPacket *p,
                             int value, uint8_t *dest, size_t len)
 {
-    bool msos = (dev->flags & (1 << USB_DEV_FLAG_MSOS_DESC_IN_USE));
     const USBDesc *desc = usb_device_get_usb_desc(dev);
     const USBDescDevice *other_dev;
     size_t buflen = USB_DESC_MAX_LEN;
@@ -651,7 +637,7 @@ int usb_desc_get_descriptor(USBDevice *dev, USBPacket *p,
 
     switch(type) {
     case USB_DT_DEVICE:
-        ret = usb_desc_device(&desc->id, dev->device, msos, buf, buflen);
+        ret = usb_desc_device(&desc->id, dev->device, buf, buflen);
         trace_usb_desc_device(dev->addr, len, ret);
         break;
     case USB_DT_CONFIG:
@@ -708,7 +694,6 @@ int usb_desc_get_descriptor(USBDevice *dev, USBPacket *p,
 int usb_desc_handle_control(USBDevice *dev, USBPacket *p,
         int request, int value, int index, int length, uint8_t *data)
 {
-    bool msos = (dev->flags & (1 << USB_DEV_FLAG_MSOS_DESC_IN_USE));
     const USBDesc *desc = usb_device_get_usb_desc(dev);
     int ret = -1;
 
@@ -794,20 +779,6 @@ int usb_desc_handle_control(USBDevice *dev, USBPacket *p,
         ret = usb_desc_set_interface(dev, index, value);
         trace_usb_set_interface(dev->addr, index, value, ret);
         break;
-
-    case VendorDeviceRequest | 'Q':
-        if (msos) {
-            ret = usb_desc_msos(desc, p, index, data, length);
-            trace_usb_desc_msos(dev->addr, index, length, ret);
-        }
-        break;
-    case VendorInterfaceRequest | 'Q':
-        if (msos) {
-            ret = usb_desc_msos(desc, p, index, data, length);
-            trace_usb_desc_msos(dev->addr, index, length, ret);
-        }
-        break;
-
     }
     return ret;
 }

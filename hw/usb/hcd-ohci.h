@@ -110,8 +110,6 @@ struct OHCISysBusState {
     dma_addr_t dma_offset;
 };
 
-extern const VMStateDescription vmstate_ohci_state;
-
 void usb_ohci_init(OHCIState *ohci, DeviceState *dev, uint32_t num_ports,
                    dma_addr_t localmem_base, char *masterbus,
                    uint32_t firstport, AddressSpace *as,

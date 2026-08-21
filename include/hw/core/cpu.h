@@ -329,7 +329,6 @@ typedef struct CPUTLB {
 } CPUTLB;
 
 /*
- * Low 16 bits: number of cycles left, used only in icount mode.
  * High 16 bits: Set to -1 to force TCG to stop executing linked TBs
  * for this CPU and return to its top level loop (even in non-icount mode).
  * This allows a single read-compare-cbranch-write sequence to test
@@ -384,8 +383,6 @@ typedef void (*run_on_cpu_func)(CPUState *cpu, run_on_cpu_data data);
 
 struct qemu_work_item;
 
-#define CPU_UNSET_NUMA_NODE_ID -1
-
 /**
  * struct CPUState - common state of one CPU core or thread.
  *
@@ -423,7 +420,6 @@ struct qemu_work_item;
  * @unplug: Indicates a pending CPU unplug request.
  * @crash_occurred: Indicates the OS reported a crash (panic) for this CPU
  * @singlestep_enabled: Flags for single-stepping.
- * @icount_extra: Instructions until next timer event.
  * @cpu_ases: Pointer to array of CPUAddressSpaces (which define the
  *            AddressSpaces this CPU has)
  * @num_ases: number of CPUAddressSpaces in @cpu_ases
@@ -486,8 +482,6 @@ struct CPUState {
     uint32_t cflags_next_tb;
     uint32_t interrupt_request;
     int singlestep_enabled;
-    int64_t icount_budget;
-    int64_t icount_extra;
     uint64_t random_seed;
     sigjmp_buf jmp_env;
 
@@ -624,46 +618,6 @@ bool cpu_get_memory_mapping(CPUState *cpu, MemoryMappingList *list,
                             Error **errp);
 
 /**
- * cpu_write_elf64_note:
- * @f: pointer to a function that writes memory to a file
- * @cpu: The CPU whose memory is to be dumped
- * @cpuid: ID number of the CPU
- * @opaque: pointer to the CPUState struct
- */
-int cpu_write_elf64_note(WriteCoreDumpFunction f, CPUState *cpu,
-                         int cpuid, void *opaque);
-
-/**
- * cpu_write_elf64_qemunote:
- * @f: pointer to a function that writes memory to a file
- * @cpu: The CPU whose memory is to be dumped
- * @cpuid: ID number of the CPU
- * @opaque: pointer to the CPUState struct
- */
-int cpu_write_elf64_qemunote(WriteCoreDumpFunction f, CPUState *cpu,
-                             void *opaque);
-
-/**
- * cpu_write_elf32_note:
- * @f: pointer to a function that writes memory to a file
- * @cpu: The CPU whose memory is to be dumped
- * @cpuid: ID number of the CPU
- * @opaque: pointer to the CPUState struct
- */
-int cpu_write_elf32_note(WriteCoreDumpFunction f, CPUState *cpu,
-                         int cpuid, void *opaque);
-
-/**
- * cpu_write_elf32_qemunote:
- * @f: pointer to a function that writes memory to a file
- * @cpu: The CPU whose memory is to be dumped
- * @cpuid: ID number of the CPU
- * @opaque: pointer to the CPUState struct
- */
-int cpu_write_elf32_qemunote(WriteCoreDumpFunction f, CPUState *cpu,
-                             void *opaque);
-
-/**
  * cpu_get_crash_info:
  * @cpu: The CPU to get crash information for
  *
@@ -731,15 +685,6 @@ hwaddr cpu_get_phys_page_debug(CPUState *cpu, vaddr addr);
  * to use for a memory access with the given transaction attributes.
  */
 int cpu_asidx_from_attrs(CPUState *cpu, MemTxAttrs attrs);
-
-/**
- * cpu_virtio_is_big_endian:
- * @cpu: CPU
-
- * Returns %true if a CPU which supports runtime configurable endianness
- * is currently big-endian.
- */
-bool cpu_virtio_is_big_endian(CPUState *cpu);
 
 /**
  * cpu_has_work:
@@ -1149,13 +1094,9 @@ void qemu_process_cpu_events(CPUState *cpu);
 void cpu_class_init_props(DeviceClass *dc);
 void cpu_exec_class_post_init(CPUClass *cc);
 void cpu_exec_initfn(CPUState *cpu);
-void cpu_vmstate_register(CPUState *cpu);
-void cpu_vmstate_unregister(CPUState *cpu);
 bool cpu_exec_realizefn(CPUState *cpu, Error **errp);
 void cpu_exec_unrealizefn(CPUState *cpu);
 void cpu_exec_reset_hold(CPUState *cpu);
-
-extern const VMStateDescription vmstate_cpu_common;
 
 #define UNASSIGNED_CPU_INDEX -1
 #define UNASSIGNED_CLUSTER_INDEX -1

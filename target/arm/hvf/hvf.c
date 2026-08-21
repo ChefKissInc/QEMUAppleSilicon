@@ -36,7 +36,6 @@
 #include "target/arm/gtimer.h"
 #include "target/arm/trace.h"
 #include "trace.h"
-#include "migration/vmstate.h"
 
 #include "gdbstub/enums.h"
 
@@ -575,7 +574,6 @@ int hvf_arch_put_registers(CPUState *cpu)
     uint64_t val;
     hv_simd_fp_uchar16_t fpval;
     int i, n;
-    bool b;
 
     for (i = 0; i < ARRAY_SIZE(hvf_reg_match); i++) {
         val = *(uint64_t *)((void *)env + hvf_reg_match[i].offset);
@@ -2091,16 +2089,6 @@ int hvf_arch_vcpu_exec(CPUState *cpu)
     return ret;
 }
 
-static const VMStateDescription vmstate_hvf_vtimer = {
-    .name = "hvf-vtimer",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT64(vtimer_val, HVFVTimer),
-        VMSTATE_END_OF_LIST()
-    },
-};
-
 static void hvf_vm_state_change(void *opaque, bool running, RunState state)
 {
     HVFVTimer *s = opaque;
@@ -2118,7 +2106,6 @@ static void hvf_vm_state_change(void *opaque, bool running, RunState state)
 int hvf_arch_init(void)
 {
     hvf_state->vtimer_offset = mach_absolute_time();
-    vmstate_register(NULL, 0, &vmstate_hvf_vtimer, &vtimer);
     qemu_add_vm_change_state_handler(hvf_vm_state_change, &vtimer);
 
     hvf_arm_init_debug();

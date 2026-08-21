@@ -10,7 +10,6 @@
 #include "qemu/osdep.h"
 #include "hw/qdev-properties.h"
 #include "hw/spmi/spmi.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "trace.h"
@@ -25,37 +24,12 @@ static const TypeInfo spmi_bus_info = {
     .instance_size = sizeof(SPMIBus),
 };
 
-static int spmi_bus_pre_save(void *opaque)
-{
-    SPMIBus *bus = opaque;
-
-    bus->saved_sid = -1;
-    if (bus->current_dev) {
-        bus->saved_sid = bus->current_dev->sid;
-    }
-
-    return 0;
-}
-
-static const VMStateDescription vmstate_spmi_bus = {
-    .name = "spmi_bus",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .pre_save = spmi_bus_pre_save,
-    .fields =
-        (VMStateField[]){
-            VMSTATE_UINT8(saved_sid, SPMIBus),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 /* Create a new SPMI bus.  */
 SPMIBus *spmi_init_bus(DeviceState *parent, const char *name)
 {
     SPMIBus *bus;
 
     bus = SPMI_BUS(qbus_new(TYPE_SPMI_BUS, parent, name));
-    vmstate_register(NULL, VMSTATE_INSTANCE_ID_ANY, &vmstate_spmi_bus, bus);
     return bus;
 }
 
@@ -182,30 +156,6 @@ int spmi_recv(SPMIBus *bus, uint8_t *data, uint8_t len)
 {
     return spmi_send_recv(bus, data, len, false);
 }
-
-static int spmi_slave_post_load(void *opaque, int version_id)
-{
-    SPMISlave *dev = opaque;
-    SPMIBus *bus;
-
-    bus = SPMI_BUS(qdev_get_parent_bus(DEVICE(dev)));
-    if (bus->saved_sid == dev->sid) {
-        bus->current_dev = dev;
-    }
-    return 0;
-}
-
-const VMStateDescription vmstate_spmi_slave = {
-    .name = "SPMISlave",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .post_load = spmi_slave_post_load,
-    .fields =
-        (VMStateField[]){
-            VMSTATE_UINT8(sid, SPMISlave),
-            VMSTATE_END_OF_LIST(),
-        },
-};
 
 SPMISlave *spmi_slave_new(const char *name, uint8_t sid)
 {

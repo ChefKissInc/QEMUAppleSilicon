@@ -91,20 +91,6 @@ struct Clock {
     QLIST_ENTRY(Clock) sibling;
 };
 
-/*
- * vmstate description entry to be added in device vmsd.
- */
-extern const VMStateDescription vmstate_clock;
-#define VMSTATE_CLOCK(field, state) \
-    VMSTATE_CLOCK_V(field, state, 0)
-#define VMSTATE_CLOCK_V(field, state, version) \
-    VMSTATE_STRUCT_POINTER_V(field, state, version, vmstate_clock, Clock)
-#define VMSTATE_ARRAY_CLOCK(field, state, num) \
-    VMSTATE_ARRAY_CLOCK_V(field, state, num, 0)
-#define VMSTATE_ARRAY_CLOCK_V(field, state, num, version)          \
-    VMSTATE_ARRAY_OF_POINTER_TO_STRUCT(field, state, num, version, \
-                                       vmstate_clock, Clock)
-
 /**
  * clock_setup_canonical_path:
  * @clk: clock

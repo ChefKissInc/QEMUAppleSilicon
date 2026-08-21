@@ -58,9 +58,9 @@ ForEachMacros:
 IncludeCategories:
   - Regex: '^"qemu/osdep.h'
     Priority: -3
-  - Regex: '^"(block|chardev|crypto|disas|exec|fpu|hw|io|libdecnumber|migration|monitor|net|qapi|qemu|qom|standard-headers|system|ui|tcg|accel|target|plugins|authz|audio)/'
+  - Regex: '^"(block|chardev|crypto|disas|exec|fpu|hw|io|monitor|net|qapi|qemu|qom|standard-headers|system|ui|tcg|accel|target|plugins|authz|audio)/'
     Priority: -2
-  - Regex: '^"(elf.h|qemu-common.h|glib-compat.h|qemu-io.h|trace-tcg.h)'
+  - Regex: '^"(elf.h|qemu-common.h|glib-compat.h|trace-tcg.h)'
     Priority: -1
   - Regex: ".*"
     Priority: 1

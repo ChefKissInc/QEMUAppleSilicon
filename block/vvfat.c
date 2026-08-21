@@ -33,7 +33,6 @@
 #include "qemu/module.h"
 #include "qemu/option.h"
 #include "qemu/bswap.h"
-#include "migration/blocker.h"
 #include "qobject/qdict.h"
 #include "qobject/qstring.h"
 #include "qemu/ctype.h"
@@ -334,8 +333,6 @@ typedef struct BDRVVVFATState {
     array_t commits;
     const char* path;
     int downcase_short_names;
-
-    Error *migration_blocker;
 } BDRVVVFATState;
 
 /* take the sector position spos and convert it to Cylinder/Head/Sector position
@@ -1260,18 +1257,6 @@ static int vvfat_open(BlockDriverState *bs, QDict *options, int flags,
 
     s->sector_count = s->offset_to_root_dir
                     + s->sectors_per_cluster * s->cluster_count;
-
-    /* Disable migration when vvfat is used rw */
-    if (s->qcow) {
-        error_setg(&s->migration_blocker,
-                   "The vvfat (rw) format used by node '%s' "
-                   "does not support live migration",
-                   bdrv_get_device_or_node_name(bs));
-        ret = migrate_add_blocker_normal(&s->migration_blocker, errp);
-        if (ret < 0) {
-            goto fail;
-        }
-    }
 
     if (s->offset_to_bootsector > 0) {
         init_mbr(s, cyls, heads, secs);
@@ -3234,10 +3219,6 @@ static void vvfat_close(BlockDriverState *bs)
     array_free(&(s->directory));
     array_free(&(s->mapping));
     g_free(s->cluster_buffer);
-
-    if (s->qcow) {
-        migrate_del_blocker(&s->migration_blocker);
-    }
 }
 
 static const char *const vvfat_strong_runtime_opts[] = {

@@ -25,8 +25,6 @@
 
 #include "qemu/osdep.h"
 #include "system/tcg.h"
-#include "exec/replay-core.h"
-#include "exec/icount.h"
 #include "tcg/startup.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
@@ -80,21 +78,6 @@ static void tcg_accel_instance_init(Object *obj)
 
 bool one_insn_per_tb;
 
-static void tcg_vm_change_state(void *opaque, bool running, RunState state)
-{
-    if (state == RUN_STATE_RESTORE_VM) {
-        /*
-         * loadvm will update the content of RAM, bypassing the usual
-         * mechanisms that ensure we flush TBs for writes to memory
-         * we've translated code from, so we must flush all TBs.
-         *
-         * vm_stop() has just stopped all cpus, so we are exclusive.
-         */
-        assert(!running);
-        tb_flush__exclusive_or_serial();
-    }
-}
-
 static int tcg_init_machine(AccelState *as, MachineState *ms)
 {
     TCGState *s = TCG_STATE(as);
@@ -117,7 +100,7 @@ static int tcg_init_machine(AccelState *as, MachineState *ms)
          * there is one remaining limitation to check:
          *   - The guest can't be oversized (e.g. 64 bit guest on 32 bit host)
          */
-        if (mttcg_supported && !icount_enabled()) {
+        if (mttcg_supported) {
             s->mttcg_enabled = ON_OFF_AUTO_ON;
             max_threads = ms->smp.max_cpus;
         } else {
@@ -136,8 +119,6 @@ static int tcg_init_machine(AccelState *as, MachineState *ms)
     default:
         assert_not_reached();
     }
-
-    qemu_add_vm_change_state_handler(tcg_vm_change_state, NULL);
 
     tcg_allowed = true;
 
@@ -168,11 +149,7 @@ static void tcg_set_thread(Object *obj, const char *value, Error **errp)
     TCGState *s = TCG_STATE(obj);
 
     if (strcmp(value, "multi") == 0) {
-        if (icount_enabled()) {
-            error_setg(errp, "No MTTCG when icount is enabled");
-        } else {
-            s->mttcg_enabled = ON_OFF_AUTO_ON;
-        }
+        s->mttcg_enabled = ON_OFF_AUTO_ON;
     } else if (strcmp(value, "single") == 0) {
         s->mttcg_enabled = ON_OFF_AUTO_OFF;
     } else {
@@ -232,17 +209,7 @@ static void tcg_set_one_insn_per_tb(Object *obj, bool value, Error **errp)
 
 static int tcg_gdbstub_supported_sstep_flags(AccelState *as)
 {
-    /*
-     * In replay mode all events will come from the log and can't be
-     * suppressed otherwise we would break determinism. However as those
-     * events are tied to the number of executed instructions we won't see
-     * them occurring every time we single step.
-     */
-    if (replay_mode != REPLAY_MODE_NONE) {
-        return SSTEP_ENABLE;
-    } else {
-        return SSTEP_ENABLE | SSTEP_NOIRQ | SSTEP_NOTIMER;
-    }
+    return SSTEP_ENABLE | SSTEP_NOIRQ | SSTEP_NOTIMER;
 }
 
 static void tcg_accel_class_init(ObjectClass *oc, const void *data)

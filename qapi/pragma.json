@@ -10,8 +10,6 @@
     'command-name-exceptions': [
         'add_client',
         'block_resize',
-        'block_set_io_throttle',
-        'client_migrate_info',
         'device_add',
         'device_del',
         'expire_password',
@@ -55,8 +53,6 @@
         'ImageInfoSpecificKind',
         'InputAxis',
         'InputButton',
-        'IscsiHeaderDigest',
-        'IscsiTransport',
         'KeyValueKind',
         'MemoryDeviceInfoKind',
         'NetClientDriver',
@@ -67,7 +63,6 @@
         'String',
         'StringWrapper',
         'SysEmuTarget',
-        'ThrottleGroupProperties',
         'VncPrimaryAuth',
         'VncVencryptSubAuth',
         'X86CPURegister32',
@@ -83,7 +78,6 @@
         'BlockDeviceInfo',          # query-block
         'BlockDeviceStats',         # query-blockstats
         'BlockDeviceTimedStats',    # query-blockstats
-        'BlockIOThrottle',          # block_set_io_throttle
         'BlockInfo',                # query-block
         'BlockdevAioOptions',       # blockdev-add, -blockdev
         'BlockdevDriver',           # blockdev-add, query-blockstats, ...

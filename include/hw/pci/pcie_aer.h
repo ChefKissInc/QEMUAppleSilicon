@@ -84,8 +84,6 @@ pcie_aer_msg_is_uncor(const PCIEAERMsg *msg)
         msg->severity == PCI_ERR_ROOT_CMD_FATAL_EN;
 }
 
-extern const VMStateDescription vmstate_pcie_aer_log;
-
 int pcie_aer_init(PCIDevice *dev, uint8_t cap_ver, uint16_t offset,
                   uint16_t size, Error **errp);
 void pcie_aer_exit(PCIDevice *dev);

@@ -26,7 +26,6 @@
 #include "hw/irq.h"
 #include "hw/or-irq.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "qemu/module.h"
 
 static void or_irq_handler(void *opaque, int n, int level)
@@ -70,51 +69,6 @@ static void or_irq_init(Object *obj)
     qdev_init_gpio_out(DEVICE(obj), &s->out_irq, 1);
 }
 
-/* The original version of this device had a fixed 16 entries in its
- * VMState array; devices with more inputs than this need to
- * migrate the extra lines via a subsection.
- * The subsection migrates as much of the levels[] array as is needed
- * (including repeating the first 16 elements), to avoid the awkwardness
- * of splitting it in two to meet the requirements of VMSTATE_VARRAY_UINT16.
- */
-#define OLD_MAX_OR_LINES 16
-#if MAX_OR_LINES < OLD_MAX_OR_LINES
-#error MAX_OR_LINES must be at least 16 for migration compatibility
-#endif
-
-static bool vmstate_extras_needed(void *opaque)
-{
-    OrIRQState *s = opaque;
-
-    return s->num_lines >= OLD_MAX_OR_LINES;
-}
-
-static const VMStateDescription vmstate_or_irq_extras = {
-    .name = "or-irq-extras",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = vmstate_extras_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_VARRAY_UINT16_UNSAFE(levels, OrIRQState, num_lines, 0,
-                                     vmstate_info_bool, bool),
-        VMSTATE_END_OF_LIST(),
-    },
-};
-
-static const VMStateDescription vmstate_or_irq = {
-    .name = TYPE_OR_IRQ,
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_BOOL_SUB_ARRAY(levels, OrIRQState, 0, OLD_MAX_OR_LINES),
-        VMSTATE_END_OF_LIST(),
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &vmstate_or_irq_extras,
-        NULL
-    },
-};
-
 static const Property or_irq_properties[] = {
     DEFINE_PROP_UINT16("num-lines", OrIRQState, num_lines, 1),
 };
@@ -126,7 +80,6 @@ static void or_irq_class_init(ObjectClass *klass, const void *data)
     device_class_set_legacy_reset(dc, or_irq_reset);
     device_class_set_props(dc, or_irq_properties);
     dc->realize = or_irq_realize;
-    dc->vmsd = &vmstate_or_irq;
 
     /* Reason: Needs to be wired up to work, e.g. see stm32f205_soc.c */
     dc->user_creatable = false;

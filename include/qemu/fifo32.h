@@ -185,6 +185,4 @@ static inline bool fifo32_is_full(Fifo32 *fifo)
     return fifo8_num_free(&fifo->fifo) < sizeof(uint32_t);
 }
 
-#define VMSTATE_FIFO32(_field, _state) VMSTATE_FIFO8(_field.fifo, _state)
-
 #endif /* FIFO32_H */

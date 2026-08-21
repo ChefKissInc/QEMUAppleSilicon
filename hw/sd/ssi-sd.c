@@ -18,7 +18,6 @@
 #include "qemu/osdep.h"
 #include "system/blockdev.h"
 #include "hw/ssi/ssi.h"
-#include "migration/vmstate.h"
 #include "hw/qdev-properties.h"
 #include "hw/sd/sd.h"
 #include "qapi/error.h"
@@ -275,27 +274,6 @@ static int ssi_sd_post_load(void *opaque, int version_id)
     return 0;
 }
 
-static const VMStateDescription vmstate_ssi_sd = {
-    .name = "ssi_sd",
-    .version_id = 7,
-    .minimum_version_id = 7,
-    .post_load = ssi_sd_post_load,
-    .fields = (const VMStateField []) {
-        VMSTATE_UINT32(mode, ssi_sd_state),
-        VMSTATE_INT32(cmd, ssi_sd_state),
-        VMSTATE_UINT8_ARRAY(cmdarg, ssi_sd_state, 4),
-        VMSTATE_UINT8_ARRAY(response, ssi_sd_state, 5),
-        VMSTATE_UINT16(crc16, ssi_sd_state),
-        VMSTATE_INT32(read_bytes, ssi_sd_state),
-        VMSTATE_INT32(write_bytes, ssi_sd_state),
-        VMSTATE_INT32(arglen, ssi_sd_state),
-        VMSTATE_INT32(response_pos, ssi_sd_state),
-        VMSTATE_INT32(stopping, ssi_sd_state),
-        VMSTATE_SSI_PERIPHERAL(ssidev, ssi_sd_state),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static void ssi_sd_realize(SSIPeripheral *d, Error **errp)
 {
     ssi_sd_state *s = SSI_SD(d);
@@ -327,7 +305,6 @@ static void ssi_sd_class_init(ObjectClass *klass, const void *data)
     k->realize = ssi_sd_realize;
     k->transfer = ssi_sd_transfer;
     k->cs_polarity = SSI_CS_LOW;
-    dc->vmsd = &vmstate_ssi_sd;
     device_class_set_legacy_reset(dc, ssi_sd_reset);
     /* Reason: GPIO chip-select line should be wired up */
     dc->user_creatable = false;

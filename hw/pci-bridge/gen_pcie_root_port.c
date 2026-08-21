@@ -17,7 +17,6 @@
 #include "hw/pci/pcie_port.h"
 #include "hw/qdev-properties.h"
 #include "hw/qdev-properties-system.h"
-#include "migration/vmstate.h"
 #include "qom/object.h"
 
 #define TYPE_GEN_PCIE_ROOT_PORT                "pcie-root-port"
@@ -66,13 +65,6 @@ static void gen_rp_interrupts_uninit(PCIDevice *d)
     msix_uninit_exclusive_bar(d);
 }
 
-static bool gen_rp_test_migrate_msix(void *opaque, int version_id)
-{
-    GenPCIERootPort *rp = opaque;
-
-    return rp->migrate_msix;
-}
-
 static void gen_rp_realize(DeviceState *dev, Error **errp)
 {
     PCIDevice *d = PCI_DEVICE(dev);
@@ -111,23 +103,6 @@ static void gen_rp_realize(DeviceState *dev, Error **errp)
     }
 }
 
-static const VMStateDescription vmstate_rp_dev = {
-    .name = "pcie-root-port",
-    .priority = MIG_PRI_PCI_BUS,
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .post_load = pcie_cap_slot_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_PCI_DEVICE(parent_obj.parent_obj.parent_obj, PCIESlot),
-        VMSTATE_STRUCT(parent_obj.parent_obj.parent_obj.exp.aer_log,
-                       PCIESlot, 0, vmstate_pcie_aer_log, PCIEAERLog),
-        VMSTATE_MSIX_TEST(parent_obj.parent_obj.parent_obj.parent_obj,
-                          GenPCIERootPort,
-                          gen_rp_test_migrate_msix),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static const Property gen_rp_props[] = {
     DEFINE_PROP_BOOL("x-migrate-msix", GenPCIERootPort,
                      migrate_msix, true),
@@ -156,7 +131,6 @@ static void gen_rp_dev_class_init(ObjectClass *klass, const void *data)
     k->vendor_id = PCI_VENDOR_ID_REDHAT;
     k->device_id = PCI_DEVICE_ID_REDHAT_PCIE_RP;
     dc->desc = "PCI Express Root Port";
-    dc->vmsd = &vmstate_rp_dev;
     device_class_set_props(dc, gen_rp_props);
 
     device_class_set_parent_realize(dc, gen_rp_realize, &rpc->parent_realize);

@@ -39,7 +39,6 @@
 #include "hw/registerfields.h"
 #include "system/block-backend.h"
 #include "hw/sd/sd.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/bitmap.h"
 #include "hw/qdev-properties.h"
@@ -957,96 +956,6 @@ static void sd_cardchange(void *opaque, bool load, Error **errp)
 
 static const BlockDevOps sd_block_ops = {
     .change_media_cb = sd_cardchange,
-};
-
-static bool sd_ocr_vmstate_needed(void *opaque)
-{
-    SDState *sd = opaque;
-
-    /* Include the OCR state (and timer) if it is not yet powered up */
-    return !REG_FIELD_EX32(sd->ocr, OCR, CARD_POWER_UP);
-}
-
-static const VMStateDescription sd_ocr_vmstate = {
-    .name = "sd-card/ocr-state",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = sd_ocr_vmstate_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(ocr, SDState),
-        VMSTATE_TIMER_PTR(ocr_power_timer, SDState),
-        VMSTATE_END_OF_LIST()
-    },
-};
-
-static bool vmstate_needed_for_emmc(void *opaque)
-{
-    SDState *sd = opaque;
-
-    return sd_is_emmc(sd);
-}
-
-static const VMStateDescription emmc_extcsd_vmstate = {
-    .name = "sd-card/ext_csd_modes-state",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = vmstate_needed_for_emmc,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8_ARRAY(ext_csd_rw, SDState, 192),
-        VMSTATE_END_OF_LIST()
-    },
-};
-
-static int sd_vmstate_pre_load(void *opaque)
-{
-    SDState *sd = opaque;
-
-    /* If the OCR state is not included (prior versions, or not
-     * needed), then the OCR must be set as powered up. If the OCR state
-     * is included, this will be replaced by the state restore.
-     */
-    sd_ocr_powerup(sd);
-
-    return 0;
-}
-
-static const VMStateDescription sd_vmstate = {
-    .name = "sd-card",
-    .version_id = 2,
-    .minimum_version_id = 2,
-    .pre_load = sd_vmstate_pre_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UNUSED(4),
-        VMSTATE_INT32(state, SDState),
-        VMSTATE_UINT8_ARRAY(cid, SDState, 16),
-        VMSTATE_UINT8_ARRAY(csd, SDState, 16),
-        VMSTATE_UINT16(rca, SDState),
-        VMSTATE_UINT32(card_status, SDState),
-        VMSTATE_PARTIAL_BUFFER(sd_status, SDState, 1),
-        VMSTATE_UINT32(vhs, SDState),
-        VMSTATE_BITMAP(wp_group_bmap, SDState, 0, wp_group_bits),
-        VMSTATE_UINT32(blk_len, SDState),
-        VMSTATE_UINT32(multi_blk_cnt, SDState),
-        VMSTATE_UINT32(erase_start, SDState),
-        VMSTATE_UINT32(erase_end, SDState),
-        VMSTATE_UINT8_ARRAY(pwd, SDState, 16),
-        VMSTATE_UINT32(pwd_len, SDState),
-        VMSTATE_UINT8_ARRAY(function_group, SDState, 6),
-        VMSTATE_UINT8(current_cmd, SDState),
-        VMSTATE_BOOL(expecting_acmd, SDState),
-        VMSTATE_UINT32(blk_written, SDState),
-        VMSTATE_UINT64(data_start, SDState),
-        VMSTATE_UINT32(data_offset, SDState),
-        VMSTATE_UINT8_ARRAY(data, SDState, 512),
-        VMSTATE_UNUSED_V(1, 512),
-        VMSTATE_UNUSED(1),
-        VMSTATE_END_OF_LIST()
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &sd_ocr_vmstate,
-        &emmc_extcsd_vmstate,
-        NULL
-    },
 };
 
 static void sd_blk_read(SDState *sd, uint64_t addr, uint32_t len)
@@ -2850,7 +2759,6 @@ static void sdmmc_common_class_init(ObjectClass *klass, const void *data)
     SDCardClass *sc = SDMMC_COMMON_CLASS(klass);
 
     device_class_set_props(dc, sdmmc_common_properties);
-    dc->vmsd = &sd_vmstate;
     device_class_set_legacy_reset(dc, sd_reset);
     dc->bus_type = TYPE_SD_BUS;
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);

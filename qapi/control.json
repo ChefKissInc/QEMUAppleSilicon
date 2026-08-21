@@ -142,9 +142,6 @@
 #     <- {
 #          "return":[
 #             {
-#                "name":"query-balloon"
-#             },
-#             {
 #                "name":"system_powerdown"
 #             },
 #             ...

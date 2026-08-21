@@ -188,23 +188,6 @@ static const Property pci_bridge_dev_properties[] = {
                      res_reserve.mem_pref_64, -1),
 };
 
-static bool pci_device_shpc_present(void *opaque, int version_id)
-{
-    PCIDevice *dev = opaque;
-
-    return shpc_present(dev);
-}
-
-static const VMStateDescription pci_bridge_dev_vmstate = {
-    .name = "pci_bridge",
-    .priority = MIG_PRI_PCI_BUS,
-    .fields = (const VMStateField[]) {
-        VMSTATE_PCI_DEVICE(parent_obj, PCIBridge),
-        SHPC_VMSTATE(shpc, PCIDevice, pci_device_shpc_present),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 void pci_bridge_dev_plug_cb(HotplugHandler *hotplug_dev, DeviceState *dev,
                             Error **errp)
 {
@@ -255,7 +238,6 @@ static void pci_bridge_dev_class_init(ObjectClass *klass, const void *data)
     dc->desc = "Standard PCI Bridge";
     device_class_set_legacy_reset(dc, qdev_pci_bridge_dev_reset);
     device_class_set_props(dc, pci_bridge_dev_properties);
-    dc->vmsd = &pci_bridge_dev_vmstate;
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
     hc->plug = pci_bridge_dev_plug_cb;
     hc->unplug = pci_bridge_dev_unplug_cb;

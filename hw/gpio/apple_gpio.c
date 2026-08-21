@@ -21,7 +21,6 @@
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/gpio/apple_gpio.h"
 #include "hw/irq.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/bitops.h"
 #include "qemu/log.h"
@@ -471,29 +470,6 @@ DeviceState *apple_gpio_from_node(AppleDTNode *node)
         apple_dt_get_prop_u32(node, "#gpio-int-groups", &error_fatal));
 }
 
-static const VMStateDescription vmstate_apple_gpio = {
-    .name = "AppleGPIOState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(npl, AppleGPIOState),
-            VMSTATE_UINT32(pin_count, AppleGPIOState),
-            VMSTATE_UINT32(int_config_len, AppleGPIOState),
-            VMSTATE_UINT32(in_len, AppleGPIOState),
-            VMSTATE_VARRAY_UINT32_ALLOC(gpio_cfg, AppleGPIOState, pin_count, 0,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_VARRAY_UINT32_ALLOC(int_config, AppleGPIOState,
-                                        int_config_len, 0, vmstate_info_uint32,
-                                        uint32_t),
-            VMSTATE_VARRAY_UINT32_ALLOC(in, AppleGPIOState, in_len, 0,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_VARRAY_UINT32_ALLOC(in_old, AppleGPIOState, in_len, 0,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_gpio_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc;
@@ -502,7 +478,6 @@ static void apple_gpio_class_init(ObjectClass *klass, const void *data)
 
     dc->desc = "Apple General Purpose Input/Output Controller";
     dc->realize = apple_gpio_realize;
-    dc->vmsd = &vmstate_apple_gpio;
     device_class_set_legacy_reset(dc, apple_gpio_reset);
 }
 

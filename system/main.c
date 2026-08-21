@@ -25,7 +25,6 @@
 #include "qemu/osdep.h"
 #include "qemu-main.h"
 #include "qemu/main-loop.h"
-#include "system/replay.h"
 #include "system/system.h"
 
 #ifdef CONFIG_SDL
@@ -45,12 +44,10 @@ static void *qemu_default_main(void *opaque)
 {
     int status;
 
-    replay_mutex_lock();
     bql_lock();
     status = qemu_main_loop();
     qemu_cleanup(status);
     bql_unlock();
-    replay_mutex_unlock();
 
     exit(status);
 }
@@ -73,8 +70,7 @@ int main(int argc, char **argv)
     /*
      * qemu_init acquires the BQL and replay mutex lock. BQL is acquired when
      * initializing cpus, to block associated threads until initialization is
-     * complete. Replay_mutex lock is acquired on initialization, because it
-     * must be held when configuring icount_mode.
+     * complete.
      *
      * On MacOS, qemu main event loop runs in a background thread, as main
      * thread must be reserved for UI. Thus, we need to transfer lock ownership,
@@ -82,7 +78,6 @@ int main(int argc, char **argv)
      * from qemu_default_main.
      */
     bql_unlock();
-    replay_mutex_unlock();
 
     if (qemu_main) {
         QemuThread main_loop_thread;

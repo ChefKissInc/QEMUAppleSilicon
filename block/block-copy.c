@@ -24,7 +24,6 @@
 #include "qemu/units.h"
 #include "qemu/co-shared-resource.h"
 #include "qemu/coroutine.h"
-#include "qemu/ratelimit.h"
 #include "block/aio_task.h"
 #include "qemu/error-report.h"
 #include "qemu/memalign.h"
@@ -53,7 +52,6 @@ typedef struct BlockCopyCallState {
     int64_t bytes;
     int max_workers;
     int64_t max_chunk;
-    bool ignore_ratelimit;
     BlockCopyAsyncCallbackFunc cb;
     void *cb_opaque;
     /* Coroutine where async block-copy is running */
@@ -159,7 +157,6 @@ typedef struct BlockCopyState {
     BdrvDirtyBitmap *copy_bitmap;
     ProgressMeter *progress;
     SharedResource *mem;
-    RateLimit rate_limit;
 } BlockCopyState;
 
 /* Called with lock held */
@@ -269,7 +266,6 @@ void block_copy_state_free(BlockCopyState *s)
         return;
     }
 
-    ratelimit_destroy(&s->rate_limit);
     bdrv_release_dirty_bitmap(s->copy_bitmap);
     shres_destroy(s->mem);
     g_free(s);
@@ -439,7 +435,6 @@ BlockCopyState *block_copy_state_new(BdrvChild *source, BdrvChild *target,
     s->discard_source = discard_source;
     block_copy_set_copy_opts(s, false, false);
 
-    ratelimit_init(&s->rate_limit);
     qemu_co_mutex_init(&s->lock);
     QLIST_INIT(&s->reqs);
     QLIST_INIT(&s->calls);
@@ -801,19 +796,6 @@ block_copy_dirty_clusters(BlockCopyCallState *call_state)
             task->method = COPY_WRITE_ZEROES;
         }
 
-        if (!call_state->ignore_ratelimit) {
-            uint64_t ns = ratelimit_calculate_delay(&s->rate_limit, 0);
-            if (ns > 0) {
-                block_copy_task_end(task, -EAGAIN);
-                g_free(task);
-                qemu_co_sleep_ns_wakeable(&call_state->sleep,
-                                          QEMU_CLOCK_REALTIME, ns);
-                continue;
-            }
-        }
-
-        ratelimit_calculate_delay(&s->rate_limit, task->req.bytes);
-
         trace_block_copy_process(s, task->req.offset);
 
         co_get_from_shres(s->mem, task->req.bytes);
@@ -937,7 +919,7 @@ static void coroutine_fn block_copy_async_co_entry(void *opaque)
 }
 
 int coroutine_fn block_copy(BlockCopyState *s, int64_t start, int64_t bytes,
-                            bool ignore_ratelimit, uint64_t timeout_ns,
+                            uint64_t timeout_ns,
                             BlockCopyAsyncCallbackFunc cb,
                             void *cb_opaque)
 {
@@ -948,7 +930,6 @@ int coroutine_fn block_copy(BlockCopyState *s, int64_t start, int64_t bytes,
         .s = s,
         .offset = start,
         .bytes = bytes,
-        .ignore_ratelimit = ignore_ratelimit,
         .max_workers = BLOCK_COPY_MAX_WORKERS,
         .cb = cb,
         .cb_opaque = cb_opaque,
@@ -1060,16 +1041,4 @@ int64_t block_copy_cluster_size(BlockCopyState *s)
 void block_copy_set_skip_unallocated(BlockCopyState *s, bool skip)
 {
     qatomic_set(&s->skip_unallocated, skip);
-}
-
-void block_copy_set_speed(BlockCopyState *s, uint64_t speed)
-{
-    ratelimit_set_speed(&s->rate_limit, speed, BLOCK_COPY_SLICE_TIME);
-
-    /*
-     * Note: it's good to kick all call states from here, but it should be done
-     * only from a coroutine, to not crash if s->calls list changed while
-     * entering one call. So for now, the only user of this function kicks its
-     * only one call_state by hand.
-     */
 }

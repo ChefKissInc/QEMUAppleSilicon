@@ -14,73 +14,20 @@
 
 #define NVME_DEFAULT_RU_SIZE (96 * MiB)
 
-static int nvme_subsys_reserve_cntlids(NvmeCtrl *n, int start, int num)
-{
-    NvmeSubsystem *subsys = n->subsys;
-    NvmeSecCtrlEntry *list = n->sec_ctrl_list;
-    NvmeSecCtrlEntry *sctrl;
-    int i, cnt = 0;
-
-    for (i = start; i < ARRAY_SIZE(subsys->ctrls) && cnt < num; i++) {
-        if (!subsys->ctrls[i]) {
-            sctrl = &list[cnt];
-            sctrl->scid = cpu_to_le16(i);
-            subsys->ctrls[i] = SUBSYS_SLOT_RSVD;
-            cnt++;
-        }
-    }
-
-    return cnt;
-}
-
-static void nvme_subsys_unreserve_cntlids(NvmeCtrl *n)
-{
-    NvmeSubsystem *subsys = n->subsys;
-    NvmeSecCtrlEntry *list = n->sec_ctrl_list;
-    NvmeSecCtrlEntry *sctrl;
-    int i, cntlid;
-
-    for (i = 0; i < n->params.sriov_max_vfs; i++) {
-        sctrl = &list[i];
-        cntlid = le16_to_cpu(sctrl->scid);
-
-        if (cntlid) {
-            assert(subsys->ctrls[cntlid] == SUBSYS_SLOT_RSVD);
-            subsys->ctrls[cntlid] = NULL;
-            sctrl->scid = 0;
-        }
-    }
-}
-
 int nvme_subsys_register_ctrl(NvmeCtrl *n, Error **errp)
 {
     NvmeSubsystem *subsys = n->subsys;
-    NvmeSecCtrlEntry *sctrl = nvme_sctrl(n);
-    int cntlid, num_rsvd, num_vfs = n->params.sriov_max_vfs;
+    int cntlid;
 
-    if (pci_is_vf(&n->parent_obj)) {
-        cntlid = le16_to_cpu(sctrl->scid);
-    } else {
-        n->sec_ctrl_list = g_new0(NvmeSecCtrlEntry, num_vfs);
-
-        for (cntlid = 0; cntlid < ARRAY_SIZE(subsys->ctrls); cntlid++) {
-            if (!subsys->ctrls[cntlid]) {
-                break;
-            }
+    for (cntlid = 0; cntlid < ARRAY_SIZE(subsys->ctrls); cntlid++) {
+        if (!subsys->ctrls[cntlid]) {
+            break;
         }
+    }
 
-        if (cntlid == ARRAY_SIZE(subsys->ctrls)) {
-            error_setg(errp, "no more free controller id");
-            return -1;
-        }
-
-        num_rsvd = nvme_subsys_reserve_cntlids(n, cntlid + 1, num_vfs);
-        if (num_rsvd != num_vfs) {
-            nvme_subsys_unreserve_cntlids(n);
-            error_setg(errp,
-                       "no more free controller ids for secondary controllers");
-            return -1;
-        }
+    if (cntlid == ARRAY_SIZE(subsys->ctrls)) {
+        error_setg(errp, "no more free controller id");
+        return -1;
     }
 
     if (!subsys->serial) {
@@ -97,12 +44,7 @@ int nvme_subsys_register_ctrl(NvmeCtrl *n, Error **errp)
 
 void nvme_subsys_unregister_ctrl(NvmeSubsystem *subsys, NvmeCtrl *n)
 {
-    if (pci_is_vf(&n->parent_obj)) {
-        subsys->ctrls[n->cntlid] = SUBSYS_SLOT_RSVD;
-    } else {
-        subsys->ctrls[n->cntlid] = NULL;
-        nvme_subsys_unreserve_cntlids(n);
-    }
+    subsys->ctrls[n->cntlid] = NULL;
 
     n->cntlid = -1;
 }

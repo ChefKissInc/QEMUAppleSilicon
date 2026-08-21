@@ -113,22 +113,6 @@ SRST
     Show the cpu registers.
 ERST
 
-#if defined(TARGET_I386)
-    {
-        .name       = "lapic",
-        .args_type  = "apic-id:i?",
-        .params     = "[apic-id]",
-        .help       = "show local apic state (apic-id: local apic to read, default is which of current CPU)",
-
-        .cmd        = hmp_info_local_apic,
-    },
-#endif
-
-SRST
-  ``info lapic``
-    Show local APIC state
-ERST
-
     {
         .name       = "cpus",
         .args_type  = "",
@@ -193,36 +177,6 @@ ERST
 SRST
   ``info pci``
     Show PCI information.
-ERST
-
-#if defined(TARGET_I386)
-    {
-        .name       = "tlb",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show virtual to physical memory mappings",
-        .cmd        = hmp_info_tlb,
-    },
-#endif
-
-SRST
-  ``info tlb``
-    Show virtual to physical memory mappings.
-ERST
-
-#if defined(TARGET_I386) || defined(TARGET_RISCV)
-    {
-        .name       = "mem",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show the active virtual memory mappings",
-        .cmd        = hmp_info_mem,
-    },
-#endif
-
-SRST
-  ``info mem``
-    Show the active virtual memory mappings.
 ERST
 
     {
@@ -305,27 +259,6 @@ SRST
   ``info kvm``
     Show KVM information.
 ERST
-
-    {
-        .name       = "numa",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show NUMA information",
-        .cmd_info_hrt = qmp_x_query_numa,
-    },
-
-SRST
-  ``info numa``
-    Show NUMA information.
-ERST
-
-    {
-        .name       = "usb",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show guest USB devices",
-        .cmd_info_hrt = qmp_x_query_usb,
-    },
 
 SRST
   ``info usb``
@@ -412,21 +345,6 @@ SRST
     Show the vnc server status.
 ERST
 
-#if defined(CONFIG_SPICE)
-    {
-        .name       = "spice",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show the spice server status",
-        .cmd        = hmp_info_spice,
-    },
-#endif
-
-SRST
-  ``info spice``
-    Show the spice server status.
-ERST
-
     {
         .name       = "name",
         .args_type  = "",
@@ -471,58 +389,6 @@ SRST
 ERST
 
     {
-        .name       = "migrate",
-        .args_type  = "all:-a",
-        .params     = "[-a]",
-        .help       = "show migration status (-a: all, dump all status)",
-        .cmd        = hmp_info_migrate,
-    },
-
-SRST
-  ``info migrate``
-    Show migration status.
-ERST
-
-    {
-        .name       = "migrate_capabilities",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show current migration capabilities",
-        .cmd        = hmp_info_migrate_capabilities,
-    },
-
-SRST
-  ``info migrate_capabilities``
-    Show current migration capabilities.
-ERST
-
-    {
-        .name       = "migrate_parameters",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show current migration parameters",
-        .cmd        = hmp_info_migrate_parameters,
-    },
-
-SRST
-  ``info migrate_parameters``
-    Show current migration parameters.
-ERST
-
-    {
-        .name       = "balloon",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show balloon information",
-        .cmd        = hmp_info_balloon,
-    },
-
-SRST
-  ``info balloon``
-    Show balloon information.
-ERST
-
-    {
         .name       = "qtree",
         .args_type  = "brief:-b",
         .params     = "[-b]",
@@ -563,19 +429,6 @@ SRST
 ERST
 
     {
-        .name       = "roms",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show roms",
-        .cmd_info_hrt = qmp_x_query_roms,
-    },
-
-SRST
-  ``info roms``
-    Show roms.
-ERST
-
-    {
         .name       = "trace-events",
         .args_type  = "name:s?,vcpu:i?",
         .params     = "[name] [vcpu]",
@@ -588,19 +441,6 @@ ERST
 SRST
   ``info trace-events``
     Show available trace-events & their state.
-ERST
-
-    {
-        .name       = "tpm",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show the TPM device",
-        .cmd        = hmp_info_tpm,
-    },
-
-SRST
-  ``info tpm``
-    Show the TPM device.
 ERST
 
     {
@@ -617,96 +457,9 @@ SRST
     Show memory backends
 ERST
 
-    {
-        .name       = "memory-devices",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show memory devices",
-        .cmd        = hmp_info_memory_devices,
-    },
-
-SRST
-  ``info memory-devices``
-    Show memory devices.
-ERST
-
-    {
-        .name       = "iothreads",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show iothreads",
-        .cmd        = hmp_info_iothreads,
-        .flags      = "p",
-    },
-
 SRST
   ``info iothreads``
     Show iothread's identifiers.
-ERST
-
-    {
-        .name       = "rocker",
-        .args_type  = "name:s",
-        .params     = "name",
-        .help       = "Show rocker switch",
-        .cmd        = hmp_rocker,
-    },
-
-SRST
-  ``info rocker`` *name*
-    Show rocker switch.
-ERST
-
-    {
-        .name       = "rocker-ports",
-        .args_type  = "name:s",
-        .params     = "name",
-        .help       = "Show rocker ports",
-        .cmd        = hmp_rocker_ports,
-    },
-
-SRST
-  ``info rocker-ports`` *name*-ports
-    Show rocker ports.
-ERST
-
-    {
-        .name       = "rocker-of-dpa-flows",
-        .args_type  = "name:s,tbl_id:i?",
-        .params     = "name [tbl_id]",
-        .help       = "Show rocker OF-DPA flow tables",
-        .cmd        = hmp_rocker_of_dpa_flows,
-    },
-
-SRST
-  ``info rocker-of-dpa-flows`` *name* [*tbl_id*]
-    Show rocker OF-DPA flow tables.
-ERST
-
-    {
-        .name       = "rocker-of-dpa-groups",
-        .args_type  = "name:s,type:i?",
-        .params     = "name [type]",
-        .help       = "Show rocker OF-DPA groups",
-        .cmd        = hmp_rocker_of_dpa_groups,
-    },
-
-SRST
-  ``info rocker-of-dpa-groups`` *name* [*type*]
-    Show rocker OF-DPA groups.
-ERST
-
-    {
-        .name       = "dump",
-        .args_type  = "",
-        .params     = "",
-        .help       = "Display the latest dump status",
-        .cmd        = hmp_info_dump,
-    },
-
-SRST
-  ``info dump``
-    Display the latest dump status.
 ERST
 
     {
@@ -737,19 +490,6 @@ SRST
 ERST
 
     {
-        .name       = "vm-generation-id",
-        .args_type  = "",
-        .params     = "",
-        .help       = "Show Virtual Machine Generation ID",
-        .cmd = hmp_info_vm_generation_id,
-    },
-
-SRST
-  ``info vm-generation-id``
-    Show Virtual Machine Generation ID
-ERST
-
-    {
         .name       = "memory_size_summary",
         .args_type  = "",
         .params     = "",
@@ -762,90 +502,6 @@ SRST
   ``info memory_size_summary``
     Display the amount of initially allocated and present hotpluggable (if
     enabled) memory in bytes.
-ERST
-
-#if defined(TARGET_I386)
-    {
-        .name       = "sev",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show SEV information",
-        .cmd        = hmp_info_sev,
-    },
-#endif
-
-SRST
-  ``info sev``
-    Show SEV information.
-ERST
-
-    {
-        .name       = "replay",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show record/replay information",
-        .cmd        = hmp_info_replay,
-    },
-
-SRST
-  ``info replay``
-    Display the record/replay information: mode and the current icount.
-ERST
-
-    {
-        .name       = "dirty_rate",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show dirty rate information",
-        .cmd        = hmp_info_dirty_rate,
-    },
-
-SRST
-  ``info dirty_rate``
-    Display the vcpu dirty rate information.
-ERST
-
-    {
-        .name       = "vcpu_dirty_limit",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show dirty page limit information of all vCPU",
-        .cmd        = hmp_info_vcpu_dirty_limit,
-    },
-
-SRST
-  ``info vcpu_dirty_limit``
-    Display the vcpu dirty page limit information.
-ERST
-
-#if defined(TARGET_I386)
-    {
-        .name       = "sgx",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show intel SGX information",
-        .cmd        = hmp_info_sgx,
-    },
-#endif
-
-SRST
-  ``info sgx``
-    Show intel SGX information.
-ERST
-
-#if defined(CONFIG_MOS6522)
-    {
-        .name         = "via",
-        .args_type    = "",
-        .params       = "",
-        .help         = "show guest mos6522 VIA devices",
-        .cmd          = hmp_info_via,
-    },
-#endif
-
-SRST
-  ``info via``
-    Show guest mos6522 VIA devices.
 ERST
 
 #if defined(TARGET_AARCH64)
@@ -875,88 +531,4 @@ ERST
 SRST
   ``info stats``
     Show runtime-collected statistics
-ERST
-
-    {
-        .name      = "virtio",
-        .args_type = "",
-        .params    = "",
-        .help      = "List all available virtio devices",
-        .cmd       = hmp_virtio_query,
-        .flags     = "p",
-    },
-
-SRST
-  ``info virtio``
-    List all available virtio devices
-ERST
-
-    {
-        .name      = "virtio-status",
-        .args_type = "path:s",
-        .params    = "path",
-        .help      = "Display status of a given virtio device",
-        .cmd       = hmp_virtio_status,
-        .flags     = "p",
-    },
-
-SRST
-  ``info virtio-status`` *path*
-    Display status of a given virtio device
-ERST
-
-    {
-        .name      = "virtio-queue-status",
-        .args_type = "path:s,queue:i",
-        .params    = "path queue",
-        .help      = "Display status of a given virtio queue",
-        .cmd       = hmp_virtio_queue_status,
-        .flags     = "p",
-    },
-
-SRST
-  ``info virtio-queue-status`` *path* *queue*
-    Display status of a given virtio queue
-ERST
-
-    {
-        .name      = "virtio-vhost-queue-status",
-        .args_type = "path:s,queue:i",
-        .params    = "path queue",
-        .help      = "Display status of a given vhost queue",
-        .cmd       = hmp_vhost_queue_status,
-        .flags     = "p",
-    },
-
-SRST
-  ``info virtio-vhost-queue-status`` *path* *queue*
-    Display status of a given vhost queue
-ERST
-
-    {
-        .name       = "virtio-queue-element",
-        .args_type  = "path:s,queue:i,index:i?",
-        .params     = "path queue [index]",
-        .help       = "Display element of a given virtio queue",
-        .cmd        = hmp_virtio_queue_element,
-        .flags      = "p",
-    },
-
-SRST
-  ``info virtio-queue-element`` *path* *queue* [*index*]
-    Display element of a given virtio queue
-ERST
-
-    {
-        .name       = "cryptodev",
-        .args_type  = "",
-        .params     = "",
-        .help       = "show the crypto devices",
-        .cmd        = hmp_info_cryptodev,
-        .flags      = "p",
-    },
-
-SRST
-  ``info cryptodev``
-    Show the crypto devices.
 ERST

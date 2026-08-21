@@ -35,12 +35,4 @@ struct QCryptoHashDriver {
 
 extern QCryptoHashDriver qcrypto_hash_lib_driver;
 
-#ifdef CONFIG_AF_ALG
-
-#include "afalgpriv.h"
-
-extern QCryptoHashDriver qcrypto_hash_afalg_driver;
-
-#endif
-
 #endif

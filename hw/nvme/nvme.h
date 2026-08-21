@@ -459,7 +459,6 @@ static inline const char *nvme_adm_opc_str(uint8_t opc)
     case NVME_ADM_CMD_ASYNC_EV_REQ:     return "NVME_ADM_CMD_ASYNC_EV_REQ";
     case NVME_ADM_CMD_NS_ATTACHMENT:    return "NVME_ADM_CMD_NS_ATTACHMENT";
     case NVME_ADM_CMD_DIRECTIVE_SEND:   return "NVME_ADM_CMD_DIRECTIVE_SEND";
-    case NVME_ADM_CMD_VIRT_MNGMT:       return "NVME_ADM_CMD_VIRT_MNGMT";
     case NVME_ADM_CMD_DIRECTIVE_RECV:   return "NVME_ADM_CMD_DIRECTIVE_RECV";
     case NVME_ADM_CMD_DBBUF_CONFIG:     return "NVME_ADM_CMD_DBBUF_CONFIG";
     case NVME_ADM_CMD_FORMAT_NVM:       return "NVME_ADM_CMD_FORMAT_NVM";
@@ -552,11 +551,6 @@ typedef struct NvmeParams {
     bool     legacy_cmb;
     bool     ioeventfd;
     bool     dbcs;
-    uint16_t  sriov_max_vfs;
-    uint16_t sriov_vq_flexible;
-    uint16_t sriov_vi_flexible;
-    uint32_t  sriov_max_vq_per_vf;
-    uint32_t  sriov_max_vi_per_vf;
     bool     msix_exclusive_bar;
     bool     ocp;
 
@@ -650,8 +644,6 @@ typedef struct NvmeCtrl {
     } features;
 
     NvmePriCtrlCap  pri_ctrl_cap;
-    uint32_t nr_sec_ctrls;
-    NvmeSecCtrlEntry *sec_ctrl_list;
     struct {
         uint16_t    vqrfap;
         uint16_t    virfap;
@@ -695,33 +687,6 @@ static inline uint16_t nvme_cid(NvmeRequest *req)
     }
 
     return le16_to_cpu(req->cqe.cid);
-}
-
-static inline NvmeSecCtrlEntry *nvme_sctrl(NvmeCtrl *n)
-{
-    PCIDevice *pci_dev = &n->parent_obj;
-    NvmeCtrl *pf = NVME(pcie_sriov_get_pf(pci_dev));
-
-    if (pci_is_vf(pci_dev)) {
-        return &pf->sec_ctrl_list[pcie_sriov_vf_number(pci_dev)];
-    }
-
-    return NULL;
-}
-
-static inline NvmeSecCtrlEntry *nvme_sctrl_for_cntlid(NvmeCtrl *n,
-                                                      uint16_t cntlid)
-{
-    NvmeSecCtrlEntry *list = n->sec_ctrl_list;
-    uint8_t i;
-
-    for (i = 0; i < n->nr_sec_ctrls; i++) {
-        if (le16_to_cpu(list[i].scid) == cntlid) {
-            return &list[i];
-        }
-    }
-
-    return NULL;
 }
 
 void nvme_attach_ns(NvmeCtrl *n, NvmeNamespace *ns);

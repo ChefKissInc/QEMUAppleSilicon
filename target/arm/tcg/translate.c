@@ -24,7 +24,6 @@
 #include "translate-a32.h"
 #include "qemu/log.h"
 #include "arm_ldst.h"
-#include "semihosting/semihost.h"
 #include "cpregs.h"
 #include "exec/helper-proto.h"
 #include "exec/target_page.h"
@@ -240,18 +239,6 @@ static inline int get_a32_user_mem_index(DisasContext *s)
     case ARMMMUIdx_GE10_1:
     case ARMMMUIdx_GE10_1_PAN:
         return arm_to_core_mmu_idx(ARMMMUIdx_E10_0);
-    case ARMMMUIdx_MUser:
-    case ARMMMUIdx_MPriv:
-        return arm_to_core_mmu_idx(ARMMMUIdx_MUser);
-    case ARMMMUIdx_MUserNegPri:
-    case ARMMMUIdx_MPrivNegPri:
-        return arm_to_core_mmu_idx(ARMMMUIdx_MUserNegPri);
-    case ARMMMUIdx_MSUser:
-    case ARMMMUIdx_MSPriv:
-        return arm_to_core_mmu_idx(ARMMMUIdx_MSUser);
-    case ARMMMUIdx_MSUserNegPri:
-    case ARMMMUIdx_MSPrivNegPri:
-        return arm_to_core_mmu_idx(ARMMMUIdx_MSUserNegPri);
     default:
         assert_not_reached();
     }
@@ -317,23 +304,12 @@ void store_reg(DisasContext *s, int reg, TCGv_i32 var)
         tcg_gen_andi_i32(var, var, s->thumb ? ~1 : ~3);
         s->base.is_jmp = DISAS_JUMP;
         s->pc_save = -1;
-    } else if (reg == 13 && arm_dc_feature(s, ARM_FEATURE_M)) {
-        /* For M-profile SP bits [1:0] are always zero */
-        tcg_gen_andi_i32(var, var, ~3);
     }
     tcg_gen_mov_i32(cpu_R[reg], var);
 }
 
-/*
- * Variant of store_reg which applies v8M stack-limit checks before updating
- * SP. If the check fails this will result in an exception being taken.
- */
 static void store_sp_checked(DisasContext *s, TCGv_i32 var)
 {
-    if (s->v8m_stackcheck) {
-        gen_helper_v8m_stackcheck(tcg_env, var);
-    }
-
     store_reg(s, 13, var);
 }
 
@@ -353,21 +329,11 @@ void gen_set_cpsr(TCGv_i32 var, uint32_t mask)
 
 static void gen_rebuild_hflags(DisasContext *s, bool new_el)
 {
-    bool m_profile = arm_dc_feature(s, ARM_FEATURE_M);
-
     if (new_el) {
-        if (m_profile) {
-            gen_helper_rebuild_hflags_m32_newel(tcg_env);
-        } else {
-            gen_helper_rebuild_hflags_a32_newel(tcg_env);
-        }
+        gen_helper_rebuild_hflags_a32_newel(tcg_env);
     } else {
         TCGv_i32 tcg_el = tcg_constant_i32(s->current_el);
-        if (m_profile) {
-            gen_helper_rebuild_hflags_m32(tcg_env, tcg_el);
-        } else {
-            gen_helper_rebuild_hflags_a32(tcg_env, tcg_el);
-        }
+        gen_helper_rebuild_hflags_a32(tcg_env, tcg_el);
     }
 }
 
@@ -752,110 +718,6 @@ static inline void gen_bx(DisasContext *s, TCGv_i32 var)
     s->pc_save = -1;
 }
 
-/*
- * Set PC and Thumb state from var. var is marked as dead.
- * For M-profile CPUs, include logic to detect exception-return
- * branches and handle them. This is needed for Thumb POP/LDM to PC, LDR to PC,
- * and BX reg, and no others, and happens only for code in Handler mode.
- * The Security Extension also requires us to check for the FNC_RETURN
- * which signals a function return from non-secure state; this can happen
- * in both Handler and Thread mode.
- * To avoid having to do multiple comparisons in inline generated code,
- * we make the check we do here loose, so it will match for EXC_RETURN
- * in Thread mode. For system emulation do_v7m_exception_exit() checks
- * for these spurious cases and returns without doing anything (giving
- * the same behaviour as for a branch to a non-magic address).
- *
- * In linux-user mode it is unclear what the right behaviour for an
- * attempted FNC_RETURN should be, because in real hardware this will go
- * directly to Secure code (ie not the Linux kernel) which will then treat
- * the error in any way it chooses. For QEMU we opt to make the FNC_RETURN
- * attempt behave the way it would on a CPU without the security extension,
- * which is to say "like a normal branch". That means we can simply treat
- * all branches as normal with no magic address behaviour.
- */
-static inline void gen_bx_excret(DisasContext *s, TCGv_i32 var)
-{
-    /* Generate the same code here as for a simple bx, but flag via
-     * s->base.is_jmp that we need to do the rest of the work later.
-     */
-    gen_bx(s, var);
-
-    if (arm_dc_feature(s, ARM_FEATURE_M_SECURITY) ||
-        (s->v7m_handler_mode && arm_dc_feature(s, ARM_FEATURE_M))) {
-        s->base.is_jmp = DISAS_BX_EXCRET;
-    }
-}
-
-static inline void gen_bx_excret_final_code(DisasContext *s)
-{
-    /* Generate the code to finish possible exception return and end the TB */
-    DisasLabel excret_label = gen_disas_label(s);
-    uint32_t min_magic;
-
-    if (arm_dc_feature(s, ARM_FEATURE_M_SECURITY)) {
-        /* Covers FNC_RETURN and EXC_RETURN magic */
-        min_magic = FNC_RETURN_MIN_MAGIC;
-    } else {
-        /* EXC_RETURN magic only */
-        min_magic = EXC_RETURN_MIN_MAGIC;
-    }
-
-    /* Is the new PC value in the magic range indicating exception return? */
-    tcg_gen_brcondi_i32(TCG_COND_GEU, cpu_R[15], min_magic, excret_label.label);
-    /* No: end the TB as we would for a DISAS_JMP */
-    if (s->ss_active) {
-        gen_singlestep_exception(s);
-    } else {
-        tcg_gen_exit_tb(NULL, 0);
-    }
-    set_disas_label(s, excret_label);
-    /* Yes: this is an exception return.
-     * At this point in runtime env->regs[15] and env->thumb will hold
-     * the exception-return magic number, which do_v7m_exception_exit()
-     * will read. Nothing else will be able to see those values because
-     * the cpu-exec main loop guarantees that we will always go straight
-     * from raising the exception to the exception-handling code.
-     *
-     * gen_ss_advance(s) does nothing on M profile currently but
-     * calling it is conceptually the right thing as we have executed
-     * this instruction (compare SWI, HVC, SMC handling).
-     */
-    gen_ss_advance(s);
-    gen_exception_internal(EXCP_EXCEPTION_EXIT);
-}
-
-static inline void gen_bxns(DisasContext *s, int rm)
-{
-    TCGv_i32 var = load_reg(s, rm);
-
-    /* The bxns helper may raise an EXCEPTION_EXIT exception, so in theory
-     * we need to sync state before calling it, but:
-     *  - we don't need to do gen_update_pc() because the bxns helper will
-     *    always set the PC itself
-     *  - we don't need to do gen_set_condexec() because BXNS is UNPREDICTABLE
-     *    unless it's outside an IT block or the last insn in an IT block,
-     *    so we know that condexec == 0 (already set at the top of the TB)
-     *    is correct in the non-UNPREDICTABLE cases, and we can choose
-     *    "zeroes the IT bits" as our UNPREDICTABLE behaviour otherwise.
-     */
-    gen_helper_v7m_bxns(tcg_env, var);
-    s->base.is_jmp = DISAS_EXIT;
-}
-
-static inline void gen_blxns(DisasContext *s, int rm)
-{
-    TCGv_i32 var = load_reg(s, rm);
-
-    /* We don't need to sync condexec state, for the same reason as bxns.
-     * We do however need to set the PC, because the blxns helper reads it.
-     * The blxns helper may throw an exception.
-     */
-    gen_update_pc(s, curr_insn_len(s));
-    gen_helper_v7m_blxns(tcg_env, var);
-    s->base.is_jmp = DISAS_EXIT;
-}
-
 /* Variant of store_reg which uses branch&exchange logic when storing
    to r15 in ARM architecture v7 and above. The source must be a temporary
    and will be marked as dead. */
@@ -875,7 +737,7 @@ static inline void store_reg_bx(DisasContext *s, int reg, TCGv_i32 var)
 static inline void store_reg_from_load(DisasContext *s, int reg, TCGv_i32 var)
 {
     if (reg == 15 && ENABLE_ARCH_5) {
-        gen_bx_excret(s, var);
+        gen_bx(s, var);
     } else {
         store_reg(s, reg, var);
     }
@@ -1021,14 +883,6 @@ static inline void gen_smc(DisasContext *s)
     s->base.is_jmp = DISAS_SMC;
 }
 
-static void gen_exception_internal_insn(DisasContext *s, int excp)
-{
-    gen_set_condexec(s);
-    gen_update_pc(s, 0);
-    gen_exception_internal(excp);
-    s->base.is_jmp = DISAS_NORETURN;
-}
-
 static void gen_exception_el_v(int excp, uint32_t syndrome, TCGv_i32 tcg_el)
 {
     gen_helper_exception_with_syndrome_el(tcg_env, tcg_constant_i32(excp),
@@ -1102,24 +956,6 @@ void gen_lookup_tb(DisasContext *s)
 
 static inline void gen_hlt(DisasContext *s, int imm)
 {
-    /* HLT. This has two purposes.
-     * Architecturally, it is an external halting debug instruction.
-     * Since QEMU doesn't implement external debug, we treat this as
-     * it is required for halting debug disabled: it will UNDEF.
-     * Secondly, "HLT 0x3C" is a T32 semihosting trap instruction,
-     * and "HLT 0xF000" is an A32 semihosting syscall. These traps
-     * must trigger semihosting even for ARMv7 and earlier, where
-     * HLT was an undefined encoding.
-     * In system mode, we don't allow userspace access to
-     * semihosting, to provide some semblance of security
-     * (and for consistency with our 32-bit semihosting).
-     */
-    if (semihosting_enabled(s->current_el == 0) &&
-        (imm == (s->thumb ? 0x3c : 0xf000))) {
-        gen_exception_internal_insn(s, EXCP_SEMIHOST);
-        return;
-    }
-
     unallocated_encoding(s);
 }
 
@@ -2279,11 +2115,9 @@ static bool valid_cp(DisasContext *s, int cp)
      * now part of VFP.
      * For v8A and later, the encoding has been tightened so that
      * only cp14 and cp15 are valid, and other values aren't considered
-     * to be in the coprocessor-instruction space at all. v8M still
-     * permits coprocessors 0..7.
+     * to be in the coprocessor-instruction space at all.
      */
-    if (arm_dc_feature(s, ARM_FEATURE_V8) &&
-        !arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (arm_dc_feature(s, ARM_FEATURE_V8)) {
         return cp >= 14;
     }
     return cp < 8 || cp >= 14;
@@ -2668,245 +2502,6 @@ static bool trans_MOVT(DisasContext *s, arg_MOVW *a)
 }
 
 /*
- * v8.1M MVE wide-shifts
- */
-static bool do_mve_shl_ri(DisasContext *s, arg_mve_shl_ri *a,
-                          WideShiftImmFn *fn)
-{
-    TCGv_i64 rda;
-    TCGv_i32 rdalo, rdahi;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_V8_1M)) {
-        /* Decode falls through to ORR/MOV UNPREDICTABLE handling */
-        return false;
-    }
-    if (a->rdahi == 15) {
-        /* These are a different encoding (SQSHL/SRSHR/UQSHL/URSHR) */
-        return false;
-    }
-    if (!dc_isar_feature(aa32_mve, s) ||
-        !arm_dc_feature(s, ARM_FEATURE_M_MAIN) ||
-        a->rdahi == 13) {
-        /* RdaHi == 13 is UNPREDICTABLE; we choose to UNDEF */
-        unallocated_encoding(s);
-        return true;
-    }
-
-    if (a->shim == 0) {
-        a->shim = 32;
-    }
-
-    rda = tcg_temp_new_i64();
-    rdalo = load_reg(s, a->rdalo);
-    rdahi = load_reg(s, a->rdahi);
-    tcg_gen_concat_i32_i64(rda, rdalo, rdahi);
-
-    fn(rda, rda, a->shim);
-
-    tcg_gen_extrl_i64_i32(rdalo, rda);
-    tcg_gen_extrh_i64_i32(rdahi, rda);
-    store_reg(s, a->rdalo, rdalo);
-    store_reg(s, a->rdahi, rdahi);
-
-    return true;
-}
-
-static bool trans_ASRL_ri(DisasContext *s, arg_mve_shl_ri *a)
-{
-    return do_mve_shl_ri(s, a, tcg_gen_sari_i64);
-}
-
-static bool trans_LSLL_ri(DisasContext *s, arg_mve_shl_ri *a)
-{
-    return do_mve_shl_ri(s, a, tcg_gen_shli_i64);
-}
-
-static bool trans_LSRL_ri(DisasContext *s, arg_mve_shl_ri *a)
-{
-    return do_mve_shl_ri(s, a, tcg_gen_shri_i64);
-}
-
-static void gen_mve_sqshll(TCGv_i64 r, TCGv_i64 n, int64_t shift)
-{
-    gen_helper_mve_sqshll(r, tcg_env, n, tcg_constant_i32(shift));
-}
-
-static bool trans_SQSHLL_ri(DisasContext *s, arg_mve_shl_ri *a)
-{
-    return do_mve_shl_ri(s, a, gen_mve_sqshll);
-}
-
-static void gen_mve_uqshll(TCGv_i64 r, TCGv_i64 n, int64_t shift)
-{
-    gen_helper_mve_uqshll(r, tcg_env, n, tcg_constant_i32(shift));
-}
-
-static bool trans_UQSHLL_ri(DisasContext *s, arg_mve_shl_ri *a)
-{
-    return do_mve_shl_ri(s, a, gen_mve_uqshll);
-}
-
-static bool trans_SRSHRL_ri(DisasContext *s, arg_mve_shl_ri *a)
-{
-    return do_mve_shl_ri(s, a, gen_srshr64_i64);
-}
-
-static bool trans_URSHRL_ri(DisasContext *s, arg_mve_shl_ri *a)
-{
-    return do_mve_shl_ri(s, a, gen_urshr64_i64);
-}
-
-static bool do_mve_shl_rr(DisasContext *s, arg_mve_shl_rr *a, WideShiftFn *fn)
-{
-    TCGv_i64 rda;
-    TCGv_i32 rdalo, rdahi;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_V8_1M)) {
-        /* Decode falls through to ORR/MOV UNPREDICTABLE handling */
-        return false;
-    }
-    if (a->rdahi == 15) {
-        /* These are a different encoding (SQSHL/SRSHR/UQSHL/URSHR) */
-        return false;
-    }
-    if (!dc_isar_feature(aa32_mve, s) ||
-        !arm_dc_feature(s, ARM_FEATURE_M_MAIN) ||
-        a->rdahi == 13 || a->rm == 13 || a->rm == 15 ||
-        a->rm == a->rdahi || a->rm == a->rdalo) {
-        /* These rdahi/rdalo/rm cases are UNPREDICTABLE; we choose to UNDEF */
-        unallocated_encoding(s);
-        return true;
-    }
-
-    rda = tcg_temp_new_i64();
-    rdalo = load_reg(s, a->rdalo);
-    rdahi = load_reg(s, a->rdahi);
-    tcg_gen_concat_i32_i64(rda, rdalo, rdahi);
-
-    /* The helper takes care of the sign-extension of the low 8 bits of Rm */
-    fn(rda, tcg_env, rda, cpu_R[a->rm]);
-
-    tcg_gen_extrl_i64_i32(rdalo, rda);
-    tcg_gen_extrh_i64_i32(rdahi, rda);
-    store_reg(s, a->rdalo, rdalo);
-    store_reg(s, a->rdahi, rdahi);
-
-    return true;
-}
-
-static bool trans_LSLL_rr(DisasContext *s, arg_mve_shl_rr *a)
-{
-    return do_mve_shl_rr(s, a, gen_helper_mve_ushll);
-}
-
-static bool trans_ASRL_rr(DisasContext *s, arg_mve_shl_rr *a)
-{
-    return do_mve_shl_rr(s, a, gen_helper_mve_sshrl);
-}
-
-static bool trans_UQRSHLL64_rr(DisasContext *s, arg_mve_shl_rr *a)
-{
-    return do_mve_shl_rr(s, a, gen_helper_mve_uqrshll);
-}
-
-static bool trans_SQRSHRL64_rr(DisasContext *s, arg_mve_shl_rr *a)
-{
-    return do_mve_shl_rr(s, a, gen_helper_mve_sqrshrl);
-}
-
-static bool trans_UQRSHLL48_rr(DisasContext *s, arg_mve_shl_rr *a)
-{
-    return do_mve_shl_rr(s, a, gen_helper_mve_uqrshll48);
-}
-
-static bool trans_SQRSHRL48_rr(DisasContext *s, arg_mve_shl_rr *a)
-{
-    return do_mve_shl_rr(s, a, gen_helper_mve_sqrshrl48);
-}
-
-static bool do_mve_sh_ri(DisasContext *s, arg_mve_sh_ri *a, ShiftImmFn *fn)
-{
-    if (!arm_dc_feature(s, ARM_FEATURE_V8_1M)) {
-        /* Decode falls through to ORR/MOV UNPREDICTABLE handling */
-        return false;
-    }
-    if (!dc_isar_feature(aa32_mve, s) ||
-        !arm_dc_feature(s, ARM_FEATURE_M_MAIN) ||
-        a->rda == 13 || a->rda == 15) {
-        /* These rda cases are UNPREDICTABLE; we choose to UNDEF */
-        unallocated_encoding(s);
-        return true;
-    }
-
-    if (a->shim == 0) {
-        a->shim = 32;
-    }
-    fn(cpu_R[a->rda], cpu_R[a->rda], a->shim);
-
-    return true;
-}
-
-static bool trans_URSHR_ri(DisasContext *s, arg_mve_sh_ri *a)
-{
-    return do_mve_sh_ri(s, a, gen_urshr32_i32);
-}
-
-static bool trans_SRSHR_ri(DisasContext *s, arg_mve_sh_ri *a)
-{
-    return do_mve_sh_ri(s, a, gen_srshr32_i32);
-}
-
-static void gen_mve_sqshl(TCGv_i32 r, TCGv_i32 n, int32_t shift)
-{
-    gen_helper_mve_sqshl(r, tcg_env, n, tcg_constant_i32(shift));
-}
-
-static bool trans_SQSHL_ri(DisasContext *s, arg_mve_sh_ri *a)
-{
-    return do_mve_sh_ri(s, a, gen_mve_sqshl);
-}
-
-static void gen_mve_uqshl(TCGv_i32 r, TCGv_i32 n, int32_t shift)
-{
-    gen_helper_mve_uqshl(r, tcg_env, n, tcg_constant_i32(shift));
-}
-
-static bool trans_UQSHL_ri(DisasContext *s, arg_mve_sh_ri *a)
-{
-    return do_mve_sh_ri(s, a, gen_mve_uqshl);
-}
-
-static bool do_mve_sh_rr(DisasContext *s, arg_mve_sh_rr *a, ShiftFn *fn)
-{
-    if (!arm_dc_feature(s, ARM_FEATURE_V8_1M)) {
-        /* Decode falls through to ORR/MOV UNPREDICTABLE handling */
-        return false;
-    }
-    if (!dc_isar_feature(aa32_mve, s) ||
-        !arm_dc_feature(s, ARM_FEATURE_M_MAIN) ||
-        a->rda == 13 || a->rda == 15 || a->rm == 13 || a->rm == 15 ||
-        a->rm == a->rda) {
-        /* These rda/rm cases are UNPREDICTABLE; we choose to UNDEF */
-        unallocated_encoding(s);
-        return true;
-    }
-
-    /* The helper takes care of the sign-extension of the low 8 bits of Rm */
-    fn(cpu_R[a->rda], tcg_env, cpu_R[a->rda], cpu_R[a->rm]);
-    return true;
-}
-
-static bool trans_SQRSHR_rr(DisasContext *s, arg_mve_sh_rr *a)
-{
-    return do_mve_sh_rr(s, a, gen_helper_mve_sqrshr);
-}
-
-static bool trans_UQRSHL_rr(DisasContext *s, arg_mve_sh_rr *a)
-{
-    return do_mve_sh_rr(s, a, gen_helper_mve_uqrshl);
-}
-
-/*
  * Multiply and multiply accumulate
  */
 
@@ -3216,10 +2811,9 @@ static bool trans_WFI(DisasContext *s, arg_WFI *a)
 static bool trans_ESB(DisasContext *s, arg_ESB *a)
 {
     /*
-     * For M-profile, minimal-RAS ESB can be a NOP.
      * Without RAS, we must implement this as NOP.
      */
-    if (!arm_dc_feature(s, ARM_FEATURE_M) && dc_isar_feature(aa32_ras, s)) {
+    if (dc_isar_feature(aa32_ras, s)) {
         /*
          * QEMU does not have a source of physical SErrors,
          * so we are only concerned with virtual SErrors.
@@ -3307,18 +2901,12 @@ DO_CRC32(CRC32CW, true, MO_32)
 
 static bool trans_MRS_bank(DisasContext *s, arg_MRS_bank *a)
 {
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
     gen_mrs_banked(s, a->r, a->sysm, a->rd);
     return true;
 }
 
 static bool trans_MSR_bank(DisasContext *s, arg_MSR_bank *a)
 {
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
     gen_msr_banked(s, a->r, a->sysm, a->rn);
     return true;
 }
@@ -3327,9 +2915,6 @@ static bool trans_MRS_reg(DisasContext *s, arg_MRS_reg *a)
 {
     TCGv_i32 tmp;
 
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
     if (a->r) {
         if (IS_USER(s)) {
             unallocated_encoding(s);
@@ -3349,42 +2934,10 @@ static bool trans_MSR_reg(DisasContext *s, arg_MSR_reg *a)
     TCGv_i32 tmp;
     uint32_t mask = msr_mask(s, a->mask, a->r);
 
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
     tmp = load_reg(s, a->rn);
     if (gen_set_psr(s, mask, a->r, tmp)) {
         unallocated_encoding(s);
     }
-    return true;
-}
-
-static bool trans_MRS_v7m(DisasContext *s, arg_MRS_v7m *a)
-{
-    TCGv_i32 tmp;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
-    tmp = tcg_temp_new_i32();
-    gen_helper_v7m_mrs(tmp, tcg_env, tcg_constant_i32(a->sysm));
-    store_reg(s, a->rd, tmp);
-    return true;
-}
-
-static bool trans_MSR_v7m(DisasContext *s, arg_MSR_v7m *a)
-{
-    TCGv_i32 addr, reg;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
-    addr = tcg_constant_i32((a->mask << 10) | a->sysm);
-    reg = load_reg(s, a->rn);
-    gen_helper_v7m_msr(tcg_env, addr, reg);
-    /* If we wrote to CONTROL, the EL might have changed */
-    gen_rebuild_hflags(s, true);
-    gen_lookup_tb(s);
     return true;
 }
 
@@ -3393,13 +2946,13 @@ static bool trans_BX(DisasContext *s, arg_BX *a)
     if (!ENABLE_ARCH_4T) {
         return false;
     }
-    gen_bx_excret(s, load_reg(s, a->rm));
+    gen_bx(s, load_reg(s, a->rm));
     return true;
 }
 
 static bool trans_BXJ(DisasContext *s, arg_BXJ *a)
 {
-    if (!ENABLE_ARCH_5J || arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_5J) {
         return false;
     }
     /*
@@ -3429,32 +2982,6 @@ static bool trans_BLX_r(DisasContext *s, arg_BLX_r *a)
     tmp = load_reg(s, a->rm);
     gen_pc_plus_diff(s, cpu_R[14], curr_insn_len(s) | s->thumb);
     gen_bx(s, tmp);
-    return true;
-}
-
-/*
- * BXNS/BLXNS: only exist for v8M with the security extensions,
- * and always UNDEF if NonSecure.  We don't implement these in
- * the user-only mode either (in theory you can use them from
- * Secure User mode but they are too tied in to system emulation).
- */
-static bool trans_BXNS(DisasContext *s, arg_BXNS *a)
-{
-    if (!s->v8m_secure) {
-        unallocated_encoding(s);
-    } else {
-        gen_bxns(s, a->rm);
-    }
-    return true;
-}
-
-static bool trans_BLXNS(DisasContext *s, arg_BLXNS *a)
-{
-    if (!s->v8m_secure) {
-        unallocated_encoding(s);
-    } else {
-        gen_blxns(s, a->rm);
-    }
     return true;
 }
 
@@ -3505,19 +3032,13 @@ static bool trans_BKPT(DisasContext *s, arg_BKPT *a)
     }
     /* BKPT is OK with ECI set and leaves it untouched */
     s->eci_handled = true;
-    if (arm_dc_feature(s, ARM_FEATURE_M) &&
-        semihosting_enabled(s->current_el == 0) &&
-        (a->imm == 0xab)) {
-        gen_exception_internal_insn(s, EXCP_SEMIHOST);
-    } else {
-        gen_exception_bkpt_insn(s, syn_aa32_bkpt(a->imm, false));
-    }
+    gen_exception_bkpt_insn(s, syn_aa32_bkpt(a->imm, false));
     return true;
 }
 
 static bool trans_HVC(DisasContext *s, arg_HVC *a)
 {
-    if (!ENABLE_ARCH_7 || arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_7) {
         return false;
     }
     if (IS_USER(s)) {
@@ -3530,7 +3051,7 @@ static bool trans_HVC(DisasContext *s, arg_HVC *a)
 
 static bool trans_SMC(DisasContext *s, arg_SMC *a)
 {
-    if (!ENABLE_ARCH_6K || arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_6K) {
         return false;
     }
     if (IS_USER(s)) {
@@ -3538,60 +3059,6 @@ static bool trans_SMC(DisasContext *s, arg_SMC *a)
     } else {
         gen_smc(s);
     }
-    return true;
-}
-
-static bool trans_SG(DisasContext *s, arg_SG *a)
-{
-    if (!arm_dc_feature(s, ARM_FEATURE_M) ||
-        !arm_dc_feature(s, ARM_FEATURE_V8)) {
-        return false;
-    }
-    /*
-     * SG (v8M only)
-     * The bulk of the behaviour for this instruction is implemented
-     * in v7m_handle_execute_nsc(), which deals with the insn when
-     * it is executed by a CPU in non-secure state from memory
-     * which is Secure & NonSecure-Callable.
-     * Here we only need to handle the remaining cases:
-     *  * in NS memory (including the "security extension not
-     *    implemented" case) : NOP
-     *  * in S memory but CPU already secure (clear IT bits)
-     * We know that the attribute for the memory this insn is
-     * in must match the current CPU state, because otherwise
-     * get_phys_addr_pmsav8 would have generated an exception.
-     */
-    if (s->v8m_secure) {
-        /* Like the IT insn, we don't need to generate any code */
-        s->condexec_cond = 0;
-        s->condexec_mask = 0;
-    }
-    return true;
-}
-
-static bool trans_TT(DisasContext *s, arg_TT *a)
-{
-    TCGv_i32 addr, tmp;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_M) ||
-        !arm_dc_feature(s, ARM_FEATURE_V8)) {
-        return false;
-    }
-    if (a->rd == 13 || a->rd == 15 || a->rn == 15) {
-        /* We UNDEF for these UNPREDICTABLE cases */
-        unallocated_encoding(s);
-        return true;
-    }
-    if (a->A && !s->v8m_secure) {
-        /* This case is UNDEFINED.  */
-        unallocated_encoding(s);
-        return true;
-    }
-
-    addr = load_reg(s, a->rn);
-    tmp = tcg_temp_new_i32();
-    gen_helper_v7m_tt(tmp, tcg_env, addr, tcg_constant_i32((a->A << 1) | a->T));
-    store_reg(s, a->rd, tmp);
     return true;
 }
 
@@ -3618,10 +3085,6 @@ static ISSInfo make_issinfo(DisasContext *s, int rd, bool p, bool w)
 static TCGv_i32 op_addr_rr_pre(DisasContext *s, arg_ldst_rr *a)
 {
     TCGv_i32 addr = load_reg(s, a->rn);
-
-    if (s->v8m_stackcheck && a->rn == 13 && a->w) {
-        gen_helper_v8m_stackcheck(tcg_env, addr);
-    }
 
     if (a->p) {
         TCGv_i32 ofs = load_reg(s, a->rm);
@@ -3821,22 +3284,6 @@ static TCGv_i32 op_addr_ri_pre(DisasContext *s, arg_ldst_ri *a)
         ofs = -ofs;
     }
 
-    if (s->v8m_stackcheck && a->rn == 13 && a->w) {
-        /*
-         * Stackcheck. Here we know 'addr' is the current SP;
-         * U is set if we're moving SP up, else down. It is
-         * UNKNOWN whether the limit check triggers when SP starts
-         * below the limit and ends up above it; we chose to do so.
-         */
-        if (!a->u) {
-            TCGv_i32 newsp = tcg_temp_new_i32();
-            tcg_gen_addi_i32(newsp, cpu_R[13], ofs);
-            gen_helper_v8m_stackcheck(tcg_env, newsp);
-        } else {
-            gen_helper_v8m_stackcheck(tcg_env, cpu_R[13]);
-        }
-    }
-
     return add_reg_for_lit(s, a->rn, a->p ? ofs : 0);
 }
 
@@ -4028,8 +3475,8 @@ static bool trans_SWPB(DisasContext *s, arg_SWP *a)
 static bool op_strex(DisasContext *s, arg_STREX *a, MemOp mop, bool rel)
 {
     TCGv_i32 addr;
-    /* Some cases stopped being UNPREDICTABLE in v8A (but not v8M) */
-    bool v8a = ENABLE_ARCH_8 && !arm_dc_feature(s, ARM_FEATURE_M);
+    /* Some cases stopped being UNPREDICTABLE in v8A */
+    bool v8a = ENABLE_ARCH_8;
 
     /* We UNDEF for these UNPREDICTABLE cases.  */
     if (a->rd == 15 || a->rn == 15 || a->rt == 15
@@ -4184,8 +3631,8 @@ static bool trans_STLH(DisasContext *s, arg_STL *a)
 static bool op_ldrex(DisasContext *s, arg_LDREX *a, MemOp mop, bool acq)
 {
     TCGv_i32 addr;
-    /* Some cases stopped being UNPREDICTABLE in v8A (but not v8M) */
-    bool v8a = ENABLE_ARCH_8 && !arm_dc_feature(s, ARM_FEATURE_M);
+    /* Some cases stopped being UNPREDICTABLE in v8A */
+    bool v8a = ENABLE_ARCH_8;
 
     /* We UNDEF for these UNPREDICTABLE cases.  */
     if (a->rn == 15 || a->rt == 15
@@ -4994,21 +4441,6 @@ static TCGv_i32 op_addr_block_pre(DisasContext *s, arg_ldst_block *a, int n)
         tcg_gen_addi_i32(addr, addr, -((n - 1) * 4));
     }
 
-    if (s->v8m_stackcheck && a->rn == 13 && a->w) {
-        /*
-         * If the writeback is incrementing SP rather than
-         * decrementing it, and the initial SP is below the
-         * stack limit but the final written-back SP would
-         * be above, then we must not perform any memory
-         * accesses, but it is IMPDEF whether we generate
-         * an exception. We choose to do so in this case.
-         * At this point 'addr' is the lowest address, so
-         * either the original SP (if incrementing) or our
-         * final SP (if decrementing), so that's what we check.
-         */
-        gen_helper_v8m_stackcheck(tcg_env, addr);
-    }
-
     return addr;
 }
 
@@ -5228,44 +4660,6 @@ static bool trans_LDM_t16(DisasContext *s, arg_ldst_block *a)
     return do_ldm(s, a);
 }
 
-static bool trans_CLRM(DisasContext *s, arg_CLRM *a)
-{
-    int i;
-    TCGv_i32 zero;
-
-    if (!dc_isar_feature(aa32_m_sec_state, s)) {
-        return false;
-    }
-
-    if (extract32(a->list, 13, 1)) {
-        return false;
-    }
-
-    if (!a->list) {
-        /* UNPREDICTABLE; we choose to UNDEF */
-        return false;
-    }
-
-    s->eci_handled = true;
-
-    zero = tcg_constant_i32(0);
-    for (i = 0; i < 15; i++) {
-        if (extract32(a->list, i, 1)) {
-            /* Clear R[i] */
-            tcg_gen_mov_i32(cpu_R[i], zero);
-        }
-    }
-    if (extract32(a->list, 15, 1)) {
-        /*
-         * Clear APSR (by calling the MSR helper with the same argument
-         * as for "MSR APSR_nzcvqg, Rn": mask = 0b1100, SYSM=0)
-         */
-        gen_helper_v7m_msr(tcg_env, tcg_constant_i32(0xc00), zero);
-    }
-    clear_eci_state(s);
-    return true;
-}
-
 /*
  * Branch, branch with link
  */
@@ -5300,14 +4694,6 @@ static bool trans_BL(DisasContext *s, arg_i *a)
 
 static bool trans_BLX_i(DisasContext *s, arg_BLX_i *a)
 {
-    /*
-     * BLX <imm> would be useless on M-profile; the encoding space
-     * is used for other insns from v8.1M onward, and UNDEFs before that.
-     */
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
-
     /* For A32, ARM_FEATURE_V5 is checked near the start of the uncond block. */
     if (s->thumb && (a->imm & 2)) {
         return false;
@@ -5353,307 +4739,6 @@ static bool trans_BLX_suffix(DisasContext *s, arg_BLX_suffix *a)
     return true;
 }
 
-static bool trans_BF(DisasContext *s, arg_BF *a)
-{
-    /*
-     * M-profile branch future insns. The architecture permits an
-     * implementation to implement these as NOPs (equivalent to
-     * discarding the LO_BRANCH_INFO cache immediately), and we
-     * take that IMPDEF option because for QEMU a "real" implementation
-     * would be complicated and wouldn't execute any faster.
-     */
-    if (!dc_isar_feature(aa32_lob, s)) {
-        return false;
-    }
-    if (a->boff == 0) {
-        /* SEE "Related encodings" (loop insns) */
-        return false;
-    }
-    /* Handle as NOP */
-    return true;
-}
-
-static bool trans_DLS(DisasContext *s, arg_DLS *a)
-{
-    /* M-profile low-overhead loop start */
-    TCGv_i32 tmp;
-
-    if (!dc_isar_feature(aa32_lob, s)) {
-        return false;
-    }
-    if (a->rn == 13 || a->rn == 15) {
-        /*
-         * For DLSTP rn == 15 is a related encoding (LCTP); the
-         * other cases caught by this condition are all
-         * CONSTRAINED UNPREDICTABLE: we choose to UNDEF
-         */
-        return false;
-    }
-
-    if (a->size != 4) {
-        /* DLSTP */
-        if (!dc_isar_feature(aa32_mve, s)) {
-            return false;
-        }
-        if (!vfp_access_check(s)) {
-            return true;
-        }
-    }
-
-    /* Not a while loop: set LR to the count, and set LTPSIZE for DLSTP */
-    tmp = load_reg(s, a->rn);
-    store_reg(s, 14, tmp);
-    if (a->size != 4) {
-        /* DLSTP: set FPSCR.LTPSIZE */
-        store_cpu_field(tcg_constant_i32(a->size), v7m.ltpsize);
-        s->base.is_jmp = DISAS_UPDATE_NOCHAIN;
-    }
-    return true;
-}
-
-static bool trans_WLS(DisasContext *s, arg_WLS *a)
-{
-    /* M-profile low-overhead while-loop start */
-    TCGv_i32 tmp;
-    DisasLabel nextlabel;
-
-    if (!dc_isar_feature(aa32_lob, s)) {
-        return false;
-    }
-    if (a->rn == 13 || a->rn == 15) {
-        /*
-         * For WLSTP rn == 15 is a related encoding (LE); the
-         * other cases caught by this condition are all
-         * CONSTRAINED UNPREDICTABLE: we choose to UNDEF
-         */
-        return false;
-    }
-    if (s->condexec_mask) {
-        /*
-         * WLS in an IT block is CONSTRAINED UNPREDICTABLE;
-         * we choose to UNDEF, because otherwise our use of
-         * gen_goto_tb(1) would clash with the use of TB exit 1
-         * in the dc->condjmp condition-failed codepath in
-         * arm_tr_tb_stop() and we'd get an assertion.
-         */
-        return false;
-    }
-    if (a->size != 4) {
-        /* WLSTP */
-        if (!dc_isar_feature(aa32_mve, s)) {
-            return false;
-        }
-        /*
-         * We need to check that the FPU is enabled here, but mustn't
-         * call vfp_access_check() to do that because we don't want to
-         * do the lazy state preservation in the "loop count is zero" case.
-         * Do the check-and-raise-exception by hand.
-         */
-        if (s->fp_excp_el) {
-            gen_exception_insn_el(s, 0, EXCP_NOCP,
-                                  syn_uncategorized(), s->fp_excp_el);
-            return true;
-        }
-    }
-
-    nextlabel = gen_disas_label(s);
-    tcg_gen_brcondi_i32(TCG_COND_EQ, cpu_R[a->rn], 0, nextlabel.label);
-    tmp = load_reg(s, a->rn);
-    store_reg(s, 14, tmp);
-    if (a->size != 4) {
-        /*
-         * WLSTP: set FPSCR.LTPSIZE. This requires that we do the
-         * lazy state preservation, new FP context creation, etc,
-         * that vfp_access_check() does. We know that the actual
-         * access check will succeed (ie it won't generate code that
-         * throws an exception) because we did that check by hand earlier.
-         */
-        bool ok = vfp_access_check(s);
-        assert(ok);
-        store_cpu_field(tcg_constant_i32(a->size), v7m.ltpsize);
-        /*
-         * LTPSIZE updated, but MVE_NO_PRED will always be the same thing (0)
-         * when we take this upcoming exit from this TB, so gen_jmp_tb() is OK.
-         */
-    }
-    gen_jmp_tb(s, curr_insn_len(s), 1);
-
-    set_disas_label(s, nextlabel);
-    gen_jmp(s, jmp_diff(s, a->imm));
-    return true;
-}
-
-static bool trans_LE(DisasContext *s, arg_LE *a)
-{
-    /*
-     * M-profile low-overhead loop end. The architecture permits an
-     * implementation to discard the LO_BRANCH_INFO cache at any time,
-     * and we take the IMPDEF option to never set it in the first place
-     * (equivalent to always discarding it immediately), because for QEMU
-     * a "real" implementation would be complicated and wouldn't execute
-     * any faster.
-     */
-    TCGv_i32 tmp;
-    DisasLabel loopend;
-    bool fpu_active;
-
-    if (!dc_isar_feature(aa32_lob, s)) {
-        return false;
-    }
-    if (a->f && a->tp) {
-        return false;
-    }
-    if (s->condexec_mask) {
-        /*
-         * LE in an IT block is CONSTRAINED UNPREDICTABLE;
-         * we choose to UNDEF, because otherwise our use of
-         * gen_goto_tb(1) would clash with the use of TB exit 1
-         * in the dc->condjmp condition-failed codepath in
-         * arm_tr_tb_stop() and we'd get an assertion.
-         */
-        return false;
-    }
-    if (a->tp) {
-        /* LETP */
-        if (!dc_isar_feature(aa32_mve, s)) {
-            return false;
-        }
-        if (!vfp_access_check(s)) {
-            s->eci_handled = true;
-            return true;
-        }
-    }
-
-    /* LE/LETP is OK with ECI set and leaves it untouched */
-    s->eci_handled = true;
-
-    /*
-     * With MVE, LTPSIZE might not be 4, and we must emit an INVSTATE
-     * UsageFault exception for the LE insn in that case. Note that we
-     * are not directly checking FPSCR.LTPSIZE but instead check the
-     * pseudocode LTPSIZE() function, which returns 4 if the FPU is
-     * not currently active (ie ActiveFPState() returns false). We
-     * can identify not-active purely from our TB state flags, as the
-     * FPU is active only if:
-     *  the FPU is enabled
-     *  AND lazy state preservation is not active
-     *  AND we do not need a new fp context (this is the ASPEN/FPCA check)
-     *
-     * Usually we don't need to care about this distinction between
-     * LTPSIZE and FPSCR.LTPSIZE, because the code in vfp_access_check()
-     * will either take an exception or clear the conditions that make
-     * the FPU not active. But LE is an unusual case of a non-FP insn
-     * that looks at LTPSIZE.
-     */
-    fpu_active = !s->fp_excp_el && !s->v7m_lspact && !s->v7m_new_fp_ctxt_needed;
-
-    if (!a->tp && dc_isar_feature(aa32_mve, s) && fpu_active) {
-        /* Need to do a runtime check for LTPSIZE != 4 */
-        DisasLabel skipexc = gen_disas_label(s);
-        tmp = load_cpu_field(v7m.ltpsize);
-        tcg_gen_brcondi_i32(TCG_COND_EQ, tmp, 4, skipexc.label);
-        gen_exception_insn(s, 0, EXCP_INVSTATE, syn_uncategorized());
-        set_disas_label(s, skipexc);
-    }
-
-    if (a->f) {
-        /* Loop-forever: just jump back to the loop start */
-        gen_jmp(s, jmp_diff(s, -a->imm));
-        return true;
-    }
-
-    /*
-     * Not loop-forever. If LR <= loop-decrement-value this is the last loop.
-     * For LE, we know at this point that LTPSIZE must be 4 and the
-     * loop decrement value is 1. For LETP we need to calculate the decrement
-     * value from LTPSIZE.
-     */
-    loopend = gen_disas_label(s);
-    if (!a->tp) {
-        tcg_gen_brcondi_i32(TCG_COND_LEU, cpu_R[14], 1, loopend.label);
-        tcg_gen_addi_i32(cpu_R[14], cpu_R[14], -1);
-    } else {
-        /*
-         * Decrement by 1 << (4 - LTPSIZE). We need to use a TCG local
-         * so that decr stays live after the brcondi.
-         */
-        TCGv_i32 decr = tcg_temp_new_i32();
-        TCGv_i32 ltpsize = load_cpu_field(v7m.ltpsize);
-        tcg_gen_sub_i32(decr, tcg_constant_i32(4), ltpsize);
-        tcg_gen_shl_i32(decr, tcg_constant_i32(1), decr);
-
-        tcg_gen_brcond_i32(TCG_COND_LEU, cpu_R[14], decr, loopend.label);
-
-        tcg_gen_sub_i32(cpu_R[14], cpu_R[14], decr);
-    }
-    /* Jump back to the loop start */
-    gen_jmp(s, jmp_diff(s, -a->imm));
-
-    set_disas_label(s, loopend);
-    if (a->tp) {
-        /* Exits from tail-pred loops must reset LTPSIZE to 4 */
-        store_cpu_field(tcg_constant_i32(4), v7m.ltpsize);
-    }
-    /* End TB, continuing to following insn */
-    gen_jmp_tb(s, curr_insn_len(s), 1);
-    return true;
-}
-
-static bool trans_LCTP(DisasContext *s, arg_LCTP *a)
-{
-    /*
-     * M-profile Loop Clear with Tail Predication. Since our implementation
-     * doesn't cache branch information, all we need to do is reset
-     * FPSCR.LTPSIZE to 4.
-     */
-
-    if (!dc_isar_feature(aa32_lob, s) ||
-        !dc_isar_feature(aa32_mve, s)) {
-        return false;
-    }
-
-    if (!vfp_access_check(s)) {
-        return true;
-    }
-
-    store_cpu_field_constant(4, v7m.ltpsize);
-    return true;
-}
-
-static bool trans_VCTP(DisasContext *s, arg_VCTP *a)
-{
-    /*
-     * M-profile Create Vector Tail Predicate. This insn is itself
-     * predicated and is subject to beatwise execution.
-     */
-    TCGv_i32 rn_shifted, masklen;
-
-    if (!dc_isar_feature(aa32_mve, s) || a->rn == 13 || a->rn == 15) {
-        return false;
-    }
-
-    if (!mve_eci_check(s) || !vfp_access_check(s)) {
-        return true;
-    }
-
-    /*
-     * We pre-calculate the mask length here to avoid having
-     * to have multiple helpers specialized for size.
-     * We pass the helper "rn <= (1 << (4 - size)) ? (rn << size) : 16".
-     */
-    rn_shifted = tcg_temp_new_i32();
-    masklen = load_reg(s, a->rn);
-    tcg_gen_shli_i32(rn_shifted, masklen, a->size);
-    tcg_gen_movcond_i32(TCG_COND_LEU, masklen,
-                        masklen, tcg_constant_i32(1 << (4 - a->size)),
-                        rn_shifted, tcg_constant_i32(16));
-    gen_helper_mve_vctp(tcg_env, masklen);
-    /* This insn updates predication bits */
-    s->base.is_jmp = DISAS_UPDATE_NOCHAIN;
-    mve_update_eci(s);
-    return true;
-}
-
 static bool op_tbranch(DisasContext *s, arg_tbranch *a, bool half)
 {
     TCGv_i32 addr, tmp;
@@ -5695,28 +4780,15 @@ static bool trans_CBZ(DisasContext *s, arg_CBZ *a)
     return true;
 }
 
-/*
- * Supervisor call - both T32 & A32 come here so we need to check
- * which mode we are in when checking for semihosting.
- */
-
 static bool trans_SVC(DisasContext *s, arg_SVC *a)
 {
-    const uint32_t semihost_imm = s->thumb ? 0xab : 0x123456;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_M) &&
-        semihosting_enabled(s->current_el == 0) &&
-        (a->imm == semihost_imm)) {
-        gen_exception_internal_insn(s, EXCP_SEMIHOST);
+    if (s->fgt_svc) {
+        uint32_t syndrome = syn_aa32_svc(a->imm, s->thumb);
+        gen_exception_insn_el(s, 0, EXCP_UDEF, syndrome, 2);
     } else {
-        if (s->fgt_svc) {
-            uint32_t syndrome = syn_aa32_svc(a->imm, s->thumb);
-            gen_exception_insn_el(s, 0, EXCP_UDEF, syndrome, 2);
-        } else {
-            gen_update_pc(s, curr_insn_len(s));
-            s->svc_imm = a->imm;
-            s->base.is_jmp = DISAS_SWI;
-        }
+        gen_update_pc(s, curr_insn_len(s));
+        s->svc_imm = a->imm;
+        s->base.is_jmp = DISAS_SWI;
     }
     return true;
 }
@@ -5735,7 +4807,7 @@ static bool trans_RFE(DisasContext *s, arg_RFE *a)
     };
     TCGv_i32 addr, t1, t2;
 
-    if (!ENABLE_ARCH_6 || arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_6) {
         return false;
     }
     if (IS_USER(s)) {
@@ -5764,7 +4836,7 @@ static bool trans_RFE(DisasContext *s, arg_RFE *a)
 
 static bool trans_SRS(DisasContext *s, arg_SRS *a)
 {
-    if (!ENABLE_ARCH_6 || arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_6) {
         return false;
     }
     gen_srs(s, a->mode, a->pu, a->w);
@@ -5775,7 +4847,7 @@ static bool trans_CPS(DisasContext *s, arg_CPS *a)
 {
     uint32_t mask, val;
 
-    if (!ENABLE_ARCH_6 || arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_6) {
         return false;
     }
     if (IS_USER(s)) {
@@ -5809,34 +4881,6 @@ static bool trans_CPS(DisasContext *s, arg_CPS *a)
     return true;
 }
 
-static bool trans_CPS_v7m(DisasContext *s, arg_CPS_v7m *a)
-{
-    TCGv_i32 tmp, addr;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_M)) {
-        return false;
-    }
-    if (IS_USER(s)) {
-        /* Implemented as NOP in user mode.  */
-        return true;
-    }
-
-    tmp = tcg_constant_i32(a->im);
-    /* FAULTMASK */
-    if (a->F) {
-        addr = tcg_constant_i32(19);
-        gen_helper_v7m_msr(tcg_env, addr, tmp);
-    }
-    /* PRIMASK */
-    if (a->I) {
-        addr = tcg_constant_i32(16);
-        gen_helper_v7m_msr(tcg_env, addr, tmp);
-    }
-    gen_rebuild_hflags(s, false);
-    gen_lookup_tb(s);
-    return true;
-}
-
 /*
  * Clear-Exclusive, Barriers
  */
@@ -5844,7 +4888,7 @@ static bool trans_CPS_v7m(DisasContext *s, arg_CPS_v7m *a)
 static bool trans_CLREX(DisasContext *s, arg_CLREX *a)
 {
     if (s->thumb
-        ? !ENABLE_ARCH_7 && !arm_dc_feature(s, ARM_FEATURE_M)
+        ? !ENABLE_ARCH_7
         : !ENABLE_ARCH_6K) {
         return false;
     }
@@ -5854,7 +4898,7 @@ static bool trans_CLREX(DisasContext *s, arg_CLREX *a)
 
 static bool trans_DSB(DisasContext *s, arg_DSB *a)
 {
-    if (!ENABLE_ARCH_7 && !arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_7) {
         return false;
     }
     tcg_gen_mb(TCG_MO_ALL | TCG_BAR_SC);
@@ -5868,7 +4912,7 @@ static bool trans_DMB(DisasContext *s, arg_DMB *a)
 
 static bool trans_ISB(DisasContext *s, arg_ISB *a)
 {
-    if (!ENABLE_ARCH_7 && !arm_dc_feature(s, ARM_FEATURE_M)) {
+    if (!ENABLE_ARCH_7) {
         return false;
     }
     /*
@@ -5947,63 +4991,6 @@ static bool trans_IT(DisasContext *s, arg_IT *a)
     return true;
 }
 
-/* v8.1M CSEL/CSINC/CSNEG/CSINV */
-static bool trans_CSEL(DisasContext *s, arg_CSEL *a)
-{
-    TCGv_i32 rn, rm;
-    DisasCompare c;
-
-    if (!arm_dc_feature(s, ARM_FEATURE_V8_1M)) {
-        return false;
-    }
-
-    if (a->rm == 13) {
-        /* SEE "Related encodings" (MVE shifts) */
-        return false;
-    }
-
-    if (a->rd == 13 || a->rd == 15 || a->rn == 13 || a->fcond >= 14) {
-        /* CONSTRAINED UNPREDICTABLE: we choose to UNDEF */
-        return false;
-    }
-
-    /* In this insn input reg fields of 0b1111 mean "zero", not "PC" */
-    rn = tcg_temp_new_i32();
-    rm = tcg_temp_new_i32();
-    if (a->rn == 15) {
-        tcg_gen_movi_i32(rn, 0);
-    } else {
-        load_reg_var(s, rn, a->rn);
-    }
-    if (a->rm == 15) {
-        tcg_gen_movi_i32(rm, 0);
-    } else {
-        load_reg_var(s, rm, a->rm);
-    }
-
-    switch (a->op) {
-    case 0: /* CSEL */
-        break;
-    case 1: /* CSINC */
-        tcg_gen_addi_i32(rm, rm, 1);
-        break;
-    case 2: /* CSINV */
-        tcg_gen_not_i32(rm, rm);
-        break;
-    case 3: /* CSNEG */
-        tcg_gen_neg_i32(rm, rm);
-        break;
-    default:
-        assert_not_reached();
-    }
-
-    arm_test_cc(&c, a->fcond);
-    tcg_gen_movcond_i32(c.cond, rn, c.value, tcg_constant_i32(0), rn, rm);
-
-    store_reg(s, a->rd, rn);
-    return true;
-}
-
 /*
  * Legacy decoder.
  */
@@ -6011,14 +4998,6 @@ static bool trans_CSEL(DisasContext *s, arg_CSEL *a)
 static void disas_arm_insn(DisasContext *s, unsigned int insn)
 {
     unsigned int cond = insn >> 28;
-
-    /* M variants do not implement ARM mode; this must raise the INVSTATE
-     * UsageFault exception.
-     */
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        gen_exception_insn(s, 0, EXCP_INVSTATE, syn_uncategorized());
-        return;
-    }
 
     if (s->pstate_il) {
         /*
@@ -6083,10 +5062,8 @@ static bool thumb_insn_is_16bit(DisasContext *s, uint32_t pc, uint32_t insn)
      * end up actually treating this as two 16-bit insns, though,
      * if it's half of a bl/blx pair that might span a page boundary.
      */
-    if (arm_dc_feature(s, ARM_FEATURE_THUMB2) ||
-        arm_dc_feature(s, ARM_FEATURE_M)) {
-        /* Thumb2 cores (including all M profile ones) always treat
-         * 32-bit insns as 32-bit.
+    if (arm_dc_feature(s, ARM_FEATURE_THUMB2)) {
+        /* Thumb2 cores always treat 32-bit insns as 32-bit.
          */
         return false;
     }
@@ -6109,53 +5086,9 @@ static bool thumb_insn_is_16bit(DisasContext *s, uint32_t pc, uint32_t insn)
 /* Translate a 32-bit thumb instruction. */
 static void disas_thumb2_insn(DisasContext *s, uint32_t insn)
 {
-    /*
-     * ARMv6-M supports a limited subset of Thumb2 instructions.
-     * Other Thumb1 architectures allow only 32-bit
-     * combined BL/BLX prefix and suffix.
-     */
-    if (arm_dc_feature(s, ARM_FEATURE_M) &&
-        !arm_dc_feature(s, ARM_FEATURE_V7)) {
-        int i;
-        bool found = false;
-        static const uint32_t armv6m_insn[] = {0xf3808000 /* msr */,
-                                               0xf3b08040 /* dsb */,
-                                               0xf3b08050 /* dmb */,
-                                               0xf3b08060 /* isb */,
-                                               0xf3e08000 /* mrs */,
-                                               0xf000d000 /* bl */};
-        static const uint32_t armv6m_mask[] = {0xffe0d000,
-                                               0xfff0d0f0,
-                                               0xfff0d0f0,
-                                               0xfff0d0f0,
-                                               0xffe0d000,
-                                               0xf800d000};
-
-        for (i = 0; i < ARRAY_SIZE(armv6m_insn); i++) {
-            if ((insn & armv6m_mask[i]) == armv6m_insn[i]) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            goto illegal_op;
-        }
-    } else if ((insn & 0xf800e800) != 0xf000e800)  {
+    if ((insn & 0xf800e800) != 0xf000e800)  {
         if (!arm_dc_feature(s, ARM_FEATURE_THUMB2)) {
             unallocated_encoding(s);
-            return;
-        }
-    }
-
-    if (arm_dc_feature(s, ARM_FEATURE_M)) {
-        /*
-         * NOCP takes precedence over any UNDEF for (almost) the
-         * entire wide range of coprocessor-space encodings, so check
-         * for it first before proceeding to actually decode eg VFP
-         * insns. This decode also handles the few insns which are
-         * in copro space but do not have NOCP checks (eg VLLDM, VLSTM).
-         */
-        if (disas_m_nocp(s, insn)) {
             return;
         }
     }
@@ -6195,12 +5128,10 @@ static void disas_thumb2_insn(DisasContext *s, uint32_t insn)
     if (disas_t32(s, insn) ||
         disas_vfp_uncond(s, insn) ||
         disas_neon_shared(s, insn) ||
-        disas_mve(s, insn) ||
         ((insn >> 28) == 0xe && disas_vfp(s, insn))) {
         return;
     }
 
-illegal_op:
     unallocated_encoding(s);
 }
 
@@ -6237,9 +5168,9 @@ static void arm_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
     dc->condjmp = 0;
     dc->pc_save = dc->base.pc_first;
     dc->aarch64 = false;
-    dc->thumb = EX_TBFLAG_AM32(tb_flags, THUMB);
+    dc->thumb = EX_TBFLAG_A32(tb_flags, THUMB);
     dc->be_data = EX_TBFLAG_ANY(tb_flags, BE_DATA) ? MO_BE : MO_LE;
-    condexec = EX_TBFLAG_AM32(tb_flags, CONDEXEC);
+    condexec = EX_TBFLAG_A32(tb_flags, CONDEXEC);
     /*
      * the CONDEXEC TB flags are CPSR bits [15:10][26:25]. On A-profile this
      * is always the IT bits. On M-profile, some of the reserved encodings
@@ -6256,10 +5187,6 @@ static void arm_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
     if (condexec & 0xf) {
         dc->condexec_mask = (condexec & 0xf) << 1;
         dc->condexec_cond = condexec >> 4;
-    } else {
-        if (arm_feature(env, ARM_FEATURE_M)) {
-            dc->eci = condexec >> 4;
-        }
     }
 
     core_mmu_idx = EX_TBFLAG_ANY(tb_flags, MMUIDX);
@@ -6271,28 +5198,14 @@ static void arm_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
     dc->pstate_il = EX_TBFLAG_ANY(tb_flags, PSTATE__IL);
     dc->fgt_active = EX_TBFLAG_ANY(tb_flags, FGT_ACTIVE);
     dc->fgt_svc = EX_TBFLAG_ANY(tb_flags, FGT_SVC);
-
-    if (arm_feature(env, ARM_FEATURE_M)) {
-        dc->vfp_enabled = 1;
-        dc->be_data = MO_TE;
-        dc->v7m_handler_mode = EX_TBFLAG_M32(tb_flags, HANDLER);
-        dc->v8m_secure = EX_TBFLAG_M32(tb_flags, SECURE);
-        dc->v8m_stackcheck = EX_TBFLAG_M32(tb_flags, STACKCHECK);
-        dc->v8m_fpccr_s_wrong = EX_TBFLAG_M32(tb_flags, FPCCR_S_WRONG);
-        dc->v7m_new_fp_ctxt_needed =
-            EX_TBFLAG_M32(tb_flags, NEW_FP_CTXT_NEEDED);
-        dc->v7m_lspact = EX_TBFLAG_M32(tb_flags, LSPACT);
-        dc->mve_no_pred = EX_TBFLAG_M32(tb_flags, MVE_NO_PRED);
-    } else {
-        dc->sctlr_b = EX_TBFLAG_A32(tb_flags, SCTLR__B);
-        dc->hstr_active = EX_TBFLAG_A32(tb_flags, HSTR_ACTIVE);
-        dc->ns = EX_TBFLAG_A32(tb_flags, NS);
-        dc->vfp_enabled = EX_TBFLAG_A32(tb_flags, VFPEN);
-        dc->vec_len = EX_TBFLAG_A32(tb_flags, VECLEN);
-        dc->vec_stride = EX_TBFLAG_A32(tb_flags, VECSTRIDE);
-        dc->sme_trap_nonstreaming =
-            EX_TBFLAG_A32(tb_flags, SME_TRAP_NONSTREAMING);
-    }
+    dc->sctlr_b = EX_TBFLAG_A32(tb_flags, SCTLR__B);
+    dc->hstr_active = EX_TBFLAG_A32(tb_flags, HSTR_ACTIVE);
+    dc->ns = EX_TBFLAG_A32(tb_flags, NS);
+    dc->vfp_enabled = EX_TBFLAG_A32(tb_flags, VFPEN);
+    dc->vec_len = EX_TBFLAG_A32(tb_flags, VECLEN);
+    dc->vec_stride = EX_TBFLAG_A32(tb_flags, VECSTRIDE);
+    dc->sme_trap_nonstreaming =
+        EX_TBFLAG_A32(tb_flags, SME_TRAP_NONSTREAMING);
     dc->lse2 = false; /* applies only to aarch64 */
     dc->cp_regs = cpu->cp_regs;
     dc->features = env->features;
@@ -6489,25 +5402,12 @@ static bool thumb_insn_is_unconditional(DisasContext *s, uint32_t insn)
         return true;
     }
 
-    if ((insn & 0xffffffc0) == 0xba80 && arm_dc_feature(s, ARM_FEATURE_V8) &&
-        !arm_dc_feature(s, ARM_FEATURE_M)) {
+    if ((insn & 0xffffffc0) == 0xba80 && arm_dc_feature(s, ARM_FEATURE_V8)) {
         /* HLT: v8A only. This is unconditional even when it is going to
          * UNDEF; see the v8A ARM ARM DDI0487B.a H3.3.
          * For v7 cores this was a plain old undefined encoding and so
-         * honours its cc check. (We might be using the encoding as
-         * a semihosting trap, but we don't change the cc check behaviour
-         * on that account, because a debugger connected to a real v7A
-         * core and emulating semihosting traps by catching the UNDEF
-         * exception would also only see cases where the cc check passed.
-         * No guest code should be trying to do a HLT semihosting trap
-         * in an IT block anyway.
+         * honours its cc check.
          */
-        return true;
-    }
-
-    if (insn == 0xe97fe97f && arm_dc_feature(s, ARM_FEATURE_V8) &&
-        arm_dc_feature(s, ARM_FEATURE_M)) {
-        /* SG: v8M only */
         return true;
     }
 
@@ -6659,14 +5559,7 @@ static void arm_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
        instruction was a conditional branch or trap, and the PC has
        already been written.  */
     gen_set_condexec(dc);
-    if (dc->base.is_jmp == DISAS_BX_EXCRET) {
-        /* Exception return branches need some special case code at the
-         * end of the TB, which is complex enough that it has to
-         * handle the single-step vs not and the condition-failed
-         * insn codepath itself.
-         */
-        gen_bx_excret_final_code(dc);
-    } else if (unlikely(dc->ss_active)) {
+    if (unlikely(dc->ss_active)) {
         /* Unconditional and "condition passed" instruction codepath. */
         switch (dc->base.is_jmp) {
         case DISAS_SWI:
@@ -6786,7 +5679,7 @@ void arm_translate_code(CPUState *cpu, TranslationBlock *tb,
     const TranslatorOps *ops = &arm_translator_ops;
     CPUARMTBFlags tb_flags = arm_tbflags_from_tb(tb);
 
-    if (EX_TBFLAG_AM32(tb_flags, THUMB)) {
+    if (EX_TBFLAG_A32(tb_flags, THUMB)) {
         ops = &thumb_translator_ops;
     }
 #ifdef TARGET_AARCH64

@@ -25,9 +25,7 @@
 #include "der.h"
 #include "rsakey.h"
 
-#if defined(CONFIG_GCRYPT)
-#include "akcipher-gcrypt.c.inc"
-#elif defined(CONFIG_NETTLE) && defined(CONFIG_HOGWEED)
+#if defined(CONFIG_HOGWEED)
 #include "akcipher-nettle.c.inc"
 #else
 QCryptoAkCipher *qcrypto_akcipher_new(const QCryptoAkCipherOptions *opts,
@@ -35,9 +33,7 @@ QCryptoAkCipher *qcrypto_akcipher_new(const QCryptoAkCipherOptions *opts,
                                       const uint8_t *key, size_t keylen,
                                       Error **errp)
 {
-    QCryptoAkCipher *akcipher = NULL;
-
-    return akcipher;
+    return NULL;
 }
 
 bool qcrypto_akcipher_supports(QCryptoAkCipherOptions *opts)

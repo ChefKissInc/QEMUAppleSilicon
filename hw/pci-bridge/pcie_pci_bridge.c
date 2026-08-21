@@ -127,16 +127,6 @@ static const Property pcie_pci_bridge_dev_properties[] = {
         DEFINE_PROP_ON_OFF_AUTO("msi", PCIEPCIBridge, msi, ON_OFF_AUTO_AUTO),
 };
 
-static const VMStateDescription pcie_pci_bridge_dev_vmstate = {
-        .name = TYPE_PCIE_PCI_BRIDGE_DEV,
-        .priority = MIG_PRI_PCI_BUS,
-        .fields = (const VMStateField[]) {
-            VMSTATE_PCI_DEVICE(parent_obj, PCIBridge),
-            SHPC_VMSTATE(shpc, PCIDevice, NULL),
-            VMSTATE_END_OF_LIST()
-        }
-};
-
 static void pcie_pci_bridge_class_init(ObjectClass *klass, const void *data)
 {
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
@@ -148,7 +138,6 @@ static void pcie_pci_bridge_class_init(ObjectClass *klass, const void *data)
     k->realize = pcie_pci_bridge_realize;
     k->exit = pcie_pci_bridge_exit;
     k->config_write = pcie_pci_bridge_write_config;
-    dc->vmsd = &pcie_pci_bridge_dev_vmstate;
     device_class_set_props(dc, pcie_pci_bridge_dev_properties);
     device_class_set_legacy_reset(dc, pcie_pci_bridge_reset);
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);

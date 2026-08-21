@@ -8,10 +8,8 @@
  */
 
 #include "qemu/osdep.h"
-#include "hw/acpi/vmgenid.h"
 #include "hw/boards.h"
 #include "hw/intc/intc.h"
-#include "hw/mem/memory-device.h"
 #include "qapi/error.h"
 #include "qapi/qapi-builtin-visit.h"
 #include "qapi/qapi-commands-accelerator.h"
@@ -24,7 +22,6 @@
 #include "qom/qom-qobject.h"
 #include "system/hostmem.h"
 #include "system/hw_accel.h"
-#include "system/numa.h"
 #include "system/runstate.h"
 #include "system/system.h"
 
@@ -90,9 +87,7 @@ MachineInfoList *qmp_query_machines(bool has_compat_props, bool compat_props,
         info->name = g_strdup(mc->name);
         info->cpu_max = !mc->max_cpus ? 1 : mc->max_cpus;
         info->hotpluggable_cpus = mc->has_hotpluggable_cpus;
-        info->numa_mem_supported = mc->numa_mem_supported;
         info->deprecated = !!mc->deprecation_reason;
-        info->acpi = !!object_class_property_find(OBJECT_CLASS(mc), "acpi");
         if (default_cpu_type) {
             info->default_cpu_type = g_strdup(default_cpu_type);
         }
@@ -157,16 +152,6 @@ HotpluggableCPUList *qmp_query_hotpluggable_cpus(Error **errp)
     return machine_query_hotpluggable_cpus(ms);
 }
 
-void qmp_set_numa_node(NumaOptions *cmd, Error **errp)
-{
-    if (phase_check(PHASE_MACHINE_INITIALIZED)) {
-        error_setg(errp, "The command is permitted only before the machine has been created");
-        return;
-    }
-
-    set_numa_options(MACHINE(qdev_get_machine()), cmd, errp);
-}
-
 static int query_memdev(Object *obj, void *opaque)
 {
     Error *err = NULL;
@@ -191,15 +176,6 @@ static int query_memdev(Object *obj, void *opaque)
         } else {
             m->has_reserve = true;
         }
-        m->policy = object_property_get_enum(obj, "policy", "HostMemPolicy",
-                                             &error_abort);
-        host_nodes = object_property_get_qobject(obj,
-                                                 "host-nodes",
-                                                 &error_abort);
-        v = qobject_input_visitor_new(host_nodes);
-        visit_type_uint16List(v, NULL, &m->host_nodes, &error_abort);
-        visit_free(v);
-        qobject_unref(host_nodes);
 
         QAPI_LIST_PREPEND(*list, m);
     }
@@ -214,45 +190,6 @@ MemdevList *qmp_query_memdev(Error **errp)
 
     object_child_foreach(obj, query_memdev, &list);
     return list;
-}
-
-HumanReadableText *qmp_x_query_numa(Error **errp)
-{
-    g_autoptr(GString) buf = g_string_new("");
-    int i, nb_numa_nodes;
-    NumaNodeMem *node_mem;
-    CpuInfoFastList *cpu_list, *cpu;
-    MachineState *ms = MACHINE(qdev_get_machine());
-
-    nb_numa_nodes = ms->numa_state ? ms->numa_state->num_nodes : 0;
-    g_string_append_printf(buf, "%d nodes\n", nb_numa_nodes);
-    if (!nb_numa_nodes) {
-        goto done;
-    }
-
-    cpu_list = qmp_query_cpus_fast(&error_abort);
-    node_mem = g_new0(NumaNodeMem, nb_numa_nodes);
-
-    query_numa_node_mem(node_mem, ms);
-    for (i = 0; i < nb_numa_nodes; i++) {
-        g_string_append_printf(buf, "node %d cpus:", i);
-        for (cpu = cpu_list; cpu; cpu = cpu->next) {
-            if (cpu->value->props && cpu->value->props->has_node_id &&
-                cpu->value->props->node_id == i) {
-                g_string_append_printf(buf, " %" PRIi64, cpu->value->cpu_index);
-            }
-        }
-        g_string_append_printf(buf, "\n");
-        g_string_append_printf(buf, "node %d size: %" PRId64 " MB\n", i,
-                               node_mem[i].node_mem >> 20);
-        g_string_append_printf(buf, "node %d plugged: %" PRId64 " MB\n", i,
-                               node_mem[i].node_plugged_mem >> 20);
-    }
-    qapi_free_CpuInfoFastList(cpu_list);
-    g_free(node_mem);
-
- done:
-    return human_readable_text_from_str(buf);
 }
 
 KvmInfo *qmp_query_kvm(Error **errp)
@@ -294,21 +231,12 @@ void qmp_system_wakeup(Error **errp)
     qemu_system_wakeup_request(QEMU_WAKEUP_REASON_OTHER, errp);
 }
 
-MemoryDeviceInfoList *qmp_query_memory_devices(Error **errp)
-{
-    return qmp_memory_device_list();
-}
-
 MemoryInfo *qmp_query_memory_size_summary(Error **errp)
 {
     MemoryInfo *mem_info = g_new0(MemoryInfo, 1);
     MachineState *ms = MACHINE(qdev_get_machine());
 
     mem_info->base_memory = ms->ram_size;
-
-    mem_info->plugged_memory = get_plugged_memory_size();
-    mem_info->has_plugged_memory =
-        mem_info->plugged_memory != (uint64_t)-1;
 
     return mem_info;
 }
@@ -390,21 +318,4 @@ HumanReadableText *qmp_x_query_interrupt_controllers(Error **errp)
     object_child_foreach_recursive(object_get_root(),
                                    qmp_x_query_intc_foreach, buf);
     return human_readable_text_from_str(buf);
-}
-
-GuidInfo *qmp_query_vm_generation_id(Error **errp)
-{
-    GuidInfo *info;
-    VmGenIdState *vms;
-    Object *obj = find_vmgenid_dev();
-
-    if (!obj) {
-        error_setg(errp, "VM Generation ID device not found");
-        return NULL;
-    }
-    vms = VMGENID(obj);
-
-    info = g_malloc0(sizeof(*info));
-    info->guid = qemu_uuid_unparse_strdup(&vms->guid);
-    return info;
 }

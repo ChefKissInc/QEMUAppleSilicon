@@ -1,6 +1,3 @@
-# loader.c
-loader_write_rom(const char *name, uint64_t gpa, uint64_t size, bool isrom) "%s: @0x%"PRIx64" size=0x%"PRIx64" ROM=%d"
-
 # qdev.c
 qdev_update_parent_bus(void *obj, const char *objtype, void *oldp, const char *oldptype, void *newp, const char *newptype) "obj=%p(%s) old_parent=%p(%s) new_parent=%p(%s)"
 
@@ -20,7 +17,6 @@ resettable_phase_hold_end(void *obj, const char *objtype, unsigned count) "obj=%
 resettable_phase_exit_begin(void *obj, const char *objtype, unsigned count, int type) "obj=%p(%s) count=%d type=%d"
 resettable_phase_exit_exec(void *obj, const char *objtype, int has_method) "obj=%p(%s) method=%d"
 resettable_phase_exit_end(void *obj, const char *objtype, unsigned count) "obj=%p(%s) count=%d"
-resettable_transitional_function(void *obj, const char *objtype) "obj=%p(%s)"
 
 # clock.c
 clock_set_source(const char *clk, const char *src) "'%s', src='%s'"

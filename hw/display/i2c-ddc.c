@@ -21,7 +21,6 @@
 #include "qemu/module.h"
 #include "hw/i2c/i2c.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "hw/display/i2c-ddc.h"
 
 #ifndef DEBUG_I2CDDC
@@ -85,16 +84,6 @@ static void i2c_ddc_init(Object *obj)
     qemu_edid_generate(s->edid_blob, sizeof(s->edid_blob), &s->edid_info);
 }
 
-static const VMStateDescription vmstate_i2c_ddc = {
-    .name = TYPE_I2CDDC,
-    .version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_BOOL(firstbyte, I2CDDCState),
-        VMSTATE_UINT8(reg, I2CDDCState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static const Property i2c_ddc_properties[] = {
     DEFINE_EDID_PROPERTIES(I2CDDCState, edid_info),
 };
@@ -105,7 +94,6 @@ static void i2c_ddc_class_init(ObjectClass *oc, const void *data)
     I2CSlaveClass *isc = I2C_SLAVE_CLASS(oc);
 
     device_class_set_legacy_reset(dc, i2c_ddc_reset);
-    dc->vmsd = &vmstate_i2c_ddc;
     device_class_set_props(dc, i2c_ddc_properties);
     isc->event = i2c_ddc_event;
     isc->recv = i2c_ddc_rx;

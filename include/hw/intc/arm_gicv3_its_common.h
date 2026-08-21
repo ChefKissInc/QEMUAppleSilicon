@@ -80,8 +80,6 @@ struct GICv3ITSState {
     TableDesc  ct;
     TableDesc  vpet;
     CmdQDesc   cq;
-
-    Error *migration_blocker;
 };
 
 typedef struct GICv3ITSState GICv3ITSState;
@@ -118,8 +116,6 @@ struct GICv3ITSCommonClass {
     /*< public >*/
 
     int (*send_msi)(GICv3ITSState *s, uint32_t data, uint16_t devid);
-    void (*pre_save)(GICv3ITSState *s);
-    void (*post_load)(GICv3ITSState *s);
 };
 
 /**

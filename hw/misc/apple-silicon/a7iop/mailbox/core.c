@@ -28,7 +28,6 @@
 #include "hw/misc/apple-silicon/a7iop/private.h"
 #include "hw/qdev-core.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "qemu/bitops.h"
 #include "qemu/lockable.h"
 #include "qemu/log.h"
@@ -645,69 +644,12 @@ static void apple_a7iop_mailbox_reset(DeviceState *dev)
     apple_a7iop_mailbox_update_irq_status(s);
 }
 
-const VMStateDescription vmstate_apple_a7iop_message = {
-    .name = "Apple A7IOP Message State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT8_ARRAY(data, AppleA7IOPMessage, 16),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
-static const VMStateDescription vmstate_apple_a7iop_int_status_message = {
-    .name = "Apple A7IOP Interrupt Status Message State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(status, AppleA7IOPInterruptStatusMessage),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
-static const VMStateDescription vmstate_apple_a7iop_mailbox = {
-    .name = "Apple A7IOP Mailbox State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_APPLE_A7IOP_MESSAGE(inbox, AppleA7IOPMailbox),
-            VMSTATE_QTAILQ_V(interrupt_status, AppleA7IOPMailbox, 0,
-                             vmstate_apple_a7iop_int_status_message,
-                             AppleA7IOPInterruptStatusMessage, entry),
-            VMSTATE_UINT32(count, AppleA7IOPMailbox),
-            VMSTATE_BOOL(iop_dir_en, AppleA7IOPMailbox),
-            VMSTATE_BOOL(ap_dir_en, AppleA7IOPMailbox),
-            VMSTATE_BOOL(underflow, AppleA7IOPMailbox),
-            VMSTATE_UINT32(int_mask, AppleA7IOPMailbox),
-            VMSTATE_UINT8_ARRAY(iop_recv_reg, AppleA7IOPMailbox, 16),
-            VMSTATE_UINT8_ARRAY(ap_recv_reg, AppleA7IOPMailbox, 16),
-            VMSTATE_UINT8_ARRAY(iop_send_reg, AppleA7IOPMailbox, 16),
-            VMSTATE_UINT8_ARRAY(ap_send_reg, AppleA7IOPMailbox, 16),
-            VMSTATE_UINT32_ARRAY(interrupts_enabled, AppleA7IOPMailbox, 4),
-            VMSTATE_BOOL(iop_nonempty, AppleA7IOPMailbox),
-            VMSTATE_BOOL(iop_empty, AppleA7IOPMailbox),
-            VMSTATE_BOOL(ap_nonempty, AppleA7IOPMailbox),
-            VMSTATE_BOOL(ap_empty, AppleA7IOPMailbox),
-            VMSTATE_UINT32(glb_cfg, AppleA7IOPMailbox),
-            VMSTATE_UINT32(timer0_enabled, AppleA7IOPMailbox),
-            VMSTATE_UINT32(timer1_enabled, AppleA7IOPMailbox),
-            VMSTATE_UINT32(timer0_masked, AppleA7IOPMailbox),
-            VMSTATE_UINT32(timer1_masked, AppleA7IOPMailbox),
-            VMSTATE_UINT32(sepd_enabled, AppleA7IOPMailbox),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_a7iop_mailbox_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc;
 
     dc = DEVICE_CLASS(klass);
 
-    dc->vmsd = &vmstate_apple_a7iop_mailbox;
     device_class_set_legacy_reset(dc, apple_a7iop_mailbox_reset);
     dc->desc = "Apple A7IOP Mailbox";
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);

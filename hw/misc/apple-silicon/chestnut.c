@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/i2c/i2c.h"
 #include "hw/misc/apple-silicon/chestnut.h"
-#include "migration/vmstate.h"
 
 #define REG_DEVICE_ID_0 (0x00)
 #define REG_DEVICE_ID_1 (0x01)
@@ -51,17 +50,6 @@ static int apple_chestnut_tx(I2CSlave *i2c, uint8_t data)
     return 0x00;
 }
 
-static const VMStateDescription vmstate_apple_chestnut = {
-    .name = "AppleChestnutState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_I2C_SLAVE(i2c, AppleChestnutState),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_chestnut_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -69,7 +57,6 @@ static void apple_chestnut_class_init(ObjectClass *klass, const void *data)
 
     dc->desc = "Apple Chestnut Display PMU";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_apple_chestnut;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 
     c->recv = apple_chestnut_rx;

@@ -29,7 +29,6 @@
 #include "qemu/osdep.h"
 #include "hw/usb.h"
 #include "hw/usb/uhci-regs.h"
-#include "migration/vmstate.h"
 #include "hw/pci/pci.h"
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
@@ -335,51 +334,6 @@ static void uhci_reset(DeviceState *dev)
     qemu_bh_cancel(s->bh);
     uhci_update_irq(s);
 }
-
-static const VMStateDescription vmstate_uhci_port = {
-    .name = "uhci port",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT16(ctrl, UHCIPort),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static int uhci_post_load(void *opaque, int version_id)
-{
-    UHCIState *s = opaque;
-
-    if (version_id < 2) {
-        s->expire_time = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
-            (NANOSECONDS_PER_SECOND / FRAME_TIMER_FREQ);
-    }
-    return 0;
-}
-
-static const VMStateDescription vmstate_uhci = {
-    .name = "uhci",
-    .version_id = 3,
-    .minimum_version_id = 1,
-    .post_load = uhci_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_PCI_DEVICE(dev, UHCIState),
-        VMSTATE_UINT8_EQUAL(num_ports_vmstate, UHCIState, NULL),
-        VMSTATE_STRUCT_ARRAY(ports, UHCIState, UHCI_PORTS, 1,
-                             vmstate_uhci_port, UHCIPort),
-        VMSTATE_UINT16(cmd, UHCIState),
-        VMSTATE_UINT16(status, UHCIState),
-        VMSTATE_UINT16(intr, UHCIState),
-        VMSTATE_UINT16(frnum, UHCIState),
-        VMSTATE_UINT32(fl_base_addr, UHCIState),
-        VMSTATE_UINT8(sof_timing, UHCIState),
-        VMSTATE_UINT8(status2, UHCIState),
-        VMSTATE_TIMER_PTR(frame_timer, UHCIState),
-        VMSTATE_INT64_V(expire_time, UHCIState, 2),
-        VMSTATE_UINT32_V(pending_int_mask, UHCIState, 3),
-        VMSTATE_END_OF_LIST()
-    }
-};
 
 static void uhci_port_write(void *opaque, hwaddr addr,
                             uint64_t val, unsigned size)
@@ -1272,7 +1226,6 @@ static void uhci_class_init(ObjectClass *klass, const void *data)
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
     k->class_id  = PCI_CLASS_SERIAL_USB;
-    dc->vmsd = &vmstate_uhci;
     device_class_set_legacy_reset(dc, uhci_reset);
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }

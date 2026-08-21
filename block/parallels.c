@@ -42,7 +42,6 @@
 #include "qemu/bswap.h"
 #include "qemu/bitmap.h"
 #include "qemu/memalign.h"
-#include "migration/blocker.h"
 #include "parallels.h"
 
 /**************************************************************/
@@ -1364,15 +1363,6 @@ static int parallels_open(BlockDriverState *bs, QDict *options, int flags,
     s->bat_dirty_bmap =
         bitmap_new(DIV_ROUND_UP(s->header_size, s->bat_dirty_block));
 
-    /* Disable migration until bdrv_activate method is added */
-    error_setg(&s->migration_blocker, "The Parallels format used by node '%s' "
-               "does not support live migration",
-               bdrv_get_device_or_node_name(bs));
-
-    ret = migrate_add_blocker_normal(&s->migration_blocker, errp);
-    if (ret < 0) {
-        goto fail;
-    }
     qemu_co_mutex_init(&s->lock);
 
     for (i = 0; i < s->bat_size; i++) {
@@ -1405,7 +1395,6 @@ static int parallels_open(BlockDriverState *bs, QDict *options, int flags,
         ret = bdrv_check(bs, &res, BDRV_FIX_ERRORS | BDRV_FIX_LEAKS);
         if (ret < 0) {
             error_setg_errno(errp, -ret, "Could not repair corrupted image");
-            migrate_del_blocker(&s->migration_blocker);
             goto fail;
         }
     }
@@ -1447,8 +1436,6 @@ static void parallels_close(BlockDriverState *bs)
 
     g_free(s->bat_dirty_bmap);
     qemu_vfree(s->header);
-
-    migrate_del_blocker(&s->migration_blocker);
 }
 
 static bool parallels_is_support_dirty_bitmaps(BlockDriverState *bs)

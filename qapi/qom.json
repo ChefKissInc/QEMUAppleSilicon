@@ -275,228 +275,6 @@
   'if': 'CONFIG_LINUX' }
 
 ##
-# @ColoCompareProperties:
-#
-# Properties for colo-compare objects.
-#
-# @primary_in: name of the character device backend to use for the
-#     primary input (incoming packets are redirected to @outdev)
-#
-# @secondary_in: name of the character device backend to use for
-#     secondary input (incoming packets are only compared to the input
-#     on @primary_in and then dropped)
-#
-# @outdev: name of the character device backend to use for output
-#
-# @iothread: name of the iothread to run in
-#
-# @notify_dev: name of the character device backend to be used to
-#     communicate with the remote colo-frame (only for Xen COLO)
-#
-# @compare_timeout: the maximum time to hold a packet from @primary_in
-#     for comparison with an incoming packet on @secondary_in in
-#     milliseconds (default: 3000)
-#
-# @expired_scan_cycle: the interval at which colo-compare checks
-#     whether packets from @primary have timed out, in milliseconds
-#     (default: 3000)
-#
-# @max_queue_size: the maximum number of packets to keep in the queue
-#     for comparing with incoming packets from @secondary_in.  If the
-#     queue is full and additional packets are received, the
-#     additional packets are dropped.  (default: 1024)
-#
-# @vnet_hdr_support: if true, vnet header support is enabled
-#     (default: false)
-#
-# Since: 2.8
-##
-{ 'struct': 'ColoCompareProperties',
-  'data': { 'primary_in': 'str',
-            'secondary_in': 'str',
-            'outdev': 'str',
-            'iothread': 'str',
-            '*notify_dev': 'str',
-            '*compare_timeout': 'uint64',
-            '*expired_scan_cycle': 'uint32',
-            '*max_queue_size': 'uint32',
-            '*vnet_hdr_support': 'bool' } }
-
-##
-# @CryptodevBackendProperties:
-#
-# Properties for cryptodev-backend and cryptodev-backend-builtin
-# objects.
-#
-# @queues: the number of queues for the cryptodev backend.  Ignored
-#     for cryptodev-backend and must be 1 for
-#     cryptodev-backend-builtin.  (default: 1)
-#
-# @throttle-bps: limit total bytes per second (Since 8.0)
-#
-# @throttle-ops: limit total operations per second (Since 8.0)
-#
-# Since: 2.8
-##
-{ 'struct': 'CryptodevBackendProperties',
-  'data': { '*queues': 'uint32',
-            '*throttle-bps': 'uint64',
-            '*throttle-ops': 'uint64' } }
-
-##
-# @DBusVMStateProperties:
-#
-# Properties for dbus-vmstate objects.
-#
-# @addr: the name of the DBus bus to connect to
-#
-# @id-list: a comma separated list of DBus IDs of helpers whose data
-#     should be included in the VM state on migration
-#
-# Since: 5.0
-##
-{ 'struct': 'DBusVMStateProperties',
-  'data': { 'addr': 'str' ,
-            '*id-list': 'str' } }
-
-##
-# @NetfilterInsert:
-#
-# Indicates where to insert a netfilter relative to a given other
-# filter.
-#
-# @before: insert before the specified filter
-#
-# @behind: insert behind the specified filter
-#
-# Since: 5.0
-##
-{ 'enum': 'NetfilterInsert',
-  'data': [ 'before', 'behind' ] }
-
-##
-# @NetfilterProperties:
-#
-# Properties for objects of classes derived from netfilter.
-#
-# @netdev: id of the network device backend to filter
-#
-# @queue: indicates which queue(s) to filter (default: all)
-#
-# @status: indicates whether the filter is enabled ("on") or disabled
-#     ("off") (default: "on")
-#
-# @position: specifies where the filter should be inserted in the
-#     filter list.  "head" means the filter is inserted at the head of
-#     the filter list, before any existing filters.  "tail" means the
-#     filter is inserted at the tail of the filter list, behind any
-#     existing filters (default).  "id=<id>" means the filter is
-#     inserted before or behind the filter specified by <id>,
-#     depending on the @insert property.  (default: "tail")
-#
-# @insert: where to insert the filter relative to the filter given in
-#     @position.  Ignored if @position is "head" or "tail".
-#     (default: behind)
-#
-# Since: 2.5
-##
-{ 'struct': 'NetfilterProperties',
-  'data': { 'netdev': 'str',
-            '*queue': 'NetFilterDirection',
-            '*status': 'str',
-            '*position': 'str',
-            '*insert': 'NetfilterInsert' } }
-
-##
-# @FilterBufferProperties:
-#
-# Properties for filter-buffer objects.
-#
-# @interval: a non-zero interval in microseconds.  All packets
-#     arriving in the given interval are delayed until the end of the
-#     interval.
-#
-# Since: 2.5
-##
-{ 'struct': 'FilterBufferProperties',
-  'base': 'NetfilterProperties',
-  'data': { 'interval': 'uint32' } }
-
-##
-# @FilterDumpProperties:
-#
-# Properties for filter-dump objects.
-#
-# @file: the filename where the dumped packets should be stored
-#
-# @maxlen: maximum number of bytes in a packet that are stored
-#     (default: 65536)
-#
-# Since: 2.5
-##
-{ 'struct': 'FilterDumpProperties',
-  'base': 'NetfilterProperties',
-  'data': { 'file': 'str',
-            '*maxlen': 'uint32' } }
-
-##
-# @FilterMirrorProperties:
-#
-# Properties for filter-mirror objects.
-#
-# @outdev: the name of a character device backend to which all
-#     incoming packets are mirrored
-#
-# @vnet_hdr_support: if true, vnet header support is enabled
-#     (default: false)
-#
-# Since: 2.6
-##
-{ 'struct': 'FilterMirrorProperties',
-  'base': 'NetfilterProperties',
-  'data': { 'outdev': 'str',
-            '*vnet_hdr_support': 'bool' } }
-
-##
-# @FilterRedirectorProperties:
-#
-# Properties for filter-redirector objects.
-#
-# At least one of @indev or @outdev must be present.  If both are
-# present, they must not refer to the same character device backend.
-#
-# @indev: the name of a character device backend from which packets
-#     are received and redirected to the filtered network device
-#
-# @outdev: the name of a character device backend to which all
-#     incoming packets are redirected
-#
-# @vnet_hdr_support: if true, vnet header support is enabled
-#     (default: false)
-#
-# Since: 2.6
-##
-{ 'struct': 'FilterRedirectorProperties',
-  'base': 'NetfilterProperties',
-  'data': { '*indev': 'str',
-            '*outdev': 'str',
-            '*vnet_hdr_support': 'bool' } }
-
-##
-# @FilterRewriterProperties:
-#
-# Properties for filter-rewriter objects.
-#
-# @vnet_hdr_support: if true, vnet header support is enabled
-#     (default: false)
-#
-# Since: 2.8
-##
-{ 'struct': 'FilterRewriterProperties',
-  'base': 'NetfilterProperties',
-  'data': { '*vnet_hdr_support': 'bool' } }
-
-##
 # @InputBarrierProperties:
 #
 # Properties for input-barrier objects.
@@ -624,10 +402,6 @@
 # @dump: if true, include the memory in core dumps (default depends on
 #     the machine type)
 #
-# @host-nodes: the list of NUMA host nodes to bind the memory to
-#
-# @policy: the NUMA policy (default: 'default')
-#
 # @prealloc: if true, preallocate memory (default: false)
 #
 # @prealloc-threads: number of CPU threads to use for prealloc
@@ -661,9 +435,7 @@
 ##
 { 'struct': 'MemoryBackendProperties',
   'data': { '*dump': 'bool',
-            '*host-nodes': ['uint16'],
             '*merge': 'bool',
-            '*policy': 'HostMemPolicy',
             '*prealloc': 'bool',
             '*prealloc-threads': 'uint32',
             '*prealloc-context': 'str',
@@ -819,90 +591,6 @@
   'data': { 'fd': 'str', 'devid': 'str' } }
 
 ##
-# @VfioUserServerProperties:
-#
-# Properties for x-vfio-user-server objects.
-#
-# @socket: socket to be used by the libvfio-user library
-#
-# @device: the ID of the device to be emulated at the server
-#
-# Since: 7.1
-##
-{ 'struct': 'VfioUserServerProperties',
-  'data': { 'socket': 'SocketAddress', 'device': 'str' } }
-
-##
-# @IOMMUFDProperties:
-#
-# Properties for iommufd objects.
-#
-# @fd: file descriptor name previously passed via `getfd` command,
-#     which represents a pre-opened /dev/iommu.  This allows the
-#     iommufd object to be shared across several subsystems (VFIO,
-#     VDPA, ...), and the file descriptor to be shared with other
-#     process, e.g. DPDK.  (default: QEMU opens /dev/iommu by itself)
-#
-# Since: 9.0
-##
-{ 'struct': 'IOMMUFDProperties',
-  'data': { '*fd': 'str' } }
-
-##
-# @AcpiGenericInitiatorProperties:
-#
-# Properties for acpi-generic-initiator objects.
-#
-# @pci-dev: PCI device ID to be associated with the node
-#
-# @node: NUMA node associated with the PCI device
-#
-# Since: 9.0
-##
-{ 'struct': 'AcpiGenericInitiatorProperties',
-  'data': { 'pci-dev': 'str',
-            'node': 'uint32' } }
-
-##
-# @AcpiGenericPortProperties:
-#
-# Properties for acpi-generic-port objects.
-#
-# @pci-bus: QOM path of the PCI bus of the hostbridge associated with
-#     this SRAT Generic Port Affinity Structure.  This is the same as
-#     the bus parameter for the root ports attached to this host
-#     bridge.  The resulting SRAT Generic Port Affinity Structure will
-#     refer to the ACPI object in DSDT that represents the host bridge
-#     (e.g.  ACPI0016 for CXL host bridges).  See ACPI 6.5 Section
-#     5.2.16.7 for more information.
-#
-# @node: Similar to a NUMA node ID, but instead of providing a
-#     reference point used for defining NUMA distances and access
-#     characteristics to memory or from an initiator (e.g. CPU), this
-#     node defines the boundary point between non-discoverable system
-#     buses which must be described by firmware, and a discoverable
-#     bus.  NUMA distances and access characteristics are defined to
-#     and from that point.  For system software to establish full
-#     initiator to target characteristics this information must be
-#     combined with information retrieved from the discoverable part
-#     of the path.  An example would use CDAT (see UEFI.org)
-#     information read from devices and switches in conjunction with
-#     link characteristics read from PCIe Configuration space.
-#     To get the full path latency from CPU to CXL attached DRAM
-#     CXL device: Add the latency from CPU to Generic Port (from
-#     HMAT indexed via the node ID in this SRAT structure) to
-#     that for CXL bus links, the latency across intermediate switches
-#     and from the EP port to the actual memory.  Bandwidth is more
-#     complex as there may be interleaving across multiple devices
-#     and shared links in the path.
-#
-# Since: 9.2
-##
-{ 'struct': 'AcpiGenericPortProperties',
-  'data': { 'pci-bus': 'str',
-            'node': 'uint32' } }
-
-##
 # @RngProperties:
 #
 # Properties for objects of classes derived from rng.
@@ -950,19 +638,6 @@
   'base': 'RngProperties',
   'data': { '*filename': 'str' },
   'if': 'CONFIG_POSIX' }
-
-##
-# @IgvmCfgProperties:
-#
-# Properties common to objects that handle IGVM files.
-#
-# @file: IGVM file to use to configure guest
-#
-# Since: 10.1
-##
-{ 'struct': 'IgvmCfgProperties',
-  'if': 'CONFIG_IGVM',
-  'data': { 'file': 'str' } }
 
 ##
 # @SevCommonProperties:
@@ -1145,15 +820,12 @@
 #
 # Features:
 #
-# @unstable: Members @x-remote-object and @x-vfio-user-server are
-#     experimental.
+# @unstable: Member @x-remote-object is experimental.
 #
 # Since: 6.0
 ##
 { 'enum': 'ObjectType',
   'data': [
-    'acpi-generic-initiator',
-    'acpi-generic-port',
     'authz-list',
     'authz-listfile',
     'authz-pam',
@@ -1161,19 +833,6 @@
     'can-bus',
     { 'name': 'can-host-socketcan',
       'if': 'CONFIG_LINUX' },
-    'colo-compare',
-    'cryptodev-backend',
-    'cryptodev-backend-builtin',
-    'cryptodev-backend-lkcf',
-    'dbus-vmstate',
-    'filter-buffer',
-    'filter-dump',
-    'filter-mirror',
-    'filter-redirector',
-    'filter-replay',
-    'filter-rewriter',
-    { 'name': 'igvm-cfg',
-      'if': 'CONFIG_IGVM' },
     'input-barrier',
     { 'name': 'input-linux',
       'if': 'CONFIG_LINUX' },
@@ -1202,13 +861,11 @@
     'sev-snp-guest',
     'thread-context',
     'tdx-guest',
-    'throttle-group',
     'tls-creds-anon',
     'tls-creds-psk',
     'tls-creds-x509',
     'tls-cipher-suites',
     { 'name': 'x-remote-object', 'features': [ 'unstable' ] },
-    { 'name': 'x-vfio-user-server', 'features': [ 'unstable' ] }
   ] }
 
 ##
@@ -1227,27 +884,12 @@
             'id': 'str' },
   'discriminator': 'qom-type',
   'data': {
-      'acpi-generic-initiator':     'AcpiGenericInitiatorProperties',
-      'acpi-generic-port':          'AcpiGenericPortProperties',
       'authz-list':                 'AuthZListProperties',
       'authz-listfile':             'AuthZListFileProperties',
       'authz-pam':                  'AuthZPAMProperties',
       'authz-simple':               'AuthZSimpleProperties',
       'can-host-socketcan':         { 'type': 'CanHostSocketcanProperties',
                                       'if': 'CONFIG_LINUX' },
-      'colo-compare':               'ColoCompareProperties',
-      'cryptodev-backend':          'CryptodevBackendProperties',
-      'cryptodev-backend-builtin':  'CryptodevBackendProperties',
-      'cryptodev-backend-lkcf':     'CryptodevBackendProperties',
-      'dbus-vmstate':               'DBusVMStateProperties',
-      'filter-buffer':              'FilterBufferProperties',
-      'filter-dump':                'FilterDumpProperties',
-      'filter-mirror':              'FilterMirrorProperties',
-      'filter-redirector':          'FilterRedirectorProperties',
-      'filter-replay':              'NetfilterProperties',
-      'filter-rewriter':            'FilterRewriterProperties',
-      'igvm-cfg':                   { 'type': 'IgvmCfgProperties',
-                                      'if': 'CONFIG_IGVM' },
       'input-barrier':              'InputBarrierProperties',
       'input-linux':                { 'type': 'InputLinuxProperties',
                                       'if': 'CONFIG_LINUX' },
@@ -1275,13 +917,11 @@
       'sev-snp-guest':              'SevSnpGuestProperties',
       'tdx-guest':                  'TdxGuestProperties',
       'thread-context':             'ThreadContextProperties',
-      'throttle-group':             'ThrottleGroupProperties',
       'tls-creds-anon':             'TlsCredsAnonProperties',
       'tls-creds-psk':              'TlsCredsPskProperties',
       'tls-creds-x509':             'TlsCredsX509Properties',
       'tls-cipher-suites':          'TlsCredsProperties',
       'x-remote-object':            'RemoteObjectProperties',
-      'x-vfio-user-server':         'VfioUserServerProperties'
   } }
 
 ##

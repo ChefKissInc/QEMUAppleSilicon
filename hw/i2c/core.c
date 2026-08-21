@@ -10,7 +10,6 @@
 #include "qemu/osdep.h"
 #include "hw/i2c/i2c.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "qemu/main-loop.h"
@@ -28,33 +27,6 @@ static const TypeInfo i2c_bus_info = {
     .instance_size = sizeof(I2CBus),
 };
 
-static int i2c_bus_pre_save(void *opaque)
-{
-    I2CBus *bus = opaque;
-
-    bus->saved_address = -1;
-    if (!QLIST_EMPTY(&bus->current_devs)) {
-        if (!bus->broadcast) {
-            bus->saved_address = QLIST_FIRST(&bus->current_devs)->elt->address;
-        } else {
-            bus->saved_address = I2C_BROADCAST;
-        }
-    }
-
-    return 0;
-}
-
-static const VMStateDescription vmstate_i2c_bus = {
-    .name = "i2c_bus",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .pre_save = i2c_bus_pre_save,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8(saved_address, I2CBus),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 /* Create a new I2C bus.  */
 I2CBus *i2c_init_bus(DeviceState *parent, const char *name)
 {
@@ -63,7 +35,6 @@ I2CBus *i2c_init_bus(DeviceState *parent, const char *name)
     bus = I2C_BUS(qbus_new(TYPE_I2C_BUS, parent, name));
     QLIST_INIT(&bus->current_devs);
     QSIMPLEQ_INIT(&bus->pending_masters);
-    vmstate_register_any(NULL, &vmstate_i2c_bus, bus);
     return bus;
 }
 
@@ -336,33 +307,6 @@ void i2c_ack(I2CBus *bus)
 
     qemu_bh_schedule(bus->bh);
 }
-
-static int i2c_slave_post_load(void *opaque, int version_id)
-{
-    I2CSlave *dev = opaque;
-    I2CBus *bus;
-    I2CNode *node;
-
-    bus = I2C_BUS(qdev_get_parent_bus(DEVICE(dev)));
-    if ((bus->saved_address == dev->address) ||
-        (bus->saved_address == I2C_BROADCAST)) {
-        node = g_new(struct I2CNode, 1);
-        node->elt = dev;
-        QLIST_INSERT_HEAD(&bus->current_devs, node, next);
-    }
-    return 0;
-}
-
-const VMStateDescription vmstate_i2c_slave = {
-    .name = "I2CSlave",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .post_load = i2c_slave_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8(address, I2CSlave),
-        VMSTATE_END_OF_LIST()
-    }
-};
 
 I2CSlave *i2c_slave_new(const char *name, uint8_t addr)
 {

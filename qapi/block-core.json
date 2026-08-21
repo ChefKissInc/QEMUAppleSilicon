@@ -29,19 +29,12 @@
 # @vm-clock-nsec: fractional part in nano seconds to be used with
 #     vm-clock-sec
 #
-# @icount: Current instruction count.  Appears when execution
-#     record/replay is enabled.  Used for "time-traveling" to match
-#     the moment in the recorded execution with the snapshots.  This
-#     counter may be obtained through `query-replay` command
-#     (since 5.2)
-#
 # Since: 1.3
 ##
 { 'struct': 'SnapshotInfo',
   'data': { 'id': 'str', 'name': 'str', 'vm-state-size': 'int',
             'date-sec': 'int', 'date-nsec': 'int',
-            'vm-clock-sec': 'int', 'vm-clock-nsec': 'int',
-            '*icount': 'int' } }
+            'vm-clock-sec': 'int', 'vm-clock-nsec': 'int' } }
 
 ##
 # @ImageInfoSpecificQCow2EncryptionBase:
@@ -496,7 +489,7 @@
 # @drv: the name of the block format used to open the backing device.
 #     As of 0.14 this can be: 'blkdebug', 'bochs', 'cloop', 'cow',
 #     'dmg', 'file', 'file', 'ftp', 'ftps', 'host_cdrom',
-#     'host_device', 'http', 'https', 'luks', 'nbd', 'parallels',
+#     'host_device', 'http', 'https', 'luks', 'parallels',
 #     'qcow', 'qcow2', 'raw', 'vdi', 'vmdk', 'vpc', 'vvfat' 2.2:
 #     'archipelago' added, 'cow' dropped 2.3: 'host_floppy' deprecated
 #     2.5: 'host_floppy' dropped 2.6: 'luks' added 2.8: 'replication'
@@ -568,8 +561,6 @@
 #
 # @iops_size: an I/O size in bytes (Since 1.7)
 #
-# @group: throttle group name (Since 2.4)
-#
 # @cache: the cache mode used for the block device (since: 2.3)
 #
 # @write_threshold: configured write threshold for the device.  0 if
@@ -595,7 +586,7 @@
             '*bps_max_length': 'int', '*bps_rd_max_length': 'int',
             '*bps_wr_max_length': 'int', '*iops_max_length': 'int',
             '*iops_rd_max_length': 'int', '*iops_wr_max_length': 'int',
-            '*iops_size': 'int', '*group': 'str', 'cache': 'BlockdevCacheInfo',
+            '*iops_size': 'int', 'cache': 'BlockdevCacheInfo',
             'write_threshold': 'int', '*dirty-bitmaps': ['BlockDirtyInfo'] } }
 
 ##
@@ -628,7 +619,7 @@
 # @recording: true if the bitmap is recording new writes from the
 #     guest.  (since 4.0)
 #
-# @busy: true if the bitmap is in-use by some operation (NBD or jobs)
+# @busy: true if the bitmap is in-use by some operation (jobs)
 #     and cannot be modified via QMP or used by another operation.
 #     (since 4.0)
 #
@@ -1430,8 +1421,6 @@
 # @paused: whether the job is paused or, if @busy is true, will pause
 #     itself as soon as possible.  (Since 1.3)
 #
-# @speed: the rate limit, bytes per second
-#
 # @io-status: the status of the job (since 1.3)
 #
 # @ready: true if the job may be completed (since 2.2)
@@ -1451,7 +1440,7 @@
 ##
 { 'union': 'BlockJobInfo',
   'base': {'type': 'JobType', 'device': 'str', 'len': 'int',
-           'offset': 'int', 'busy': 'bool', 'paused': 'bool', 'speed': 'int',
+           'offset': 'int', 'busy': 'bool', 'paused': 'bool',
            'io-status': 'BlockDeviceIoStatus', 'ready': 'bool',
            'status': 'JobStatus',
            'auto-finalize': 'bool', 'auto-dismiss': 'bool',
@@ -1603,9 +1592,6 @@
 #     destination (all the disk, only the sectors allocated in the
 #     topmost image, from a dirty bitmap, or only new I/O).
 #
-# @speed: the maximum speed, in bytes per second.  The default is 0,
-#     for unlimited.
-#
 # @bitmap: The name of a dirty bitmap to use.  Must be present if sync
 #     is "bitmap" or "incremental".  Can be present if sync is "full"
 #     or "top".  Must not be present otherwise.
@@ -1662,7 +1648,7 @@
 ##
 { 'struct': 'BackupCommon',
   'data': { '*job-id': 'str', 'device': 'str',
-            'sync': 'MirrorSyncMode', '*speed': 'int',
+            'sync': 'MirrorSyncMode',
             '*bitmap': 'str', '*bitmap-mode': 'BitmapSyncMode',
             '*compress': 'bool',
             '*on-source-error': 'BlockdevOnError',
@@ -1859,8 +1845,6 @@
 #     protocol name as the backing format.  Can be used even when no
 #     image header will be updated (default false; since 9.0).
 #
-# @speed: the maximum speed, in bytes per second
-#
 # @on-error: the action to take on an error.  'ignore' means that the
 #     request should be retried.  (default: report; since: 5.0)
 #
@@ -1903,7 +1887,6 @@
             '*top-node': 'str',
             '*top': { 'type': 'str', 'features': [ 'deprecated' ] },
             '*backing-file': 'str', '*backing-mask-protocol': 'bool',
-            '*speed': 'int',
             '*on-error': 'BlockdevOnError',
             '*filter-node-name': 'str',
             '*auto-finalize': 'bool', '*auto-dismiss': 'bool' },
@@ -2199,8 +2182,6 @@
 # @mode: whether and how QEMU should create a new image, default is
 #     'absolute-paths'.
 #
-# @speed: the maximum speed, in bytes per second
-#
 # @sync: what parts of the disk image should be copied to the
 #     destination (all the disk, only the sectors allocated in the
 #     topmost image, or only new I/O).
@@ -2247,7 +2228,7 @@
   'data': { '*job-id': 'str', 'device': 'str', 'target': 'str',
             '*format': 'str', '*node-name': 'str', '*replaces': 'str',
             'sync': 'MirrorSyncMode', '*mode': 'NewImageMode',
-            '*speed': 'int', '*granularity': 'uint32',
+            '*granularity': 'uint32',
             '*buf-size': 'int', '*on-source-error': 'BlockdevOnError',
             '*on-target-error': 'BlockdevOnError',
             '*unmap': 'bool', '*copy-mode': 'MirrorCopyMode',
@@ -2516,8 +2497,6 @@
 #     repair broken Quorum files.  By default, @device is replaced,
 #     although implicitly created filters on it are kept.
 #
-# @speed: the maximum speed, in bytes per second
-#
 # @sync: what parts of the disk image should be copied to the
 #     destination (all the disk, only the sectors allocated in the
 #     topmost image, or only new I/O).
@@ -2575,7 +2554,7 @@
   'data': { '*job-id': 'str', 'device': 'str', 'target': 'str',
             '*replaces': 'str',
             'sync': 'MirrorSyncMode',
-            '*speed': 'int', '*granularity': 'uint32',
+            '*granularity': 'uint32',
             '*buf-size': 'int', '*on-source-error': 'BlockdevOnError',
             '*on-target-error': 'BlockdevOnError',
             '*filter-node-name': 'str',
@@ -2583,215 +2562,6 @@
             '*auto-finalize': 'bool', '*auto-dismiss': 'bool',
             '*target-is-zero': 'bool'},
   'allow-preconfig': true }
-
-##
-# @BlockIOThrottle:
-#
-# A set of parameters describing block throttling.
-#
-# @device: Block device name
-#
-# @id: The name or QOM path of the guest device (since: 2.8)
-#
-# @bps: total throughput limit in bytes per second
-#
-# @bps_rd: read throughput limit in bytes per second
-#
-# @bps_wr: write throughput limit in bytes per second
-#
-# @iops: total I/O operations per second
-#
-# @iops_rd: read I/O operations per second
-#
-# @iops_wr: write I/O operations per second
-#
-# @bps_max: total throughput limit during bursts, in bytes (Since 1.7)
-#
-# @bps_rd_max: read throughput limit during bursts, in bytes
-#     (Since 1.7)
-#
-# @bps_wr_max: write throughput limit during bursts, in bytes
-#     (Since 1.7)
-#
-# @iops_max: total I/O operations per second during bursts, in bytes
-#     (Since 1.7)
-#
-# @iops_rd_max: read I/O operations per second during bursts, in bytes
-#     (Since 1.7)
-#
-# @iops_wr_max: write I/O operations per second during bursts, in
-#     bytes (Since 1.7)
-#
-# @bps_max_length: maximum length of the @bps_max burst period, in
-#     seconds.  It must only be set if @bps_max is set as well.
-#     Defaults to 1.  (Since 2.6)
-#
-# @bps_rd_max_length: maximum length of the @bps_rd_max burst period,
-#     in seconds.  It must only be set if @bps_rd_max is set as well.
-#     Defaults to 1.  (Since 2.6)
-#
-# @bps_wr_max_length: maximum length of the @bps_wr_max burst period,
-#     in seconds.  It must only be set if @bps_wr_max is set as well.
-#     Defaults to 1.  (Since 2.6)
-#
-# @iops_max_length: maximum length of the @iops burst period, in
-#     seconds.  It must only be set if @iops_max is set as well.
-#     Defaults to 1.  (Since 2.6)
-#
-# @iops_rd_max_length: maximum length of the @iops_rd_max burst
-#     period, in seconds.  It must only be set if @iops_rd_max is set
-#     as well.  Defaults to 1.  (Since 2.6)
-#
-# @iops_wr_max_length: maximum length of the @iops_wr_max burst
-#     period, in seconds.  It must only be set if @iops_wr_max is set
-#     as well.  Defaults to 1.  (Since 2.6)
-#
-# @iops_size: an I/O size in bytes (Since 1.7)
-#
-# @group: throttle group name (Since 2.4)
-#
-# Features:
-#
-# @deprecated: Member @device is deprecated.  Use @id instead.
-#
-# Since: 1.1
-##
-{ 'struct': 'BlockIOThrottle',
-  'data': { '*device': { 'type': 'str', 'features': [ 'deprecated' ] },
-            '*id': 'str', 'bps': 'int', 'bps_rd': 'int',
-            'bps_wr': 'int', 'iops': 'int', 'iops_rd': 'int', 'iops_wr': 'int',
-            '*bps_max': 'int', '*bps_rd_max': 'int',
-            '*bps_wr_max': 'int', '*iops_max': 'int',
-            '*iops_rd_max': 'int', '*iops_wr_max': 'int',
-            '*bps_max_length': 'int', '*bps_rd_max_length': 'int',
-            '*bps_wr_max_length': 'int', '*iops_max_length': 'int',
-            '*iops_rd_max_length': 'int', '*iops_wr_max_length': 'int',
-            '*iops_size': 'int', '*group': 'str' } }
-
-##
-# @ThrottleLimits:
-#
-# Limit parameters for throttling.  Since some limit combinations are
-# illegal, limits should always be set in one transaction.  All fields
-# are optional.  When setting limits, if a field is missing the
-# current value is not changed.
-#
-# @iops-total: limit total I/O operations per second
-#
-# @iops-total-max: I/O operations burst
-#
-# @iops-total-max-length: length of the iops-total-max burst period,
-#     in seconds.  It must only be set if @iops-total-max is set as
-#     well.
-#
-# @iops-read: limit read operations per second
-#
-# @iops-read-max: I/O operations read burst
-#
-# @iops-read-max-length: length of the iops-read-max burst period, in
-#     seconds.  It must only be set if @iops-read-max is set as well.
-#
-# @iops-write: limit write operations per second
-#
-# @iops-write-max: I/O operations write burst
-#
-# @iops-write-max-length: length of the iops-write-max burst period,
-#     in seconds.  It must only be set if @iops-write-max is set as
-#     well.
-#
-# @bps-total: limit total bytes per second
-#
-# @bps-total-max: total bytes burst
-#
-# @bps-total-max-length: length of the bps-total-max burst period, in
-#     seconds.  It must only be set if @bps-total-max is set as well.
-#
-# @bps-read: limit read bytes per second
-#
-# @bps-read-max: total bytes read burst
-#
-# @bps-read-max-length: length of the bps-read-max burst period, in
-#     seconds.  It must only be set if @bps-read-max is set as well.
-#
-# @bps-write: limit write bytes per second
-#
-# @bps-write-max: total bytes write burst
-#
-# @bps-write-max-length: length of the bps-write-max burst period, in
-#     seconds.  It must only be set if @bps-write-max is set as well.
-#
-# @iops-size: when limiting by iops max size of an I/O in bytes
-#
-# Since: 2.11
-##
-{ 'struct': 'ThrottleLimits',
-  'data': { '*iops-total' : 'int', '*iops-total-max' : 'int',
-            '*iops-total-max-length' : 'int', '*iops-read' : 'int',
-            '*iops-read-max' : 'int', '*iops-read-max-length' : 'int',
-            '*iops-write' : 'int', '*iops-write-max' : 'int',
-            '*iops-write-max-length' : 'int', '*bps-total' : 'int',
-            '*bps-total-max' : 'int', '*bps-total-max-length' : 'int',
-            '*bps-read' : 'int', '*bps-read-max' : 'int',
-            '*bps-read-max-length' : 'int', '*bps-write' : 'int',
-            '*bps-write-max' : 'int', '*bps-write-max-length' : 'int',
-            '*iops-size' : 'int' } }
-
-##
-# @ThrottleGroupProperties:
-#
-# Properties for throttle-group objects.
-#
-# @limits: limits to apply for this throttle group
-#
-# Features:
-#
-# @unstable: All members starting with x- are aliases for the same key
-#     without x- in the @limits object.  This is not a stable
-#     interface and may be removed or changed incompatibly in the
-#     future.  Use @limits for a supported stable interface.
-#
-# Since: 2.11
-##
-{ 'struct': 'ThrottleGroupProperties',
-  'data': { '*limits': 'ThrottleLimits',
-            '*x-iops-total': { 'type': 'int',
-                               'features': [ 'unstable' ] },
-            '*x-iops-total-max': { 'type': 'int',
-                                   'features': [ 'unstable' ] },
-            '*x-iops-total-max-length': { 'type': 'int',
-                                          'features': [ 'unstable' ] },
-            '*x-iops-read': { 'type': 'int',
-                              'features': [ 'unstable' ] },
-            '*x-iops-read-max': { 'type': 'int',
-                                  'features': [ 'unstable' ] },
-            '*x-iops-read-max-length': { 'type': 'int',
-                                         'features': [ 'unstable' ] },
-            '*x-iops-write': { 'type': 'int',
-                               'features': [ 'unstable' ] },
-            '*x-iops-write-max': { 'type': 'int',
-                                   'features': [ 'unstable' ] },
-            '*x-iops-write-max-length': { 'type': 'int',
-                                          'features': [ 'unstable' ] },
-            '*x-bps-total': { 'type': 'int',
-                              'features': [ 'unstable' ] },
-            '*x-bps-total-max': { 'type': 'int',
-                                  'features': [ 'unstable' ] },
-            '*x-bps-total-max-length': { 'type': 'int',
-                                         'features': [ 'unstable' ] },
-            '*x-bps-read': { 'type': 'int',
-                             'features': [ 'unstable' ] },
-            '*x-bps-read-max': { 'type': 'int',
-                                 'features': [ 'unstable' ] },
-            '*x-bps-read-max-length': { 'type': 'int',
-                                        'features': [ 'unstable' ] },
-            '*x-bps-write': { 'type': 'int',
-                              'features': [ 'unstable' ] },
-            '*x-bps-write-max': { 'type': 'int',
-                                  'features': [ 'unstable' ] },
-            '*x-bps-write-max-length': { 'type': 'int',
-                                         'features': [ 'unstable' ] },
-            '*x-iops-size': { 'type': 'int',
-                              'features': [ 'unstable' ] } } }
 
 ##
 # @block-stream:
@@ -2861,8 +2631,6 @@
 #     protocol name as the backing format.  Can be used even when no
 #     image header will be updated (default false; since 9.0).
 #
-# @speed: the maximum speed, in bytes per second
-#
 # @on-error: the action to take on an error (default report).  'stop'
 #     and 'enospc' can only be used if the block device supports
 #     io-status (see `BlockInfo`).  (Since 1.3)
@@ -2900,35 +2668,9 @@
             '*base-node': 'str', '*backing-file': 'str',
             '*backing-mask-protocol': 'bool',
             '*bottom': 'str',
-            '*speed': 'int', '*on-error': 'BlockdevOnError',
+            '*on-error': 'BlockdevOnError',
             '*filter-node-name': 'str',
             '*auto-finalize': 'bool', '*auto-dismiss': 'bool' },
-  'allow-preconfig': true }
-
-##
-# @block-job-set-speed:
-#
-# Set maximum speed for a background block operation.
-#
-# This command can only be issued when there is an active block job.
-#
-# Throttling can be disabled by setting the speed to 0.
-#
-# @device: The job identifier.  This used to be a device name (hence
-#     the name of the parameter), but since QEMU 2.7 it can have other
-#     values.
-#
-# @speed: the maximum speed, in bytes per second, or 0 for unlimited.
-#     Defaults to 0.
-#
-# Errors:
-#     - If no background operation is active on this device,
-#       DeviceNotActive
-#
-# Since: 1.1
-##
-{ 'command': 'block-job-set-speed',
-  'data': { 'device': 'str', 'speed': 'int' },
   'allow-preconfig': true }
 
 ##
@@ -3242,15 +2984,11 @@
 #
 # Drivers that are supported in block device operations.
 #
-# @throttle: Since 2.11
-#
 # @nvme: Since 2.12
 #
 # @copy-on-read: Since 3.0
 #
 # @blklogwrites: Since 3.0
-#
-# @blkreplay: Since 4.2
 #
 # @compress: Since 5.0
 #
@@ -3266,7 +3004,7 @@
 # Since: 2.9
 ##
 { 'enum': 'BlockdevDriver',
-  'data': [ 'blkdebug', 'blklogwrites', 'blkreplay', 'blkverify', 'bochs',
+  'data': [ 'blkdebug', 'blklogwrites', 'blkverify', 'bochs',
             'cloop', 'compress', 'copy-before-write', 'copy-on-read', 'dmg',
             'file', 'snapshot-access', 'ftp', 'ftps',
             {'name': 'gluster', 'features': [ 'deprecated' ] },
@@ -3274,15 +3012,12 @@
             {'name': 'host_device', 'if': 'HAVE_HOST_BLOCK_DEVICE' },
             'http', 'https',
             { 'name': 'io_uring', 'if': 'CONFIG_BLKIO' },
-            'iscsi',
-            'luks', 'nbd', 'nfs', 'null-aio', 'null-co', 'nvme',
+            'luks', 'nfs', 'null-aio', 'null-co', 'nvme',
             { 'name': 'nvme-io_uring', 'if': 'CONFIG_BLKIO' },
             'parallels', 'preallocate', 'qcow', 'qcow2', 'qed', 'quorum',
             'raw', 'rbd',
             { 'name': 'replication', 'if': 'CONFIG_REPLICATION' },
-            'ssh', 'throttle', 'vdi', 'vhdx',
-            { 'name': 'virtio-blk-vfio-pci', 'if': 'CONFIG_BLKIO' },
-            { 'name': 'virtio-blk-vhost-vdpa', 'if': 'CONFIG_BLKIO' },
+            'ssh', 'vdi', 'vhdx',
             'vmdk', 'vpc', 'vvfat' ] }
 
 ##
@@ -3986,18 +3721,6 @@
             'raw': 'BlockdevRef' } }
 
 ##
-# @BlockdevOptionsBlkreplay:
-#
-# Driver specific block device options for blkreplay.
-#
-# @image: disk image which should be controlled with blkreplay
-#
-# Since: 4.2
-##
-{ 'struct': 'BlockdevOptionsBlkreplay',
-  'data': { 'image': 'BlockdevRef' } }
-
-##
 # @QuorumReadPattern:
 #
 # An enumeration of quorum read patterns.
@@ -4087,105 +3810,6 @@
 { 'struct': 'BlockdevOptionsNvmeIoUring',
   'data': { 'path': 'str' },
   'if': 'CONFIG_BLKIO' }
-
-##
-# @BlockdevOptionsVirtioBlkVfioPci:
-#
-# Driver specific block device options for the virtio-blk-vfio-pci
-# backend.
-#
-# @path: path to the PCI device's sysfs directory (e.g.
-#     /sys/bus/pci/devices/0000:00:01.0).
-#
-# Since: 7.2
-##
-{ 'struct': 'BlockdevOptionsVirtioBlkVfioPci',
-  'data': { 'path': 'str' },
-  'if': 'CONFIG_BLKIO' }
-
-##
-# @BlockdevOptionsVirtioBlkVhostVdpa:
-#
-# Driver specific block device options for the virtio-blk-vhost-vdpa
-# backend.
-#
-# @path: path to the vhost-vdpa character device.
-#
-# Features:
-#
-# @fdset: Member @path supports the special "/dev/fdset/N" path
-#     (since 8.1)
-#
-# Since: 7.2
-##
-{ 'struct': 'BlockdevOptionsVirtioBlkVhostVdpa',
-  'data': { 'path': 'str' },
-  'features': [ { 'name' :'fdset',
-                  'if': 'CONFIG_BLKIO_VHOST_VDPA_FD' } ],
-  'if': 'CONFIG_BLKIO' }
-
-##
-# @IscsiTransport:
-#
-# An enumeration of libiscsi transport types
-#
-# Since: 2.9
-##
-{ 'enum': 'IscsiTransport',
-  'data': [ 'tcp', 'iser' ] }
-
-##
-# @IscsiHeaderDigest:
-#
-# An enumeration of header digests supported by libiscsi
-#
-# Since: 2.9
-##
-{ 'enum': 'IscsiHeaderDigest',
-  'prefix': 'QAPI_ISCSI_HEADER_DIGEST',
-  'data': [ 'crc32c', 'none', 'crc32c-none', 'none-crc32c' ] }
-
-##
-# @BlockdevOptionsIscsi:
-#
-# Driver specific block device options for iscsi
-#
-# @transport: The iscsi transport type
-#
-# @portal: The address of the iscsi portal
-#
-# @target: The target iqn name
-#
-# @lun: LUN to connect to.  Defaults to 0.
-#
-# @user: User name to log in with.  If omitted, no CHAP authentication
-#     is performed.
-#
-# @password-secret: The ID of a QCryptoSecret object providing the
-#     password for the login.  This option is required if @user is
-#     specified.
-#
-# @initiator-name: The iqn name we want to identify to the target as.
-#     If this option is not specified, an initiator name is generated
-#     automatically.
-#
-# @header-digest: The desired header digest.  Defaults to none-crc32c.
-#
-# @timeout: Timeout in seconds after which a request will timeout.  0
-#     means no timeout and is the default.
-#
-# Since: 2.9
-##
-{ 'struct': 'BlockdevOptionsIscsi',
-  'data': { 'transport': 'IscsiTransport',
-            'portal': 'str',
-            'target': 'str',
-            '*lun': 'int',
-            '*user': 'str',
-            '*password-secret': 'str',
-            '*initiator-name': 'str',
-            '*header-digest': 'IscsiHeaderDigest',
-            '*timeout': 'int' } }
 
 ##
 # @RbdAuthMode:
@@ -4555,55 +4179,6 @@
   'data': { '*sslverify': 'bool' } }
 
 ##
-# @BlockdevOptionsNbd:
-#
-# Driver specific block device options for NBD.
-#
-# @server: NBD server address
-#
-# @export: export name
-#
-# @tls-creds: TLS credentials ID
-#
-# @tls-hostname: TLS hostname override for certificate validation
-#     (Since 7.0)
-#
-# @x-dirty-bitmap: A metadata context name such as
-#     "qemu:dirty-bitmap:NAME" or "qemu:allocation-depth" to query in
-#     place of the traditional "base:allocation" block status (see
-#     NBD_OPT_LIST_META_CONTEXT in the NBD protocol; and yes, naming
-#     this option x-context would have made more sense) (since 3.0)
-#
-# @reconnect-delay: On an unexpected disconnect, the nbd client tries
-#     to connect again until succeeding or encountering a serious
-#     error.  During the first @reconnect-delay seconds, all requests
-#     are paused and will be rerun on a successful reconnect.  After
-#     that time, any delayed requests and all future requests before a
-#     successful reconnect will immediately fail.  Default 0
-#     (Since 4.2)
-#
-# @open-timeout: In seconds.  If zero, the nbd driver tries the
-#     connection only once, and fails to open if the connection fails.
-#     If non-zero, the nbd driver will repeat connection attempts
-#     until successful or until @open-timeout seconds have elapsed.
-#     Default 0 (Since 7.0)
-#
-# Features:
-#
-# @unstable: Member @x-dirty-bitmap is experimental.
-#
-# Since: 2.9
-##
-{ 'struct': 'BlockdevOptionsNbd',
-  'data': { 'server': 'SocketAddress',
-            '*export': 'str',
-            '*tls-creds': 'str',
-            '*tls-hostname': 'str',
-            '*x-dirty-bitmap': { 'type': 'str', 'features': [ 'unstable' ] },
-            '*reconnect-delay': 'uint32',
-            '*open-timeout': 'uint32' } }
-
-##
 # @BlockdevOptionsRaw:
 #
 # Driver specific block device options for the raw driver.
@@ -4617,23 +4192,6 @@
 { 'struct': 'BlockdevOptionsRaw',
   'base': 'BlockdevOptionsGenericFormat',
   'data': { '*offset': 'int', '*size': 'int' } }
-
-##
-# @BlockdevOptionsThrottle:
-#
-# Driver specific block device options for the throttle driver
-#
-# @throttle-group: the name of the throttle-group object to use.  It
-#     must already exist.
-#
-# @file: reference to or definition of the data source block device
-#
-# Since: 2.11
-##
-{ 'struct': 'BlockdevOptionsThrottle',
-  'data': { 'throttle-group': 'str',
-            'file' : 'BlockdevRef'
-             } }
 
 ##
 # @BlockdevOptionsCor:
@@ -4773,7 +4331,6 @@
       'blkdebug':   'BlockdevOptionsBlkdebug',
       'blklogwrites':'BlockdevOptionsBlklogwrites',
       'blkverify':  'BlockdevOptionsBlkverify',
-      'blkreplay':  'BlockdevOptionsBlkreplay',
       'bochs':      'BlockdevOptionsGenericFormat',
       'cloop':      'BlockdevOptionsGenericFormat',
       'compress':   'BlockdevOptionsGenericFormat',
@@ -4792,9 +4349,7 @@
       'https':      'BlockdevOptionsCurlHttps',
       'io_uring':   { 'type': 'BlockdevOptionsIoUring',
                       'if': 'CONFIG_BLKIO' },
-      'iscsi':      'BlockdevOptionsIscsi',
       'luks':       'BlockdevOptionsLUKS',
-      'nbd':        'BlockdevOptionsNbd',
       'nfs':        'BlockdevOptionsNfs',
       'null-aio':   'BlockdevOptionsNull',
       'null-co':    'BlockdevOptionsNull',
@@ -4813,15 +4368,8 @@
                        'if': 'CONFIG_REPLICATION' },
       'snapshot-access': 'BlockdevOptionsGenericFormat',
       'ssh':        'BlockdevOptionsSsh',
-      'throttle':   'BlockdevOptionsThrottle',
       'vdi':        'BlockdevOptionsGenericFormat',
       'vhdx':       'BlockdevOptionsGenericFormat',
-      'virtio-blk-vfio-pci':
-                    { 'type': 'BlockdevOptionsVirtioBlkVfioPci',
-                      'if': 'CONFIG_BLKIO' },
-      'virtio-blk-vhost-vdpa':
-                    { 'type': 'BlockdevOptionsVirtioBlkVhostVdpa',
-                      'if': 'CONFIG_BLKIO' },
       'vmdk':       'BlockdevOptionsGenericCOWFormat',
       'vpc':        'BlockdevOptionsGenericFormat',
       'vvfat':      'BlockdevOptionsVVFAT'
@@ -5735,8 +5283,6 @@
 # @offset: current progress value.  On success this is equal to len.
 #     On failure this is less than len
 #
-# @speed: rate limit, bytes per second
-#
 # @error: error message.  Only present on failure.  This field
 #     contains a human-readable error message.  There are no semantics
 #     other than that streaming has failed and clients should not try
@@ -5748,8 +5294,7 @@
 #
 #     <- { "event": "BLOCK_JOB_COMPLETED",
 #          "data": { "type": "stream", "device": "virtio-disk0",
-#                    "len": 10737418240, "offset": 10737418240,
-#                    "speed": 0 },
+#                    "len": 10737418240, "offset": 10737418240 },
 #          "timestamp": { "seconds": 1267061043, "microseconds": 959568 } }
 ##
 { 'event': 'BLOCK_JOB_COMPLETED',
@@ -5757,7 +5302,6 @@
             'device': 'str',
             'len'   : 'int',
             'offset': 'int',
-            'speed' : 'int',
             '*error': 'str' } }
 
 ##
@@ -5775,24 +5319,20 @@
 # @offset: current progress value.  On success this is equal to len.
 #     On failure this is less than len
 #
-# @speed: rate limit, bytes per second
-#
 # Since: 1.1
 #
 # .. qmp-example::
 #
 #     <- { "event": "BLOCK_JOB_CANCELLED",
 #          "data": { "type": "stream", "device": "virtio-disk0",
-#                    "len": 10737418240, "offset": 134217728,
-#                    "speed": 0 },
+#                    "len": 10737418240, "offset": 134217728 },
 #          "timestamp": { "seconds": 1267061043, "microseconds": 959568 } }
 ##
 { 'event': 'BLOCK_JOB_CANCELLED',
   'data': { 'type'  : 'JobType',
             'device': 'str',
             'len'   : 'int',
-            'offset': 'int',
-            'speed' : 'int' } }
+            'offset': 'int' } }
 
 ##
 # @BLOCK_JOB_ERROR:
@@ -5836,8 +5376,6 @@
 # @offset: current progress value.  On success this is equal to len.
 #     On failure this is less than len
 #
-# @speed: rate limit, bytes per second
-#
 # .. note:: The "ready to complete" status is always reset by a
 #    `BLOCK_JOB_ERROR` event.
 #
@@ -5846,7 +5384,7 @@
 # .. qmp-example::
 #
 #     <- { "event": "BLOCK_JOB_READY",
-#          "data": { "device": "drive0", "type": "mirror", "speed": 0,
+#          "data": { "device": "drive0", "type": "mirror",
 #                    "len": 2097152, "offset": 2097152 },
 #          "timestamp": { "seconds": 1265044230, "microseconds": 450486 } }
 ##
@@ -5854,8 +5392,7 @@
   'data': { 'type'  : 'JobType',
             'device': 'str',
             'len'   : 'int',
-            'offset': 'int',
-            'speed' : 'int' } }
+            'offset': 'int' } }
 
 ##
 # @BLOCK_JOB_PENDING:

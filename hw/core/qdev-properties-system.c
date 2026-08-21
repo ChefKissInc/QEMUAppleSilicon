@@ -17,8 +17,6 @@
 #include "qapi/visitor.h"
 #include "qapi/qapi-types-block.h"
 #include "qapi/qapi-types-machine.h"
-#include "qapi/qapi-types-migration.h"
-#include "qapi/qapi-visit-virtio.h"
 #include "qapi/qmp/qerror.h"
 #include "qemu/ctype.h"
 #include "qemu/cutils.h"
@@ -34,7 +32,6 @@
 #include "net/net.h"
 #include "hw/pci/pci.h"
 #include "hw/pci/pcie.h"
-#include "hw/i386/x86.h"
 #include "util/block-helpers.h"
 
 static bool check_prop_still_unset(Object *obj, const char *name,
@@ -546,44 +543,6 @@ void qdev_set_nic_properties(DeviceState *dev, NICInfo *nd)
     nd->instantiated = 1;
 }
 
-/* --- lost tick policy --- */
-
-static void qdev_propinfo_set_losttickpolicy(Object *obj, Visitor *v,
-                                             const char *name, void *opaque,
-                                             Error **errp)
-{
-    const Property *prop = opaque;
-    int *ptr = object_field_prop_ptr(obj, prop);
-    int value;
-
-    if (!visit_type_enum(v, name, &value, prop->info->enum_table, errp)) {
-        return;
-    }
-
-    if (value == LOST_TICK_POLICY_SLEW) {
-        MachineState *ms = MACHINE(qdev_get_machine());
-
-        if (!object_dynamic_cast(OBJECT(ms), TYPE_X86_MACHINE)) {
-            error_setg(errp,
-                       "the 'slew' policy is only available for x86 machines");
-            return;
-        }
-    }
-
-    *ptr = value;
-}
-
-QEMU_BUILD_BUG_ON(sizeof(LostTickPolicy) != sizeof(int));
-
-const PropertyInfo qdev_prop_losttickpolicy = {
-    .type  = "LostTickPolicy",
-    .description = "Policy for handling lost ticks (discard/delay/slew)",
-    .enum_table  = &LostTickPolicy_lookup,
-    .get   = qdev_propinfo_get_enum,
-    .set   = qdev_propinfo_set_losttickpolicy,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
 /* --- blocksize --- */
 
 static void set_blocksize(Object *obj, Visitor *v, const char *name,
@@ -619,78 +578,6 @@ const PropertyInfo qdev_prop_blockdev_on_error = {
     .type = "BlockdevOnError",
     .description = "Error handling policy (report/ignore/enospc/stop/auto)",
     .enum_table = &BlockdevOnError_lookup,
-    .get = qdev_propinfo_get_enum,
-    .set = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-/* --- BIOS CHS translation */
-
-QEMU_BUILD_BUG_ON(sizeof(BiosAtaTranslation) != sizeof(int));
-
-const PropertyInfo qdev_prop_bios_chs_trans = {
-    .type = "BiosAtaTranslation",
-    .description = "Logical CHS translation algorithm "
-                   " (auto/none/lba/large/rechs)",
-    .enum_table = &BiosAtaTranslation_lookup,
-    .get = qdev_propinfo_get_enum,
-    .set = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-/* --- FDC default drive types */
-
-const PropertyInfo qdev_prop_fdc_drive_type = {
-    .type = "FloppyDriveType",
-    .description = "Floppy drive type (144/288/120/none/auto)",
-    .enum_table = &FloppyDriveType_lookup,
-    .get = qdev_propinfo_get_enum,
-    .set = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-/* --- MultiFDCompression --- */
-
-const PropertyInfo qdev_prop_multifd_compression = {
-    .type = "MultiFDCompression",
-    .description = "multifd_compression values"
-                   " (none/zlib/zstd/qpl/uadk/qatzip)",
-    .enum_table = &MultiFDCompression_lookup,
-    .get = qdev_propinfo_get_enum,
-    .set = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-/* --- MigMode --- */
-
-QEMU_BUILD_BUG_ON(sizeof(MigMode) != sizeof(int));
-
-const PropertyInfo qdev_prop_mig_mode = {
-    .type = "MigMode",
-    .description = "Migration mode (normal/cpr-reboot)",
-    .enum_table = &MigMode_lookup,
-    .get = qdev_propinfo_get_enum,
-    .set = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-/* --- GranuleMode --- */
-
-QEMU_BUILD_BUG_ON(sizeof(GranuleMode) != sizeof(int));
-
-const PropertyInfo qdev_prop_granule_mode = {
-    .type = "GranuleMode",
-    .description = "Granule page size (4k/8k/16k/64k/host)",
-    .enum_table = &GranuleMode_lookup,
-    .get = qdev_propinfo_get_enum,
-    .set = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-const PropertyInfo qdev_prop_zero_page_detection = {
-    .type = "ZeroPageDetection",
-    .description = "Zero page detection (none/legacy/multifd)",
-    .enum_table = &ZeroPageDetection_lookup,
     .get = qdev_propinfo_get_enum,
     .set = qdev_propinfo_set_enum,
     .set_default_value = qdev_propinfo_set_default_value_enum,
@@ -1195,51 +1082,6 @@ const PropertyInfo qdev_prop_uuid = {
     .set_default_value = set_default_uuid_auto,
 };
 
-/* --- IOThreadVirtQueueMappingList --- */
-
-static void get_iothread_vq_mapping_list(Object *obj, Visitor *v,
-        const char *name, void *opaque, Error **errp)
-{
-    IOThreadVirtQueueMappingList **prop_ptr =
-        object_field_prop_ptr(obj, opaque);
-
-    visit_type_IOThreadVirtQueueMappingList(v, name, prop_ptr, errp);
-}
-
-static void set_iothread_vq_mapping_list(Object *obj, Visitor *v,
-        const char *name, void *opaque, Error **errp)
-{
-    IOThreadVirtQueueMappingList **prop_ptr =
-        object_field_prop_ptr(obj, opaque);
-    IOThreadVirtQueueMappingList *list;
-
-    if (!visit_type_IOThreadVirtQueueMappingList(v, name, &list, errp)) {
-        return;
-    }
-
-    qapi_free_IOThreadVirtQueueMappingList(*prop_ptr);
-    *prop_ptr = list;
-}
-
-static void release_iothread_vq_mapping_list(Object *obj,
-        const char *name, void *opaque)
-{
-    IOThreadVirtQueueMappingList **prop_ptr =
-        object_field_prop_ptr(obj, opaque);
-
-    qapi_free_IOThreadVirtQueueMappingList(*prop_ptr);
-    *prop_ptr = NULL;
-}
-
-const PropertyInfo qdev_prop_iothread_vq_mapping_list = {
-    .type = "IOThreadVirtQueueMappingList",
-    .description = "IOThread virtqueue mapping list [{\"iothread\":\"<id>\", "
-                   "\"vqs\":[1,2,3,...]},...]",
-    .get = get_iothread_vq_mapping_list,
-    .set = set_iothread_vq_mapping_list,
-    .release = release_iothread_vq_mapping_list,
-};
-
 /* --- Endian modes */
 
 const PropertyInfo qdev_prop_endian_mode = {
@@ -1249,57 +1091,4 @@ const PropertyInfo qdev_prop_endian_mode = {
     .get = qdev_propinfo_get_enum,
     .set = qdev_propinfo_set_enum,
     .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-const PropertyInfo qdev_prop_vmapple_virtio_blk_variant = {
-    .type  = "VMAppleVirtioBlkVariant",
-    .description = "unspecified/root/aux",
-    .enum_table  = &VMAppleVirtioBlkVariant_lookup,
-    .get   = qdev_propinfo_get_enum,
-    .set   = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
-};
-
-/* --- VirtIOGPUOutputList --- */
-
-static void get_virtio_gpu_output_list(Object *obj, Visitor *v,
-    const char *name, void *opaque, Error **errp)
-{
-    VirtIOGPUOutputList **prop_ptr =
-        object_field_prop_ptr(obj, opaque);
-
-    visit_type_VirtIOGPUOutputList(v, name, prop_ptr, errp);
-}
-
-static void set_virtio_gpu_output_list(Object *obj, Visitor *v,
-    const char *name, void *opaque, Error **errp)
-{
-    VirtIOGPUOutputList **prop_ptr =
-        object_field_prop_ptr(obj, opaque);
-    VirtIOGPUOutputList *list;
-
-    if (!visit_type_VirtIOGPUOutputList(v, name, &list, errp)) {
-        return;
-    }
-
-    qapi_free_VirtIOGPUOutputList(*prop_ptr);
-    *prop_ptr = list;
-}
-
-static void release_virtio_gpu_output_list(Object *obj,
-    const char *name, void *opaque)
-{
-    VirtIOGPUOutputList **prop_ptr =
-        object_field_prop_ptr(obj, opaque);
-
-    qapi_free_VirtIOGPUOutputList(*prop_ptr);
-    *prop_ptr = NULL;
-}
-
-const PropertyInfo qdev_prop_virtio_gpu_output_list = {
-    .type = "VirtIOGPUOutputList",
-    .description = "VirtIO GPU output list [{\"name\":\"<name>\"},...]",
-    .get = get_virtio_gpu_output_list,
-    .set = set_virtio_gpu_output_list,
-    .release = release_virtio_gpu_output_list,
 };

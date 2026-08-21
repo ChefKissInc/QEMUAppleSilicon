@@ -24,7 +24,6 @@
 
 #include "qemu/osdep.h"
 #include "audio.h"
-#include "migration/vmstate.h"
 #include "monitor/monitor.h"
 #include "qemu/timer.h"
 #include "qapi/error.h"
@@ -39,9 +38,7 @@
 #include "qemu/module.h"
 #include "qemu/help_option.h"
 #include "system/system.h"
-#include "system/replay.h"
 #include "system/runstate.h"
-#include "ui/qemu-spice.h"
 #include "trace.h"
 
 #define AUDIO_CAP "audio"
@@ -60,7 +57,6 @@
     that we generate the list.
 */
 const char *audio_prio_list[] = {
-    "spice",
     CONFIG_AUDIO_DRIVERS
     "none",
     NULL
@@ -1232,7 +1228,6 @@ static void audio_run_out (AudioState *s)
 
         prev_rpos = hw->mix_buf.pos;
         played = audio_pcm_hw_run_out(hw, live);
-        replay_audio_out(&played);
         if (audio_bug(__func__, hw->mix_buf.pos >= hw->mix_buf.size)) {
             dolog("hw->mix_buf.pos=%zu hw->mix_buf.size=%zu played=%zu\n",
                   hw->mix_buf.pos, hw->mix_buf.size, played);
@@ -1315,12 +1310,8 @@ static void audio_run_in (AudioState *s)
         SWVoiceIn *sw;
         size_t captured = 0, min;
 
-        if (replay_mode != REPLAY_MODE_PLAY) {
-            captured = audio_pcm_hw_run_in(
-                hw, hw->conv_buf.size - audio_pcm_hw_get_live_in(hw));
-        }
-        replay_audio_in(&captured, hw->conv_buf.buffer, &hw->conv_buf.pos,
-                        hw->conv_buf.size);
+        captured = audio_pcm_hw_run_in(
+            hw, hw->conv_buf.size - audio_pcm_hw_get_live_in(hw));
 
         min = audio_pcm_hw_find_min_in (hw);
         hw->total_samples_captured += captured - min;
@@ -1677,25 +1668,6 @@ void audio_cleanup(void)
     }
 }
 
-static bool vmstate_audio_needed(void *opaque)
-{
-    /*
-     * Never needed, this vmstate only exists in case
-     * an old qemu sends it to us.
-     */
-    return false;
-}
-
-static const VMStateDescription vmstate_audio = {
-    .name = "audio",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = vmstate_audio_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 void audio_create_default_audiodevs(void)
 {
     for (int i = 0; audio_prio_list[i]; i++) {
@@ -1792,7 +1764,6 @@ static AudioState *audio_init(Audiodev *dev, Error **errp)
 
     QTAILQ_INSERT_TAIL(&audio_states, s, list);
     QLIST_INIT (&s->card_head);
-    vmstate_register_any(NULL, &vmstate_audio, s);
     return s;
 
 out:
@@ -2018,9 +1989,6 @@ void audio_create_pdos(Audiodev *dev)
 #ifdef CONFIG_AUDIO_COREAUDIO
         CASE(COREAUDIO, coreaudio, Coreaudio);
 #endif
-#ifdef CONFIG_DBUS_DISPLAY
-        CASE(DBUS, dbus, );
-#endif
 #ifdef CONFIG_AUDIO_DSOUND
         CASE(DSOUND, dsound, );
 #endif
@@ -2041,9 +2009,6 @@ void audio_create_pdos(Audiodev *dev)
 #endif
 #ifdef CONFIG_AUDIO_SNDIO
         CASE(SNDIO, sndio, );
-#endif
-#ifdef CONFIG_SPICE
-        CASE(SPICE, spice, );
 #endif
         CASE(WAV, wav, );
 

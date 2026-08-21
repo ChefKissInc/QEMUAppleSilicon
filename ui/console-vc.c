@@ -383,8 +383,6 @@ static void text_console_resize(QemuTextConsole *t)
     TextCell *cells, *c, *c1;
     int w1, x, y, last_width, w, h;
 
-    assert(s->scanout.kind == SCANOUT_SURFACE);
-
     w = surface_width(s->surface) / FONT_WIDTH;
     h = surface_height(s->surface) / FONT_HEIGHT;
     if (w == t->width && h == t->height) {

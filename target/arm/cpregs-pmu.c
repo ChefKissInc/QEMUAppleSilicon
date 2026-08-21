@@ -5,7 +5,6 @@
 
 #include "qemu/osdep.h"
 #include "qemu/timer.h"
-#include "exec/icount.h"
 #include "hw/irq.h"
 #include "cpu.h"
 #include "cpu-features.h"
@@ -86,24 +85,6 @@ static int64_t cycles_ns_per(uint64_t cycles)
     return (ARM_CPU_FREQ / NANOSECONDS_PER_SECOND) * cycles;
 }
 
-static bool instructions_supported(CPUARMState *env)
-{
-    /* Precise instruction counting */
-    return icount_enabled() == ICOUNT_PRECISE;
-}
-
-static uint64_t instructions_get_count(CPUARMState *env)
-{
-    assert(icount_enabled() == ICOUNT_PRECISE);
-    return (uint64_t)icount_get_raw();
-}
-
-static int64_t instructions_ns_per(uint64_t icount)
-{
-    assert(icount_enabled() == ICOUNT_PRECISE);
-    return icount_to_ns((int64_t)icount);
-}
-
 static bool pmuv3p1_events_supported(CPUARMState *env)
 {
     /* For events which are supported in any v8.1 PMU */
@@ -134,11 +115,11 @@ static const pm_event pm_events[] = {
       .get_count = swinc_get_count,
       .ns_per_count = swinc_ns_per,
     },
-    { .number = 0x008, /* INST_RETIRED, Instruction architecturally executed */
-      .supported = instructions_supported,
-      .get_count = instructions_get_count,
-      .ns_per_count = instructions_ns_per,
-    },
+    // { .number = 0x008, /* INST_RETIRED, Instruction architecturally executed */
+    //   .supported = instructions_supported,
+    //   .get_count = instructions_get_count,
+    //   .ns_per_count = instructions_ns_per,
+    // },
     { .number = 0x011, /* CPU_CYCLES, Cycle */
       .supported = event_always_supported,
       .get_count = cycles_get_count,

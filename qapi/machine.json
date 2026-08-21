@@ -30,7 +30,7 @@
 # Since: 3.0
 ##
 { 'enum' : 'SysEmuTarget',
-  'data' : [ 'aarch64', 'arm', 'i386', 'x86_64' ] }
+  'data' : [ 'aarch64', 'arm' ] }
 
 ##
 # @CpuInfoFast:
@@ -134,9 +134,6 @@
 #
 # @hotpluggable-cpus: cpu hotplug via -device is supported (since 2.7)
 #
-# @numa-mem-supported: true if '-numa node,mem' option is supported by
-#     the machine type and false otherwise (since 4.1)
-#
 # @deprecated: if true, the machine type is deprecated and may be
 #     removed in future versions of QEMU according to the QEMU
 #     deprecation policy (since 4.1)
@@ -162,7 +159,7 @@
 { 'struct': 'MachineInfo',
   'data': { 'name': 'str', '*alias': 'str',
             '*is-default': 'bool', 'cpu-max': 'int',
-            'hotpluggable-cpus': 'bool',  'numa-mem-supported': 'bool',
+            'hotpluggable-cpus': 'bool',
             'deprecated': 'bool', '*default-cpu-type': 'str',
             '*default-ram-id': 'str', 'acpi': 'bool',
             '*compat-props': { 'type': ['CompatProperty'],
@@ -196,7 +193,6 @@
 #                          "value": "off"
 #                       }
 #                   ],
-#                   "numa-mem-supported": false,
 #                   "default-cpu-type": "qemu64-x86_64-cpu",
 #                   "cpu-max": 288,
 #                   "deprecated": false,
@@ -293,15 +289,6 @@
 { 'struct': 'GuidInfo', 'data': {'guid': 'str'} }
 
 ##
-# @query-vm-generation-id:
-#
-# Show Virtual Machine Generation ID
-#
-# Since: 2.9
-##
-{ 'command': 'query-vm-generation-id', 'returns': 'GuidInfo' }
-
-##
 # @system_reset:
 #
 # Performs a hard reset of a guest.
@@ -355,38 +342,6 @@
 { 'command': 'system_wakeup' }
 
 ##
-# @LostTickPolicy:
-#
-# Policy for handling lost ticks in timer devices.  Ticks end up
-# getting lost when, for example, the guest is paused.
-#
-# @discard: throw away the missed ticks and continue with future
-#     injection normally.  The guest OS will see the timer jump ahead
-#     by a potentially quite significant amount all at once, as if the
-#     intervening chunk of time had simply not existed; needless to
-#     say, such a sudden jump can easily confuse a guest OS which is
-#     not specifically prepared to deal with it.  Assuming the guest
-#     OS can deal correctly with the time jump, the time in the guest
-#     and in the host should now match.
-#
-# @delay: continue to deliver ticks at the normal rate.  The guest OS
-#     will not notice anything is amiss, as from its point of view
-#     time will have continued to flow normally.  The time in the
-#     guest should now be behind the time in the host by exactly the
-#     amount of time during which ticks have been missed.
-#
-# @slew: deliver ticks at a higher rate to catch up with the missed
-#     ticks.  The guest OS will not notice anything is amiss, as from
-#     its point of view time will have continued to flow normally.
-#     Once the timer has managed to catch up with all the missing
-#     ticks, the time in the guest and in the host should match.
-#
-# Since: 2.0
-##
-{ 'enum': 'LostTickPolicy',
-  'data': ['discard', 'delay', 'slew' ] }
-
-##
 # @inject-nmi:
 #
 # Injects a Non-Maskable Interrupt into the default CPU (x86/s390) or
@@ -404,133 +359,6 @@
 #     <- { "return": {} }
 ##
 { 'command': 'inject-nmi' }
-
-##
-# @NumaOptionsType:
-#
-# @node: NUMA nodes configuration
-#
-# @dist: NUMA distance configuration (since 2.10)
-#
-# @cpu: property based CPU(s) to node mapping (Since: 2.10)
-#
-# @hmat-lb: memory latency and bandwidth information (Since: 5.0)
-#
-# @hmat-cache: memory side cache information (Since: 5.0)
-#
-# Since: 2.1
-##
-{ 'enum': 'NumaOptionsType',
-  'data': [ 'node', 'dist', 'cpu', 'hmat-lb', 'hmat-cache' ] }
-
-##
-# @NumaOptions:
-#
-# A discriminated record of NUMA options.  (for OptsVisitor)
-#
-# @type: NUMA option type
-#
-# Since: 2.1
-##
-{ 'union': 'NumaOptions',
-  'base': { 'type': 'NumaOptionsType' },
-  'discriminator': 'type',
-  'data': {
-    'node': 'NumaNodeOptions',
-    'dist': 'NumaDistOptions',
-    'cpu': 'NumaCpuOptions',
-    'hmat-lb': 'NumaHmatLBOptions',
-    'hmat-cache': 'NumaHmatCacheOptions' }}
-
-##
-# @NumaNodeOptions:
-#
-# Create a guest NUMA node.  (for OptsVisitor)
-#
-# @nodeid: NUMA node ID (increase by 1 from 0 if omitted)
-#
-# @cpus: VCPUs belonging to this node (assign VCPUS round-robin if
-#     omitted)
-#
-# @mem: memory size of this node; mutually exclusive with @memdev.
-#     Equally divide total memory among nodes if both @mem and @memdev
-#     are omitted.
-#
-# @memdev: memory backend object.  If specified for one node, it must
-#     be specified for all nodes.
-#
-# @initiator: defined in ACPI 6.3 Chapter 5.2.27.3 Table 5-145, points
-#     to the nodeid which has the memory controller responsible for
-#     this NUMA node.  This field provides additional information as
-#     to the initiator node that is closest (as in directly attached)
-#     to this node, and therefore has the best performance (since 5.0)
-#
-# Since: 2.1
-##
-{ 'struct': 'NumaNodeOptions',
-  'data': {
-   '*nodeid': 'uint16',
-   '*cpus':   ['uint16'],
-   '*mem':    'size',
-   '*memdev': 'str',
-   '*initiator': 'uint16' }}
-
-##
-# @NumaDistOptions:
-#
-# Set the distance between 2 NUMA nodes.
-#
-# @src: source NUMA node.
-#
-# @dst: destination NUMA node.
-#
-# @val: NUMA distance from source node to destination node.  When a
-#     node is unreachable from another node, set the distance between
-#     them to 255.
-#
-# Since: 2.10
-##
-{ 'struct': 'NumaDistOptions',
-  'data': {
-   'src': 'uint16',
-   'dst': 'uint16',
-   'val': 'uint8' }}
-
-##
-# @CXLFixedMemoryWindowOptions:
-#
-# Create a CXL Fixed Memory Window
-#
-# @size: Size of the Fixed Memory Window in bytes.  Must be a multiple
-#     of 256MiB.
-#
-# @interleave-granularity: Number of contiguous bytes for which
-#     accesses will go to a given interleave target.  Accepted values
-#     [256, 512, 1k, 2k, 4k, 8k, 16k]
-#
-# @targets: Target root bridge IDs from -device ...,id=<ID> for each
-#     root bridge.
-#
-# Since: 7.1
-##
-{ 'struct': 'CXLFixedMemoryWindowOptions',
-  'data': {
-      'size': 'size',
-      '*interleave-granularity': 'size',
-      'targets': ['str'] }}
-
-##
-# @CXLFMWProperties:
-#
-# List of CXL Fixed Memory Windows.
-#
-# @cxl-fmw: List of `CXLFixedMemoryWindowOptions`
-#
-# Since: 7.1
-##
-{ 'struct' : 'CXLFMWProperties',
-  'data': { 'cxl-fmw': ['CXLFixedMemoryWindowOptions'] }
-}
 
 ##
 # @X86CPURegister32:
@@ -575,179 +403,6 @@
 ##
 { 'struct': 'DummyForceArrays',
   'data': { 'unused': ['X86CPUFeatureWordInfo'] } }
-
-##
-# @NumaCpuOptions:
-#
-# Option "-numa cpu" overrides default cpu to node mapping.  It accepts
-# the same set of cpu properties as returned by
-# `query-hotpluggable-cpus[].props <query-hotpluggable-cpus>`, where
-# node-id could be used to override default node mapping.
-#
-# Since: 2.10
-##
-{ 'struct': 'NumaCpuOptions',
-   'base': 'CpuInstanceProperties',
-   'data' : {} }
-
-##
-# @HmatLBMemoryHierarchy:
-#
-# The memory hierarchy in the System Locality Latency and Bandwidth
-# Information Structure of HMAT (Heterogeneous Memory Attribute Table)
-#
-# For more information about `HmatLBMemoryHierarchy`, see chapter
-# 5.2.27.4: Table 5-146: Field "Flags" of ACPI 6.3 spec.
-#
-# @memory: the structure represents the memory performance
-#
-# @first-level: first level of memory side cache
-#
-# @second-level: second level of memory side cache
-#
-# @third-level: third level of memory side cache
-#
-# Since: 5.0
-##
-{ 'enum': 'HmatLBMemoryHierarchy',
-  'data': [ 'memory', 'first-level', 'second-level', 'third-level' ] }
-
-##
-# @HmatLBDataType:
-#
-# Data type in the System Locality Latency and Bandwidth Information
-# Structure of HMAT (Heterogeneous Memory Attribute Table)
-#
-# For more information about `HmatLBDataType`, see chapter 5.2.27.4:
-# Table 5-146: Field "Data Type" of ACPI 6.3 spec.
-#
-# @access-latency: access latency (nanoseconds)
-#
-# @read-latency: read latency (nanoseconds)
-#
-# @write-latency: write latency (nanoseconds)
-#
-# @access-bandwidth: access bandwidth (Bytes per second)
-#
-# @read-bandwidth: read bandwidth (Bytes per second)
-#
-# @write-bandwidth: write bandwidth (Bytes per second)
-#
-# Since: 5.0
-##
-{ 'enum': 'HmatLBDataType',
-  'data': [ 'access-latency', 'read-latency', 'write-latency',
-            'access-bandwidth', 'read-bandwidth', 'write-bandwidth' ] }
-
-##
-# @NumaHmatLBOptions:
-#
-# Set the system locality latency and bandwidth information between
-# Initiator and Target proximity Domains.
-#
-# For more information about `NumaHmatLBOptions`, see chapter 5.2.27.4:
-# Table 5-146 of ACPI 6.3 spec.
-#
-# @initiator: the Initiator Proximity Domain.
-#
-# @target: the Target Proximity Domain.
-#
-# @hierarchy: the Memory Hierarchy.  Indicates the performance of
-#     memory or side cache.
-#
-# @data-type: presents the type of data, access/read/write latency or
-#     hit latency.
-#
-# @latency: the value of latency from @initiator to @target proximity
-#     domain, the latency unit is "ns(nanosecond)".
-#
-# @bandwidth: the value of bandwidth between @initiator and @target
-#     proximity domain, the bandwidth unit is "Bytes per second".
-#
-# Since: 5.0
-##
-{ 'struct': 'NumaHmatLBOptions',
-    'data': {
-    'initiator': 'uint16',
-    'target': 'uint16',
-    'hierarchy': 'HmatLBMemoryHierarchy',
-    'data-type': 'HmatLBDataType',
-    '*latency': 'uint64',
-    '*bandwidth': 'size' }}
-
-##
-# @HmatCacheAssociativity:
-#
-# Cache associativity in the Memory Side Cache Information Structure
-# of HMAT
-#
-# For more information of `HmatCacheAssociativity`, see chapter
-# 5.2.27.5: Table 5-147 of ACPI 6.3 spec.
-#
-# @none: None (no memory side cache in this proximity domain, or cache
-#     associativity unknown)
-#
-# @direct: Direct Mapped
-#
-# @complex: Complex Cache Indexing (implementation specific)
-#
-# Since: 5.0
-##
-{ 'enum': 'HmatCacheAssociativity',
-  'data': [ 'none', 'direct', 'complex' ] }
-
-##
-# @HmatCacheWritePolicy:
-#
-# Cache write policy in the Memory Side Cache Information Structure of
-# HMAT
-#
-# For more information of `HmatCacheWritePolicy`, see chapter 5.2.27.5:
-# Table 5-147: Field "Cache Attributes" of ACPI 6.3 spec.
-#
-# @none: None (no memory side cache in this proximity domain, or cache
-#     write policy unknown)
-#
-# @write-back: Write Back (WB)
-#
-# @write-through: Write Through (WT)
-#
-# Since: 5.0
-##
-{ 'enum': 'HmatCacheWritePolicy',
-  'data': [ 'none', 'write-back', 'write-through' ] }
-
-##
-# @NumaHmatCacheOptions:
-#
-# Set the memory side cache information for a given memory domain.
-#
-# For more information of `NumaHmatCacheOptions`, see chapter 5.2.27.5:
-# Table 5-147: Field "Cache Attributes" of ACPI 6.3 spec.
-#
-# @node-id: the memory proximity domain to which the memory belongs.
-#
-# @size: the size of memory side cache in bytes.
-#
-# @level: the cache level described in this structure.
-#
-# @associativity: the cache associativity,
-#     none/direct-mapped/complex(complex cache indexing).
-#
-# @policy: the write policy, none/write-back/write-through.
-#
-# @line: the cache line size in bytes.
-#
-# Since: 5.0
-##
-{ 'struct': 'NumaHmatCacheOptions',
-  'data': {
-   'node-id': 'uint32',
-   'size': 'size',
-   'level': 'uint8',
-   'associativity': 'HmatCacheAssociativity',
-   'policy': 'HmatCacheWritePolicy',
-   'line': 'uint16' }}
 
 ##
 # @memsave:
@@ -834,10 +489,6 @@
 #     reservation.  For example, Linux will never reserve swap space
 #     for shared file mappings.  (since 6.1)
 #
-# @host-nodes: host nodes for its memory policy
-#
-# @policy: memory policy of memory backend
-#
 # Since: 2.1
 ##
 { 'struct': 'Memdev',
@@ -848,9 +499,7 @@
     'dump':       'bool',
     'prealloc':   'bool',
     'share':      'bool',
-    '*reserve':    'bool',
-    'host-nodes': ['uint16'],
-    'policy':     'HostMemPolicy' }}
+    '*reserve':    'bool' }}
 
 ##
 # @query-memdev:
@@ -901,8 +550,6 @@
 # within the CPU topology (as defined by the machine property "smp",
 # thus see also type `SMPConfiguration`)
 #
-# @node-id: NUMA node ID the CPU belongs to
-#
 # @drawer-id: drawer number within CPU topology the CPU belongs to
 #     (since 8.2)
 #
@@ -928,8 +575,7 @@
 ##
 { 'struct': 'CpuInstanceProperties',
   # Keep these in sync with the properties `device_add` accepts
-  'data': { '*node-id': 'int',
-            '*drawer-id': 'int',
+  'data': { '*drawer-id': 'int',
             '*book-id': 'int',
             '*socket-id': 'int',
             '*die-id': 'int',
@@ -1029,171 +675,6 @@
              'allow-preconfig': true }
 
 ##
-# @set-numa-node:
-#
-# Runtime equivalent of '-numa' CLI option, available at preconfigure
-# stage to configure numa mapping before initializing machine.
-#
-# Since: 3.0
-##
-{ 'command': 'set-numa-node', 'boxed': true,
-  'data': 'NumaOptions',
-  'allow-preconfig': true
-}
-
-##
-# @balloon:
-#
-# Request the balloon driver to change its balloon size.
-#
-# @value: the target logical size of the VM in bytes.  We can deduce
-#     the size of the balloon using this formula:
-#
-#        logical_vm_size = vm_ram_size - balloon_size
-#
-#     From it we have: balloon_size = vm_ram_size - @value
-#
-# Errors:
-#     - If the balloon driver is enabled but not functional because
-#       the KVM kernel module cannot support it, KVMMissingCap
-#     - If no balloon device is present, DeviceNotActive
-#
-# .. note:: This command just issues a request to the guest.  When it
-#    returns, the balloon size may not have changed.  A guest can
-#    change the balloon size independent of this command.
-#
-# Since: 0.14
-#
-# .. qmp-example::
-#    :annotated:
-#
-#    ::
-#
-#      -> { "execute": "balloon", "arguments": { "value": 536870912 } }
-#      <- { "return": {} }
-#
-#    With a 2.5GiB guest this command inflated the ballon to 3GiB.
-##
-{ 'command': 'balloon', 'data': {'value': 'int'} }
-
-##
-# @BalloonInfo:
-#
-# Information about the guest balloon device.
-#
-# @actual: the logical size of the VM in bytes.  Formula used:
-#     logical_vm_size = vm_ram_size - balloon_size
-#
-# Since: 0.14
-##
-{ 'struct': 'BalloonInfo', 'data': {'actual': 'int' } }
-
-##
-# @query-balloon:
-#
-# Return information about the balloon device.
-#
-# Errors:
-#     - If the balloon driver is enabled but not functional because
-#       the KVM kernel module cannot support it, KVMMissingCap
-#     - If no balloon device is present, DeviceNotActive
-#
-# Since: 0.14
-#
-# .. qmp-example::
-#
-#     -> { "execute": "query-balloon" }
-#     <- { "return": {
-#              "actual": 1073741824
-#           }
-#        }
-##
-{ 'command': 'query-balloon', 'returns': 'BalloonInfo' }
-
-##
-# @BALLOON_CHANGE:
-#
-# Emitted when the guest changes the actual BALLOON level.  This value
-# is equivalent to the @actual field return by the `query-balloon`
-# command
-#
-# @actual: the logical size of the VM in bytes.  Formula used:
-#     logical_vm_size = vm_ram_size - balloon_size
-#
-# .. note:: This event is rate-limited.
-#
-# Since: 1.2
-#
-# .. qmp-example::
-#
-#     <- { "event": "BALLOON_CHANGE",
-#          "data": { "actual": 944766976 },
-#          "timestamp": { "seconds": 1267020223, "microseconds": 435656 } }
-##
-{ 'event': 'BALLOON_CHANGE',
-  'data': { 'actual': 'int' } }
-
-##
-# @HvBalloonInfo:
-#
-# hv-balloon guest-provided memory status information.
-#
-# @committed: the amount of memory in use inside the guest plus the
-#     amount of the memory unusable inside the guest (ballooned out,
-#     offline, etc.)
-#
-# @available: the amount of the memory inside the guest available for
-#     new allocations ("free")
-#
-# Since: 8.2
-##
-{ 'struct': 'HvBalloonInfo',
-  'data': { 'committed': 'size', 'available': 'size' } }
-
-##
-# @query-hv-balloon-status-report:
-#
-# Return the hv-balloon driver data contained in the last received
-# "STATUS" message from the guest.
-#
-# Errors:
-#     - If no hv-balloon device is present, guest memory status
-#       reporting is not enabled or no guest memory status report
-#       received yet, GenericError
-#
-# Since: 8.2
-#
-# .. qmp-example::
-#
-#     -> { "execute": "query-hv-balloon-status-report" }
-#     <- { "return": {
-#              "committed": 816640000,
-#              "available": 3333054464
-#           }
-#        }
-##
-{ 'command': 'query-hv-balloon-status-report', 'returns': 'HvBalloonInfo' }
-
-##
-# @HV_BALLOON_STATUS_REPORT:
-#
-# Emitted when the hv-balloon driver receives a "STATUS" message from
-# the guest.
-#
-# .. note:: This event is rate-limited.
-#
-# Since: 8.2
-#
-# .. qmp-example::
-#
-#     <- { "event": "HV_BALLOON_STATUS_REPORT",
-#          "data": { "committed": 816640000, "available": 3333054464 },
-#          "timestamp": { "seconds": 1600295492, "microseconds": 661044 } }
-##
-{ 'event': 'HV_BALLOON_STATUS_REPORT',
-  'data': 'HvBalloonInfo' }
-
-##
 # @MemoryInfo:
 #
 # Actual memory information in bytes.
@@ -1201,14 +682,10 @@
 # @base-memory: size of "base" memory specified with command line
 #     option -m.
 #
-# @plugged-memory: size of memory that can be hot-unplugged.  This
-#     field is omitted if target doesn't support memory hotplug (i.e.
-#     CONFIG_MEM_DEVICE not defined at build time).
-#
 # Since: 2.11
 ##
 { 'struct': 'MemoryInfo',
-  'data'  : { 'base-memory': 'size', '*plugged-memory': 'size' } }
+  'data'  : { 'base-memory': 'size' } }
 
 ##
 # @query-memory-size-summary:
@@ -1226,320 +703,6 @@
 # Since: 2.11
 ##
 { 'command': 'query-memory-size-summary', 'returns': 'MemoryInfo' }
-
-##
-# @PCDIMMDeviceInfo:
-#
-# PCDIMMDevice state information
-#
-# @id: device's ID
-#
-# @addr: physical address, where device is mapped
-#
-# @size: size of memory that the device provides
-#
-# @slot: slot number at which device is plugged in
-#
-# @node: NUMA node number where device is plugged in
-#
-# @memdev: memory backend linked with device
-#
-# @hotplugged: true if device was hotplugged
-#
-# @hotpluggable: true if device if could be added/removed while
-#     machine is running
-#
-# Since: 2.1
-##
-{ 'struct': 'PCDIMMDeviceInfo',
-  'data': { '*id': 'str',
-            'addr': 'int',
-            'size': 'int',
-            'slot': 'int',
-            'node': 'int',
-            'memdev': 'str',
-            'hotplugged': 'bool',
-            'hotpluggable': 'bool'
-          }
-}
-
-##
-# @VirtioPMEMDeviceInfo:
-#
-# VirtioPMEM state information
-#
-# @id: device's ID
-#
-# @memaddr: physical address in memory, where device is mapped
-#
-# @size: size of memory that the device provides
-#
-# @memdev: memory backend linked with device
-#
-# Since: 4.1
-##
-{ 'struct': 'VirtioPMEMDeviceInfo',
-  'data': { '*id': 'str',
-            'memaddr': 'size',
-            'size': 'size',
-            'memdev': 'str'
-          }
-}
-
-##
-# @VirtioMEMDeviceInfo:
-#
-# VirtioMEMDevice state information
-#
-# @id: device's ID
-#
-# @memaddr: physical address in memory, where device is mapped
-#
-# @requested-size: the user requested size of the device
-#
-# @size: the (current) size of memory that the device provides
-#
-# @max-size: the maximum size of memory that the device can provide
-#
-# @block-size: the block size of memory that the device provides
-#
-# @node: NUMA node number where device is assigned to
-#
-# @memdev: memory backend linked with the region
-#
-# Since: 5.1
-##
-{ 'struct': 'VirtioMEMDeviceInfo',
-  'data': { '*id': 'str',
-            'memaddr': 'size',
-            'requested-size': 'size',
-            'size': 'size',
-            'max-size': 'size',
-            'block-size': 'size',
-            'node': 'int',
-            'memdev': 'str'
-          }
-}
-
-##
-# @SgxEPCDeviceInfo:
-#
-# Sgx EPC state information
-#
-# @id: device's ID
-#
-# @memaddr: physical address in memory, where device is mapped
-#
-# @size: size of memory that the device provides
-#
-# @memdev: memory backend linked with device
-#
-# @node: the numa node (Since: 7.0)
-#
-# Since: 6.2
-##
-{ 'struct': 'SgxEPCDeviceInfo',
-  'data': { '*id': 'str',
-            'memaddr': 'size',
-            'size': 'size',
-            'node': 'int',
-            'memdev': 'str'
-          }
-}
-
-##
-# @HvBalloonDeviceInfo:
-#
-# hv-balloon provided memory state information
-#
-# @id: device's ID
-#
-# @memaddr: physical address in memory, where device is mapped
-#
-# @max-size: the maximum size of memory that the device can provide
-#
-# @memdev: memory backend linked with device
-#
-# Since: 8.2
-##
-{ 'struct': 'HvBalloonDeviceInfo',
-  'data': { '*id': 'str',
-            '*memaddr': 'size',
-            'max-size': 'size',
-            '*memdev': 'str'
-          }
-}
-
-##
-# @MemoryDeviceInfoKind:
-#
-# @nvdimm: since 2.12
-#
-# @virtio-pmem: since 4.1
-#
-# @virtio-mem: since 5.1
-#
-# @sgx-epc: since 6.2.
-#
-# @hv-balloon: since 8.2.
-#
-# Since: 2.1
-##
-{ 'enum': 'MemoryDeviceInfoKind',
-  'data': [ 'dimm', 'nvdimm', 'virtio-pmem', 'virtio-mem', 'sgx-epc',
-            'hv-balloon' ] }
-
-##
-# @PCDIMMDeviceInfoWrapper:
-#
-# @data: PCDIMMDevice state information
-#
-# Since: 2.1
-##
-{ 'struct': 'PCDIMMDeviceInfoWrapper',
-  'data': { 'data': 'PCDIMMDeviceInfo' } }
-
-##
-# @VirtioPMEMDeviceInfoWrapper:
-#
-# @data: VirtioPMEM state information
-#
-# Since: 2.1
-##
-{ 'struct': 'VirtioPMEMDeviceInfoWrapper',
-  'data': { 'data': 'VirtioPMEMDeviceInfo' } }
-
-##
-# @VirtioMEMDeviceInfoWrapper:
-#
-# @data: VirtioMEMDevice state information
-#
-# Since: 2.1
-##
-{ 'struct': 'VirtioMEMDeviceInfoWrapper',
-  'data': { 'data': 'VirtioMEMDeviceInfo' } }
-
-##
-# @SgxEPCDeviceInfoWrapper:
-#
-# @data: Sgx EPC state information
-#
-# Since: 6.2
-##
-{ 'struct': 'SgxEPCDeviceInfoWrapper',
-  'data': { 'data': 'SgxEPCDeviceInfo' } }
-
-##
-# @HvBalloonDeviceInfoWrapper:
-#
-# @data: hv-balloon provided memory state information
-#
-# Since: 8.2
-##
-{ 'struct': 'HvBalloonDeviceInfoWrapper',
-  'data': { 'data': 'HvBalloonDeviceInfo' } }
-
-##
-# @MemoryDeviceInfo:
-#
-# Union containing information about a memory device
-#
-# @type: memory device type
-#
-# Since: 2.1
-##
-{ 'union': 'MemoryDeviceInfo',
-  'base': { 'type': 'MemoryDeviceInfoKind' },
-  'discriminator': 'type',
-  'data': { 'dimm': 'PCDIMMDeviceInfoWrapper',
-            'nvdimm': 'PCDIMMDeviceInfoWrapper',
-            'virtio-pmem': 'VirtioPMEMDeviceInfoWrapper',
-            'virtio-mem': 'VirtioMEMDeviceInfoWrapper',
-            'sgx-epc': 'SgxEPCDeviceInfoWrapper',
-            'hv-balloon': 'HvBalloonDeviceInfoWrapper'
-          }
-}
-
-##
-# @SgxEPC:
-#
-# Sgx EPC cmdline information
-#
-# @memdev: memory backend linked with device
-#
-# @node: the numa node (Since: 7.0)
-#
-# Since: 6.2
-##
-{ 'struct': 'SgxEPC',
-  'data': { 'memdev': 'str',
-            'node': 'int'
-          }
-}
-
-##
-# @SgxEPCProperties:
-#
-# SGX properties of machine types.
-#
-# @sgx-epc: list of ids of memory-backend-epc objects.
-#
-# Since: 6.2
-##
-{ 'struct': 'SgxEPCProperties',
-  'data': { 'sgx-epc': ['SgxEPC'] }
-}
-
-##
-# @query-memory-devices:
-#
-# Lists available memory devices and their state
-#
-# Since: 2.1
-#
-# .. qmp-example::
-#
-#     -> { "execute": "query-memory-devices" }
-#     <- { "return": [ { "data":
-#                           { "addr": 5368709120,
-#                             "hotpluggable": true,
-#                             "hotplugged": true,
-#                             "id": "d1",
-#                             "memdev": "/objects/memX",
-#                             "node": 0,
-#                             "size": 1073741824,
-#                             "slot": 0},
-#                        "type": "dimm"
-#                      } ] }
-##
-{ 'command': 'query-memory-devices', 'returns': ['MemoryDeviceInfo'] }
-
-##
-# @MEMORY_DEVICE_SIZE_CHANGE:
-#
-# Emitted when the size of a memory device changes.  Only emitted for
-# memory devices that can actually change the size (e.g., virtio-mem
-# due to guest action).
-#
-# @id: device's ID
-#
-# @size: the new size of memory that the device provides
-#
-# @qom-path: path to the device object in the QOM tree (since 6.2)
-#
-# .. note:: This event is rate-limited.
-#
-# Since: 5.1
-#
-# .. qmp-example::
-#
-#     <- { "event": "MEMORY_DEVICE_SIZE_CHANGE",
-#          "data": { "id": "vm0", "size": 1073741824,
-#                    "qom-path": "/machine/unattached/device[2]" },
-#          "timestamp": { "seconds": 1588168529, "microseconds": 201316 } }
-##
-{ 'event': 'MEMORY_DEVICE_SIZE_CHANGE',
-  'data': { '*id': 'str', 'size': 'size', 'qom-path' : 'str'} }
 
 ##
 # @BootConfiguration:
@@ -1662,23 +825,6 @@
   'features': [ 'unstable' ] }
 
 ##
-# @x-query-numa:
-#
-# Query NUMA topology information
-#
-# Features:
-#
-# @unstable: This command is meant for debugging.
-#
-# Returns: topology information
-#
-# Since: 6.2
-##
-{ 'command': 'x-query-numa',
-  'returns': 'HumanReadableText',
-  'features': [ 'unstable' ] }
-
-##
 # @x-query-ramblock:
 #
 # Query system ramblock information
@@ -1692,23 +838,6 @@
 # Since: 6.2
 ##
 { 'command': 'x-query-ramblock',
-  'returns': 'HumanReadableText',
-  'features': [ 'unstable' ] }
-
-##
-# @x-query-roms:
-#
-# Query information on the registered ROMS
-#
-# Features:
-#
-# @unstable: This command is meant for debugging.
-#
-# Returns: registered ROMs
-#
-# Since: 6.2
-##
-{ 'command': 'x-query-roms',
   'returns': 'HumanReadableText',
   'features': [ 'unstable' ] }
 
@@ -1730,21 +859,6 @@
   'features': [ 'unstable' ] }
 
 ##
-# @SmbiosEntryPointType:
-#
-# @32: SMBIOS version 2.1 (32-bit) Entry Point
-#
-# @64: SMBIOS version 3.0 (64-bit) Entry Point
-#
-# @auto: Either 2.x or 3.x SMBIOS version, 2.x if configuration can be
-#     described by it and 3.x otherwise (since: 9.0)
-#
-# Since: 7.0
-##
-{ 'enum': 'SmbiosEntryPointType',
-  'data': [ '32', '64', 'auto' ] }
-
-##
 # @MemorySizeConfiguration:
 #
 # Schema for memory size configuration.
@@ -1761,25 +875,6 @@
      '*size': 'size',
      '*max-size': 'size',
      '*slots': 'uint64' } }
-
-##
-# @dumpdtb:
-#
-# Save the FDT in dtb format.
-#
-# @filename: name of the dtb file to be created
-#
-# Since: 7.2
-#
-# .. qmp-example::
-#
-#     -> { "execute": "dumpdtb" }
-#          "arguments": { "filename": "fdt.dtb" } }
-#     <- { "return": {} }
-##
-{ 'command': 'dumpdtb',
-  'data': { 'filename': 'str' },
-  'if': 'CONFIG_FDT' }
 
 ##
 # @x-query-interrupt-controllers:
@@ -1836,16 +931,6 @@
 # @full: Expand all properties.  The produced model is not guaranteed
 #     to be migration-safe, but allows tooling to get an insight and
 #     work with model details.
-#
-# .. note:: When a non-migration-safe CPU model is expanded in static
-#    mode, some features enabled by the CPU model may be omitted,
-#    because they can't be implemented by a static CPU model
-#    definition (e.g. cache info passthrough and PMU passthrough in
-#    x86).  If you need an accurate representation of the features
-#    enabled by a non-migration-safe CPU model, use @full.  If you
-#    need a static representation that will keep ABI compatibility
-#    even when changing QEMU version or machine-type, use @static (but
-#    keep in mind that some features may be omitted).
 #
 # Since: 2.8
 ##

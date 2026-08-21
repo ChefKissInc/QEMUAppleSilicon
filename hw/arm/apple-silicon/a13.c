@@ -26,7 +26,6 @@
 #include "hw/or-irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/resettable.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "qemu/log.h"
@@ -36,12 +35,6 @@
 #include "system/reset.h"
 #include "target/arm/cpregs.h"
 #include "arm-powerctl.h"
-
-#define VMSTATE_A13_CPREG(name) \
-    VMSTATE_UINT64(A13_CPREG_VAR_NAME(name), AppleA13State)
-
-#define VMSTATE_A13_CLUSTER_CPREG(name) \
-    VMSTATE_UINT64(A13_CPREG_VAR_NAME(name), AppleA13Cluster)
 
 #define A13_CPREG_DEF(p_name, p_op0, p_op1, p_crn, p_crm, p_op2, p_access, \
                       p_reset)                                             \
@@ -228,20 +221,6 @@ static void apple_a13_cluster_deliver_ipi(AppleA13Cluster *c, uint64_t cpu_id,
                                           uint64_t src_cpu, uint64_t flag)
 {
     apple_a13_deliver_ipi(c->cpus[cpu_id], src_cpu, flag);
-}
-
-static int apple_a13_cluster_pre_save(void *opaque)
-{
-    AppleA13Cluster *cluster = opaque;
-    cluster->ipi_cr = ipi_cr;
-    return 0;
-}
-
-static int apple_a13_cluster_post_load(void *opaque, int version_id)
-{
-    AppleA13Cluster *cluster = opaque;
-    ipi_cr = cluster->ipi_cr;
-    return 0;
 }
 
 static void apple_a13_cluster_reset(DeviceState *dev)
@@ -761,79 +740,6 @@ static const Property apple_a13_cluster_properties[] = {
     DEFINE_PROP_UINT32("cluster-type", AppleA13Cluster, cluster_type, 0),
 };
 
-static const VMStateDescription vmstate_apple_a13 = {
-    .name = "AppleA13State",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_A13_CPREG(ARM64_REG_EHID3),
-            VMSTATE_A13_CPREG(ARM64_REG_EHID4),
-            VMSTATE_A13_CPREG(ARM64_REG_EHID10),
-            VMSTATE_A13_CPREG(ARM64_REG_HID0),
-            VMSTATE_A13_CPREG(ARM64_REG_HID1),
-            VMSTATE_A13_CPREG(ARM64_REG_HID3),
-            VMSTATE_A13_CPREG(ARM64_REG_HID4),
-            VMSTATE_A13_CPREG(ARM64_REG_HID5),
-            VMSTATE_A13_CPREG(ARM64_REG_HID7),
-            VMSTATE_A13_CPREG(ARM64_REG_HID8),
-            VMSTATE_A13_CPREG(ARM64_REG_HID9),
-            VMSTATE_A13_CPREG(ARM64_REG_HID11),
-            VMSTATE_A13_CPREG(ARM64_REG_HID13),
-            VMSTATE_A13_CPREG(ARM64_REG_HID14),
-            VMSTATE_A13_CPREG(ARM64_REG_HID16),
-            VMSTATE_A13_CPREG(ARM64_REG_MMU_ERR_STS),
-            VMSTATE_A13_CPREG(ARM64_REG_LSU_ERR_STS),
-            VMSTATE_A13_CPREG(ARM64_REG_FED_ERR_STS),
-            VMSTATE_A13_CPREG(ARM64_REG_LLC_ERR_STS),
-            VMSTATE_A13_CPREG(ARM64_REG_LLC_ERR_INF),
-            VMSTATE_A13_CPREG(ARM64_REG_LLC_ERR_ADR),
-            VMSTATE_A13_CPREG(ARM64_REG_LLC_RAM_CONFIG),
-            VMSTATE_A13_CPREG(IMP_BARRIER_LBSY_BST_SYNC_W0_EL0),
-            VMSTATE_A13_CPREG(IMP_BARRIER_LBSY_BST_SYNC_W1_EL0),
-            VMSTATE_A13_CPREG(PMC0),
-            VMSTATE_A13_CPREG(PMC1),
-            VMSTATE_A13_CPREG(PMCR0),
-            VMSTATE_A13_CPREG(PMCR1),
-            VMSTATE_A13_CPREG(PMSR),
-            VMSTATE_A13_CPREG(S3_4_c15_c0_5),
-            VMSTATE_A13_CPREG(AMX_STATUS_EL1),
-            VMSTATE_A13_CPREG(AMX_CTL_EL1),
-            VMSTATE_A13_CPREG(ARM64_REG_CPU_OVRD),
-            VMSTATE_A13_CPREG(ARM64_REG_ACC_OVRD),
-            VMSTATE_A13_CPREG(ARM64_REG_ACC_CFG),
-            VMSTATE_A13_CPREG(S3_5_c15_c10_1),
-            VMSTATE_A13_CPREG(SYS_ACC_PWR_DN_SAVE),
-            VMSTATE_A13_CPREG(UPMPCM),
-            VMSTATE_A13_CPREG(UPMCR0),
-            VMSTATE_A13_CPREG(UPMSR),
-            VMSTATE_UINT64(env.keys.m.lo, ARMCPU),
-            VMSTATE_UINT64(env.keys.m.hi, ARMCPU),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
-static const VMStateDescription vmstate_apple_a13_cluster = {
-    .name = "AppleA13Cluster",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .pre_save = apple_a13_cluster_pre_save,
-    .post_load = apple_a13_cluster_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32_ARRAY(deferredIPI, AppleA13Cluster, A13_MAX_CPU),
-            VMSTATE_UINT32_ARRAY(noWakeIPI, AppleA13Cluster, A13_MAX_CPU),
-            VMSTATE_UINT64(ipi_cr, AppleA13Cluster),
-            VMSTATE_A13_CLUSTER_CPREG(CTRR_A_LWR_EL1),
-            VMSTATE_A13_CLUSTER_CPREG(CTRR_A_UPR_EL1),
-            VMSTATE_A13_CLUSTER_CPREG(CTRR_B_LWR_EL1),
-            VMSTATE_A13_CLUSTER_CPREG(CTRR_B_UPR_EL1),
-            VMSTATE_A13_CLUSTER_CPREG(CTRR_CTL_EL1),
-            VMSTATE_A13_CLUSTER_CPREG(CTRR_LOCK_EL1),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_a13_class_init(ObjectClass *klass, const void *data)
 {
     ResettableClass *rc = RESETTABLE_CLASS(klass);
@@ -844,7 +750,6 @@ static void apple_a13_class_init(ObjectClass *klass, const void *data)
     resettable_class_set_parent_phases(rc, NULL, apple_a13_reset_hold, NULL,
                                        &tc->parent_phases);
     dc->desc = "Apple A13 CPU";
-    dc->vmsd = &vmstate_apple_a13;
     set_bit(DEVICE_CATEGORY_CPU, dc->categories);
 }
 
@@ -856,7 +761,6 @@ static void apple_a13_cluster_class_init(ObjectClass *klass, const void *data)
     device_class_set_legacy_reset(dc, apple_a13_cluster_reset);
     dc->desc = "Apple A13 CPU Cluster";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_apple_a13_cluster;
     device_class_set_props(dc, apple_a13_cluster_properties);
 }
 

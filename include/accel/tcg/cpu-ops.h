@@ -197,22 +197,6 @@ struct TCGCPUOps {
      * breakpoint whose PC has matched should really fire.
      */
     bool (*debug_check_breakpoint)(CPUState *cpu);
-
-    /**
-     * @io_recompile_replay_branch: Callback for cpu_io_recompile.
-     *
-     * The cpu has been stopped, and cpu_restore_state_from_tb has been
-     * called.  If the faulting instruction is in a delay slot, and the
-     * target architecture requires re-execution of the branch, then
-     * adjust the cpu state as required and return true.
-     */
-    bool (*io_recompile_replay_branch)(CPUState *cpu,
-                                       const TranslationBlock *tb);
-    /**
-     * @need_replay_interrupt: Return %true if @interrupt_request
-     * needs to be recorded for replay purposes.
-     */
-    bool (*need_replay_interrupt)(int interrupt_request);
 };
 
 /**

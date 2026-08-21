@@ -45,16 +45,12 @@ typedef enum {
     /* Whether it is possible to send/recv file descriptors
      * over the data channel */
     QEMU_CHAR_FEATURE_FD_PASS,
-    /* Whether replay or record mode is enabled */
-    QEMU_CHAR_FEATURE_REPLAY,
     /* Whether the gcontext can be changed after calling
      * qemu_chr_be_update_read_handlers() */
     QEMU_CHAR_FEATURE_GCONTEXT,
 
     QEMU_CHAR_FEATURE_LAST,
 } ChardevFeature;
-
-#define qemu_chr_replay(chr) qemu_chr_has_feature(chr, QEMU_CHAR_FEATURE_REPLAY)
 
 struct Chardev {
     Object parent_obj;

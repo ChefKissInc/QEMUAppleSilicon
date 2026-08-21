@@ -47,7 +47,6 @@
 #include "qemu/guest-random.h"
 #include "system/hw_accel.h"
 #include "kvm-cpus.h"
-#include "system/dirtylimit.h"
 #include "qemu/range.h"
 
 #include "hw/boards.h"
@@ -1637,11 +1636,6 @@ static void *kvm_dirty_ring_reaper_thread(void *data)
          * TODO: provide a smarter timeout rather than a constant?
          */
         sleep(1);
-
-        /* keep sleeping so that dirtylimit not be interfered by reaper */
-        if (dirtylimit_in_service()) {
-            continue;
-        }
 
         trace_kvm_dirty_ring_reaper("wakeup");
         r->reaper_state = KVM_DIRTY_RING_REAPER_REAPING;
@@ -3247,17 +3241,10 @@ int kvm_cpu_exec(CPUState *cpu)
             bql_lock();
             /*
              * We throttle vCPU by making it sleep once it exit from kernel
-             * due to dirty ring full. In the dirtylimit scenario, reaping
-             * all vCPUs after a single vCPU dirty ring get full result in
-             * the miss of sleep, so just reap the ring-fulled vCPU.
+             * due to dirty ring full.
              */
-            if (dirtylimit_in_service()) {
-                kvm_dirty_ring_reap(kvm_state, cpu);
-            } else {
-                kvm_dirty_ring_reap(kvm_state, NULL);
-            }
+            kvm_dirty_ring_reap(kvm_state, NULL);
             bql_unlock();
-            dirtylimit_vcpu_execute(cpu);
             ret = 0;
             break;
         case KVM_EXIT_SYSTEM_EVENT:
@@ -3960,11 +3947,7 @@ static void kvm_accel_instance_init(Object *obj)
     s->kvm_dirty_ring_size = 0;
     s->kvm_dirty_ring_with_bitmap = false;
     s->kvm_eager_split_size = 0;
-    s->notify_vmexit = NOTIFY_VMEXIT_OPTION_RUN;
     s->notify_window = 0;
-    s->xen_version = 0;
-    s->xen_gnttab_max_frames = 64;
-    s->xen_evtchn_max_pirq = 256;
     s->device = NULL;
     s->msr_energy.enable = false;
 }

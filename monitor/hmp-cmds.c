@@ -418,19 +418,3 @@ void hmp_info_mtree(Monitor *mon, const QDict *qdict)
 
     mtree_info(flatview, dispatch_tree, owner, disabled);
 }
-
-#if defined(CONFIG_FDT)
-void hmp_dumpdtb(Monitor *mon, const QDict *qdict)
-{
-    const char *filename = qdict_get_str(qdict, "filename");
-    Error *local_err = NULL;
-
-    qmp_dumpdtb(filename, &local_err);
-
-    if (hmp_handle_error(mon, local_err)) {
-        return;
-    }
-
-    monitor_printf(mon, "DTB dumped to '%s'\n", filename);
-}
-#endif

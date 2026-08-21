@@ -27,7 +27,6 @@
 #include "qemu/error-report.h"
 #include "qemu/memalign.h"
 #include "vhdx.h"
-#include "migration/blocker.h"
 #include "qemu/uuid.h"
 #include "qobject/qdict.h"
 #include "qapi/qobject-input-visitor.h"
@@ -989,7 +988,6 @@ static void vhdx_close(BlockDriverState *bs)
     s->bat = NULL;
     qemu_vfree(s->parent_entries);
     s->parent_entries = NULL;
-    migrate_del_blocker(&s->migration_blocker);
     qemu_vfree(s->log.hdr);
     s->log.hdr = NULL;
     vhdx_region_unregister_all(s);
@@ -1094,15 +1092,6 @@ static int vhdx_open(BlockDriverState *bs, QDict *options, int flags,
         if (ret < 0) {
             goto fail;
         }
-    }
-
-    /* Disable migration when VHDX images are used */
-    error_setg(&s->migration_blocker, "The vhdx format used by node '%s' "
-               "does not support live migration",
-               bdrv_get_device_or_node_name(bs));
-    ret = migrate_add_blocker_normal(&s->migration_blocker, errp);
-    if (ret < 0) {
-        goto fail;
     }
 
     /* TODO: differencing files */

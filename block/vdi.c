@@ -62,7 +62,6 @@
 #include "qemu/module.h"
 #include "qemu/option.h"
 #include "qemu/bswap.h"
-#include "migration/blocker.h"
 #include "qemu/coroutine.h"
 #include "qemu/cutils.h"
 #include "qemu/uuid.h"
@@ -187,8 +186,6 @@ typedef struct {
     VdiHeader header;
 
     CoRwlock bmap_lock;
-
-    Error *migration_blocker;
 } BDRVVdiState;
 
 static void vdi_header_to_cpu(VdiHeader *header)
@@ -491,16 +488,6 @@ static int vdi_open(BlockDriverState *bs, QDict *options, int flags,
 
     ret = bdrv_pread(bs->file, header.offset_bmap, bmap_size * SECTOR_SIZE,
                      s->bmap, 0);
-    if (ret < 0) {
-        goto fail_free_bmap;
-    }
-
-    /* Disable migration when vdi images are used */
-    error_setg(&s->migration_blocker, "The vdi format used by node '%s' "
-               "does not support live migration",
-               bdrv_get_device_or_node_name(bs));
-
-    ret = migrate_add_blocker_normal(&s->migration_blocker, errp);
     if (ret < 0) {
         goto fail_free_bmap;
     }
@@ -988,8 +975,6 @@ static void vdi_close(BlockDriverState *bs)
     BDRVVdiState *s = bs->opaque;
 
     qemu_vfree(s->bmap);
-
-    migrate_del_blocker(&s->migration_blocker);
 }
 
 static int GRAPH_RDLOCK vdi_has_zero_init(BlockDriverState *bs)

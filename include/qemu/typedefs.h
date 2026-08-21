@@ -67,12 +67,9 @@ typedef struct MemoryMappingList MemoryMappingList;
 typedef struct MemoryRegion MemoryRegion;
 typedef struct MemoryRegionCache MemoryRegionCache;
 typedef struct MemoryRegionSection MemoryRegionSection;
-typedef struct MigrationIncomingState MigrationIncomingState;
-typedef struct MigrationState MigrationState;
 typedef struct Monitor Monitor;
 typedef struct MSIMessage MSIMessage;
 typedef struct NetClientState NetClientState;
-typedef struct NetFilterState NetFilterState;
 typedef struct NICInfo NICInfo;
 typedef struct Object Object;
 typedef struct ObjectClass ObjectClass;
@@ -118,7 +115,6 @@ typedef struct TranslationBlock TranslationBlock;
 typedef struct VirtIODevice VirtIODevice;
 typedef struct Visitor Visitor;
 typedef struct VMChangeStateEntry VMChangeStateEntry;
-typedef struct VMStateDescription VMStateDescription;
 
 /*
  * Pointer types
@@ -132,9 +128,5 @@ typedef struct IRQState *qemu_irq;
  * Function types
  */
 typedef void (*qemu_irq_handler)(void *opaque, int n, int level);
-typedef bool (*MigrationLoadThread)(void *opaque, bool *should_quit,
-                                    Error **errp);
-typedef bool (*SaveCompletePrecopyThreadHandler)(SaveCompletePrecopyThreadData *d,
-                                                 Error **errp);
 
 #endif /* QEMU_TYPEDEFS_H */

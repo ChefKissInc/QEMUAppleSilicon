@@ -38,9 +38,7 @@ static const size_t alg_key_len[QCRYPTO_CIPHER_ALGO__MAX] = {
     [QCRYPTO_CIPHER_ALGO_TWOFISH_128] = 16,
     [QCRYPTO_CIPHER_ALGO_TWOFISH_192] = 24,
     [QCRYPTO_CIPHER_ALGO_TWOFISH_256] = 32,
-#ifdef CONFIG_CRYPTO_SM4
     [QCRYPTO_CIPHER_ALGO_SM4] = 16,
-#endif
 };
 
 static const size_t alg_block_len[QCRYPTO_CIPHER_ALGO__MAX] = {
@@ -56,9 +54,7 @@ static const size_t alg_block_len[QCRYPTO_CIPHER_ALGO__MAX] = {
     [QCRYPTO_CIPHER_ALGO_TWOFISH_128] = 16,
     [QCRYPTO_CIPHER_ALGO_TWOFISH_192] = 16,
     [QCRYPTO_CIPHER_ALGO_TWOFISH_256] = 16,
-#ifdef CONFIG_CRYPTO_SM4
     [QCRYPTO_CIPHER_ALGO_SM4] = 16,
-#endif
 };
 
 static const bool mode_need_iv[QCRYPTO_CIPHER_MODE__MAX] = {
@@ -138,11 +134,7 @@ qcrypto_cipher_validate_key_length(QCryptoCipherAlgo alg,
     return true;
 }
 
-#ifdef CONFIG_NETTLE
 #include "cipher-nettle.c.inc"
-#else
-#include "cipher-stub.c.inc"
-#endif
 
 QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgo alg,
                                   QCryptoCipherMode mode,
@@ -150,10 +142,6 @@ QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgo alg,
                                   Error **errp)
 {
     QCryptoCipher *cipher = NULL;
-
-#ifdef CONFIG_AF_ALG
-    cipher = qcrypto_afalg_cipher_ctx_new(alg, mode, key, nkey, NULL);
-#endif
 
     if (!cipher) {
         cipher = qcrypto_cipher_ctx_new(alg, mode, key, nkey, errp);

@@ -28,7 +28,6 @@
 #include "trace.h"
 #include "hw/qdev-properties.h"
 #include "hw/usb.h"
-#include "migration/vmstate.h"
 #include "desc.h"
 #include "qemu/error-report.h"
 #include "qemu/module.h"
@@ -620,51 +619,6 @@ static void usb_hub_realize(USBDevice *dev, Error **errp)
     usb_hub_handle_reset(dev);
 }
 
-static const VMStateDescription vmstate_usb_hub_port = {
-    .name = "usb-hub-port",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT16(wPortStatus, USBHubPort),
-        VMSTATE_UINT16(wPortChange, USBHubPort),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static bool usb_hub_port_timer_needed(void *opaque)
-{
-    USBHubState *s = opaque;
-
-    return s->port_power;
-}
-
-static const VMStateDescription vmstate_usb_hub_port_timer = {
-    .name = "usb-hub/port-timer",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = usb_hub_port_timer_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_TIMER_PTR(port_timer, USBHubState),
-        VMSTATE_END_OF_LIST()
-    },
-};
-
-static const VMStateDescription vmstate_usb_hub = {
-    .name = "usb-hub",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_USB_DEVICE(dev, USBHubState),
-        VMSTATE_STRUCT_ARRAY(ports, USBHubState, MAX_PORTS, 0,
-                             vmstate_usb_hub_port, USBHubPort),
-        VMSTATE_END_OF_LIST()
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &vmstate_usb_hub_port_timer,
-        NULL
-    }
-};
-
 static const Property usb_hub_properties[] = {
     DEFINE_PROP_UINT32("ports", USBHubState, num_ports, 8),
     DEFINE_PROP_BOOL("port-power", USBHubState, port_power, false),
@@ -685,7 +639,6 @@ static void usb_hub_class_initfn(ObjectClass *klass, const void *data)
     uc->unrealize      = usb_hub_unrealize;
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
     dc->fw_name = "hub";
-    dc->vmsd = &vmstate_usb_hub;
     device_class_set_props(dc, usb_hub_properties);
 }
 

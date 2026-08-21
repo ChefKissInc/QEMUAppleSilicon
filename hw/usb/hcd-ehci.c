@@ -31,7 +31,6 @@
 #include "hw/irq.h"
 #include "hw/usb/ehci-regs.h"
 #include "hw/usb/hcd-ehci.h"
-#include "migration/vmstate.h"
 #include "trace.h"
 #include "qemu/error-report.h"
 #include "qemu/main-loop.h"
@@ -2410,39 +2409,6 @@ static USBBusOps ehci_bus_ops_standalone = {
     .wakeup_endpoint = ehci_wakeup_endpoint,
 };
 
-static int usb_ehci_pre_save(void *opaque)
-{
-    EHCIState *ehci = opaque;
-    uint32_t new_frindex;
-
-    /* Round down frindex to a multiple of 8 for migration compatibility */
-    new_frindex = ehci->frindex & ~7;
-    ehci->last_run_ns -= (ehci->frindex - new_frindex) * UFRAME_TIMER_NS;
-    ehci->frindex = new_frindex;
-
-    return 0;
-}
-
-static int usb_ehci_post_load(void *opaque, int version_id)
-{
-    EHCIState *s = opaque;
-    int i;
-
-    for (i = 0; i < EHCI_PORTS; i++) {
-        USBPort *companion = s->companion_ports[i];
-        if (companion == NULL) {
-            continue;
-        }
-        if (s->portsc[i] & PORTSC_POWNER) {
-            companion->dev = s->ports[i].dev;
-        } else {
-            companion->dev = NULL;
-        }
-    }
-
-    return 0;
-}
-
 static void usb_ehci_vm_state_change(void *opaque, bool running, RunState state)
 {
     EHCIState *ehci = opaque;
@@ -2456,55 +2422,7 @@ static void usb_ehci_vm_state_change(void *opaque, bool running, RunState state)
     if (running) {
         ehci_advance_async_state(ehci);
     }
-
-    /*
-     * The schedule rebuilt from guest memory could cause the migration dest
-     * to miss a QH unlink, and fail to cancel packets, since the unlinked QH
-     * will never have existed on the destination. Therefore we must flush the
-     * async schedule on savevm to catch any not yet noticed unlinks.
-     */
-    if (state == RUN_STATE_SAVE_VM) {
-        ehci_advance_async_state(ehci);
-        ehci_queues_rip_unseen(ehci, 1);
-    }
 }
-
-const VMStateDescription vmstate_ehci = {
-    .name        = "ehci-core",
-    .version_id  = 2,
-    .minimum_version_id  = 1,
-    .pre_save    = usb_ehci_pre_save,
-    .post_load   = usb_ehci_post_load,
-    .fields = (const VMStateField[]) {
-        /* mmio registers */
-        VMSTATE_UINT32(usbcmd, EHCIState),
-        VMSTATE_UINT32(usbsts, EHCIState),
-        VMSTATE_UINT32_V(usbsts_pending, EHCIState, 2),
-        VMSTATE_UINT32_V(usbsts_frindex, EHCIState, 2),
-        VMSTATE_UINT32(usbintr, EHCIState),
-        VMSTATE_UINT32(frindex, EHCIState),
-        VMSTATE_UINT32(ctrldssegment, EHCIState),
-        VMSTATE_UINT32(periodiclistbase, EHCIState),
-        VMSTATE_UINT32(asynclistaddr, EHCIState),
-        VMSTATE_UINT32(configflag, EHCIState),
-        VMSTATE_UINT32(portsc[0], EHCIState),
-        VMSTATE_UINT32(portsc[1], EHCIState),
-        VMSTATE_UINT32(portsc[2], EHCIState),
-        VMSTATE_UINT32(portsc[3], EHCIState),
-        VMSTATE_UINT32(portsc[4], EHCIState),
-        VMSTATE_UINT32(portsc[5], EHCIState),
-        /* frame timer */
-        VMSTATE_TIMER_PTR(frame_timer, EHCIState),
-        VMSTATE_UINT64(last_run_ns, EHCIState),
-        VMSTATE_UINT32(async_stepdown, EHCIState),
-        /* schedule state */
-        VMSTATE_UINT32(astate, EHCIState),
-        VMSTATE_UINT32(pstate, EHCIState),
-        VMSTATE_UINT32(a_fetch_addr, EHCIState),
-        VMSTATE_UINT32(p_fetch_addr, EHCIState),
-        VMSTATE_END_OF_LIST()
-    }
-};
 
 void usb_ehci_realize(EHCIState *s, DeviceState *dev, Error **errp)
 {

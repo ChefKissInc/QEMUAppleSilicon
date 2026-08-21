@@ -27,7 +27,6 @@
 #include "hw/qdev-core.h"
 #include "hw/qdev-properties.h"
 #include "hw/core/sysemu-cpu-ops.h"
-#include "migration/vmstate.h"
 #include "system/tcg.h"
 
 bool cpu_has_work(CPUState *cpu)
@@ -91,50 +90,6 @@ int cpu_asidx_from_attrs(CPUState *cpu, MemTxAttrs attrs)
     return ret;
 }
 
-int cpu_write_elf32_qemunote(WriteCoreDumpFunction f, CPUState *cpu,
-                             void *opaque)
-{
-    if (!cpu->cc->sysemu_ops->write_elf32_qemunote) {
-        return 0;
-    }
-    return (*cpu->cc->sysemu_ops->write_elf32_qemunote)(f, cpu, opaque);
-}
-
-int cpu_write_elf32_note(WriteCoreDumpFunction f, CPUState *cpu,
-                         int cpuid, void *opaque)
-{
-    if (!cpu->cc->sysemu_ops->write_elf32_note) {
-        return -1;
-    }
-    return (*cpu->cc->sysemu_ops->write_elf32_note)(f, cpu, cpuid, opaque);
-}
-
-int cpu_write_elf64_qemunote(WriteCoreDumpFunction f, CPUState *cpu,
-                             void *opaque)
-{
-    if (!cpu->cc->sysemu_ops->write_elf64_qemunote) {
-        return 0;
-    }
-    return (*cpu->cc->sysemu_ops->write_elf64_qemunote)(f, cpu, opaque);
-}
-
-int cpu_write_elf64_note(WriteCoreDumpFunction f, CPUState *cpu,
-                         int cpuid, void *opaque)
-{
-    if (!cpu->cc->sysemu_ops->write_elf64_note) {
-        return -1;
-    }
-    return (*cpu->cc->sysemu_ops->write_elf64_note)(f, cpu, cpuid, opaque);
-}
-
-bool cpu_virtio_is_big_endian(CPUState *cpu)
-{
-    if (cpu->cc->sysemu_ops->virtio_is_big_endian) {
-        return cpu->cc->sysemu_ops->virtio_is_big_endian(cpu);
-    }
-    return target_big_endian();
-}
-
 GuestPanicInformation *cpu_get_crash_info(CPUState *cpu)
 {
     GuestPanicInformation *res = NULL;
@@ -192,105 +147,4 @@ void cpu_exec_initfn(CPUState *cpu)
 {
     cpu->memory = get_system_memory();
     object_ref(OBJECT(cpu->memory));
-}
-
-static int cpu_common_post_load(void *opaque, int version_id)
-{
-    if (tcg_enabled()) {
-        CPUState *cpu = opaque;
-
-        /*
-         * 0x01 was CPU_INTERRUPT_EXIT. This line can be removed when the
-         * version_id is increased.
-         */
-        cpu_reset_interrupt(cpu, 0x01);
-
-        tlb_flush(cpu);
-    }
-
-    return 0;
-}
-
-static int cpu_common_pre_load(void *opaque)
-{
-    CPUState *cpu = opaque;
-
-    cpu->exception_index = -1;
-
-    return 0;
-}
-
-static bool cpu_common_exception_index_needed(void *opaque)
-{
-    CPUState *cpu = opaque;
-
-    return tcg_enabled() && cpu->exception_index != -1;
-}
-
-static const VMStateDescription vmstate_cpu_common_exception_index = {
-    .name = "cpu_common/exception_index",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = cpu_common_exception_index_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_INT32(exception_index, CPUState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static bool cpu_common_crash_occurred_needed(void *opaque)
-{
-    CPUState *cpu = opaque;
-
-    return cpu->crash_occurred;
-}
-
-static const VMStateDescription vmstate_cpu_common_crash_occurred = {
-    .name = "cpu_common/crash_occurred",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = cpu_common_crash_occurred_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_BOOL(crash_occurred, CPUState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-const VMStateDescription vmstate_cpu_common = {
-    .name = "cpu_common",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .pre_load = cpu_common_pre_load,
-    .post_load = cpu_common_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(halted, CPUState),
-        VMSTATE_UINT32(interrupt_request, CPUState),
-        VMSTATE_END_OF_LIST()
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &vmstate_cpu_common_exception_index,
-        &vmstate_cpu_common_crash_occurred,
-        NULL
-    }
-};
-
-void cpu_vmstate_register(CPUState *cpu)
-{
-    if (qdev_get_vmsd(DEVICE(cpu)) == NULL) {
-        vmstate_register(NULL, cpu->cpu_index, &vmstate_cpu_common, cpu);
-    }
-    if (cpu->cc->sysemu_ops->legacy_vmsd != NULL) {
-        vmstate_register(NULL, cpu->cpu_index,
-                         cpu->cc->sysemu_ops->legacy_vmsd, cpu);
-    }
-}
-
-void cpu_vmstate_unregister(CPUState *cpu)
-{
-    if (cpu->cc->sysemu_ops->legacy_vmsd != NULL) {
-        vmstate_unregister(NULL, cpu->cc->sysemu_ops->legacy_vmsd, cpu);
-    }
-    if (qdev_get_vmsd(DEVICE(cpu)) == NULL) {
-        vmstate_unregister(NULL, &vmstate_cpu_common, cpu);
-    }
 }

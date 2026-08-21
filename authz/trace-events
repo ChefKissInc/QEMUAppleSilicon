@@ -1,5 +1,3 @@
-# See docs/devel/tracing.rst for syntax documentation.
-
 # base.c
 qauthz_is_allowed(void *authz, const char *identity, bool allowed) "AuthZ %p check identity=%s allowed=%d"
 

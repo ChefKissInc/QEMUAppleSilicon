@@ -297,13 +297,4 @@ void ptimer_run(ptimer_state *s, int oneshot);
  */
 void ptimer_stop(ptimer_state *s);
 
-extern const VMStateDescription vmstate_ptimer;
-
-#define VMSTATE_PTIMER(_field, _state) \
-    VMSTATE_STRUCT_POINTER_V(_field, _state, 1, vmstate_ptimer, ptimer_state)
-
-#define VMSTATE_PTIMER_ARRAY(_f, _s, _n)                                \
-    VMSTATE_ARRAY_OF_POINTER_TO_STRUCT(_f, _s, _n, 0,                   \
-                                       vmstate_ptimer, ptimer_state)
-
 #endif

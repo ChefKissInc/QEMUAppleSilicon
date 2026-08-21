@@ -14,7 +14,6 @@
 #define BLOCK_BACKEND_COMMON_H
 
 #include "qemu/iov.h"
-#include "block/throttle-groups.h"
 
 /*
  * TODO Have to include block/block.h for a bunch of block layer
@@ -90,14 +89,5 @@ typedef struct BlockDevOps {
      */
     void (*resize_cb)(void *opaque);
 } BlockDevOps;
-
-/*
- * This struct is embedded in (the private) BlockBackend struct and contains
- * fields that must be public. This is in particular for QLIST_ENTRY() and
- * friends so that BlockBackends can be kept in lists outside block-backend.c
- */
-typedef struct BlockBackendPublic {
-    ThrottleGroupMember throttle_group_member;
-} BlockBackendPublic;
 
 #endif /* BLOCK_BACKEND_COMMON_H */

@@ -31,10 +31,6 @@
 #endif
 #include "mixeng.h"
 
-#ifdef CONFIG_GIO
-#include <gio/gio.h>
-#endif
-
 struct audio_pcm_ops;
 
 struct audio_callback {
@@ -142,9 +138,6 @@ struct audio_driver {
     const char *descr;
     void *(*init) (Audiodev *, Error **);
     void (*fini) (void *);
-#ifdef CONFIG_GIO
-    void (*set_dbus_server) (AudioState *s, GDBusObjectManagerServer *manager, bool p2p);
-#endif
     struct audio_pcm_ops *pcm_ops;
     int max_voices_out;
     int max_voices_in;

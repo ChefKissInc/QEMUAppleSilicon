@@ -23,7 +23,6 @@
 #include "hw/usb/hcd-tcp.h"
 #include "io/channel-util.h"
 #include "io/channel.h"
-#include "migration/blocker.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "qemu/lockable.h"
@@ -56,7 +55,6 @@ static void usb_tcp_host_closed(USBTCPHostState *s)
         s->ioc = NULL;
     }
     s->closed = true;
-    migrate_del_blocker(&s->migration_blocker);
 }
 
 static ssize_t tcp_usb_read(QIOChannel *ioc, void *buf, size_t len)
@@ -514,7 +512,6 @@ static void usb_tcp_host_attach(USBPort *port)
     s->closed = false;
     s->ioc = ioc;
 
-    migrate_add_blocker(&s->migration_blocker, NULL);
     co = qemu_coroutine_create(usb_tcp_host_msg_loop_co, s);
     qemu_coroutine_enter(co);
 }
@@ -583,9 +580,6 @@ static void usb_tcp_host_init(Object *obj)
 {
     USBTCPHostState *s = USB_TCP_HOST(obj);
     s->closed = true;
-    error_setg(&s->migration_blocker,
-               "%s does not support migration while connected",
-               TYPE_USB_TCP_HOST);
 }
 
 static const Property usb_tcp_host_props[] = {

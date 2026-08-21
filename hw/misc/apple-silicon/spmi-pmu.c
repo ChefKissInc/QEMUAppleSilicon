@@ -4,7 +4,6 @@
 #include "hw/misc/apple-silicon/spmi-pmu.h"
 #include "hw/registerfields.h"
 #include "hw/spmi/spmi.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "qemu/timer.h"
@@ -221,26 +220,12 @@ DeviceState *apple_spmi_pmu_from_node(AppleDTNode *node)
     return dev;
 }
 
-static const VMStateDescription vmstate_apple_spmi_pmu = {
-    .name = "AppleSPMIPMUState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT16(addr, AppleSPMIPMUState),
-            VMSTATE_UINT8_ARRAY(reg, AppleSPMIPMUState, 0x10000),
-            VMSTATE_TIMER_PTR(timer, AppleSPMIPMUState),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_spmi_pmu_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     SPMISlaveClass *sc = SPMI_SLAVE_CLASS(klass);
 
     dc->desc = "Apple Dialog SPMI PMU";
-    dc->vmsd = &vmstate_apple_spmi_pmu;
 
     sc->send = apple_spmi_pmu_send;
     sc->recv = apple_spmi_pmu_recv;

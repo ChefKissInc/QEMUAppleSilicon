@@ -4,6 +4,3 @@
 # features from the 32bit platform (although virt still supports 32bit
 # itself)
 #
-
-CONFIG_ARM_VIRT=y
-CONFIG_SBSA_REF=y

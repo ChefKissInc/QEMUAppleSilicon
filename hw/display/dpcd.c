@@ -30,7 +30,6 @@
 #include "qemu/log.h"
 #include "qemu/module.h"
 #include "hw/misc/auxbus.h"
-#include "migration/vmstate.h"
 #include "hw/display/dpcd.h"
 #include "trace.h"
 
@@ -131,22 +130,11 @@ static void dpcd_init(Object *obj)
     aux_init_mmio(AUX_SLAVE(obj), &s->iomem);
 }
 
-static const VMStateDescription vmstate_dpcd = {
-    .name = TYPE_DPCD,
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8_ARRAY_V(dpcd_info, DPCDState, DPCD_READABLE_AREA, 0),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static void dpcd_class_init(ObjectClass *oc, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(oc);
 
     device_class_set_legacy_reset(dc, dpcd_reset);
-    dc->vmsd = &vmstate_dpcd;
 }
 
 static const TypeInfo dpcd_info = {

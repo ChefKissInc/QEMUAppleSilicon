@@ -80,7 +80,6 @@ void block_job_free(Job *job)
     GLOBAL_STATE_CODE();
 
     block_job_remove_all_bdrv(bjob);
-    ratelimit_destroy(&bjob->limit);
     error_free(bjob->blocker);
 }
 
@@ -264,54 +263,6 @@ const BlockJobDriver *block_job_driver(BlockJob *job)
     return container_of(job->job.driver, BlockJobDriver, job_driver);
 }
 
-/* Assumes the job_mutex is held */
-static bool job_timer_pending(Job *job)
-{
-    return timer_pending(&job->sleep_timer);
-}
-
-bool block_job_set_speed_locked(BlockJob *job, int64_t speed, Error **errp)
-{
-    const BlockJobDriver *drv = block_job_driver(job);
-    int64_t old_speed = job->speed;
-
-    GLOBAL_STATE_CODE();
-
-    if (job_apply_verb_locked(&job->job, JOB_VERB_SET_SPEED, errp) < 0) {
-        return false;
-    }
-    if (speed < 0) {
-        error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "speed",
-                   "a non-negative value");
-        return false;
-    }
-
-    ratelimit_set_speed(&job->limit, speed, BLOCK_JOB_SLICE_TIME);
-
-    job->speed = speed;
-
-    if (drv->set_speed) {
-        job_unlock();
-        drv->set_speed(job, speed);
-        job_lock();
-    }
-
-    if (speed && speed <= old_speed) {
-        return true;
-    }
-
-    /* kick only if a timer is pending */
-    job_enter_cond_locked(&job->job, job_timer_pending);
-
-    return true;
-}
-
-static bool block_job_set_speed(BlockJob *job, int64_t speed, Error **errp)
-{
-    JOB_LOCK_GUARD();
-    return block_job_set_speed_locked(job, speed, errp);
-}
-
 void block_job_change_locked(BlockJob *job, BlockJobChangeOptions *opts,
                              Error **errp)
 {
@@ -330,30 +281,6 @@ void block_job_change_locked(BlockJob *job, BlockJobChangeOptions *opts,
     } else {
         error_setg(errp, "Job type does not support change");
     }
-}
-
-void block_job_ratelimit_processed_bytes(BlockJob *job, uint64_t n)
-{
-    IO_CODE();
-    ratelimit_calculate_delay(&job->limit, n);
-}
-
-void block_job_ratelimit_sleep(BlockJob *job)
-{
-    uint64_t delay_ns;
-
-    /*
-     * Sleep at least once. If the job is reentered early, keep waiting until
-     * we've waited for the full time that is necessary to keep the job at the
-     * right speed.
-     *
-     * Make sure to recalculate the delay after each (possibly interrupted)
-     * sleep because the speed can change while the job has yielded.
-     */
-    do {
-        delay_ns = ratelimit_calculate_delay(&job->limit, 0);
-        job_sleep_ns(&job->job, delay_ns);
-    } while (delay_ns && !job_is_cancelled(&job->job));
 }
 
 BlockJobInfo *block_job_query_locked(BlockJob *job, Error **errp)
@@ -379,7 +306,6 @@ BlockJobInfo *block_job_query_locked(BlockJob *job, Error **errp)
     info->paused    = job->job.pause_count > 0;
     info->offset    = progress_current;
     info->len       = progress_total;
-    info->speed     = job->speed;
     info->io_status = job->iostatus;
     info->ready     = job_is_ready_locked(&job->job),
     info->status    = job->job.status;
@@ -423,8 +349,7 @@ static void block_job_event_cancelled_locked(Notifier *n, void *opaque)
     qapi_event_send_block_job_cancelled(job_type(&job->job),
                                         job->job.id,
                                         progress_total,
-                                        progress_current,
-                                        job->speed);
+                                        progress_current);
 }
 
 /* Called with job_mutex lock held. */
@@ -449,7 +374,6 @@ static void block_job_event_completed_locked(Notifier *n, void *opaque)
                                         job->job.id,
                                         progress_total,
                                         progress_current,
-                                        job->speed,
                                         msg);
 }
 
@@ -482,14 +406,13 @@ static void block_job_event_ready_locked(Notifier *n, void *opaque)
     qapi_event_send_block_job_ready(job_type(&job->job),
                                     job->job.id,
                                     progress_total,
-                                    progress_current,
-                                    job->speed);
+                                    progress_current);
 }
 
 
 void *block_job_create(const char *job_id, const BlockJobDriver *driver,
                        JobTxn *txn, BlockDriverState *bs, uint64_t perm,
-                       uint64_t shared_perm, int64_t speed, int flags,
+                       uint64_t shared_perm, int flags,
                        BlockCompletionFunc *cb, void *opaque, Error **errp)
 {
     BlockJob *job;
@@ -513,8 +436,6 @@ void *block_job_create(const char *job_id, const BlockJobDriver *driver,
     assert(job->job.driver->free == &block_job_free);
     assert(job->job.driver->user_resume == &block_job_user_resume);
 
-    ratelimit_init(&job->limit);
-
     job->finalize_cancelled_notifier.notify = block_job_event_cancelled_locked;
     job->finalize_completed_notifier.notify = block_job_event_completed_locked;
     job->pending_notifier.notify = block_job_event_pending_locked;
@@ -536,10 +457,6 @@ void *block_job_create(const char *job_id, const BlockJobDriver *driver,
 
     ret = block_job_add_bdrv(job, "main node", bs, perm, shared_perm, errp);
     if (ret < 0) {
-        goto fail;
-    }
-
-    if (!block_job_set_speed(job, speed, errp)) {
         goto fail;
     }
 

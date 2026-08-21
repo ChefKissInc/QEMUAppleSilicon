@@ -66,8 +66,6 @@ struct BlockJobDriver {
      */
     void (*attached_aio_context)(BlockJob *job, AioContext *new_context);
 
-    void (*set_speed)(BlockJob *job, int64_t speed);
-
     /*
      * Change the @job's options according to @opts.
      *
@@ -96,7 +94,6 @@ struct BlockJobDriver {
  * @txn: The transaction this job belongs to, if any. %NULL otherwise.
  * @bs: The block
  * @perm, @shared_perm: Permissions to request for @bs
- * @speed: The maximum speed, in bytes per second, or 0 for unlimited.
  * @flags: Creation flags for the Block Job. See @JobCreateFlags.
  * @cb: Completion function for the job.
  * @opaque: Opaque pointer value passed to @cb.
@@ -114,7 +111,7 @@ struct BlockJobDriver {
 void * GRAPH_UNLOCKED
 block_job_create(const char *job_id, const BlockJobDriver *driver,
                  JobTxn *txn, BlockDriverState *bs, uint64_t perm,
-                 uint64_t shared_perm, int64_t speed, int flags,
+                 uint64_t shared_perm, int flags,
                  BlockCompletionFunc *cb, void *opaque, Error **errp);
 
 /**
@@ -137,20 +134,6 @@ void block_job_user_resume(Job *job);
  * See include/block/block-io.h for more information about
  * the I/O API.
  */
-
-/**
- * block_job_ratelimit_processed_bytes:
- *
- * To be called after some work has been done. Adjusts the delay for the next
- * request. See the documentation of ratelimit_calculate_delay() for details.
- */
-void block_job_ratelimit_processed_bytes(BlockJob *job, uint64_t n);
-
-/**
- * Put the job to sleep (assuming that it wasn't canceled) to throttle it to the
- * right speed according to its rate limiting.
- */
-void block_job_ratelimit_sleep(BlockJob *job);
 
 /**
  * block_job_error_action:

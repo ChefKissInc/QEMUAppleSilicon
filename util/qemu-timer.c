@@ -27,8 +27,6 @@
 #include "qemu/timer.h"
 #include "qemu/lockable.h"
 #include "system/cpu-timers.h"
-#include "exec/icount.h"
-#include "system/replay.h"
 #include "system/cpus.h"
 
 #ifdef CONFIG_POSIX
@@ -132,11 +130,6 @@ static void qemu_clock_init(QEMUClockType type, QEMUTimerListNotifyCB *notify_cb
     clock->enabled = (type == QEMU_CLOCK_VIRTUAL ? false : true);
     QLIST_INIT(&clock->timerlists);
     main_loop_tlg.tl[type] = timerlist_new(type, notify_cb, NULL);
-}
-
-bool qemu_clock_use_for_deadline(QEMUClockType type)
-{
-    return !(icount_enabled() && (type == QEMU_CLOCK_VIRTUAL));
 }
 
 void qemu_clock_notify(QEMUClockType type)
@@ -509,14 +502,8 @@ bool timerlist_run_timers(QEMUTimerList *timer_list)
     case QEMU_CLOCK_VIRTUAL:
         break;
     case QEMU_CLOCK_HOST:
-        if (!replay_checkpoint(CHECKPOINT_CLOCK_HOST)) {
-            goto out;
-        }
         break;
     case QEMU_CLOCK_VIRTUAL_RT:
-        if (!replay_checkpoint(CHECKPOINT_CLOCK_VIRTUAL_RT)) {
-            goto out;
-        }
         break;
     }
 
@@ -538,17 +525,6 @@ bool timerlist_run_timers(QEMUTimerList *timer_list)
              * if no timers fired or they were all external.
              */
             break;
-        }
-        /* Checkpoint for virtual clock is redundant in cases where
-         * it's being triggered with only non-EXTERNAL timers, because
-         * these timers don't change guest state directly.
-         */
-        if (replay_mode != REPLAY_MODE_NONE
-            && timer_list->clock->type == QEMU_CLOCK_VIRTUAL
-            && !(ts->attributes & QEMU_TIMER_ATTR_EXTERNAL)
-            && !replay_checkpoint(CHECKPOINT_CLOCK_VIRTUAL)) {
-            qemu_mutex_unlock(&timer_list->active_timers_lock);
-            goto out;
         }
 
         /* remove timer from the list before calling the callback */
@@ -609,10 +585,8 @@ int64_t timerlistgroup_deadline_ns(QEMUTimerListGroup *tlg)
     int64_t deadline = -1;
     QEMUClockType type;
     for (type = 0; type < QEMU_CLOCK_MAX; type++) {
-        if (qemu_clock_use_for_deadline(type)) {
-            deadline = qemu_soonest_timeout(deadline,
-                                            timerlist_deadline_ns(tlg->tl[type]));
-        }
+        deadline = qemu_soonest_timeout(deadline,
+                                        timerlist_deadline_ns(tlg->tl[type]));
     }
     return deadline;
 }
@@ -626,9 +600,9 @@ int64_t qemu_clock_get_ns(QEMUClockType type)
     case QEMU_CLOCK_VIRTUAL:
         return cpus_get_virtual_clock();
     case QEMU_CLOCK_HOST:
-        return REPLAY_CLOCK(REPLAY_CLOCK_HOST, get_clock_realtime());
+        return get_clock_realtime();
     case QEMU_CLOCK_VIRTUAL_RT:
-        return REPLAY_CLOCK(REPLAY_CLOCK_VIRTUAL_RT, cpu_get_clock());
+        return cpu_get_clock();
     }
 }
 
@@ -660,9 +634,7 @@ bool qemu_clock_run_all_timers(void)
     QEMUClockType type;
 
     for (type = 0; type < QEMU_CLOCK_MAX; type++) {
-        if (qemu_clock_use_for_deadline(type)) {
-            progress |= qemu_clock_run_timers(type);
-        }
+        progress |= qemu_clock_run_timers(type);
     }
 
     return progress;

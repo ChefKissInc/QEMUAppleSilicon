@@ -19,7 +19,6 @@
 
 #include "qemu/osdep.h"
 #include "hw/misc/apple-silicon/fan53740.h"
-#include "migration/vmstate.h"
 
 struct FAN53740State {
     /*< private >*/
@@ -43,17 +42,6 @@ static int fan53740_event(I2CSlave *s, enum i2c_event event)
     return 0;
 }
 
-static const VMStateDescription vmstate_fan53740 = {
-    .name = "FAN53740State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_I2C_SLAVE(i2c, FAN53740State),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void fan53740_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -61,7 +49,6 @@ static void fan53740_class_init(ObjectClass *klass, const void *data)
 
     dc->desc = "ACC Buck FAN53740";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_fan53740;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 
     c->recv = fan53740_rx;

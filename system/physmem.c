@@ -39,7 +39,6 @@
 #include "hw/qdev-core.h"
 #include "hw/qdev-properties.h"
 #include "hw/boards.h"
-#include "system/xen.h"
 #include "system/kvm.h"
 #include "system/tcg.h"
 #include "qemu/timer.h"
@@ -54,7 +53,6 @@
 #include "system/dma.h"
 #include "system/hostmem.h"
 #include "system/hw_accel.h"
-#include "system/xen-mapcache.h"
 #include "trace.h"
 
 #ifdef CONFIG_FALLOCATE_PUNCH_HOLE
@@ -63,17 +61,10 @@
 
 #include "qemu/rcu_queue.h"
 #include "qemu/main-loop.h"
-#include "system/replay.h"
 
 #include "system/ram_addr.h"
 
 #include "qemu/pmem.h"
-
-#include "qapi/qapi-types-migration.h"
-#include "migration/blocker.h"
-#include "migration/cpr.h"
-#include "migration/options.h"
-#include "migration/vmstate.h"
 
 #include "qemu/range.h"
 #ifndef _WIN32
@@ -158,7 +149,6 @@ static void io_mem_init(void);
 static void memory_map_init(void);
 static void tcg_log_global_after_sync(MemoryListener *listener);
 static void tcg_commit(MemoryListener *listener);
-static bool ram_is_cpr_compatible(RAMBlock *rb);
 
 /**
  * CPUAddressSpace: all the information a CPU needs about an AddressSpace
@@ -577,11 +567,6 @@ MemoryRegion *flatview_translate(FlatView *fv, hwaddr addr, hwaddr *xlat,
     section = flatview_do_translate(fv, addr, xlat, plen, NULL,
                                     is_write, true, &as, attrs);
     mr = section.mr;
-
-    if (xen_enabled() && memory_access_is_direct(mr, is_write, attrs)) {
-        hwaddr page = ((addr & TARGET_PAGE_MASK) + TARGET_PAGE_SIZE) - addr;
-        *plen = MIN(page, *plen);
-    }
 
     return mr;
 }
@@ -1594,21 +1579,6 @@ void qemu_ram_set_uf_zeroable(RAMBlock *rb)
     rb->flags |= RAM_UF_ZEROPAGE;
 }
 
-bool qemu_ram_is_migratable(const RAMBlock *rb)
-{
-    return rb->flags & RAM_MIGRATABLE;
-}
-
-void qemu_ram_set_migratable(RAMBlock *rb)
-{
-    rb->flags |= RAM_MIGRATABLE;
-}
-
-void qemu_ram_unset_migratable(RAMBlock *rb)
-{
-    rb->flags &= ~RAM_MIGRATABLE;
-}
-
 bool qemu_ram_is_named_file(const RAMBlock *rb)
 {
     return rb->flags & RAM_NAMED_FILE;
@@ -1700,70 +1670,6 @@ static int memory_try_enable_merging(void *addr, size_t len)
 }
 
 /*
- * Resizing RAM while migrating can result in the migration being canceled.
- * Care has to be taken if the guest might have already detected the memory.
- *
- * As memory core doesn't know how is memory accessed, it is up to
- * resize callback to update device state and/or add assertions to detect
- * misuse, if necessary.
- */
-int qemu_ram_resize(RAMBlock *block, ram_addr_t newsize, Error **errp)
-{
-    const ram_addr_t oldsize = block->used_length;
-    const ram_addr_t unaligned_size = newsize;
-
-    assert(block);
-
-    newsize = TARGET_PAGE_ALIGN(newsize);
-    newsize = REAL_HOST_PAGE_ALIGN(newsize);
-
-    if (block->used_length == newsize) {
-        /*
-         * We don't have to resize the ram block (which only knows aligned
-         * sizes), however, we have to notify if the unaligned size changed.
-         */
-        if (unaligned_size != memory_region_size(block->mr)) {
-            memory_region_set_size(block->mr, unaligned_size);
-            if (block->resized) {
-                block->resized(block->idstr, unaligned_size, block->host);
-            }
-        }
-        return 0;
-    }
-
-    if (!(block->flags & RAM_RESIZEABLE)) {
-        error_setg_errno(errp, EINVAL,
-                         "Size mismatch: %s: 0x" RAM_ADDR_FMT
-                         " != 0x" RAM_ADDR_FMT, block->idstr,
-                         newsize, block->used_length);
-        return -EINVAL;
-    }
-
-    if (block->max_length < newsize) {
-        error_setg_errno(errp, EINVAL,
-                         "Size too large: %s: 0x" RAM_ADDR_FMT
-                         " > 0x" RAM_ADDR_FMT, block->idstr,
-                         newsize, block->max_length);
-        return -EINVAL;
-    }
-
-    /* Notify before modifying the ram block and touching the bitmaps. */
-    if (block->host) {
-        ram_block_notify_resize(block->host, oldsize, newsize);
-    }
-
-    cpu_physical_memory_clear_dirty_range(block->offset, block->used_length);
-    block->used_length = newsize;
-    cpu_physical_memory_set_dirty_range(block->offset, block->used_length,
-                                        DIRTY_CLIENTS_ALL);
-    memory_region_set_size(block->mr, unaligned_size);
-    if (block->resized) {
-        block->resized(block->idstr, unaligned_size, block->host);
-    }
-    return 0;
-}
-
-/*
  * Trigger sync on the given ram block for range [start, start + length]
  * with the backing store if one is available.
  * Otherwise no-op.
@@ -1846,91 +1752,23 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
     RAMBlock *last_block = NULL;
     bool free_on_error = false;
     ram_addr_t ram_size;
-    Error *err = NULL;
 
     qemu_mutex_lock_ramlist();
     new_block->offset = find_ram_offset(new_block->max_length);
 
     if (!new_block->host) {
-        if (xen_enabled()) {
-            xen_ram_alloc(new_block->offset, new_block->max_length,
-                          new_block->mr, &err);
-            if (err) {
-                error_propagate(errp, err);
-                qemu_mutex_unlock_ramlist();
-                return;
-            }
-        } else {
-            new_block->host = qemu_anon_ram_alloc(new_block->max_length,
-                                                  &new_block->mr->align,
-                                                  shared, noreserve);
-            if (!new_block->host) {
-                error_setg_errno(errp, errno,
-                                 "cannot set up guest memory '%s'",
-                                 memory_region_name(new_block->mr));
-                qemu_mutex_unlock_ramlist();
-                return;
-            }
-            memory_try_enable_merging(new_block->host, new_block->max_length);
-            free_on_error = true;
-        }
-    }
-
-    if (new_block->flags & RAM_GUEST_MEMFD) {
-        int ret;
-
-        if (!kvm_enabled()) {
-            error_setg(errp, "cannot set up private guest memory for %s: KVM required",
-                       object_get_typename(OBJECT(current_machine->cgs)));
-            goto out_free;
-        }
-        assert(new_block->guest_memfd < 0);
-
-        ret = ram_block_coordinated_discard_require(true);
-        if (ret < 0) {
-            error_setg_errno(errp, -ret,
-                             "cannot set up private guest memory: discard currently blocked");
-            error_append_hint(errp, "Are you using assigned devices?\n");
-            goto out_free;
-        }
-
-        new_block->guest_memfd = kvm_create_guest_memfd(new_block->max_length,
-                                                        0, errp);
-        if (new_block->guest_memfd < 0) {
+        new_block->host = qemu_anon_ram_alloc(new_block->max_length,
+                                              &new_block->mr->align,
+                                              shared, noreserve);
+        if (!new_block->host) {
+            error_setg_errno(errp, errno,
+                             "cannot set up guest memory '%s'",
+                             memory_region_name(new_block->mr));
             qemu_mutex_unlock_ramlist();
-            goto out_free;
+            return;
         }
-
-        /*
-         * The attribute bitmap of the RamBlockAttributes is default to
-         * discarded, which mimics the behavior of kvm_set_phys_mem() when it
-         * calls kvm_set_memory_attributes_private(). This leads to a brief
-         * period of inconsistency between the creation of the RAMBlock and its
-         * mapping into the physical address space. However, this is not
-         * problematic, as no users rely on the attribute status to perform
-         * any actions during this interval.
-         */
-        new_block->attributes = ram_block_attributes_create(new_block);
-        if (!new_block->attributes) {
-            error_setg(errp, "Failed to create ram block attribute");
-            close(new_block->guest_memfd);
-            ram_block_coordinated_discard_require(false);
-            qemu_mutex_unlock_ramlist();
-            goto out_free;
-        }
-
-        /*
-         * Add a specific guest_memfd blocker if a generic one would not be
-         * added by ram_block_add_cpr_blocker.
-         */
-        if (ram_is_cpr_compatible(new_block)) {
-            error_setg(&new_block->cpr_blocker,
-                       "Memory region %s uses guest_memfd, "
-                       "which is not supported with CPR.",
-                       memory_region_name(new_block->mr));
-            migrate_add_blocker_modes(&new_block->cpr_blocker, errp,
-                                      MIG_MODE_CPR_TRANSFER, -1);
-        }
+        memory_try_enable_merging(new_block->host, new_block->max_length);
+        free_on_error = true;
     }
 
     ram_size = (new_block->offset + new_block->max_length) >> TARGET_PAGE_BITS;
@@ -1971,12 +1809,9 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
          */
         qemu_madvise(new_block->host, new_block->max_length,
                      QEMU_MADV_DONTFORK);
-        ram_block_notify_add(new_block->host, new_block->used_length,
-                             new_block->max_length);
     }
     return;
 
-out_free:
     if (free_on_error) {
         qemu_anon_ram_free(new_block->host, new_block->max_length);
         new_block->host = NULL;
@@ -1985,7 +1820,7 @@ out_free:
 
 #if defined(CONFIG_POSIX) && !defined(EMSCRIPTEN)
 RAMBlock *qemu_ram_alloc_from_fd(ram_addr_t size, ram_addr_t max_size,
-                                 qemu_ram_resize_cb resized, MemoryRegion *mr,
+                                 MemoryRegion *mr,
                                  uint32_t ram_flags, int fd, off_t offset,
                                  bool grow,
                                  Error **errp)
@@ -2002,14 +1837,8 @@ RAMBlock *qemu_ram_alloc_from_fd(ram_addr_t size, ram_addr_t max_size,
     /* Just support these ram flags by now. */
     assert((ram_flags & ~(RAM_SHARED | RAM_PMEM | RAM_NORESERVE |
                           RAM_PROTECTED | RAM_NAMED_FILE | RAM_READONLY |
-                          RAM_READONLY_FD | RAM_GUEST_MEMFD |
-                          RAM_RESIZEABLE)) == 0);
+                          RAM_READONLY_FD)) == 0);
     assert(max_size >= size);
-
-    if (xen_enabled()) {
-        error_setg(errp, "-mem-path not supported with Xen");
-        return NULL;
-    }
 
     if (kvm_enabled() && !kvm_has_sync_mmu()) {
         error_setg(errp,
@@ -2044,7 +1873,6 @@ RAMBlock *qemu_ram_alloc_from_fd(ram_addr_t size, ram_addr_t max_size,
     new_block->mr = mr;
     new_block->used_length = size;
     new_block->max_length = max_size;
-    new_block->resized = resized;
     new_block->flags = ram_flags;
     new_block->guest_memfd = -1;
     new_block->host = file_ram_alloc(new_block, max_size, fd,
@@ -2101,7 +1929,7 @@ RAMBlock *qemu_ram_alloc_from_file(ram_addr_t size, MemoryRegion *mr,
         return NULL;
     }
 
-    block = qemu_ram_alloc_from_fd(size, size, NULL, mr, ram_flags, fd, offset,
+    block = qemu_ram_alloc_from_fd(size, size, mr, ram_flags, fd, offset,
                                    false, errp);
     if (!block) {
         if (created) {
@@ -2116,19 +1944,9 @@ RAMBlock *qemu_ram_alloc_from_file(ram_addr_t size, MemoryRegion *mr,
 #endif
 
 #ifdef CONFIG_POSIX
-/*
- * Create MAP_SHARED RAMBlocks by mmap'ing a file descriptor, so it can be
- * shared with another process if CPR is being used.  Use memfd if available
- * because it has no size limits, else use POSIX shm.
- */
 static int qemu_ram_get_shared_fd(const char *name, bool *reused, Error **errp)
 {
-    int fd = cpr_find_fd(name, 0);
-
-    if (fd >= 0) {
-        *reused = true;
-        return fd;
-    }
+    int fd = -1;
 
     if (qemu_memfd_check(0)) {
         fd = qemu_memfd_create(name, 0, 0, 0, 0, errp);
@@ -2136,9 +1954,6 @@ static int qemu_ram_get_shared_fd(const char *name, bool *reused, Error **errp)
         fd = qemu_shm_alloc(0, errp);
     }
 
-    if (fd >= 0) {
-        cpr_save_fd(name, 0, fd);
-    }
     *reused = false;
     return fd;
 }
@@ -2146,7 +1961,6 @@ static int qemu_ram_get_shared_fd(const char *name, bool *reused, Error **errp)
 
 static
 RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
-                                  qemu_ram_resize_cb resized,
                                   void *host, uint32_t ram_flags,
                                   MemoryRegion *mr, Error **errp)
 {
@@ -2158,8 +1972,8 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
     assert(share_flags != (RAM_SHARED | RAM_PRIVATE));
     ram_flags &= ~RAM_PRIVATE;
 
-    assert((ram_flags & ~(RAM_SHARED | RAM_RESIZEABLE | RAM_PREALLOC |
-                          RAM_NORESERVE | RAM_GUEST_MEMFD)) == 0);
+    assert((ram_flags & ~(RAM_SHARED | RAM_PREALLOC |
+                          RAM_NORESERVE)) == 0);
     assert(!host ^ (ram_flags & RAM_PREALLOC));
     assert(max_size >= size);
 
@@ -2192,7 +2006,7 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
              * region if necessary.  The extra space will be usable after a
              * guest reset.
              */
-            new_block = qemu_ram_alloc_from_fd(size, max_size, resized, mr,
+            new_block = qemu_ram_alloc_from_fd(size, max_size, mr,
                                                ram_flags, fd, 0, reused, NULL);
             if (new_block) {
                 trace_qemu_ram_alloc_shared(name, new_block->used_length,
@@ -2201,7 +2015,6 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
                 return new_block;
             }
 
-            cpr_delete_fd(name, 0);
             close(fd);
             /* fall back to anon allocation */
         }
@@ -2215,7 +2028,6 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
 
     new_block = g_malloc0(sizeof(*new_block));
     new_block->mr = mr;
-    new_block->resized = resized;
     new_block->used_length = size;
     new_block->max_length = max_size;
     new_block->fd = -1;
@@ -2235,32 +2047,22 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
 RAMBlock *qemu_ram_alloc_from_ptr(ram_addr_t size, void *host,
                                    MemoryRegion *mr, Error **errp)
 {
-    return qemu_ram_alloc_internal(size, size, NULL, host, RAM_PREALLOC, mr,
+    return qemu_ram_alloc_internal(size, size, host, RAM_PREALLOC, mr,
                                    errp);
 }
 
 RAMBlock *qemu_ram_alloc(ram_addr_t size, uint32_t ram_flags,
                          MemoryRegion *mr, Error **errp)
 {
-    assert((ram_flags & ~(RAM_SHARED | RAM_NORESERVE | RAM_GUEST_MEMFD |
+    assert((ram_flags & ~(RAM_SHARED | RAM_NORESERVE |
                           RAM_PRIVATE)) == 0);
-    return qemu_ram_alloc_internal(size, size, NULL, NULL, ram_flags, mr, errp);
-}
-
-RAMBlock *qemu_ram_alloc_resizeable(ram_addr_t size, ram_addr_t maxsz,
-                                    qemu_ram_resize_cb resized,
-                                    MemoryRegion *mr, Error **errp)
-{
-    return qemu_ram_alloc_internal(size, maxsz, resized, NULL,
-                                   RAM_RESIZEABLE, mr, errp);
+    return qemu_ram_alloc_internal(size, size, NULL, ram_flags, mr, errp);
 }
 
 static void reclaim_ramblock(RAMBlock *block)
 {
     if (block->flags & RAM_PREALLOC) {
         ;
-    } else if (xen_enabled()) {
-        xen_invalidate_map_cache_entry(block->host);
 #if !defined(_WIN32) && !defined(EMSCRIPTEN)
     } else if (block->fd >= 0) {
         qemu_ram_munmap(block->fd, block->host, block->max_length);
@@ -2281,20 +2083,11 @@ static void reclaim_ramblock(RAMBlock *block)
 
 void qemu_ram_free(RAMBlock *block)
 {
-    g_autofree char *name = NULL;
-
     if (!block) {
         return;
     }
 
-    if (block->host) {
-        ram_block_notify_remove(block->host, block->used_length,
-                                block->max_length);
-    }
-
     qemu_mutex_lock_ramlist();
-    name = cpr_name(block->mr);
-    cpr_delete_fd(name, 0);
     QLIST_REMOVE_RCU(block, next);
     ram_list.mru_block = NULL;
     /* Write list before version */
@@ -2352,8 +2145,6 @@ void qemu_ram_remap(ram_addr_t addr)
             vaddr = ramblock_ptr(block, offset);
             if (block->flags & RAM_PREALLOC) {
                 ;
-            } else if (xen_enabled()) {
-                abort();
             } else {
                 if (ram_block_discard_range(block, offset, page_size) != 0) {
                     /*
@@ -2418,23 +2209,6 @@ static void *qemu_ram_ptr_length(RAMBlock *block, ram_addr_t addr,
         len = *size;
     }
 
-    if (xen_enabled() && block->host == NULL) {
-        /* We need to check if the requested address is in the RAM
-         * because we don't want to map the entire memory in QEMU.
-         * In that case just map the requested area.
-         */
-        if (xen_mr_is_memory(block->mr)) {
-            return xen_map_cache(block->mr, block->offset + addr,
-                                 len, block->offset,
-                                 lock, lock, is_write);
-        }
-
-        block->host = xen_map_cache(block->mr, block->offset,
-                                    block->max_length,
-                                    block->offset,
-                                    1, lock, is_write);
-    }
-
     return ramblock_ptr(block, addr);
 }
 
@@ -2466,21 +2240,6 @@ RAMBlock *qemu_ram_block_from_host(void *ptr, bool round_offset,
 {
     RAMBlock *block;
     uint8_t *host = ptr;
-
-    if (xen_enabled()) {
-        ram_addr_t ram_addr;
-        RCU_READ_LOCK_GUARD();
-        ram_addr = xen_ram_addr_from_mapcache(ptr);
-        if (ram_addr == RAM_ADDR_INVALID) {
-            return NULL;
-        }
-
-        block = qemu_get_ram_block(ram_addr);
-        if (block) {
-            *offset = ram_addr - block->offset;
-        }
-        return block;
-    }
 
     RCU_READ_LOCK_GUARD();
     block = qatomic_rcu_read(&ram_list.mru_block);
@@ -2709,34 +2468,9 @@ static void tcg_log_global_after_sync(MemoryListener *listener)
 {
     CPUAddressSpace *cpuas;
 
-    /* Wait for the CPU to end the current TB.  This avoids the following
-     * incorrect race:
-     *
-     *      vCPU                         migration
-     *      ----------------------       -------------------------
-     *      TLB check -> slow path
-     *        notdirty_mem_write
-     *          write to RAM
-     *          mark dirty
-     *                                   clear dirty flag
-     *      TLB check -> fast path
-     *                                   read memory
-     *        write to RAM
-     *
-     * by pushing the migration thread's memory read after the vCPU thread has
-     * written the memory.
-     */
-    if (replay_mode == REPLAY_MODE_NONE) {
-        /*
-         * VGA can make calls to this function while updating the screen.
-         * In record/replay mode this causes a deadlock, because
-         * run_on_cpu waits for rr mutex. Therefore no races are possible
-         * in this case and no need for making run_on_cpu when
-         * record/replay is enabled.
-         */
-        cpuas = container_of(listener, CPUAddressSpace, tcg_as_listener);
-        run_on_cpu(cpuas->cpu, do_nothing, RUN_ON_CPU_NULL);
-    }
+    /* Wait for the CPU to end the current TB. */
+    cpuas = container_of(listener, CPUAddressSpace, tcg_as_listener);
+    run_on_cpu(cpuas->cpu, do_nothing, RUN_ON_CPU_NULL);
 }
 
 static void tcg_commit_cpu(CPUState *cpu, run_on_cpu_data data)
@@ -3452,9 +3186,6 @@ void address_space_unmap(AddressSpace *as, void *buffer, hwaddr len,
         if (is_write) {
             invalidate_and_set_dirty(mr, addr1, access_len);
         }
-        if (xen_enabled()) {
-            xen_invalidate_map_cache_entry(buffer);
-        }
         memory_region_unref(mr);
         return;
     }
@@ -3563,9 +3294,6 @@ void address_space_cache_destroy(MemoryRegionCache *cache)
         return;
     }
 
-    if (xen_enabled()) {
-        xen_invalidate_map_cache_entry(cache->ptr);
-    }
     memory_region_unref(cache->mrs.mr);
     flatview_unref(cache->fv);
     cache->mrs.mr = NULL;
@@ -4095,59 +3823,4 @@ bool ram_block_discard_is_required(void)
 {
     return qatomic_read(&ram_block_discard_required_cnt) ||
            qatomic_read(&ram_block_coordinated_discard_required_cnt);
-}
-
-/*
- * Return true if ram is compatible with CPR.  Do not exclude rom,
- * because the rom file could change in new QEMU.
- */
-static bool ram_is_cpr_compatible(RAMBlock *rb)
-{
-    MemoryRegion *mr = rb->mr;
-
-    if (!mr || !memory_region_is_ram(mr)) {
-        return true;
-    }
-
-    /* Ram device is remapped in new QEMU */
-    if (memory_region_is_ram_device(mr)) {
-        return true;
-    }
-
-    /*
-     * A file descriptor is passed to new QEMU and remapped, or its backing
-     * file is reopened and mapped.  It must be shared to avoid COW.
-     */
-    if (rb->fd >= 0 && qemu_ram_is_shared(rb)) {
-        return true;
-    }
-
-    return false;
-}
-
-/*
- * Add a blocker for each volatile ram block.  This function should only be
- * called after we know that the block is migratable.  Non-migratable blocks
- * are either re-created in new QEMU, or are handled specially, or are covered
- * by a device-level CPR blocker.
- */
-void ram_block_add_cpr_blocker(RAMBlock *rb, Error **errp)
-{
-    assert(qemu_ram_is_migratable(rb));
-
-    if (ram_is_cpr_compatible(rb)) {
-        return;
-    }
-
-    error_setg(&rb->cpr_blocker,
-               "Memory region %s is not compatible with CPR. share=on is "
-               "required for memory-backend objects, and aux-ram-share=on is "
-               "required.", memory_region_name(rb->mr));
-    migrate_add_blocker_modes(&rb->cpr_blocker, errp, MIG_MODE_CPR_TRANSFER,
-                              -1);
-}
-
-void ram_block_del_cpr_blocker(RAMBlock *rb)
-{
-    migrate_del_blocker(&rb->cpr_blocker);
 }

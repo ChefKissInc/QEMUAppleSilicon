@@ -22,7 +22,6 @@
 #include "hw/qdev-properties.h"
 #include "hw/usb/apple_typec.h"
 #include "hw/usb/hcd-tcp.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "qom/object.h"
@@ -162,31 +161,12 @@ static void apple_typec_init(Object *obj)
                               "conn-port");
 }
 
-static int apple_typec_post_load(void *opaque, int version_id)
-{
-    AppleTypeCState *s = opaque;
-    return 0;
-}
-
-static const VMStateDescription vmstate_apple_typec = {
-    .name = "AppleTypeCState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .post_load = apple_typec_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT8_ARRAY(phy_reg, AppleTypeCState, 0x100),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_typec_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     dc->realize = apple_typec_realize;
     device_class_set_legacy_reset(dc, apple_typec_reset);
     dc->desc = "Apple Type C USB PHY";
-    dc->vmsd = &vmstate_apple_typec;
 }
 
 static const TypeInfo apple_typec_info = {

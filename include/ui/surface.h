@@ -7,23 +7,12 @@
 
 #include "ui/qemu-pixman.h"
 
-#ifdef CONFIG_OPENGL
-# include <epoxy/gl.h>
-# include "ui/shader.h"
-#endif
-
 #define QEMU_ALLOCATED_FLAG     0x01
 #define QEMU_PLACEHOLDER_FLAG   0x02
 
 typedef struct DisplaySurface {
     pixman_image_t *image;
     uint8_t flags;
-#ifdef CONFIG_OPENGL
-    GLenum glformat;
-    GLenum gltype;
-    GLuint texture;
-    GLuint mem_obj;
-#endif
     qemu_pixman_shareable share_handle;
     uint32_t share_handle_offset;
 } DisplaySurface;

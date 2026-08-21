@@ -22,7 +22,6 @@
 #include "chardev/char-serial.h"
 #include "hw/qdev-core.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/fifo8.h"
 #include "qemu/log.h"
@@ -536,30 +535,6 @@ static void apple_uart_reset(DeviceState *dev)
     trace_apple_uart_rxsize(s->channel, s->rx_fifo_size);
 }
 
-static int apple_uart_post_load(void *opaque, int version_id)
-{
-    AppleUartState *s = opaque;
-
-    apple_uart_update_parameters(s);
-    apple_uart_rx_timeout_set(s);
-
-    return 0;
-}
-
-static const VMStateDescription vmstate_apple_uart = {
-    .name = "AppleUartState",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .post_load = apple_uart_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_FIFO8(rx, AppleUartState),
-            VMSTATE_UINT32_ARRAY(reg, AppleUartState,
-                                 APPLE_UART_REGS_MEM_SIZE / sizeof(uint32_t)),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 DeviceState *apple_uart_create(hwaddr addr, int fifo_size, int channel,
                                Chardev *chr, qemu_irq irq)
 {
@@ -638,7 +613,6 @@ static void apple_uart_class_init(ObjectClass *klass, const void *data)
     dc->realize = apple_uart_realize;
     device_class_set_legacy_reset(dc, apple_uart_reset);
     device_class_set_props(dc, apple_uart_properties);
-    dc->vmsd = &vmstate_apple_uart;
 }
 
 static const TypeInfo apple_uart_info = {

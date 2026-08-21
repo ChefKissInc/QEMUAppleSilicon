@@ -75,12 +75,6 @@ typedef struct DisasContext {
     bool vfp_enabled; /* FP enabled via FPSCR.EN */
     int vec_len;
     int vec_stride;
-    bool v7m_handler_mode;
-    bool v8m_secure; /* true if v8M and we're in Secure mode */
-    bool v8m_stackcheck; /* true if we need to perform v8M stack limit checks */
-    bool v8m_fpccr_s_wrong; /* true if v8M FPCCR.S != v8m_secure */
-    bool v7m_new_fp_ctxt_needed; /* ASPEN set but no active FP context */
-    bool v7m_lspact; /* FPCCR.LSPACT set */
     /* Immediate value in AArch32 SVC insn; must be set if is_jmp == DISAS_SWI
      * so that top level loop can generate correct syndrome information.
      */
@@ -140,8 +134,6 @@ typedef struct DisasContext {
     bool sme_trap_nonstreaming;
     /* True if the current instruction is non-streaming. */
     bool is_nonstreaming;
-    /* True if MVE insns are definitely not predicated by VPR or LTPSIZE */
-    bool mve_no_pred;
     /* True if fine-grained traps are active */
     bool fgt_active;
     /* True if fine-grained trap on SVC is enabled */
@@ -320,10 +312,6 @@ static inline int curr_insn_len(DisasContext *s)
 #define DISAS_HVC       DISAS_TARGET_5
 #define DISAS_SMC       DISAS_TARGET_6
 #define DISAS_YIELD     DISAS_TARGET_7
-/* M profile branch which might be an exception return (and so needs
- * custom end-of-TB code)
- */
-#define DISAS_BX_EXCRET DISAS_TARGET_8
 /*
  * For instructions which want an immediate exit to the main loop, as opposed
  * to attempting to use lookup_and_goto_ptr.  Unlike DISAS_UPDATE_EXIT, this

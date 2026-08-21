@@ -39,10 +39,6 @@
 #include "qobject/qdict.h"
 #include "qobject/qstring.h"
 
-#include "scsi/pr-manager.h"
-#include "scsi/constants.h"
-#include "scsi/utils.h"
-
 #if defined(__APPLE__) && (__MACH__)
 #include <sys/ioctl.h>
 #if defined(HAVE_HOST_BLOCK_DEVICE)
@@ -195,8 +191,6 @@ typedef struct BDRVRawState {
         uint64_t discard_nb_failed;
         uint64_t discard_bytes_ok;
     } stats;
-
-    PRManager *pr_mgr;
 } BDRVRawState;
 
 typedef struct BDRVRawReopenState {
@@ -621,7 +615,6 @@ static int raw_open_common(BlockDriverState *bs, QDict *options,
     QemuOpts *opts;
     Error *local_err = NULL;
     const char *filename = NULL;
-    const char *str;
     BlockdevAioOptions aio, aio_default;
     int fd, ret;
     struct stat st;
@@ -692,16 +685,6 @@ static int raw_open_common(BlockDriverState *bs, QDict *options,
         break;
     default:
         abort();
-    }
-
-    str = qemu_opt_get(opts, "pr-manager");
-    if (str) {
-        s->pr_mgr = pr_manager_lookup(str, &local_err);
-        if (local_err) {
-            error_propagate(errp, local_err);
-            ret = -EINVAL;
-            goto fail;
-        }
     }
 
     s->drop_cache = qemu_opt_get_bool(opts, "drop-cache", true);

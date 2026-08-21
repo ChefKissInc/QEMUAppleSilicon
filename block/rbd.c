@@ -23,7 +23,6 @@
 #include "block/qdict.h"
 #include "crypto/secret.h"
 #include "qemu/cutils.h"
-#include "system/replay.h"
 #include "qobject/qstring.h"
 #include "qobject/qdict.h"
 #include "qobject/qjson.h"

@@ -52,8 +52,6 @@
 #include "block/qapi.h"
 #include "crypto/init.h"
 #include "trace/control.h"
-#include "qemu/throttle.h"
-#include "block/throttle-groups.h"
 
 #define QEMU_IMG_VERSION "qemu-img version " QEMU_FULL_VERSION \
                           "\n" QEMU_COPYRIGHT "\n"
@@ -159,7 +157,7 @@ static OutputFormat parse_output_format(const char *argv0, const char *arg)
  * an odd number of ',' (or else a separating ',' following it gets
  * escaped), or be empty (or else a separating ',' preceding it can
  * escape a separating ',' following it).
- * 
+ *
  */
 static bool is_valid_option_list(const char *list)
 {
@@ -911,7 +909,6 @@ static int img_commit(const img_cmd_t *ccmd, int argc, char **argv)
     Error *local_err = NULL;
     CommonBlockJobCBInfo cbi;
     bool image_opts = false;
-    int64_t rate_limit = 0;
 
     fmt = NULL;
     cache = BDRV_DEFAULT_CACHE;
@@ -951,8 +948,6 @@ static int img_commit(const img_cmd_t *ccmd, int argc, char **argv)
 "  -b, --base BASE_IMG\n"
 "     image in the backing chain to commit change to\n"
 "     (default: immediate backing file; implies --drop)\n"
-"  -r, --rate-limit RATE\n"
-"     I/O rate limit, in bytes per second\n"
 "  -p, --progress\n"
 "     display progress information\n"
 "  -q, --quiet\n"
@@ -980,12 +975,6 @@ static int img_commit(const img_cmd_t *ccmd, int argc, char **argv)
             base = optarg;
             /* -b implies -d */
             drop = true;
-            break;
-        case 'r':
-            rate_limit = cvtnum("rate limit", optarg, true);
-            if (rate_limit < 0) {
-                return 1;
-            }
             break;
         case 'p':
             progress = true;
@@ -1056,7 +1045,7 @@ static int img_commit(const img_cmd_t *ccmd, int argc, char **argv)
         .bs   = bs,
     };
 
-    commit_active_start("commit", bs, base_bs, JOB_DEFAULT, rate_limit,
+    commit_active_start("commit", bs, base_bs, JOB_DEFAULT,
                         BLOCKDEV_ON_ERROR_REPORT, NULL, common_block_job_cb,
                         &cbi, false, &local_err);
     if (local_err) {
@@ -2215,17 +2204,6 @@ static int convert_copy_bitmaps(BlockDriverState *src, BlockDriverState *dst,
 
 #define MAX_BUF_SECTORS 32768
 
-static void set_rate_limit(BlockBackend *blk, int64_t rate_limit)
-{
-    ThrottleConfig cfg;
-
-    throttle_config_init(&cfg);
-    cfg.buckets[THROTTLE_BPS_WRITE].avg = rate_limit;
-
-    blk_io_limits_enable(blk, CONVERT_THROTTLE_GROUP);
-    blk_set_io_limits(blk, &cfg);
-}
-
 static int img_convert(const img_cmd_t *ccmd, int argc, char **argv)
 {
     int c, bs_i, flags, src_flags = BDRV_O_NO_SHARE;
@@ -2857,10 +2835,6 @@ static int img_convert(const img_cmd_t *ccmd, int argc, char **argv)
     } else {
         s.compressed = s.compressed || bdi.needs_compressed_writes;
         s.cluster_sectors = bdi.cluster_size / BDRV_SECTOR_SIZE;
-    }
-
-    if (rate_limit) {
-        set_rate_limit(s.target, rate_limit);
     }
 
     ret = convert_do_copy(&s);

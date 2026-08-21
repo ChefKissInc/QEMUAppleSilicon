@@ -19,7 +19,6 @@
 #ifndef SYSTEM_RAM_ADDR_H
 #define SYSTEM_RAM_ADDR_H
 
-#include "system/xen.h"
 #include "system/tcg.h"
 #include "exec/cputlb.h"
 #include "exec/ramlist.h"
@@ -110,10 +109,9 @@ bool ramblock_is_pmem(RAMBlock *rb);
  *  @size: the size in bytes of the ram block
  *  @max_size: the maximum size of the block after resizing
  *  @mr: the memory region where the ram block is
- *  @resized: callback after calls to qemu_ram_resize
  *  @ram_flags: RamBlock flags. Supported flags: RAM_SHARED, RAM_PMEM,
  *              RAM_NORESERVE, RAM_PROTECTED, RAM_NAMED_FILE, RAM_READONLY,
- *              RAM_READONLY_FD, RAM_GUEST_MEMFD
+ *              RAM_READONLY_FD
  *  @mem_path or @fd: specify the backing file or device
  *  @offset: Offset into target file
  *  @grow: extend file if necessary (but an empty file is always extended).
@@ -123,13 +121,11 @@ bool ramblock_is_pmem(RAMBlock *rb);
  *  On success, return a pointer to the ram block.
  *  On failure, return NULL.
  */
-typedef void (*qemu_ram_resize_cb)(const char *, uint64_t length, void *host);
-
 RAMBlock *qemu_ram_alloc_from_file(ram_addr_t size, MemoryRegion *mr,
                                    uint32_t ram_flags, const char *mem_path,
                                    off_t offset, Error **errp);
 RAMBlock *qemu_ram_alloc_from_fd(ram_addr_t size, ram_addr_t max_size,
-                                 qemu_ram_resize_cb resized, MemoryRegion *mr,
+                                 MemoryRegion *mr,
                                  uint32_t ram_flags, int fd, off_t offset,
                                  bool grow,
                                  Error **errp);
@@ -138,12 +134,7 @@ RAMBlock *qemu_ram_alloc_from_ptr(ram_addr_t size, void *host,
                                   MemoryRegion *mr, Error **errp);
 RAMBlock *qemu_ram_alloc(ram_addr_t size, uint32_t ram_flags, MemoryRegion *mr,
                          Error **errp);
-RAMBlock *qemu_ram_alloc_resizeable(ram_addr_t size, ram_addr_t max_size,
-                                    qemu_ram_resize_cb resized,
-                                    MemoryRegion *mr, Error **errp);
 void qemu_ram_free(RAMBlock *block);
-
-int qemu_ram_resize(RAMBlock *block, ram_addr_t newsize, Error **errp);
 
 void qemu_ram_msync(RAMBlock *block, ram_addr_t start, ram_addr_t length);
 
@@ -299,10 +290,6 @@ static inline void cpu_physical_memory_set_dirty_range(ram_addr_t start,
     unsigned long idx, offset, base;
     int i;
 
-    if (!mask && !xen_enabled()) {
-        return;
-    }
-
     end = TARGET_PAGE_ALIGN(start + length) >> TARGET_PAGE_BITS;
     page = start >> TARGET_PAGE_BITS;
 
@@ -335,10 +322,6 @@ static inline void cpu_physical_memory_set_dirty_range(ram_addr_t start,
             offset = 0;
             base += DIRTY_MEMORY_BLOCK_SIZE;
         }
-    }
-
-    if (xen_enabled()) {
-        xen_hvm_modified_memory(start, length);
     }
 }
 
@@ -413,10 +396,6 @@ uint64_t cpu_physical_memory_set_dirty_lebitmap(unsigned long *bitmap,
                     idx++;
                 }
             }
-        }
-
-        if (xen_enabled()) {
-            xen_hvm_modified_memory(start, pages << TARGET_PAGE_BITS);
         }
     } else {
         uint8_t clients = tcg_enabled() ? DIRTY_CLIENTS_ALL : DIRTY_CLIENTS_NOCODE;

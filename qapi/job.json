@@ -99,8 +99,6 @@
 #
 # @resume: see `job-resume`
 #
-# @set-speed: see `block-job-set-speed`
-#
 # @complete: see `job-complete`
 #
 # @dismiss: see `job-dismiss`
@@ -112,7 +110,7 @@
 # Since: 2.12
 ##
 { 'enum': 'JobVerb',
-  'data': ['cancel', 'pause', 'resume', 'set-speed', 'complete', 'dismiss',
+  'data': ['cancel', 'pause', 'resume', 'complete', 'dismiss',
            'finalize', 'change' ] }
 
 ##

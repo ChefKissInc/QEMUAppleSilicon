@@ -319,8 +319,6 @@ struct EHCIState {
     VMChangeStateEntry *vmstate;
 };
 
-extern const VMStateDescription vmstate_ehci;
-
 void usb_ehci_init(EHCIState *s, DeviceState *dev);
 void usb_ehci_finalize(EHCIState *s);
 void usb_ehci_realize(EHCIState *s, DeviceState *dev, Error **errp);

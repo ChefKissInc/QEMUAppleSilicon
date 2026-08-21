@@ -1,9 +1,6 @@
 config WHPX
     bool
 
-config NVMM
-    bool
-
 config HVF
     bool
 
@@ -12,9 +9,3 @@ config TCG
 
 config KVM
     bool
-
-config XEN
-    bool
-    select FSDEV_9P if VIRTFS
-    select PCI_EXPRESS_GENERIC_BRIDGE
-    select XEN_BUS

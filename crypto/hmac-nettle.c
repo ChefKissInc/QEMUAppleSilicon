@@ -38,9 +38,7 @@ struct QCryptoHmacNettle {
         struct hmac_sha256_ctx sha256_ctx; /* equals hmac_sha224_ctx */
         struct hmac_sha512_ctx sha512_ctx; /* equals hmac_sha384_ctx */
         struct hmac_ripemd160_ctx ripemd160_ctx;
-#ifdef CONFIG_CRYPTO_SM3
  struct hmac_sm3_ctx ctx;
-#endif
     } u;
 };
 
@@ -92,14 +90,12 @@ struct qcrypto_nettle_hmac_alg {
         .digest = (qcrypto_nettle_hmac_digest)hmac_ripemd160_digest,
         .len = RIPEMD160_DIGEST_SIZE,
     },
-#ifdef CONFIG_CRYPTO_SM3
     [QCRYPTO_HASH_ALGO_SM3] = {
         .setkey = (qcrypto_nettle_hmac_setkey)hmac_sm3_set_key,
         .update = (qcrypto_nettle_hmac_update)hmac_sm3_update,
         .digest = (qcrypto_nettle_hmac_digest)hmac_sm3_digest,
         .len = SM3_DIGEST_SIZE,
     },
-#endif
 };
 
 bool qcrypto_hmac_supports(QCryptoHashAlgo alg)

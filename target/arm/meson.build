@@ -22,14 +22,12 @@ arm_common_system_ss.add(when: 'TARGET_AARCH64', if_false: files(
 arm_common_system_ss.add(when: 'CONFIG_KVM', if_false: files('kvm-stub.c'))
 arm_common_system_ss.add(when: 'CONFIG_HVF', if_false: files('hvf-stub.c'))
 arm_common_system_ss.add(files(
-  'arch_dump.c',
   'arm-powerctl.c',
   'cortex-regs.c',
   'cpregs-pmu.c',
   'cpu-irq.c',
   'debug_helper.c',
   'helper.c',
-  'machine.c',
   'ptw.c',
   'vfp_fpscr.c',
 ))

@@ -30,8 +30,6 @@
 #include "kvm_arm.h"
 #include "gicv3_internal.h"
 #include "vgic_common.h"
-#include "migration/blocker.h"
-#include "migration/misc.h"
 #include "qom/object.h"
 #include "target/arm/cpregs.h"
 
@@ -691,10 +689,6 @@ static void arm_gicv3_icc_reset(CPUARMState *env, const ARMCPRegInfo *ri)
     memset(c->icc_apr, 0, sizeof(c->icc_apr));
     memset(c->icc_igrpen, 0, sizeof(c->icc_igrpen));
 
-    if (s->migration_blocker) {
-        return;
-    }
-
     /* Initialize to actual HW supported configuration */
     kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CPU_SYSREGS,
                       KVM_VGIC_ATTR(ICC_CTLR_EL1, c->gicr_typer),
@@ -712,11 +706,6 @@ static void kvm_arm_gicv3_reset_hold(Object *obj, ResetType type)
 
     if (kgc->parent_phases.hold) {
         kgc->parent_phases.hold(obj, type);
-    }
-
-    if (s->migration_blocker) {
-        DPRINTF("Cannot put kernel gic state, no kernel interface\n");
-        return;
     }
 
     kvm_arm_gicv3_put(s);
@@ -837,15 +826,7 @@ static void kvm_arm_gicv3_realize(DeviceState *dev, Error **errp)
     }
 
     if (s->maint_irq) {
-        Error *kvm_nv_migration_blocker = NULL;
         int ret;
-
-        error_setg(&kvm_nv_migration_blocker,
-                   "Live migration disabled because KVM nested virt is enabled");
-        if (migrate_add_blocker(&kvm_nv_migration_blocker, errp)) {
-            error_free(kvm_nv_migration_blocker);
-            return;
-        }
 
         ret = kvm_device_check_attr(s->dev_fd,
                                     KVM_DEV_ARM_VGIC_GRP_MAINT_IRQ, 0);
@@ -918,20 +899,9 @@ static void kvm_arm_gicv3_realize(DeviceState *dev, Error **errp)
         kvm_irqchip_commit_routes(kvm_state);
     }
 
-    if (!kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_DIST_REGS,
-                               GICD_CTLR)) {
-        error_setg(&s->migration_blocker, "This operating system kernel does "
-                                          "not support vGICv3 migration");
-        if (migrate_add_blocker(&s->migration_blocker, errp) < 0) {
-            return;
-        }
-    }
     if (kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
                               KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES)) {
         qemu_add_vm_change_state_handler(vm_change_state_handler, s);
-        migration_add_notifier_mode(&s->cpr_notifier,
-                                    kvm_arm_gicv3_notifier,
-                                    MIG_MODE_CPR_TRANSFER);
     }
 }
 
@@ -942,8 +912,6 @@ static void kvm_arm_gicv3_class_init(ObjectClass *klass, const void *data)
     ARMGICv3CommonClass *agcc = ARM_GICV3_COMMON_CLASS(klass);
     KVMARMGICv3Class *kgc = KVM_ARM_GICV3_CLASS(klass);
 
-    agcc->pre_save = kvm_arm_gicv3_get;
-    agcc->post_load = kvm_arm_gicv3_put;
     device_class_set_parent_realize(dc, kvm_arm_gicv3_realize,
                                     &kgc->parent_realize);
     resettable_class_set_parent_phases(rc, NULL, kvm_arm_gicv3_reset_hold, NULL,

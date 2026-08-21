@@ -17,7 +17,6 @@
 #include "block/blockjob_int.h"
 #include "qapi/error.h"
 #include "qobject/qdict.h"
-#include "qemu/ratelimit.h"
 #include "system/block-backend.h"
 #include "block/copy-on-read.h"
 
@@ -176,10 +175,8 @@ static int coroutine_fn stream_run(Job *job, Error **errp)
         bool copy;
         int ret = -1;
 
-        /* Note that even when no rate limit is applied we need to yield
-         * with no pending I/O here so that bdrv_drain_all() returns.
+        /* Note we need to yield with no pending I/O here so that bdrv_drain_all() returns.
          */
-        block_job_ratelimit_sleep(&s->common);
         if (job_is_cancelled(&s->common.job)) {
             break;
         }
@@ -227,9 +224,6 @@ static int coroutine_fn stream_run(Job *job, Error **errp)
 
         /* Publish progress */
         job_progress_update(&s->common.job, n);
-        if (copy) {
-            block_job_ratelimit_processed_bytes(&s->common, n);
-        }
     }
 
     /* Do not remove the backing file if an error was there but ignored. */
@@ -252,7 +246,7 @@ void stream_start(const char *job_id, BlockDriverState *bs,
                   BlockDriverState *base, const char *backing_file_str,
                   bool backing_mask_protocol,
                   BlockDriverState *bottom,
-                  int creation_flags, int64_t speed,
+                  int creation_flags,
                   BlockdevOnError on_error,
                   const char *filter_node_name,
                   Error **errp)
@@ -348,7 +342,7 @@ void stream_start(const char *job_id, BlockDriverState *bs,
 
     s = block_job_create(job_id, &stream_job_driver, NULL, cor_filter_bs,
                          0, BLK_PERM_ALL,
-                         speed, creation_flags, NULL, NULL, errp);
+                         creation_flags, NULL, NULL, errp);
     if (!s) {
         goto fail;
     }

@@ -52,7 +52,6 @@ typedef ssize_t (NetReceiveIOV)(NetClientState *, const struct iovec *, int);
 typedef void (NetCleanup) (NetClientState *);
 typedef void (LinkStatusChanged)(NetClientState *);
 typedef void (NetClientDestructor)(NetClientState *);
-typedef RxFilterInfo *(QueryRxFilter)(NetClientState *);
 typedef bool (HasUfo)(NetClientState *);
 typedef bool (HasUso)(NetClientState *);
 typedef bool (HasVnetHdr)(NetClientState *);
@@ -81,7 +80,6 @@ typedef struct NetClientInfo {
     NetStop *stop;
     NetCleanup *cleanup;
     LinkStatusChanged *link_status_changed;
-    QueryRxFilter *query_rx_filter;
     NetPoll *poll;
     HasUfo *has_ufo;
     HasUso *has_uso;
@@ -116,7 +114,6 @@ struct NetClientState {
     bool is_netdev;
     bool do_not_pad; /* do not pad to the minimum ethernet frame length */
     bool is_datapath;
-    QTAILQ_HEAD(, NetFilterState) filters;
 };
 
 typedef QTAILQ_HEAD(NetClientStateList, NetClientState) NetClientStateList;
@@ -322,18 +319,6 @@ void qdev_set_nic_properties(DeviceState *dev, NICInfo *nd);
 #define POLYNOMIAL_LE 0xedb88320
 uint32_t net_crc32(const uint8_t *p, int len);
 uint32_t net_crc32_le(const uint8_t *p, int len);
-
-#define vmstate_offset_macaddr(_state, _field)                       \
-    vmstate_offset_array(_state, _field.a, uint8_t,                \
-                         sizeof(typeof_field(_state, _field)))
-
-#define VMSTATE_MACADDR(_field, _state) {                            \
-    .name       = (stringify(_field)),                               \
-    .size       = sizeof(MACAddr),                                   \
-    .info       = &vmstate_info_buffer,                              \
-    .flags      = VMS_BUFFER,                                        \
-    .offset     = vmstate_offset_macaddr(_state, _field),            \
-}
 
 static inline bool net_peer_needs_padding(NetClientState *nc)
 {

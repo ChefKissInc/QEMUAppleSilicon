@@ -18,22 +18,14 @@
 #include "system/iothread.h"
 #include "block/export.h"
 #include "block/fuse.h"
-#include "block/nbd.h"
 #include "qapi/error.h"
 #include "qapi/qapi-commands-block-export.h"
 #include "qapi/qapi-events-block-export.h"
 #include "qemu/id.h"
-#ifdef CONFIG_VDUSE_BLK_EXPORT
-#include "vduse-blk.h"
-#endif
 
 static const BlockExportDriver *blk_exp_drivers[] = {
-    &blk_exp_nbd,
 #ifdef CONFIG_FUSE
     &blk_exp_fuse,
-#endif
-#ifdef CONFIG_VDUSE_BLK_EXPORT
-    &blk_exp_vduse_blk,
 #endif
 };
 

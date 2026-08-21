@@ -23,7 +23,6 @@
 #include "hw/sysbus.h"
 #include "hw/usb/dwc3-regs.h"
 #include "hw/usb/hcd-dwc3.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/bitops.h"
 #include "qemu/cutils.h"
@@ -2290,142 +2289,6 @@ static void dwc3_ep_run_schedule_update(DWC3State *s, DWC3Endpoint *ep)
                             dwc3_new_ep_run_update(s, ep));
 }
 
-static int dwc3_buffer_desc_pre_save(void *opaque)
-{
-    DWC3BufferDesc *s = opaque;
-    if (s->mapped) {
-        error_report("dwc3: Cannot save when a transfer is ongoing");
-        return -EINVAL;
-    }
-    return 0;
-}
-
-static int usb_dwc3_post_load(void *opaque, int version_id)
-{
-    DWC3State *s = opaque;
-    USBDevice *udev = &s->device.parent_obj;
-
-    s->eps[0].uep = &udev->ep_ctl;
-    s->eps[1].uep = &udev->ep_ctl;
-    for (int i = 2; i < DWC3_NUM_EPS; i++) {
-        if (s->eps[i].epnum) {
-            s->eps[i].uep = usb_ep_get(
-                udev, s->eps[i].epnum & 1 ? USB_TOKEN_IN : USB_TOKEN_OUT,
-                s->eps[i].epnum >> 1);
-        }
-    }
-    return 0;
-}
-
-static const VMStateDescription vmstate_dwc3_event_ring = {
-    .name = "dwc3/event_ring",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(size, DWC3EventRing),
-            VMSTATE_UINT32(head, DWC3EventRing),
-            VMSTATE_UINT32(count, DWC3EventRing),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_dwc3_trb = {
-    .name = "dwc3/trb",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT64(addr, DWC3TRB),
-            VMSTATE_UINT64(bp, DWC3TRB),
-            VMSTATE_UINT32(status, DWC3TRB),
-            VMSTATE_UINT32(ctrl, DWC3TRB),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_dwc3_buffer_desc = {
-    .name = "dwc3/buffer_descriptor",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .pre_save = dwc3_buffer_desc_pre_save,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_INT32(epid, DWC3BufferDesc),
-            VMSTATE_UINT32(count, DWC3BufferDesc),
-            VMSTATE_UINT32(length, DWC3BufferDesc),
-            VMSTATE_UINT32(actual_length, DWC3BufferDesc),
-            VMSTATE_UINT32(dir, DWC3BufferDesc),
-            VMSTATE_BOOL(ended, DWC3BufferDesc),
-            VMSTATE_STRUCT_VARRAY_POINTER_UINT32(trbs, DWC3BufferDesc, count,
-                                                 vmstate_dwc3_trb, DWC3TRB),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_dwc3_transfer = {
-    .name = "dwc3/transfer",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT64(tdaddr, DWC3Transfer),
-            VMSTATE_INT32(epid, DWC3Transfer),
-            VMSTATE_UINT32(count, DWC3Transfer),
-            VMSTATE_UINT32(rsc_idx, DWC3Transfer),
-            VMSTATE_BOOL(can_free, DWC3Transfer),
-            VMSTATE_QTAILQ_V(buffers, DWC3Transfer, 1, vmstate_dwc3_buffer_desc,
-                             DWC3BufferDesc, queue),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_dwc3_endpoint = {
-    .name = "dwc3/endpoint",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(epid, DWC3Endpoint),
-            VMSTATE_UINT32(epnum, DWC3Endpoint),
-            VMSTATE_UINT32(intrnum, DWC3Endpoint),
-            VMSTATE_UINT32(event_en, DWC3Endpoint),
-            VMSTATE_UINT32(xfer_resource_idx, DWC3Endpoint),
-            VMSTATE_UINT8(dseqnum, DWC3Endpoint),
-            VMSTATE_BOOL(stalled, DWC3Endpoint),
-            VMSTATE_BOOL(not_ready, DWC3Endpoint),
-            VMSTATE_STRUCT_POINTER(xfer, DWC3Endpoint, vmstate_dwc3_transfer,
-                                   DWC3Transfer),
-            VMSTATE_UINT64(setup_packet_u64, DWC3Endpoint),
-            VMSTATE_UINT32(last_control_command, DWC3Endpoint),
-            VMSTATE_BOOL(send_not_ready_control_data, DWC3Endpoint),
-            VMSTATE_UINT32(rsc_idx_counter, DWC3Endpoint),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_usb_dwc3 = {
-    .name = "dwc3",
-    .version_id = 1,
-    .post_load = usb_dwc3_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32_ARRAY(glbreg, DWC3State,
-                                 DWC3_GLBREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(dreg, DWC3State,
-                                 DWC3_DREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_UINT32_ARRAY(depcmdreg, DWC3State,
-                                 DWC3_DEPCMDREG_SIZE / sizeof(uint32_t)),
-            VMSTATE_BOOL_ARRAY(host_intr_state, DWC3State, DWC3_NUM_INTRS),
-            VMSTATE_STRUCT_ARRAY(eps, DWC3State, DWC3_NUM_EPS, 1,
-                                 vmstate_dwc3_endpoint, DWC3Endpoint),
-            VMSTATE_STRUCT_ARRAY(intrs, DWC3State, DWC3_NUM_INTRS, 1,
-                                 vmstate_dwc3_event_ring, DWC3EventRing),
-            VMSTATE_UINT32(global_rsc_idx_counter, DWC3State),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void dwc3_usb_device_class_initfn(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -2456,7 +2319,6 @@ static void usb_dwc3_class_init(ObjectClass *klass, const void *data)
     ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     dc->realize = usb_dwc3_realize;
-    dc->vmsd = &vmstate_usb_dwc3;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
     resettable_class_set_parent_phases(rc, dwc3_reset_enter, dwc3_reset_hold,
                                        dwc3_reset_exit, &c->parent_phases);

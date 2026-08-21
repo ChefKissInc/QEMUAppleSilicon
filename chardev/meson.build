@@ -29,24 +29,8 @@ endif
 
 chardev_ss = chardev_ss.apply({})
 
-system_ss.add(files(
-    'char-hmp-cmds.c',
-    'msmouse.c',
-    'wctablet.c',
-    'testdev.c'))
+system_ss.add(files('char-hmp-cmds.c'))
 
 chardev_modules = {}
-
-if brlapi.found()
-  module_ss = ss.source_set()
-  module_ss.add(when: [brlapi], if_true: [files('baum.c'), pixman])
-  chardev_modules += { 'baum': module_ss }
-endif
-
-if spice.found()
-  module_ss = ss.source_set()
-  module_ss.add(when: [spice], if_true: files('spice.c'))
-  chardev_modules += { 'spice': module_ss }
-endif
 
 modules += { 'chardev': chardev_modules }

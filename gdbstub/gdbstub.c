@@ -39,7 +39,6 @@
 
 #include "system/hw_accel.h"
 #include "system/runstate.h"
-#include "exec/replay-core.h"
 #include "exec/hwaddr.h"
 
 #include "internals.h"
@@ -1344,30 +1343,7 @@ static void handle_step(GArray *params, void *user_ctx)
 
 static void handle_backward(GArray *params, void *user_ctx)
 {
-    if (!gdb_can_reverse()) {
-        gdb_put_packet("E22");
-    }
-    if (params->len == 1) {
-        switch (gdb_get_cmd_param(params, 0)->opcode) {
-        case 's':
-            if (replay_reverse_step()) {
-                gdb_continue();
-            } else {
-                gdb_put_packet("E14");
-            }
-            return;
-        case 'c':
-            if (replay_reverse_continue()) {
-                gdb_continue();
-            } else {
-                gdb_put_packet("E14");
-            }
-            return;
-        }
-    }
-
-    /* Default invalid command */
-    gdb_put_packet("");
+    gdb_put_packet("E22");
 }
 
 static void handle_v_cont_query(GArray *params, void *user_ctx)
@@ -1619,11 +1595,6 @@ static void handle_query_supported(GArray *params, void *user_ctx)
     g_string_printf(gdbserver_state.str_buf, "PacketSize=%x", MAX_PACKET_LENGTH);
     if (gdb_get_core_xml_file(first_cpu)) {
         g_string_append(gdbserver_state.str_buf, ";qXfer:features:read+");
-    }
-
-    if (gdb_can_reverse()) {
-        g_string_append(gdbserver_state.str_buf,
-            ";ReverseStep+;ReverseContinue+");
     }
 
     if (params->len) {

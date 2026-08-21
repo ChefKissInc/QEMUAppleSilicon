@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/dma/apple_sio.h"
 #include "hw/misc/apple-silicon/a7iop/rtkit.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/log.h"
 #include "qemu/queue.h"
@@ -662,124 +661,6 @@ static void apple_sio_reset_hold(Object *obj, ResetType type)
     }
 }
 
-static const VMStateDescription vmstate_sio_dma_config = {
-    .name = "SIODMAConfig",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(xfer, SIODMAConfig),
-            VMSTATE_UINT32(timeout, SIODMAConfig),
-            VMSTATE_UINT32(fifo, SIODMAConfig),
-            VMSTATE_UINT32(trigger, SIODMAConfig),
-            VMSTATE_UINT32(limit, SIODMAConfig),
-            VMSTATE_UINT32(field_14, SIODMAConfig),
-            VMSTATE_UINT32(field_18, SIODMAConfig),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_sio_dma_segment = {
-    .name = "SIODMASegment",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT64(addr, SIODMASegment),
-            VMSTATE_UINT32(len, SIODMASegment),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static int vmstate_apple_sio_dma_endpoint_pre_load(void *opaque)
-{
-    AppleSIODMAEndpoint *ep = opaque;
-    apple_sio_dma_del_buffers(ep);
-    return 0;
-}
-
-static int vmstate_apple_sio_dma_endpoint_post_load(void *opaque,
-                                                    int version_id)
-{
-    AppleSIODMAEndpoint *ep = opaque;
-    AppleSIOState *s;
-    SIODMABuffer *buf;
-    uint64_t completed;
-
-    s = container_of(ep, AppleSIOState, eps[ep->id]);
-
-    QTAILQ_FOREACH (buf, &ep->buffers, next) {
-        qemu_sglist_init(&buf->sgl, DEVICE(s), buf->segment_count, &s->dma_as);
-        for (uint32_t i = 0; i < buf->segment_count; ++i) {
-            qemu_sglist_add(&buf->sgl, buf->segments[i].addr,
-                            buf->segments[i].len);
-        }
-
-        if (buf->mapped) {
-            buf->mapped = false;
-            completed = buf->completed;
-            apple_sio_dma_map_buf(ep, buf);
-            buf->completed = completed;
-        }
-    }
-
-    return 0;
-}
-
-static const VMStateDescription vmstate_sio_dma_map_buf = {
-    .name = "SIODMABuffer",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_STRUCT_VARRAY_UINT32_ALLOC(
-                segments, SIODMABuffer, segment_count, 0,
-                vmstate_sio_dma_segment, SIODMASegment),
-            VMSTATE_UINT32(segment_count, SIODMABuffer),
-            VMSTATE_UINT64(completed, SIODMABuffer),
-            VMSTATE_UINT64(start_timestamp, SIODMABuffer),
-            VMSTATE_UINT8(tag, SIODMABuffer),
-            VMSTATE_BOOL(mapped, SIODMABuffer),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_apple_sio_dma_endpoint = {
-    .name = "AppleSIODMAEndpoint",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .pre_load = vmstate_apple_sio_dma_endpoint_pre_load,
-    .post_load = vmstate_apple_sio_dma_endpoint_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_STRUCT(config, AppleSIODMAEndpoint, 0,
-                           vmstate_sio_dma_config, SIODMAConfig),
-            VMSTATE_UINT8(id, AppleSIODMAEndpoint),
-            VMSTATE_UINT32(direction, AppleSIODMAEndpoint),
-            VMSTATE_QTAILQ_V(buffers, AppleSIODMAEndpoint, 0,
-                             vmstate_sio_dma_map_buf, SIODMABuffer, next),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_apple_sio = {
-    .name = "AppleSIOState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_APPLE_RTKIT(parent_obj, AppleSIOState),
-            VMSTATE_STRUCT_ARRAY(eps, AppleSIOState, SIO_NUM_EPS, 0,
-                                 vmstate_apple_sio_dma_endpoint,
-                                 AppleSIODMAEndpoint),
-            VMSTATE_UINT32(protocol_version, AppleSIOState),
-            VMSTATE_UINT64(segment_base, AppleSIOState),
-            VMSTATE_UINT32(segment_size, AppleSIOState),
-            VMSTATE_UINT64(resp_base, AppleSIOState),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void apple_sio_class_init(ObjectClass *klass, const void *data)
 {
     ResettableClass *rc;
@@ -796,7 +677,6 @@ static void apple_sio_class_init(ObjectClass *klass, const void *data)
                                        &sioc->parent_reset);
     dc->desc = "Apple Smart IO DMA Controller";
     dc->user_creatable = false;
-    dc->vmsd = &vmstate_apple_sio;
 }
 
 static const TypeInfo apple_sio_info = {

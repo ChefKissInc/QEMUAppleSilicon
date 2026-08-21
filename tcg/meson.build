@@ -22,7 +22,6 @@ if get_option('tcg_interpreter')
   tcg_ss.add(files('tci.c'))
 endif
 
-tcg_ss.add(when: libdw, if_true: files('debuginfo.c'))
 if host_os == 'linux'
   tcg_ss.add(files('perf.c'))
 endif

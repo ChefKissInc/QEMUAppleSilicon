@@ -4,7 +4,6 @@
 #include "qemu/range.h"
 #include "qemu/error-report.h"
 #include "hw/pci/shpc.h"
-#include "migration/qemu-file-types.h"
 #include "hw/pci/pci.h"
 #include "hw/pci/pci_bus.h"
 #include "hw/pci/msi.h"
@@ -758,32 +757,3 @@ void shpc_cap_write_config(PCIDevice *d, uint32_t addr, uint32_t val, int l)
     /* Update cap dword data in case guest is going to read it. */
     shpc_cap_update_dword(d);
 }
-
-static int shpc_save(QEMUFile *f, void *pv, size_t size,
-                     const VMStateField *field, JSONWriter *vmdesc)
-{
-    PCIDevice *d = container_of(pv, PCIDevice, shpc);
-    qemu_put_buffer(f, d->shpc->config, SHPC_SIZEOF(d));
-
-    return 0;
-}
-
-static int shpc_load(QEMUFile *f, void *pv, size_t size,
-                     const VMStateField *field)
-{
-    PCIDevice *d = container_of(pv, PCIDevice, shpc);
-    int ret = qemu_get_buffer(f, d->shpc->config, SHPC_SIZEOF(d));
-    if (ret != SHPC_SIZEOF(d)) {
-        return -EINVAL;
-    }
-    /* Make sure we don't lose notifications. An extra interrupt is harmless. */
-    d->shpc->msi_requested = 0;
-    shpc_interrupt_update(d);
-    return 0;
-}
-
-const VMStateInfo shpc_vmstate_info = {
-    .name = "shpc",
-    .get  = shpc_load,
-    .put  = shpc_save,
-};

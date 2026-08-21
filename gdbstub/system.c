@@ -22,7 +22,6 @@
 #include "accel/accel-cpu-ops.h"
 #include "system/cpus.h"
 #include "system/runstate.h"
-#include "system/replay.h"
 #include "hw/core/cpu.h"
 #include "hw/cpu/cluster.h"
 #include "hw/boards.h"
@@ -98,7 +97,6 @@ static void gdb_chr_event(void *opaque, QEMUChrEvent event)
         s->g_cpu = s->c_cpu;
 
         vm_stop(RUN_STATE_PAUSED);
-        replay_gdb_attached();
         break;
     default:
         break;
@@ -193,12 +191,6 @@ static void gdb_vm_state_change(void *opaque, bool running, RunState state)
     case RUN_STATE_INTERNAL_ERROR:
         trace_gdbstub_hit_internal_error();
         ret = GDB_SIGNAL_ABRT;
-        break;
-    case RUN_STATE_SAVE_VM:
-    case RUN_STATE_RESTORE_VM:
-        return;
-    case RUN_STATE_FINISH_MIGRATE:
-        ret = GDB_SIGNAL_XCPU;
         break;
     default:
         trace_gdbstub_hit_unknown(state);
@@ -476,11 +468,6 @@ unsigned int gdb_get_max_cpus(void)
 {
     MachineState *ms = MACHINE(qdev_get_machine());
     return ms->smp.max_cpus;
-}
-
-bool gdb_can_reverse(void)
-{
-    return replay_mode == REPLAY_MODE_PLAY;
 }
 
 /*

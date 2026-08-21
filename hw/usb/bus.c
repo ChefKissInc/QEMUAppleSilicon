@@ -7,7 +7,6 @@
 #include "qemu/error-report.h"
 #include "qemu/module.h"
 #include "system/system.h"
-#include "migration/vmstate.h"
 #include "monitor/monitor.h"
 #include "trace.h"
 #include "qemu/cutils.h"
@@ -21,8 +20,6 @@ static void usb_qdev_unrealize(DeviceState *qdev);
 static const Property usb_props[] = {
     DEFINE_PROP_STRING("port", USBDevice, port_path),
     DEFINE_PROP_STRING("serial", USBDevice, serial),
-    DEFINE_PROP_BIT("msos-desc", USBDevice, flags,
-                    USB_DEV_FLAG_MSOS_DESC_ENABLE, true),
     DEFINE_PROP_STRING("pcap", USBDevice, pcap_filename),
 };
 
@@ -50,35 +47,6 @@ static const TypeInfo usb_bus_info = {
 
 static int next_usb_bus = 0;
 static QTAILQ_HEAD(, USBBus) busses = QTAILQ_HEAD_INITIALIZER(busses);
-
-static int usb_device_post_load(void *opaque, int version_id)
-{
-    USBDevice *dev = opaque;
-
-    if (dev->state == USB_STATE_NOTATTACHED) {
-        dev->attached = false;
-    } else {
-        dev->attached = true;
-    }
-    return 0;
-}
-
-const VMStateDescription vmstate_usb_device = {
-    .name = "USBDevice",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .post_load = usb_device_post_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8(addr, USBDevice),
-        VMSTATE_INT32(state, USBDevice),
-        VMSTATE_INT32(remote_wakeup, USBDevice),
-        VMSTATE_INT32(setup_state, USBDevice),
-        VMSTATE_INT32(setup_len, USBDevice),
-        VMSTATE_INT32(setup_index, USBDevice),
-        VMSTATE_UINT8_ARRAY(setup_buf, USBDevice, 8),
-        VMSTATE_END_OF_LIST(),
-    }
-};
 
 void usb_bus_new(USBBus *bus, size_t bus_size,
                  USBBusOps *ops, DeviceState *host)

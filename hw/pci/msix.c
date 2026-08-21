@@ -19,15 +19,9 @@
 #include "hw/pci/msi.h"
 #include "hw/pci/msix.h"
 #include "hw/pci/pci.h"
-#include "hw/xen/xen.h"
-#include "system/xen.h"
-#include "migration/qemu-file-types.h"
-#include "migration/vmstate.h"
 #include "qemu/range.h"
 #include "qapi/error.h"
 #include "trace.h"
-
-#include "hw/i386/kvm/xen_evtchn.h"
 
 /* MSI enable bit and maskall bit are in byte 1 in FLAGS register */
 #define MSIX_CONTROL_OFFSET (PCI_MSIX_FLAGS + 1)
@@ -90,12 +84,6 @@ void msix_clr_pending(PCIDevice *dev, int vector)
 static bool msix_vector_masked(PCIDevice *dev, unsigned int vector, bool fmask)
 {
     unsigned offset = vector * PCI_MSIX_ENTRY_SIZE;
-    uint8_t *data = &dev->msix_table[offset + PCI_MSIX_ENTRY_DATA];
-    /* MSIs on Xen can be remapped into pirqs. In those cases, masking
-     * and unmasking go through the PV evtchn path. */
-    if (xen_enabled() && xen_is_pirq_msi(pci_get_long(data))) {
-        return false;
-    }
     return fmask || dev->msix_table[offset + PCI_MSIX_ENTRY_VECTOR_CTRL] &
         PCI_MSIX_ENTRY_CTRL_MASKBIT;
 }
@@ -126,13 +114,6 @@ static void msix_fire_vector_notifier(PCIDevice *dev,
 static void msix_handle_mask_update(PCIDevice *dev, int vector, bool was_masked)
 {
     bool is_masked = msix_is_masked(dev, vector);
-
-    if (xen_mode == XEN_EMULATE) {
-        MSIMessage msg = msix_prepare_message(dev, vector);
-
-        xen_evtchn_snoop_msi(dev, true, vector, msg.address, msg.data,
-                             is_masked);
-    }
 
     if (is_masked == was_masked) {
         return;
@@ -490,38 +471,6 @@ void msix_uninit_exclusive_bar(PCIDevice *dev)
     }
 }
 
-void msix_save(PCIDevice *dev, QEMUFile *f)
-{
-    unsigned n = dev->msix_entries_nr;
-
-    if (!msix_present(dev)) {
-        return;
-    }
-
-    qemu_put_buffer(f, dev->msix_table, n * PCI_MSIX_ENTRY_SIZE);
-    qemu_put_buffer(f, dev->msix_pba, DIV_ROUND_UP(n, 8));
-}
-
-/* Should be called after restoring the config space. */
-void msix_load(PCIDevice *dev, QEMUFile *f)
-{
-    unsigned n = dev->msix_entries_nr;
-    unsigned int vector;
-
-    if (!msix_present(dev)) {
-        return;
-    }
-
-    msix_clear_all_vectors(dev);
-    qemu_get_buffer(f, dev->msix_table, n * PCI_MSIX_ENTRY_SIZE);
-    qemu_get_buffer(f, dev->msix_pba, DIV_ROUND_UP(n, 8));
-    msix_update_function_masked(dev);
-
-    for (vector = 0; vector < n; vector++) {
-        msix_handle_mask_update(dev, vector, true);
-    }
-}
-
 /* Does device support MSI-X? */
 int msix_present(PCIDevice *dev)
 {
@@ -684,40 +633,3 @@ void msix_unset_vector_notifiers(PCIDevice *dev)
     dev->msix_vector_release_notifier = NULL;
     dev->msix_vector_poll_notifier = NULL;
 }
-
-static int put_msix_state(QEMUFile *f, void *pv, size_t size,
-                          const VMStateField *field, JSONWriter *vmdesc)
-{
-    msix_save(pv, f);
-
-    return 0;
-}
-
-static int get_msix_state(QEMUFile *f, void *pv, size_t size,
-                          const VMStateField *field)
-{
-    msix_load(pv, f);
-    return 0;
-}
-
-static const VMStateInfo vmstate_info_msix = {
-    .name = "msix state",
-    .get  = get_msix_state,
-    .put  = put_msix_state,
-};
-
-const VMStateDescription vmstate_msix = {
-    .name = "msix",
-    .fields = (const VMStateField[]) {
-        {
-            .name         = "msix",
-            .version_id   = 0,
-            .field_exists = NULL,
-            .size         = 0,   /* ouch */
-            .info         = &vmstate_info_msix,
-            .flags        = VMS_SINGLE,
-            .offset       = 0,
-        },
-        VMSTATE_END_OF_LIST()
-    }
-};

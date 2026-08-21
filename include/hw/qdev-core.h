@@ -175,12 +175,6 @@ struct DeviceClass {
     DeviceSyncConfig sync_config;
 
     /**
-     * @vmsd: device state serialisation description for
-     * migration/save/restore
-     */
-    const VMStateDescription *vmsd;
-
-    /**
      * @bus_type: bus type
      * private: to qdev / bus.
      */
@@ -1003,8 +997,6 @@ device_class_set_parent_unrealize(DeviceClass *dc,
     *parent_unrealize = dc->unrealize;
     dc->unrealize = dev_unrealize;
 }
-
-const VMStateDescription *qdev_get_vmsd(DeviceState *dev);
 
 const char *qdev_fw_name(DeviceState *dev);
 

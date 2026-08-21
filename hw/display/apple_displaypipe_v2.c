@@ -20,7 +20,6 @@
 #include "qemu/osdep.h"
 #include "hw/display/apple_displaypipe_v2.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "qemu/log.h"
 #include "ui/console.h"
 #include "framebuffer.h"
@@ -273,38 +272,11 @@ static const Property adp_v2_props[] = {
     DEFINE_PROP_UINT32("height", AppleDisplayPipeV2State, height, 960),
 };
 
-static const VMStateDescription vmstate_adp_v2_dbe = {
-    .name = "Apple Display Pipe V2 Back End State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(vftg_ctl, DisplayBackEndState),
-            VMSTATE_UINT32(const_colour, DisplayBackEndState),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
-static const VMStateDescription vmstate_adp_v2 = {
-    .name = "Apple Display Pipe V2 State",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(width, AppleDisplayPipeV2State),
-            VMSTATE_UINT32(height, AppleDisplayPipeV2State),
-            VMSTATE_STRUCT(dbe_state, AppleDisplayPipeV2State, 0,
-                           vmstate_adp_v2_dbe, DisplayBackEndState),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static void adp_v2_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->realize = adp_v2_realize;
-    dc->vmsd = &vmstate_adp_v2;
     device_class_set_props(dc, adp_v2_props);
     set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
 }

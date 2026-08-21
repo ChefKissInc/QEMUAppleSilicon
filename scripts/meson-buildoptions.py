@@ -40,7 +40,6 @@ OPTION_NAMES = {
     "debug": "debug-info",
     "malloc": "enable-malloc",
     "pkgversion": "with-pkgversion",
-    "qemu_firmwarepath": "firmwarepath",
     "qemu_suffix": "with-suffix",
     "trace_backends": "enable-trace-backends",
     "trace_file": "with-trace-file",

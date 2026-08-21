@@ -17,7 +17,6 @@
 #include "qemu/module.h"
 #include "qapi/error.h"
 #include "qom/object.h"
-#include "migration/cpr.h"
 
 OBJECT_DECLARE_SIMPLE_TYPE(HostMemoryBackendMemfd, MEMORY_BACKEND_MEMFD)
 
@@ -35,16 +34,12 @@ memfd_backend_memory_alloc(HostMemoryBackend *backend, Error **errp)
 {
     HostMemoryBackendMemfd *m = MEMORY_BACKEND_MEMFD(backend);
     g_autofree char *name = host_memory_backend_get_name(backend);
-    int fd = cpr_find_fd(name, 0);
+    int fd;
     uint32_t ram_flags;
 
     if (!backend->size) {
         error_setg(errp, "can't create backend with size 0");
         return false;
-    }
-
-    if (fd >= 0) {
-        goto have_fd;
     }
 
     fd = qemu_memfd_create(TYPE_MEMORY_BACKEND_MEMFD, backend->size,
@@ -54,13 +49,10 @@ memfd_backend_memory_alloc(HostMemoryBackend *backend, Error **errp)
     if (fd == -1) {
         return false;
     }
-    cpr_save_fd(name, 0, fd);
 
-have_fd:
     backend->aligned = true;
     ram_flags = backend->share ? RAM_SHARED : RAM_PRIVATE;
     ram_flags |= backend->reserve ? 0 : RAM_NORESERVE;
-    ram_flags |= backend->guest_memfd ? RAM_GUEST_MEMFD : 0;
     return memory_region_init_ram_from_fd(&backend->mr, OBJECT(backend), name,
                                           backend->size, ram_flags, fd, 0, errp);
 }

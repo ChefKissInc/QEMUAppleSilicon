@@ -164,7 +164,6 @@ static void apple_mca_class_init(ObjectClass *klass, const void *data)
     dc->desc = "Apple Multi-Channel Audio";
     dc->user_creatable = false;
     // dc->realize = apple_mca_realize;
-    // dc->vmsd = &vmstate_apple_mca;
     set_bit(DEVICE_CATEGORY_SOUND, dc->categories);
 }
 

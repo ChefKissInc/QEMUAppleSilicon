@@ -8,10 +8,7 @@
 
 #include "qemu/osdep.h"
 #include "hw/ptimer.h"
-#include "migration/vmstate.h"
 #include "qemu/host-utils.h"
-#include "exec/replay-core.h"
-#include "exec/icount.h"
 #include "block/aio.h"
 #include "hw/clock.h"
 
@@ -133,8 +130,7 @@ static void ptimer_reload(ptimer_state *s, int delta_adjust)
      * on the current generation of host machines.
      */
 
-    if (s->enabled == 1 && (delta * period < 10000) &&
-        !icount_enabled()) {
+    if (s->enabled == 1 && (delta * period < 10000)) {
         period = 10000 / delta;
         period_frac = 0;
     }
@@ -217,8 +213,7 @@ uint64_t ptimer_get_count(ptimer_state *s)
             uint32_t period_frac = s->period_frac;
             uint64_t period = s->period;
 
-            if (!oneshot && (s->delta * period < 10000) &&
-                !icount_enabled()) {
+            if (!oneshot && (s->delta * period < 10000)) {
                 period = 10000 / s->delta;
                 period_frac = 0;
             }
@@ -247,7 +242,7 @@ uint64_t ptimer_get_count(ptimer_state *s)
             } else {
                 if (shift != 0)
                     div |= (period_frac >> (32 - shift));
-                /* Look at remaining bits of period_frac and round div up if 
+                /* Look at remaining bits of period_frac and round div up if
                    necessary.  */
                 if ((uint32_t)(period_frac << shift))
                     div += 1;
@@ -429,23 +424,6 @@ void ptimer_transaction_commit(ptimer_state *s)
     /* Now we've finished reload we can leave the transaction block. */
     s->in_transaction = false;
 }
-
-const VMStateDescription vmstate_ptimer = {
-    .name = "ptimer",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT8(enabled, ptimer_state),
-        VMSTATE_UINT64(limit, ptimer_state),
-        VMSTATE_UINT64(delta, ptimer_state),
-        VMSTATE_UINT32(period_frac, ptimer_state),
-        VMSTATE_INT64(period, ptimer_state),
-        VMSTATE_INT64(last_event, ptimer_state),
-        VMSTATE_INT64(next_event, ptimer_state),
-        VMSTATE_TIMER_PTR(timer, ptimer_state),
-        VMSTATE_END_OF_LIST()
-    }
-};
 
 ptimer_state *ptimer_init(ptimer_cb callback, void *callback_opaque,
                           uint8_t policy_mask)

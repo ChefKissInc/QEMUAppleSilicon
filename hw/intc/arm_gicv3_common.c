@@ -28,285 +28,9 @@
 #include "hw/core/cpu.h"
 #include "hw/intc/arm_gicv3_common.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "gicv3_internal.h"
-#include "hw/arm/linux-boot-if.h"
 #include "system/kvm.h"
 
-
-static void gicv3_gicd_no_migration_shift_bug_post_load(GICv3State *cs)
-{
-    if (cs->gicd_no_migration_shift_bug) {
-        return;
-    }
-
-    /* Older versions of QEMU had a bug in the handling of state save/restore
-     * to the KVM GICv3: they got the offset in the bitmap arrays wrong,
-     * so that instead of the data for external interrupts 32 and up
-     * starting at bit position 32 in the bitmap, it started at bit
-     * position 64. If we're receiving data from a QEMU with that bug,
-     * we must move the data down into the right place.
-     */
-    memmove(cs->group, (uint8_t *)cs->group + GIC_INTERNAL / 8,
-            sizeof(cs->group) - GIC_INTERNAL / 8);
-    memmove(cs->grpmod, (uint8_t *)cs->grpmod + GIC_INTERNAL / 8,
-            sizeof(cs->grpmod) - GIC_INTERNAL / 8);
-    memmove(cs->enabled, (uint8_t *)cs->enabled + GIC_INTERNAL / 8,
-            sizeof(cs->enabled) - GIC_INTERNAL / 8);
-    memmove(cs->pending, (uint8_t *)cs->pending + GIC_INTERNAL / 8,
-            sizeof(cs->pending) - GIC_INTERNAL / 8);
-    memmove(cs->active, (uint8_t *)cs->active + GIC_INTERNAL / 8,
-            sizeof(cs->active) - GIC_INTERNAL / 8);
-    memmove(cs->edge_trigger, (uint8_t *)cs->edge_trigger + GIC_INTERNAL / 8,
-            sizeof(cs->edge_trigger) - GIC_INTERNAL / 8);
-
-    /*
-     * While this new version QEMU doesn't have this kind of bug as we fix it,
-     * so it needs to set the flag to true to indicate that and it's necessary
-     * for next migration to work from this new version QEMU.
-     */
-    cs->gicd_no_migration_shift_bug = true;
-}
-
-static int gicv3_pre_save(void *opaque)
-{
-    GICv3State *s = (GICv3State *)opaque;
-    ARMGICv3CommonClass *c = ARM_GICV3_COMMON_GET_CLASS(s);
-
-    if (c->pre_save) {
-        c->pre_save(s);
-    }
-
-    return 0;
-}
-
-static int gicv3_post_load(void *opaque, int version_id)
-{
-    GICv3State *s = (GICv3State *)opaque;
-    ARMGICv3CommonClass *c = ARM_GICV3_COMMON_GET_CLASS(s);
-
-    gicv3_gicd_no_migration_shift_bug_post_load(s);
-
-    if (c->post_load) {
-        c->post_load(s);
-    }
-    return 0;
-}
-
-static bool virt_state_needed(void *opaque)
-{
-    GICv3CPUState *cs = opaque;
-
-    return cs->num_list_regs != 0;
-}
-
-static const VMStateDescription vmstate_gicv3_cpu_virt = {
-    .name = "arm_gicv3_cpu/virt",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = virt_state_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT64_2DARRAY(ich_apr, GICv3CPUState, 3, 4),
-        VMSTATE_UINT64(ich_hcr_el2, GICv3CPUState),
-        VMSTATE_UINT64_ARRAY(ich_lr_el2, GICv3CPUState, GICV3_LR_MAX),
-        VMSTATE_UINT64(ich_vmcr_el2, GICv3CPUState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static int vmstate_gicv3_cpu_pre_load(void *opaque)
-{
-    GICv3CPUState *cs = opaque;
-
-   /*
-    * If the sre_el1 subsection is not transferred this
-    * means SRE_EL1 is 0x7 (which might not be the same as
-    * our reset value).
-    */
-    cs->icc_sre_el1 = 0x7;
-    return 0;
-}
-
-static bool icc_sre_el1_reg_needed(void *opaque)
-{
-    GICv3CPUState *cs = opaque;
-
-    return cs->icc_sre_el1 != 7;
-}
-
-const VMStateDescription vmstate_gicv3_cpu_sre_el1 = {
-    .name = "arm_gicv3_cpu/sre_el1",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = icc_sre_el1_reg_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT64(icc_sre_el1, GICv3CPUState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static bool gicv4_needed(void *opaque)
-{
-    GICv3CPUState *cs = opaque;
-
-    return cs->gic->revision > 3;
-}
-
-const VMStateDescription vmstate_gicv3_gicv4 = {
-    .name = "arm_gicv3_cpu/gicv4",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = gicv4_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT64(gicr_vpropbaser, GICv3CPUState),
-        VMSTATE_UINT64(gicr_vpendbaser, GICv3CPUState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static bool gicv3_cpu_nmi_needed(void *opaque)
-{
-    GICv3CPUState *cs = opaque;
-
-    return cs->gic->nmi_support;
-}
-
-static const VMStateDescription vmstate_gicv3_cpu_nmi = {
-    .name = "arm_gicv3_cpu/nmi",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = gicv3_cpu_nmi_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(gicr_inmir0, GICv3CPUState),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static const VMStateDescription vmstate_gicv3_cpu = {
-    .name = "arm_gicv3_cpu",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .pre_load = vmstate_gicv3_cpu_pre_load,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(level, GICv3CPUState),
-        VMSTATE_UINT32(gicr_ctlr, GICv3CPUState),
-        VMSTATE_UINT32_ARRAY(gicr_statusr, GICv3CPUState, 2),
-        VMSTATE_UINT32(gicr_waker, GICv3CPUState),
-        VMSTATE_UINT64(gicr_propbaser, GICv3CPUState),
-        VMSTATE_UINT64(gicr_pendbaser, GICv3CPUState),
-        VMSTATE_UINT32(gicr_igroupr0, GICv3CPUState),
-        VMSTATE_UINT32(gicr_ienabler0, GICv3CPUState),
-        VMSTATE_UINT32(gicr_ipendr0, GICv3CPUState),
-        VMSTATE_UINT32(gicr_iactiver0, GICv3CPUState),
-        VMSTATE_UINT32(edge_trigger, GICv3CPUState),
-        VMSTATE_UINT32(gicr_igrpmodr0, GICv3CPUState),
-        VMSTATE_UINT32(gicr_nsacr, GICv3CPUState),
-        VMSTATE_UINT8_ARRAY(gicr_ipriorityr, GICv3CPUState, GIC_INTERNAL),
-        VMSTATE_UINT64_ARRAY(icc_ctlr_el1, GICv3CPUState, 2),
-        VMSTATE_UINT64(icc_pmr_el1, GICv3CPUState),
-        VMSTATE_UINT64_ARRAY(icc_bpr, GICv3CPUState, 3),
-        VMSTATE_UINT64_2DARRAY(icc_apr, GICv3CPUState, 3, 4),
-        VMSTATE_UINT64_ARRAY(icc_igrpen, GICv3CPUState, 3),
-        VMSTATE_UINT64(icc_ctlr_el3, GICv3CPUState),
-        VMSTATE_END_OF_LIST()
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &vmstate_gicv3_cpu_virt,
-        &vmstate_gicv3_cpu_sre_el1,
-        &vmstate_gicv3_gicv4,
-        &vmstate_gicv3_cpu_nmi,
-        NULL
-    }
-};
-
-static int gicv3_pre_load(void *opaque)
-{
-    GICv3State *cs = opaque;
-
-   /*
-    * The gicd_no_migration_shift_bug flag is used for migration compatibility
-    * for old version QEMU which may have the GICD bmp shift bug under KVM mode.
-    * Strictly, what we want to know is whether the migration source is using
-    * KVM. Since we don't have any way to determine that, we look at whether the
-    * destination is using KVM; this is close enough because for the older QEMU
-    * versions with this bug KVM -> TCG migration didn't work anyway. If the
-    * source is a newer QEMU without this bug it will transmit the migration
-    * subsection which sets the flag to true; otherwise it will remain set to
-    * the value we select here.
-    */
-    if (kvm_enabled()) {
-        cs->gicd_no_migration_shift_bug = false;
-    }
-
-    return 0;
-}
-
-static bool needed_always(void *opaque)
-{
-    return true;
-}
-
-const VMStateDescription vmstate_gicv3_gicd_no_migration_shift_bug = {
-    .name = "arm_gicv3/gicd_no_migration_shift_bug",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = needed_always,
-    .fields = (const VMStateField[]) {
-        VMSTATE_BOOL(gicd_no_migration_shift_bug, GICv3State),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static bool gicv3_nmi_needed(void *opaque)
-{
-    GICv3State *cs = opaque;
-
-    return cs->nmi_support;
-}
-
-const VMStateDescription vmstate_gicv3_gicd_nmi = {
-    .name = "arm_gicv3/gicd_nmi",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .needed = gicv3_nmi_needed,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32_ARRAY(nmi, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static const VMStateDescription vmstate_gicv3 = {
-    .name = "arm_gicv3",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .pre_load = gicv3_pre_load,
-    .pre_save = gicv3_pre_save,
-    .post_load = gicv3_post_load,
-    .priority = MIG_PRI_GICV3,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(gicd_ctlr, GICv3State),
-        VMSTATE_UINT32_ARRAY(gicd_statusr, GICv3State, 2),
-        VMSTATE_UINT32_ARRAY(group, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_UINT32_ARRAY(grpmod, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_UINT32_ARRAY(enabled, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_UINT32_ARRAY(pending, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_UINT32_ARRAY(active, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_UINT32_ARRAY(level, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_UINT32_ARRAY(edge_trigger, GICv3State, GICV3_BMP_SIZE),
-        VMSTATE_UINT8_ARRAY(gicd_ipriority, GICv3State, GICV3_MAXIRQ),
-        VMSTATE_UINT64_ARRAY(gicd_irouter, GICv3State, GICV3_MAXIRQ),
-        VMSTATE_UINT32_ARRAY(gicd_nsacr, GICv3State,
-                             DIV_ROUND_UP(GICV3_MAXIRQ, 16)),
-        VMSTATE_STRUCT_VARRAY_POINTER_UINT32(cpu, GICv3State, num_cpu,
-                                             vmstate_gicv3_cpu, GICv3CPUState),
-        VMSTATE_END_OF_LIST()
-    },
-    .subsections = (const VMStateDescription * const []) {
-        &vmstate_gicv3_gicd_no_migration_shift_bug,
-        &vmstate_gicv3_gicd_nmi,
-        NULL
-    }
-};
 
 void gicv3_init_irqs_and_mmio(GICv3State *s, qemu_irq_handler handler,
                               const MemoryRegionOps *ops)
@@ -585,24 +309,6 @@ static void arm_gicv3_common_reset_hold(Object *obj, ResetType type)
             gicv3_gicd_group_set(s, i);
         }
     }
-    s->gicd_no_migration_shift_bug = true;
-}
-
-static void arm_gic_common_linux_init(ARMLinuxBootIf *obj,
-                                      bool secure_boot)
-{
-    GICv3State *s = ARM_GICV3_COMMON(obj);
-
-    if (s->security_extn && !secure_boot) {
-        /* We're directly booting a kernel into NonSecure. If this GIC
-         * implements the security extensions then we must configure it
-         * to have all the interrupts be NonSecure (this is a job that
-         * is done by the Secure boot firmware in real hardware, and in
-         * this mode QEMU is acting as a minimalist firmware-and-bootloader
-         * equivalent).
-         */
-        s->irq_reset_nonsecure = true;
-    }
 }
 
 static const Property arm_gicv3_common_properties[] = {
@@ -628,13 +334,10 @@ static void arm_gicv3_common_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);
-    ARMLinuxBootIfClass *albifc = ARM_LINUX_BOOT_IF_CLASS(klass);
 
     rc->phases.hold = arm_gicv3_common_reset_hold;
     dc->realize = arm_gicv3_common_realize;
     device_class_set_props(dc, arm_gicv3_common_properties);
-    dc->vmsd = &vmstate_gicv3;
-    albifc->arm_linux_init = arm_gic_common_linux_init;
 }
 
 static const TypeInfo arm_gicv3_common_type = {
@@ -645,10 +348,6 @@ static const TypeInfo arm_gicv3_common_type = {
     .class_init = arm_gicv3_common_class_init,
     .instance_finalize = arm_gicv3_finalize,
     .abstract = true,
-    .interfaces = (const InterfaceInfo[]) {
-        { TYPE_ARM_LINUX_BOOT_IF },
-        { },
-    },
 };
 
 static void register_types(void)

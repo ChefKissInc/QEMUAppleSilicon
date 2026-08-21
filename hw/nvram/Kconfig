@@ -1,14 +1,6 @@
-config DS1225Y
-    bool
-
 config AT24C
     bool
     depends on I2C
-
-
-# NMC93XX uses the NS uWire interface (similar to SPI but less configurable)
-config NMC93XX_EEPROM
-    bool
 
 config CHRP_NVRAM
     bool
@@ -17,23 +9,3 @@ config APPLE_NVRAM
     bool
     select CHRP_NVRAM
     depends on APPLE_SOC
-    depends on NVME_PCI
-
-config XLNX_EFUSE_CRC
-    bool
-
-config XLNX_EFUSE
-    bool
-    select XLNX_EFUSE_CRC
-
-config XLNX_EFUSE_VERSAL
-    bool
-    select XLNX_EFUSE
-
-config XLNX_EFUSE_ZYNQMP
-    bool
-    select XLNX_EFUSE
-
-config XLNX_BBRAM
-    bool
-    select XLNX_EFUSE_CRC

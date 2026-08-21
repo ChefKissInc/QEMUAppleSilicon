@@ -21,7 +21,6 @@
 #include "block/dirty-bitmap.h"
 #include "system/block-backend.h"
 #include "qapi/error.h"
-#include "qemu/ratelimit.h"
 #include "qemu/bitmap.h"
 #include "qemu/memalign.h"
 
@@ -524,7 +523,6 @@ static void coroutine_fn GRAPH_UNLOCKED mirror_iteration(MirrorBlockJob *s)
     int64_t offset;
     /* At least the first dirty chunk is mirrored in one iteration. */
     int nb_chunks = 1;
-    bool write_zeroes_ok = bdrv_can_write_zeroes_with_unmap(blk_bs(s->target));
     int max_io_bytes = MAX(s->buf_size / MAX_IN_FLIGHT, MAX_IO_BYTES);
 
     bdrv_graph_co_rdlock();
@@ -604,7 +602,6 @@ static void coroutine_fn GRAPH_UNLOCKED mirror_iteration(MirrorBlockJob *s)
     while (nb_chunks > 0 && offset < s->bdev_length) {
         int ret = -1;
         int64_t io_bytes;
-        int64_t io_bytes_acct;
         bool io_skipped = false;
         MirrorMethod mirror_method = MIRROR_METHOD_COPY;
 
@@ -651,16 +648,9 @@ static void coroutine_fn GRAPH_UNLOCKED mirror_iteration(MirrorBlockJob *s)
         io_bytes = mirror_clip_bytes(s, offset, io_bytes);
         io_bytes = mirror_perform(s, offset, io_bytes, mirror_method,
                                   &io_skipped);
-        if (io_skipped ||
-            (mirror_method != MIRROR_METHOD_COPY && write_zeroes_ok)) {
-            io_bytes_acct = 0;
-        } else {
-            io_bytes_acct = io_bytes;
-        }
         assert(io_bytes);
         offset += io_bytes;
         nb_chunks -= DIV_ROUND_UP(io_bytes, s->granularity);
-        block_job_ratelimit_processed_bytes(&s->common, io_bytes_acct);
     }
 
 fail:
@@ -1233,8 +1223,6 @@ static int coroutine_fn mirror_run(Job *job, Error **errp)
                                           BLOCK_JOB_SLICE_TIME);
                 job_sleep_ns(&s->common.job, BLOCK_JOB_SLICE_TIME);
             }
-        } else {
-            block_job_ratelimit_sleep(&s->common);
         }
         s->last_pause_ns = qemu_clock_get_ns(QEMU_CLOCK_REALTIME);
     }
@@ -1824,7 +1812,7 @@ static BlockDriver bdrv_mirror_top = {
 static BlockJob *mirror_start_job(
                              const char *job_id, BlockDriverState *bs,
                              int creation_flags, BlockDriverState *target,
-                             const char *replaces, int64_t speed,
+                             const char *replaces,
                              uint32_t granularity, int64_t buf_size,
                              MirrorSyncMode sync_mode,
                              BlockMirrorBackingMode backing_mode,
@@ -1912,7 +1900,7 @@ static BlockJob *mirror_start_job(
     s = block_job_create(job_id, driver, NULL, mirror_top_bs,
                          BLK_PERM_CONSISTENT_READ,
                          BLK_PERM_CONSISTENT_READ | BLK_PERM_WRITE_UNCHANGED |
-                         BLK_PERM_WRITE, speed,
+                         BLK_PERM_WRITE,
                          creation_flags, cb, opaque, errp);
     if (!s) {
         goto fail;
@@ -2122,7 +2110,7 @@ fail:
 
 void mirror_start(const char *job_id, BlockDriverState *bs,
                   BlockDriverState *target, const char *replaces,
-                  int creation_flags, int64_t speed,
+                  int creation_flags,
                   uint32_t granularity, int64_t buf_size,
                   MirrorSyncMode mode, BlockMirrorBackingMode backing_mode,
                   bool target_is_zero,
@@ -2147,7 +2135,7 @@ void mirror_start(const char *job_id, BlockDriverState *bs,
     bdrv_graph_rdunlock_main_loop();
 
     mirror_start_job(job_id, bs, creation_flags, target, replaces,
-                     speed, granularity, buf_size, mode, backing_mode,
+                     granularity, buf_size, mode, backing_mode,
                      target_is_zero, on_source_error, on_target_error, unmap,
                      NULL, NULL, &mirror_job_driver, base, false,
                      filter_node_name, true, copy_mode, false, errp);
@@ -2155,7 +2143,7 @@ void mirror_start(const char *job_id, BlockDriverState *bs,
 
 BlockJob *commit_active_start(const char *job_id, BlockDriverState *bs,
                               BlockDriverState *base, int creation_flags,
-                              int64_t speed, BlockdevOnError on_error,
+                              BlockdevOnError on_error,
                               const char *filter_node_name,
                               BlockCompletionFunc *cb, void *opaque,
                               bool auto_complete, Error **errp)
@@ -2174,7 +2162,7 @@ BlockJob *commit_active_start(const char *job_id, BlockDriverState *bs,
     }
 
     job = mirror_start_job(
-                     job_id, bs, creation_flags, base, NULL, speed, 0, 0,
+                     job_id, bs, creation_flags, base, NULL, 0, 0,
                      MIRROR_SYNC_MODE_TOP, MIRROR_LEAVE_BACKING_CHAIN, false,
                      on_error, on_error, true, cb, opaque,
                      &commit_active_job_driver, base, auto_complete,

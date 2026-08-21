@@ -11,38 +11,8 @@ config LIBCBOR
 config GNUTLS
     bool
 
-config OPENGL
-    bool
-
 config X11
     bool
 
 config PIXMAN
-    bool
-
-config SPICE
-    bool
-
-config IVSHMEM
-    bool
-
-config TPM
-    bool
-
-config FDT
-    bool
-
-config VHOST_VDPA
-    bool
-
-config VHOST_KERNEL
-    bool
-
-config VIRTFS
-    bool
-
-config HV_BALLOON_POSSIBLE
-    bool
-
-config MAC_PVG
     bool

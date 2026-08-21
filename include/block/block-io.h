@@ -219,12 +219,6 @@ int co_wrapper_bdrv_rdlock
 bdrv_change_backing_file(BlockDriverState *bs, const char *backing_file,
                          const char *backing_fmt, bool warn);
 
-int bdrv_save_vmstate(BlockDriverState *bs, const uint8_t *buf,
-                      int64_t pos, int size);
-
-int bdrv_load_vmstate(BlockDriverState *bs, uint8_t *buf,
-                      int64_t pos, int size);
-
 /*
  * Returns the alignment in bytes that is required so that no bounce buffer
  * is required throughout the stack
@@ -373,12 +367,6 @@ int co_wrapper_mixed_bdrv_rdlock bdrv_flush(BlockDriverState *bs);
 
 int co_wrapper_mixed_bdrv_rdlock
 bdrv_pdiscard(BdrvChild *child, int64_t offset, int64_t bytes);
-
-int co_wrapper_mixed_bdrv_rdlock
-bdrv_readv_vmstate(BlockDriverState *bs, QEMUIOVector *qiov, int64_t pos);
-
-int co_wrapper_mixed_bdrv_rdlock
-bdrv_writev_vmstate(BlockDriverState *bs, QEMUIOVector *qiov, int64_t pos);
 
 /**
  * bdrv_parent_drained_begin_single:

@@ -147,7 +147,6 @@ struct GICState {
     bool virt_extn;
     bool irq_reset_nonsecure; /* configure IRQs as group 1 (NS) on reset? */
     int dev_fd; /* kvm device fd if backed by kvm vgic support */
-    Error *migration_blocker;
 };
 typedef struct GICState GICState;
 
@@ -160,9 +159,6 @@ struct ARMGICCommonClass {
     /*< private >*/
     SysBusDeviceClass parent_class;
     /*< public >*/
-
-    void (*pre_save)(GICState *s);
-    void (*post_load)(GICState *s);
 };
 
 void gic_init_irqs_and_mmio(GICState *s, qemu_irq_handler handler,

@@ -9,7 +9,6 @@
 
 #include "qemu/osdep.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "qemu/timer.h"
 #include "hw/irq.h"
 #include "hw/ptimer.h"
@@ -159,19 +158,6 @@ static void arm_timer_tick(void *opaque)
     arm_timer_update(s);
 }
 
-static const VMStateDescription vmstate_arm_timer = {
-    .name = "arm_timer",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(control, arm_timer_state),
-        VMSTATE_UINT32(limit, arm_timer_state),
-        VMSTATE_INT32(int_level, arm_timer_state),
-        VMSTATE_PTIMER(timer, arm_timer_state),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static arm_timer_state *arm_timer_init(uint32_t freq)
 {
     arm_timer_state *s;
@@ -181,7 +167,6 @@ static arm_timer_state *arm_timer_init(uint32_t freq)
     s->control = TIMER_CTRL_IE;
 
     s->timer = ptimer_init(arm_timer_tick, s, PTIMER_POLICY_LEGACY);
-    vmstate_register_any(NULL, &vmstate_arm_timer, s);
     return s;
 }
 
@@ -276,16 +261,6 @@ static const MemoryRegionOps sp804_ops = {
     .read = sp804_read,
     .write = sp804_write,
     .endianness = DEVICE_NATIVE_ENDIAN,
-};
-
-static const VMStateDescription vmstate_sp804 = {
-    .name = "sp804",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_INT32_ARRAY(level, SP804State, 2),
-        VMSTATE_END_OF_LIST()
-    }
 };
 
 static void sp804_init(Object *obj)
@@ -398,7 +373,6 @@ static void sp804_class_init(ObjectClass *klass, const void *data)
 
     k->realize = sp804_realize;
     device_class_set_props(k, sp804_properties);
-    k->vmsd = &vmstate_sp804;
 }
 
 static const TypeInfo sp804_info = {

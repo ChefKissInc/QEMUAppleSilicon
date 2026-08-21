@@ -106,19 +106,6 @@ enum {
     RTKIT_MAX_VERSION = 12,
 };
 
-const VMStateDescription vmstate_apple_rtkit = {
-    .name = "AppleRTKit",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT8(ep0_status, AppleRTKit),
-            VMSTATE_UINT32(protocol_version, AppleRTKit),
-            VMSTATE_APPLE_A7IOP_MESSAGE(rollcall, AppleRTKit),
-            VMSTATE_END_OF_LIST(),
-        },
-};
-
 static AppleA7IOPMessage *apple_rtkit_construct_msg(uint8_t ep, uint64_t data)
 {
     AppleA7IOPMessage *msg;

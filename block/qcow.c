@@ -39,7 +39,6 @@
 #include "qapi/qobject-input-visitor.h"
 #include "qapi/qapi-visit-block-core.h"
 #include "crypto/block.h"
-#include "migration/blocker.h"
 #include "crypto.h"
 
 /**************************************************************/
@@ -87,7 +86,6 @@ typedef struct BDRVQcowState {
     QCryptoBlock *crypto; /* Disk encryption format driver */
     uint32_t crypt_method_header;
     CoMutex lock;
-    Error *migration_blocker;
 } BDRVQcowState;
 
 static QemuOptsList qcow_create_opts;
@@ -300,16 +298,6 @@ static int qcow_open(BlockDriverState *bs, QDict *options, int flags,
         bs->auto_backing_file[len] = '\0';
         pstrcpy(bs->backing_file, sizeof(bs->backing_file),
                 bs->auto_backing_file);
-    }
-
-    /* Disable migration when qcow images are used */
-    error_setg(&s->migration_blocker, "The qcow format used by node '%s' "
-               "does not support live migration",
-               bdrv_get_device_or_node_name(bs));
-
-    ret = migrate_add_blocker_normal(&s->migration_blocker, errp);
-    if (ret < 0) {
-        goto fail;
     }
 
     qobject_unref(encryptopts);
@@ -803,8 +791,6 @@ static void qcow_close(BlockDriverState *bs)
     qemu_vfree(s->l2_cache);
     g_free(s->cluster_cache);
     g_free(s->cluster_data);
-
-    migrate_del_blocker(&s->migration_blocker);
 }
 
 static int coroutine_fn GRAPH_UNLOCKED

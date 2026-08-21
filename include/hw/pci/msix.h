@@ -23,9 +23,6 @@ void msix_uninit_exclusive_bar(PCIDevice *dev);
 
 unsigned int msix_nr_vectors_allocated(const PCIDevice *dev);
 
-void msix_save(PCIDevice *dev, QEMUFile *f);
-void msix_load(PCIDevice *dev, QEMUFile *f);
-
 int msix_enabled(PCIDevice *dev);
 int msix_present(PCIDevice *dev);
 
@@ -48,19 +45,5 @@ int msix_set_vector_notifiers(PCIDevice *dev,
                               MSIVectorReleaseNotifier release_notifier,
                               MSIVectorPollNotifier poll_notifier);
 void msix_unset_vector_notifiers(PCIDevice *dev);
-
-extern const VMStateDescription vmstate_msix;
-
-#define VMSTATE_MSIX_TEST(_field, _state, _test) {                   \
-    .name         = (stringify(_field)),                             \
-    .size         = sizeof(PCIDevice),                               \
-    .vmsd         = &vmstate_msix,                                   \
-    .flags        = VMS_STRUCT,                                      \
-    .offset       = vmstate_offset_value(_state, _field, PCIDevice), \
-    .field_exists = (_test)                                          \
-}
-
-#define VMSTATE_MSIX(_f, _s)                                         \
-    VMSTATE_MSIX_TEST(_f, _s, NULL)
 
 #endif

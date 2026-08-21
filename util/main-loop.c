@@ -27,8 +27,6 @@
 #include "qemu/cutils.h"
 #include "qemu/timer.h"
 #include "system/cpu-timers.h"
-#include "exec/icount.h"
-#include "system/replay.h"
 #include "qemu/main-loop.h"
 #include "block/aio.h"
 #include "block/thread-pool.h"
@@ -303,11 +301,9 @@ static int os_host_main_loop_wait(int64_t timeout)
     glib_pollfds_fill(&timeout);
 
     bql_unlock();
-    replay_mutex_unlock();
 
     ret = qemu_poll_ns((GPollFD *)gpollfds->data, gpollfds->len, timeout);
 
-    replay_mutex_lock();
     bql_lock();
 
     glib_pollfds_poll();
@@ -519,11 +515,7 @@ static int os_host_main_loop_wait(int64_t timeout)
 
     bql_unlock();
 
-    replay_mutex_unlock();
-
     g_poll_ret = qemu_poll_ns(poll_fds, n_poll_fds + w->num, poll_timeout_ns);
-
-    replay_mutex_lock();
 
     bql_lock();
     if (g_poll_ret > 0) {
@@ -593,13 +585,6 @@ void main_loop_wait(int nonblocking)
     mlpoll.state = ret < 0 ? MAIN_LOOP_POLL_ERR : MAIN_LOOP_POLL_OK;
     notifier_list_notify(&main_loop_poll_notifiers, &mlpoll);
 
-    if (icount_enabled()) {
-        /*
-         * CPU thread can infinitely wait for event after
-         * missing the warp
-         */
-        icount_start_warp_timer();
-    }
     qemu_clock_run_all_timers();
 }
 

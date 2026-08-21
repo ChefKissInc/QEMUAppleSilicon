@@ -28,7 +28,7 @@
 #include "hw/arm/apple-silicon/s8000-config.c.inc"
 #include "hw/arm/apple-silicon/s8000.h"
 #include "hw/arm/apple-silicon/sep-sim.h"
-#include "hw/arm/exynos4210.h"
+#include "hw/char/exynos4210_uart.h"
 #include "hw/block/apple-silicon/nvme_mmu.h"
 #include "hw/display/apple_displaypipe_v2.h"
 // #include "hw/dma/apple_sio.h"
@@ -44,6 +44,7 @@
 #include "hw/ssi/ssi.h"
 #include "hw/usb/apple_otg.h"
 #include "hw/watchdog/apple_wdt.h"
+#include "qapi/visitor.h"
 #include "qemu/error-report.h"
 #include "qemu/guest-random.h"
 #include "qemu/log.h"
@@ -1412,15 +1413,13 @@ static void s8000_reset(MachineState *machine, ResetType type)
     AppleS8000MachineState *s8000 = APPLE_S8000(machine);
     DeviceState *gpio = NULL;
 
-    if (!runstate_check(RUN_STATE_RESTORE_VM)) {
-        qemu_devices_reset(type);
+    qemu_devices_reset(type);
 
-        if (!runstate_check(RUN_STATE_PRELAUNCH)) {
-            s8000_memory_setup(MACHINE(s8000));
-        }
-
-        s8000_cpu_reset(s8000);
+    if (!runstate_check(RUN_STATE_PRELAUNCH)) {
+        s8000_memory_setup(MACHINE(s8000));
     }
+
+    s8000_cpu_reset(s8000);
 
     gpio =
         DEVICE(object_property_get_link(OBJECT(s8000), "gpio", &error_fatal));
@@ -1644,10 +1643,6 @@ static void s8000_class_init(ObjectClass *klass, const void *data)
     mc->init = s8000_init;
     mc->reset = s8000_reset;
     mc->max_cpus = A9_MAX_CPU;
-    mc->auto_create_sdcard = false;
-    mc->no_floppy = true;
-    mc->no_cdrom = true;
-    mc->no_parallel = true;
     mc->default_cpu_type = TYPE_APPLE_A9;
     mc->minimum_page_bits = 14;
     mc->default_ram_size = DRAM_SIZE;

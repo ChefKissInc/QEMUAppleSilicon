@@ -108,7 +108,6 @@ static void cpu_common_reset_hold(Object *obj, ResetType type)
     cpu->interrupt_request = 0;
     cpu->halted = cpu->start_powered_off;
     cpu->mem_io_pc = 0;
-    cpu->icount_extra = 0;
     qatomic_set(&cpu->neg.icount_decr.u32, 0);
     cpu->neg.can_do_io = true;
     cpu->exception_index = -1;
@@ -235,8 +234,6 @@ bool cpu_exec_realizefn(CPUState *cpu, Error **errp)
     /* Wait until cpu initialization complete before exposing cpu. */
     cpu_list_add(cpu);
 
-    cpu_vmstate_register(cpu);
-
     return true;
 }
 
@@ -276,8 +273,6 @@ static void cpu_common_unrealizefn(DeviceState *dev)
 
 void cpu_exec_unrealizefn(CPUState *cpu)
 {
-    cpu_vmstate_unregister(cpu);
-
     cpu_list_remove(cpu);
     /*
      * Now that the vCPU has been removed from the RCU list, we can call

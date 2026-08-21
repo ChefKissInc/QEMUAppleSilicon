@@ -821,7 +821,6 @@ static void apple_aop_class_init(ObjectClass *klass, const void *data)
                                        &aopc->parent_reset);
     dc->desc = "Apple Always-On Processor";
     dc->user_creatable = false;
-    // dc->vmsd = &vmstate_apple_aop;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
 

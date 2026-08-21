@@ -25,7 +25,6 @@
 #include "qemu/osdep.h"
 #include "hw/irq.h"
 #include "hw/sysbus.h"
-#include "migration/vmstate.h"
 #include "qemu/module.h"
 #include "qemu/timer.h"
 #include "qom/object.h"
@@ -39,16 +38,6 @@ struct GPIOKEYState {
 
     QEMUTimer *timer;
     qemu_irq irq;
-};
-
-static const VMStateDescription vmstate_gpio_key = {
-    .name = "gpio-key",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_TIMER_PTR(timer, GPIOKEYState),
-        VMSTATE_END_OF_LIST()
-    }
 };
 
 static void gpio_key_reset(DeviceState *dev)
@@ -90,7 +79,6 @@ static void gpio_key_class_init(ObjectClass *klass, const void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->realize = gpio_key_realize;
-    dc->vmsd = &vmstate_gpio_key;
     device_class_set_legacy_reset(dc, gpio_key_reset);
 }
 

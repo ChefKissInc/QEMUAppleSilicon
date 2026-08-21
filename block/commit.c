@@ -20,7 +20,6 @@
 #include "block/block_int.h"
 #include "block/blockjob_int.h"
 #include "qapi/error.h"
-#include "qemu/ratelimit.h"
 #include "qemu/memalign.h"
 #include "system/block-backend.h"
 
@@ -177,13 +176,6 @@ static int commit_iteration(CommitBlockJob *s, int64_t offset,
                 goto fail;
             }
         }
-
-        /*
-         * Whether zeroes actually end up on disk depends on the details of
-         * the underlying driver. Therefore, this might rate limit more than
-         * is necessary.
-         */
-        block_job_ratelimit_processed_bytes(&s->common, bytes);
     }
 
     /* Publish progress */
@@ -236,10 +228,8 @@ static int coroutine_fn commit_run(Job *job, Error **errp)
     buf = blk_blockalign(s->top, COMMIT_BUFFER_SIZE);
 
     for (offset = 0; offset < len; offset += n) {
-        /* Note that even when no rate limit is applied we need to yield
-         * with no pending I/O here so that bdrv_drain_all() returns.
+        /* Note we need to yield with no pending I/O here so that bdrv_drain_all() returns.
          */
-        block_job_ratelimit_sleep(&s->common);
         if (job_is_cancelled(&s->common.job)) {
             break;
         }
@@ -304,7 +294,7 @@ static BlockDriver bdrv_commit_top = {
 
 void commit_start(const char *job_id, BlockDriverState *bs,
                   BlockDriverState *base, BlockDriverState *top,
-                  int creation_flags, int64_t speed,
+                  int creation_flags,
                   BlockdevOnError on_error, const char *backing_file_str,
                   bool backing_mask_protocol,
                   const char *filter_node_name, Error **errp)
@@ -346,7 +336,7 @@ void commit_start(const char *job_id, BlockDriverState *bs,
     }
 
     s = block_job_create(job_id, &commit_job_driver, NULL, bs, 0, BLK_PERM_ALL,
-                         speed, creation_flags, NULL, NULL, errp);
+                         creation_flags, NULL, NULL, errp);
     if (!s) {
         return;
     }

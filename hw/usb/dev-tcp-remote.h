@@ -55,7 +55,6 @@ struct USBTCPRemoteState {
     QEMUBH *completed_bh;
     QEMUBH *addr_bh;
     QEMUBH *cleanup_bh;
-    Error *migration_blocker;
 
     USBTCPRemoteConnType conn_type;
     char *conn_addr;

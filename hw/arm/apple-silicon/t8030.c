@@ -65,6 +65,7 @@
 #include "hw/ssi/ssi.h"
 #include "hw/usb/apple_typec.h"
 #include "hw/watchdog/apple_wdt.h"
+#include "qapi/visitor.h"
 #include "qemu/error-report.h"
 #include "qemu/guest-random.h"
 #include "qemu/log.h"
@@ -2692,22 +2693,20 @@ static void t8030_reset(MachineState *machine, ResetType type)
     AppleT8030MachineState *t8030 = APPLE_T8030(machine);
     DeviceState *gpio;
 
-    if (!runstate_check(RUN_STATE_RESTORE_VM)) {
-        memset(t8030->pmgr_reg, 0, sizeof(t8030->pmgr_reg));
+    memset(t8030->pmgr_reg, 0, sizeof(t8030->pmgr_reg));
 
-        pmgr_unk_e4800 = 0;
-        // maybe also reset pmgr_unk_e4000 array
-        // Ah, what the heck. Let's do it.
-        memset(pmgr_unk_e4000, 0, sizeof(pmgr_unk_e4000));
+    pmgr_unk_e4800 = 0;
+    // maybe also reset pmgr_unk_e4000 array
+    // Ah, what the heck. Let's do it.
+    memset(pmgr_unk_e4000, 0, sizeof(pmgr_unk_e4000));
 
-        qemu_devices_reset(type);
+    qemu_devices_reset(type);
 
-        if (!runstate_check(RUN_STATE_PRELAUNCH)) {
-            t8030_memory_setup(t8030);
-        }
-
-        t8030_cpu_reset(t8030);
+    if (!runstate_check(RUN_STATE_PRELAUNCH)) {
+        t8030_memory_setup(t8030);
     }
+
+    t8030_cpu_reset(t8030);
 
 
     gpio =
@@ -3085,10 +3084,6 @@ static void t8030_class_init(ObjectClass *klass, const void *data)
     mc->init = t8030_init;
     mc->reset = t8030_reset;
     mc->max_cpus = A13_MAX_CPU + 1;
-    mc->auto_create_sdcard = false;
-    mc->no_floppy = true;
-    mc->no_cdrom = true;
-    mc->no_parallel = true;
     mc->default_cpu_type = TYPE_APPLE_A13;
     mc->minimum_page_bits = 14;
     mc->default_ram_size = 4 * GiB;

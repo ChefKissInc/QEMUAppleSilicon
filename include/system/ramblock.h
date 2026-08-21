@@ -31,18 +31,14 @@ struct RAMBlock {
     struct rcu_head rcu;
     struct MemoryRegion *mr;
     uint8_t *host;
-    uint8_t *colo_cache; /* For colo, VM's ram cache */
     ram_addr_t offset;
     ram_addr_t used_length;
     ram_addr_t max_length;
-    void (*resized)(const char*, uint64_t length, void *host);
     uint32_t flags;
     /* Protected by the BQL.  */
     char idstr[256];
     /* RCU-enabled, writes protected by the ramlist lock */
     QLIST_ENTRY(RAMBlock) next;
-    QLIST_HEAD(, RAMBlockNotifier) ramblock_notifiers;
-    Error *cpr_blocker;
     int fd;
     uint64_t fd_offset;
     int guest_memfd;
@@ -84,16 +80,6 @@ struct RAMBlock {
      */
     unsigned long *clear_bmap;
     uint8_t clear_bmap_shift;
-
-    /*
-     * RAM block length that corresponds to the used_length on the migration
-     * source (after RAM block sizes were synchronized). Especially, after
-     * starting to run the guest, used_length and postcopy_length can differ.
-     * Used to register/unregister uffd handlers and as the size of the received
-     * bitmap. Receiving any page beyond this length will bail out, as it
-     * could not have been valid on the source.
-     */
-    ram_addr_t postcopy_length;
 };
 
 struct RamBlockAttributes {

@@ -24,7 +24,6 @@
 #include "hw/irq.h"
 #include "hw/misc/apple-silicon/aes.h"
 #include "hw/misc/apple-silicon/aes_reg.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/bitops.h"
 #include "qemu/cutils.h"
@@ -752,102 +751,6 @@ SysBusDevice *apple_aes_create(AppleDTNode *node, uint32_t board_id)
     return sbd;
 }
 
-static int apple_aes_key_post_load(void *opaque, int version_id)
-{
-    AESKey *k = opaque;
-    if (k->cipher) {
-        qcrypto_cipher_free(k->cipher);
-        k->cipher = NULL;
-    }
-    if (k->select != KEY_SELECT_SOFTWARE) {
-        k->disabled = true;
-    } else {
-        k->disabled = false;
-        k->cipher = qcrypto_cipher_new(k->algo, key_mode(k->mode), k->key,
-                                       k->len, &error_abort);
-    }
-    return 0;
-}
-
-static int apple_aes_pre_save(void *opaque)
-{
-    AppleAESState *s = opaque;
-    if (!s->stopped) {
-        aes_stop(s);
-        s->stopped = false;
-    }
-    return 0;
-}
-
-static int apple_aes_post_load(void *opaque, int version_id)
-{
-    AppleAESState *s = opaque;
-    if (!s->stopped) {
-        s->stopped = true;
-        aes_start(s);
-    }
-    return 0;
-}
-
-static const VMStateDescription vmstate_apple_aes_command = {
-    .name = "apple_aes_command",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(command, AESCommand),
-            VMSTATE_UINT32(data_len, AESCommand),
-            VMSTATE_VARRAY_UINT32_ALLOC(data, AESCommand, data_len, 1,
-                                        vmstate_info_uint32, uint32_t),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
-static const VMStateDescription vmstate_apple_aes_key = {
-    .name = "apple_aes_key",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .post_load = apple_aes_key_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT32(select, AESKey),
-            VMSTATE_UINT32(algo, AESKey),
-            VMSTATE_UINT32(len, AESKey),
-            VMSTATE_BOOL(wrapped, AESKey),
-            VMSTATE_BOOL(encrypt, AESKey),
-            VMSTATE_UINT32(func, AESKey),
-            VMSTATE_UINT32(mode, AESKey),
-            VMSTATE_UINT8(id, AESKey),
-            VMSTATE_UINT8_ARRAY(key, AESKey, 32),
-            VMSTATE_BOOL(disabled, AESKey),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
-static const VMStateDescription vmstate_apple_aes = {
-    .name = "AppleAESState",
-    .version_id = 0,
-    .minimum_version_id = 0,
-    .pre_save = apple_aes_pre_save,
-    .post_load = apple_aes_post_load,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_INT32(last_level, AppleAESState),
-            VMSTATE_UINT32_ARRAY(reg.raw, AppleAESState,
-                                 AES_BLK_REG_SIZE / sizeof(uint32_t)),
-            VMSTATE_QTAILQ_V(queue, AppleAESState, 0, vmstate_apple_aes_command,
-                             AESCommand, next),
-            VMSTATE_UINT32(command, AppleAESState),
-            VMSTATE_UINT32(data_len, AppleAESState),
-            VMSTATE_UINT32(data_read, AppleAESState),
-            VMSTATE_STRUCT_ARRAY(keys, AppleAESState, 2, 1,
-                                 vmstate_apple_aes_key, AESKey),
-            VMSTATE_UINT8_2DARRAY(iv, AppleAESState, 4, 16),
-            VMSTATE_BOOL(stopped, AppleAESState),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_aes_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -856,7 +759,6 @@ static void apple_aes_class_init(ObjectClass *klass, const void *data)
     dc->unrealize = apple_aes_unrealize;
     device_class_set_legacy_reset(dc, apple_aes_reset);
     dc->desc = "Apple AES Accelerator";
-    dc->vmsd = &vmstate_apple_aes;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
 

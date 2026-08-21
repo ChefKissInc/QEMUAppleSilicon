@@ -22,7 +22,6 @@
 #include "hw/usb.h"
 #include "hw/usb/dev-tcp-remote.h"
 #include "hw/usb/tcp-usb.h"
-#include "migration/blocker.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "qemu/lockable.h"
@@ -113,7 +112,6 @@ static void usb_tcp_remote_cleanup(void *opaque)
     }
 
     qemu_cond_broadcast(&s->cond);
-    migrate_del_blocker(&s->migration_blocker);
 }
 
 static void usb_tcp_remote_update_addr_bh(void *opaque)
@@ -370,8 +368,6 @@ static void *usb_tcp_remote_thread(void *arg)
                 continue;
             }
 
-            migrate_add_blocker(&s->migration_blocker, NULL);
-
             s->closed = false;
 
             qemu_cond_broadcast(&s->cond);
@@ -587,10 +583,6 @@ static void usb_tcp_remote_realize(USBDevice *dev, Error **errp)
         return;
     }
 
-    error_setg(&s->migration_blocker,
-               "%s does not support migration "
-               "while connected",
-               TYPE_USB_TCP_REMOTE);
     qemu_thread_create(&s->thread, TYPE_USB_TCP_REMOTE ".thread",
                        &usb_tcp_remote_thread, s, QEMU_THREAD_JOINABLE);
 }

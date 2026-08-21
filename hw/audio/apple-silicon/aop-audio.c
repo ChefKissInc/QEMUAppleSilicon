@@ -88,7 +88,6 @@ static void apple_aop_audio_class_init(ObjectClass *klass, const void *data)
 
     dc->desc = "Apple Always-On Processor Audio";
     dc->user_creatable = false;
-    // dc->vmsd = &vmstate_apple_aop_audio;
     set_bit(DEVICE_CATEGORY_SOUND, dc->categories);
 }
 

@@ -1,5 +1,3 @@
-# See docs/devel/tracing.rst for syntax documentation.
-
 # task.c
 qio_task_new(void *task, void *source, void *func, void *opaque) "Task new task=%p source=%p func=%p opaque=%p"
 qio_task_complete(void *task) "Task complete task=%p"
@@ -47,7 +45,6 @@ qio_channel_tls_handshake_cancel(void *ioc) "TLS handshake cancel ioc=%p"
 qio_channel_tls_bye_start(void *ioc) "TLS termination start ioc=%p"
 qio_channel_tls_bye_pending(void *ioc, int status) "TLS termination pending ioc=%p status=%d"
 qio_channel_tls_bye_fail(void *ioc) "TLS termination fail ioc=%p"
-qio_channel_tls_bye_complete(void *ioc) "TLS termination complete ioc=%p"
 qio_channel_tls_bye_cancel(void *ioc) "TLS termination cancel ioc=%p"
 qio_channel_tls_credentials_allow(void *ioc) "TLS credentials allow ioc=%p"
 qio_channel_tls_credentials_deny(void *ioc) "TLS credentials deny ioc=%p"

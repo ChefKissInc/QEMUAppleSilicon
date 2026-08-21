@@ -9,11 +9,9 @@
  */
 #include "qemu/osdep.h"
 #include "hw/qdev-properties.h"
-#include "migration/vmstate.h"
 #include "trace.h"
 #include "qapi/error.h"
 #include "hcd-xhci-sysbus.h"
-#include "hw/acpi/aml-build.h"
 #include "hw/irq.h"
 
 static bool xhci_sysbus_intr_raise(XHCIState *xhci, int n, bool level)
@@ -68,32 +66,9 @@ static void xhci_sysbus_instance_init(Object *obj)
     s->xhci.intr_raise = xhci_sysbus_intr_raise;
 }
 
-void xhci_sysbus_build_aml(Aml *scope, uint32_t mmio, unsigned int irq)
-{
-    Aml *dev = aml_device("XHCI");
-    Aml *crs = aml_resource_template();
-
-    aml_append(crs, aml_memory32_fixed(mmio, XHCI_LEN_REGS, AML_READ_WRITE));
-    aml_append(crs, aml_interrupt(AML_CONSUMER, AML_LEVEL, AML_ACTIVE_HIGH,
-                                  AML_EXCLUSIVE, &irq, 1));
-
-    aml_append(dev, aml_name_decl("_HID", aml_eisaid("PNP0D10")));
-    aml_append(dev, aml_name_decl("_CRS", crs));
-    aml_append(scope, dev);
-}
-
 static const Property xhci_sysbus_props[] = {
     DEFINE_PROP_UINT32("intrs", XHCISysbusState, xhci.numintrs, XHCI_MAXINTRS),
     DEFINE_PROP_UINT32("slots", XHCISysbusState, xhci.numslots, XHCI_MAXSLOTS),
-};
-
-static const VMStateDescription vmstate_xhci_sysbus = {
-    .name = "xhci-sysbus",
-    .version_id = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_STRUCT(xhci, XHCISysbusState, 1, vmstate_xhci, XHCIState),
-        VMSTATE_END_OF_LIST()
-    }
 };
 
 static void xhci_sysbus_class_init(ObjectClass *klass, const void *data)
@@ -102,7 +77,6 @@ static void xhci_sysbus_class_init(ObjectClass *klass, const void *data)
 
     device_class_set_legacy_reset(dc, xhci_sysbus_reset);
     dc->realize = xhci_sysbus_realize;
-    dc->vmsd = &vmstate_xhci_sysbus;
     device_class_set_props(dc, xhci_sysbus_props);
 }
 

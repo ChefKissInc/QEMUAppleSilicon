@@ -26,7 +26,6 @@
 #include "qemu/cacheinfo.h"
 #include "qemu/target-info.h"
 #include "exec/log.h"
-#include "exec/icount.h"
 #include "accel/tcg/cpu-ops.h"
 #include "tb-jmp-cache.h"
 #include "tb-hash.h"
@@ -177,15 +176,6 @@ void cpu_restore_state_from_tb(CPUState *cpu, TranslationBlock *tb,
 
     if (insns_left < 0) {
         return;
-    }
-
-    if (tb_cflags(tb) & CF_USE_ICOUNT) {
-        assert(icount_enabled());
-        /*
-         * Reset the cycle counter to the start of the block and
-         * shift if to the number of actually executed instructions.
-         */
-        cpu->neg.icount_decr.u16.low += insns_left;
     }
 
     cpu->cc->tcg_ops->restore_state_to_opc(cpu, tb, data);
@@ -560,8 +550,6 @@ void tb_check_watchpoint(CPUState *cpu, uintptr_t retaddr)
 void cpu_io_recompile(CPUState *cpu, uintptr_t retaddr)
 {
     TranslationBlock *tb;
-    CPUClass *cc;
-    uint32_t n;
 
     tb = tcg_tb_lookup(retaddr);
     if (!tb) {
@@ -571,26 +559,13 @@ void cpu_io_recompile(CPUState *cpu, uintptr_t retaddr)
     cpu_restore_state_from_tb(cpu, tb, retaddr);
 
     /*
-     * Some guests must re-execute the branch when re-executing a delay
-     * slot instruction.  When this is the case, adjust icount and N
-     * to account for the re-execution of the branch.
-     */
-    n = 1;
-    cc = cpu->cc;
-    if (cc->tcg_ops->io_recompile_replay_branch &&
-        cc->tcg_ops->io_recompile_replay_branch(cpu, tb)) {
-        cpu->neg.icount_decr.u16.low++;
-        n = 2;
-    }
-
-    /*
      * Exit the loop and potentially generate a new TB executing the
      * just the I/O insns. We also limit instrumentation to memory
      * operations only (which execute after completion) so we don't
      * double instrument the instruction. Also don't let an IRQ sneak
      * in before we execute it.
      */
-    cpu->cflags_next_tb = curr_cflags(cpu) | CF_MEMI_ONLY | CF_NOIRQ | n;
+    cpu->cflags_next_tb = curr_cflags(cpu) | CF_MEMI_ONLY | CF_NOIRQ | 1;
 
     if (qemu_loglevel_mask(CPU_LOG_EXEC)) {
         vaddr pc = cpu->cc->get_pc(cpu);

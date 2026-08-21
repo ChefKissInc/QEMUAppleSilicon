@@ -25,7 +25,6 @@
 #include "hw/ptimer.h"
 #include "hw/qdev-properties.h"
 #include "hw/timer/arm_mptimer.h"
-#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "hw/core/cpu.h"
@@ -277,29 +276,6 @@ static void arm_mptimer_realize(DeviceState *dev, Error **errp)
     }
 }
 
-static const VMStateDescription vmstate_timerblock = {
-    .name = "arm_mptimer_timerblock",
-    .version_id = 3,
-    .minimum_version_id = 3,
-    .fields = (const VMStateField[]) {
-        VMSTATE_UINT32(control, TimerBlock),
-        VMSTATE_UINT32(status, TimerBlock),
-        VMSTATE_PTIMER(timer, TimerBlock),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
-static const VMStateDescription vmstate_arm_mptimer = {
-    .name = "arm_mptimer",
-    .version_id = 3,
-    .minimum_version_id = 3,
-    .fields = (const VMStateField[]) {
-        VMSTATE_STRUCT_VARRAY_UINT32(timerblock, ARMMPTimerState, num_cpu,
-                                     3, vmstate_timerblock, TimerBlock),
-        VMSTATE_END_OF_LIST()
-    }
-};
-
 static const Property arm_mptimer_properties[] = {
     DEFINE_PROP_UINT32("num-cpu", ARMMPTimerState, num_cpu, 0),
 };
@@ -309,7 +285,6 @@ static void arm_mptimer_class_init(ObjectClass *klass, const void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->realize = arm_mptimer_realize;
-    dc->vmsd = &vmstate_arm_mptimer;
     device_class_set_legacy_reset(dc, arm_mptimer_reset);
     device_class_set_props(dc, arm_mptimer_properties);
 }

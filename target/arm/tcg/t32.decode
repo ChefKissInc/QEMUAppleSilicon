@@ -48,11 +48,6 @@
 &mcr             !extern cp opc1 crn crm opc2 rt
 &mcrr            !extern cp opc1 crm rt rt2
 
-&mve_shl_ri      rdalo rdahi shim
-&mve_shl_rr      rdalo rdahi rm
-&mve_sh_ri       rda shim
-&mve_sh_rr       rda rm
-
 # rdahi: bits [3:1] from insn, bit 0 is 1
 # rdalo: bits [3:1] from insn, bit 0 is 0
 %rdahi_9 9:3 !function=times_2_plus_1
@@ -69,73 +64,11 @@
 @S_xrr_shi       ....... .... .   rn:4 .... .... .. shty:2 rm:4 \
                  &s_rrr_shi shim=%imm5_12_6 s=1 rd=0
 
-@mve_shl_ri      ....... .... . ... . . ... ... . .. .. .... \
-                 &mve_shl_ri shim=%imm5_12_6 rdalo=%rdalo_17 rdahi=%rdahi_9
-@mve_shl_rr      ....... .... . ... . rm:4  ... . .. .. .... \
-                 &mve_shl_rr rdalo=%rdalo_17 rdahi=%rdahi_9
-@mve_sh_ri       ....... .... . rda:4 . ... ... . .. .. .... \
-                 &mve_sh_ri shim=%imm5_12_6
-@mve_sh_rr       ....... .... . rda:4 rm:4 .... .... .... &mve_sh_rr
-
 {
   TST_xrri       1110101 0000 1 .... 0 ... 1111 .... ....     @S_xrr_shi
   AND_rrri       1110101 0000 . .... 0 ... .... .... ....     @s_rrr_shi
 }
 BIC_rrri         1110101 0001 . .... 0 ... .... .... ....     @s_rrr_shi
-{
-  # The v8.1M MVE shift insns overlap in encoding with MOVS/ORRS
-  # and are distinguished by having Rm==13 or 15. Those are UNPREDICTABLE
-  # cases for MOVS/ORRS. We decode the MVE cases first, ensuring that
-  # they explicitly call unallocated_encoding() for cases that must UNDEF
-  # (eg "using a new shift insn on a v8.1M CPU without MVE"), and letting
-  # the rest fall through (where ORR_rrri and MOV_rxri will end up
-  # handling them as r13 and r15 accesses with the same semantics as A32).
-  [
-    {
-      UQSHL_ri   1110101 0010 1 ....  0 ...  1111 .. 00 1111  @mve_sh_ri
-      LSLL_ri    1110101 0010 1 ... 0 0 ... ... 1 .. 00 1111  @mve_shl_ri
-      UQSHLL_ri  1110101 0010 1 ... 1 0 ... ... 1 .. 00 1111  @mve_shl_ri
-    }
-
-    {
-      URSHR_ri   1110101 0010 1 ....  0 ...  1111 .. 01 1111  @mve_sh_ri
-      LSRL_ri    1110101 0010 1 ... 0 0 ... ... 1 .. 01 1111  @mve_shl_ri
-      URSHRL_ri  1110101 0010 1 ... 1 0 ... ... 1 .. 01 1111  @mve_shl_ri
-    }
-
-    {
-      SRSHR_ri   1110101 0010 1 ....  0 ...  1111 .. 10 1111  @mve_sh_ri
-      ASRL_ri    1110101 0010 1 ... 0 0 ... ... 1 .. 10 1111  @mve_shl_ri
-      SRSHRL_ri  1110101 0010 1 ... 1 0 ... ... 1 .. 10 1111  @mve_shl_ri
-    }
-
-    {
-      SQSHL_ri   1110101 0010 1 ....  0 ...  1111 .. 11 1111  @mve_sh_ri
-      SQSHLL_ri  1110101 0010 1 ... 1 0 ... ... 1 .. 11 1111  @mve_shl_ri
-    }
-
-    {
-      UQRSHL_rr    1110101 0010 1 ....  ....  1111 0000 1101  @mve_sh_rr
-      LSLL_rr      1110101 0010 1 ... 0 .... ... 1 0000 1101  @mve_shl_rr
-      UQRSHLL64_rr 1110101 0010 1 ... 1 .... ... 1 0000 1101  @mve_shl_rr
-    }
-
-    {
-      SQRSHR_rr    1110101 0010 1 ....  ....  1111 0010 1101  @mve_sh_rr
-      ASRL_rr      1110101 0010 1 ... 0 .... ... 1 0010 1101  @mve_shl_rr
-      SQRSHRL64_rr 1110101 0010 1 ... 1 .... ... 1 0010 1101  @mve_shl_rr
-    }
-
-    UQRSHLL48_rr 1110101 0010 1 ... 1 ....  ... 1  1000 1101  @mve_shl_rr
-    SQRSHRL48_rr 1110101 0010 1 ... 1 ....  ... 1  1010 1101  @mve_shl_rr
-  ]
-
-  MOV_rxri       1110101 0010 . 1111 0 ... .... .... ....     @s_rxr_shi
-  ORR_rrri       1110101 0010 . .... 0 ... .... .... ....     @s_rrr_shi
-
-  # v8.1M CSEL and friends
-  CSEL           1110101 0010 1 rn:4 10 op:2 rd:4 fcond:4 rm:4
-}
 {
   MVN_rxri       1110101 0011 . 1111 0 ... .... .... ....     @s_rxr_shi
   ORN_rrri       1110101 0011 . .... 0 ... .... .... ....     @s_rrr_shi
@@ -392,18 +325,15 @@ CLZ              1111 1010 1011 ---- 1111 .... 1000 ....      @rdm
     ISB          1111 0011 1011 1111 1000 1111 0110 ----
     SB           1111 0011 1011 1111 1000 1111 0111 0000
 
-    # Note that the v7m insn overlaps both the normal and banked insn.
     {
       MRS_bank   1111 0011 111 r:1 .... 1000 rd:4   001. 0000  \
                  &mrs_bank sysm=%mrs_sysm
       MRS_reg    1111 0011 111 r:1 1111 1000 rd:4   0000 0000  &mrs_reg
-      MRS_v7m    1111 0011 111 0   1111 1000 rd:4   sysm:8
     }
     {
       MSR_bank   1111 0011 100 r:1 rn:4 1000 ....   001. 0000  \
                  &msr_bank sysm=%msr_sysm
       MSR_reg    1111 0011 100 r:1 rn:4 1000 mask:4 0000 0000  &msr_reg
-      MSR_v7m    1111 0011 100 0   rn:4 1000 mask:2 00 sysm:8
     }
     BXJ          1111 0011 1100 rm:4 1000 1111 0000 0000      &r
     {
@@ -559,7 +489,6 @@ LDRD_ri_t32      1110 1001 .101 .... .... .... ........    @ldstd_ri8 w=0 p=1
 
 STRD_ri_t32      1110 1001 .110 .... .... .... ........    @ldstd_ri8 w=1 p=1
 {
-  SG             1110 1001 0111 1111 1110 1001 01111111
   LDRD_ri_t32    1110 1001 .111 .... .... .... ........    @ldstd_ri8 w=1 p=1
 }
 
@@ -580,7 +509,6 @@ STRD_ri_t32      1110 1001 .110 .... .... .... ........    @ldstd_ri8 w=1 p=1
                  &ldrex imm=0
 
 {
-  TT             1110 1000 0100 rn:4 1111 rd:4 A:1 T:1 000000
   STREX          1110 1000 0100 .... .... .... .... ....      @strex_i
 }
 STREXB           1110 1000 1100 .... .... 1111 0100 ....      @strex_0
@@ -678,8 +606,6 @@ UXTAB            1111 1010 0101 .... 1111 .... 10.. ....      @rrr_rot
 STM_t32          1110 1000 10.0 .... ................         @ldstm i=1 b=0
 STM_t32          1110 1001 00.0 .... ................         @ldstm i=0 b=1
 {
-  # Rn=15 UNDEFs for LDM; M-profile CLRM uses that encoding
-  CLRM           1110 1000 1001 1111 list:16
   LDM_t32        1110 1000 10.1 .... ................         @ldstm i=1 b=0
 }
 LDM_t32          1110 1001 00.1 .... ................         @ldstm i=0 b=1
@@ -723,30 +649,4 @@ BL               1111 0. .......... 11.1 ............         @branch24
 {
   # BLX_i is non-M-profile only
   BLX_i          1111 0. .......... 11.0 ............         @branch24
-  # M-profile only: loop and branch insns
-  [
-    # All these BF insns have boff != 0b0000; we NOP them all
-    BF           1111 0 boff:4  ------- 1100 - ---------- 1    # BFL
-    BF           1111 0 boff:4 0 ------ 1110 - ---------- 1    # BFCSEL
-    BF           1111 0 boff:4 10 ----- 1110 - ---------- 1    # BF
-    BF           1111 0 boff:4 11 ----- 1110 0 0000000000 1    # BFX, BFLX
-  ]
-  [
-    # LE and WLS immediate
-    %lob_imm 1:10 11:1 !function=times_2
-
-    DLS          1111 0 0000 100     rn:4 1110 0000 0000 0001 size=4
-    WLS          1111 0 0000 100     rn:4 1100 . .......... 1 imm=%lob_imm size=4
-    {
-      LE         1111 0 0000 0 f:1 tp:1 1111 1100 . .......... 1 imm=%lob_imm
-      # This is WLSTP
-      WLS        1111 0 0000 0 size:2 rn:4 1100 . .......... 1 imm=%lob_imm
-    }
-    {
-      LCTP       1111 0 0000 000     1111 1110 0000 0000 0001
-      # This is DLSTP
-      DLS        1111 0 0000 0 size:2 rn:4 1110 0000 0000 0001
-    }
-    VCTP         1111 0 0000 0 size:2 rn:4 1110 1000 0000 0001
-  ]
 }

@@ -18,17 +18,6 @@
 #include "qemu/osdep.h"
 #include "hw/qdev-properties.h"
 #include "hw/usb/hcd-ehci.h"
-#include "migration/vmstate.h"
-
-static const VMStateDescription vmstate_ehci_sysbus = {
-    .name        = "ehci-sysbus",
-    .version_id  = 2,
-    .minimum_version_id  = 1,
-    .fields = (const VMStateField[]) {
-        VMSTATE_STRUCT(ehci, EHCISysBusState, 2, vmstate_ehci, EHCIState),
-        VMSTATE_END_OF_LIST()
-    }
-};
 
 static const Property ehci_sysbus_properties[] = {
     DEFINE_PROP_UINT32("maxframes", EHCISysBusState, ehci.maxframes, 128),
@@ -89,7 +78,6 @@ static void ehci_sysbus_class_init(ObjectClass *klass, const void *data)
     sec->portnr = EHCI_PORTS;
 
     dc->realize = usb_ehci_sysbus_realize;
-    dc->vmsd = &vmstate_ehci_sysbus;
     device_class_set_props(dc, ehci_sysbus_properties);
     device_class_set_legacy_reset(dc, usb_ehci_sysbus_reset);
     set_bit(DEVICE_CATEGORY_USB, dc->categories);

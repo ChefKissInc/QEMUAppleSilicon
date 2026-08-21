@@ -22,7 +22,6 @@
 #include "hw/i2c/apple_i2c.h"
 #include "hw/i2c/i2c.h"
 #include "hw/irq.h"
-#include "migration/vmstate.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
 
@@ -327,22 +326,6 @@ SysBusDevice *apple_i2c_create(const char *name)
     return sbd;
 }
 
-static const VMStateDescription vmstate_apple_i2c = {
-    .name = "apple_i2c",
-    .version_id = 1,
-    .minimum_version_id = 1,
-    .fields =
-        (const VMStateField[]){
-            VMSTATE_UINT8_ARRAY(reg, AppleI2CState, APPLE_I2C_MMIO_SIZE),
-            VMSTATE_FIFO8(rx_fifo, AppleI2CState),
-            VMSTATE_BOOL(last_irq, AppleI2CState),
-            VMSTATE_BOOL(nak, AppleI2CState),
-            VMSTATE_BOOL(xip, AppleI2CState),
-            VMSTATE_BOOL(is_recv, AppleI2CState),
-            VMSTATE_END_OF_LIST(),
-        }
-};
-
 static void apple_i2c_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -350,7 +333,6 @@ static void apple_i2c_class_init(ObjectClass *klass, const void *data)
     ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     dc->desc = "Apple I2C Controller";
-    dc->vmsd = &vmstate_apple_i2c;
     resettable_class_set_parent_phases(rc, apple_i2c_reset_enter,
                                        apple_i2c_reset_hold,
                                        apple_i2c_reset_exit, &c->parent_phases);

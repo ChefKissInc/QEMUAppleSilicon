@@ -29,7 +29,6 @@
 #include "block/blockjob.h"
 #include "block/dirty-bitmap.h"
 #include "block/fuse.h"
-#include "block/nbd.h"
 #include "block/qdict.h"
 #include "qemu/error-report.h"
 #include "block/module_block.h"
@@ -5037,9 +5036,7 @@ bdrv_reopen_prepare(BDRVReopenState *reopen_state, BlockReopenQueue *queue,
              * will be strings; however, when using -blockdev, blockdev-add or
              * filenames using the json:{} pseudo-protocol, they will be
              * correctly typed.
-             * In contrast, reopening options are (currently) always strings
-             * (because you can only specify them through qemu-io; all other
-             * callers do not specify any options).
+             * In contrast, reopening options are (currently) always strings.
              * Therefore, when using anything other than -drive to create a BDS,
              * this cannot detect non-string options as unchanged, because
              * qobject_is_equal() always returns false for objects of different

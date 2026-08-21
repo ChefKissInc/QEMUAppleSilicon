@@ -27,7 +27,6 @@
 #include "block/qapi.h"
 #include "block/block_int.h"
 #include "block/dirty-bitmap.h"
-#include "block/throttle-groups.h"
 #include "block/write-threshold.h"
 #include "qapi/error.h"
 #include "qapi/qapi-commands-block-core.h"
@@ -96,62 +95,6 @@ BlockDeviceInfo *bdrv_block_device_info(BlockBackend *blk,
     }
 
     info->detect_zeroes = bs->detect_zeroes;
-
-    if (blk && blk_get_public(blk)->throttle_group_member.throttle_state) {
-        ThrottleConfig cfg;
-        BlockBackendPublic *blkp = blk_get_public(blk);
-
-        throttle_group_get_config(&blkp->throttle_group_member, &cfg);
-
-        info->bps     = cfg.buckets[THROTTLE_BPS_TOTAL].avg;
-        info->bps_rd  = cfg.buckets[THROTTLE_BPS_READ].avg;
-        info->bps_wr  = cfg.buckets[THROTTLE_BPS_WRITE].avg;
-
-        info->iops    = cfg.buckets[THROTTLE_OPS_TOTAL].avg;
-        info->iops_rd = cfg.buckets[THROTTLE_OPS_READ].avg;
-        info->iops_wr = cfg.buckets[THROTTLE_OPS_WRITE].avg;
-
-        info->has_bps_max     = cfg.buckets[THROTTLE_BPS_TOTAL].max;
-        info->bps_max         = cfg.buckets[THROTTLE_BPS_TOTAL].max;
-        info->has_bps_rd_max  = cfg.buckets[THROTTLE_BPS_READ].max;
-        info->bps_rd_max      = cfg.buckets[THROTTLE_BPS_READ].max;
-        info->has_bps_wr_max  = cfg.buckets[THROTTLE_BPS_WRITE].max;
-        info->bps_wr_max      = cfg.buckets[THROTTLE_BPS_WRITE].max;
-
-        info->has_iops_max    = cfg.buckets[THROTTLE_OPS_TOTAL].max;
-        info->iops_max        = cfg.buckets[THROTTLE_OPS_TOTAL].max;
-        info->has_iops_rd_max = cfg.buckets[THROTTLE_OPS_READ].max;
-        info->iops_rd_max     = cfg.buckets[THROTTLE_OPS_READ].max;
-        info->has_iops_wr_max = cfg.buckets[THROTTLE_OPS_WRITE].max;
-        info->iops_wr_max     = cfg.buckets[THROTTLE_OPS_WRITE].max;
-
-        info->has_bps_max_length     = info->has_bps_max;
-        info->bps_max_length         =
-            cfg.buckets[THROTTLE_BPS_TOTAL].burst_length;
-        info->has_bps_rd_max_length  = info->has_bps_rd_max;
-        info->bps_rd_max_length      =
-            cfg.buckets[THROTTLE_BPS_READ].burst_length;
-        info->has_bps_wr_max_length  = info->has_bps_wr_max;
-        info->bps_wr_max_length      =
-            cfg.buckets[THROTTLE_BPS_WRITE].burst_length;
-
-        info->has_iops_max_length    = info->has_iops_max;
-        info->iops_max_length        =
-            cfg.buckets[THROTTLE_OPS_TOTAL].burst_length;
-        info->has_iops_rd_max_length = info->has_iops_rd_max;
-        info->iops_rd_max_length     =
-            cfg.buckets[THROTTLE_OPS_READ].burst_length;
-        info->has_iops_wr_max_length = info->has_iops_wr_max;
-        info->iops_wr_max_length     =
-            cfg.buckets[THROTTLE_OPS_WRITE].burst_length;
-
-        info->has_iops_size = cfg.op_size;
-        info->iops_size = cfg.op_size;
-
-        info->group =
-            g_strdup(throttle_group_get_name(&blkp->throttle_group_member));
-    }
-
     info->write_threshold = bdrv_write_threshold_get(bs);
 
     p_image_info = &info->image;
@@ -219,8 +162,6 @@ int bdrv_query_snapshot_info_list(BlockDriverState *bs,
         info->date_nsec     = sn_tab[i].date_nsec;
         info->vm_clock_sec  = sn_tab[i].vm_clock_nsec / 1000000000;
         info->vm_clock_nsec = sn_tab[i].vm_clock_nsec % 1000000000;
-        info->icount        = sn_tab[i].icount;
-        info->has_icount    = sn_tab[i].icount != -1ULL;
 
         QAPI_LIST_APPEND(tail, info);
     }
@@ -746,13 +687,12 @@ BlockStatsList *qmp_query_blockstats(bool has_query_nodes,
 void bdrv_snapshot_dump(QEMUSnapshotInfo *sn)
 {
     char clock_buf[128];
-    char icount_buf[128] = {0};
     int64_t secs;
     char *sizing = NULL;
 
     if (!sn) {
-        qemu_printf("%-7s %-16s %8s %19s %15s %10s",
-                    "ID", "TAG", "VM_SIZE", "DATE", "VM_CLOCK", "ICOUNT");
+        qemu_printf("%-7s %-16s %8s %19s %15s",
+                    "ID", "TAG", "VM_SIZE", "DATE", "VM_CLOCK");
     } else {
         g_autoptr(GDateTime) date = g_date_time_new_from_unix_local(sn->date_sec);
         g_autofree char *date_buf = g_date_time_format(date, "%Y-%m-%d %H:%M:%S");
@@ -765,18 +705,11 @@ void bdrv_snapshot_dump(QEMUSnapshotInfo *sn)
                  (int)(secs % 60),
                  (int)((sn->vm_clock_nsec / 1000000) % 1000));
         sizing = size_to_str(sn->vm_state_size);
-        if (sn->icount != -1ULL) {
-            snprintf(icount_buf, sizeof(icount_buf),
-                "%"PRId64, sn->icount);
-        } else {
-            snprintf(icount_buf, sizeof(icount_buf), "--");
-        }
-        qemu_printf("%-7s %-16s %8s %19s %15s %10s",
+        qemu_printf("%-7s %-16s %8s %19s %15s",
                     sn->id_str, sn->name,
                     sizing,
                     date_buf,
-                    clock_buf,
-                    icount_buf);
+                    clock_buf);
     }
     g_free(sizing);
 }
@@ -1001,8 +934,6 @@ void bdrv_node_info_dump(BlockNodeInfo *info, int indentation, bool protocol)
                 .date_nsec = elem->value->date_nsec,
                 .vm_clock_nsec = elem->value->vm_clock_sec * 1000000000ULL +
                                  elem->value->vm_clock_nsec,
-                .icount = elem->value->has_icount ?
-                          elem->value->icount : -1ULL,
             };
 
             pstrcpy(sn.id_str, sizeof(sn.id_str), elem->value->id);

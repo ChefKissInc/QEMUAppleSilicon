@@ -530,11 +530,6 @@ void pcie_cap_slot_plug_cb(HotplugHandler *hotplug_dev, DeviceState *dev,
     PCIDevice *pci_dev = PCI_DEVICE(dev);
     uint32_t lnkcap = pci_get_long(exp_cap + PCI_EXP_LNKCAP);
 
-    if (pci_is_vf(pci_dev)) {
-        /* Virtual function cannot be physically disconnected */
-        return;
-    }
-
     /* Don't send event when device is enabled during qemu machine creation:
      * it is present on boot, no hotplug event is necessary. We do send an
      * event when the device is disabled later. */
@@ -893,7 +888,7 @@ void pcie_cap_slot_write_config(PCIDevice *dev,
 
     hotplug_event_notify(dev);
 
-    /* 
+    /*
      * 6.7.3.2 Command Completed Events
      *
      * Software issues a command to a hot-plug capable Downstream Port by

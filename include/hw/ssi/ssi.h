@@ -71,16 +71,6 @@ struct SSIPeripheral {
     uint8_t cs_index;
 };
 
-extern const VMStateDescription vmstate_ssi_peripheral;
-
-#define VMSTATE_SSI_PERIPHERAL(_field, _state) {                     \
-    .name       = (stringify(_field)),                               \
-    .size       = sizeof(SSIPeripheral),                             \
-    .vmsd       = &vmstate_ssi_peripheral,                           \
-    .flags      = VMS_STRUCT,                                        \
-    .offset     = vmstate_offset_value(_state, _field, SSIPeripheral), \
-}
-
 DeviceState *ssi_create_peripheral(SSIBus *bus, const char *name);
 /**
  * ssi_realize_and_unref: realize and unref an SSI peripheral

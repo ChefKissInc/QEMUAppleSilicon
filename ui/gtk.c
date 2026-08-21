@@ -134,8 +134,6 @@ DECLARE_INSTANCE_CHECKER(VCChardev, VC_CHARDEV,
 
 static struct touch_slot touch_slots[INPUT_EVENT_SLOTS_MAX];
 
-bool gtk_use_gl_area;
-
 static void gd_grab_pointer(VirtualConsole *vc, const char *reason);
 static void gd_ungrab_pointer(GtkDisplayState *s);
 static void gd_grab_keyboard(VirtualConsole *vc, const char *reason);
@@ -342,12 +340,6 @@ static void gd_update_full_redraw(VirtualConsole *vc)
     int ww, wh;
     ww = gdk_window_get_width(gtk_widget_get_window(area));
     wh = gdk_window_get_height(gtk_widget_get_window(area));
-#if defined(CONFIG_OPENGL)
-    if (vc->gfx.gls && gtk_use_gl_area) {
-        gtk_gl_area_queue_render(GTK_GL_AREA(vc->gfx.drawing_area));
-        return;
-    }
-#endif
     gtk_widget_queue_draw_area(area, 0, 0, ww, wh);
 }
 
@@ -563,119 +555,6 @@ static const DisplayChangeListenerOps dcl_ops = {
 };
 
 
-#if defined(CONFIG_OPENGL)
-
-static bool gd_has_dmabuf(DisplayChangeListener *dcl)
-{
-    VirtualConsole *vc = container_of(dcl, VirtualConsole, gfx.dcl);
-
-    if (gtk_use_gl_area && !gtk_widget_get_realized(vc->gfx.drawing_area)) {
-        /* FIXME: Assume it will work, actual check done after realize */
-        /* fixing this would require delaying listener registration */
-        return true;
-    }
-
-    return vc->gfx.has_dmabuf;
-}
-
-static void gd_gl_release_dmabuf(DisplayChangeListener *dcl,
-                                 QemuDmaBuf *dmabuf)
-{
-#ifdef CONFIG_GBM
-    VirtualConsole *vc = container_of(dcl, VirtualConsole, gfx.dcl);
-
-    egl_dmabuf_release_texture(dmabuf);
-    if (vc->gfx.guest_fb.dmabuf == dmabuf) {
-        vc->gfx.guest_fb.dmabuf = NULL;
-    }
-#endif
-}
-
-void gd_hw_gl_flushed(void *vcon)
-{
-    VirtualConsole *vc = vcon;
-    QemuDmaBuf *dmabuf = vc->gfx.guest_fb.dmabuf;
-    int fence_fd;
-
-    fence_fd = qemu_dmabuf_get_fence_fd(dmabuf);
-    if (fence_fd >= 0) {
-        qemu_set_fd_handler(fence_fd, NULL, NULL, NULL);
-        close(fence_fd);
-        qemu_dmabuf_set_fence_fd(dmabuf, -1);
-        graphic_hw_gl_block(vc->gfx.dcl.con, false);
-    }
-}
-
-/** DisplayState Callbacks (opengl version) **/
-
-static const DisplayChangeListenerOps dcl_gl_area_ops = {
-    .dpy_name             = "gtk-egl",
-    .dpy_gfx_update       = gd_gl_area_update,
-    .dpy_gfx_switch       = gd_gl_area_switch,
-    .dpy_gfx_check_format = console_gl_check_format,
-    .dpy_refresh          = gd_gl_area_refresh,
-    .dpy_mouse_set        = gd_mouse_set,
-    .dpy_cursor_define    = gd_cursor_define,
-
-    .dpy_gl_scanout_texture  = gd_gl_area_scanout_texture,
-    .dpy_gl_scanout_disable  = gd_gl_area_scanout_disable,
-    .dpy_gl_update           = gd_gl_area_scanout_flush,
-    .dpy_gl_scanout_dmabuf   = gd_gl_area_scanout_dmabuf,
-    .dpy_gl_release_dmabuf   = gd_gl_release_dmabuf,
-    .dpy_has_dmabuf          = gd_has_dmabuf,
-};
-
-static bool
-gd_gl_area_is_compatible_dcl(DisplayGLCtx *dgc,
-                             DisplayChangeListener *dcl)
-{
-    return dcl->ops == &dcl_gl_area_ops;
-}
-
-static const DisplayGLCtxOps gl_area_ctx_ops = {
-    .dpy_gl_ctx_is_compatible_dcl = gd_gl_area_is_compatible_dcl,
-    .dpy_gl_ctx_create       = gd_gl_area_create_context,
-    .dpy_gl_ctx_destroy      = gd_gl_area_destroy_context,
-    .dpy_gl_ctx_make_current = gd_gl_area_make_current,
-};
-
-#ifdef CONFIG_X11
-static const DisplayChangeListenerOps dcl_egl_ops = {
-    .dpy_name             = "gtk-egl",
-    .dpy_gfx_update       = gd_egl_update,
-    .dpy_gfx_switch       = gd_egl_switch,
-    .dpy_gfx_check_format = console_gl_check_format,
-    .dpy_refresh          = gd_egl_refresh,
-    .dpy_mouse_set        = gd_mouse_set,
-    .dpy_cursor_define    = gd_cursor_define,
-
-    .dpy_gl_scanout_disable  = gd_egl_scanout_disable,
-    .dpy_gl_scanout_texture  = gd_egl_scanout_texture,
-    .dpy_gl_scanout_dmabuf   = gd_egl_scanout_dmabuf,
-    .dpy_gl_cursor_dmabuf    = gd_egl_cursor_dmabuf,
-    .dpy_gl_cursor_position  = gd_egl_cursor_position,
-    .dpy_gl_update           = gd_egl_flush,
-    .dpy_gl_release_dmabuf   = gd_gl_release_dmabuf,
-    .dpy_has_dmabuf          = gd_has_dmabuf,
-};
-
-static bool
-gd_egl_is_compatible_dcl(DisplayGLCtx *dgc,
-                         DisplayChangeListener *dcl)
-{
-    return dcl->ops == &dcl_egl_ops;
-}
-
-static const DisplayGLCtxOps egl_ctx_ops = {
-    .dpy_gl_ctx_is_compatible_dcl = gd_egl_is_compatible_dcl,
-    .dpy_gl_ctx_create       = gd_egl_create_context,
-    .dpy_gl_ctx_destroy      = qemu_egl_destroy_context,
-    .dpy_gl_ctx_make_current = gd_egl_make_current,
-};
-#endif
-
-#endif /* CONFIG_OPENGL */
-
 /** QEMU Events **/
 
 static void gd_change_runstate(void *opaque, bool running, RunState state)
@@ -751,42 +630,6 @@ static void gd_set_ui_size(VirtualConsole *vc, gint width, gint height)
     info.height = height;
     dpy_set_ui_info(vc->gfx.dcl.con, &info, true);
 }
-
-#if defined(CONFIG_OPENGL)
-
-static gboolean gd_render_event(GtkGLArea *area, GdkGLContext *context,
-                                void *opaque)
-{
-    VirtualConsole *vc = opaque;
-
-    if (vc->gfx.gls) {
-        gd_gl_area_draw(vc);
-    }
-    return TRUE;
-}
-
-static void gd_resize_event(GtkGLArea *area,
-                            gint width, gint height, gpointer *opaque)
-{
-    VirtualConsole *vc = (void *)opaque;
-    double pw = width, ph = height;
-    double sx = vc->gfx.scale_x, sy = vc->gfx.scale_y;
-    GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(area));
-    const int gs = gdk_window_get_scale_factor(window);
-
-    if (!vc->s->free_scale && !vc->s->full_screen) {
-        pw /= sx;
-        ph /= sy;
-    }
-
-    /**
-     * width and height here are in pixel coordinate, so we must divide it
-     * by global window scale (gs)
-     */
-    gd_set_ui_size(vc, pw / gs, ph / gs);
-}
-
-#endif
 
 void gd_update_monitor_refresh_rate(VirtualConsole *vc, GtkWidget *widget)
 {
@@ -905,22 +748,6 @@ static gboolean gd_draw_event(GtkWidget *widget, cairo_t *cr, void *opaque)
     int wx_offset, wy_offset;
     int ww_widget, wh_widget, ww_surface, wh_surface;
     int fbw, fbh;
-
-#if defined(CONFIG_OPENGL)
-    if (vc->gfx.gls) {
-        if (gtk_use_gl_area) {
-            /* invoke render callback please */
-            return FALSE;
-        } else {
-#ifdef CONFIG_X11
-            gd_egl_draw(vc);
-            return TRUE;
-#else
-            abort();
-#endif
-        }
-    }
-#endif
 
     if (!gtk_widget_get_realized(widget)) {
         return FALSE;
@@ -1461,16 +1288,11 @@ static gboolean gd_tab_window_close(GtkWidget *widget, GdkEvent *event,
                                     vc->tab_item, vc->label);
     gtk_widget_destroy(vc->window);
     vc->window = NULL;
-#if defined(CONFIG_OPENGL)
-    if (vc->gfx.esurface) {
-        eglDestroySurface(qemu_egl_display, vc->gfx.esurface);
-        vc->gfx.esurface = NULL;
+
+    if (vc == gd_vc_find_by_menu(s)) {
+        gtk_widget_grab_focus(vc->focus);
     }
-    if (vc->gfx.ectx) {
-        eglDestroyContext(qemu_egl_display, vc->gfx.ectx);
-        vc->gfx.ectx = NULL;
-    }
-#endif
+
     return TRUE;
 }
 
@@ -1500,16 +1322,6 @@ static void gd_menu_untabify(GtkMenuItem *item, void *opaque)
     if (!vc->window) {
         gtk_widget_set_sensitive(vc->menu_item, false);
         vc->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#if defined(CONFIG_OPENGL)
-        if (vc->gfx.esurface) {
-            eglDestroySurface(qemu_egl_display, vc->gfx.esurface);
-            vc->gfx.esurface = NULL;
-        }
-        if (vc->gfx.ectx) {
-            eglDestroyContext(qemu_egl_display, vc->gfx.ectx);
-            vc->gfx.ectx = NULL;
-        }
-#endif
         gd_widget_reparent(s->notebook, vc->window, vc->tab_item);
 
         g_signal_connect(vc->window, "delete-event",
@@ -2110,15 +1922,6 @@ static void gd_connect_vc_gfx_signals(VirtualConsole *vc)
 {
     g_signal_connect(vc->gfx.drawing_area, "draw",
                      G_CALLBACK(gd_draw_event), vc);
-#if defined(CONFIG_OPENGL)
-    if (gtk_use_gl_area) {
-        /* wire up GtkGlArea events */
-        g_signal_connect(vc->gfx.drawing_area, "render",
-                         G_CALLBACK(gd_render_event), vc);
-        g_signal_connect(vc->gfx.drawing_area, "resize",
-                         G_CALLBACK(gd_resize_event), vc);
-    }
-#endif
     if (qemu_console_is_graphic(vc->gfx.dcl.con)) {
         g_signal_connect(vc->gfx.drawing_area, "event",
                          G_CALLBACK(gd_event), vc);
@@ -2226,18 +2029,6 @@ static GtkWidget *gd_create_menu_machine(GtkDisplayState *s)
     return machine_menu;
 }
 
-#if defined(CONFIG_OPENGL)
-static void gl_area_realize(GtkGLArea *area, VirtualConsole *vc)
-{
-    gtk_gl_area_make_current(area);
-    qemu_egl_display = eglGetCurrentDisplay();
-    vc->gfx.has_dmabuf = qemu_egl_has_dmabuf();
-    if (!vc->gfx.has_dmabuf) {
-        error_report("GtkGLArea console lacks DMABUF support.");
-    }
-}
-#endif
-
 static bool gd_scale_valid(double scale)
 {
     return scale >= VC_SCALE_MIN && scale <= VC_SCALE_MAX;
@@ -2265,41 +2056,8 @@ static GSList *gd_vc_gfx_init(GtkDisplayState *s, VirtualConsole *vc,
     vc->gfx.scale_x = vc->gfx.preferred_scale;
     vc->gfx.scale_y = vc->gfx.preferred_scale;
 
-#if defined(CONFIG_OPENGL)
-    if (display_opengl) {
-        if (gtk_use_gl_area) {
-            vc->gfx.drawing_area = gtk_gl_area_new();
-            g_signal_connect(vc->gfx.drawing_area, "realize",
-                             G_CALLBACK(gl_area_realize), vc);
-            vc->gfx.dcl.ops = &dcl_gl_area_ops;
-            vc->gfx.dgc.ops = &gl_area_ctx_ops;
-        } else {
-#ifdef CONFIG_X11
-            vc->gfx.drawing_area = gtk_drawing_area_new();
-            /*
-             * gtk_widget_set_double_buffered() was deprecated in 3.14.
-             * It is required for opengl rendering on X11 though.  A
-             * proper replacement (native opengl support) is only
-             * available in 3.16+.  Silence the warning if possible.
-             */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            gtk_widget_set_double_buffered(vc->gfx.drawing_area, FALSE);
-#pragma GCC diagnostic pop
-            vc->gfx.dcl.ops = &dcl_egl_ops;
-            vc->gfx.dgc.ops = &egl_ctx_ops;
-            vc->gfx.has_dmabuf = qemu_egl_has_dmabuf();
-#else
-            abort();
-#endif
-        }
-    } else
-#endif
-    {
-        vc->gfx.drawing_area = gtk_drawing_area_new();
-        vc->gfx.dcl.ops = &dcl_ops;
-    }
-
+    vc->gfx.drawing_area = gtk_drawing_area_new();
+    vc->gfx.dcl.ops = &dcl_ops;
 
     gtk_widget_add_events(vc->gfx.drawing_area,
                           GDK_POINTER_MOTION_MASK |
@@ -2323,9 +2081,6 @@ static GSList *gd_vc_gfx_init(GtkDisplayState *s, VirtualConsole *vc,
     vc->gfx.kbd = qkbd_state_init(con);
     vc->gfx.dcl.con = con;
 
-    if (display_opengl) {
-        qemu_console_set_display_gl_ctx(con, &vc->gfx.dgc);
-    }
     register_displaychangelistener(&vc->gfx.dcl);
 
     gd_connect_vc_gfx_signals(vc);
@@ -2570,7 +2325,9 @@ static void gtk_display_init(DisplayState *ds, DisplayOptions *opts)
         if (!con) {
             break;
         }
-        gtk_widget_realize(s->vc[idx].gfx.drawing_area);
+        if (s->vc[idx].type == GD_VC_GFX) {
+            gtk_widget_realize(s->vc[idx].gfx.drawing_area);
+        }
     }
 
     if (opts->u.gtk.has_show_menubar &&
@@ -2632,28 +2389,6 @@ static void early_gtk_display_init(DisplayOptions *opts)
     }
 
     assert(opts->type == DISPLAY_TYPE_GTK);
-    if (opts->has_gl && opts->gl != DISPLAY_GL_MODE_OFF) {
-#if defined(CONFIG_OPENGL)
-#if defined(GDK_WINDOWING_WAYLAND)
-        if (GDK_IS_WAYLAND_DISPLAY(gdk_display_get_default())) {
-            gtk_use_gl_area = true;
-            gtk_gl_area_init();
-        } else
-#endif
-#if defined(GDK_WINDOWING_WIN32)
-        if (GDK_IS_WIN32_DISPLAY(gdk_display_get_default())) {
-            gtk_use_gl_area = true;
-            gtk_gl_area_init();
-        } else
-#endif
-        {
-#ifdef CONFIG_X11
-            DisplayGLMode mode = opts->has_gl ? opts->gl : DISPLAY_GL_MODE_ON;
-            gtk_egl_init(mode);
-#endif
-        }
-#endif
-    }
 
     keycode_map = gd_get_keymap(&keycode_maplen);
 
@@ -2675,7 +2410,3 @@ static void register_gtk(void)
 }
 
 type_init(register_gtk);
-
-#ifdef CONFIG_OPENGL
-module_dep("ui-opengl");
-#endif

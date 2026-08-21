@@ -23,8 +23,6 @@
 #include "qemu/cutils.h"
 #include "trace.h"
 #include "ui/console.h"
-#include "ui/dbus-display.h"
-#include "ui/qemu-spice.h"
 #ifdef CONFIG_PNG
 #include <png.h>
 #endif
@@ -33,27 +31,18 @@ void qmp_set_password(SetPasswordOptions *opts, Error **errp)
 {
     int rc;
 
-    if (opts->protocol == DISPLAY_PROTOCOL_SPICE) {
-        if (!qemu_using_spice(errp)) {
-            return;
-        }
-        rc = qemu_spice.set_passwd(opts->password,
-                opts->connected == SET_PASSWORD_ACTION_FAIL,
-                opts->connected == SET_PASSWORD_ACTION_DISCONNECT);
-    } else {
-        assert(opts->protocol == DISPLAY_PROTOCOL_VNC);
-        if (opts->connected != SET_PASSWORD_ACTION_KEEP) {
-            /* vnc supports "connected=keep" only */
-            error_setg(errp, "parameter 'connected' must be 'keep'"
-                       " when 'protocol' is 'vnc'");
-            return;
-        }
-        /*
-         * Note that setting an empty password will not disable login
-         * through this interface.
-         */
-        rc = vnc_display_password(opts->u.vnc.display, opts->password);
+    assert(opts->protocol == DISPLAY_PROTOCOL_VNC);
+    if (opts->connected != SET_PASSWORD_ACTION_KEEP) {
+        /* vnc supports "connected=keep" only */
+        error_setg(errp, "parameter 'connected' must be 'keep'"
+                   " when 'protocol' is 'vnc'");
+        return;
     }
+    /*
+     * Note that setting an empty password will not disable login
+     * through this interface.
+     */
+    rc = vnc_display_password(opts->u.vnc.display, opts->password);
 
     if (rc != 0) {
         error_setg(errp, "Could not set password");
@@ -89,15 +78,8 @@ void qmp_expire_password(ExpirePasswordOptions *opts, Error **errp)
         when += num;
     }
 
-    if (opts->protocol == DISPLAY_PROTOCOL_SPICE) {
-        if (!qemu_using_spice(errp)) {
-            return;
-        }
-        rc = qemu_spice.set_pw_expire(when);
-    } else {
-        assert(opts->protocol == DISPLAY_PROTOCOL_VNC);
-        rc = vnc_display_pw_expire(opts->u.vnc.display, when);
-    }
+    assert(opts->protocol == DISPLAY_PROTOCOL_VNC);
+    rc = vnc_display_pw_expire(opts->u.vnc.display, when);
 
     if (rc != 0) {
         error_setg(errp, "Could not set password expire time");
@@ -113,41 +95,12 @@ void qmp_change_vnc_password(const char *password, Error **errp)
 }
 #endif
 
-bool qmp_add_client_spice(int fd, bool has_skipauth, bool skipauth,
-                          bool has_tls, bool tls, Error **errp)
-{
-    if (!qemu_using_spice(errp)) {
-        return false;
-    }
-    skipauth = has_skipauth ? skipauth : false;
-    tls = has_tls ? tls : false;
-    if (qemu_spice.display_add_client(fd, skipauth, tls) < 0) {
-        error_setg(errp, "spice failed to add client");
-        return false;
-    }
-    return true;
-}
-
 #ifdef CONFIG_VNC
 bool qmp_add_client_vnc(int fd, bool has_skipauth, bool skipauth,
                         bool has_tls, bool tls, Error **errp)
 {
     skipauth = has_skipauth ? skipauth : false;
     vnc_display_add_client(NULL, fd, skipauth);
-    return true;
-}
-#endif
-
-#ifdef CONFIG_DBUS_DISPLAY
-bool qmp_add_client_dbus_display(int fd, bool has_skipauth, bool skipauth,
-                                 bool has_tls, bool tls, Error **errp)
-{
-    if (!qemu_using_dbus_display(errp)) {
-        return false;
-    }
-    if (!qemu_dbus_display.add_client(fd, errp)) {
-        return false;
-    }
     return true;
 }
 #endif
@@ -182,35 +135,6 @@ void qmp_display_update(DisplayUpdateOptions *arg, Error **errp)
     default:
         abort();
     }
-}
-
-void qmp_client_migrate_info(const char *protocol, const char *hostname,
-                             bool has_port, int64_t port,
-                             bool has_tls_port, int64_t tls_port,
-                             const char *cert_subject,
-                             Error **errp)
-{
-    if (strcmp(protocol, "spice") == 0) {
-        if (!qemu_using_spice(errp)) {
-            return;
-        }
-
-        if (!has_port && !has_tls_port) {
-            error_setg(errp, "parameter 'port' or 'tls-port' is required");
-            return;
-        }
-
-        if (qemu_spice.migrate_info(hostname,
-                                    has_port ? port : -1,
-                                    has_tls_port ? tls_port : -1,
-                                    cert_subject)) {
-            error_setg(errp, "Could not set up display for migration");
-            return;
-        }
-        return;
-    }
-
-    error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "protocol", "'spice'");
 }
 
 #ifdef CONFIG_PIXMAN

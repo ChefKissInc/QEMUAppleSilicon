@@ -49,12 +49,7 @@ int arm_cpu_gdb_read_register(CPUState *cs, GByteArray *mem_buf, int n)
         return gdb_get_reg32(mem_buf, env->regs[n]);
     }
     if (n == 25) {
-        /* CPSR, or XPSR for M-profile */
-        if (arm_feature(env, ARM_FEATURE_M)) {
-            return gdb_get_reg32(mem_buf, xpsr_read(env));
-        } else {
-            return gdb_get_reg32(mem_buf, cpsr_read(env));
-        }
+        return gdb_get_reg32(mem_buf, cpsr_read(env));
     }
     /* Unknown register.  */
     return 0;
@@ -86,27 +81,11 @@ int arm_cpu_gdb_write_register(CPUState *cs, uint8_t *mem_buf, int n)
     }
 
     if (n < 16) {
-        /* Core integer register.  */
-        if (n == 13 && arm_feature(env, ARM_FEATURE_M)) {
-            /* M profile SP low bits are always 0 */
-            tmp &= ~3;
-        }
         env->regs[n] = tmp;
         return 4;
     }
     if (n == 25) {
-        /* CPSR, or XPSR for M-profile */
-        if (arm_feature(env, ARM_FEATURE_M)) {
-            /*
-             * Don't allow writing to XPSR.Exception as it can cause
-             * a transition into or out of handler mode (it's not
-             * writable via the MSR insn so this is a reasonable
-             * restriction). Other fields are safe to update.
-             */
-            xpsr_write(env, tmp, ~XPSR_EXCP);
-        } else {
-            cpsr_write(env, tmp, 0xffffffff, CPSRWriteByGDBStub);
-        }
+        cpsr_write(env, tmp, 0xffffffff, CPSRWriteByGDBStub);
         return 4;
     }
     /* Unknown register.  */
@@ -193,33 +172,6 @@ static int vfp_gdb_set_sysreg(CPUState *cs, uint8_t *buf, int reg)
         return 4;
     }
     return 0;
-}
-
-static int mve_gdb_get_reg(CPUState *cs, GByteArray *buf, int reg)
-{
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-
-    switch (reg) {
-    case 0:
-        return gdb_get_reg32(buf, env->v7m.vpr);
-    default:
-        return 0;
-    }
-}
-
-static int mve_gdb_set_reg(CPUState *cs, uint8_t *buf, int reg)
-{
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-
-    switch (reg) {
-    case 0:
-        env->v7m.vpr = ldl_p(buf);
-        return 4;
-    default:
-        return 0;
-    }
 }
 
 /**
@@ -317,168 +269,6 @@ static GDBFeature *arm_gen_dynamic_sysreg_feature(CPUState *cs, int base_reg)
     return &cpu->dyn_sysreg_feature.desc;
 }
 
-#ifdef CONFIG_TCG
-typedef enum {
-    M_SYSREG_MSP,
-    M_SYSREG_PSP,
-    M_SYSREG_PRIMASK,
-    M_SYSREG_CONTROL,
-    M_SYSREG_BASEPRI,
-    M_SYSREG_FAULTMASK,
-    M_SYSREG_MSPLIM,
-    M_SYSREG_PSPLIM,
-} MProfileSysreg;
-
-static const struct {
-    const char *name;
-    int feature;
-} m_sysreg_def[] = {
-    [M_SYSREG_MSP] = { "msp", ARM_FEATURE_M },
-    [M_SYSREG_PSP] = { "psp", ARM_FEATURE_M },
-    [M_SYSREG_PRIMASK] = { "primask", ARM_FEATURE_M },
-    [M_SYSREG_CONTROL] = { "control", ARM_FEATURE_M },
-    [M_SYSREG_BASEPRI] = { "basepri", ARM_FEATURE_M_MAIN },
-    [M_SYSREG_FAULTMASK] = { "faultmask", ARM_FEATURE_M_MAIN },
-    [M_SYSREG_MSPLIM] = { "msplim", ARM_FEATURE_V8 },
-    [M_SYSREG_PSPLIM] = { "psplim", ARM_FEATURE_V8 },
-};
-
-static uint32_t *m_sysreg_ptr(CPUARMState *env, MProfileSysreg reg, bool sec)
-{
-    uint32_t *ptr;
-
-    switch (reg) {
-    case M_SYSREG_MSP:
-        ptr = arm_v7m_get_sp_ptr(env, sec, false, true);
-        break;
-    case M_SYSREG_PSP:
-        ptr = arm_v7m_get_sp_ptr(env, sec, true, true);
-        break;
-    case M_SYSREG_MSPLIM:
-        ptr = &env->v7m.msplim[sec];
-        break;
-    case M_SYSREG_PSPLIM:
-        ptr = &env->v7m.psplim[sec];
-        break;
-    case M_SYSREG_PRIMASK:
-        ptr = &env->v7m.primask[sec];
-        break;
-    case M_SYSREG_BASEPRI:
-        ptr = &env->v7m.basepri[sec];
-        break;
-    case M_SYSREG_FAULTMASK:
-        ptr = &env->v7m.faultmask[sec];
-        break;
-    case M_SYSREG_CONTROL:
-        ptr = &env->v7m.control[sec];
-        break;
-    default:
-        return NULL;
-    }
-    return arm_feature(env, m_sysreg_def[reg].feature) ? ptr : NULL;
-}
-
-static int m_sysreg_get(CPUARMState *env, GByteArray *buf,
-                        MProfileSysreg reg, bool secure)
-{
-    uint32_t *ptr = m_sysreg_ptr(env, reg, secure);
-
-    if (ptr == NULL) {
-        return 0;
-    }
-    return gdb_get_reg32(buf, *ptr);
-}
-
-static int arm_gdb_get_m_systemreg(CPUState *cs, GByteArray *buf, int reg)
-{
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-
-    /*
-     * Here, we emulate MRS instruction, where CONTROL has a mix of
-     * banked and non-banked bits.
-     */
-    if (reg == M_SYSREG_CONTROL) {
-        return gdb_get_reg32(buf, arm_v7m_mrs_control(env, env->v7m.secure));
-    }
-    return m_sysreg_get(env, buf, reg, env->v7m.secure);
-}
-
-static int arm_gdb_set_m_systemreg(CPUState *cs, uint8_t *buf, int reg)
-{
-    return 0; /* TODO */
-}
-
-static GDBFeature *arm_gen_dynamic_m_systemreg_feature(CPUState *cs,
-                                                       int base_reg)
-{
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-    GDBFeatureBuilder builder;
-    int reg = 0;
-    int i;
-
-    gdb_feature_builder_init(&builder, &cpu->dyn_m_systemreg_feature.desc,
-                             "org.gnu.gdb.arm.m-system", "arm-m-system.xml",
-                             base_reg);
-
-    for (i = 0; i < ARRAY_SIZE(m_sysreg_def); i++) {
-        if (arm_feature(env, m_sysreg_def[i].feature)) {
-            gdb_feature_builder_append_reg(&builder, m_sysreg_def[i].name, 32,
-                                           reg++, "int", NULL);
-        }
-    }
-
-    gdb_feature_builder_end(&builder);
-
-    return &cpu->dyn_m_systemreg_feature.desc;
-}
-
-/*
- * For user-only, we see the non-secure registers via m_systemreg above.
- * For secext, encode the non-secure view as even and secure view as odd.
- */
-static int arm_gdb_get_m_secextreg(CPUState *cs, GByteArray *buf, int reg)
-{
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-
-    return m_sysreg_get(env, buf, reg >> 1, reg & 1);
-}
-
-static int arm_gdb_set_m_secextreg(CPUState *cs, uint8_t *buf, int reg)
-{
-    return 0; /* TODO */
-}
-
-static GDBFeature *arm_gen_dynamic_m_secextreg_feature(CPUState *cs,
-                                                       int base_reg)
-{
-    ARMCPU *cpu = ARM_CPU(cs);
-    GDBFeatureBuilder builder;
-    char *name;
-    int reg = 0;
-    int i;
-
-    gdb_feature_builder_init(&builder, &cpu->dyn_m_secextreg_feature.desc,
-                             "org.gnu.gdb.arm.secext", "arm-m-secext.xml",
-                             base_reg);
-
-    for (i = 0; i < ARRAY_SIZE(m_sysreg_def); i++) {
-        name = g_strconcat(m_sysreg_def[i].name, "_ns", NULL);
-        gdb_feature_builder_append_reg(&builder, name, 32, reg++,
-                                       "int", NULL);
-        name = g_strconcat(m_sysreg_def[i].name, "_s", NULL);
-        gdb_feature_builder_append_reg(&builder, name, 32, reg++,
-                                       "int", NULL);
-    }
-
-    gdb_feature_builder_end(&builder);
-
-    return &cpu->dyn_m_secextreg_feature.desc;
-}
-#endif /* CONFIG_TCG */
-
 void arm_cpu_register_gdb_commands(ARMCPU *cpu)
 {
     g_autoptr(GPtrArray) query_table = g_ptr_array_new();
@@ -563,35 +353,15 @@ void arm_cpu_register_gdb_regs_for_features(ARMCPU *cpu)
             gdb_register_coprocessor(cs, vfp_gdb_get_reg, vfp_gdb_set_reg,
                                      gdb_find_static_feature("arm-vfp.xml"), 0);
         }
-        if (!arm_feature(env, ARM_FEATURE_M)) {
-            /*
-             * A and R profile have FP sysregs FPEXC and FPSID that we
-             * expose to gdb.
-             */
-            gdb_register_coprocessor(cs, vfp_gdb_get_sysreg, vfp_gdb_set_sysreg,
-                                     gdb_find_static_feature("arm-vfp-sysregs.xml"),
-                                     0);
-        }
-    }
-    if (cpu_isar_feature(aa32_mve, cpu) && tcg_enabled()) {
-        gdb_register_coprocessor(cs, mve_gdb_get_reg, mve_gdb_set_reg,
-                                 gdb_find_static_feature("arm-m-profile-mve.xml"),
+        /*
+         * A and R profile have FP sysregs FPEXC and FPSID that we
+         * expose to gdb.
+         */
+        gdb_register_coprocessor(cs, vfp_gdb_get_sysreg, vfp_gdb_set_sysreg,
+                                 gdb_find_static_feature("arm-vfp-sysregs.xml"),
                                  0);
     }
     gdb_register_coprocessor(cs, arm_gdb_get_sysreg, arm_gdb_set_sysreg,
                              arm_gen_dynamic_sysreg_feature(cs, cs->gdb_num_regs),
                              0);
-
-#ifdef CONFIG_TCG
-    if (arm_feature(env, ARM_FEATURE_M) && tcg_enabled()) {
-        gdb_register_coprocessor(cs,
-            arm_gdb_get_m_systemreg, arm_gdb_set_m_systemreg,
-            arm_gen_dynamic_m_systemreg_feature(cs, cs->gdb_num_regs), 0);
-        if (arm_feature(env, ARM_FEATURE_M_SECURITY)) {
-            gdb_register_coprocessor(cs,
-                arm_gdb_get_m_secextreg, arm_gdb_set_m_secextreg,
-                arm_gen_dynamic_m_secextreg_feature(cs, cs->gdb_num_regs), 0);
-        }
-    }
-#endif /* CONFIG_TCG */
 }
