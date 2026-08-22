@@ -1,8 +1,8 @@
 #pragma once
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
-#include "hw/misc/apple-silicon/a7iop/base.h"
+#include "hw/arm/dt.h"
+#include "hw/misc/a7iop/base.h"
 #include "hw/sysbus.h"
 
 #define TYPE_APPLE_SIO "apple-sio"

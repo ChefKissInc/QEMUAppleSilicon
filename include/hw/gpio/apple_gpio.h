@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/dt.h"
 #include "hw/sysbus.h"
 #include "qom/object.h"
 

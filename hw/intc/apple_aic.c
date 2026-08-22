@@ -19,7 +19,7 @@
  */
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/dt.h"
 #include "hw/intc/apple_aic.h"
 #include "hw/irq.h"
 #include "hw/pci/msi.h"

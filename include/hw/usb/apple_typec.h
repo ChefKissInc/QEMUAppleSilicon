@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/dt.h"
 #include "hw/sysbus.h"
 #include "hw/usb/hcd-dwc2.h"
 #include "hw/usb/hcd-dwc3.h"

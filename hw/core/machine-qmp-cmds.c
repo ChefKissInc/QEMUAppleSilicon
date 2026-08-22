@@ -147,8 +147,6 @@ static int query_memdev(Object* obj, void* opaque)
     Error*       err  = NULL;
     MemdevList** list = opaque;
     Memdev*      m;
-    QObject*     host_nodes;
-    Visitor*     v;
 
     if (object_dynamic_cast(obj, TYPE_MEMORY_BACKEND)) {
         m = g_malloc0(sizeof(*m));

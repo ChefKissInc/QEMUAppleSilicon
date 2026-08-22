@@ -18,7 +18,7 @@
  */
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/dt.h"
 #include "hw/gpio/apple_gpio.h"
 #include "hw/irq.h"
 #include "qapi/error.h"

@@ -20,7 +20,7 @@
 #pragma once
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/dt.h"
 #include "hw/sysbus.h"
 
 #define TYPE_SYNOPSYS_MIPI_DSIM "synopsys-mipi-dsim"

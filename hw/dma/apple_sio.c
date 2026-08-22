@@ -19,7 +19,7 @@
 
 #include "qemu/osdep.h"
 #include "hw/dma/apple_sio.h"
-#include "hw/misc/apple-silicon/a7iop/rtkit.h"
+#include "hw/misc/a7iop/rtkit.h"
 #include "qapi/error.h"
 #include "qemu/log.h"
 #include "qemu/queue.h"

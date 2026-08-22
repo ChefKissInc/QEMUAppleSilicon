@@ -19,7 +19,7 @@
 #pragma once
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/dt.h"
 #include "hw/sysbus.h"
 
 #define TYPE_APPLE_SCALER "apple-scaler"

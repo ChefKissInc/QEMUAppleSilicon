@@ -19,7 +19,7 @@
  */
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dt.h"
+#include "hw/arm/dt.h"
 #include "hw/usb/apple_otg.h"
 #include "hw/usb/hcd-dwc2.h"
 #include "hw/usb/hcd-tcp.h"

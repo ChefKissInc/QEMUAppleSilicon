@@ -4,3 +4,9 @@ empty_slot_write(uint64_t addr, unsigned width, uint64_t value, unsigned size, c
 # led.c
 led_set_intensity(const char *color, const char *desc, uint8_t intensity_percent) "LED desc:'%s' color:%s intensity: %u%%"
 led_change_intensity(const char *color, const char *desc, uint8_t old_intensity_percent, uint8_t new_intensity_percent) "LED desc:'%s' color:%s intensity %u%% -> %u%%"
+
+# aes.c
+apple_aes_reg_read(uint64_t addr, uint32_t val) "0x%04" PRIx64 " val 0x%08x"
+apple_aes_reg_write(uint64_t addr, uint32_t orig, uint32_t old, uint32_t result) "0x%04" PRIx64 " orig 0x%08x old 0x%08x val 0x%08x"
+apple_aes_update_irq(uint32_t level) "level %d"
+apple_aes_process_command(uint32_t op) "op 0x%x"

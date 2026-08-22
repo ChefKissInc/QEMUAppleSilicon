@@ -19,7 +19,7 @@
  */
 
 #include "qemu/osdep.h"
-#include "hw/arm/apple-silicon/dart.h"
+#include "hw/arm/dart.h"
 #include "hw/intc/apple_aic.h"
 #include "hw/irq.h"
 #include "hw/misc/unimp.h"
