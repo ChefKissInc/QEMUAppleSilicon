@@ -836,7 +836,6 @@
     'input-barrier',
     { 'name': 'input-linux',
       'if': 'CONFIG_LINUX' },
-    'iommufd',
     'iothread',
     'main-loop',
     { 'name': 'memory-backend-epc',
@@ -865,7 +864,7 @@
     'tls-creds-psk',
     'tls-creds-x509',
     'tls-cipher-suites',
-    { 'name': 'x-remote-object', 'features': [ 'unstable' ] },
+    { 'name': 'x-remote-object', 'features': [ 'unstable' ] }
   ] }
 
 ##
@@ -893,7 +892,6 @@
       'input-barrier':              'InputBarrierProperties',
       'input-linux':                { 'type': 'InputLinuxProperties',
                                       'if': 'CONFIG_LINUX' },
-      'iommufd':                    'IOMMUFDProperties',
       'iothread':                   'IothreadProperties',
       'main-loop':                  'MainLoopProperties',
       'memory-backend-epc':         { 'type': 'MemoryBackendEpcProperties',
@@ -921,7 +919,7 @@
       'tls-creds-psk':              'TlsCredsPskProperties',
       'tls-creds-x509':             'TlsCredsX509Properties',
       'tls-cipher-suites':          'TlsCredsProperties',
-      'x-remote-object':            'RemoteObjectProperties',
+      'x-remote-object':            'RemoteObjectProperties'
   } }
 
 ##
