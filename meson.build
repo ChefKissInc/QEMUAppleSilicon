@@ -3372,7 +3372,6 @@ if stap.found()
 endif
 
 subdir('scripts')
-subdir('tools')
 if gtk.found()
   subdir('po')
 endif
