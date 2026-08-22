@@ -337,8 +337,6 @@ _meson_option_parse() {
     --disable-qom-cast-debug) printf "%s" -Dqom_cast_debug=false ;;
     --enable-rbd) printf "%s" -Drbd=enabled ;;
     --disable-rbd) printf "%s" -Drbd=disabled ;;
-    --enable-rdma) printf "%s" -Drdma=enabled ;;
-    --disable-rdma) printf "%s" -Drdma=disabled ;;
     --enable-relocatable) printf "%s" -Drelocatable=true ;;
     --disable-relocatable) printf "%s" -Drelocatable=false ;;
     --enable-rng-none) printf "%s" -Drng_none=true ;;
