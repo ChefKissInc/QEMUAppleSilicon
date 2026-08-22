@@ -43,21 +43,6 @@ typedef struct RamDiscardManagerClass RamDiscardManagerClass;
 typedef struct RamDiscardManager      RamDiscardManager;
 DECLARE_OBJ_CHECKERS_IF(RamDiscardManager, RamDiscardManagerClass, RAM_DISCARD_MANAGER, TYPE_RAM_DISCARD_MANAGER);
 
-/* Possible bits for global_dirty_log_{start|stop} */
-
-/* Dirty tracking enabled because migration is running */
-#define GLOBAL_DIRTY_MIGRATION (1U << 0)
-
-/* Dirty tracking enabled because measuring dirty rate */
-#define GLOBAL_DIRTY_DIRTY_RATE (1U << 1)
-
-/* Dirty tracking enabled because dirty limit */
-#define GLOBAL_DIRTY_LIMIT (1U << 2)
-
-#define GLOBAL_DIRTY_MASK (0x7)
-
-extern unsigned int global_dirty_tracking;
-
 typedef struct MemoryRegionOps MemoryRegionOps;
 
 struct ReservedRegion
@@ -912,9 +897,9 @@ struct MemoryListener
     /**
      * @log_sync:
      *
-     * Called by memory_region_snapshot_and_clear_dirty() and
-     * memory_global_dirty_log_sync(), before accessing QEMU's "official"
-     * copy of the dirty memory bitmap for a #MemoryRegionSection.
+     * Called by memory_region_snapshot_and_clear_dirty(),
+     * before accessing QEMU's "official" copy of the dirty
+     * memory bitmap for a #MemoryRegionSection.
      *
      * @listener: The #MemoryListener.
      * @section: The #MemoryRegionSection.
@@ -946,33 +931,6 @@ struct MemoryListener
      * @section: The #MemoryRegionSection.
      */
     void (*log_clear)(MemoryListener* listener, MemoryRegionSection* section);
-
-    /**
-     * @log_global_start:
-     *
-     * Called by memory_global_dirty_log_start(), which
-     * enables the %DIRTY_LOG_MIGRATION client on all memory regions in
-     * the address space.  #MemoryListener.log_global_start() is also
-     * called when a #MemoryListener is added, if global dirty logging is
-     * active at that time.
-     *
-     * @listener: The #MemoryListener.
-     * @errp: pointer to Error*, to store an error if it happens.
-     *
-     * Return: true on success, else false setting @errp with error.
-     */
-    bool (*log_global_start)(MemoryListener* listener, Error** errp);
-
-    /**
-     * @log_global_stop:
-     *
-     * Called by memory_global_dirty_log_stop(), which
-     * disables the %DIRTY_LOG_MIGRATION client on all memory regions in
-     * the address space.
-     *
-     * @listener: The #MemoryListener.
-     */
-    void (*log_global_stop)(MemoryListener* listener);
 
     /**
      * @log_global_after_sync:
@@ -1903,8 +1861,7 @@ bool memory_region_snapshot_get_dirty(MemoryRegion* mr, DirtyBitmapSnapshot* sna
  * @mr: the region being updated.
  * @addr: the start of the subrange being cleaned.
  * @size: the size of the subrange being cleaned.
- * @client: the user of the logging information; %DIRTY_MEMORY_MIGRATION or
- *          %DIRTY_MEMORY_VGA.
+ * @client: the user of the logging information; %DIRTY_MEMORY_VGA.
  */
 void memory_region_reset_dirty(MemoryRegion* mr, hwaddr addr, hwaddr size, unsigned client);
 
@@ -2271,15 +2228,6 @@ int memory_region_set_ram_discard_manager(MemoryRegion* mr, RamDiscardManager* r
 MemoryRegionSection memory_region_find(MemoryRegion* mr, hwaddr addr, uint64_t size);
 
 /**
- * memory_global_dirty_log_sync: synchronize the dirty log for all memory
- *
- * Synchronizes the dirty page log for all address spaces.
- *
- * @last_stage: whether this is the last stage of live migration
- */
-void memory_global_dirty_log_sync(bool last_stage);
-
-/**
  * memory_global_after_dirty_log_sync: synchronize the dirty log for all memory
  *
  * Synchronizes the vCPUs with a thread that is reading the dirty bitmap.
@@ -2320,23 +2268,6 @@ void memory_listener_register(MemoryListener* listener, AddressSpace* filter);
  * @listener: an object containing the callbacks to be removed
  */
 void memory_listener_unregister(MemoryListener* listener);
-
-/**
- * memory_global_dirty_log_start: begin dirty logging for all regions
- *
- * @flags: purpose of starting dirty log, migration or dirty rate
- * @errp: pointer to Error*, to store an error if it happens.
- *
- * Return: true on success, else false setting @errp with error.
- */
-bool memory_global_dirty_log_start(unsigned int flags, Error** errp);
-
-/**
- * memory_global_dirty_log_stop: end dirty logging for all regions
- *
- * @flags: purpose of stopping dirty log, migration or dirty rate
- */
-void memory_global_dirty_log_stop(unsigned int flags);
 
 void mtree_info(bool flatview, bool dispatch_tree, bool owner, bool disabled);
 
