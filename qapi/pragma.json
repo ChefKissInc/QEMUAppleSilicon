@@ -65,7 +65,6 @@
         'SysEmuTarget',
         'VncPrimaryAuth',
         'VncVencryptSubAuth',
-        'X86CPURegister32',
         'XDbgBlockGraph',
         'YankInstanceType',
         'blockdev-reopen' ],
@@ -99,7 +98,5 @@
         'SshHostKeyCheckMode',      # blockdev-add, -blockdev
         'SysEmuTarget',             # query-cpu-fast, query-target
         'UuidInfo',                 # query-uuid
-        'VncClientInfo',            # query-vnc, query-vnc-servers, ...
-        'X86CPURegister32'          # qom-get of x86 CPU properties
-                                    # feature-words, filtered-features
+        'VncClientInfo'             # query-vnc, query-vnc-servers, ...
     ] } }
