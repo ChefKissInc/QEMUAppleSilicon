@@ -1,6 +1,6 @@
 # ChefKiss Inferno ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ChefKissInc/Inferno/build.yaml?style=for-the-badge) ![Written by humans, not AI](https://img.shields.io/badge/written_by_humans-not_ai-blue?style=for-the-badge)
 
-ChefKiss Inferno is derivative of the QEMU project which provides Apple ARM device guest support.
+Cross-platform Apple ARM device emulation, based on very heavily-modified QEMU code.
 
 > [!CAUTION]
 > Please consider donating/tipping to help continue the project's development,
@@ -33,11 +33,11 @@ This derivative project (“ChefKiss Inferno”) is licensed under the GNU Gener
 This was done due to other entities shadowing the project with proprietary, paid solutions based mostly verbatim on this project.
 
 The parts of QEMU which are licensed under the "version 2 or later" clause retain their original license restrictions and copyright holders.
-The parts that are only GNU General Public License, version 2, with no "or later" clause, will be removed in subsequent commits.
-You may explicitly contact us for early/faster removal of your code if desired.
+
+The parts that are not will be removed in subsequent commits, you may explicitly contact us for early/faster removal of your code if desired.
 
 Restrictions apply for the branding of the “ChefKiss Inferno” project, see [here](./ui/icons/CKBrandingNotice.md).
 
-QEMU is a copyright and trademark of Fabrice Bellard. QEMU is unaffiliated with this project.
+QEMU is a copyright and trademark of Fabrice Bellard. QEMU, Fabrice Bellard, and the QEMU developers are unaffiliated with this project.
 
-iOS is a copyright and trademark of Apple, Inc. Apple, Inc. is unaffiliated with this project. 
+Apple, Inc. is unaffiliated with this project. 
