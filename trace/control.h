@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef TRACE__CONTROL_H
-#define TRACE__CONTROL_H
+#pragma once
 
 #include "event-internal.h"
 
@@ -212,5 +211,3 @@ uint32_t trace_get_vcpu_event_count(void);
 
 
 #include "control-internal.h"
-
-#endif /* TRACE__CONTROL_H */

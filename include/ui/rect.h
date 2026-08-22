@@ -1,9 +1,7 @@
 /*
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-#ifndef QEMU_RECT_H
-#define QEMU_RECT_H
-
+#pragma once
 
 typedef struct QemuRect {
     int16_t x;
@@ -53,5 +51,3 @@ static inline bool qemu_rect_intersect(const QemuRect *a, const QemuRect *b,
 
     return true;
 }
-
-#endif

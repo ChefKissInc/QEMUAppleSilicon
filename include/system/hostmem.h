@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef SYSTEM_HOSTMEM_H
-#define SYSTEM_HOSTMEM_H
+#pragma once
 
 #include "qapi/qapi-types-machine.h"
 #include "qom/object.h"
@@ -92,5 +91,3 @@ char *host_memory_backend_get_name(HostMemoryBackend *backend);
 
 long qemu_minrampagesize(void);
 long qemu_maxrampagesize(void);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef RAMLIST_H
-#define RAMLIST_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "qemu/thread.h"
@@ -66,5 +65,3 @@ void qemu_mutex_lock_ramlist(void);
 void qemu_mutex_unlock_ramlist(void);
 
 GString *ram_block_format(void);
-
-#endif /* RAMLIST_H */

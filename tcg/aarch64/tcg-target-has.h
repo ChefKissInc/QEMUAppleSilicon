@@ -4,8 +4,7 @@
  * Copyright (c) 2013 Huawei Technologies Duesseldorf GmbH
  */
 
-#ifndef TCG_TARGET_HAS_H
-#define TCG_TARGET_HAS_H
+#pragma once
 
 #include "host/cpuinfo.h"
 
@@ -47,5 +46,3 @@
 #define TCG_TARGET_extract_valid(type, ofs, len)   1
 #define TCG_TARGET_sextract_valid(type, ofs, len)  1
 #define TCG_TARGET_deposit_valid(type, ofs, len)   1
-
-#endif

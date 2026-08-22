@@ -17,13 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_LM_BACKLIGHT_H
-#define HW_ARM_APPLE_SILICON_LM_BACKLIGHT_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "qom/object.h"
 
 #define TYPE_APPLE_LM_BACKLIGHT "apple-lm-backlight"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleLMBacklightState, APPLE_LM_BACKLIGHT);
-
-#endif /* HW_ARM_APPLE_SILICON_LM_BACKLIGHT_H */

@@ -10,8 +10,7 @@
  * width.
  */
 
-#ifndef QEMU_SSI_H
-#define QEMU_SSI_H
+#pragma once
 
 #include "hw/qdev-core.h"
 #include "qom/object.h"
@@ -117,5 +116,3 @@ SSIBus *ssi_create_bus(DeviceState *parent, const char *name);
 uint32_t ssi_transfer(SSIBus *bus, uint32_t val);
 
 DeviceState *ssi_get_cs(SSIBus *bus, uint8_t cs_index);
-
-#endif

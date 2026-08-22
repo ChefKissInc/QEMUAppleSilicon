@@ -1,5 +1,4 @@
-#ifndef QEMU_HELP_TEXTS_H
-#define QEMU_HELP_TEXTS_H
+#pragma once
 
 /* Copyright string for -version arguments, About dialogs, etc */
 #define QEMU_COPYRIGHT "Copyright (c) 2003-2025 " \
@@ -9,5 +8,3 @@
 #define QEMU_HELP_BOTTOM \
     "See <https://qemu.org/contribute/report-a-bug> for how to report bugs.\n" \
     "More information on the QEMU project at <https://qemu.org>."
-
-#endif

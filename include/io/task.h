@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_TASK_H
-#define QIO_TASK_H
+#pragma once
 
 typedef struct QIOTask QIOTask;
 
@@ -346,5 +345,3 @@ gpointer qio_task_get_result_pointer(QIOTask *task);
  * Returns: the source object
  */
 Object *qio_task_get_source(QIOTask *task);
-
-#endif /* QIO_TASK_H */

@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef TCG_MO_H
-#define TCG_MO_H
+#pragma once
 
 typedef enum {
     /* Used to indicate the type of accesses on which ordering
@@ -44,5 +43,3 @@ typedef enum {
     TCG_BAR_STRL  = 0x20,  /* Previous ops will not be delayed */
     TCG_BAR_SC    = 0x30,  /* No ops cross barrier; OR of the above */
 } TCGBar;
-
-#endif /* TCG_MO_H */

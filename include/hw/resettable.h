@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef HW_RESETTABLE_H
-#define HW_RESETTABLE_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -233,5 +232,3 @@ static inline void resettable_class_set_parent_phases(
         rc->phases.exit = exit;
     }
 }
-
-#endif

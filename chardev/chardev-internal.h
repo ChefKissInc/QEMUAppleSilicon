@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef CHARDEV_INTERNAL_H
-#define CHARDEV_INTERNAL_H
+#pragma once
 
 #include "chardev/char.h"
 #include "chardev/char-fe.h"
@@ -115,5 +114,3 @@ void mux_set_focus(Chardev *chr, unsigned int focus);
 void mux_chr_send_all_event(Chardev *chr, QEMUChrEvent event);
 
 Object *get_chardevs_root(void);
-
-#endif /* CHARDEV_INTERNAL_H */

@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCK_COROUTINES_H
-#define BLOCK_COROUTINES_H
+#pragma once
 
 #include "block/block_int.h"
 
@@ -74,5 +73,3 @@ bdrv_common_block_status_above(BlockDriverState *bs,
                                int64_t *map,
                                BlockDriverState **file,
                                int *depth);
-
-#endif /* BLOCK_COROUTINES_H */

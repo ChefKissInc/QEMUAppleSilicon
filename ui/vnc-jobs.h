@@ -27,8 +27,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef VNC_JOBS_H
-#define VNC_JOBS_H
+#pragma once
 
 /* Jobs */
 VncJob *vnc_job_new(VncState *vs);
@@ -64,5 +63,3 @@ static inline void vnc_unlock_output(VncState *vs)
 {
     qemu_mutex_unlock(&vs->output_mutex);
 }
-
-#endif /* VNC_JOBS_H */

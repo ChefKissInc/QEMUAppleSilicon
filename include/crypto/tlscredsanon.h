@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_TLSCREDSANON_H
-#define QCRYPTO_TLSCREDSANON_H
+#pragma once
 
 #include "crypto/tlscreds.h"
 #include "qom/object.h"
@@ -95,6 +94,3 @@ typedef struct QCryptoTLSCredsAnonClass QCryptoTLSCredsAnonClass;
 struct QCryptoTLSCredsAnonClass {
     QCryptoTLSCredsClass parent_class;
 };
-
-
-#endif /* QCRYPTO_TLSCREDSANON_H */

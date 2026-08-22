@@ -25,8 +25,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef HW_USB_HCD_UHCI_H
-#define HW_USB_HCD_UHCI_H
+#pragma once
 
 #include "system/memory.h"
 #include "qemu/timer.h"
@@ -94,5 +93,3 @@ void usb_uhci_common_realize(PCIDevice *dev, Error **errp);
 #define TYPE_PIIX3_USB_UHCI "piix3-usb-uhci"
 #define TYPE_PIIX4_USB_UHCI "piix4-usb-uhci"
 #define TYPE_ICH9_USB_UHCI(fn) "ich9-usb-uhci" #fn
-
-#endif

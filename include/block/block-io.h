@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_IO_H
-#define BLOCK_IO_H
+#pragma once
 
 #include "block/aio-wait.h"
 #include "block/block-common.h"
@@ -437,5 +436,3 @@ void bdrv_do_drained_begin_quiesce(BlockDriverState *bs, BdrvChild *parent);
  * However, it cannot be directly called by an Iothread.
  */
 void bdrv_drained_end(BlockDriverState *bs);
-
-#endif /* BLOCK_IO_H */

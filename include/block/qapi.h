@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCK_QAPI_H
-#define BLOCK_QAPI_H
+#pragma once
 
 #include "block/graph-lock.h"
 #include "block/snapshot.h"
@@ -49,4 +48,3 @@ void bdrv_image_info_specific_dump(ImageInfoSpecific *info_spec,
                                    const char *prefix,
                                    int indentation);
 void bdrv_node_info_dump(BlockNodeInfo *info, int indentation, bool protocol);
-#endif

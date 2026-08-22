@@ -1,5 +1,4 @@
-#ifndef WKDM_INTERNAL_H
-#define WKDM_INTERNAL_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "exec/target_page.h"
@@ -233,5 +232,3 @@ unsigned int WKdm_compress(WK_word *src_buf, WK_word *dest_buf,
                            int byte_budget);
 
 bool WKdm_decompress(WK_word *src_buf, WK_word *dest_buf, unsigned int size);
-
-#endif /* WKDM_INTERNAL_H */

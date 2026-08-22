@@ -5,8 +5,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-#ifndef HW_MISC_LED_H
-#define HW_MISC_LED_H
+#pragma once
 
 #include "qom/object.h"
 #include "hw/qdev-core.h"
@@ -94,5 +93,3 @@ LEDState *led_create_simple(Object *parentobj,
                             GpioPolarity gpio_polarity,
                             LEDColor color,
                             const char *description);
-
-#endif /* HW_MISC_LED_H */

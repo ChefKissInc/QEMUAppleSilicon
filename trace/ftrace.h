@@ -1,5 +1,4 @@
-#ifndef TRACE_FTRACE_H
-#define TRACE_FTRACE_H
+#pragma once
 
 #define MAX_TRACE_STRLEN 512
 #define _STR(x) #x
@@ -8,5 +7,3 @@
 extern int trace_marker_fd;
 
 bool ftrace_init(void);
-
-#endif /* TRACE_FTRACE_H */

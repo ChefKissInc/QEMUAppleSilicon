@@ -7,8 +7,7 @@
  * (GNU GPL), version 2 or later.
  */
 
-#ifndef DMA_H
-#define DMA_H
+#pragma once
 
 #include "system/memory.h"
 #include "system/address-spaces.h"
@@ -318,5 +317,3 @@ void dma_acct_start(BlockBackend *blk, BlockAcctCookie *cookie,
  */
 uint64_t dma_aligned_pow2_mask(uint64_t start, uint64_t end,
                                int max_addr_bits);
-
-#endif

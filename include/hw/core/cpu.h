@@ -17,8 +17,7 @@
  * along with this program; if not, see
  * <http://www.gnu.org/licenses/gpl-2.0.html>
  */
-#ifndef QEMU_CPU_H
-#define QEMU_CPU_H
+#pragma once
 
 #include "hw/qdev-core.h"
 #include "exec/breakpoint.h"
@@ -1106,5 +1105,3 @@ enum CacheType {
     INSTRUCTION_CACHE,
     UNIFIED_CACHE
 };
-
-#endif

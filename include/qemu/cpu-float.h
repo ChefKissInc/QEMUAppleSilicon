@@ -1,5 +1,4 @@
-#ifndef QEMU_CPU_FLOAT_H
-#define QEMU_CPU_FLOAT_H
+#pragma once
 
 #include "fpu/softfloat-types.h"
 
@@ -60,5 +59,3 @@ typedef union {
     } ll;
 #endif
 } CPU_QuadU;
-
-#endif /* QEMU_CPU_FLOAT_H */

@@ -10,8 +10,7 @@
  *
  */
 
-#ifndef STRING_OUTPUT_VISITOR_H
-#define STRING_OUTPUT_VISITOR_H
+#pragma once
 
 #include "qapi/visitor.h"
 
@@ -31,5 +30,3 @@ typedef struct StringOutputVisitor StringOutputVisitor;
  * non-null list argument to visit_start_list().
  */
 Visitor *string_output_visitor_new(bool human, char **result);
-
-#endif

@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef QCRYPTO_RSAKEY_H
-#define QCRYPTO_RSAKEY_H
+#pragma once
 
 #include "qemu/host-utils.h"
 #include "crypto/akcipher.h"
@@ -97,5 +96,3 @@ void qcrypto_akcipher_rsakey_free(QCryptoAkCipherRSAKey *key);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoAkCipherRSAKey,
                               qcrypto_akcipher_rsakey_free);
-
-#endif

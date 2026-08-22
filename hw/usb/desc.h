@@ -1,5 +1,4 @@
-#ifndef QEMU_HW_USB_DESC_H
-#define QEMU_HW_USB_DESC_H
+#pragma once
 
 #include <wchar.h>
 
@@ -232,5 +231,3 @@ int usb_desc_get_descriptor(USBDevice *dev, USBPacket *p,
         int value, uint8_t *dest, size_t len);
 int usb_desc_handle_control(USBDevice *dev, USBPacket *p,
         int request, int value, int index, int length, uint8_t *data);
-
-#endif /* QEMU_HW_USB_DESC_H */

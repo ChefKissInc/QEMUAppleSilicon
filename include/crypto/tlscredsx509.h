@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_TLSCREDSX509_H
-#define QCRYPTO_TLSCREDSX509_H
+#pragma once
 
 #include "crypto/tlscreds.h"
 #include "qom/object.h"
@@ -99,6 +98,3 @@ typedef struct QCryptoTLSCredsX509Class QCryptoTLSCredsX509Class;
 struct QCryptoTLSCredsX509Class {
     QCryptoTLSCredsClass parent_class;
 };
-
-
-#endif /* QCRYPTO_TLSCREDSX509_H */

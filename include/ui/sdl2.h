@@ -1,5 +1,4 @@
-#ifndef SDL2_H
-#define SDL2_H
+#pragma once
 
 /* Avoid compiler warning because macro is redefined in SDL_syswm.h. */
 #undef WIN32_LEAN_AND_MEAN
@@ -59,5 +58,3 @@ void sdl2_2d_refresh(DisplayChangeListener *dcl);
 void sdl2_2d_redraw(struct sdl2_console *scon);
 bool sdl2_2d_check_format(DisplayChangeListener *dcl,
                           pixman_format_code_t format);
-
-#endif /* SDL2_H */

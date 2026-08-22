@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef TRACE_SIMPLE_H
-#define TRACE_SIMPLE_H
+#pragma once
 
 void st_print_trace_file_status(void);
 bool st_set_trace_file_enabled(bool enable);
@@ -48,5 +47,3 @@ void trace_record_write_str(TraceBufferRecord *rec, const char *s, uint32_t slen
  * Don't append any more arguments to the trace record after calling this.
  */
 void trace_record_finish(TraceBufferRecord *rec);
-
-#endif /* TRACE_SIMPLE_H */

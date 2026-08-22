@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_AOP_H
-#define HW_MISC_APPLE_SILICON_AOP_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -77,5 +76,3 @@ MemTxResult apple_aop_ep_send_reply_locked(AppleAOPEndpoint *s,
 MemTxResult apple_aop_ep_send_reply(AppleAOPEndpoint *s, uint16_t packet_type,
                                     uint16_t seq, const void *payload,
                                     uint32_t payload_len, uint32_t out_len);
-
-#endif /* HW_MISC_APPLE_SILICON_AOP_H */

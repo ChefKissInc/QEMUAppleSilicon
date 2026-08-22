@@ -18,8 +18,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HCD_OHCI_H
-#define HCD_OHCI_H
+#pragma once
 
 #include "hw/sysbus.h"
 #include "system/dma.h"
@@ -118,5 +117,3 @@ void ohci_bus_stop(OHCIState *ohci);
 void ohci_stop_endpoints(OHCIState *ohci);
 void ohci_hard_reset(OHCIState *ohci);
 void ohci_sysbus_die(struct OHCIState *ohci);
-
-#endif

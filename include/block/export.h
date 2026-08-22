@@ -11,8 +11,7 @@
  * later.  See the COPYING file in the top-level directory.
  */
 
-#ifndef BLOCK_EXPORT_H
-#define BLOCK_EXPORT_H
+#pragma once
 
 #include "qapi/qapi-types-block-export.h"
 #include "qemu/queue.h"
@@ -90,5 +89,3 @@ void blk_exp_unref(BlockExport *exp);
 void blk_exp_request_shutdown(BlockExport *exp);
 void blk_exp_close_all(void);
 void blk_exp_close_all_type(BlockExportType type);
-
-#endif

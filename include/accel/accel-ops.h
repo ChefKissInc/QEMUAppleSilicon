@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef ACCEL_OPS_H
-#define ACCEL_OPS_H
+#pragma once
 
 #include "exec/hwaddr.h"
 #include "qemu/accel.h"
@@ -47,5 +46,3 @@ struct AccelClass {
      */
     GPtrArray *compat_props;
 };
-
-#endif /* ACCEL_OPS_H */

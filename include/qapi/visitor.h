@@ -12,8 +12,7 @@
  *
  */
 
-#ifndef QAPI_VISITOR_H
-#define QAPI_VISITOR_H
+#pragma once
 
 #include "qapi/qapi-builtin-types.h"
 #include "qapi/qapi-types-compat.h"
@@ -709,5 +708,3 @@ bool visit_type_any(Visitor *v, const char *name, QObject **obj, Error **errp);
  */
 bool visit_type_null(Visitor *v, const char *name, QNull **obj,
                      Error **errp);
-
-#endif

@@ -11,8 +11,7 @@
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  * See the COPYING file in the top-level directory.
  */
-#ifndef ACCEL_BLOCKER_H
-#define ACCEL_BLOCKER_H
+#pragma once
 
 #include "system/cpus.h"
 
@@ -51,5 +50,3 @@ void accel_ioctl_inhibit_begin(void);
  * This function allows blocked accel_{cpu_}ioctl_begin() to continue.
  */
 void accel_ioctl_inhibit_end(void);
-
-#endif /* ACCEL_BLOCKER_H */

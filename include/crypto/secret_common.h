@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_SECRET_COMMON_H
-#define QCRYPTO_SECRET_COMMON_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 #include "qom/object.h"
@@ -54,5 +53,3 @@ int qcrypto_secret_lookup(const char *secretid,
                           Error **errp);
 char *qcrypto_secret_lookup_as_utf8(const char *secretid, Error **errp);
 char *qcrypto_secret_lookup_as_base64(const char *secretid, Error **errp);
-
-#endif /* QCRYPTO_SECRET_COMMON_H */

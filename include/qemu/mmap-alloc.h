@@ -1,5 +1,4 @@
-#ifndef QEMU_MMAP_ALLOC_H
-#define QEMU_MMAP_ALLOC_H
+#pragma once
 
 typedef enum {
     QEMU_FS_TYPE_UNKNOWN = 0,
@@ -62,5 +61,3 @@ void qemu_ram_munmap(int fd, void *ptr, size_t size);
  * applicable). Bail out if not supported/effective.
  */
 #define QEMU_MAP_NORESERVE  (1 << 3)
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef QEMU_USB_H
-#define QEMU_USB_H
+#pragma once
 
 /*
  * QEMU USB API
@@ -603,5 +602,3 @@ static inline USBDevice *usb_create_simple(USBBus *bus, const char *name)
     usb_realize_and_unref(dev, bus, &error_abort);
     return dev;
 }
-
-#endif

@@ -17,8 +17,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CPUTLB_H
-#define CPUTLB_H
+#pragma once
 
 #include "exec/cpu-common.h"
 #include "exec/hwaddr.h"
@@ -281,5 +280,3 @@ static inline void tlb_flush_range_by_mmuidx_all_cpus_synced(CPUState *cpu,
 {
 }
 #endif /* CONFIG_TCG */
-
-#endif /* CPUTLB_H */

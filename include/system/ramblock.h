@@ -16,8 +16,7 @@
  * The functions declared here will be removed soon.
  */
 
-#ifndef SYSTEM_RAMBLOCK_H
-#define SYSTEM_RAMBLOCK_H
+#pragma once
 
 #include "exec/cpu-common.h"
 #include "qemu/rcu.h"
@@ -98,5 +97,3 @@ RamBlockAttributes *ram_block_attributes_create(RAMBlock *ram_block);
 void ram_block_attributes_destroy(RamBlockAttributes *attr);
 int ram_block_attributes_state_change(RamBlockAttributes *attr, uint64_t offset,
                                       uint64_t size, bool to_discard);
-
-#endif

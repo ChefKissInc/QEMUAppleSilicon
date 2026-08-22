@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef TCG_CPU_OPS_H
-#define TCG_CPU_OPS_H
+#pragma once
 
 #include "exec/breakpoint.h"
 #include "exec/hwaddr.h"
@@ -230,5 +229,3 @@ int cpu_watchpoint_address_matches(CPUState *cpu, vaddr addr, vaddr len);
  */
 vaddr cpu_pointer_wrap_notreached(CPUState *, int, vaddr, vaddr);
 vaddr cpu_pointer_wrap_uint32(CPUState *, int, vaddr, vaddr);
-
-#endif /* TCG_CPU_OPS_H */

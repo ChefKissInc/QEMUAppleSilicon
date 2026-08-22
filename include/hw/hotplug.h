@@ -9,8 +9,7 @@
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  * See the COPYING file in the top-level directory.
  */
-#ifndef HOTPLUG_H
-#define HOTPLUG_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -96,4 +95,3 @@ void hotplug_handler_unplug_request(HotplugHandler *plug_handler,
 void hotplug_handler_unplug(HotplugHandler *plug_handler,
                             DeviceState *plugged_dev,
                             Error **errp);
-#endif

@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QEMU_SEQLOCK_H
-#define QEMU_SEQLOCK_H
+#pragma once
 
 #include "qemu/atomic.h"
 #include "qemu/thread.h"
@@ -81,5 +80,3 @@ static inline int seqlock_read_retry(const QemuSeqLock *sl, unsigned start)
     smp_rmb();
     return unlikely(qatomic_read(&sl->sequence) != start);
 }
-
-#endif

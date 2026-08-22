@@ -13,8 +13,7 @@
  *
  */
 
-#ifndef QCRYPTO_HASHPRIV_H
-#define QCRYPTO_HASHPRIV_H
+#pragma once
 
 #include "crypto/hash.h"
 
@@ -34,5 +33,3 @@ struct QCryptoHashDriver {
 };
 
 extern QCryptoHashDriver qcrypto_hash_lib_driver;
-
-#endif

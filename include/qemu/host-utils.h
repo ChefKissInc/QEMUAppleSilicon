@@ -27,8 +27,7 @@
  * version 2 or later. See the COPYING file in the top-level directory.
  */
 
-#ifndef HOST_UTILS_H
-#define HOST_UTILS_H
+#pragma once
 
 #include "qemu/bswap.h"
 #include "qemu/int128.h"
@@ -867,4 +866,3 @@ static inline uint64_t udiv_qrnnd(uint64_t *r, uint64_t n1,
 
 Int128 divu256(Int128 *plow, Int128 *phigh, Int128 divisor);
 Int128 divs256(Int128 *plow, Int128 *phigh, Int128 divisor);
-#endif

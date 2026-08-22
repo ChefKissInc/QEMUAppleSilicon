@@ -4,8 +4,7 @@
  * Copyright (c) 2009, 2011 Stefan Weil
  */
 
-#ifndef TCG_TARGET_MO_H
-#define TCG_TARGET_MO_H
+#pragma once
 
 /*
  * We could notice __i386__ or __s390x__ and reduce the barriers depending
@@ -13,5 +12,3 @@
  * We prefer consistency across hosts on this.
  */
 #define TCG_TARGET_DEFAULT_MO  0
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef QEMU_AES_H
-#define QEMU_AES_H
+#pragma once
 
 #define AES_MAXNR 14
 #define AES_BLOCK_SIZE 16
@@ -36,5 +35,3 @@ AES_Td0[x] = Si[x].[0e, 09, 0d, 0b];
 */
 
 extern const uint32_t AES_Te0[256], AES_Td0[256];
-
-#endif

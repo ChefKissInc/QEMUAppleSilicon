@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_I2C_APPLE_I2C_H
-#define HW_I2C_APPLE_I2C_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/sysbus.h"
@@ -59,4 +58,3 @@ struct AppleI2CState {
 };
 
 SysBusDevice *apple_i2c_create(const char *name);
-#endif /* HW_I2C_APPLE_I2C_H */

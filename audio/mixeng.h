@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_MIXENG_H
-#define QEMU_MIXENG_H
+#pragma once
 
 #ifdef FLOAT_MIXENG
 typedef float mixeng_real;
@@ -56,5 +55,3 @@ uint32_t st_rate_frames_out(void *opaque, uint32_t frames_in);
 uint32_t st_rate_frames_in(void *opaque, uint32_t frames_out);
 void mixeng_clear (struct st_sample *buf, int len);
 void mixeng_volume (struct st_sample *buf, int len, struct mixeng_volume *vol);
-
-#endif /* QEMU_MIXENG_H */

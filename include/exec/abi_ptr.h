@@ -3,13 +3,10 @@
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
-#ifndef EXEC_ABI_PTR_H
-#define EXEC_ABI_PTR_H
+#pragma once
 
 #include "cpu-param.h"
 #include "exec/target_long.h"
 
 typedef target_ulong abi_ptr;
 #define TARGET_ABI_FMT_ptr TARGET_FMT_lx
-
-#endif

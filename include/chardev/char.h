@@ -1,5 +1,4 @@
-#ifndef QEMU_CHAR_H
-#define QEMU_CHAR_H
+#pragma once
 
 #include "qapi/qapi-types-char.h"
 #include "qemu/bitmap.h"
@@ -325,5 +324,3 @@ void resume_mux_open(void);
 
 char *qemu_chr_get_pty_name(Chardev *chr);
 char *qemu_chr_get_filename(Chardev *chr);
-
-#endif

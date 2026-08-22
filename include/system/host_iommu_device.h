@@ -9,8 +9,7 @@
  * the COPYING file in the top-level directory.
  */
 
-#ifndef HOST_IOMMU_DEVICE_H
-#define HOST_IOMMU_DEVICE_H
+#pragma once
 
 #include "qom/object.h"
 #include "qapi/error.h"
@@ -122,4 +121,3 @@ struct HostIOMMUDeviceClass {
 #define HOST_IOMMU_DEVICE_CAP_AW_BITS           1
 
 #define HOST_IOMMU_DEVICE_CAP_AW_BITS_MAX       64
-#endif

@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef QEMU_TARGET_INFO_IMPL_H
-#define QEMU_TARGET_INFO_IMPL_H
+#pragma once
 
 #include "qapi/qapi-types-machine.h"
 
@@ -32,5 +31,3 @@ typedef struct TargetInfo {
  * Returns: The TargetInfo structure definition for this target binary.
  */
 const TargetInfo *target_info(void);
-
-#endif

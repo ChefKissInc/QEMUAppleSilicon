@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_A13_H
-#define HW_ARM_APPLE_SILICON_A13_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -133,5 +132,3 @@ bool apple_a13_is_off(const AppleA13State *acpu);
 void apple_a13_set_on(AppleA13State *acpu);
 void apple_a13_reset(AppleA13State *acpu);
 void apple_a13_set_off(AppleA13State *acpu);
-
-#endif /* HW_ARM_APPLE_SILICON_A13_H */

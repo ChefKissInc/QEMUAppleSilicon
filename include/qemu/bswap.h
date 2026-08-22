@@ -1,5 +1,4 @@
-#ifndef BSWAP_H
-#define BSWAP_H
+#pragma once
 
 #include "qemu/target-info.h"
 
@@ -504,5 +503,3 @@ static inline void stn_p(void *ptr, int sz, uint64_t v)
 }
 
 #undef STORE_IMPL
-
-#endif /* BSWAP_H */

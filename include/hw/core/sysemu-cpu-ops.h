@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef SYSTEM_CPU_OPS_H
-#define SYSTEM_CPU_OPS_H
+#pragma once
 
 #include "hw/core/cpu.h"
 
@@ -53,5 +52,3 @@ typedef struct SysemuCPUOps {
      */
     GuestPanicInformation* (*get_crash_info)(CPUState *cpu);
 } SysemuCPUOps;
-
-#endif /* SYSTEM_CPU_OPS_H */

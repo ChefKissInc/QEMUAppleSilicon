@@ -4,8 +4,7 @@
  * Copyright (c) 2003 Fabrice Bellard
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
-#ifndef ACCEL_TCG_PROBE_H
-#define ACCEL_TCG_PROBE_H
+#pragma once
 
 #include "exec/mmu-access-type.h"
 #include "exec/vaddr.h"
@@ -110,5 +109,3 @@ int probe_access_full_mmu(CPUArchState *env, vaddr addr, int size,
  */
 void *tlb_vaddr_to_host(CPUArchState *env, vaddr addr,
                         MMUAccessType access_type, int mmu_idx);
-
-#endif

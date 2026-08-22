@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef SELFMAP_H
-#define SELFMAP_H
+#pragma once
 
 #include "qemu/interval-tree.h"
 
@@ -40,5 +39,3 @@ IntervalTreeRoot *read_self_maps(void);
  * Free a tree of MapInfo structures.
  */
 void free_self_maps(IntervalTreeRoot *root);
-
-#endif /* SELFMAP_H */

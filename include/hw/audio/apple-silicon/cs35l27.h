@@ -17,13 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_CS35L27_H
-#define HW_MISC_APPLE_SILICON_CS35L27_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "qom/object.h"
 
 #define TYPE_APPLE_CS35L27 "apple-cs35l27"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleCS35L27State, APPLE_CS35L27);
-
-#endif /* HW_MISC_APPLE_SILICON_CS35L27_H */

@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef S390_TCG_TARGET_H
-#define S390_TCG_TARGET_H
+#pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE 2
 
@@ -50,5 +49,3 @@ typedef enum TCGReg {
 } TCGReg;
 
 #define TCG_TARGET_NB_REGS 64
-
-#endif

@@ -10,8 +10,7 @@
  * later version.  See the COPYING file in the top-level directory.
  *
  */
-#ifndef QEMU_XATTR_H
-#define QEMU_XATTR_H
+#pragma once
 
 /*
  * Modern distributions (e.g. Fedora 15), have no libattr.so, place attr.h
@@ -28,6 +27,4 @@
 #  ifndef CONFIG_WIN32
 #    include <sys/xattr.h>
 #  endif
-#endif
-
 #endif

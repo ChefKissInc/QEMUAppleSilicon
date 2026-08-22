@@ -8,8 +8,7 @@
 
 /* header to be included in HVF-specific code */
 
-#ifndef HVF_INT_H
-#define HVF_INT_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "exec/vaddr.h"
@@ -119,5 +118,3 @@ int hvf_update_guest_debug(CPUState *cpu);
  * Return whether the guest supports debugging.
  */
 bool hvf_arch_supports_guest_debug(void);
-
-#endif

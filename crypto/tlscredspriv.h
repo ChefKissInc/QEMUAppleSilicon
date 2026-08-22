@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_TLSCREDSPRIV_H
-#define QCRYPTO_TLSCREDSPRIV_H
+#pragma once
 
 #include "crypto/tlscreds.h"
 
@@ -82,5 +81,3 @@ int qcrypto_tls_creds_get_dh_params_file(QCryptoTLSCreds *creds,
                                          Error **errp);
 
 #endif
-
-#endif /* QCRYPTO_TLSCREDSPRIV_H */

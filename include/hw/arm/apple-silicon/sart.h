@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_SART_H
-#define HW_ARM_APPLE_SILICON_SART_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -36,5 +35,3 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleSARTIOMMUMemoryRegion,
                            APPLE_SART_IOMMU_MEMORY_REGION)
 
 SysBusDevice *apple_sart_from_node(AppleDTNode *node);
-
-#endif /* HW_ARM_APPLE_SILICON_SART_H */

@@ -1,7 +1,6 @@
 /* headers to use the BSD sockets */
 
-#ifndef QEMU_SOCKETS_H
-#define QEMU_SOCKETS_H
+#pragma once
 
 #ifdef _WIN32
 
@@ -134,4 +133,3 @@ SocketAddress *socket_address_flatten(SocketAddressLegacy *addr);
  * Return 0 on success.
  */
 int socket_address_parse_named_fd(SocketAddress *addr, Error **errp);
-#endif /* QEMU_SOCKETS_H */

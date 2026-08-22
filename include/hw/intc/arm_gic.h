@@ -64,8 +64,7 @@
  *      ...
  */
 
-#ifndef HW_ARM_GIC_H
-#define HW_ARM_GIC_H
+#pragma once
 
 #include "arm_gic_common.h"
 #include "qom/object.h"
@@ -90,5 +89,3 @@ struct ARMGICClass {
 };
 
 const char *gic_class_name(void);
-
-#endif

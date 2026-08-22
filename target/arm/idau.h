@@ -25,8 +25,7 @@
  * connected to the CPU using a link property.
  */
 
-#ifndef TARGET_ARM_IDAU_H
-#define TARGET_ARM_IDAU_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -54,5 +53,3 @@ struct IDAUInterfaceClass {
     void (*check)(IDAUInterface *ii, uint32_t address, int *iregion,
                   bool *exempt, bool *ns, bool *nsc);
 };
-
-#endif

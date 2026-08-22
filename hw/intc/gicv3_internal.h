@@ -21,8 +21,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_ARM_GICV3_INTERNAL_H
-#define QEMU_ARM_GICV3_INTERNAL_H
+#pragma once
 
 #include "hw/registerfields.h"
 #include "hw/intc/arm_gicv3_common.h"
@@ -861,5 +860,3 @@ static inline void gicv3_cache_all_target_cpustates(GICv3State *s)
 }
 
 void gicv3_set_gicv3state(CPUState *cpu, GICv3CPUState *s);
-
-#endif /* QEMU_ARM_GICV3_INTERNAL_H */

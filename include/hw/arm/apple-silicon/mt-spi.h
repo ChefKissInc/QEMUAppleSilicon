@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_MT_SPI_H
-#define HW_ARM_APPLE_SILICON_MT_SPI_H
+#pragma once
+
 #include "qemu/osdep.h"
 #include "qom/object.h"
 
@@ -26,4 +26,3 @@
 OBJECT_DECLARE_SIMPLE_TYPE(AppleMTSPIState, APPLE_MT_SPI)
 
 #define APPLE_MT_SPI_IRQ "mt-irq"
-#endif /* HW_ARM_APPLE_SILICON_MT_SPI_H */

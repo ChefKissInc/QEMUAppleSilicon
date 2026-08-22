@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef TCG_INTERNAL_H
-#define TCG_INTERNAL_H
+#pragma once
 
 #include "tcg/helper-info.h"
 
@@ -110,5 +109,3 @@ TCGOp *tcg_op_insert_before(TCGContext *s, TCGOp *op,
                             TCGOpcode, TCGType, unsigned nargs);
 TCGOp *tcg_op_insert_after(TCGContext *s, TCGOp *op,
                            TCGOpcode, TCGType, unsigned nargs);
-
-#endif /* TCG_INTERNAL_H */

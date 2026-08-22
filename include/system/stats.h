@@ -5,8 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef STATS_H
-#define STATS_H
+#pragma once
 
 #include "qapi/qapi-types-stats.h"
 
@@ -41,5 +40,3 @@ void add_stats_schema(StatsSchemaList **, StatsProvider, StatsTarget,
  * return true.
  */
 bool apply_str_list_filter(const char *string, strList *list);
-
-#endif /* STATS_H */

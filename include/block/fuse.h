@@ -16,8 +16,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BLOCK_FUSE_H
-#define BLOCK_FUSE_H
+#pragma once
 
 #ifdef CONFIG_FUSE
 
@@ -26,5 +25,3 @@
 extern const BlockExportDriver blk_exp_fuse;
 
 #endif /* CONFIG_FUSE */
-
-#endif

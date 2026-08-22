@@ -9,8 +9,6 @@
  * the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_CHARDEV_OPEN_H
-#define QEMU_CHARDEV_OPEN_H
+#pragma once
 
 int open_cdev(const char *devpath, dev_t cdev);
-#endif

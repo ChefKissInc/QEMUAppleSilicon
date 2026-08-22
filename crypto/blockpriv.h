@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_BLOCKPRIV_H
-#define QCRYPTO_BLOCKPRIV_H
+#pragma once
 
 #include "crypto/block.h"
 #include "qemu/thread.h"
@@ -138,5 +137,3 @@ int qcrypto_block_init_cipher(QCryptoBlock *block,
                               Error **errp);
 
 void qcrypto_block_free_cipher(QCryptoBlock *block);
-
-#endif /* QCRYPTO_BLOCKPRIV_H */

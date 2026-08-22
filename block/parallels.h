@@ -29,8 +29,8 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-#ifndef BLOCK_PARALLELS_H
-#define BLOCK_PARALLELS_H
+#pragma once
+
 #include "qemu/coroutine.h"
 
 #define HEADS_NUMBER 16
@@ -92,5 +92,3 @@ typedef struct BDRVParallelsState {
 int GRAPH_RDLOCK
 parallels_read_format_extension(BlockDriverState *bs, int64_t ext_off,
                                 Error **errp);
-
-#endif

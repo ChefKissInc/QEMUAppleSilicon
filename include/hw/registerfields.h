@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_REGISTERFIELDS_H
-#define HW_REGISTERFIELDS_H
+#pragma once
 
 #include "qemu/bitops.h"
 
@@ -220,5 +219,3 @@
 #define SHARED_REG_ARRAY_FIELD_DP64(_regs, _offset, _field, _val) \
     (_regs)[(_offset)] =                                          \
         SHARED_REG_FIELD_DP64((_regs)[(_offset)], _field, _val);
-
-#endif /* HW_REGISTERFIELDS_H */

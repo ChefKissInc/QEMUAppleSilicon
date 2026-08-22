@@ -14,8 +14,7 @@
  * GNU GPL, version 2 or (at your option) any later version.
  */
 
-#ifndef AIO_POSIX_H
-#define AIO_POSIX_H
+#pragma once
 
 #include "block/aio.h"
 
@@ -79,5 +78,3 @@ static inline void fdmon_io_uring_destroy(AioContext *ctx)
 {
 }
 #endif /* !CONFIG_LINUX_IO_URING */
-
-#endif /* AIO_POSIX_H */

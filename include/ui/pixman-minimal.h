@@ -41,8 +41,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PIXMAN_MINIMAL_H
-#define PIXMAN_MINIMAL_H
+#pragma once
 
 #define PIXMAN_TYPE_OTHER       0
 #define PIXMAN_TYPE_ARGB        2
@@ -235,5 +234,3 @@ static inline pixman_format_code_t pixman_image_get_format(pixman_image_t *i)
 {
     return i->format;
 }
-
-#endif /* PIXMAN_MINIMAL_H */

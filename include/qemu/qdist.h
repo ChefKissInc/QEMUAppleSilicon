@@ -4,8 +4,7 @@
  * License: GNU GPL, version 2 or later.
  *   See the COPYING file in the top-level directory.
  */
-#ifndef QEMU_QDIST_H
-#define QEMU_QDIST_H
+#pragma once
 
 #include "qemu/bitops.h"
 
@@ -57,5 +56,3 @@ char *qdist_pr(const struct qdist *dist, size_t n_groups, uint32_t opt);
 
 /* Only qdist code and test code should ever call this function */
 void qdist_bin__internal(struct qdist *to, const struct qdist *from, size_t n);
-
-#endif /* QEMU_QDIST_H */

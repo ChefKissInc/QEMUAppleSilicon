@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef QCRYPTO_AKCIPHERPRIV_H
-#define QCRYPTO_AKCIPHERPRIV_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 
@@ -52,4 +51,4 @@ struct QCryptoAkCipherDriver {
     void (*free)(QCryptoAkCipher *akcipher);
 };
 
-#endif /* QCRYPTO_AKCIPHER_H */
+/* QCRYPTO_AKCIPHER_H */

@@ -6,8 +6,7 @@
  * Author: Paolo Bonzini <pbonzini@redhat.com>
  */
 
-#ifndef QEMU_SYS_MEMBARRIER_H
-#define QEMU_SYS_MEMBARRIER_H
+#pragma once
 
 #ifdef CONFIG_MEMBARRIER
 /* Only block reordering at the compiler level in the performance-critical
@@ -22,6 +21,4 @@ void smp_mb_global(void);
 static inline void smp_mb_global_init(void) {}
 #define smp_mb_global()            smp_mb()
 #define smp_mb_placeholder()       smp_mb()
-#endif
-
 #endif

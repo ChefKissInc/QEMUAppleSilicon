@@ -16,8 +16,7 @@
  * The functions declared here will be removed soon.
  */
 
-#ifndef SYSTEM_RAM_ADDR_H
-#define SYSTEM_RAM_ADDR_H
+#pragma once
 
 #include "system/tcg.h"
 #include "exec/cputlb.h"
@@ -536,5 +535,3 @@ uint64_t cpu_physical_memory_sync_dirty_bitmap(RAMBlock *rb,
 
     return num_dirty;
 }
-
-#endif

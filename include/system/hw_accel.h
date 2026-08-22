@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef QEMU_HW_ACCEL_H
-#define QEMU_HW_ACCEL_H
+#pragma once
 
 #include "hw/core/cpu.h"
 #include "system/kvm.h"
@@ -37,5 +36,3 @@ void cpu_synchronize_pre_loadvm(CPUState *cpu);
  */
 void cpu_synchronize_post_reset(CPUState *cpu);
 void cpu_synchronize_post_init(CPUState *cpu);
-
-#endif /* QEMU_HW_ACCEL_H */

@@ -15,8 +15,7 @@
  * GNU GPL, version 2 or (at your option) any later version.
  */
 
-#ifndef QEMU_THREAD_POOL_H
-#define QEMU_THREAD_POOL_H
+#pragma once
 
 #include "block/aio.h"
 
@@ -89,5 +88,3 @@ bool thread_pool_set_max_threads(ThreadPool *pool, int max_threads);
  * own thread (exactly one thread per task).
  */
 bool thread_pool_adjust_max_threads_to_work(ThreadPool *pool);
-
-#endif

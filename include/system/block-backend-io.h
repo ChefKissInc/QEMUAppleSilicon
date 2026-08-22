@@ -10,8 +10,7 @@
  * or later.  See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef BLOCK_BACKEND_IO_H
-#define BLOCK_BACKEND_IO_H
+#pragma once
 
 #include "block-backend-common.h"
 #include "block/accounting.h"
@@ -227,5 +226,3 @@ int co_wrapper_mixed blk_truncate(BlockBackend *blk, int64_t offset,
 int coroutine_fn blk_co_truncate(BlockBackend *blk, int64_t offset, bool exact,
                                  PreallocMode prealloc, BdrvRequestFlags flags,
                                  Error **errp);
-
-#endif /* BLOCK_BACKEND_IO_H */

@@ -11,8 +11,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QDEV_CLOCK_H
-#define QDEV_CLOCK_H
+#pragma once
 
 #include "hw/clock.h"
 
@@ -160,5 +159,3 @@ typedef struct ClockPortInitElem ClockPortInitArray[];
  * clocks information.
  */
 void qdev_init_clocks(DeviceState *dev, const ClockPortInitArray clocks);
-
-#endif /* QDEV_CLOCK_H */

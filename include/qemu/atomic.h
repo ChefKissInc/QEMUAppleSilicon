@@ -12,8 +12,7 @@
  * atomic primitive is meant to provide.
  */
 
-#ifndef QEMU_ATOMIC_H
-#define QEMU_ATOMIC_H
+#pragma once
 
 #include "compiler.h"
 
@@ -268,5 +267,3 @@ void qatomic_set_i64(int64_t *ptr, int64_t val);
 void qatomic_set_u64(uint64_t *ptr, uint64_t val);
 void qatomic64_init(void);
 #endif /* !CONFIG_ATOMIC64 */
-
-#endif /* QEMU_ATOMIC_H */

@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef QAPI_CLONE_VISITOR_H
-#define QAPI_CLONE_VISITOR_H
+#pragma once
 
 #include "qapi/error.h"
 #include "qapi/visitor.h"
@@ -58,5 +57,3 @@ Visitor *qapi_clone_members_visitor_new(void);
         visit_type_ ## type ## _members(v_, (type *)(dst), &error_abort); \
         visit_free(v_);                                                   \
     })
-
-#endif

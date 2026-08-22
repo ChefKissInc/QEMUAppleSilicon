@@ -9,8 +9,7 @@
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  * See the COPYING file in the top-level directory.
  */
-#ifndef QEMU_EVENT_LOOP_BASE_H
-#define QEMU_EVENT_LOOP_BASE_H
+#pragma once
 
 #include "qom/object.h"
 #include "block/aio.h"
@@ -37,4 +36,3 @@ struct EventLoopBase {
     int64_t thread_pool_min;
     int64_t thread_pool_max;
 };
-#endif

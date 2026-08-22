@@ -1,5 +1,4 @@
-#ifndef HW_USB_XHCI_H
-#define HW_USB_XHCI_H
+#pragma once
 
 #define TYPE_XHCI "base-xhci"
 #define TYPE_NEC_XHCI "nec-usb-xhci"
@@ -17,5 +16,3 @@
 #define XHCI_LEN_REGS 0x4000
 
 void xhci_sysbus_build_aml(Aml *scope, uint32_t mmio, unsigned int irq);
-
-#endif

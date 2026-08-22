@@ -1,5 +1,4 @@
-#ifndef QEMU_CUTILS_H
-#define QEMU_CUTILS_H
+#pragma once
 
 /*
  * si_prefix:
@@ -316,5 +315,3 @@ void qemu_hexdump(FILE *fp, const char *prefix,
  */
 void qemu_hexdump_to_buffer(char *restrict buffer, size_t buffer_size,
                             const uint8_t *restrict data, size_t data_size);
-
-#endif

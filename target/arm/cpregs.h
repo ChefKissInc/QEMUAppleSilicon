@@ -18,8 +18,7 @@
  * <http://www.gnu.org/licenses/gpl-2.0.html>
  */
 
-#ifndef TARGET_ARM_CPREGS_H
-#define TARGET_ARM_CPREGS_H
+#pragma once
 
 #include "hw/registerfields.h"
 #include "target/arm/kvm-consts.h"
@@ -1194,5 +1193,3 @@ static inline bool arm_cpreg_traps_in_nv(const ARMCPRegInfo *ri)
     A32_BANKED_REG_SET((_env), _regname,                                    \
                        (arm_is_secure(_env) && !arm_el_is_aa64((_env), 3)), \
                        (_val))
-
-#endif /* TARGET_ARM_CPREGS_H */

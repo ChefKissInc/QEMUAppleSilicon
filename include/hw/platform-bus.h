@@ -1,5 +1,4 @@
-#ifndef HW_PLATFORM_BUS_H
-#define HW_PLATFORM_BUS_H
+#pragma once
 
 /*
  *  Platform Bus device to support dynamic Sysbus devices
@@ -48,5 +47,3 @@ hwaddr platform_bus_get_mmio_addr(PlatformBusDevice *pbus, SysBusDevice *sbdev,
                                   int n);
 
 void platform_bus_link_device(PlatformBusDevice *pbus, SysBusDevice *sbdev);
-
-#endif /* HW_PLATFORM_BUS_H */

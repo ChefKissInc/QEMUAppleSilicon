@@ -1,5 +1,4 @@
-#ifndef HW_PCI_PCI_INTERNAL_H
-#define HW_PCI_PCI_INTERNAL_H
+#pragma once
 
 #include "qemu/queue.h"
 
@@ -20,5 +19,3 @@ void pcibus_dev_print(Monitor *mon, DeviceState *dev, int indent);
 
 int pcie_aer_parse_error_string(const char *error_name,
                                 uint32_t *status, bool *correctable);
-
-#endif

@@ -12,8 +12,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef BLOCK_COPY_H
-#define BLOCK_COPY_H
+#pragma once
 
 #include "block/block-common.h"
 #include "qemu/progress_meter.h"
@@ -99,5 +98,3 @@ void block_copy_call_cancel(BlockCopyCallState *call_state);
 BdrvDirtyBitmap *block_copy_dirty_bitmap(BlockCopyState *s);
 int64_t block_copy_cluster_size(BlockCopyState *s);
 void block_copy_set_skip_unallocated(BlockCopyState *s, bool skip);
-
-#endif /* BLOCK_COPY_H */

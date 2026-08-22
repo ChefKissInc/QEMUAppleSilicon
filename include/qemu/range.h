@@ -17,8 +17,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_RANGE_H
-#define QEMU_RANGE_H
+#pragma once
 
 #include "qemu/bitops.h"
 
@@ -243,5 +242,3 @@ GList *range_list_insert(GList *list, Range *data);
 void range_inverse_array(GList *in_ranges,
                          GList **out_ranges,
                          uint64_t low, uint64_t high);
-
-#endif

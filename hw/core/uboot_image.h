@@ -12,8 +12,7 @@
  ********************************************************************
  */
 
-#ifndef UBOOT_IMAGE_H
-#define UBOOT_IMAGE_H
+#pragma once
 
 /*
  * Operating System Codes
@@ -225,6 +224,3 @@ typedef struct uboot_image_header {
 	uint8_t		ih_comp;	/* Compression Type		*/
 	uint8_t		ih_name[IH_NMLEN];	/* Image Name		*/
 } uboot_image_header_t;
-
-
-#endif /* UBOOT_IMAGE_H */

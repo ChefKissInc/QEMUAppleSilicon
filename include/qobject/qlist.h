@@ -10,8 +10,7 @@
  * See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef QLIST_H
-#define QLIST_H
+#pragma once
 
 #include "qobject/qobject.h"
 #include "qemu/queue.h"
@@ -65,5 +64,3 @@ static inline const QListEntry *qlist_next(const QListEntry *entry)
 {
     return QTAILQ_NEXT(entry, next);
 }
-
-#endif /* QLIST_H */

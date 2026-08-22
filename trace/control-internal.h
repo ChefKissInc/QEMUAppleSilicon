@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef TRACE__CONTROL_INTERNAL_H
-#define TRACE__CONTROL_INTERNAL_H
+#pragma once
 
 extern int trace_events_enabled_count;
 
@@ -47,5 +46,3 @@ static inline bool trace_event_get_state_dynamic(TraceEvent *ev)
 }
 
 void trace_event_register_group(TraceEvent **events);
-
-#endif /* TRACE__CONTROL_INTERNAL_H */

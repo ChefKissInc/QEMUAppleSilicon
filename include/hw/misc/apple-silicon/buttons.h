@@ -17,12 +17,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_BUTTONS_H
-#define HW_MISC_APPLE_SILICON_BUTTONS_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/sysbus.h"
 
 SysBusDevice *apple_buttons_create(AppleDTNode *node);
-
-#endif /* HW_MISC_APPLE_SILICON_BUTTONS_H */

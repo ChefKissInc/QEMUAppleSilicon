@@ -1,5 +1,4 @@
-#ifndef QEMU_QDEV_PROPERTIES_H
-#define QEMU_QDEV_PROPERTIES_H
+#pragma once
 
 #include "hw/qdev-core.h"
 
@@ -278,5 +277,3 @@ void qdev_prop_set_after_realize(DeviceState *dev, const char *name,
 void qdev_prop_allow_set_link_before_realize(const Object *obj,
                                              const char *name,
                                              Object *val, Error **errp);
-
-#endif

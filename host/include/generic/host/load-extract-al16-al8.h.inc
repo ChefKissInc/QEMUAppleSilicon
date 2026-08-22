@@ -5,8 +5,7 @@
  * Copyright (C) 2023 Linaro, Ltd.
  */
 
-#ifndef HOST_LOAD_EXTRACT_AL16_AL8_H
-#define HOST_LOAD_EXTRACT_AL16_AL8_H
+#pragma once
 
 /**
  * load_atom_extract_al16_or_al8:
@@ -41,5 +40,3 @@ load_atom_extract_al16_or_al8(void *pv, int s)
     }
     return int128_getlo(int128_urshift(r, shr));
 }
-
-#endif /* HOST_LOAD_EXTRACT_AL16_AL8_H */

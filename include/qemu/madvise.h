@@ -5,8 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_MADVISE_H
-#define QEMU_MADVISE_H
+#pragma once
 
 #define QEMU_MADV_INVALID -1
 
@@ -91,5 +90,3 @@
 #endif
 
 int qemu_madvise(void *addr, size_t len, int advice);
-
-#endif

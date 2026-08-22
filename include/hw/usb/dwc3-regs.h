@@ -38,8 +38,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DWC3_REGS_H
-#define DWC3_REGS_H
+#pragma once
 
 /* Global constants */
 #define EP0_BOUNCE_SIZE    512
@@ -705,5 +704,3 @@ union dwc3_event {
 #define DEPCFG_FIFO_BASED          BIT(31)
 
 #define DEPXFERCFG_NUMXFERRES(_v)  ((_v) & 0xffff)
-#endif
-

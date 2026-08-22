@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCK_INT_GLOBAL_STATE_H
-#define BLOCK_INT_GLOBAL_STATE_H
+#pragma once
 
 #include "block/blockjob.h"
 #include "block/block_int-common.h"
@@ -319,5 +318,3 @@ void bdrv_remove_aio_context_notifier(BlockDriverState *bs,
  * should call it.
  */
 void bdrv_drain_all_end_quiesce(BlockDriverState *bs);
-
-#endif /* BLOCK_INT_GLOBAL_STATE_H */

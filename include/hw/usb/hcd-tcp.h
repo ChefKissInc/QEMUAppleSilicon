@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_USB_HCD_TCP_H
-#define HW_USB_HCD_TCP_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/sysbus.h"
@@ -52,5 +51,3 @@ struct USBTCPHostState {
     char *conn_addr;
     uint16_t conn_port;
 };
-
-#endif /* HW_USB_HCD_TCP_H */

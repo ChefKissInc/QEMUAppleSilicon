@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef CHAR_IO_H
-#define CHAR_IO_H
+#pragma once
 
 #include "io/channel.h"
 #include "chardev/char.h"
@@ -44,5 +43,3 @@ int io_channel_send_full(QIOChannel *ioc, const void *buf, size_t len,
                          int *fds, size_t nfds);
 
 void remove_listener_fd_in_watch(Chardev *chr);
-
-#endif /* CHAR_IO_H */

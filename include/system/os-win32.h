@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_OS_WIN32_H
-#define QEMU_OS_WIN32_H
+#pragma once
 
 #include <winsock2.h>
 #include <windows.h>
@@ -271,6 +270,4 @@ void qemu_win32_map_free(void *ptr, HANDLE h, Error **errp);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

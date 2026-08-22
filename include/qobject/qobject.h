@@ -29,8 +29,7 @@
  *  when the function returns you must behave as if the reference to the
  *  passed object was weak.
  */
-#ifndef QOBJECT_H
-#define QOBJECT_H
+#pragma once
 
 #include "qapi/qapi-builtin-types.h"
 
@@ -140,5 +139,3 @@ static inline QObject *qobject_check_type(const QObject *obj, QType type)
         return NULL;
     }
 }
-
-#endif /* QOBJECT_H */

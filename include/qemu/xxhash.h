@@ -31,8 +31,7 @@
  * - xxHash source repository : https://github.com/Cyan4973/xxHash
  */
 
-#ifndef QEMU_XXHASH_H
-#define QEMU_XXHASH_H
+#pragma once
 
 #include "qemu/bitops.h"
 
@@ -227,5 +226,3 @@ static inline uint64_t qemu_xxhash64_4(uint64_t a, uint64_t b,
 
     return XXH64_avalanche(XXH64_mergerounds(v1, v2, v3, v4));
 }
-
-#endif /* QEMU_XXHASH_H */

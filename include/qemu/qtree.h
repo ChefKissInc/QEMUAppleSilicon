@@ -39,9 +39,7 @@
  * TODO: remove QTree when QEMU's minimum Glib version is >= 2.75.3.
  */
 
-#ifndef QEMU_QTREE_H
-#define QEMU_QTREE_H
-
+#pragma once
 
 #ifdef HAVE_GLIB_WITH_SLICE_ALLOCATOR
 
@@ -196,5 +194,3 @@ static inline gint q_tree_nnodes(QTree *tree)
 }
 
 #endif /* HAVE_GLIB_WITH_SLICE_ALLOCATOR */
-
-#endif /* QEMU_QTREE_H */

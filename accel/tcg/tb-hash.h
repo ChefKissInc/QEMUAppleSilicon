@@ -17,8 +17,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EXEC_TB_HASH_H
-#define EXEC_TB_HASH_H
+#pragma once
 
 #include "exec/vaddr.h"
 #include "exec/target_page.h"
@@ -67,5 +66,3 @@ uint32_t tb_hash_func(tb_page_addr_t phys_pc, vaddr pc,
 {
     return qemu_xxhash8(phys_pc, pc, flags2, flags, cf_mask);
 }
-
-#endif

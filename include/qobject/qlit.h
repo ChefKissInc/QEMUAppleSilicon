@@ -11,8 +11,7 @@
  * See the COPYING.LIB file in the top-level directory.
  *
  */
-#ifndef QLIT_H
-#define QLIT_H
+#pragma once
 
 #include "qobject.h"
 
@@ -51,5 +50,3 @@ struct QLitDictEntry {
 bool qlit_equal_qobject(const QLitObject *lhs, const QObject *rhs);
 
 QObject *qobject_from_qlit(const QLitObject *qlit);
-
-#endif /* QLIT_H */

@@ -4,9 +4,6 @@
  * Copyright (c) 2023 Linaro
  */
 
-#ifndef TCG_TARGET_REG_BITS_H
-#define TCG_TARGET_REG_BITS_H
+#pragma once
 
 #define TCG_TARGET_REG_BITS  64
-
-#endif

@@ -10,8 +10,7 @@
  *
  */
 
-#ifndef FORWARD_VISITOR_H
-#define FORWARD_VISITOR_H
+#pragma once
 
 #include "qapi/visitor.h"
 
@@ -23,5 +22,3 @@ typedef struct ForwardFieldVisitor ForwardFieldVisitor;
  * Calls within a struct are forwarded without changing the name.
  */
 Visitor *visitor_forward_field(Visitor *target, const char *from, const char *to);
-
-#endif

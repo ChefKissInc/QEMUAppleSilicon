@@ -9,8 +9,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_STATS64_H
-#define QEMU_STATS64_H
+#pragma once
 
 #include "qemu/atomic.h"
 
@@ -193,7 +192,5 @@ static inline void stat64_max(Stat64 *s, uint64_t value)
         /* If the value changes in any way, we have to take the lock.  */
     } while (!stat64_max_slow(s, value));
 }
-
-#endif
 
 #endif

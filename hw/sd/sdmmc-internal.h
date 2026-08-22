@@ -8,8 +8,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef SDMMC_INTERNAL_H
-#define SDMMC_INTERNAL_H
+#pragma once
 
 #define TYPE_SDMMC_COMMON "sdmmc-common"
 DECLARE_OBJ_CHECKERS(SDState, SDCardClass, SDMMC_COMMON, TYPE_SDMMC_COMMON)
@@ -122,5 +121,3 @@ DECLARE_OBJ_CHECKERS(SDState, SDCardClass, SDMMC_COMMON, TYPE_SDMMC_COMMON)
 #define EXT_CSD_PART_CONFIG_EN_MASK             (0x7 << 3)
 #define EXT_CSD_PART_CONFIG_EN_BOOT0            (0x1 << 3)
 #define EXT_CSD_PART_CONFIG_EN_USER             (0x7 << 3)
-
-#endif

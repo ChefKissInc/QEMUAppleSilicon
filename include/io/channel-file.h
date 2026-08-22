@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_CHANNEL_FILE_H
-#define QIO_CHANNEL_FILE_H
+#pragma once
 
 #include "io/channel.h"
 #include "qom/object.h"
@@ -106,5 +105,3 @@ qio_channel_file_new_path(const char *path,
                           int flags,
                           mode_t mode,
                           Error **errp);
-
-#endif /* QIO_CHANNEL_FILE_H */

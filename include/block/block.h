@@ -21,12 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_H
-#define BLOCK_H
+#pragma once
 
 #include "block/block-global-state.h"
 #include "block/block-io.h"
 
 /* DO NOT ADD ANYTHING IN HERE. USE ONE OF THE HEADERS INCLUDED ABOVE */
-
-#endif /* BLOCK_H */

@@ -17,11 +17,8 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QCRYPTO_IVGEN_PLAIN64_H
-#define QCRYPTO_IVGEN_PLAIN64_H
+#pragma once
 
 #include "ivgenpriv.h"
 
 extern struct QCryptoIVGenDriver qcrypto_ivgen_plain64;
-
-#endif /* QCRYPTO_IVGEN_PLAIN64_H */

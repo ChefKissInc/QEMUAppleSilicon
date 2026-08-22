@@ -5,9 +5,7 @@
  * Those constants and macros should go to Linux pci_regs.h
  * Once they're merged, they will go away.
  */
-#ifndef QEMU_PCIE_REGS_H
-#define QEMU_PCIE_REGS_H
-
+#pragma once
 
 /* express capability */
 
@@ -181,5 +179,3 @@ typedef enum PCIExpLinkWidth {
 /* DOE Capability Register Fields */
 #define PCI_DOE_VER                     0x1
 #define PCI_DOE_SIZEOF                  24
-
-#endif /* QEMU_PCIE_REGS_H */

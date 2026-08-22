@@ -24,9 +24,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TIMED_AVERAGE_H
-#define TIMED_AVERAGE_H
-
+#pragma once
 
 #include "qemu/timer.h"
 
@@ -61,5 +59,3 @@ uint64_t timed_average_min(TimedAverage *ta);
 uint64_t timed_average_avg(TimedAverage *ta);
 uint64_t timed_average_max(TimedAverage *ta);
 uint64_t timed_average_sum(TimedAverage *ta, uint64_t *elapsed);
-
-#endif

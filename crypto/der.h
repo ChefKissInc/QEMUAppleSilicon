@@ -17,8 +17,7 @@
  *
  */
 
-#ifndef QCRYPTO_ASN1_DECODER_H
-#define QCRYPTO_ASN1_DECODER_H
+#pragma once
 
 #include "qapi/error.h"
 
@@ -260,5 +259,3 @@ size_t qcrypto_der_encode_ctx_buffer_len(QCryptoEncodeContext *ctx);
  */
 void qcrypto_der_encode_ctx_flush_and_free(QCryptoEncodeContext *ctx,
                                            uint8_t *dst);
-
-#endif  /* QCRYPTO_ASN1_DECODER_H */

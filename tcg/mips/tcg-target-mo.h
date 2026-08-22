@@ -5,9 +5,6 @@
  * Copyright (c) 2009 Aurelien Jarno <aurelien@aurel32.net>
  */
 
-#ifndef TCG_TARGET_MO_H
-#define TCG_TARGET_MO_H
+#pragma once
 
 #define TCG_TARGET_DEFAULT_MO  0
-
-#endif

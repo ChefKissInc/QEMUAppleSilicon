@@ -8,8 +8,7 @@
  * atomic primitive is meant to provide.
  */
 
-#ifndef HOST_ATOMIC128_LDST_H
-#define HOST_ATOMIC128_LDST_H
+#pragma once
 
 #if defined(CONFIG_ATOMIC128)
 # define HAVE_ATOMIC128_RO 1
@@ -77,5 +76,3 @@ Int128 QEMU_ERROR("unsupported atomic") atomic16_read_ro(const Int128 *ptr);
 Int128 QEMU_ERROR("unsupported atomic") atomic16_read_rw(Int128 *ptr);
 void QEMU_ERROR("unsupported atomic") atomic16_set(Int128 *ptr, Int128 val);
 #endif
-
-#endif /* HOST_ATOMIC128_LDST_H */

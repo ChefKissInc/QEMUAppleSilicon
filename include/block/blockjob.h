@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCKJOB_H
-#define BLOCKJOB_H
+#pragma once
 
 #include "qapi/qapi-types-block-core.h"
 #include "qemu/job.h"
@@ -210,5 +209,3 @@ bool block_job_is_internal(BlockJob *job);
  * Returns the driver associated with a block job.
  */
 const BlockJobDriver *block_job_driver(BlockJob *job);
-
-#endif

@@ -4,8 +4,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_CPUID_H
-#define QEMU_CPUID_H
+#pragma once
 
 #ifndef CONFIG_CPUID_H
 # error "<cpuid.h> is unusable with this compiler"
@@ -101,5 +100,3 @@ static inline unsigned xgetbv_low(unsigned c)
     asm("xgetbv" : "=a"(a), "=d"(d) : "c"(c));
     return a;
 }
-
-#endif /* QEMU_CPUID_H */

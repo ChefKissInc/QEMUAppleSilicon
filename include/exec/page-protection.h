@@ -5,8 +5,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1+
  */
-#ifndef EXEC_PAGE_PROT_COMMON_H
-#define EXEC_PAGE_PROT_COMMON_H
+#pragma once
 
 /* same as PROT_xxx */
 #define PAGE_READ      0x0001
@@ -37,5 +36,3 @@
  * in both guest and host.
  */
 #define PAGE_PASSTHROUGH 0x0800
-
-#endif

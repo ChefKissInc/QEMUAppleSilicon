@@ -1,5 +1,4 @@
-#ifndef QEMU_PCI_DEVICE_H
-#define QEMU_PCI_DEVICE_H
+#pragma once
 
 #include "hw/pci/pci.h"
 #include "hw/pci/pcie.h"
@@ -314,5 +313,3 @@ static inline void pci_dma_sglist_init(QEMUSGList *qsg, PCIDevice *dev,
 {
     qemu_sglist_init(qsg, DEVICE(dev), alloc_hint, pci_get_address_space(dev));
 }
-
-#endif

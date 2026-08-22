@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCK_BLOCK_GEN_H
-#define BLOCK_BLOCK_GEN_H
+#pragma once
 
 #include "block/block_int.h"
 
@@ -42,5 +41,3 @@ static inline void bdrv_poll_co(BdrvPollCo *s)
     aio_co_enter(s->ctx, s->co);
     AIO_WAIT_WHILE(s->ctx, s->in_progress);
 }
-
-#endif /* BLOCK_BLOCK_GEN_H */

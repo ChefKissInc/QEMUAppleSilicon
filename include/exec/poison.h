@@ -1,8 +1,7 @@
 /* Poison identifiers that should not be used when building
    target independent device code.  */
 
-#ifndef HW_POISON_H
-#define HW_POISON_H
+#pragma once
 
 #include "config-poison.h"
 
@@ -36,5 +35,3 @@
 #pragma GCC poison CONFIG_BSD_USER
 
 #pragma GCC poison KVM_HAVE_MCE_INJECTION
-
-#endif

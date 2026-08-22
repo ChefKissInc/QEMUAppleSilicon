@@ -7,8 +7,7 @@
  * or later.  See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef QOBJECT_INTERNAL_H
-#define QOBJECT_INTERNAL_H
+#pragma once
 
 #include "qobject/qobject.h"
 
@@ -35,5 +34,3 @@ bool qnum_is_equal(const QObject *x, const QObject *y);
 
 void qstring_destroy_obj(QObject *obj);
 bool qstring_is_equal(const QObject *x, const QObject *y);
-
-#endif

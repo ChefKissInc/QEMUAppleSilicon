@@ -5,8 +5,7 @@
  * SPDX-License-Identifier: LGPL-2.0-or-later
  */
 
-#ifndef ARM_CPU_PARAM_H
-#define ARM_CPU_PARAM_H
+#pragma once
 
 #ifdef TARGET_AARCH64
 # define TARGET_PHYS_ADDR_SPACE_BITS  52
@@ -29,5 +28,3 @@
  * 2: Partial exception syndrome for data aborts
  */
 #define TARGET_INSN_START_EXTRA_WORDS 2
-
-#endif

@@ -3,8 +3,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_PIXMAN_H
-#define QEMU_PIXMAN_H
+#pragma once
 
 #ifdef CONFIG_PIXMAN
 #include <pixman.h>
@@ -122,5 +121,3 @@ bool qemu_pixman_image_new_shareable(
     Error **errp);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(pixman_image_t, qemu_pixman_image_unref)
-
-#endif /* QEMU_PIXMAN_H */

@@ -74,8 +74,7 @@ this code that are retained.
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FPU_SOFTFLOAT_MACROS_H
-#define FPU_SOFTFLOAT_MACROS_H
+#pragma once
 
 #include "fpu/softfloat-types.h"
 #include "qemu/host-utils.h"
@@ -696,5 +695,3 @@ static inline bool lt192(uint64_t a0, uint64_t a1, uint64_t a2,
     }
     return a2 < b2;
 }
-
-#endif

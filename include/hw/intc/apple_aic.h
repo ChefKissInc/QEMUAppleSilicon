@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_INTC_APPLE_AIC_H
-#define HW_INTC_APPLE_AIC_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/sysbus.h"
@@ -60,5 +59,3 @@ struct AppleAICState {
 
 SysBusDevice *apple_aic_create(uint32_t numCPU, AppleDTNode *node,
                                AppleDTNode *timebase_node);
-
-#endif /* HW_INTC_APPLE_AIC_H */

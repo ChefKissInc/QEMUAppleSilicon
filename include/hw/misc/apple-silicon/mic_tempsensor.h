@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_MIC_TEMPSENSOR_H
-#define HW_MISC_APPLE_SILICON_MIC_TEMPSENSOR_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/i2c/i2c.h"
@@ -31,4 +30,3 @@ I2CSlave *apple_mic_temp_sensor_create(uint8_t addr, I2CBus *bus,
                                        uint8_t product_id, uint8_t vendor_id,
                                        uint8_t revision, uint8_t fab_id,
                                        Error **errp);
-#endif /* HW_MISC_APPLE_SILICON_MIC_TEMPSENSOR_H */

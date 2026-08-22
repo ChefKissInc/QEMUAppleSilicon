@@ -5,8 +5,7 @@
  * Copyright (c) 2026 Visual Ehrmanntraut
  */
 
-#ifndef TCG_DEBUG_ASSERT_H
-#define TCG_DEBUG_ASSERT_H
+#pragma once
 
 #if defined CONFIG_DEBUG_TCG || defined QEMU_STATIC_ANALYSIS
 # define tcg_debug_assert(X) do { assert(X); } while (0)
@@ -19,6 +18,4 @@
     do { if (!(X)) { __builtin_unreachable(); } } while (0)
 #endif
 # define tcg_debug_assert_not_reached() __builtin_unreachable()
-#endif
-
 #endif

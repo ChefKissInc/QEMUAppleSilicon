@@ -17,11 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_KERNEL_PATCHES_H
-#define HW_ARM_APPLE_SILICON_KERNEL_PATCHES_H
+#pragma once
 
 #include "hw/arm/apple-silicon/boot.h"
 
 void ck_patch_kernel(MachoHeader64 *hdr);
-
-#endif /* HW_ARM_APPLE_SILICON_KERNEL_PATCHES_H */

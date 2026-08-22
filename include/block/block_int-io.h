@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_INT_IO_H
-#define BLOCK_INT_IO_H
+#pragma once
 
 #include "block/block_int-common.h"
 #include "qemu/hbitmap.h"
@@ -190,5 +189,3 @@ void bdrv_bsc_invalidate_range(BlockDriverState *bs,
  * Mark the range [offset, offset + bytes) as a data region.
  */
 void bdrv_bsc_fill(BlockDriverState *bs, int64_t offset, int64_t bytes);
-
-#endif /* BLOCK_INT_IO_H */

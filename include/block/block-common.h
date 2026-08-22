@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_COMMON_H
-#define BLOCK_COMMON_H
+#pragma once
 
 #include "qapi/qapi-types-block-core.h"
 #include "qemu/queue.h"
@@ -574,5 +573,3 @@ char *path_combine(const char *base_path, const char *filename);
 char *bdrv_get_full_backing_filename_from_filename(const char *backed,
                                                    const char *backing,
                                                    Error **errp);
-
-#endif /* BLOCK_COMMON_H */

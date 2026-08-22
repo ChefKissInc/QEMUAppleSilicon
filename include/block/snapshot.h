@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef SNAPSHOT_H
-#define SNAPSHOT_H
+#pragma once
 
 #include "block/graph-lock.h"
 #include "qapi/qapi-builtin-types.h"
@@ -108,5 +107,3 @@ int bdrv_all_create_snapshot(QEMUSnapshotInfo *sn,
 BlockDriverState *bdrv_all_find_vmstate_bs(const char *vmstate_bs,
                                            bool has_devices, strList *devices,
                                            Error **errp);
-
-#endif

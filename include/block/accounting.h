@@ -22,8 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_ACCOUNTING_H
-#define BLOCK_ACCOUNTING_H
+#pragma once
 
 #include "qemu/timed-average.h"
 #include "qemu/thread.h"
@@ -120,5 +119,3 @@ double block_acct_queue_depth(BlockAcctTimedStats *stats,
 int block_latency_histogram_set(BlockAcctStats *stats, enum BlockAcctType type,
                                 uint64List *boundaries);
 void block_latency_histograms_clear(BlockAcctStats *stats);
-
-#endif

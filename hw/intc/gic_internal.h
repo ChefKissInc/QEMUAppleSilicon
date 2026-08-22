@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_ARM_GIC_INTERNAL_H
-#define QEMU_ARM_GIC_INTERNAL_H
+#pragma once
 
 #include "hw/registerfields.h"
 #include "hw/intc/arm_gic.h"
@@ -322,5 +321,3 @@ static inline int gic_get_priority(GICState *s, int irq, int cpu)
         return GIC_DIST_GET_PRIORITY(irq, cpu);
     }
 }
-
-#endif /* QEMU_ARM_GIC_INTERNAL_H */

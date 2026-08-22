@@ -10,8 +10,7 @@
  * or later.  See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef BLOCK_BACKEND_COMMON_H
-#define BLOCK_BACKEND_COMMON_H
+#pragma once
 
 #include "qemu/iov.h"
 
@@ -89,5 +88,3 @@ typedef struct BlockDevOps {
      */
     void (*resize_cb)(void *opaque);
 } BlockDevOps;
-
-#endif /* BLOCK_BACKEND_COMMON_H */

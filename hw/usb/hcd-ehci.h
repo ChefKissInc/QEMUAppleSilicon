@@ -15,8 +15,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_USB_HCD_EHCI_H
-#define HW_USB_HCD_EHCI_H
+#pragma once
 
 #include "qemu/timer.h"
 #include "hw/usb.h"
@@ -376,5 +375,3 @@ struct FUSBH200EHCIState {
 
     MemoryRegion mem_vendor;
 };
-
-#endif

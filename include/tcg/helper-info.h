@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef TCG_HELPER_INFO_H
-#define TCG_HELPER_INFO_H
+#pragma once
 
 #ifdef CONFIG_TCG_INTERPRETER
 #include <ffi.h>
@@ -63,5 +62,3 @@ struct TCGHelperInfo {
     /* Maximum physical arguments are constrained by TCG_TYPE_I128. */
     TCGCallArgumentLoc in[MAX_CALL_IARGS * (128 / TCG_TARGET_REG_BITS)];
 };
-
-#endif /* TCG_HELPER_INFO_H */

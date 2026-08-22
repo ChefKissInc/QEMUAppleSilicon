@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef ACCEL_TCG_CPU_MMU_INDEX_H
-#define ACCEL_TCG_CPU_MMU_INDEX_H
+#pragma once
 
 #include "hw/core/cpu.h"
 #include "accel/tcg/cpu-ops.h"
@@ -27,5 +26,3 @@ static inline int cpu_mmu_index(CPUState *cs, bool ifetch)
     tcg_debug_assert(ret >= 0 && ret < NB_MMU_MODES);
     return ret;
 }
-
-#endif /* ACCEL_TCG_CPU_MMU_INDEX_H */

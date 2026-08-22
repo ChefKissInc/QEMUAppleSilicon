@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QEMU_NOTIFY_H
-#define QEMU_NOTIFY_H
+#pragma once
 
 #include "qemu/queue.h"
 
@@ -74,5 +73,3 @@ void notifier_with_return_remove(NotifierWithReturn *notifier);
 
 int notifier_with_return_list_notify(NotifierWithReturnList *list,
                                      void *data, Error **errp);
-
-#endif

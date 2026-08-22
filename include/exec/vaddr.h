@@ -1,7 +1,6 @@
 /* Define vaddr.  */
 
-#ifndef VADDR_H
-#define VADDR_H
+#pragma once
 
 /**
  * vaddr:
@@ -16,5 +15,3 @@ typedef uintptr_t vaddr;
 #define VADDR_PRIx PRIxPTR
 #define VADDR_PRIX PRIXPTR
 #define VADDR_MAX UINTPTR_MAX
-
-#endif

@@ -8,8 +8,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef ACCEL_CPU_TARGET_H
-#define ACCEL_CPU_TARGET_H
+#pragma once
 
 /*
  * This header is used to define new accelerator-specific target-specific
@@ -28,4 +27,4 @@
 #define ACCEL_CPU_NAME(name) (name "-" TYPE_ACCEL_CPU)
 DECLARE_CLASS_CHECKERS(AccelCPUClass, ACCEL_CPU, TYPE_ACCEL_CPU)
 
-#endif /* ACCEL_CPU_H */
+/* ACCEL_CPU_H */

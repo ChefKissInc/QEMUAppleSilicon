@@ -5,8 +5,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-#ifndef EXEC_BREAKPOINT_H
-#define EXEC_BREAKPOINT_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "exec/vaddr.h"
@@ -26,5 +25,3 @@ typedef struct CPUWatchpoint {
     int flags; /* BP_* */
     QTAILQ_ENTRY(CPUWatchpoint) entry;
 } CPUWatchpoint;
-
-#endif

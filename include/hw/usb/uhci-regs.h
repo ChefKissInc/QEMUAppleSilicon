@@ -1,5 +1,4 @@
-#ifndef HW_USB_UHCI_REGS_H
-#define HW_USB_UHCI_REGS_H
+#pragma once
 
 #define UHCI_USBCMD       0
 #define UHCI_USBSTS       2
@@ -47,5 +46,3 @@
 
 #define UHCI_PORT_READ_ONLY    (0x1bb)
 #define UHCI_PORT_WRITE_CLEAR  (UHCI_PORT_CSC | UHCI_PORT_ENC)
-
-#endif /* HW_USB_UHCI_REGS_H */

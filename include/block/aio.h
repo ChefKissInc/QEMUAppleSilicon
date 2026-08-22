@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QEMU_AIO_H
-#define QEMU_AIO_H
+#pragma once
 
 #ifdef CONFIG_LINUX_IO_URING
 #include <liburing.h>
@@ -724,4 +723,3 @@ void aio_context_set_aio_params(AioContext *ctx, int64_t max_batch);
  */
 void aio_context_set_thread_pool_params(AioContext *ctx, int64_t min,
                                         int64_t max, Error **errp);
-#endif

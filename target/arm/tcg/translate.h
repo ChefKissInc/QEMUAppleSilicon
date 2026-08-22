@@ -1,5 +1,4 @@
-#ifndef TARGET_ARM_TRANSLATE_H
-#define TARGET_ARM_TRANSLATE_H
+#pragma once
 
 #include "cpu.h"
 #include "tcg/tcg-op.h"
@@ -843,5 +842,3 @@ static inline void gen_restore_rmode(TCGv_i32 old, TCGv_ptr fpst)
         s->is_nonstreaming = true;                                \
         return dc_isar_feature(FEAT, s) && FUNC(s, __VA_ARGS__);  \
     }
-
-#endif /* TARGET_ARM_TRANSLATE_H */

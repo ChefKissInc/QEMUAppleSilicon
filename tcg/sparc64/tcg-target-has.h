@@ -4,8 +4,7 @@
  * Copyright (c) 2008 Fabrice Bellard
  */
 
-#ifndef TCG_TARGET_HAS_H
-#define TCG_TARGET_HAS_H
+#pragma once
 
 /* optional instructions */
 #define TCG_TARGET_HAS_extr_i64_i32     0
@@ -18,5 +17,3 @@
 #define TCG_TARGET_sextract_valid  TCG_TARGET_extract_valid
 
 #define TCG_TARGET_deposit_valid(type, ofs, len) 0
-
-#endif

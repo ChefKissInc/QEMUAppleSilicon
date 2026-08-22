@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_SYSTEMD_H
-#define QEMU_SYSTEMD_H
+#pragma once
 
 #define FIRST_SOCKET_ACTIVATION_FD 3 /* defined by systemd ABI */
 
@@ -22,5 +21,3 @@
  * Returns 0 if no socket activation, or the number of FDs.
  */
 unsigned int check_socket_activation(void);
-
-#endif

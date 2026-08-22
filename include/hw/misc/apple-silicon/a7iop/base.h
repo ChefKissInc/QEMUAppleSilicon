@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_A7IOP_BASE_H
-#define HW_MISC_APPLE_SILICON_A7IOP_BASE_H
+#pragma once
 
 #include "qemu/osdep.h"
 
@@ -39,5 +38,3 @@ enum {
     APPLE_A7IOP_IRQ_AP_EMPTY,
     APPLE_A7IOP_IRQ_MAX,
 };
-
-#endif /* HW_MISC_APPLE_SILICON_A7IOP_BASE_H */

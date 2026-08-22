@@ -22,8 +22,7 @@
  * private to it and not required by the rest of QEMU.
  */
 
-#ifndef TARGET_ARM_INTERNALS_H
-#define TARGET_ARM_INTERNALS_H
+#pragma once
 
 #include "exec/hwaddr.h"
 #include "exec/vaddr.h"
@@ -1880,5 +1879,3 @@ bool arm_pan_enabled(CPUARMState *env);
 
 /* Compare uint64_t for qsort and bsearch. */
 int compare_u64(const void *a, const void *b);
-
-#endif

@@ -10,8 +10,7 @@
  * later.  See the COPYING file in the top-level directory.
  */
 
-#ifndef QAPI_COMPAT_POLICY_H
-#define QAPI_COMPAT_POLICY_H
+#pragma once
 
 #include "qapi/error.h"
 #include "qapi/qapi-types-compat.h"
@@ -41,5 +40,3 @@ Visitor *qobject_input_visitor_new_qmp(QObject *obj);
  * -compat.
  */
 Visitor *qobject_output_visitor_new_qmp(QObject **result);
-
-#endif

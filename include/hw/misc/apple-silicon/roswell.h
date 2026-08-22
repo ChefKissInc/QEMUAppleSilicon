@@ -17,13 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_ROSWELL_H
-#define HW_MISC_APPLE_SILICON_ROSWELL_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "qom/object.h"
 
 #define TYPE_APPLE_ROSWELL "apple-roswell"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleRoswellState, APPLE_ROSWELL);
-
-#endif /* HW_MISC_APPLE_SILICON_ROSWELL_H */

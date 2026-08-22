@@ -16,8 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TLB_FLAGS_H
-#define TLB_FLAGS_H
+#pragma once
 
 /*
  * Flags stored in CPUTLBEntryFull.slow_flags[x].
@@ -62,5 +61,3 @@
 
 /* The two sets of flags must not overlap. */
 QEMU_BUILD_BUG_ON(TLB_FLAGS_MASK & TLB_SLOW_FLAGS_MASK);
-
-#endif /* TLB_FLAGS_H */

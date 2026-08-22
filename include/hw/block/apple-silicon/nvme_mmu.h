@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_BLOCK_APPLE_NVME_MMU_H
-#define HW_BLOCK_APPLE_NVME_MMU_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/nvme/nvme.h"
@@ -64,5 +63,3 @@ struct AppleNVMeMMUState {
 };
 
 SysBusDevice *apple_nvme_mmu_from_node(AppleDTNode *node, PCIBus *pci_bus);
-
-#endif /* HW_BLOCK_APPLE_NVME_MMU_H */

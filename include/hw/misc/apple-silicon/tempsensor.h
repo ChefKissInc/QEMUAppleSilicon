@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_APPLE_TEMP_SENSOR_H
-#define HW_MISC_APPLE_SILICON_APPLE_TEMP_SENSOR_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -28,5 +27,3 @@
 OBJECT_DECLARE_SIMPLE_TYPE(AppleTempSensorState, APPLE_TEMP_SENSOR);
 
 SysBusDevice *apple_temp_sensor_create(AppleDTNode *node);
-
-#endif /* HW_MISC_APPLE_SILICON_APPLE_TEMP_SENSOR_H */

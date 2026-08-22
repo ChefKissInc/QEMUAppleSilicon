@@ -9,9 +9,7 @@
  * See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef BITMAP_H
-#define BITMAP_H
-
+#pragma once
 
 #include "qemu/bitops.h"
 
@@ -285,5 +283,3 @@ void bitmap_copy_with_src_offset(unsigned long *dst, const unsigned long *src,
                                  unsigned long offset, unsigned long nbits);
 void bitmap_copy_with_dst_offset(unsigned long *dst, const unsigned long *src,
                                  unsigned long shift, unsigned long nbits);
-
-#endif /* BITMAP_H */

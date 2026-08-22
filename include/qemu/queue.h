@@ -37,8 +37,7 @@
  *      @(#)queue.h     8.5 (Berkeley) 8/20/94
  */
 
-#ifndef QEMU_SYS_QUEUE_H
-#define QEMU_SYS_QUEUE_H
+#pragma once
 
 /*
  * This file defines four types of data structures: singly-linked lists,
@@ -572,5 +571,3 @@ union {                                                                 \
             *QLIST_RAW_NEXT(elm, entry) = NULL;                                \
         }                                                                      \
 } while (0)
-
-#endif /* QEMU_SYS_QUEUE_H */

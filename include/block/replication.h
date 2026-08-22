@@ -12,8 +12,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef REPLICATION_H
-#define REPLICATION_H
+#pragma once
 
 #include "qapi/qapi-types-block-core.h"
 #include "qemu/module.h"
@@ -171,5 +170,3 @@ void replication_get_error_all(Error **errp);
  * use this API to shutdown the guest, or other things except failover
  */
 void replication_stop_all(bool failover, Error **errp);
-
-#endif /* REPLICATION_H */

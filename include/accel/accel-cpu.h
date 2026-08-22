@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef ACCEL_CPU_H
-#define ACCEL_CPU_H
+#pragma once
 
 #include "qom/object.h"
 #include "hw/core/cpu.h"
@@ -19,5 +18,3 @@ typedef struct AccelCPUClass {
     void (*cpu_instance_init)(CPUState *cpu);
     bool (*cpu_target_realize)(CPUState *cpu, Error **errp);
 } AccelCPUClass;
-
-#endif /* ACCEL_CPU_H */

@@ -5,8 +5,7 @@
  * Copyright (c) 2008 Fabrice Bellard
  */
 
-#ifndef TCG_TCG_OP_H
-#define TCG_TCG_OP_H
+#pragma once
 
 #include "tcg/tcg-op-common.h"
 #include "tcg/insn-start-words.h"
@@ -424,4 +423,3 @@ DEF_ATOMIC2(tcg_gen_atomic_umax_fetch, i64)
      :  (target_long)dup_const(VECE, C))
 
 #endif /* TARGET_LONG_BITS == 64 */
-#endif /* TCG_TCG_OP_H */

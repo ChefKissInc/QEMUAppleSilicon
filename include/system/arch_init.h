@@ -1,6 +1,4 @@
-#ifndef QEMU_ARCH_INIT_H
-#define QEMU_ARCH_INIT_H
-
+#pragma once
 
 enum {
     QEMU_ARCH_ALL = -1,
@@ -9,5 +7,3 @@ enum {
 };
 
 bool qemu_arch_available(unsigned qemu_arch_mask);
-
-#endif

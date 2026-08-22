@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_CHAR_APPLE_UART_H
-#define HW_CHAR_APPLE_UART_H
+#pragma once
 
 #include "hw/or-irq.h"
 #include "hw/sysbus.h"
@@ -27,4 +26,3 @@
 
 DeviceState *apple_uart_create(hwaddr addr, int fifo_size, int channel,
                                Chardev *chr, qemu_irq irq);
-#endif /* HW_CHAR_APPLE_UART_H */

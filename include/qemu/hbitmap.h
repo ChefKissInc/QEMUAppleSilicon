@@ -9,8 +9,7 @@
  * later.  See the COPYING file in the top-level directory.
  */
 
-#ifndef HBITMAP_H
-#define HBITMAP_H
+#pragma once
 
 #include "bitops.h"
 #include "host-utils.h"
@@ -349,5 +348,3 @@ bool hbitmap_status(const HBitmap *hb, int64_t start, int64_t count,
  * or -1 if all remaining bits are zero.
  */
 int64_t hbitmap_iter_next(HBitmapIter *hbi);
-
-#endif

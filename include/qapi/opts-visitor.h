@@ -10,8 +10,7 @@
  *
  */
 
-#ifndef OPTS_VISITOR_H
-#define OPTS_VISITOR_H
+#pragma once
 
 #include "qapi/visitor.h"
 
@@ -35,5 +34,3 @@ typedef struct OptsVisitor OptsVisitor;
  * visit_start_list().
  */
 Visitor *opts_visitor_new(const QemuOpts *opts);
-
-#endif

@@ -15,8 +15,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_NET_CHECKSUM_H
-#define QEMU_NET_CHECKSUM_H
+#pragma once
 
 #include "qemu/bswap.h"
 struct iovec;
@@ -107,5 +106,3 @@ void net_toeplitz_add(uint32_t *result,
     key->leftmost_32_bits = leftmost_32_bits;
     *result = accumulator;
 }
-
-#endif /* QEMU_NET_CHECKSUM_H */

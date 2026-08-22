@@ -24,8 +24,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_SYSTEM_RESET_H
-#define QEMU_SYSTEM_RESET_H
+#pragma once
 
 #include "hw/resettable.h"
 #include "qapi/qapi-events-run-state.h"
@@ -123,5 +122,3 @@ void qemu_unregister_reset(QEMUResetHandler *func, void *opaque);
  * model, don't use this function. Use qemu_system_reset_request().
  */
 void qemu_devices_reset(ResetType type);
-
-#endif

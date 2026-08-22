@@ -1,5 +1,4 @@
-#ifndef QEMU_PCI_H
-#define QEMU_PCI_H
+#pragma once
 
 #include "system/memory.h"
 #include "system/dma.h"
@@ -1001,5 +1000,3 @@ MSIMessage pci_get_msi_message(PCIDevice *dev, int vector);
 void pci_set_enabled(PCIDevice *pci_dev, bool state);
 void pci_set_power(PCIDevice *pci_dev, bool state);
 int pci_pm_init(PCIDevice *pci_dev, uint8_t offset, Error **errp);
-
-#endif

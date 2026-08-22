@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_T8030_H
-#define HW_ARM_APPLE_SILICON_T8030_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "exec/hwaddr.h"
@@ -85,5 +84,3 @@ typedef struct {
     uint32_t disp_width;
     uint32_t disp_height;
 } AppleT8030MachineState;
-
-#endif /* HW_ARM_APPLE_SILICON_T8030_H */

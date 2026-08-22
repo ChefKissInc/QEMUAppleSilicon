@@ -1,5 +1,4 @@
-#ifndef QEMU_TYPEDEFS_H
-#define QEMU_TYPEDEFS_H
+#pragma once
 
 /*
  * This header is for selectively avoiding #include just to get a
@@ -128,5 +127,3 @@ typedef struct IRQState *qemu_irq;
  * Function types
  */
 typedef void (*qemu_irq_handler)(void *opaque, int n, int level);
-
-#endif /* QEMU_TYPEDEFS_H */

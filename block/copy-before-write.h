@@ -23,8 +23,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COPY_BEFORE_WRITE_H
-#define COPY_BEFORE_WRITE_H
+#pragma once
 
 #include "block/block_int.h"
 #include "block/block-copy.h"
@@ -45,5 +44,3 @@ BlockDriverState *bdrv_cbw_append(BlockDriverState *source,
                                   OnCbwError on_cbw_error,
                                   Error **errp);
 void bdrv_cbw_drop(BlockDriverState *bs);
-
-#endif /* COPY_BEFORE_WRITE_H */

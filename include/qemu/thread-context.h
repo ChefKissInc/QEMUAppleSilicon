@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef SYSEMU_THREAD_CONTEXT_H
-#define SYSEMU_THREAD_CONTEXT_H
+#pragma once
 
 #include "qapi/qapi-types-machine.h"
 #include "qemu/thread.h"
@@ -53,5 +52,3 @@ void thread_context_create_thread(ThreadContext *tc, QemuThread *thread,
                                   const char *name,
                                   void *(*start_routine)(void *), void *arg,
                                   int mode);
-
-#endif /* SYSEMU_THREAD_CONTEXT_H */

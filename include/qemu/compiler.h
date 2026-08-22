@@ -4,8 +4,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef COMPILER_H
-#define COMPILER_H
+#pragma once
 
 #define HOST_BIG_ENDIAN (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
 
@@ -370,5 +369,3 @@
         (unsigned short)1,                                                         \
       (expr)+0))))))
 #endif
-
-#endif /* COMPILER_H */

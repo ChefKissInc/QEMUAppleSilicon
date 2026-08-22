@@ -16,8 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_MEM_H
-#define HW_ARM_APPLE_SILICON_MEM_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "exec/hwaddr.h"
@@ -53,5 +52,3 @@ hwaddr carveout_alloc_mem(CarveoutAllocator *ca, hwaddr size);
 /// Returns the kernel region size.
 /// The pointer `ca` will no longer be valid after this point.
 hwaddr carveout_alloc_finalise(CarveoutAllocator *ca);
-
-#endif /* HW_ARM_APPLE_SILICON_MEM_H */

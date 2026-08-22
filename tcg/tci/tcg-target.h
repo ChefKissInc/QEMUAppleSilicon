@@ -37,8 +37,7 @@
  * Therefore, we need both 32 and 64 bit virtual machines (interpreter).
  */
 
-#ifndef TCG_TARGET_H
-#define TCG_TARGET_H
+#pragma once
 
 #define TCG_TARGET_INTERPRETER 1
 #define TCG_TARGET_INSN_UNIT_SIZE 4
@@ -72,5 +71,3 @@ typedef enum {
 } TCGReg;
 
 #define HAVE_TCG_QEMU_TB_EXEC
-
-#endif /* TCG_TARGET_H */

@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef AARCH64_HOST_CRYPTO_CLMUL_H
-#define AARCH64_HOST_CRYPTO_CLMUL_H
+#pragma once
 
 #include "host/cpuinfo.h"
 #include <arm_neon.h>
@@ -37,5 +36,3 @@ clmul_64_accel(uint64_t n, uint64_t m)
 #endif
     return u.s;
 }
-
-#endif /* AARCH64_HOST_CRYPTO_CLMUL_H */

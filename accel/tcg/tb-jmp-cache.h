@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef ACCEL_TCG_TB_JMP_CACHE_H
-#define ACCEL_TCG_TB_JMP_CACHE_H
+#pragma once
 
 #include "qemu/rcu.h"
 #include "exec/cpu-common.h"
@@ -29,5 +28,3 @@ typedef struct CPUJumpCache {
         vaddr pc;
     } array[TB_JMP_CACHE_SIZE];
 } CPUJumpCache;
-
-#endif /* ACCEL_TCG_TB_JMP_CACHE_H */

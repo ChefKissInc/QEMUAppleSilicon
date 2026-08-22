@@ -11,8 +11,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_HW_CLOCK_H
-#define QEMU_HW_CLOCK_H
+#pragma once
 
 #include "qom/object.h"
 #include "qemu/queue.h"
@@ -355,5 +354,3 @@ char *clock_display_freq(Clock *clk);
  * caller should do that if necessary.
  */
 bool clock_set_mul_div(Clock *clk, uint32_t multiplier, uint32_t divider);
-
-#endif /* QEMU_HW_CLOCK_H */

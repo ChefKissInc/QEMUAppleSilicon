@@ -10,8 +10,7 @@
  *
  */
 
-#ifndef QEMU_LOCKABLE_H
-#define QEMU_LOCKABLE_H
+#pragma once
 
 #include "qemu/coroutine-core.h"
 #include "qemu/thread.h"
@@ -180,5 +179,3 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(QemuLockable, qemu_lockable_auto_unlock)
     g_autoptr(QemuLockable)                                      \
     glue(qemu_lockable_auto, __COUNTER__) G_GNUC_UNUSED =        \
             qemu_lockable_auto_lock(QEMU_MAKE_LOCKABLE((x)))
-
-#endif

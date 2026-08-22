@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef HW_RESETCONTAINER_H
-#define HW_RESETCONTAINER_H
+#pragma once
 
 /*
  * The "reset container" is an object which implements the Resettable
@@ -44,5 +43,3 @@ void resettable_container_add(ResettableContainer *rc, Object *obj);
  * previously added to this container.
  */
 void resettable_container_remove(ResettableContainer *rc, Object *obj);
-
-#endif

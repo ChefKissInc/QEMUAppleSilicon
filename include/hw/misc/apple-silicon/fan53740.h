@@ -17,13 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_FAN53740_H
-#define HW_MISC_APPLE_SILICON_FAN53740_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/i2c/i2c.h"
 
 #define TYPE_FAN53740 "fan53740"
 OBJECT_DECLARE_SIMPLE_TYPE(FAN53740State, FAN53740);
-
-#endif /* HW_MISC_APPLE_SILICON_FAN53740_H */

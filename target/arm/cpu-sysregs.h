@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-#ifndef ARM_CPU_SYSREGS_H
-#define ARM_CPU_SYSREGS_H
+#pragma once
 
 /*
  * Following is similar to the coprocessor regs encodings, but with an argument
@@ -38,5 +37,3 @@ typedef enum ARMSysRegs {
 extern const uint32_t id_register_sysreg[NUM_ID_IDX];
 
 int get_sysreg_idx(ARMSysRegs sysreg);
-
-#endif /* ARM_CPU_SYSREGS_H */

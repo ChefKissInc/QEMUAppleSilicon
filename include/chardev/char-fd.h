@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef CHAR_FD_H
-#define CHAR_FD_H
+#pragma once
 
 #include "io/channel.h"
 #include "chardev/char.h"
@@ -43,5 +42,3 @@ DECLARE_INSTANCE_CHECKER(FDChardev, FD_CHARDEV,
 
 bool qemu_chr_open_fd(Chardev *chr, int fd_in, int fd_out, Error **errp);
 int qmp_chardev_open_file_source(char *src, int flags, Error **errp);
-
-#endif /* CHAR_FD_H */

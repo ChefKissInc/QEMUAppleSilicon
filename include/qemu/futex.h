@@ -21,8 +21,7 @@
  * to decide whether to continue to block or not.
  */
 
-#ifndef QEMU_FUTEX_H
-#define QEMU_FUTEX_H
+#pragma once
 
 #define HAVE_FUTEX
 
@@ -75,5 +74,3 @@ static inline void qemu_futex_wait(void *f, unsigned val)
 #else
 #undef HAVE_FUTEX
 #endif
-
-#endif /* QEMU_FUTEX_H */

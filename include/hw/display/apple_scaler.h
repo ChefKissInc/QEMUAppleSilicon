@@ -16,8 +16,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef HW_DISPLAY_APPLE_SCALER_H
-#define HW_DISPLAY_APPLE_SCALER_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -27,5 +26,3 @@
 OBJECT_DECLARE_SIMPLE_TYPE(AppleScalerState, APPLE_SCALER);
 
 SysBusDevice *apple_scaler_create(AppleDTNode *node, MemoryRegion *dma_mr);
-
-#endif /* HW_DISPLAY_APPLE_SCALER_H */

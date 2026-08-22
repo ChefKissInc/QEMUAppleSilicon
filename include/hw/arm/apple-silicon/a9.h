@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_A9_H
-#define HW_ARM_APPLE_SILICON_A9_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -89,5 +88,3 @@ AppleA9State *apple_a9_from_node(AppleDTNode *node);
 bool apple_a9_cpu_is_asleep(AppleA9State *acpu);
 bool apple_a9_cpu_is_off(AppleA9State *acpu);
 void apple_a9_cpu_set_on(AppleA9State *acpu);
-
-#endif /* HW_ARM_APPLE_SILICON_A9_H */

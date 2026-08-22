@@ -9,11 +9,8 @@
  * version.
  */
 
-#ifndef HW_EMPTY_SLOT_H
-#define HW_EMPTY_SLOT_H
+#pragma once
 
 #include "exec/hwaddr.h"
 
 void empty_slot_init(const char *name, hwaddr addr, uint64_t slot_size);
-
-#endif

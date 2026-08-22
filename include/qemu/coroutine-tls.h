@@ -44,8 +44,7 @@
  *   }
  */
 
-#ifndef QEMU_COROUTINE_TLS_H
-#define QEMU_COROUTINE_TLS_H
+#pragma once
 
 /*
  * To stop the compiler from caching TLS values we define accessor functions
@@ -161,5 +160,3 @@
     static __attribute__((noinline, unused))                                 \
     type *get_ptr_##var(void)                                                \
     { type *ptr = &co_tls_##var; asm volatile("" : "+rm" (ptr)); return ptr; }
-
-#endif /* QEMU_COROUTINE_TLS_H */

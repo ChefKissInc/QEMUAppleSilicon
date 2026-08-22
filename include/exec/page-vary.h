@@ -17,8 +17,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EXEC_PAGE_VARY_H
-#define EXEC_PAGE_VARY_H
+#pragma once
 
 typedef struct {
     bool decided;
@@ -57,5 +56,3 @@ void finalize_target_page_bits(void);
  * TARGET_PAGE_BITS that the target had then.
  */
 int migration_legacy_page_bits(void);
-
-#endif /* EXEC_PAGE_VARY_H */

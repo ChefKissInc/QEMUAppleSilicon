@@ -12,8 +12,7 @@
  *
  */
 
-#ifndef QEMU_COROUTINE_H
-#define QEMU_COROUTINE_H
+#pragma once
 
 #include "qemu/coroutine-core.h"
 #include "qemu/atomic.h"
@@ -308,5 +307,3 @@ ssize_t coroutine_fn qemu_co_send_recv(int sockfd, void *buf, size_t bytes,
   qemu_co_send_recv(sockfd, buf, bytes, false)
 #define qemu_co_send(sockfd, buf, bytes) \
   qemu_co_send_recv(sockfd, buf, bytes, true)
-
-#endif /* QEMU_COROUTINE_H */

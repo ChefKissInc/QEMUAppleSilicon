@@ -10,8 +10,7 @@
  * See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef QDICT_H
-#define QDICT_H
+#pragma once
 
 #include "qobject/qobject.h"
 #include "qemu/queue.h"
@@ -67,5 +66,3 @@ bool qdict_get_try_bool(const QDict *qdict, const char *key, bool def_value);
 const char *qdict_get_try_str(const QDict *qdict, const char *key);
 
 QDict *qdict_clone_shallow(const QDict *src);
-
-#endif /* QDICT_H */

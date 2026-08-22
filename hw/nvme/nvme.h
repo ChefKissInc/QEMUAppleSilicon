@@ -15,8 +15,7 @@
  * This code is licensed under the GNU GPL v2 or later.
  */
 
-#ifndef HW_NVME_NVME_H
-#define HW_NVME_NVME_H
+#pragma once
 
 #include "qemu/uuid.h"
 #include "hw/pci/pci_device.h"
@@ -697,5 +696,3 @@ uint16_t nvme_bounce_mdata(NvmeCtrl *n, void *ptr, uint32_t len,
 void nvme_rw_complete_cb(void *opaque, int ret);
 uint16_t nvme_map_dptr(NvmeCtrl *n, NvmeSg *sg, size_t len,
                        NvmeCmd *cmd);
-
-#endif /* HW_NVME_NVME_H */

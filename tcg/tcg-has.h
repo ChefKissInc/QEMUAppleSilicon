@@ -4,8 +4,7 @@
  * Copyright (c) 2024 Linaro, Ltd.
  */
 
-#ifndef TCG_HAS_H
-#define TCG_HAS_H
+#pragma once
 
 #include "tcg-target-has.h"
 
@@ -49,6 +48,4 @@
 #endif
 #ifndef TCG_TARGET_HAS_v256
 #define TCG_TARGET_HAS_v256             0
-#endif
-
 #endif

@@ -21,8 +21,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SDHCI_INTERNAL_H
-#define SDHCI_INTERNAL_H
+#pragma once
 
 #include "hw/registerfields.h"
 
@@ -321,5 +320,3 @@ void sdhci_uninitfn(SDHCIState *s);
 void sdhci_common_realize(SDHCIState *s, Error **errp);
 void sdhci_common_unrealize(SDHCIState *s);
 void sdhci_common_class_init(ObjectClass *klass, const void *data);
-
-#endif

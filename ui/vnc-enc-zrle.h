@@ -26,8 +26,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef VNC_ENC_ZRLE_H
-#define VNC_ENC_ZRLE_H
+#pragma once
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  * ZRLE - encoding combining Zlib compression, tiling, palettisation and
@@ -36,5 +35,3 @@
 
 #define VNC_ZRLE_TILE_WIDTH  64
 #define VNC_ZRLE_TILE_HEIGHT 64
-
-#endif

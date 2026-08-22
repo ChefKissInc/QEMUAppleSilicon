@@ -10,11 +10,8 @@
  * option) any later version.  See the COPYING file in the top-level directory.
  *
  */
-#ifndef QEMU_ASYNC_TEARDOWN_H
-#define QEMU_ASYNC_TEARDOWN_H
+#pragma once
 
 #ifdef CONFIG_LINUX
 void init_async_teardown(void);
-#endif
-
 #endif

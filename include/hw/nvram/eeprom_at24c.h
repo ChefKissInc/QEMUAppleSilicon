@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#ifndef EEPROM_AT24C_H
-#define EEPROM_AT24C_H
+#pragma once
 
 #include "hw/i2c/i2c.h"
 
@@ -38,4 +37,3 @@ I2CSlave *at24c_eeprom_init_rom(I2CBus *bus, uint8_t address, uint32_t rom_size,
 
 I2CSlave *at24c_eeprom_init_rom_blk(I2CBus *bus, uint8_t address, uint32_t rom_size,
                                 const uint8_t *init_rom, uint32_t init_rom_size, uint32_t address_size, BlockBackend *blk);
-#endif

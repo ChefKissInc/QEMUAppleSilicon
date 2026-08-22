@@ -19,8 +19,8 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_USB_HCD_XHCI_H
-#define HW_USB_HCD_XHCI_H
+#pragma once
+
 #include "qom/object.h"
 
 #include "hw/usb.h"
@@ -227,4 +227,3 @@ typedef struct XHCIState {
 
 bool xhci_get_flag(XHCIState *xhci, enum xhci_flags bit);
 void xhci_set_flag(XHCIState *xhci, enum xhci_flags bit);
-#endif

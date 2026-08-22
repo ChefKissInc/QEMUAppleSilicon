@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef MONITOR_INTERNAL_H
-#define MONITOR_INTERNAL_H
+#pragma once
 
 #include "chardev/char-fe.h"
 #include "monitor/monitor.h"
@@ -186,5 +185,3 @@ void qmp_dispatcher_co_wake(void);
 int get_monitor_def(Monitor *mon, int64_t *pval, const char *name);
 void handle_hmp_command(MonitorHMP *mon, const char *cmdline);
 int hmp_compare_cmd(const char *name, const char *list);
-
-#endif

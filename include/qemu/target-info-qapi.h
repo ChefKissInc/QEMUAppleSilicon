@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef QEMU_TARGET_INFO_EXTRA_H
-#define QEMU_TARGET_INFO_EXTRA_H
+#pragma once
 
 #include "qapi/qapi-types-common.h"
 #include "qapi/qapi-types-machine.h"
@@ -25,5 +24,3 @@ SysEmuTarget target_arch(void);
  * Returns: QAPI EndianMode enum (e.g. ENDIAN_MODE_LITTLE).
  */
 EndianMode target_endian_mode(void);
-
-#endif

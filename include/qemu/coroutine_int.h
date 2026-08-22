@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_COROUTINE_INT_H
-#define QEMU_COROUTINE_INT_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "qemu/coroutine.h"
@@ -73,5 +72,3 @@ Coroutine *qemu_coroutine_new(void);
 void qemu_coroutine_delete(Coroutine *co);
 CoroutineAction qemu_coroutine_switch(Coroutine *from, Coroutine *to,
                                       CoroutineAction action);
-
-#endif

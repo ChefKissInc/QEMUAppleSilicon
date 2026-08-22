@@ -17,8 +17,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef GRAPH_LOCK_H
-#define GRAPH_LOCK_H
+#pragma once
 
 /**
  * Graph Lock API
@@ -289,6 +288,3 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(GraphLockableMainloop,
     g_autoptr(GraphLockableMainloop)                                \
     glue(graph_lockable_auto, __COUNTER__) G_GNUC_UNUSED =          \
             graph_lockable_auto_lock_mainloop(GMLML_OBJ_())
-
-#endif /* GRAPH_LOCK_H */
-

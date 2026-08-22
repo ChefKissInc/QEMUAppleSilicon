@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QAUTHZ_SIMPLE_H
-#define QAUTHZ_SIMPLE_H
+#pragma once
 
 #include "authz/base.h"
 #include "qom/object.h"
@@ -67,6 +66,3 @@ struct QAuthZSimple {
 QAuthZSimple *qauthz_simple_new(const char *id,
                                 const char *identity,
                                 Error **errp);
-
-
-#endif /* QAUTHZ_SIMPLE_H */

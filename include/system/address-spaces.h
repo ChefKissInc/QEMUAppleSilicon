@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef SYSTEM_ADDRESS_SPACES_H
-#define SYSTEM_ADDRESS_SPACES_H
+#pragma once
 
 /*
  * Internal interfaces between memory.c/exec.c/vl.c.  Do not #include unless
@@ -31,5 +30,3 @@ MemoryRegion *get_system_io(void);
 
 extern AddressSpace address_space_memory;
 extern AddressSpace address_space_io;
-
-#endif

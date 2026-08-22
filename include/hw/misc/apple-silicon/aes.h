@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_AES_H
-#define HW_MISC_APPLE_SILICON_AES_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -27,5 +26,3 @@
 
 #define TYPE_APPLE_AES "apple-aes"
 SysBusDevice *apple_aes_create(AppleDTNode *node, uint32_t board_id);
-
-#endif /* HW_MISC_APPLE_SILICON_AES_H */

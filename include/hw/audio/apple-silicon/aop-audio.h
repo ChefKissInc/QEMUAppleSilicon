@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_AUDIO_APPLE_SILICON_AOP_AUDIO_H
-#define HW_AUDIO_APPLE_SILICON_AOP_AUDIO_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/misc/apple-silicon/aop.h"
@@ -28,5 +27,3 @@
 OBJECT_DECLARE_SIMPLE_TYPE(AppleAOPAudioState, APPLE_AOP_AUDIO)
 
 SysBusDevice *apple_aop_audio_create(AppleAOPState *aop);
-
-#endif /* HW_AUDIO_APPLE_SILICON_AOP_AUDIO_H */

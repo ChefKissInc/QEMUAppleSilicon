@@ -1,5 +1,4 @@
-#ifndef ENVLIST_H
-#define ENVLIST_H
+#pragma once
 
 typedef struct envlist envlist_t;
 
@@ -8,5 +7,3 @@ void envlist_free(envlist_t *);
 int envlist_setenv(envlist_t *, const char *);
 int envlist_unsetenv(envlist_t *, const char *);
 char **envlist_to_environ(const envlist_t *, size_t *);
-
-#endif /* ENVLIST_H */

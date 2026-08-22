@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_DNS_RESOLVER_H
-#define QIO_DNS_RESOLVER_H
+#pragma once
 
 #include "qapi/qapi-types-sockets.h"
 #include "qom/object.h"
@@ -215,5 +214,3 @@ void qio_dns_resolver_lookup_result(QIODNSResolver *resolver,
                                     QIOTask *task,
                                     size_t *naddrs,
                                     SocketAddress ***addrs);
-
-#endif /* QIO_DNS_RESOLVER_H */

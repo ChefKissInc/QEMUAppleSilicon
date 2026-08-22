@@ -7,8 +7,7 @@
 
 /* header to be included in non-TCG-specific code */
 
-#ifndef SYSTEM_TCG_H
-#define SYSTEM_TCG_H
+#pragma once
 
 #ifdef CONFIG_TCG
 extern bool tcg_allowed;
@@ -24,5 +23,3 @@ extern bool tcg_allowed;
  * Returns: %true if we are in MTTCG mode %false otherwise.
  */
 bool qemu_tcg_mttcg_enabled(void);
-
-#endif

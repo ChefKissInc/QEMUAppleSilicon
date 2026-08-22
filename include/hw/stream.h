@@ -1,5 +1,4 @@
-#ifndef STREAM_H
-#define STREAM_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -48,6 +47,3 @@ stream_push(StreamSink *sink, uint8_t *buf, size_t len, bool eop);
 bool
 stream_can_push(StreamSink *sink, StreamCanPushNotifyFn notify,
                 void *notify_opaque);
-
-
-#endif /* STREAM_H */

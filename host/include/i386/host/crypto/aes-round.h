@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef X86_HOST_CRYPTO_AES_ROUND_H
-#define X86_HOST_CRYPTO_AES_ROUND_H
+#pragma once
 
 #include "host/cpuinfo.h"
 #include <immintrin.h>
@@ -148,5 +147,3 @@ aesdec_ISB_ISR_IMC_AK_accel(AESState *ret, const AESState *st,
     }
     ret->v = (AESStateVec)t;
 }
-
-#endif /* X86_HOST_CRYPTO_AES_ROUND_H */

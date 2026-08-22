@@ -10,8 +10,7 @@
  * or later.  See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef BLOCK_BACKEND_GLOBAL_STATE_H
-#define BLOCK_BACKEND_GLOBAL_STATE_H
+#pragma once
 
 #include "block-backend-common.h"
 
@@ -111,5 +110,3 @@ void blk_unregister_buf(BlockBackend *blk, void *host, size_t size);
 const BdrvChild *blk_root(BlockBackend *blk);
 
 int blk_make_empty(BlockBackend *blk, Error **errp);
-
-#endif /* BLOCK_BACKEND_GLOBAL_STATE_H */

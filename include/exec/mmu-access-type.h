@@ -5,8 +5,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-#ifndef EXEC_MMU_ACCESS_TYPE_H
-#define EXEC_MMU_ACCESS_TYPE_H
+#pragma once
 
 typedef enum MMUAccessType {
     MMU_DATA_LOAD  = 0,
@@ -14,5 +13,3 @@ typedef enum MMUAccessType {
     MMU_INST_FETCH = 2
 #define MMU_ACCESS_COUNT 3
 } MMUAccessType;
-
-#endif

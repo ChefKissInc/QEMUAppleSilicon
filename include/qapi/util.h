@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef QAPI_UTIL_H
-#define QAPI_UTIL_H
+#pragma once
 
 typedef enum {
     QAPI_DEPRECATED,
@@ -68,5 +67,3 @@ int parse_qapi_name(const char *name, bool complete);
         }                                                           \
         _len;                                                       \
     })
-
-#endif

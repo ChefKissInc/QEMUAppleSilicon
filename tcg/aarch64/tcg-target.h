@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory for details.
  */
 
-#ifndef AARCH64_TCG_TARGET_H
-#define AARCH64_TCG_TARGET_H
+#pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE  4
 #define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
@@ -48,5 +47,3 @@ typedef enum {
 #define TCG_REG_ZERO TCG_REG_XZR
 
 #define TCG_TARGET_NB_REGS 64
-
-#endif /* AARCH64_TCG_TARGET_H */

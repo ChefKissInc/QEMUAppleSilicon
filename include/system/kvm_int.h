@@ -6,8 +6,7 @@
  *
  */
 
-#ifndef QEMU_KVM_INT_H
-#define QEMU_KVM_INT_H
+#pragma once
 
 #include "system/memory.h"
 #include "qapi/qapi-types-common.h"
@@ -180,4 +179,3 @@ void kvm_set_max_memslot_size(hwaddr max_slot_size);
  * Return: None.
  */
 void kvm_hwpoison_page_add(ram_addr_t ram_addr);
-#endif

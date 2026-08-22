@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_DART_H
-#define HW_ARM_APPLE_SILICON_DART_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -43,5 +42,3 @@ IOMMUMemoryRegion *apple_dart_instance_iommu_mr(AppleDARTState *s,
                                                 uint32_t instance,
                                                 uint32_t sid);
 AppleDARTState *apple_dart_from_node(AppleDTNode *node);
-
-#endif /* HW_ARM_APPLE_SILICON_DART_H */

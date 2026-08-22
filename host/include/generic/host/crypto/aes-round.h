@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef GENERIC_HOST_CRYPTO_AES_ROUND_H
-#define GENERIC_HOST_CRYPTO_AES_ROUND_H
+#pragma once
 
 #define HAVE_AES_ACCEL  false
 #define ATTR_AES_ACCEL
@@ -29,5 +28,3 @@ void aesdec_ISB_ISR_AK_IMC_accel(AESState *, const AESState *,
 void aesdec_ISB_ISR_IMC_AK_accel(AESState *, const AESState *,
                                  const AESState *, bool)
     QEMU_ERROR("unsupported accel");
-
-#endif /* GENERIC_HOST_CRYPTO_AES_ROUND_H */

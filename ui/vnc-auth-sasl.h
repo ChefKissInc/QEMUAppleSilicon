@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_VNC_AUTH_SASL_H
-#define QEMU_VNC_AUTH_SASL_H
+#pragma once
 
 #include <sasl/sasl.h>
 
@@ -70,5 +69,3 @@ size_t vnc_client_read_sasl(VncState *vs);
 size_t vnc_client_write_sasl(VncState *vs);
 
 void start_auth_sasl(VncState *vs);
-
-#endif /* QEMU_VNC_AUTH_SASL_H */

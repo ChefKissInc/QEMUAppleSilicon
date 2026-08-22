@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef TARGET_ARM_MTE_H
-#define TARGET_ARM_MTE_H
+#pragma once
 
 #include "exec/mmu-access-type.h"
 
@@ -62,5 +61,3 @@ int load_tag1(uint64_t ptr, uint8_t *mem);
  * @tag: The tag to be stored in the nibble
  */
 void store_tag1(uint64_t ptr, uint8_t *mem, int tag);
-
-#endif /* TARGET_ARM_MTE_H */

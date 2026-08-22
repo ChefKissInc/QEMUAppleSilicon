@@ -1,5 +1,4 @@
-#ifndef QEMU_PCI_BUS_H
-#define QEMU_PCI_BUS_H
+#pragma once
 
 #include "hw/pci/pci.h"
 
@@ -64,5 +63,3 @@ static inline bool pci_bus_allows_extended_config_space(PCIBus *bus)
 {
     return !!(bus->flags & PCI_BUS_EXTENDED_CONFIG_SPACE);
 }
-
-#endif /* QEMU_PCI_BUS_H */

@@ -17,8 +17,7 @@
  * along with this program; if not, see
  * <http://www.gnu.org/licenses/gpl-2.0.html>
  */
-#ifndef QEMU_ARM_CPU_QOM_H
-#define QEMU_ARM_CPU_QOM_H
+#pragma once
 
 #include "hw/core/cpu.h"
 
@@ -39,5 +38,3 @@ OBJECT_DECLARE_CPU_TYPE(ARMCPU, ARMCPUClass, ARM_CPU)
 #define ARM_CPU_NMI 4
 #define ARM_CPU_VINMI 5
 #define ARM_CPU_VFNMI 6
-
-#endif

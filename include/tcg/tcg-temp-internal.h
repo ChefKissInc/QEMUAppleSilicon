@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef TCG_TEMP_INTERNAL_H
-#define TCG_TEMP_INTERNAL_H
+#pragma once
 
 /*
  * Allocation and freeing of EBB temps is reserved to TCG internals
@@ -48,4 +47,4 @@ static inline void tcg_temp_ebb_reset_freed(TCGContext *s)
     memset(s->free_temps, 0, sizeof(s->free_temps));
 }
 
-#endif /* TCG_TEMP_FREE_H */
+/* TCG_TEMP_FREE_H */

@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef NET_TAP_INT_H
-#define NET_TAP_INT_H
+#pragma once
 
 #include "qapi/qapi-types-net.h"
 
@@ -46,5 +45,3 @@ int tap_fd_enable(int fd);
 int tap_fd_disable(int fd);
 int tap_fd_get_ifname(int fd, char *ifname);
 int tap_fd_set_steering_ebpf(int fd, int prog_fd);
-
-#endif /* NET_TAP_INT_H */

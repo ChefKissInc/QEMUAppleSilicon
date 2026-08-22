@@ -5,8 +5,7 @@
  * Copyright (C) 2023 Linaro, Ltd.
  */
 
-#ifndef LOONGARCH_LOAD_EXTRACT_AL16_AL8_H
-#define LOONGARCH_LOAD_EXTRACT_AL16_AL8_H
+#pragma once
 
 #include "host/cpuinfo.h"
 #include "tcg/debug-assert.h"
@@ -35,5 +34,3 @@ static inline uint64_t load_atom_extract_al16_or_al8(void *pv, int s)
 
     return (l >> shr) | (h << (-shr & 63));
 }
-
-#endif /* LOONGARCH_LOAD_EXTRACT_AL16_AL8_H */

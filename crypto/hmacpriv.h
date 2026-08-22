@@ -12,8 +12,7 @@
  *
  */
 
-#ifndef QCRYPTO_HMACPRIV_H
-#define QCRYPTO_HMACPRIV_H
+#pragma once
 
 typedef struct QCryptoHmacDriver QCryptoHmacDriver;
 
@@ -32,5 +31,3 @@ void *qcrypto_hmac_ctx_new(QCryptoHashAlgo alg,
                            const uint8_t *key, size_t nkey,
                            Error **errp);
 extern QCryptoHmacDriver qcrypto_hmac_lib_driver;
-
-#endif

@@ -8,8 +8,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef HW_USB_HCD_XHCI_SYSBUS_H
-#define HW_USB_HCD_XHCI_SYSBUS_H
+#pragma once
 
 #include "hw/usb.h"
 #include "hcd-xhci.h"
@@ -28,4 +27,3 @@ typedef struct XHCISysbusState {
 } XHCISysbusState;
 
 void xhci_sysbus_reset(DeviceState *dev);
-#endif

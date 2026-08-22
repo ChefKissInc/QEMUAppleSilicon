@@ -4,8 +4,7 @@
  * Copyright (c) 2009 Ulrich Hecht <uli@suse.de>
  */
 
-#ifndef TCG_TARGET_HAS_H
-#define TCG_TARGET_HAS_H
+#pragma once
 
 /* Facilities required for proper operation; checked at startup. */
 
@@ -76,5 +75,3 @@ tcg_target_sextract_valid(TCGType type, unsigned ofs, unsigned len)
     return false;
 }
 #define TCG_TARGET_sextract_valid  tcg_target_sextract_valid
-
-#endif

@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_SECRET_H
-#define QCRYPTO_SECRET_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 #include "qom/object.h"
@@ -129,5 +128,3 @@ struct QCryptoSecret {
 struct QCryptoSecretClass {
     QCryptoSecretCommonClass parent_class;
 };
-
-#endif /* QCRYPTO_SECRET_H */

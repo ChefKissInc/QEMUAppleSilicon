@@ -5,8 +5,7 @@
  * Derived from include/linux/interval_tree.h and its dependencies.
  */
 
-#ifndef QEMU_INTERVAL_TREE_H
-#define QEMU_INTERVAL_TREE_H
+#pragma once
 
 /*
  * For now, don't expose Linux Red-Black Trees separately, but retain the
@@ -95,5 +94,3 @@ IntervalTreeNode *interval_tree_iter_first(IntervalTreeRoot *root,
  */
 IntervalTreeNode *interval_tree_iter_next(IntervalTreeNode *node,
                                           uint64_t start, uint64_t last);
-
-#endif /* QEMU_INTERVAL_TREE_H */

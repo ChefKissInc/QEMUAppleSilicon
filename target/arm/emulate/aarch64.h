@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TARGET_ARM_EMULATE_AARCH64_H
-#define TARGET_ARM_EMULATE_AARCH64_H
+#pragma once
 
 #include "qemu/osdep.h"
 
@@ -29,4 +28,3 @@ typedef void (*ArmAarch64FallbackEmuSetReg)(CPUState *cpu, int rt,
 bool arm_aarch64_fallback_emu_single(CPUState *cpu, AddressSpace *as,
                                      ArmAarch64FallbackEmuGetReg get_reg,
                                      ArmAarch64FallbackEmuSetReg set_reg);
-#endif /* TARGET_ARM_EMULATE_AARCH64_H */

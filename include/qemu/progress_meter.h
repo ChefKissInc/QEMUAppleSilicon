@@ -24,8 +24,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_PROGRESS_METER_H
-#define QEMU_PROGRESS_METER_H
+#pragma once
 
 #include "qemu/thread.h"
 
@@ -58,5 +57,3 @@ void progress_set_remaining(ProgressMeter *pm, uint64_t remaining);
 
 /* Increases the total work to do by @delta */
 void progress_increase_remaining(ProgressMeter *pm, uint64_t delta);
-
-#endif /* QEMU_PROGRESS_METER_H */

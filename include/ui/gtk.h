@@ -1,5 +1,4 @@
-#ifndef UI_GTK_H
-#define UI_GTK_H
+#pragma once
 
 /* Work around an -Wstrict-prototypes warning in GTK headers */
 #pragma GCC diagnostic push
@@ -142,5 +141,3 @@ void gd_hw_gl_flushed(void *vc);
 void gd_clipboard_init(GtkDisplayState *gd);
 
 void gd_update_scale(VirtualConsole *vc, int ww, int wh, int fbw, int fbh);
-
-#endif /* UI_GTK_H */

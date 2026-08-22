@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QAPI_DEALLOC_VISITOR_H
-#define QAPI_DEALLOC_VISITOR_H
+#pragma once
 
 #include "qapi/visitor.h"
 
@@ -24,5 +23,3 @@ typedef struct QapiDeallocVisitor QapiDeallocVisitor;
  * correctly in the face of a partially-constructed QAPI tree.
  */
 Visitor *qapi_dealloc_visitor_new(void);
-
-#endif

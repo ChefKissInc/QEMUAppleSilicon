@@ -12,8 +12,7 @@
  * the COPYING file in the top-level directory.
  */
 
-#ifndef BLOCK_BLOCK_HMP_CMDS_H
-#define BLOCK_BLOCK_HMP_CMDS_H
+#pragma once
 
 #include "qemu/coroutine.h"
 
@@ -45,5 +44,3 @@ void hmp_info_block(Monitor *mon, const QDict *qdict);
 void hmp_info_blockstats(Monitor *mon, const QDict *qdict);
 void hmp_info_block_jobs(Monitor *mon, const QDict *qdict);
 void hmp_info_snapshots(Monitor *mon, const QDict *qdict);
-
-#endif

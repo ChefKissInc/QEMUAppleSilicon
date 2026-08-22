@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef ARM_TCG_TARGET_H
-#define ARM_TCG_TARGET_H
+#pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE 4
 #define MAX_CODE_GEN_BUFFER_SIZE  UINT32_MAX
@@ -69,5 +68,3 @@ typedef enum {
 } TCGReg;
 
 #define TCG_TARGET_NB_REGS 32
-
-#endif

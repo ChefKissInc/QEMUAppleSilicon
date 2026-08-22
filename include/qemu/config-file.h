@@ -1,5 +1,4 @@
-#ifndef QEMU_CONFIG_FILE_H
-#define QEMU_CONFIG_FILE_H
+#pragma once
 
 typedef void QEMUConfigCB(const char *group, QDict *qdict, void *opaque, Error **errp);
 
@@ -27,5 +26,3 @@ int qemu_read_config_file(const char *filename, QEMUConfigCB *f, Error **errp);
    enumerated (0..(n-1)) configuration "sections") */
 bool qemu_config_parse_qdict(QDict *options, QemuOptsList **lists,
                              Error **errp);
-
-#endif /* QEMU_CONFIG_FILE_H */

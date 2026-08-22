@@ -12,8 +12,7 @@
  *
  */
 
-#ifndef QEMU_COROUTINE_CORE_H
-#define QEMU_COROUTINE_CORE_H
+#pragma once
 
 /**
  * Coroutines are a mechanism for stack switching and can be used for
@@ -150,5 +149,3 @@ void coroutine_fn qemu_co_mutex_lock(CoMutex *mutex);
  * lock to be run.
  */
 void coroutine_fn qemu_co_mutex_unlock(CoMutex *mutex);
-
-#endif

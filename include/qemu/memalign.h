@@ -5,8 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_MEMALIGN_H
-#define QEMU_MEMALIGN_H
+#pragma once
 
 /**
  * qemu_try_memalign: Allocate aligned memory
@@ -57,5 +56,3 @@ static inline void qemu_cleanup_generic_vfree(void *p)
  * Analog of g_autofree, but qemu_vfree is called on cleanup instead of g_free.
  */
 #define QEMU_AUTO_VFREE __attribute__((cleanup(qemu_cleanup_generic_vfree)))
-
-#endif

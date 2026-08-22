@@ -1,8 +1,6 @@
 /* Define hwaddr if it exists.  */
 
-#ifndef HWADDR_H
-#define HWADDR_H
-
+#pragma once
 
 #define HWADDR_BITS 64
 /* hwaddr is the type of a physical address (its size can
@@ -22,5 +20,3 @@ typedef struct MemMapEntry {
     hwaddr base;
     hwaddr size;
 } MemMapEntry;
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef QEMU_MEMFD_H
-#define QEMU_MEMFD_H
-
+#pragma once
 
 #ifndef F_LINUX_SPECIFIC_BASE
 #define F_LINUX_SPECIFIC_BASE 1024
@@ -43,5 +41,3 @@ void *qemu_memfd_alloc(const char *name, size_t size, unsigned int seals,
                        int *fd, Error **errp);
 void qemu_memfd_free(void *ptr, size_t size, int fd);
 bool qemu_memfd_check(unsigned int flags);
-
-#endif /* QEMU_MEMFD_H */

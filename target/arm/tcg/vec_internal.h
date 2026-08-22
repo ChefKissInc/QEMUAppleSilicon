@@ -17,8 +17,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TARGET_ARM_VEC_INTERNAL_H
-#define TARGET_ARM_VEC_INTERNAL_H
+#pragma once
 
 #include "fpu/softfloat.h"
 
@@ -449,5 +448,3 @@ static inline void depositn(uint64_t *p, unsigned pos,
         p[1] = deposit64(p[1], 0, len1, val >> len0);
     }
 }
-
-#endif /* TARGET_ARM_VEC_INTERNAL_H */

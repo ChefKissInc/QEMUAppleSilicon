@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_GPIO_APPLE_GPIO_H
-#define HW_GPIO_APPLE_GPIO_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/sysbus.h"
@@ -46,4 +45,3 @@ struct AppleGPIOState {
 DeviceState *apple_gpio_new(const char *name, uint64_t mmio_size,
                             uint32_t pin_count, uint32_t irq_group_count);
 DeviceState *apple_gpio_from_node(AppleDTNode *node);
-#endif

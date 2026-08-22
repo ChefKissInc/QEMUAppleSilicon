@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QJSON_H
-#define QJSON_H
+#pragma once
 
 QObject *qobject_from_json(const char *string, Error **errp);
 
@@ -27,5 +26,3 @@ QDict *qdict_from_jsonf_nofail(const char *string, ...)
 
 GString *qobject_to_json(const QObject *obj);
 GString *qobject_to_json_pretty(const QObject *obj, bool pretty);
-
-#endif /* QJSON_H */

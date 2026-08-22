@@ -9,8 +9,7 @@
  * any later version.
  */
 
-#ifndef HW_ARM_GICV3_H
-#define HW_ARM_GICV3_H
+#pragma once
 
 #include "arm_gicv3_common.h"
 #include "qom/object.h"
@@ -28,5 +27,3 @@ struct ARMGICv3Class {
 
     DeviceRealize parent_realize;
 };
-
-#endif

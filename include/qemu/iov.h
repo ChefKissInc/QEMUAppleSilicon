@@ -12,8 +12,7 @@
  * the COPYING file in the top-level directory.
  */
 
-#ifndef IOV_H
-#define IOV_H
+#pragma once
 
 /**
  * count and return data size, in bytes, of an iovec
@@ -274,5 +273,3 @@ size_t qemu_iovec_memset(QEMUIOVector *qiov, size_t offset,
 ssize_t qemu_iovec_compare(QEMUIOVector *a, QEMUIOVector *b);
 void qemu_iovec_clone(QEMUIOVector *dest, const QEMUIOVector *src, void *buf);
 void qemu_iovec_discard_back(QEMUIOVector *qiov, size_t bytes);
-
-#endif

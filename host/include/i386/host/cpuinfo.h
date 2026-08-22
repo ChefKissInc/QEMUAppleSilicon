@@ -3,8 +3,7 @@
  * Host specific cpu identification for x86.
  */
 
-#ifndef HOST_CPUINFO_H
-#define HOST_CPUINFO_H
+#pragma once
 
 /* Digested version of <cpuid.h> */
 
@@ -37,5 +36,3 @@ extern unsigned cpuinfo;
  * use the function interface rather than the variable above.
  */
 unsigned cpuinfo_init(void);
-
-#endif /* HOST_CPUINFO_H */

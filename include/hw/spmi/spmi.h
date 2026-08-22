@@ -1,5 +1,4 @@
-#ifndef QEMU_SPMI_H
-#define QEMU_SPMI_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/qdev-core.h"
@@ -133,5 +132,3 @@ SPMISlave *spmi_slave_create_simple(SPMIBus *bus, const char *name,
  * had any code that wanted it.)
  */
 bool spmi_slave_realize_and_unref(SPMISlave *dev, SPMIBus *bus, Error **errp);
-
-#endif

@@ -17,8 +17,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QCRYPTO_AFSPLIT_H
-#define QCRYPTO_AFSPLIT_H
+#pragma once
 
 #include "crypto/hash.h"
 
@@ -130,5 +129,3 @@ int qcrypto_afsplit_decode(QCryptoHashAlgo hash,
                            const uint8_t *in,
                            uint8_t *out,
                            Error **errp);
-
-#endif /* QCRYPTO_AFSPLIT_H */

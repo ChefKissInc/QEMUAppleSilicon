@@ -5,8 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef HW_CORE_QDEV_PROP_INTERNAL_H
-#define HW_CORE_QDEV_PROP_INTERNAL_H
+#pragma once
 
 void qdev_propinfo_get_enum(Object *obj, Visitor *v, const char *name,
                             void *opaque, Error **errp);
@@ -24,5 +23,3 @@ void qdev_propinfo_get_int32(Object *obj, Visitor *v, const char *name,
                              void *opaque, Error **errp);
 void qdev_propinfo_get_size32(Object *obj, Visitor *v, const char *name,
                               void *opaque, Error **errp);
-
-#endif

@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef QEMU_NET_CLIENTS_H
-#define QEMU_NET_CLIENTS_H
+#pragma once
 
 #include "net/net.h"
 
@@ -74,5 +73,3 @@ int net_init_vmnet_shared(const Netdev *netdev, const char *name,
 int net_init_vmnet_bridged(const Netdev *netdev, const char *name,
                           NetClientState *peer, Error **errp);
 #endif /* CONFIG_VMNET */
-
-#endif /* QEMU_NET_CLIENTS_H */

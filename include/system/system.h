@@ -1,5 +1,5 @@
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#pragma once
+
 /* Misc. things related to the system emulator.  */
 
 #include "qemu/timer.h"
@@ -108,5 +108,3 @@ extern QemuOptsList qemu_netdev_opts;
 extern QemuOptsList qemu_nic_opts;
 extern QemuOptsList qemu_net_opts;
 extern QemuOptsList qemu_global_opts;
-
-#endif

@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef PPC_TCG_TARGET_H
-#define PPC_TCG_TARGET_H
+#pragma once
 
 #define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
 
@@ -52,5 +51,3 @@ typedef enum {
     TCG_REG_CALL_STACK = TCG_REG_R1,
     TCG_AREG0 = TCG_REG_R27
 } TCGReg;
-
-#endif

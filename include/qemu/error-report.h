@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_ERROR_REPORT_H
-#define QEMU_ERROR_REPORT_H
+#pragma once
 
 typedef struct Location {
     /* all members are private to qemu-error.c */
@@ -79,5 +78,3 @@ extern const char *error_guest_name;
  * Caller is responsible to g_free() the returned string.
  */
 char *real_time_iso8601(void);
-
-#endif

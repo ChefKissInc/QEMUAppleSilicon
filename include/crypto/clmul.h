@@ -5,8 +5,7 @@
  * Copyright (C) 2023 Linaro, Ltd.
  */
 
-#ifndef CRYPTO_CLMUL_H
-#define CRYPTO_CLMUL_H
+#pragma once
 
 #include "qemu/int128.h"
 #include "host/crypto/clmul.h"
@@ -79,5 +78,3 @@ static inline Int128 clmul_64(uint64_t a, uint64_t b)
         return clmul_64_gen(a, b);
     }
 }
-
-#endif /* CRYPTO_CLMUL_H */

@@ -1,5 +1,4 @@
-#ifndef SYSTEM_RUNSTATE_H
-#define SYSTEM_RUNSTATE_H
+#pragma once
 
 #include "qapi/qapi-types-run-state.h"
 #include "qemu/notify.h"
@@ -153,6 +152,3 @@ void qemu_system_reset(ShutdownCause reason);
 void qemu_system_guest_panicked(GuestPanicInformation *info);
 void qemu_system_guest_crashloaded(GuestPanicInformation *info);
 void qemu_system_guest_pvshutdown(void);
-
-#endif
-

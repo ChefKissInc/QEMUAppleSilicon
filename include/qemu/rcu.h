@@ -1,5 +1,4 @@
-#ifndef QEMU_RCU_H
-#define QEMU_RCU_H
+#pragma once
 
 /*
  * urcu-mb.h
@@ -194,5 +193,3 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(RCUReadAuto, rcu_read_auto_unlock)
  */
 void rcu_add_force_rcu_notifier(Notifier *n);
 void rcu_remove_force_rcu_notifier(Notifier *n);
-
-#endif /* QEMU_RCU_H */

@@ -9,8 +9,7 @@
  * any later version.
  */
 
-#ifndef QEMU_GUEST_RANDOM_H
-#define QEMU_GUEST_RANDOM_H
+#pragma once
 
 /**
  * qemu_guest_random_seed_main(const char *seedstr, Error **errp)
@@ -64,5 +63,3 @@ int qemu_guest_getrandom(void *buf, size_t len, Error **errp);
  * Use this when there is no reasonable recovery.
  */
 void qemu_guest_getrandom_nofail(void *buf, size_t len);
-
-#endif /* QEMU_GUEST_RANDOM_H */

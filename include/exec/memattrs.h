@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef MEMATTRS_H
-#define MEMATTRS_H
+#pragma once
 
 /* Every memory transaction has associated with it a set of
  * attributes. Some of these are generic (such as the ID of
@@ -89,5 +88,3 @@ QEMU_BUILD_BUG_ON(sizeof(MemTxAttrs) > 8);
 #define MEMTX_DECODE_ERROR      (1U << 1) /* nothing at that address */
 #define MEMTX_ACCESS_ERROR      (1U << 2) /* access denied */
 typedef uint32_t MemTxResult;
-
-#endif

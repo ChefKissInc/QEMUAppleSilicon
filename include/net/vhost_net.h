@@ -1,5 +1,4 @@
-#ifndef VHOST_NET_H
-#define VHOST_NET_H
+#pragma once
 
 #include "net/net.h"
 #include "hw/virtio/vhost-backend.h"
@@ -52,4 +51,3 @@ void vhost_net_virtqueue_reset(VirtIODevice *vdev, NetClientState *nc,
                                int vq_index);
 int vhost_net_virtqueue_restart(VirtIODevice *vdev, NetClientState *nc,
                                 int vq_index);
-#endif

@@ -1,5 +1,5 @@
-#ifndef QEMU_TSAN_H
-#define QEMU_TSAN_H
+#pragma once
+
 /*
  * tsan.h
  *
@@ -68,4 +68,3 @@ void AnnotateIgnoreReadsBegin(const char *f, int l);
 void AnnotateIgnoreReadsEnd(const char *f, int l);
 void AnnotateIgnoreWritesBegin(const char *f, int l);
 void AnnotateIgnoreWritesEnd(const char *f, int l);
-#endif

@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_CO_SHARED_RESOURCE_H
-#define QEMU_CO_SHARED_RESOURCE_H
+#pragma once
 
 /* Accesses to co-shared-resource API are thread-safe */
 typedef struct SharedResource SharedResource;
@@ -57,6 +56,3 @@ void coroutine_fn co_get_from_shres(SharedResource *s, uint64_t n);
  * put(5), put(2).
  */
 void coroutine_fn co_put_to_shres(SharedResource *s, uint64_t n);
-
-
-#endif /* QEMU_CO_SHARED_RESOURCE_H */

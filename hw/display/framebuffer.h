@@ -1,5 +1,4 @@
-#ifndef QEMU_FRAMEBUFFER_H
-#define QEMU_FRAMEBUFFER_H
+#pragma once
 
 #include "system/memory.h"
 
@@ -61,5 +60,3 @@ void framebuffer_update_display(
     void *opaque,
     int *first_row,
     int *last_row);
-
-#endif

@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_CHANNEL_FILE_H
-#define QIO_CHANNEL_FILE_H
+#pragma once
 
 #include "io/channel.h"
 #include "qom/object.h"
@@ -52,4 +51,4 @@ struct QIOChannelNull {
 QIOChannelNull *
 qio_channel_null_new(void);
 
-#endif /* QIO_CHANNEL_NULL_H */
+/* QIO_CHANNEL_NULL_H */

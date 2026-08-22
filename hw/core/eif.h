@@ -8,8 +8,7 @@
  * top-level directory.
  */
 
-#ifndef HW_CORE_EIF_H
-#define HW_CORE_EIF_H
+#pragma once
 
 bool read_eif_file(const char *eif_path, const char *machine_initrd,
                    char **kernel_path, char **initrd_path,
@@ -17,6 +16,3 @@ bool read_eif_file(const char *eif_path, const char *machine_initrd,
                    uint8_t *bootstrap_sha384, uint8_t *app_sha384,
                    uint8_t *fingerprint_sha384, bool *signature_found,
                    Error **errp);
-
-#endif
-

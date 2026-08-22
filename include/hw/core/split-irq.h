@@ -32,8 +32,7 @@
  *  + N unnamed GPIO outputs: the output lines
  *  + QOM property "num-lines": sets the number of output lines
  */
-#ifndef HW_SPLIT_IRQ_H
-#define HW_SPLIT_IRQ_H
+#pragma once
 
 #include "hw/sysbus.h"
 #include "qom/object.h"
@@ -51,5 +50,3 @@ struct SplitIRQ {
     qemu_irq out_irq[MAX_SPLIT_LINES];
     uint16_t num_lines;
 };
-
-#endif

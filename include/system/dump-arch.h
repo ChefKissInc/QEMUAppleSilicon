@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef DUMP_ARCH_H
-#define DUMP_ARCH_H
+#pragma once
 
 typedef struct ArchDumpInfo {
     int d_machine;           /* Architecture */
@@ -31,5 +30,3 @@ struct GuestPhysBlockList; /* memory_mapping.h */
 int cpu_get_dump_info(ArchDumpInfo *info,
                       const struct GuestPhysBlockList *guest_phys_blocks);
 ssize_t cpu_get_note_size(int class, int machine, int nr_cpus);
-
-#endif

@@ -7,8 +7,7 @@
  * later.  See the COPYING file in the top-level directory.
  */
 
-#ifndef BLOCKDEV_H
-#define BLOCKDEV_H
+#pragma once
 
 #include "block/block.h"
 #include "qemu/queue.h"
@@ -60,5 +59,3 @@ QemuOpts *drive_add(BlockInterfaceType type, int index, const char *file,
                     const char *optstr);
 DriveInfo *drive_new(QemuOpts *arg, BlockInterfaceType block_default_type,
                      Error **errp);
-
-#endif

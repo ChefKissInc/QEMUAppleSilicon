@@ -20,8 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef QEMU_ACCEL_H
-#define QEMU_ACCEL_H
+#pragma once
 
 #include "qom/object.h"
 #include "exec/hwaddr.h"
@@ -81,5 +80,3 @@ void accel_cpu_common_unrealize(CPUState *cpu);
  * accelerator.
  */
 int accel_supported_gdbstub_sstep_flags(void);
-
-#endif /* QEMU_ACCEL_H */

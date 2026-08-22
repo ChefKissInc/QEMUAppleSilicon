@@ -48,8 +48,7 @@ this code that are retained.
 ===============================================================================
 */
 
-#ifndef SOFTFLOAT_HELPERS_H
-#define SOFTFLOAT_HELPERS_H
+#pragma once
 
 #include "fpu/softfloat-types.h"
 
@@ -205,5 +204,3 @@ static inline FloatFTZDetection get_float_ftz_detection(const float_status *stat
 {
     return status->ftz_detection;
 }
-
-#endif /* SOFTFLOAT_HELPERS_H */

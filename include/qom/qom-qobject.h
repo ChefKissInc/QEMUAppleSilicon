@@ -10,8 +10,7 @@
  *
  */
 
-#ifndef QEMU_QOM_QOBJECT_H
-#define QEMU_QOM_QOBJECT_H
+#pragma once
 
 /*
  * object_property_get_qobject:
@@ -39,5 +38,3 @@ struct QObject *object_property_get_qobject(Object *obj, const char *name,
 bool object_property_set_qobject(Object *obj,
                                  const char *name, struct QObject *value,
                                  struct Error **errp);
-
-#endif

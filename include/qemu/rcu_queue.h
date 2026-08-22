@@ -1,5 +1,4 @@
-#ifndef QEMU_RCU_QUEUE_H
-#define QEMU_RCU_QUEUE_H
+#pragma once
 
 /*
  * rcu_queue.h
@@ -305,5 +304,3 @@
     for ((var) = qatomic_rcu_read(&(head)->slh_first);                    \
          (var) && ((next) = qatomic_rcu_read(&(var)->field.sle_next), 1); \
          (var) = (next))
-
-#endif /* QEMU_RCU_QUEUE_H */

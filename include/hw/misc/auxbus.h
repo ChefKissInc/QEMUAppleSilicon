@@ -22,8 +22,7 @@
  *
  */
 
-#ifndef HW_MISC_AUXBUS_H
-#define HW_MISC_AUXBUS_H
+#pragma once
 
 #include "system/memory.h"
 #include "hw/qdev-core.h"
@@ -138,5 +137,3 @@ void aux_init_mmio(AUXSlave *aux_slave, MemoryRegion *mmio);
  * @addr The address for the slave's mmio.
  */
 void aux_map_slave(AUXSlave *dev, hwaddr addr);
-
-#endif /* HW_MISC_AUXBUS_H */

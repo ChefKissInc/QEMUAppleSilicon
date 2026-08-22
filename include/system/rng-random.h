@@ -9,13 +9,9 @@
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  * See the COPYING file in the top-level directory.
  */
-#ifndef QEMU_RNG_RANDOM_H
-#define QEMU_RNG_RANDOM_H
+#pragma once
 
 #include "qom/object.h"
 
 #define TYPE_RNG_RANDOM "rng-random"
 OBJECT_DECLARE_SIMPLE_TYPE(RngRandom, RNG_RANDOM)
-
-
-#endif

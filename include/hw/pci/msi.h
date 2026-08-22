@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_MSI_H
-#define QEMU_MSI_H
+#pragma once
 
 #include "hw/pci/pci_device.h"
 
@@ -50,5 +49,3 @@ static inline bool msi_present(const PCIDevice *dev)
 {
     return dev->cap_present & QEMU_PCI_CAP_MSI;
 }
-
-#endif /* QEMU_MSI_H */

@@ -16,8 +16,7 @@
  *  with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef I2C_DDC_H
-#define I2C_DDC_H
+#pragma once
 
 #include "hw/display/edid.h"
 #include "hw/i2c/i2c.h"
@@ -37,5 +36,3 @@ struct I2CDDCState {
 
 #define TYPE_I2CDDC "i2c-ddc"
 OBJECT_DECLARE_SIMPLE_TYPE(I2CDDCState, I2CDDC)
-
-#endif /* I2C_DDC_H */

@@ -36,8 +36,7 @@
  * last, after all abort() or commit() functions have been called.
  */
 
-#ifndef QEMU_TRANSACTIONS_H
-#define QEMU_TRANSACTIONS_H
+#pragma once
 
 #include <gmodule.h>
 
@@ -62,5 +61,3 @@ static inline void tran_finalize(Transaction *tran, int ret)
         tran_commit(tran);
     }
 }
-
-#endif /* QEMU_TRANSACTIONS_H */

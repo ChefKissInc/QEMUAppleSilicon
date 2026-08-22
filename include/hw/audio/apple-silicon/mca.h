@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_AUDIO_APPLE_SILICON_MCA_H
-#define HW_AUDIO_APPLE_SILICON_MCA_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/dma/apple_sio.h"
@@ -34,5 +33,3 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleMCAState, APPLE_MCA)
 
 SysBusDevice *apple_mca_create(AppleDTNode *node, AppleSIODMAEndpoint *tx_ep,
                                AppleSIODMAEndpoint *rx_ep);
-
-#endif /* HW_AUDIO_APPLE_SILICON_MCA_H */

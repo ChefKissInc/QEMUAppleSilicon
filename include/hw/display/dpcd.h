@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef DPCD_H
-#define DPCD_H
+#pragma once
+
 #include "qom/object.h"
 
 
@@ -101,5 +101,3 @@ OBJECT_DECLARE_SIMPLE_TYPE(DPCDState, DPCD)
 
 #define DPCD_SINK_STATUS                        0x205
 #define DPCD_RECEIVE_PORT_0_STATUS              0x01
-
-#endif /* DPCD_H */

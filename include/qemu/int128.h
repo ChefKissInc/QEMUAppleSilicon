@@ -1,5 +1,4 @@
-#ifndef INT128_H
-#define INT128_H
+#pragma once
 
 #include "qemu/bswap.h"
 
@@ -492,5 +491,3 @@ typedef union {
 #else
 typedef Int128 Int128Alias;
 #endif /* CONFIG_INT128_TYPE */
-
-#endif /* INT128_H */

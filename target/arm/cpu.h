@@ -17,8 +17,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARM_CPU_H
-#define ARM_CPU_H
+#pragma once
 
 #include "kvm-consts.h"
 #include "qemu/cpu-float.h"
@@ -2905,5 +2904,3 @@ extern const uint64_t pred_esz_masks[5];
 /* We associate one allocation tag per 16 bytes, the minimum.  */
 #define LOG2_TAG_GRANULE 4
 #define TAG_GRANULE      (1 << LOG2_TAG_GRANULE)
-
-#endif

@@ -18,9 +18,7 @@
  *
  */
 
-#ifndef QEMU_BUFFER_H
-#define QEMU_BUFFER_H
-
+#pragma once
 
 typedef struct Buffer Buffer;
 
@@ -156,5 +154,3 @@ void buffer_move_empty(Buffer *to, Buffer *from);
  * 'from' buffer is empty and zero-sized on return.
  */
 void buffer_move(Buffer *to, Buffer *from);
-
-#endif /* QEMU_BUFFER_H */

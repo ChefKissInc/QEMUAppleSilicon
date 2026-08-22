@@ -5,8 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef UI_INPUT_BARRIER_H
-#define UI_INPUT_BARRIER_H
+#pragma once
 
 /* Barrier protocol */
 #define BARRIER_VERSION_MAJOR 1
@@ -109,4 +108,3 @@ struct barrierMsg {
         struct barrierSet set;
     };
 };
-#endif

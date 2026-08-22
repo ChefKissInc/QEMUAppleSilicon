@@ -1,5 +1,4 @@
-#ifndef HW_USB_EHCI_REGS_H
-#define HW_USB_EHCI_REGS_H
+#pragma once
 
 /* Capability Registers Base Address - section 2.2 */
 #define CAPLENGTH        0x0000  /* 1-byte, 0x0001 reserved */
@@ -78,5 +77,3 @@
 #define PORTSC_PED           (1 << 2)     // Port Enable/Disable
 #define PORTSC_CSC           (1 << 1)     // Connect Status Change
 #define PORTSC_CONNECT       (1 << 0)     // Current Connect Status
-
-#endif /* HW_USB_EHCI_REGS_H */

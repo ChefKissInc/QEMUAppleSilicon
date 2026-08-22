@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef SPARC_TCG_TARGET_H
-#define SPARC_TCG_TARGET_H
+#pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE 4
 #define TCG_TARGET_NB_REGS 32
@@ -66,5 +65,3 @@ typedef enum {
 
 #define TCG_AREG0     TCG_REG_I0
 #define TCG_REG_ZERO  TCG_REG_G0
-
-#endif

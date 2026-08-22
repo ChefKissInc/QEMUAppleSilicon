@@ -17,8 +17,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_RESERVED_REGION_H
-#define QEMU_RESERVED_REGION_H
+#pragma once
 
 #include "system/memory.h"
 
@@ -28,5 +27,3 @@
  * higher priority and replaces the overlapped segment.
  */
 GList *resv_region_list_insert(GList *list, ReservedRegion *reg);
-
-#endif

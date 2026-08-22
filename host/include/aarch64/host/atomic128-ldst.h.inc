@@ -8,8 +8,7 @@
  * atomic primitive is meant to provide.
  */
 
-#ifndef AARCH64_ATOMIC128_LDST_H
-#define AARCH64_ATOMIC128_LDST_H
+#pragma once
 
 #include "host/cpuinfo.h"
 #include "tcg/debug-assert.h"
@@ -75,5 +74,3 @@ static inline void atomic16_set(Int128 *ptr, Int128 val)
             : [l] "r"(l), [h] "r"(h));
     }
 }
-
-#endif /* AARCH64_ATOMIC128_LDST_H */

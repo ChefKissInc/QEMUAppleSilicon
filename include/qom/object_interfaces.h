@@ -1,5 +1,4 @@
-#ifndef OBJECT_INTERFACES_H
-#define OBJECT_INTERFACES_H
+#pragma once
 
 #include "qom/object.h"
 #include "qapi/qapi-types-qom.h"
@@ -176,5 +175,3 @@ bool user_creatable_del(const char *id, Error **errp);
  * objects container.
  */
 void user_creatable_cleanup(void);
-
-#endif

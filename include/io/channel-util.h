@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_CHANNEL_UTIL_H
-#define QIO_CHANNEL_UTIL_H
+#pragma once
 
 #include "io/channel.h"
 
@@ -71,5 +70,3 @@ void qio_channel_util_set_aio_fd_handler(int read_fd,
                                          AioContext *write_ctx,
                                          IOHandler *io_write,
                                          void *opaque);
-
-#endif /* QIO_CHANNEL_UTIL_H */

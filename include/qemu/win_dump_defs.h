@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef QEMU_WIN_DUMP_DEFS_H
-#define QEMU_WIN_DUMP_DEFS_H
+#pragma once
 
 typedef struct WinDumpPhyMemRun32 {
     uint32_t BasePage;
@@ -282,5 +281,3 @@ typedef union WinContext {
     WinContext32 x32;
     WinContext64 x64;
 } WinContext;
-
-#endif /* QEMU_WIN_DUMP_DEFS_H */

@@ -7,8 +7,7 @@
  * See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef BLOCK_QDICT_H
-#define BLOCK_QDICT_H
+#pragma once
 
 #include "qobject/qdict.h"
 
@@ -32,4 +31,3 @@ bool qdict_rename_keys(QDict *qdict, const QDictRenames *renames, Error **errp);
 
 Visitor *qobject_input_visitor_new_flat_confused(QDict *qdict,
                                                  Error **errp);
-#endif

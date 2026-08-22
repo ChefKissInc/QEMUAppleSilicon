@@ -5,8 +5,7 @@
  * Copyright (C) 2023 Linaro, Ltd.
  */
 
-#ifndef CRYPTO_AES_ROUND_H
-#define CRYPTO_AES_ROUND_H
+#pragma once
 
 /* Hosts with acceleration will usually need a 16-byte vector type. */
 typedef uint8_t AESStateVec __attribute__((vector_size(16)));
@@ -160,5 +159,3 @@ static inline void aesdec_ISB_ISR_IMC_AK(AESState *r, const AESState *st,
         aesdec_ISB_ISR_IMC_AK_genrev(r, st, rk);
     }
 }
-
-#endif /* CRYPTO_AES_ROUND_H */

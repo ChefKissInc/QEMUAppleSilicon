@@ -2,8 +2,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  * QEMU UI Console
  */
-#ifndef SURFACE_H
-#define SURFACE_H
+#pragma once
 
 #include "ui/qemu-pixman.h"
 
@@ -79,5 +78,3 @@ static inline int surface_bytes_per_pixel(DisplaySurface *s)
     int bits = PIXMAN_FORMAT_BPP(surface_format(s));
     return DIV_ROUND_UP(bits, 8);
 }
-
-#endif

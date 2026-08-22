@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QOBJECT_OUTPUT_VISITOR_H
-#define QOBJECT_OUTPUT_VISITOR_H
+#pragma once
 
 #include "qapi/visitor.h"
 
@@ -52,5 +51,3 @@ typedef struct QObjectOutputVisitor QObjectOutputVisitor;
  * visit_free().
  */
 Visitor *qobject_output_visitor_new(QObject **result);
-
-#endif

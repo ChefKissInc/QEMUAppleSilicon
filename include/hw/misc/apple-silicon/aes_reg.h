@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_AES_REG_H
-#define HW_MISC_APPLE_SILICON_AES_REG_H
+#pragma once
 
 #include "qemu/osdep.h"
 
@@ -432,5 +431,3 @@ typedef union {
 #define AES_V3_SECURITY_SEP_FIRST_BOOT BIT(24)
 #define AES_V3_SECURITY_SEP_FIRST_AWAKE_BOOT BIT(25)
 #define AES_V3_SECURITY_SEP_ATTACK_CLK_GATE_DISABLE BIT(31)
-
-#endif /* HW_MISC_APPLE_SILICON_AES_REG_H */

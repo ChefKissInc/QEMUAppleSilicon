@@ -5,8 +5,7 @@
  * Written by Peter Maydell
  */
 
-#ifndef HW_MISC_UNIMP_H
-#define HW_MISC_UNIMP_H
+#pragma once
 
 #include "hw/qdev-properties.h"
 #include "hw/sysbus.h"
@@ -50,5 +49,3 @@ static inline void create_unimplemented_device(const char *name,
 
     sysbus_mmio_map_overlap(SYS_BUS_DEVICE(dev), 0, base, -1000);
 }
-
-#endif

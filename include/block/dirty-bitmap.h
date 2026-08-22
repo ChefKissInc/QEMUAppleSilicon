@@ -1,5 +1,4 @@
-#ifndef BLOCK_DIRTY_BITMAP_H
-#define BLOCK_DIRTY_BITMAP_H
+#pragma once
 
 #include "block/block-common.h"
 #include "qapi/qapi-types-block-core.h"
@@ -126,5 +125,3 @@ bool bdrv_dirty_bitmap_status(BdrvDirtyBitmap *bitmap, int64_t offset,
                               int64_t bytes, int64_t *count);
 BdrvDirtyBitmap *bdrv_reclaim_dirty_bitmap_locked(BdrvDirtyBitmap *bitmap,
                                                   Error **errp);
-
-#endif

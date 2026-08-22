@@ -4,8 +4,7 @@
  * License: GNU GPL, version 2 or later.
  *   See the COPYING file in the top-level directory.
  */
-#ifndef QEMU_QHT_H
-#define QEMU_QHT_H
+#pragma once
 
 #include "qemu/seqlock.h"
 #include "qemu/thread.h"
@@ -220,5 +219,3 @@ void qht_statistics_init(const struct qht *ht, struct qht_stats *stats);
  * See also: qht_statistics_init().
  */
 void qht_statistics_destroy(struct qht_stats *stats);
-
-#endif /* QEMU_QHT_H */

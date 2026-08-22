@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef BLOCK_VHDX_H
-#define BLOCK_VHDX_H
+#pragma once
+
 #include "qemu/units.h"
 
 #define DEFAULT_LOG_SIZE 1048576 /* 1MiB */
@@ -450,5 +450,3 @@ void vhdx_metadata_entry_le_export(VHDXMetadataTableEntry *e);
 
 int GRAPH_RDLOCK
 vhdx_user_visible_write(BlockDriverState *bs, BDRVVHDXState *s);
-
-#endif

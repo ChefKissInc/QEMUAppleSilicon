@@ -3,8 +3,7 @@
  * Host specific cpu identification for AArch64.
  */
 
-#ifndef HOST_CPUINFO_H
-#define HOST_CPUINFO_H
+#pragma once
 
 #define CPUINFO_ALWAYS          (1u << 0)  /* so cpuinfo is nonzero */
 #define CPUINFO_LSE             (1u << 1)
@@ -21,5 +20,3 @@ extern unsigned cpuinfo;
  * use the function interface rather than the variable above.
  */
 unsigned cpuinfo_init(void);
-
-#endif /* HOST_CPUINFO_H */

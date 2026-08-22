@@ -5,8 +5,7 @@
  *
  * This code is licensed under the GNU LGPL.
  */
-#ifndef PTIMER_H
-#define PTIMER_H
+#pragma once
 
 #include "qemu/timer.h"
 
@@ -296,5 +295,3 @@ void ptimer_run(ptimer_state *s, int oneshot);
  * ptimer_transaction_begin/commit block.
  */
 void ptimer_stop(ptimer_state *s);
-
-#endif

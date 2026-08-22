@@ -26,8 +26,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef VNC_PALETTE_H
-#define VNC_PALETTE_H
+#pragma once
 
 #include "qemu/queue.h"
 
@@ -62,5 +61,3 @@ void palette_iter(const VncPalette *palette,
 uint32_t palette_color(const VncPalette *palette, int idx, bool *found);
 size_t palette_fill(const VncPalette *palette,
                     uint32_t colors[VNC_PALETTE_MAX_SIZE]);
-
-#endif /* VNC_PALETTE_H */

@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef ACCEL_TCG_TB_INTERNAL_TARGET_H
-#define ACCEL_TCG_TB_INTERNAL_TARGET_H
+#pragma once
 
 #include "exec/translation-block.h"
 
@@ -34,5 +33,3 @@ void tb_invalidate_phys_range_fast(CPUState *cpu, ram_addr_t ram_addr,
 
 bool tb_invalidate_phys_page_unwind(CPUState *cpu, tb_page_addr_t addr,
                                     uintptr_t pc);
-
-#endif

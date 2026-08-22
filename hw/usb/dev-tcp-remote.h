@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_USB_DEV_TCP_REMOTE_H
-#define HW_USB_DEV_TCP_REMOTE_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/usb.h"
@@ -68,5 +67,3 @@ struct USBTCPRemoteState {
 
 #define TYPE_USB_TCP_REMOTE "usb-tcp-remote"
 OBJECT_DECLARE_SIMPLE_TYPE(USBTCPRemoteState, USB_TCP_REMOTE)
-
-#endif /* HW_USB_DEV_TCP_REMOTE_H */

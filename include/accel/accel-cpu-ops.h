@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_ACCEL_CPU_OPS_H
-#define QEMU_ACCEL_CPU_OPS_H
+#pragma once
 
 #include "qemu/accel.h"
 #include "exec/vaddr.h"
@@ -92,5 +91,3 @@ struct AccelOpsClass {
 };
 
 void generic_handle_interrupt(CPUState *cpu, int mask);
-
-#endif /* QEMU_ACCEL_CPU_OPS_H */

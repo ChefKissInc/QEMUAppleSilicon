@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef SYSTEM_RTC_H
-#define SYSTEM_RTC_H
+#pragma once
 
 /**
  * qemu_get_timedate: Get the current RTC time
@@ -54,5 +53,3 @@ void qemu_get_timedate(struct tm *tm, time_t offset);
  * then this function will return 3600.
  */
 time_t qemu_timedate_diff(struct tm *tm);
-
-#endif

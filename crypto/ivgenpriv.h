@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_IVGENPRIV_H
-#define QCRYPTO_IVGENPRIV_H
+#pragma once
 
 #include "crypto/ivgen.h"
 
@@ -44,6 +43,3 @@ struct QCryptoIVGen {
     QCryptoCipherAlgo cipher;
     QCryptoHashAlgo hash;
 };
-
-
-#endif /* QCRYPTO_IVGENPRIV_H */

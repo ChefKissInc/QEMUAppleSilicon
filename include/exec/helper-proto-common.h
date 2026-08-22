@@ -4,8 +4,7 @@
  * This one expands prototypes for the helper functions.
  */
 
-#ifndef HELPER_PROTO_COMMON_H
-#define HELPER_PROTO_COMMON_H
+#pragma once
 
 #include "qemu/atomic128.h"  /* for HAVE_CMPXCHG128 */
 
@@ -14,5 +13,3 @@
 #undef  HELPER_H
 
 #include "accel/tcg/getpc.h"
-
-#endif /* HELPER_PROTO_COMMON_H */

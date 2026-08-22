@@ -24,8 +24,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_VNC_H
-#define QEMU_VNC_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "qemu/thread.h"
@@ -644,5 +643,3 @@ void vnc_zrle_clear(VncWorker *worker);
 void vnc_server_cut_text_caps(VncState *vs);
 void vnc_client_cut_text(VncState *vs, size_t len, uint8_t *text);
 void vnc_client_cut_text_ext(VncState *vs, int32_t len, uint32_t flags, uint8_t *data);
-
-#endif /* QEMU_VNC_H */

@@ -1,5 +1,4 @@
-#ifndef HW_NVME_DIF_H
-#define HW_NVME_DIF_H
+#pragma once
 
 /* from Linux kernel (crypto/crct10dif_common.c) */
 static const uint16_t crc16_t10dif_table[256] = {
@@ -187,5 +186,3 @@ uint16_t nvme_dif_check(NvmeNamespace *ns, uint8_t *buf, size_t len,
                         uint64_t slba, uint16_t apptag,
                         uint16_t appmask, uint64_t *reftag);
 uint16_t nvme_dif_rw(NvmeCtrl *n, NvmeRequest *req);
-
-#endif /* HW_NVME_DIF_H */

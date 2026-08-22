@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef MEMORY_MAPPING_H
-#define MEMORY_MAPPING_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "exec/cpu-common.h"
@@ -81,5 +80,3 @@ void qemu_get_guest_simple_memory_mapping(MemoryMappingList *list,
 
 void memory_mapping_filter(MemoryMappingList *list, int64_t begin,
                            int64_t length);
-
-#endif

@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef TIMERS_STATE_H
-#define TIMERS_STATE_H
+#pragma once
 
 /* timers state, for sharing between icount and cpu-timers */
 
@@ -54,5 +53,3 @@ extern TimersState timers_state;
  * icount needs this internal from cpu-timers when adjusting the icount shift.
  */
 int64_t cpu_get_clock_locked(void);
-
-#endif /* TIMERS_STATE_H */

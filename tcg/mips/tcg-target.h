@@ -24,8 +24,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef MIPS_TCG_TARGET_H
-#define MIPS_TCG_TARGET_H
+#pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE 4
 #define TCG_TARGET_NB_REGS 32
@@ -71,5 +70,3 @@ typedef enum {
 } TCGReg;
 
 #define TCG_REG_ZERO  TCG_REG_ZERO
-
-#endif

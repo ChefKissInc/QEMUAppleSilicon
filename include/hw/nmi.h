@@ -19,8 +19,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NMI_H
-#define NMI_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -41,5 +40,3 @@ struct NMIClass {
 };
 
 void nmi_monitor_handle(int cpu_index, Error **errp);
-
-#endif /* NMI_H */

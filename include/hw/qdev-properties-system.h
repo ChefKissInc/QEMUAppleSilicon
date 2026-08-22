@@ -1,5 +1,4 @@
-#ifndef HW_QDEV_PROPERTIES_SYSTEM_H
-#define HW_QDEV_PROPERTIES_SYSTEM_H
+#pragma once
 
 #include "hw/qdev-properties.h"
 
@@ -87,5 +86,3 @@ extern const PropertyInfo qdev_prop_virtio_gpu_output_list;
                          qdev_prop_endian_mode, EndianMode)
 #define DEFINE_PROP_ENDIAN_NODEFAULT(_name, _state, _field) \
     DEFINE_PROP_ENDIAN(_name, _state, _field, ENDIAN_MODE_UNSPECIFIED)
-
-#endif

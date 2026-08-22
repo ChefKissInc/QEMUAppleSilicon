@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef TCG_COND_H
-#define TCG_COND_H
+#pragma once
 
 /*
  * Conditions.  Note that these are laid out for easy manipulation by
@@ -129,5 +128,3 @@ static inline TCGCond tcg_high_cond(TCGCond c)
         return c;
     }
 }
-
-#endif /* TCG_COND_H */

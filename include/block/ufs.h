@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#ifndef BLOCK_UFS_H
-#define BLOCK_UFS_H
+#pragma once
 
 #include "hw/registerfields.h"
 
@@ -1229,4 +1228,3 @@ static inline void _ufs_check_size(void)
     QEMU_BUILD_BUG_ON(sizeof(UfsSqEntry) != 32);
     QEMU_BUILD_BUG_ON(sizeof(UfsCqEntry) != 32);
 }
-#endif

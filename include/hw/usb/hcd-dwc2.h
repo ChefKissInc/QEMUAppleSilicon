@@ -16,8 +16,7 @@
  * GNU General Public License for more details.
  */
 
-#ifndef HW_USB_HCD_DWC2_H
-#define HW_USB_HCD_DWC2_H
+#pragma once
 
 #include "qemu/timer.h"
 #include "hw/irq.h"
@@ -242,5 +241,3 @@ OBJECT_DECLARE_TYPE(DWC2DeviceState, USBDeviceClass, DWC2_USB_DEVICE)
 
 #define TYPE_DWC2_USB   "dwc2-usb"
 OBJECT_DECLARE_TYPE(DWC2State, DWC2Class, DWC2_USB)
-
-#endif

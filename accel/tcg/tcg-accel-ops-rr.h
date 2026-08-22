@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef TCG_ACCEL_OPS_RR_H
-#define TCG_ACCEL_OPS_RR_H
+#pragma once
 
 #define TCG_KICK_PERIOD (NANOSECONDS_PER_SECOND / 10)
 
@@ -17,5 +16,3 @@ void rr_kick_vcpu_thread(CPUState *unused);
 
 /* start the round robin vcpu thread */
 void rr_start_vcpu_thread(CPUState *cpu);
-
-#endif /* TCG_ACCEL_OPS_RR_H */

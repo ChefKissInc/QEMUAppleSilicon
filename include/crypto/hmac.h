@@ -9,8 +9,7 @@
  *
  */
 
-#ifndef QCRYPTO_HMAC_H
-#define QCRYPTO_HMAC_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 
@@ -191,5 +190,3 @@ int qcrypto_hmac_digest(QCryptoHmac *hmac,
                         size_t len,
                         char **digest,
                         Error **errp);
-
-#endif

@@ -269,8 +269,7 @@
  * For mass-conversion, use scripts/coccinelle/errp-guard.cocci.
  */
 
-#ifndef ERROR_H
-#define ERROR_H
+#pragma once
 
 #include "qapi/qapi-types-error.h"
 
@@ -550,5 +549,3 @@ extern Error *error_abort;
  * See error_setg() and error_propagate() for details.
  */
 extern Error *error_fatal;
-
-#endif

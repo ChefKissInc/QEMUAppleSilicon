@@ -4,8 +4,7 @@
  * Copyright (c) 2008-2009 Arnaud Patard <arnaud.patard@rtp-net.org>
  */
 
-#ifndef TCG_TARGET_REG_BITS_H
-#define TCG_TARGET_REG_BITS_H
+#pragma once
 
 #if _MIPS_SIM == _ABIO32
 # define TCG_TARGET_REG_BITS 32
@@ -13,6 +12,4 @@
 # define TCG_TARGET_REG_BITS 64
 #else
 # error "Unknown ABI"
-#endif
-
 #endif

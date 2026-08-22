@@ -17,8 +17,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TARGET_ARM_FEATURES_H
-#define TARGET_ARM_FEATURES_H
+#pragma once
 
 #include "hw/registerfields.h"
 #include "qemu/host-utils.h"
@@ -1141,5 +1140,3 @@ static inline uint64_t make_ccsidr(CCSIDRFormat format, unsigned assoc,
  */
 #define cpu_isar_feature(name, cpu) \
     ({ ARMCPU *cpu_ = (cpu); isar_feature_##name(&cpu_->isar); })
-
-#endif

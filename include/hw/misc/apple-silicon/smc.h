@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_SMC_H
-#define HW_MISC_APPLE_SILICON_SMC_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -216,5 +215,3 @@ void apple_smc_add_key_func(AppleSMCState *s, uint32_t key, uint8_t size,
                             SMCKeyFunc *reader, SMCKeyFunc *writer);
 void apple_smc_send_hid_button(AppleSMCState *s, AppleSMCHIDButton button,
                                bool state);
-
-#endif /* HW_MISC_APPLE_SILICON_SMC_H */

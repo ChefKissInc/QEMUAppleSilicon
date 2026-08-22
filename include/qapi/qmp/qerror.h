@@ -9,8 +9,7 @@
  * This work is licensed under the terms of the GNU LGPL, version 2.1 or later.
  * See the COPYING.LIB file in the top-level directory.
  */
-#ifndef QERROR_H
-#define QERROR_H
+#pragma once
 
 /*
  * These macros will go away, please don't use in new code, and do not
@@ -22,5 +21,3 @@
 
 #define QERR_MISSING_PARAMETER \
     "Parameter '%s' is missing"
-
-#endif /* QERROR_H */

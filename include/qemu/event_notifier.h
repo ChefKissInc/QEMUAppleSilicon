@@ -10,9 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_EVENT_NOTIFIER_H
-#define QEMU_EVENT_NOTIFIER_H
-
+#pragma once
 
 #ifdef _WIN32
 #include <windows.h>
@@ -41,6 +39,4 @@ int event_notifier_get_fd(const EventNotifier *);
 int event_notifier_get_wfd(const EventNotifier *);
 #else
 HANDLE event_notifier_get_handle(EventNotifier *);
-#endif
-
 #endif

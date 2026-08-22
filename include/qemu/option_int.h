@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_OPTION_INT_H
-#define QEMU_OPTION_INT_H
+#pragma once
 
 #include "qemu/option.h"
 #include "qemu/error-report.h"
@@ -50,5 +49,3 @@ struct QemuOpts {
     QTAILQ_HEAD(, QemuOpt) head;
     QTAILQ_ENTRY(QemuOpts) next;
 };
-
-#endif

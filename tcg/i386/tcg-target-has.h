@@ -4,8 +4,7 @@
  * Copyright (c) 2008 Fabrice Bellard
  */
 
-#ifndef TCG_TARGET_HAS_H
-#define TCG_TARGET_HAS_H
+#pragma once
 
 #include "host/cpuinfo.h"
 
@@ -108,5 +107,3 @@ tcg_target_extract_valid(TCGType type, unsigned ofs, unsigned len)
     return false;
 }
 #define TCG_TARGET_extract_valid  tcg_target_extract_valid
-
-#endif

@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_OS_POSIX_H
-#define QEMU_OS_POSIX_H
+#pragma once
 
 #include <sys/mman.h>
 #include <sys/socket.h>
@@ -96,6 +95,4 @@ static inline void qemu_funlockfile(FILE *f)
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

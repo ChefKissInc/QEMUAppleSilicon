@@ -10,8 +10,7 @@
  * later.  See the COPYING file in the top-level directory.
  */
 
-#ifndef USERFAULTFD_H
-#define USERFAULTFD_H
+#pragma once
 
 #ifdef CONFIG_LINUX
 
@@ -41,5 +40,3 @@ int uffd_wakeup(int uffd_fd, void *addr, uint64_t length);
 int uffd_read_events(int uffd_fd, struct uffd_msg *msgs, int count);
 
 #endif /* CONFIG_LINUX */
-
-#endif /* USERFAULTFD_H */

@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef QEMU_ARM_POWERCTL_H
-#define QEMU_ARM_POWERCTL_H
+#pragma once
 
 #include "kvm-consts.h"
 
@@ -89,5 +88,3 @@ int arm_reset_cpu(uint64_t cpuid);
  * powering on.
  */
 int arm_set_cpu_on_and_reset(uint64_t cpuid);
-
-#endif

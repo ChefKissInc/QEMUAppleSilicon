@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_CHANNEL_BUFFER_H
-#define QIO_CHANNEL_BUFFER_H
+#pragma once
 
 #include "io/channel.h"
 #include "qom/object.h"
@@ -55,5 +54,3 @@ struct QIOChannelBuffer {
  */
 QIOChannelBuffer *
 qio_channel_buffer_new(size_t capacity);
-
-#endif /* QIO_CHANNEL_BUFFER_H */

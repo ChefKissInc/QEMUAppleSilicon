@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: LGPL-2.0-or-later
  */
 
-#ifndef _SYSCALLS_H_
-#define _SYSCALLS_H_
+#pragma once
 
 /* For gdb file i/o remote protocol open flags. */
 #define GDB_O_RDONLY  0
@@ -109,5 +108,3 @@ void gdb_exit(int code);
  * the exit request might be processed asynchronously by qemu backend.
  */
 void gdb_qemu_exit(int code);
-
-#endif /* _SYSCALLS_H_ */

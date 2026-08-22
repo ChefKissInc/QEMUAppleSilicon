@@ -1,5 +1,4 @@
-#ifndef READLINE_H
-#define READLINE_H
+#pragma once
 
 #define READLINE_CMD_BUF_SIZE 4095
 #define READLINE_MAX_CMDS 64
@@ -62,5 +61,3 @@ ReadLineState *readline_init(ReadLinePrintfFunc *printf_func,
                              void *opaque,
                              ReadLineCompletionFunc *completion_finder);
 void readline_free(ReadLineState *rs);
-
-#endif /* READLINE_H */

@@ -17,13 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_CS42L77_H
-#define HW_MISC_APPLE_SILICON_CS42L77_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "qom/object.h"
 
 #define TYPE_APPLE_CS42L77 "apple-cs42l77"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleCS42L77State, APPLE_CS42L77);
-
-#endif /* HW_MISC_APPLE_SILICON_CS42L77_H */

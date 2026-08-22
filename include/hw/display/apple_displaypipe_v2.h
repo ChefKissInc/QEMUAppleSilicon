@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_DISPLAY_ADBE_V2_H
-#define HW_DISPLAY_ADBE_V2_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/boot.h"
@@ -32,5 +31,3 @@ SysBusDevice *adp_v2_from_node(AppleDTNode *node, MemoryRegion *dma_mr,
                                AppleVideoArgs *video_args, uint64_t vram_size);
 void adp_v2_update_vram_mapping(AppleDisplayPipeV2State *s, MemoryRegion *mr,
                                 hwaddr base);
-
-#endif /* HW_DISPLAY_ADBE_V2_H */

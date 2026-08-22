@@ -59,8 +59,7 @@
  * The "mmu" suffix carries the full MemOpIdx, with both mmu_idx and the
  * MemOp including alignment requirements.  The alignment will be enforced.
  */
-#ifndef ACCEL_TCG_CPU_LDST_H
-#define ACCEL_TCG_CPU_LDST_H
+#pragma once
 
 #ifndef CONFIG_TCG
 #error Can only include this header with TCG
@@ -497,5 +496,3 @@ static inline uint64_t cpu_ldq_code(CPUArchState *env, abi_ptr addr)
     MemOpIdx oi = make_memop_idx(MO_TEUQ, cpu_mmu_index(cs, true));
     return cpu_ldq_code_mmu(env, addr, oi, 0);
 }
-
-#endif /* ACCEL_TCG_CPU_LDST_H */

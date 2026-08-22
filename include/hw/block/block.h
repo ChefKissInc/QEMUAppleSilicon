@@ -8,8 +8,7 @@
  * later.  See the COPYING file in the top-level directory.
  */
 
-#ifndef HW_BLOCK_H
-#define HW_BLOCK_H
+#pragma once
 
 #include "exec/hwaddr.h"
 #include "qapi/qapi-types-block-core.h"
@@ -103,5 +102,3 @@ void hd_geometry_guess(BlockBackend *blk,
                        uint32_t *pcyls, uint32_t *pheads, uint32_t *psecs,
                        int *ptrans);
 int hd_bios_chs_auto_trans(uint32_t cyls, uint32_t heads, uint32_t secs);
-
-#endif

@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef TCG_LDST_H
-#define TCG_LDST_H
+#pragma once
 
 /* Value zero-extended to tcg register size.  */
 tcg_target_ulong helper_ldub_mmu(CPUArchState *env, uint64_t addr,
@@ -59,5 +58,3 @@ void helper_stq_mmu(CPUArchState *env, uint64_t addr, uint64_t val,
                     MemOpIdx oi, uintptr_t retaddr);
 void helper_st16_mmu(CPUArchState *env, uint64_t addr, Int128 val,
                      MemOpIdx oi, uintptr_t retaddr);
-
-#endif /* TCG_LDST_H */

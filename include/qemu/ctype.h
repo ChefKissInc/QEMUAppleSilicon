@@ -5,8 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_CTYPE_H
-#define QEMU_CTYPE_H
+#pragma once
 
 #define qemu_isalnum(c)         isalnum((unsigned char)(c))
 #define qemu_isalpha(c)         isalpha((unsigned char)(c))
@@ -23,5 +22,3 @@
 #define qemu_toupper(c)         toupper((unsigned char)(c))
 #define qemu_isascii(c)         isascii((unsigned char)(c))
 #define qemu_toascii(c)         toascii((unsigned char)(c))
-
-#endif

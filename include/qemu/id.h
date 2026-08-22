@@ -1,5 +1,4 @@
-#ifndef QEMU_ID_H
-#define QEMU_ID_H
+#pragma once
 
 typedef enum IdSubSystems {
     ID_QDEV,
@@ -11,5 +10,3 @@ typedef enum IdSubSystems {
 
 char *id_generate(IdSubSystems id);
 bool id_wellformed(const char *id);
-
-#endif

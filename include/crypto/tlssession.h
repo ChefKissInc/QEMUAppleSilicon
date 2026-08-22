@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_TLSSESSION_H
-#define QCRYPTO_TLSSESSION_H
+#pragma once
 
 #include "crypto/tlscreds.h"
 
@@ -372,5 +371,3 @@ int qcrypto_tls_session_get_key_size(QCryptoTLSSession *sess,
  * Returns: the peer's name or NULL.
  */
 char *qcrypto_tls_session_get_peer_name(QCryptoTLSSession *sess);
-
-#endif /* QCRYPTO_TLSSESSION_H */

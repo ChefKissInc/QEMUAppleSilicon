@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_AUDIO_INT_H
-#define QEMU_AUDIO_INT_H
+#pragma once
 
 #ifdef CONFIG_AUDIO_COREAUDIO
 #define FLOAT_MIXENG
@@ -293,5 +292,3 @@ typedef QSIMPLEQ_HEAD(, AudiodevListEntry) AudiodevListHead;
 void audio_create_pdos(Audiodev *dev);
 AudiodevPerDirectionOptions *audio_get_pdo_in(Audiodev *dev);
 AudiodevPerDirectionOptions *audio_get_pdo_out(Audiodev *dev);
-
-#endif /* QEMU_AUDIO_INT_H */

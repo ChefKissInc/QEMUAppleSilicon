@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef GDBSTUB_INTERNALS_H
-#define GDBSTUB_INTERNALS_H
+#pragma once
 
 #include "exec/cpu-common.h"
 
@@ -234,5 +233,3 @@ void gdb_breakpoint_remove_all(CPUState *cs);
  */
 int gdb_target_memory_rw_debug(CPUState *cs, hwaddr addr,
                                uint8_t *buf, int len, bool is_write);
-
-#endif /* GDBSTUB_INTERNALS_H */

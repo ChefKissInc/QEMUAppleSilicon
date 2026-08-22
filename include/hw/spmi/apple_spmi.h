@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_SPMI_APPLE_SPMI_H
-#define HW_SPMI_APPLE_SPMI_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -61,5 +60,3 @@ struct AppleSPMIState {
 };
 
 SysBusDevice *apple_spmi_from_node(AppleDTNode *node);
-
-#endif /* HW_SPMI_APPLE_SPMI_H */

@@ -12,8 +12,7 @@
  *
  */
 
-#ifndef BLOCK_QED_H
-#define BLOCK_QED_H
+#pragma once
 
 #include "block/block_int.h"
 #include "qemu/cutils.h"
@@ -321,5 +320,3 @@ static inline bool qed_offset_is_zero_cluster(uint64_t offset)
     }
     return false;
 }
-
-#endif /* BLOCK_QED_H */

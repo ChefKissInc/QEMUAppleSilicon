@@ -12,8 +12,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIFO32_H
-#define FIFO32_H
+#pragma once
 
 #include "qemu/fifo8.h"
 
@@ -184,5 +183,3 @@ static inline bool fifo32_is_full(Fifo32 *fifo)
 {
     return fifo8_num_free(&fifo->fifo) < sizeof(uint32_t);
 }
-
-#endif /* FIFO32_H */

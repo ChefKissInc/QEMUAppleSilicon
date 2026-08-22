@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_CHANNEL_SOCKET_H
-#define QIO_CHANNEL_SOCKET_H
+#pragma once
 
 #include "io/channel.h"
 #include "io/task.h"
@@ -274,5 +273,3 @@ qio_channel_socket_accept(QIOChannelSocket *ioc,
 int qio_channel_socket_set_send_buffer(QIOChannelSocket *ioc,
                                        size_t size,
                                        Error **errp);
-
-#endif /* QIO_CHANNEL_SOCKET_H */

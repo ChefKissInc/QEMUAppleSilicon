@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_DT_H
-#define HW_ARM_APPLE_SILICON_DT_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "exec/hwaddr.h"
@@ -98,5 +97,3 @@ void apple_dt_connect_function_prop_in_out_gpio(DeviceState *src_device,
 uint64_t apple_dt_finalise(AppleDTNode *root);
 void apple_dt_serialise(AppleDTNode *root, void *buf);
 void apple_dt_unfinalise(AppleDTNode *root);
-
-#endif /* HW_ARM_APPLE_SILICON_DT_H */

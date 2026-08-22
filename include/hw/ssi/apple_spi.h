@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_SSI_APPLE_SPI_H
-#define HW_SSI_APPLE_SPI_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/sysbus.h"
@@ -32,4 +31,3 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleSPIState, APPLE_SPI)
 
 SysBusDevice *apple_spi_from_node(AppleDTNode *node);
 SSIBus *apple_spi_get_bus(AppleSPIState *s);
-#endif /* HW_SSI_APPLE_SPI_H */

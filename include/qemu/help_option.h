@@ -1,5 +1,4 @@
-#ifndef QEMU_HELP_OPTION_H
-#define QEMU_HELP_OPTION_H
+#pragma once
 
 /**
  * is_help_option:
@@ -29,5 +28,3 @@ static inline int starts_with_help_option(const char *s)
     }
     return 0;
 }
-
-#endif

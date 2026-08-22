@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_OPTION_H
-#define QEMU_OPTION_H
+#pragma once
 
 #include "qemu/queue.h"
 
@@ -147,5 +146,3 @@ void qemu_opts_free(QemuOptsList *list);
 QemuOptsList *qemu_opts_append(QemuOptsList *dst, QemuOptsList *list);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QemuOpts, qemu_opts_del)
-
-#endif

@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef JOB_H
-#define JOB_H
+#pragma once
 
 #include "qapi/qapi-types-job.h"
 #include "qemu/queue.h"
@@ -730,5 +729,3 @@ int job_finish_sync_locked(Job *job, void (*finish)(Job *, Error **errp),
  * be called when the job is quiescent.
  */
 void job_set_aio_context(Job *job, AioContext *ctx);
-
-#endif

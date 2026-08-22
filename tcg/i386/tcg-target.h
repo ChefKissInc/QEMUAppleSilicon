@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef I386_TCG_TARGET_H
-#define I386_TCG_TARGET_H
+#pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE  1
 
@@ -87,5 +86,3 @@ typedef enum {
     TCG_AREG0 = TCG_REG_EBP,
     TCG_REG_CALL_STACK = TCG_REG_ESP
 } TCGReg;
-
-#endif

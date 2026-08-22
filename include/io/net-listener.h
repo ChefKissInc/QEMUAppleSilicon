@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_NET_LISTENER_H
-#define QIO_NET_LISTENER_H
+#pragma once
 
 #include "io/channel-socket.h"
 #include "qom/object.h"
@@ -184,5 +183,3 @@ void qio_net_listener_disconnect(QIONetListener *listener);
  * Returns: true if connected, false otherwise
  */
 bool qio_net_listener_is_connected(QIONetListener *listener);
-
-#endif /* QIO_NET_LISTENER_H */

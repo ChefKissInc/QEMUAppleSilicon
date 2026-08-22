@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_PBKDF_H
-#define QCRYPTO_PBKDF_H
+#pragma once
 
 #include "crypto/hash.h"
 
@@ -152,5 +151,3 @@ uint64_t qcrypto_pbkdf2_count_iters(QCryptoHashAlgo hash,
                                     const uint8_t *salt, size_t nsalt,
                                     size_t nout,
                                     Error **errp);
-
-#endif /* QCRYPTO_PBKDF_H */

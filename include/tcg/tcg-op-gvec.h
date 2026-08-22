@@ -5,8 +5,7 @@
  * Copyright (c) 2018 Linaro
  */
 
-#ifndef TCG_TCG_OP_GVEC_H
-#define TCG_TCG_OP_GVEC_H
+#pragma once
 
 #include "tcg/tcg-op-gvec-common.h"
 
@@ -44,6 +43,4 @@
 #define tcg_gen_vec_sar16i_tl tcg_gen_vec_sar16i_i32
 #else
 # error
-#endif
-
 #endif

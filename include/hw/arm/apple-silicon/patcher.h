@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_PATCHER_H
-#define HW_ARM_APPLE_SILICON_PATCHER_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "exec/vaddr.h"
@@ -69,5 +68,3 @@ bool ck_patcher_find_replace(CKPatcherRange *range, const char *name,
                              const uint8_t *replacement,
                              const uint8_t *replacement_mask,
                              size_t replace_off, size_t replace_len);
-
-#endif /* HW_ARM_APPLE_SILICON_PATCHER_H */

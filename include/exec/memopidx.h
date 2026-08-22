@@ -8,8 +8,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef EXEC_MEMOPIDX_H
-#define EXEC_MEMOPIDX_H
+#pragma once
 
 #include "exec/memop.h"
 
@@ -52,5 +51,3 @@ static inline unsigned get_mmuidx(MemOpIdx oi)
 {
     return oi & 31;
 }
-
-#endif

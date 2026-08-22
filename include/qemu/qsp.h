@@ -8,8 +8,7 @@
  *
  * Note: this header file can *only* be included from thread.h.
  */
-#ifndef QEMU_QSP_H
-#define QEMU_QSP_H
+#pragma once
 
 enum QSPSortBy {
     QSP_SORT_BY_TOTAL_WAIT_TIME,
@@ -23,5 +22,3 @@ bool qsp_is_enabled(void);
 void qsp_enable(void);
 void qsp_disable(void);
 void qsp_reset(void);
-
-#endif /* QEMU_QSP_H */

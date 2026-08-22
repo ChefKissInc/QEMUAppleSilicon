@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef TRACE__EVENT_INTERNAL_H
-#define TRACE__EVENT_INTERNAL_H
+#pragma once
 
 /*
  * Special value for TraceEvent.vcpu_id field to indicate
@@ -38,5 +37,3 @@ typedef struct TraceEvent {
 } TraceEvent;
 
 void trace_event_set_state_dynamic_init(TraceEvent *ev, bool state);
-
-#endif /* TRACE__EVENT_INTERNAL_H */

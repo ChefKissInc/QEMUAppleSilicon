@@ -5,8 +5,7 @@
  * Copyright (c) 2009 Aurelien Jarno <aurelien@aurel32.net>
  */
 
-#ifndef TCG_TARGET_HAS_H
-#define TCG_TARGET_HAS_H
+#pragma once
 
 /* MOVN/MOVZ instructions detection */
 #if (defined(__mips_isa_rev) && (__mips_isa_rev >= 1)) || \
@@ -67,5 +66,3 @@ tcg_target_sextract_valid(TCGType type, unsigned ofs, unsigned len)
     return false;
 }
 #define TCG_TARGET_sextract_valid  tcg_target_sextract_valid
-
-#endif

@@ -64,8 +64,7 @@ def print_top(fheader):
 
 ''')
 
-    fheader.write('''#ifndef QEMU_MODULE_BLOCK_H
-#define QEMU_MODULE_BLOCK_H
+    fheader.write('''#pragma once
 
 static const struct {
     const char *format_name;
@@ -76,8 +75,6 @@ static const struct {
 def print_bottom(fheader):
     fheader.write('''
 };
-
-#endif
 ''')
 
 if __name__ == '__main__':

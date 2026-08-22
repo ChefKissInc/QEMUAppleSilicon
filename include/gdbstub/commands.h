@@ -1,5 +1,4 @@
-#ifndef GDBSTUB_COMMANDS_H
-#define GDBSTUB_COMMANDS_H
+#pragma once
 
 typedef void (*GdbCmdHandler)(GArray *params, void *user_ctx);
 
@@ -104,5 +103,3 @@ void gdb_extend_qsupported_features(char *qsupported_features);
  * are converted to 1 byte. Invalid hex digits are treated as 0 digits.
  */
 void gdb_hextomem(GByteArray *mem, const char *buf, int len);
-
-#endif /* GDBSTUB_COMMANDS_H */

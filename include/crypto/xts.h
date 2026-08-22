@@ -23,9 +23,7 @@
  *
  */
 
-#ifndef QCRYPTO_XTS_H
-#define QCRYPTO_XTS_H
-
+#pragma once
 
 #define XTS_BLOCK_SIZE 16
 
@@ -77,6 +75,3 @@ void xts_encrypt(const void *datactx,
                  size_t length,
                  uint8_t *dst,
                  const uint8_t *src);
-
-
-#endif /* QCRYPTO_XTS_H */

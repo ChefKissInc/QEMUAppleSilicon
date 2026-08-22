@@ -12,8 +12,7 @@
  *
  */
 
-#ifndef QCRYPTO_CIPHERPRIV_H
-#define QCRYPTO_CIPHERPRIV_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 
@@ -40,5 +39,3 @@ struct QCryptoCipherDriver {
 
     void (*cipher_free)(QCryptoCipher *cipher);
 };
-
-#endif

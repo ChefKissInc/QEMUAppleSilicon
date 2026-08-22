@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_AIO_WAIT_H
-#define QEMU_AIO_WAIT_H
+#pragma once
 
 #include "block/aio.h"
 #include "qemu/main-loop.h"
@@ -148,5 +147,3 @@ static inline bool in_aio_context_home_thread(AioContext *ctx)
         return false;
     }
 }
-
-#endif /* QEMU_AIO_WAIT_H */

@@ -5,8 +5,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef CPU_INTERRUPT_H
-#define CPU_INTERRUPT_H
+#pragma once
 
 /*
  * The numbers assigned here are non-sequential in order to preserve binary
@@ -66,5 +65,3 @@
      | CPU_INTERRUPT_TGT_EXT_2   \
      | CPU_INTERRUPT_TGT_EXT_3   \
      | CPU_INTERRUPT_TGT_EXT_4)
-
-#endif /* CPU_INTERRUPT_H */

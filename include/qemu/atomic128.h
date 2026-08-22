@@ -10,8 +10,7 @@
  * atomic primitive is meant to provide.
  */
 
-#ifndef QEMU_ATOMIC128_H
-#define QEMU_ATOMIC128_H
+#pragma once
 
 #include "qemu/atomic.h"
 #include "qemu/int128.h"
@@ -61,5 +60,3 @@
 
 #include "host/atomic128-cas.h.inc"
 #include "host/atomic128-ldst.h.inc"
-
-#endif /* QEMU_ATOMIC128_H */

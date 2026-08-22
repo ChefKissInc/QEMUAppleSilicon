@@ -39,8 +39,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DWC2_REGS_H
-#define DWC2_REGS_H
+#pragma once
 
 #define HSOTG_REG(x)    (x)
 
@@ -905,5 +904,3 @@ struct dwc2_dma_desc {
 
 #define MAX_DMA_DESC_NUM_GENERIC        64
 #define MAX_DMA_DESC_NUM_HS_ISOC        256
-
-#endif /* DWC2_REGS_H */

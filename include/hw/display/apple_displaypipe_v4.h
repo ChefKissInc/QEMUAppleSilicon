@@ -16,8 +16,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef APPLE_DISPLAYPIPE_V4_H
-#define APPLE_DISPLAYPIPE_V4_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -32,5 +31,3 @@ SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr);
 void adp_v4_update_vram_mapping(AppleDisplayPipeV4State *s, MemoryRegion *mr,
                                 hwaddr off, uint64_t size);
 uint64_t adp_v4_get_fb_off(AppleDisplayPipeV4State *s);
-
-#endif /* APPLE_DISPLAYPIPE_V4_H */

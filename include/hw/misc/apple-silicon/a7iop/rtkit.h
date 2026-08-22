@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_A7IOP_RTKIT_H
-#define HW_MISC_APPLE_SILICON_A7IOP_RTKIT_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/misc/apple-silicon/a7iop/core.h"
@@ -98,5 +97,3 @@ void apple_rtkit_init(AppleRTKit *s, void *opaque, const char *role,
 AppleRTKit *apple_rtkit_new(void *opaque, const char *role, uint64_t mmio_size,
                             AppleA7IOPVersion version,
                             const AppleRTKitOps *ops);
-
-#endif /* HW_MISC_APPLE_SILICON_A7IOP_RTKIT_H */

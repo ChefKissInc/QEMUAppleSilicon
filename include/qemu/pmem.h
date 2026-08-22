@@ -9,8 +9,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_PMEM_H
-#define QEMU_PMEM_H
+#pragma once
 
 #ifdef CONFIG_LIBPMEM
 #include <libpmem.h>
@@ -31,5 +30,3 @@ pmem_persist(const void *addr, size_t len)
 }
 
 #endif /* CONFIG_LIBPMEM */
-
-#endif /* QEMU_PMEM_H */

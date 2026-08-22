@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_KEYMAPS_H
-#define QEMU_KEYMAPS_H
+#pragma once
 
 #include "ui/kbd-state.h"
 
@@ -58,5 +57,3 @@ int keysym2scancode(kbd_layout_t *k, int keysym,
                     QKbdState *kbd, bool down);
 int keycode_is_keypad(kbd_layout_t *k, int keycode);
 int keysym_is_numlock(kbd_layout_t *k, int keysym);
-
-#endif /* QEMU_KEYMAPS_H */

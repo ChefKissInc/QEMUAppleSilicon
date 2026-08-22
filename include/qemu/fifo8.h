@@ -1,6 +1,4 @@
-#ifndef QEMU_FIFO8_H
-#define QEMU_FIFO8_H
-
+#pragma once
 
 typedef struct {
     /* All fields are private */
@@ -212,5 +210,3 @@ uint32_t fifo8_num_free(const Fifo8 *fifo);
  * Returns: Number of used bytes.
  */
 uint32_t fifo8_num_used(const Fifo8 *fifo);
-
-#endif /* QEMU_FIFO8_H */

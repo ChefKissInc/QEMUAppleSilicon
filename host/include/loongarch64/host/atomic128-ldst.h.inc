@@ -6,8 +6,7 @@
  * atomic primitive is meant to provide.
  */
 
-#ifndef LOONGARCH_ATOMIC128_LDST_H
-#define LOONGARCH_ATOMIC128_LDST_H
+#pragma once
 
 #include "host/cpuinfo.h"
 #include "tcg/debug-assert.h"
@@ -48,5 +47,3 @@ static inline void atomic16_set(Int128 *ptr, Int128 val)
         "vst $vr0, %3, 0"
         : "=m"(*ptr) : "r"(l), "r"(h), "r"(ptr) : "$f0");
 }
-
-#endif /* LOONGARCH_ATOMIC128_LDST_H */

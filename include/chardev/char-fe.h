@@ -1,5 +1,4 @@
-#ifndef QEMU_CHAR_FE_H
-#define QEMU_CHAR_FE_H
+#pragma once
 
 #include "chardev/char.h"
 #include "qemu/main-loop.h"
@@ -310,5 +309,3 @@ int qemu_chr_fe_get_msgfds(CharBackend *be, int *fds, int num);
  * Returns: -1 if fd passing isn't supported or no associated Chardev.
  */
 int qemu_chr_fe_set_msgfds(CharBackend *be, int *fds, int num);
-
-#endif /* QEMU_CHAR_FE_H */

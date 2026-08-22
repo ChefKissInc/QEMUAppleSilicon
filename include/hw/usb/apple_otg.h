@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_USB_APPLE_OTG_H
-#define HW_USB_APPLE_OTG_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/sysbus.h"
@@ -48,4 +47,3 @@ struct AppleOTGState {
 };
 
 DeviceState *apple_otg_from_node(AppleDTNode *node);
-#endif /* HW_USB_APPLE_OTG_H */

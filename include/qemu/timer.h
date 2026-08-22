@@ -1,5 +1,4 @@
-#ifndef QEMU_TIMER_H
-#define QEMU_TIMER_H
+#pragma once
 
 #include "qemu/bitops.h"
 #include "qemu/notify.h"
@@ -1023,6 +1022,4 @@ static inline int64_t cpu_get_host_ticks(void)
 {
     return get_clock();
 }
-#endif
-
 #endif

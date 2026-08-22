@@ -5,8 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_CACHEFLUSH_H
-#define QEMU_CACHEFLUSH_H
+#pragma once
 
 /**
  * flush_idcache_range:
@@ -38,5 +37,3 @@ static inline void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len);
 
 #endif
-
-#endif /* QEMU_CACHEFLUSH_H */

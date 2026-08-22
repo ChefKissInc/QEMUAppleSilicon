@@ -1,5 +1,4 @@
-#ifndef QEMU_IRQ_H
-#define QEMU_IRQ_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -113,5 +112,3 @@ static inline bool qemu_irq_is_connected(qemu_irq irq)
 {
     return irq != NULL;
 }
-
-#endif

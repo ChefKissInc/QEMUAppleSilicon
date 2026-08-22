@@ -1,7 +1,6 @@
 /* Declarations for use by board files for creating devices.  */
 
-#ifndef HW_BOARDS_H
-#define HW_BOARDS_H
+#pragma once
 
 #include "system/memory.h"
 #include "system/hostmem.h"
@@ -817,5 +816,3 @@ extern const size_t hw_compat_2_7_len;
 
 extern GlobalProperty hw_compat_2_6[];
 extern const size_t hw_compat_2_6_len;
-
-#endif

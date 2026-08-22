@@ -1,5 +1,4 @@
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#pragma once
 
 #include "ui/qemu-pixman.h"
 #include "qom/object.h"
@@ -326,5 +325,3 @@ bool qemu_console_fill_device_address(QemuConsole *con,
                                       char *device_address,
                                       size_t size,
                                       Error **errp);
-
-#endif

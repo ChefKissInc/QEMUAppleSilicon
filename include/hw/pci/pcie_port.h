@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_PCIE_PORT_H
-#define QEMU_PCIE_PORT_H
+#pragma once
 
 #include "hw/pci/pci_bridge.h"
 #include "hw/pci/pci_bus.h"
@@ -95,5 +94,3 @@ struct PCIERootPortClass {
     int acs_offset;    /* If nonzero, optional ACS capability offset */
     int ssid;
 };
-
-#endif /* QEMU_PCIE_PORT_H */

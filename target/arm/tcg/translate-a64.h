@@ -15,8 +15,7 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TARGET_ARM_TRANSLATE_A64_H
-#define TARGET_ARM_TRANSLATE_A64_H
+#pragma once
 
 TCGv_i64 cpu_reg(DisasContext *s, int reg);
 TCGv_i64 cpu_reg_sp(DisasContext *s, int reg);
@@ -232,5 +231,3 @@ void gen_sve_ldr(DisasContext *s, TCGv_ptr, int vofs,
                  int len, int rn, int imm, MemOp align);
 void gen_sve_str(DisasContext *s, TCGv_ptr, int vofs,
                  int len, int rn, int imm, MemOp align);
-
-#endif /* TARGET_ARM_TRANSLATE_A64_H */

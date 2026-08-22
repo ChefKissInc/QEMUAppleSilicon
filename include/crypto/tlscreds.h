@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_TLSCREDS_H
-#define QCRYPTO_TLSCREDS_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 #include "qom/object.h"
@@ -63,5 +62,3 @@ struct QCryptoTLSCredsClass {
 bool qcrypto_tls_creds_check_endpoint(QCryptoTLSCreds *creds,
                                       QCryptoTLSCredsEndpoint endpoint,
                                       Error **errp);
-
-#endif /* QCRYPTO_TLSCREDS_H */

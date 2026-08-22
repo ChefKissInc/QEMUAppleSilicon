@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QAUTHZ_LISTFILE_H
-#define QAUTHZ_LISTFILE_H
+#pragma once
 
 #include "authz/list.h"
 #include "qemu/filemonitor.h"
@@ -93,5 +92,3 @@ QAuthZListFile *qauthz_list_file_new(const char *id,
                                      const char *filename,
                                      bool refresh,
                                      Error **errp);
-
-#endif /* QAUTHZ_LISTFILE_H */

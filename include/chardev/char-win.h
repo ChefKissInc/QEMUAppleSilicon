@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef CHAR_WIN_H
-#define CHAR_WIN_H
+#pragma once
 
 #include "chardev/char.h"
 #include "qom/object.h"
@@ -50,5 +49,3 @@ DECLARE_INSTANCE_CHECKER(WinChardev, WIN_CHARDEV,
 void win_chr_set_file(Chardev *chr, HANDLE file, bool keep_open);
 int win_chr_serial_init(Chardev *chr, const char *filename, Error **errp);
 int win_chr_pipe_poll(void *opaque);
-
-#endif /* CHAR_WIN_H */

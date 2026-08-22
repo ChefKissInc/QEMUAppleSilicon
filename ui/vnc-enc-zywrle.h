@@ -41,8 +41,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ********************************************************************/
 
-#ifndef VNC_ENC_ZYWRLE_H
-#define VNC_ENC_ZYWRLE_H
+#pragma once
 
 /* Tables for Coefficients filtering. */
 #ifndef ZYWRLE_QUANTIZE
@@ -655,5 +654,3 @@ static inline void zywrle_calc_size(int *w, int *h, int level)
     *w &= ~((1 << level) - 1);
     *h &= ~((1 << level) - 1);
 }
-
-#endif

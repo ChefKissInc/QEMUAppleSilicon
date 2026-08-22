@@ -22,8 +22,7 @@
  * private to it and not required by the rest of QEMU.
  */
 
-#ifndef TARGET_ARM_SYNDROME_H
-#define TARGET_ARM_SYNDROME_H
+#pragma once
 
 #include "qemu/bitops.h"
 
@@ -372,6 +371,3 @@ static inline uint32_t syn_mop(bool is_set, bool is_setg, int options,
         (epilogue << 18) | (wrong_option << 17) | (option_a << 16) |
         (destreg << 10) | (srcreg << 5) | sizereg;
 }
-
-
-#endif /* TARGET_ARM_SYNDROME_H */

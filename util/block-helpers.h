@@ -1,5 +1,4 @@
-#ifndef BLOCK_HELPERS_H
-#define BLOCK_HELPERS_H
+#pragma once
 
 #include "qemu/units.h"
 
@@ -14,5 +13,3 @@
 #define MAX_BLOCK_SIZE_STR      "2 MiB"
 
 bool check_block_size(const char *name, int64_t value, Error **errp);
-
-#endif /* BLOCK_HELPERS_H */

@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_GIC_COMMON_H
-#define HW_ARM_GIC_COMMON_H
+#pragma once
 
 #include "hw/sysbus.h"
 #include "qom/object.h"
@@ -164,5 +163,3 @@ struct ARMGICCommonClass {
 void gic_init_irqs_and_mmio(GICState *s, qemu_irq_handler handler,
                             const MemoryRegionOps *ops,
                             const MemoryRegionOps *virt_ops);
-
-#endif

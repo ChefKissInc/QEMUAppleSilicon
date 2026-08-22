@@ -4,8 +4,7 @@
  * Copyright (c) 2021 WANG Xuerui <git@xen0n.name>
  */
 
-#ifndef TCG_TARGET_HAS_H
-#define TCG_TARGET_HAS_H
+#pragma once
 
 #include "host/cpuinfo.h"
 
@@ -53,5 +52,3 @@ tcg_target_sextract_valid(TCGType type, unsigned ofs, unsigned len)
     return ofs == 0 && (len == 8 || len == 16);
 }
 #define TCG_TARGET_sextract_valid  tcg_target_sextract_valid
-
-#endif

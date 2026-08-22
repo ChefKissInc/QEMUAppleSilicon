@@ -3,8 +3,7 @@
  * Definition of TCGTBCPUState.
  */
 
-#ifndef EXEC_TB_CPU_STATE_H
-#define EXEC_TB_CPU_STATE_H
+#pragma once
 
 #include "exec/vaddr.h"
 
@@ -14,5 +13,3 @@ typedef struct TCGTBCPUState {
     uint32_t cflags;
     uint64_t cs_base;
 } TCGTBCPUState;
-
-#endif

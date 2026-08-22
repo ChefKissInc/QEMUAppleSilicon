@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_THREAD_COMMON_H
-#define QEMU_THREAD_COMMON_H
+#pragma once
 
 #include "qemu/thread.h"
 #include "trace.h"
@@ -52,5 +51,3 @@ static inline void qemu_mutex_pre_unlock(QemuMutex *mutex,
     trace_qemu_mutex_unlock(mutex, file, line);
 #endif
 }
-
-#endif

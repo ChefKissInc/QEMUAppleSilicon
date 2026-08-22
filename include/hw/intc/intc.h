@@ -1,5 +1,4 @@
-#ifndef INTC_H
-#define INTC_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -24,5 +23,3 @@ struct InterruptStatsProviderClass {
                            unsigned int *nb_irqs);
     void (*print_info)(InterruptStatsProvider *obj, GString *buf);
 };
-
-#endif

@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCK_DMG_H
-#define BLOCK_DMG_H
+#pragma once
 
 #include "block/block_int.h"
 #include <zlib.h>
@@ -56,5 +55,3 @@ typedef int BdrvDmgUncompressFunc(char *next_in, unsigned int avail_in,
 
 extern BdrvDmgUncompressFunc *dmg_uncompress_bz2;
 extern BdrvDmgUncompressFunc *dmg_uncompress_lzfse;
-
-#endif

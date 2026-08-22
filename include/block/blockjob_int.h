@@ -23,8 +23,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCKJOB_INT_H
-#define BLOCKJOB_INT_H
+#pragma once
 
 #include "block/blockjob.h"
 
@@ -147,5 +146,3 @@ void block_job_user_resume(Job *job);
  */
 BlockErrorAction block_job_error_action(BlockJob *job, BlockdevOnError on_err,
                                         int is_read, int error);
-
-#endif

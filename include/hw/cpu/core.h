@@ -6,8 +6,7 @@
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  * See the COPYING file in the top-level directory.
  */
-#ifndef HW_CPU_CORE_H
-#define HW_CPU_CORE_H
+#pragma once
 
 #include "hw/qdev-core.h"
 #include "qom/object.h"
@@ -29,5 +28,3 @@ struct CPUCore {
  * 'CpuInstanceProperties' */
 
 #define CPU_CORE_PROP_CORE_ID "core-id"
-
-#endif

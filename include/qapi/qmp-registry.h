@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QAPI_QMP_DISPATCH_H
-#define QAPI_QMP_DISPATCH_H
+#pragma once
 
 #include "monitor/monitor.h"
 #include "qemu/queue.h"
@@ -63,5 +62,3 @@ typedef void (*qmp_cmd_callback_fn)(const QmpCommand *cmd, void *opaque);
 
 void qmp_for_each_command(const QmpCommandList *cmds, qmp_cmd_callback_fn fn,
                           void *opaque);
-
-#endif

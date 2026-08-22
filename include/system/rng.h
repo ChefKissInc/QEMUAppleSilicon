@@ -10,8 +10,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_RNG_H
-#define QEMU_RNG_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "qom/object.h"
@@ -86,4 +85,3 @@ void rng_backend_request_entropy(RngBackend *s, size_t size,
  * deleted.
  */
 void rng_backend_finalize_request(RngBackend *s, RngRequest *req);
-#endif

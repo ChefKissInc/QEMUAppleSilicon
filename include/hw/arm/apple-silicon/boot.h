@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_BOOT_H
-#define HW_ARM_APPLE_SILICON_BOOT_H
+#pragma once
 
 // #define ENABLE_BASEBAND
 #define ENABLE_DATA_ENCRYPTION
@@ -419,5 +418,3 @@ uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size);
 
 void apple_boot_load_ramdisk(const char *filename, AddressSpace *as, hwaddr pa,
                              uint64_t *size);
-
-#endif /* HW_ARM_APPLE_SILICON_BOOT_H */

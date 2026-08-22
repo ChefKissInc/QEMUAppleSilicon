@@ -8,8 +8,7 @@
  *      QEMU-specific definitions belong in pci.h
  */
 
-#ifndef HW_PCI_IDS_H
-#define HW_PCI_IDS_H
+#pragma once
 
 /* Device classes and subclasses */
 
@@ -290,5 +289,3 @@
 #define PCI_VENDOR_ID_SYNOPSYS           0x16C3
 
 #define PCI_VENDOR_ID_NVIDIA             0x10de
-
-#endif

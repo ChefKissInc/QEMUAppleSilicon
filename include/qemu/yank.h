@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef YANK_H
-#define YANK_H
+#pragma once
 
 #include "qapi/qapi-types-yank.h"
 
@@ -83,5 +82,3 @@ void yank_unregister_function(const YankInstance *instance,
 
 #define MIGRATION_YANK_INSTANCE (&(YankInstance) { \
         .type = YANK_INSTANCE_TYPE_MIGRATION })
-
-#endif

@@ -21,8 +21,7 @@
  *  with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EXYNOS4210_UART_H
-#define EXYNOS4210_UART_H
+#pragma once
 
 #include "hw/or-irq.h"
 #include "hw/sysbus.h"
@@ -33,5 +32,3 @@ DeviceState *exynos4210_uart_create(hwaddr addr,
                                     int channel,
                                     Chardev *chr,
                                     qemu_irq irq);
-
-#endif /* EXYNOS4210_UART_H */

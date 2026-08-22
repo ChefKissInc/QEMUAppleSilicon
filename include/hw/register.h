@@ -8,8 +8,7 @@
  * the COPYING file in the top-level directory.
  */
 
-#ifndef REGISTER_H
-#define REGISTER_H
+#pragma once
 
 #include "hw/qdev-core.h"
 #include "system/memory.h"
@@ -225,5 +224,3 @@ RegisterInfoArray *register_init_block64(DeviceState *owner,
  */
 
 void register_finalize_block(RegisterInfoArray *r_array);
-
-#endif

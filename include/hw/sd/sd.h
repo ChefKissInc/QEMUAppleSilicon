@@ -27,8 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HW_SD_H
-#define HW_SD_H
+#pragma once
 
 #include "hw/qdev-core.h"
 #include "qom/object.h"
@@ -226,5 +225,3 @@ void sdbus_reparent_card(SDBus *from, SDBus *to);
 /* Functions to be used by SD devices to report back to qdevified controllers */
 void sdbus_set_inserted(SDBus *sd, bool inserted);
 void sdbus_set_readonly(SDBus *sd, bool inserted);
-
-#endif /* HW_SD_H */

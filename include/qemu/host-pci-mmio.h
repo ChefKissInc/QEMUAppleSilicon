@@ -7,8 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef HOST_PCI_MMIO_H
-#define HOST_PCI_MMIO_H
+#pragma once
 
 #include "qemu/bswap.h"
 
@@ -103,5 +102,3 @@ static inline void host_pci_stn_le_p(void *ioaddr, int sz, uint64_t v)
         assert_not_reached();
     }
 }
-
-#endif

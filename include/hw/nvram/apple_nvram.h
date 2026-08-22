@@ -1,5 +1,4 @@
-#ifndef APPLE_NVRAM_H
-#define APPLE_NVRAM_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "block/block.h"
@@ -86,4 +85,3 @@ int env_set_uint(AppleNvramState *s, const char *name, size_t val,
                  uint32_t flags);
 int env_set_bool(AppleNvramState *s, const char *name, bool val,
                  uint32_t flags);
-#endif /* APPLE_NVRAM_H */

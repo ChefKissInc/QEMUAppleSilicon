@@ -12,8 +12,7 @@
  * See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef QNUM_H
-#define QNUM_H
+#pragma once
 
 #include "qobject/qobject.h"
 
@@ -71,5 +70,3 @@ uint64_t qnum_get_uint(const QNum *qn);
 double qnum_get_double(QNum *qn);
 
 char *qnum_to_string(QNum *qn);
-
-#endif /* QNUM_H */

@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef ACCEL_TCG_BACKEND_LDST_H
-#define ACCEL_TCG_BACKEND_LDST_H
+#pragma once
 
 #include "tcg-target-mo.h"
 
@@ -37,5 +36,3 @@
             smp_mb();             \
         }                         \
     } while (0)
-
-#endif

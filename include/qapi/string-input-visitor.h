@@ -10,8 +10,7 @@
  *
  */
 
-#ifndef STRING_INPUT_VISITOR_H
-#define STRING_INPUT_VISITOR_H
+#pragma once
 
 #include "qapi/visitor.h"
 
@@ -23,5 +22,3 @@ typedef struct StringInputVisitor StringInputVisitor;
  * of integers (except type "size") are supported.
  */
 Visitor *string_input_visitor_new(const char *str);
-
-#endif

@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_ARM_VGIC_COMMON_H
-#define QEMU_ARM_VGIC_COMMON_H
+#pragma once
 
 /**
  * kvm_arm_gic_set_irq - Send an IRQ to the in-kernel vGIC
@@ -31,5 +30,3 @@
  * @level: level of the IRQ line.
  */
 void kvm_arm_gic_set_irq(uint32_t num_irq, int irq, int level);
-
-#endif

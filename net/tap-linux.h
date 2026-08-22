@@ -13,8 +13,7 @@
  *  GNU General Public License for more details.
  */
 
-#ifndef QEMU_TAP_LINUX_H
-#define QEMU_TAP_LINUX_H
+#pragma once
 
 #ifdef __linux__
 
@@ -52,5 +51,3 @@
 #define TUN_F_UFO     0x10    /* I can handle UFO packets */
 #define TUN_F_USO4    0x20    /* I can handle USO for IPv4 packets */
 #define TUN_F_USO6    0x40    /* I can handle USO for IPv6 packets */
-
-#endif /* QEMU_TAP_LINUX_H */

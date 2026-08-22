@@ -8,8 +8,7 @@
  *
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  */
-#ifndef IOVA_TREE_H
-#define IOVA_TREE_H
+#pragma once
 
 /*
  * Currently the iova tree will only allow to keep ranges
@@ -160,5 +159,3 @@ int iova_tree_alloc_map(IOVATree *tree, DMAMap *map, hwaddr iova_begin,
  * Return: None.
  */
 void iova_tree_destroy(IOVATree *tree);
-
-#endif

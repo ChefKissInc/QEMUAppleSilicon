@@ -1,5 +1,4 @@
-#ifndef QEMU_CLIPBOARD_H
-#define QEMU_CLIPBOARD_H
+#pragma once
 
 #include "qemu/notify.h"
 
@@ -287,5 +286,3 @@ void qemu_clipboard_set_data(QemuClipboardPeer *peer,
                              bool update);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QemuClipboardInfo, qemu_clipboard_info_unref)
-
-#endif /* QEMU_CLIPBOARD_H */

@@ -1,5 +1,4 @@
-#ifndef QEMU_EXEC_LOG_H
-#define QEMU_EXEC_LOG_H
+#pragma once
 
 #include "qemu/log.h"
 #include "hw/core/cpu.h"
@@ -35,5 +34,3 @@ static inline void log_cpu_state_mask(int mask, CPUState *cpu, int flags)
         log_cpu_state(cpu, flags);
     }
 }
-
-#endif

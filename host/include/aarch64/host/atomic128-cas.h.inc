@@ -8,8 +8,7 @@
  * atomic primitive is meant to provide.
  */
 
-#ifndef AARCH64_ATOMIC128_CAS_H
-#define AARCH64_ATOMIC128_CAS_H
+#pragma once
 
 /* Through gcc 10, aarch64 has no support for 128-bit atomics.  */
 #if defined(CONFIG_ATOMIC128) || defined(CONFIG_CMPXCHG128)
@@ -98,5 +97,3 @@ static inline Int128 atomic16_fetch_or(Int128 *ptr, Int128 new)
 # define CONFIG_CMPXCHG128 1
 # define HAVE_CMPXCHG128 1
 #endif
-
-#endif /* AARCH64_ATOMIC128_CAS_H */

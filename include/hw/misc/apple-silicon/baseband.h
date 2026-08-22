@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_BASEBAND_H
-#define HW_MISC_APPLE_SILICON_BASEBAND_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/pci-host/apcie.h"
@@ -30,5 +29,3 @@
 
 SysBusDevice *apple_baseband_create(AppleDTNode *node, PCIBus *pci_bus,
                                     ApplePCIEPort *port);
-
-#endif /* HW_MISC_APPLE_SILICON_BASEBAND_H */

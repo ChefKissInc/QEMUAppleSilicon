@@ -1,5 +1,4 @@
-#ifndef HW_FLASH_H
-#define HW_FLASH_H
+#pragma once
 
 /* NOR flash devices */
 
@@ -49,5 +48,3 @@ PFlashCFI02 *pflash_cfi02_register(hwaddr base,
 #define TYPE_M25P80 "m25p80-generic"
 
 BlockBackend *m25p80_get_blk(DeviceState *dev);
-
-#endif

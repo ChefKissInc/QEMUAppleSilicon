@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_SEP_H
-#define HW_ARM_APPLE_SILICON_SEP_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -381,5 +380,3 @@ AppleSEPState *apple_sep_from_node(AppleDTNode *node, MemoryRegion *ool_mr,
                                    uint32_t chip_id);
 
 AppleSSCState *apple_ssc_create(MachineState *machine, uint8_t addr);
-
-#endif /* HW_ARM_APPLE_SILICON_SEP_H */

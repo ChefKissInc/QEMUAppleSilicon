@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef IOTHREAD_H
-#define IOTHREAD_H
+#pragma once
 
 #include "block/aio.h"
 #include "qemu/thread.h"
@@ -63,5 +62,3 @@ void iothread_destroy(IOThread *iothread);
  * false otherwise.
  */
 bool qemu_in_iothread(void);
-
-#endif /* IOTHREAD_H */

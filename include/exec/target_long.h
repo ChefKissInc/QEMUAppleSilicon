@@ -7,8 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef _TARGET_LONG_H_
-#define _TARGET_LONG_H_
+#pragma once
 
 /*
  * Usually this should only be included via cpu-defs.h however for
@@ -40,5 +39,3 @@ typedef uint64_t target_ulong;
 #else
 #error TARGET_LONG_SIZE undefined
 #endif
-
-#endif /* _TARGET_LONG_H_ */

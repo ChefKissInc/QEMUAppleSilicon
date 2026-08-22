@@ -21,8 +21,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_GICV3_COMMON_H
-#define HW_ARM_GICV3_COMMON_H
+#pragma once
 
 #include "hw/sysbus.h"
 #include "hw/intc/arm_gic_common.h"
@@ -323,5 +322,3 @@ void gicv3_init_irqs_and_mmio(GICv3State *s, qemu_irq_handler handler,
  * Returns: class name to use
  */
 const char *gicv3_class_name(void);
-
-#endif

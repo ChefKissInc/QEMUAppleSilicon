@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_DISPLAY_SYNOPSYS_MIPI_DSIM_H
-#define HW_DISPLAY_SYNOPSYS_MIPI_DSIM_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "hw/arm/apple-silicon/dt.h"
@@ -28,5 +27,3 @@
 OBJECT_DECLARE_SIMPLE_TYPE(SynopsysMIPIDSIMState, SYNOPSYS_MIPI_DSIM);
 
 SysBusDevice *synopsys_mipi_dsim_create(AppleDTNode *node);
-
-#endif /* HW_DISPLAY_SYNOPSYS_MIPI_DSIM_H */

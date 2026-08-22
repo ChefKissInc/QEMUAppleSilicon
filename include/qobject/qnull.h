@@ -10,8 +10,7 @@
  * or later.  See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef QNULL_H
-#define QNULL_H
+#pragma once
 
 #include "qobject/qobject.h"
 
@@ -29,5 +28,3 @@ static inline QNull *qnull(void)
 void qnull_unref(QNull *q);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QNull, qnull_unref)
-
-#endif /* QNULL_H */

@@ -12,8 +12,7 @@
  * Contributions after 2012-01-13 are licensed under the terms of the
  * GNU GPL, version 2 or (at your option) any later version.
  */
-#ifndef QEMU_SECCOMP_H
-#define QEMU_SECCOMP_H
+#pragma once
 
 #define QEMU_SECCOMP_SET_DEFAULT     (1 << 0)
 #define QEMU_SECCOMP_SET_OBSOLETE    (1 << 1)
@@ -22,5 +21,3 @@
 #define QEMU_SECCOMP_SET_RESOURCECTL (1 << 4)
 
 int parse_sandbox(void *opaque, QemuOpts *opts, Error **errp);
-
-#endif

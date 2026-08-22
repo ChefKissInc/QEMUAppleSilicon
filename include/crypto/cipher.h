@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_CIPHER_H
-#define QCRYPTO_CIPHER_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 
@@ -254,5 +253,3 @@ int qcrypto_cipher_setiv(QCryptoCipher *cipher,
 int qcrypto_cipher_getiv(QCryptoCipher *cipher,
                          uint8_t *iv, size_t niv,
                          Error **errp);
-
-#endif /* QCRYPTO_CIPHER_H */

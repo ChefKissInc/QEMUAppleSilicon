@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef ACCEL_TCG_INTERNAL_COMMON_H
-#define ACCEL_TCG_INTERNAL_COMMON_H
+#pragma once
 
 #include "exec/cpu-common.h"
 #include "exec/translation-block.h"
@@ -103,5 +102,3 @@ void tb_phys_invalidate(TranslationBlock *tb, tb_page_addr_t page_addr);
 void tb_set_jmp_target(TranslationBlock *tb, int n, uintptr_t addr);
 
 void tcg_get_stats(AccelState *accel, GString *buf);
-
-#endif

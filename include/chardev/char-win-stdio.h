@@ -21,9 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef CHAR_WIN_STDIO_H
-#define CHAR_WIN_STDIO_H
+#pragma once
 
 #define TYPE_CHARDEV_WIN_STDIO "chardev-win-stdio"
-
-#endif /* CHAR_WIN_STDIO_H */

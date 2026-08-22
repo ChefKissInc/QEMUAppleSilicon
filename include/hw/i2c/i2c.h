@@ -1,5 +1,4 @@
-#ifndef QEMU_I2C_H
-#define QEMU_I2C_H
+#pragma once
 
 #include "hw/qdev-core.h"
 #include "qom/object.h"
@@ -212,5 +211,3 @@ bool i2c_slave_realize_and_unref(I2CSlave *dev, I2CBus *bus, Error **errp);
  * @address: I2C address of the slave when put on a bus
  */
 void i2c_slave_set_address(I2CSlave *dev, uint8_t address);
-
-#endif

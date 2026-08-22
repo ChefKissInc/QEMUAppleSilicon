@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef TCG_STARTUP_H
-#define TCG_STARTUP_H
+#pragma once
 
 /**
  * tcg_init: Initialize the TCG runtime
@@ -54,5 +53,3 @@ void tcg_register_thread(void);
  * the guest binary and the value of guest_base is known.
  */
 void tcg_prologue_init(void);
-
-#endif

@@ -19,8 +19,7 @@
  *
  */
 
-#ifndef QCRYPTO_AKCIPHER_H
-#define QCRYPTO_AKCIPHER_H
+#pragma once
 
 #include "qapi/qapi-types-crypto.h"
 
@@ -175,5 +174,3 @@ int qcrypto_akcipher_export_p8info(const QCryptoAkCipherOptions *opts,
                                    Error **errp);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoAkCipher, qcrypto_akcipher_free)
-
-#endif /* QCRYPTO_AKCIPHER_H */

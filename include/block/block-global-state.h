@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_GLOBAL_STATE_H
-#define BLOCK_GLOBAL_STATE_H
+#pragma once
 
 #include "block/block-common.h"
 #include "qemu/coroutine.h"
@@ -314,5 +313,3 @@ bool bdrv_register_buf(BlockDriverState *bs, void *host, size_t size,
 void bdrv_unregister_buf(BlockDriverState *bs, void *host, size_t size);
 
 void bdrv_cancel_in_flight(BlockDriverState *bs);
-
-#endif /* BLOCK_GLOBAL_STATE_H */

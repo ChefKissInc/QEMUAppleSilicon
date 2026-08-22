@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_ARM_APPLE_SILICON_S8000_H
-#define HW_ARM_APPLE_SILICON_S8000_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "exec/hwaddr.h"
@@ -77,5 +76,3 @@ typedef struct {
     char *usb_conn_addr;
     uint16_t usb_conn_port;
 } AppleS8000MachineState;
-
-#endif /* HW_ARM_APPLE_SILICON_S8000_H */

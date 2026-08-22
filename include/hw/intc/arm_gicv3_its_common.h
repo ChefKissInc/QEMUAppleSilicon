@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_ARM_GICV3_ITS_COMMON_H
-#define QEMU_ARM_GICV3_ITS_COMMON_H
+#pragma once
 
 #include "hw/sysbus.h"
 #include "hw/intc/arm_gicv3_common.h"
@@ -127,5 +126,3 @@ struct GICv3ITSCommonClass {
  * Returns: class name to use
  */
 const char *its_class_name(void);
-
-#endif

@@ -5,10 +5,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef UI_WIN32_KBD_HOOK_H
-#define UI_WIN32_KBD_HOOK_H
+#pragma once
 
 void win32_kbd_set_window(void *hwnd);
 void win32_kbd_set_grab(bool grab);
-
-#endif

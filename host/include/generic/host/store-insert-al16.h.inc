@@ -5,8 +5,7 @@
  * Copyright (C) 2023 Linaro, Ltd.
  */
 
-#ifndef HOST_STORE_INSERT_AL16_H
-#define HOST_STORE_INSERT_AL16_H
+#pragma once
 
 /**
  * store_atom_insert_al16:
@@ -46,5 +45,3 @@ store_atom_insert_al16(Int128 *ps, Int128 val, Int128 msk)
     } while (int128_ne(cmp, old));
 #endif
 }
-
-#endif /* HOST_STORE_INSERT_AL16_H */

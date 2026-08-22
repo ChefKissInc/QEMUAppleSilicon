@@ -19,8 +19,7 @@
  * By Richard W.M. Jones (rjones@redhat.com).
  */
 
-#ifndef QEMU_WATCHDOG_H
-#define QEMU_WATCHDOG_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "qapi/qapi-types-run-state.h"
@@ -28,5 +27,3 @@
 /* in hw/watchdog.c */
 WatchdogAction get_watchdog_action(void);
 void watchdog_perform_action(void);
-
-#endif /* QEMU_WATCHDOG_H */

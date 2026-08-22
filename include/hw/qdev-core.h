@@ -1,5 +1,4 @@
-#ifndef QDEV_CORE_H
-#define QDEV_CORE_H
+#pragma once
 
 #include "qemu/atomic.h"
 #include "qemu/queue.h"
@@ -1137,5 +1136,3 @@ typedef enum MachineInitPhase {
 
 bool phase_check(MachineInitPhase phase);
 void phase_advance(MachineInitPhase phase);
-
-#endif

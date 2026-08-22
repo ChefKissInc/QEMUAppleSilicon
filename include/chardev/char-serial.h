@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef CHAR_SERIAL_H
-#define CHAR_SERIAL_H
+#pragma once
 
 #include "chardev/char.h"
 
@@ -45,5 +44,3 @@ typedef struct {
 #define CHR_TIOCM_RI    0x080
 #define CHR_TIOCM_DTR   0x002
 #define CHR_TIOCM_RTS   0x004
-
-#endif

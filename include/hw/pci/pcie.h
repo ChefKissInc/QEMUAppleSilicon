@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_PCIE_H
-#define QEMU_PCIE_H
+#pragma once
 
 #include "hw/pci/pci_regs.h"
 #include "hw/pci/pcie_regs.h"
@@ -156,4 +155,3 @@ bool pcie_pri_enabled(const PCIDevice *dev);
 bool pcie_pasid_enabled(const PCIDevice *dev);
 bool pcie_pasid_priv_enabled(PCIDevice *dev);
 bool pcie_ats_enabled(const PCIDevice *dev);
-#endif /* QEMU_PCIE_H */

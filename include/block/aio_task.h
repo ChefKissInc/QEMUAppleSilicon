@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCK_AIO_TASK_H
-#define BLOCK_AIO_TASK_H
+#pragma once
 
 typedef struct AioTaskPool AioTaskPool;
 typedef struct AioTask AioTask;
@@ -46,5 +45,3 @@ void coroutine_fn aio_task_pool_start_task(AioTaskPool *pool, AioTask *task);
 void coroutine_fn aio_task_pool_wait_slot(AioTaskPool *pool);
 void coroutine_fn aio_task_pool_wait_one(AioTaskPool *pool);
 void coroutine_fn aio_task_pool_wait_all(AioTaskPool *pool);
-
-#endif /* BLOCK_AIO_TASK_H */

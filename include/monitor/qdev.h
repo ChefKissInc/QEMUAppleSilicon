@@ -1,5 +1,4 @@
-#ifndef MONITOR_QDEV_H
-#define MONITOR_QDEV_H
+#pragma once
 
 /*** monitor commands ***/
 
@@ -35,5 +34,3 @@ DeviceState *qdev_device_add_from_qdict(const QDict *opts,
  * not be freed by the caller.
  */
 const char *qdev_set_id(DeviceState *dev, char *id, Error **errp);
-
-#endif

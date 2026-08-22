@@ -6,8 +6,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef QEMU_NET_ANNOUNCE_H
-#define QEMU_NET_ANNOUNCE_H
+#pragma once
 
 #include "qapi/qapi-types-net.h"
 #include "qemu/timer.h"
@@ -40,5 +39,3 @@ void qemu_announce_timer_reset(AnnounceTimer *timer,
                                void *opaque);
 
 void qemu_announce_self(AnnounceTimer *timer, AnnounceParameters *params);
-
-#endif

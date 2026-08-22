@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef SYSTEM_MEMORY_H
-#define SYSTEM_MEMORY_H
+#pragma once
 
 #include "exec/cpu-common.h"
 #include "exec/hwaddr.h"
@@ -3133,5 +3132,3 @@ bool ram_block_discard_is_disabled(void);
  * Test if any discarding of memory in ram blocks is required to work reliably.
  */
 bool ram_block_discard_is_required(void);
-
-#endif

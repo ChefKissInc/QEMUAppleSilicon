@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef APCIE_H
-#define APCIE_H
+#pragma once
 
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/pci/pcie_host.h"
@@ -158,5 +157,3 @@ void port_devices_set_power(ApplePCIEPort *port, bool power);
 void apple_pcie_port_temp_lower_msi_irq(ApplePCIEPort *port,
                                         int msi_intr_index);
 SysBusDevice *apple_pcie_from_node(AppleDTNode *node, uint32_t chip_id);
-
-#endif /* APCIE_H */

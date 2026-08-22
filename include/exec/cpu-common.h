@@ -5,8 +5,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.1+
  */
-#ifndef CPU_COMMON_H
-#define CPU_COMMON_H
+#pragma once
 
 #include "exec/vaddr.h"
 #include "exec/hwaddr.h"
@@ -257,5 +256,3 @@ static inline CPUState *env_cpu(CPUArchState *env)
 {
     return (CPUState *)env_cpu_const(env);
 }
-
-#endif /* CPU_COMMON_H */

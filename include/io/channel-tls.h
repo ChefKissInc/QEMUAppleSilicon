@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_CHANNEL_TLS_H
-#define QIO_CHANNEL_TLS_H
+#pragma once
 
 #include "io/channel.h"
 #include "io/task.h"
@@ -154,5 +153,3 @@ void qio_channel_tls_handshake(QIOChannelTLS *ioc,
  */
 QCryptoTLSSession *
 qio_channel_tls_get_session(QIOChannelTLS *ioc);
-
-#endif /* QIO_CHANNEL_TLS_H */

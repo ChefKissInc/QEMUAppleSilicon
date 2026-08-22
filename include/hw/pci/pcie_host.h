@@ -18,8 +18,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCIE_HOST_H
-#define PCIE_HOST_H
+#pragma once
 
 #include "hw/pci/pci_host.h"
 #include "system/memory.h"
@@ -77,5 +76,3 @@ void pcie_host_mmcfg_update(PCIExpressHost *e,
 #define PCIE_MMCFG_DEVFN(addr)          (((addr) >> PCIE_MMCFG_DEVFN_BIT) & \
                                          PCIE_MMCFG_DEVFN_MASK)
 #define PCIE_MMCFG_CONFOFFSET(addr)     ((addr) & PCIE_MMCFG_CONFOFFSET_MASK)
-
-#endif /* PCIE_HOST_H */

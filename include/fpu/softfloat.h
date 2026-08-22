@@ -79,8 +79,7 @@ this code that are retained.
  * version 2 or later. See the COPYING file in the top-level directory.
  */
 
-#ifndef SOFTFLOAT_H
-#define SOFTFLOAT_H
+#pragma once
 
 /*----------------------------------------------------------------------------
 | Software IEC/IEEE floating-point ordering relations
@@ -1380,6 +1379,3 @@ static inline bool float128_unordered_quiet(float128 a, float128 b,
 | The pattern for a default generated quadruple-precision NaN.
 *----------------------------------------------------------------------------*/
 float128 float128_default_nan(float_status *status);
-
-
-#endif /* SOFTFLOAT_H */

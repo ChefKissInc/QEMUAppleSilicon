@@ -22,9 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_NET_UTIL_H
-#define QEMU_NET_UTIL_H
-
+#pragma once
 
 /*
  * Structure of an internet header, naked of options.
@@ -82,5 +80,3 @@ static inline bool in6_equal_net(const struct in6_addr *a,
 #define TCPS_TIME_WAIT          10      /* in 2*msl quiet wait after close */
 
 int net_parse_macaddr(uint8_t *macaddr, const char *p);
-
-#endif /* QEMU_NET_UTIL_H */

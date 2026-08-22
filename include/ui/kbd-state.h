@@ -4,8 +4,7 @@
  * top-level directory.
  */
 
-#ifndef QEMU_UI_KBD_STATE_H
-#define QEMU_UI_KBD_STATE_H
+#pragma once
 
 #include "qapi/qapi-types-ui.h"
 
@@ -109,5 +108,3 @@ void qkbd_state_lift_all_keys(QKbdState *kbd);
  * @con: new QemuConsole for this state tracker.
  */
 void qkbd_state_switch_console(QKbdState *kbd, QemuConsole *con);
-
-#endif /* QEMU_UI_KBD_STATE_H */

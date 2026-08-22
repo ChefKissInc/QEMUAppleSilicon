@@ -77,8 +77,7 @@ this code that are retained.
  * version 2 or later. See the COPYING file in the top-level directory.
  */
 
-#ifndef SOFTFLOAT_TYPES_H
-#define SOFTFLOAT_TYPES_H
+#pragma once
 
 #include "hw/registerfields.h"
 
@@ -422,5 +421,3 @@ typedef struct float_status {
     /* should underflowed results add re_bias to its exponent? */
     bool rebias_underflow;
 } float_status;
-
-#endif /* SOFTFLOAT_TYPES_H */

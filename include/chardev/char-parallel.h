@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef CHAR_PARALLEL_H
-#define CHAR_PARALLEL_H
+#pragma once
 
 #include "chardev/char.h"
 
@@ -41,5 +40,3 @@ struct ParallelIOArg {
     void *buffer;
     int count;
 };
-
-#endif /* CHAR_PARALLEL_H */

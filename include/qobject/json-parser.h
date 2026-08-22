@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QAPI_QMP_JSON_PARSER_H
-#define QAPI_QMP_JSON_PARSER_H
+#pragma once
 
 typedef struct JSONLexer {
     int start_state, state;
@@ -42,5 +41,3 @@ void json_message_parser_feed(JSONMessageParser *parser,
 void json_message_parser_flush(JSONMessageParser *parser);
 
 void json_message_parser_destroy(JSONMessageParser *parser);
-
-#endif

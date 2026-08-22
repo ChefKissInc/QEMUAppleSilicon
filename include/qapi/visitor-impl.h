@@ -9,8 +9,7 @@
  * See the COPYING.LIB file in the top-level directory.
  *
  */
-#ifndef QAPI_VISITOR_IMPL_H
-#define QAPI_VISITOR_IMPL_H
+#pragma once
 
 #include "qapi/visitor.h"
 
@@ -133,5 +132,3 @@ struct Visitor
     /* Must be set */
     void (*free)(Visitor *v);
 };
-
-#endif

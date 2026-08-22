@@ -15,8 +15,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FW_PATH_PROVIDER_H
-#define FW_PATH_PROVIDER_H
+#pragma once
 
 #include "qom/object.h"
 
@@ -40,5 +39,3 @@ char *fw_path_provider_get_dev_path(FWPathProvider *p, BusState *bus,
                                     DeviceState *dev);
 char *fw_path_provider_try_get_dev_path(Object *o, BusState *bus,
                                         DeviceState *dev);
-
-#endif /* FW_PATH_PROVIDER_H */

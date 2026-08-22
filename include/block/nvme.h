@@ -1,5 +1,4 @@
-#ifndef BLOCK_NVME_H
-#define BLOCK_NVME_H
+#pragma once
 
 #include "hw/registerfields.h"
 
@@ -1953,4 +1952,3 @@ static inline void _nvme_check_size(void)
     QEMU_BUILD_BUG_ON(sizeof(NvmeEndGrpLog) != 512);
     QEMU_BUILD_BUG_ON(sizeof(NvmeDirectiveIdentify) != 4096);
 }
-#endif

@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QIO_CHANNEL_H
-#define QIO_CHANNEL_H
+#pragma once
 
 #include "qom/object.h"
 #include "qemu/coroutine-core.h"
@@ -1023,5 +1022,3 @@ int qio_channel_flush(QIOChannel *ioc,
 int qio_channel_get_peerpid(QIOChannel *ioc,
                              unsigned int *pid,
                              Error **errp);
-
-#endif /* QIO_CHANNEL_H */

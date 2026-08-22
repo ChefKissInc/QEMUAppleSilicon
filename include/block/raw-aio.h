@@ -13,8 +13,7 @@
  * GNU GPL, version 2 or (at your option) any later version.
  */
 
-#ifndef QEMU_RAW_AIO_H
-#define QEMU_RAW_AIO_H
+#pragma once
 
 #include "block/aio.h"
 #include "block/block-common.h"
@@ -105,5 +104,3 @@ void win32_aio_detach_aio_context(QEMUWin32AIOState *aio,
 void win32_aio_attach_aio_context(QEMUWin32AIOState *aio,
                                   AioContext *new_context);
 #endif
-
-#endif /* QEMU_RAW_AIO_H */

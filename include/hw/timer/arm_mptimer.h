@@ -18,8 +18,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef HW_TIMER_ARM_MPTIMER_H
-#define HW_TIMER_ARM_MPTIMER_H
+#pragma once
 
 #include "hw/sysbus.h"
 #include "qom/object.h"
@@ -47,5 +46,3 @@ struct ARMMPTimerState {
     TimerBlock timerblock[ARM_MPTIMER_MAX_CPUS];
     MemoryRegion iomem;
 };
-
-#endif

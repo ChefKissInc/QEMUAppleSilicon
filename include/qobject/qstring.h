@@ -10,8 +10,7 @@
  * See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef QSTRING_H
-#define QSTRING_H
+#pragma once
 
 #include "qobject/qobject.h"
 
@@ -29,5 +28,3 @@ QString *qstring_from_str(const char *str);
 QString *qstring_from_substr(const char *str, size_t start, size_t end);
 QString *qstring_from_gstring(GString *gstr);
 const char *qstring_get_str(const QString *qstring);
-
-#endif /* QSTRING_H */

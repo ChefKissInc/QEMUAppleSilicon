@@ -7,8 +7,7 @@
  * See the COPYING file in the top-level directory.
  *
  */
-#ifndef VMNET_INT_H
-#define VMNET_INT_H
+#pragma once
 
 #include "vmnet_int.h"
 #include "clients.h"
@@ -60,5 +59,3 @@ ssize_t vmnet_receive_common(NetClientState *nc,
                              size_t size);
 
 void vmnet_cleanup_common(NetClientState *nc);
-
-#endif /* VMNET_INT_H */

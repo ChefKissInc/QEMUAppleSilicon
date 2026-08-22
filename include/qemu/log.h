@@ -1,5 +1,4 @@
-#ifndef QEMU_LOG_H
-#define QEMU_LOG_H
+#pragma once
 
 /* A small part of this API is split into its own header */
 #include "qemu/log-for-trace.h"
@@ -93,5 +92,3 @@ int qemu_str_to_log_mask(const char *str);
  * to the specified FILE*.
  */
 void qemu_print_log_usage(FILE *f);
-
-#endif

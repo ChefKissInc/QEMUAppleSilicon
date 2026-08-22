@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef QEMU_OBJECT_H
-#define QEMU_OBJECT_H
+#pragma once
 
 #include "qapi/qapi-builtin-types.h"
 #include "qemu/module.h"
@@ -2177,5 +2176,3 @@ char *object_property_help(const char *name, const char *type,
                            QObject *defval, const char *description);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(Object, object_unref)
-
-#endif

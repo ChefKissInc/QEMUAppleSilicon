@@ -1,5 +1,4 @@
-#ifndef QEMU_THREAD_H
-#define QEMU_THREAD_H
+#pragma once
 
 #include "qemu/processor.h"
 #include "qemu/atomic.h"
@@ -310,5 +309,3 @@ static inline void qemu_spin_unlock(QemuSpin *spin)
     __tsan_mutex_post_unlock(spin, 0);
 #endif
 }
-
-#endif

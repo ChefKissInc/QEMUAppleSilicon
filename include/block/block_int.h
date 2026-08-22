@@ -21,13 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_INT_H
-#define BLOCK_INT_H
+#pragma once
 
 #include "block/block_int-global-state.h"
 #include "block/block_int-io.h"
 #include "block/graph-lock.h"
 
 /* DO NOT ADD ANYTHING IN HERE. USE ONE OF THE HEADERS INCLUDED ABOVE */
-
-#endif /* BLOCK_INT_H */

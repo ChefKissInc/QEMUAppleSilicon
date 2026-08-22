@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef QEMU_AUDIO_H
-#define QEMU_AUDIO_H
+#pragma once
 
 #include "qemu/queue.h"
 #include "qapi/qapi-types-audio.h"
@@ -181,5 +180,3 @@ const char *audio_get_id(QEMUSoundCard *card);
 
 #define DEFINE_AUDIO_PROPERTIES(_s, _f)         \
     DEFINE_PROP_AUDIODEV("audiodev", _s, _f)
-
-#endif /* QEMU_AUDIO_H */

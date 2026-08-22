@@ -18,8 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_A7IOP_MAILBOX_CORE_H
-#define HW_MISC_APPLE_SILICON_A7IOP_MAILBOX_CORE_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "block/aio.h"
@@ -132,5 +131,3 @@ AppleA7IOPMailbox *apple_a7iop_mailbox_new(const char *role,
                                            AppleA7IOPMailbox *ap_mailbox,
                                            void *opaque,
                                            QEMUBHFunc *handle_messages_func);
-
-#endif /* HW_MISC_APPLE_SILICON_A7IOP_MAILBOX_CORE_H */

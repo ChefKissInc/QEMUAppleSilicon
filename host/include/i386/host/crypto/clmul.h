@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef X86_HOST_CRYPTO_CLMUL_H
-#define X86_HOST_CRYPTO_CLMUL_H
+#pragma once
 
 #include "host/cpuinfo.h"
 #include <immintrin.h>
@@ -25,5 +24,3 @@ clmul_64_accel(uint64_t n, uint64_t m)
     u.v = _mm_clmulepi64_si128(_mm_set_epi64x(0, n), _mm_set_epi64x(0, m), 0);
     return u.s;
 }
-
-#endif /* X86_HOST_CRYPTO_CLMUL_H */

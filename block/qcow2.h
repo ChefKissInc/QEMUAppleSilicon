@@ -22,8 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef BLOCK_QCOW2_H
-#define BLOCK_QCOW2_H
+#pragma once
 
 #include "crypto/block.h"
 #include "qemu/coroutine.h"
@@ -1070,5 +1069,3 @@ qcow2_co_encrypt(BlockDriverState *bs, uint64_t host_offset,
 int coroutine_fn
 qcow2_co_decrypt(BlockDriverState *bs, uint64_t host_offset,
                  uint64_t guest_offset, void *buf, size_t len);
-
-#endif

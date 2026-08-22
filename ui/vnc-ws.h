@@ -18,8 +18,7 @@
  * along with this software; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QEMU_UI_VNC_WS_H
-#define QEMU_UI_VNC_WS_H
+#pragma once
 
 gboolean vncws_tls_handshake_io(QIOChannel *ioc,
                                 GIOCondition condition,
@@ -27,5 +26,3 @@ gboolean vncws_tls_handshake_io(QIOChannel *ioc,
 gboolean vncws_handshake_io(QIOChannel *ioc,
                             GIOCondition condition,
                             void *opaque);
-
-#endif /* QEMU_UI_VNC_WS_H */

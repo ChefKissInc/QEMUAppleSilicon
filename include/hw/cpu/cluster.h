@@ -17,8 +17,7 @@
  * along with this program; if not, see
  * <http://www.gnu.org/licenses/gpl-2.0.html>
  */
-#ifndef HW_CPU_CLUSTER_H
-#define HW_CPU_CLUSTER_H
+#pragma once
 
 #include "hw/qdev-core.h"
 #include "qom/object.h"
@@ -77,5 +76,3 @@ struct CPUClusterState {
     /*< public >*/
     uint32_t cluster_id;
 };
-
-#endif

@@ -9,9 +9,7 @@
  * See the COPYING.LIB file in the top-level directory.
  */
 
-#ifndef BITOPS_H
-#define BITOPS_H
-
+#pragma once
 
 #include "host-utils.h"
 #include "atomic.h"
@@ -816,5 +814,3 @@ static inline uint64_t half_unshuffle64(uint64_t x)
     x = ((x >> 16) | x) & 0x00000000FFFFFFFFULL;
     return x;
 }
-
-#endif

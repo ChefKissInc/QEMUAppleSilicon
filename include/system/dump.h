@@ -11,8 +11,7 @@
  *
  */
 
-#ifndef DUMP_H
-#define DUMP_H
+#pragma once
 
 #include "qapi/qapi-types-dump.h"
 #include "qemu/thread.h"
@@ -222,4 +221,3 @@ int64_t dump_filtered_memblock_size(GuestPhysBlock *block, int64_t filter_area_s
                                     int64_t filter_area_length);
 int64_t dump_filtered_memblock_start(GuestPhysBlock *block, int64_t filter_area_start,
                                      int64_t filter_area_length);
-#endif

@@ -17,13 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_MISC_APPLE_SILICON_CHESTNUT_H
-#define HW_MISC_APPLE_SILICON_CHESTNUT_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "qom/object.h"
 
 #define TYPE_APPLE_CHESTNUT "apple-chestnut"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleChestnutState, APPLE_CHESTNUT);
-
-#endif /* HW_MISC_APPLE_SILICON_CHESTNUT_H */

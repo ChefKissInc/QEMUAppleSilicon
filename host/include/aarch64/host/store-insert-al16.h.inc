@@ -5,8 +5,7 @@
  * Copyright (C) 2023 Linaro, Ltd.
  */
 
-#ifndef AARCH64_STORE_INSERT_AL16_H
-#define AARCH64_STORE_INSERT_AL16_H
+#pragma once
 
 /**
  * store_atom_insert_al16:
@@ -43,5 +42,3 @@ store_atom_insert_al16(Int128 *ps, Int128 val, Int128 msk)
         : [mem] "+Q"(*ps), [f] "=&r"(fail), [l] "=&r"(tl), [h] "=&r"(th)
         : [vl] "r"(vl), [vh] "r"(vh), [ml] "r"(ml), [mh] "r"(mh));
 }
-
-#endif /* AARCH64_STORE_INSERT_AL16_H */

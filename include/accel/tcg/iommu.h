@@ -4,8 +4,7 @@
  * Copyright (c) 2003 Fabrice Bellard
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
-#ifndef ACCEL_TCG_IOMMU_H
-#define ACCEL_TCG_IOMMU_H
+#pragma once
 
 #include "exec/hwaddr.h"
 #include "exec/memattrs.h"
@@ -17,6 +16,3 @@ MemoryRegionSection *address_space_translate_for_iotlb(CPUState *cpu,
                                                        hwaddr *plen,
                                                        MemTxAttrs attrs,
                                                        int *prot);
-
-#endif
-

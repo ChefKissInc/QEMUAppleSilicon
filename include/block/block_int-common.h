@@ -21,8 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef BLOCK_INT_COMMON_H
-#define BLOCK_INT_COMMON_H
+#pragma once
 
 #include "block/aio.h"
 #include "block/block-common.h"
@@ -1324,5 +1323,3 @@ int bdrv_check_qiov_request(int64_t offset, int64_t bytes,
 #ifdef _WIN32
 int is_windows_drive(const char *filename);
 #endif
-
-#endif /* BLOCK_INT_COMMON_H */

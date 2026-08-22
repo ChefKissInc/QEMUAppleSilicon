@@ -18,9 +18,7 @@
  *
  */
 
-#ifndef QCRYPTO_RANDOM_H
-#define QCRYPTO_RANDOM_H
-
+#pragma once
 
 /**
  * qcrypto_random_bytes:
@@ -46,5 +44,3 @@ int qcrypto_random_bytes(void *buf,
  * Returns 0 on success, -1 on error
  */
 int qcrypto_random_init(Error **errp);
-
-#endif /* QCRYPTO_RANDOM_H */

@@ -1,5 +1,4 @@
-#ifndef QEMU_MSIX_H
-#define QEMU_MSIX_H
+#pragma once
 
 #include "hw/pci/pci.h"
 
@@ -45,5 +44,3 @@ int msix_set_vector_notifiers(PCIDevice *dev,
                               MSIVectorReleaseNotifier release_notifier,
                               MSIVectorPollNotifier poll_notifier);
 void msix_unset_vector_notifiers(PCIDevice *dev);
-
-#endif

@@ -17,8 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_USB_TCP_USB_H
-#define HW_USB_TCP_USB_H
+#pragma once
 
 #include "qemu/osdep.h"
 #include "qapi/util.h"
@@ -76,5 +75,3 @@ typedef struct QEMU_PACKED tcp_usb_cancel_header {
     uint8_t ep;
     uint64_t id;
 } tcp_usb_cancel_header;
-
-#endif /* HW_USB_TCP_USB_H */

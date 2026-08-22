@@ -1,5 +1,4 @@
-#ifndef SHPC_H
-#define SHPC_H
+#pragma once
 
 #include "system/memory.h"
 #include "hw/hotplug.h"
@@ -55,5 +54,3 @@ static inline bool shpc_present(const PCIDevice *dev)
 {
     return dev->cap_present & QEMU_PCI_CAP_SHPC;
 }
-
-#endif

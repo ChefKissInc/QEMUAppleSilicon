@@ -6,8 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef QEMU_TARGET_INFO_H
-#define QEMU_TARGET_INFO_H
+#pragma once
 
 /**
  * target_name:
@@ -49,5 +48,3 @@ const char *target_cpu_type(void);
  * well what you are doing!
  */
 bool target_big_endian(void);
-
-#endif

@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef QAUTHZ_PAMACCT_H
-#define QAUTHZ_PAMACCT_H
+#pragma once
 
 #include "authz/base.h"
 #include "qom/object.h"
@@ -84,5 +83,3 @@ struct QAuthZPAM {
 QAuthZPAM *qauthz_pam_new(const char *id,
                           const char *service,
                           Error **errp);
-
-#endif /* QAUTHZ_PAMACCT_H */

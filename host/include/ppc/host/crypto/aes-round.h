@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef PPC_HOST_CRYPTO_AES_ROUND_H
-#define PPC_HOST_CRYPTO_AES_ROUND_H
+#pragma once
 
 #ifdef __ALTIVEC__
 #include "host/cpuinfo.h"
@@ -178,5 +177,3 @@ aesdec_ISB_ISR_IMC_AK_accel(AESState *ret, const AESState *st,
 /* Without ALTIVEC, we can't even write inline assembly. */
 #include "host/include/generic/host/crypto/aes-round.h"
 #endif
-
-#endif /* PPC_HOST_CRYPTO_AES_ROUND_H */

@@ -8,8 +8,7 @@
  * atomic primitive is meant to provide.
  */
 
-#ifndef HOST_ATOMIC128_CAS_H
-#define HOST_ATOMIC128_CAS_H
+#pragma once
 
 #if defined(CONFIG_ATOMIC128)
 static inline Int128 ATTRIBUTE_ATOMIC128_OPT
@@ -139,5 +138,3 @@ Int128 QEMU_ERROR("unsupported atomic")
     atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new);
 # define HAVE_CMPXCHG128 0
 #endif
-
-#endif /* HOST_ATOMIC128_CAS_H */

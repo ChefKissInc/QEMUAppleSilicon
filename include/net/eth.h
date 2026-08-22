@@ -23,8 +23,7 @@
  *
  */
 
-#ifndef QEMU_ETH_H
-#define QEMU_ETH_H
+#pragma once
 
 #include "qemu/bswap.h"
 #include "qemu/iov.h"
@@ -436,5 +435,3 @@ eth_parse_ipv6_hdr(const struct iovec *pkt, int pkt_frags,
  */
 bool eth_pad_short_frame(uint8_t *padded_pkt, size_t *padded_buflen,
                          const void *pkt, size_t pkt_size);
-
-#endif

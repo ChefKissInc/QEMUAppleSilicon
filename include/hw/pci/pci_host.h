@@ -25,8 +25,7 @@
 /* Worker routines for a PCI host controller that uses an {address,data}
    register pair to access PCI configuration space.  */
 
-#ifndef PCI_HOST_H
-#define PCI_HOST_H
+#pragma once
 
 #include "hw/sysbus.h"
 #include "qom/object.h"
@@ -67,5 +66,3 @@ uint32_t pci_data_read(PCIBus *s, uint32_t addr, unsigned len);
 extern const MemoryRegionOps pci_host_conf_le_ops;
 extern const MemoryRegionOps pci_host_conf_be_ops;
 extern const MemoryRegionOps pci_host_data_le_ops;
-
-#endif /* PCI_HOST_H */

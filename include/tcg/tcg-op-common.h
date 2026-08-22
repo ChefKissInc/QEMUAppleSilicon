@@ -5,8 +5,7 @@
  * Copyright (c) 2008 Fabrice Bellard
  */
 
-#ifndef TCG_TCG_OP_COMMON_H
-#define TCG_TCG_OP_COMMON_H
+#pragma once
 
 #include "tcg/tcg.h"
 #include "exec/helper-proto-common.h"
@@ -566,5 +565,3 @@ static inline void tcg_gen_trunc_ptr_i32(TCGv_i32 r, TCGv_ptr a)
 
 #undef PTR
 #undef NAT
-
-#endif /* TCG_TCG_OP_COMMON_H */

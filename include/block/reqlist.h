@@ -12,8 +12,7 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef REQLIST_H
-#define REQLIST_H
+#pragma once
 
 #include "qemu/coroutine.h"
 
@@ -71,5 +70,3 @@ void coroutine_fn reqlist_shrink_req(BlockReq *req, int64_t new_bytes);
  * Remove request and wake all waiting coroutines. Do not release any memory.
  */
 void coroutine_fn reqlist_remove_req(BlockReq *req);
-
-#endif /* REQLIST_H */

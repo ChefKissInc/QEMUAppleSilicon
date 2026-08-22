@@ -13,8 +13,7 @@
  *
  */
 
-#ifndef QEMU_GLIB_COMPAT_H
-#define QEMU_GLIB_COMPAT_H
+#pragma once
 
 /* Ask for warnings for anything that was marked deprecated in
  * the defined version, or before. It is a candidate for rewrite.
@@ -116,6 +115,4 @@ static inline gpointer g_memdup2_qemu(gconstpointer mem, gsize byte_size)
 
 #ifndef G_NORETURN
 #define G_NORETURN G_GNUC_NORETURN
-#endif
-
 #endif
