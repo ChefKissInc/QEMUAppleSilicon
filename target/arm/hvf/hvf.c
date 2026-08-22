@@ -1260,8 +1260,9 @@ static int hvf_sysreg_read(CPUState *cpu, uint32_t reg, uint64_t *val)
 
     switch (reg) {
     case SYSREG_CNTPCT_EL0:
-        *val = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) /
-              gt_cntfrq_period_ns(arm_cpu);
+        *val = muldiv64(qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL),
+                        arm_cpu->gt_cntfrq_hz,
+                        NANOSECONDS_PER_SECOND);
         return 0;
     case SYSREG_OSLSR_EL1:
         *val = env->cp15.oslsr_el1;
@@ -1742,9 +1743,10 @@ static void hvf_wfi(CPUState *cpu)
     uint64_t ctl;
     uint64_t cval;
     int64_t ticks_to_sleep;
+    uint64_t freq;
     uint64_t seconds;
     uint64_t nanos;
-    uint32_t cntfrq;
+    uint64_t rem_ticks;
 
     if (cpu_test_interrupt(cpu, CPU_INTERRUPT_HARD | CPU_INTERRUPT_FIQ)) {
         /* Interrupt pending, no need to wait */
@@ -1768,10 +1770,11 @@ static void hvf_wfi(CPUState *cpu)
         return;
     }
 
-    cntfrq = gt_cntfrq_period_ns(arm_cpu);
-    seconds = muldiv64(ticks_to_sleep, cntfrq, NANOSECONDS_PER_SECOND);
-    ticks_to_sleep -= muldiv64(seconds, NANOSECONDS_PER_SECOND, cntfrq);
-    nanos = ticks_to_sleep * cntfrq;
+    freq = arm_cpu->gt_cntfrq_hz;
+    seconds = ticks_to_sleep / freq;
+    rem_ticks = ticks_to_sleep % freq;
+    nanos = seconds * NANOSECONDS_PER_SECOND +
+                 muldiv64(rem_ticks, NANOSECONDS_PER_SECOND, freq);
 
     /*
      * Don't sleep for less than the time a context switch would take,

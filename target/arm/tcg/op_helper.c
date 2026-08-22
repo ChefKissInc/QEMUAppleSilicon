@@ -368,6 +368,7 @@ void HELPER(wfit)(CPUARMState *env, uint64_t timeout)
     CPUState *cs = env_cpu(env);
     uint32_t excp;
     int target_el = check_wfx_trap(env, false, &excp);
+
     /* The WFIT should time out when CNTVCT_EL0 >= the specified value. */
     uint64_t cntval = gt_get_countervalue(env);
     /*
@@ -378,7 +379,6 @@ void HELPER(wfit)(CPUARMState *env, uint64_t timeout)
      */
     uint64_t offset = gt_direct_access_timer_offset(env, GTIMER_VIRT);
     uint64_t cntvct = cntval - offset;
-    uint64_t nexttick;
 
     if (cpu_has_work(cs) || cntvct >= timeout) {
         /*
@@ -393,18 +393,19 @@ void HELPER(wfit)(CPUARMState *env, uint64_t timeout)
         raise_exception(env, excp, syn_wfx(1, 0xe, 0, false), target_el);
     }
 
-    if (uadd64_overflow(timeout, offset, &nexttick)) {
-        nexttick = UINT64_MAX;
-    }
-    if (nexttick > INT64_MAX / gt_cntfrq_period_ns(cpu)) {
-        /*
-         * If the timeout is too long for the signed 64-bit range
-         * of a QEMUTimer, let it expire early.
-         */
-        timer_mod_ns(cpu->wfxt_timer, INT64_MAX);
+    uint64_t remaining_ticks = timeout - cntvct;
+    uint64_t delta_ns = gt_ticks_to_ns_ceil(cpu, remaining_ticks);
+    int64_t now_ns = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+    int64_t deadline_ns;
+
+    if (delta_ns > INT64_MAX - now_ns) {
+        deadline_ns = INT64_MAX;
     } else {
-        timer_mod(cpu->wfxt_timer, nexttick);
+        deadline_ns = now_ns + delta_ns;
     }
+
+    timer_mod_ns(cpu->wfxt_timer, deadline_ns);
+
     cs->exception_index = EXCP_HLT;
     cs->halted = 1;
     cpu_loop_exit(cs);

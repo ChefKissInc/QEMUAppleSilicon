@@ -1277,7 +1277,7 @@ uint64_t gt_get_countervalue(CPUARMState *env)
 {
     ARMCPU *cpu = env_archcpu(env);
 
-    return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) / gt_cntfrq_period_ns(cpu);
+    return muldiv64(qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL), cpu->gt_cntfrq_hz, NANOSECONDS_PER_SECOND);
 }
 
 static void gt_update_irq(ARMCPU *cpu, int timeridx)
@@ -1411,9 +1411,8 @@ static void gt_recalc_timer(ARMCPU *cpu, int timeridx)
          */
         uint64_t offset = gt_indirect_access_timer_offset(&cpu->env, timeridx);
         uint64_t count = gt_get_countervalue(&cpu->env);
-        /* Note that this must be unsigned 64 bit arithmetic: */
         int istatus = count - offset >= gt->cval;
-        uint64_t nexttick;
+        uint64_t next_ns;
 
         gt->ctl = deposit32(gt->ctl, 2, 1, istatus);
 
@@ -1421,44 +1420,36 @@ static void gt_recalc_timer(ARMCPU *cpu, int timeridx)
             /*
              * Next transition is when (count - offset) rolls back over to 0.
              * If offset > count then this is when count == offset;
-             * if offset <= count then this is when count == offset + 2^64
-             * For the latter case we set nexttick to an "as far in future
-             * as possible" value and let the code below handle it.
+             * otherwise the transition is beyond the signed-64-bit timer range.
              */
             if (offset > count) {
-                nexttick = offset;
+                next_ns = gt_ticks_to_ns_ceil(cpu, offset);
             } else {
-                nexttick = UINT64_MAX;
+                next_ns = INT64_MAX;
             }
         } else {
             /*
-             * Next transition is when (count - offset) == cval, i.e.
-             * when count == (cval + offset).
-             * If that would overflow, then again we set up the next interrupt
-             * for "as far in the future as possible" for the code below.
+             * Next transition is when (count - offset) == cval,
+             * i.e. when count == (cval + offset).
              */
-            if (uadd64_overflow(gt->cval, offset, &nexttick)) {
-                nexttick = UINT64_MAX;
+            uint64_t target_count;
+
+            if (uadd64_overflow(gt->cval, offset, &target_count)) {
+                next_ns = INT64_MAX;
+            } else {
+                next_ns = gt_ticks_to_ns_ceil(cpu, target_count);
             }
         }
-        /*
-         * Note that the desired next expiry time might be beyond the
-         * signed-64-bit range of a QEMUTimer -- in this case we just
-         * set the timer for as far in the future as possible. When the
-         * timer expires we will reset the timer for any remaining period.
-         */
-        if (nexttick > INT64_MAX / gt_cntfrq_period_ns(cpu)) {
-            timer_mod_ns(cpu->gt_timer[timeridx], INT64_MAX);
-        } else {
-            timer_mod(cpu->gt_timer[timeridx], nexttick);
-        }
-        trace_arm_gt_recalc(timeridx, nexttick);
+
+        timer_mod_ns(cpu->gt_timer[timeridx], next_ns);
+        trace_arm_gt_recalc(timeridx, next_ns);
     } else {
         /* Timer disabled: ISTATUS and timer output always clear */
         gt->ctl &= ~4;
         timer_del(cpu->gt_timer[timeridx]);
         trace_arm_gt_recalc_disabled(timeridx);
     }
+
     gt_update_irq(cpu, timeridx);
 }
 

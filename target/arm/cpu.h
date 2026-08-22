@@ -1136,7 +1136,7 @@ void arm_gt_hvtimer_cb(void *opaque);
 void arm_gt_sel2timer_cb(void *opaque);
 void arm_gt_sel2vtimer_cb(void *opaque);
 
-unsigned int gt_cntfrq_period_ns(ARMCPU *cpu);
+int64_t gt_ticks_to_ns_ceil(ARMCPU *cpu, uint64_t ticks);
 void gt_rme_post_el_change(ARMCPU *cpu, void *opaque);
 
 #define ARM_AFF0_SHIFT 0

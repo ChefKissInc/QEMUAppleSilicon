@@ -197,10 +197,7 @@ static void apple_sio_dma_destroy_buffer(AppleSIODMAEndpoint *ep,
 // -- end internal references --
 static uint64_t apple_sio_get_cur_ts(AppleSIOState *s)
 {
-    return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) /
-           (NANOSECONDS_PER_SECOND > s->gtimer_freq ?
-                NANOSECONDS_PER_SECOND / s->gtimer_freq :
-                1);
+    return muldiv64(qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL), s->gtimer_freq, NANOSECONDS_PER_SECOND);
 }
 
 static void apple_sio_dma_del_buffers(AppleSIODMAEndpoint *ep)

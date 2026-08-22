@@ -865,28 +865,15 @@ static void aarch64_cpu_set_aarch64(Object *obj, bool value, Error **errp)
     }
 }
 
-unsigned int gt_cntfrq_period_ns(ARMCPU *cpu)
+int64_t gt_ticks_to_ns_ceil(ARMCPU *cpu, uint64_t ticks)
 {
-    /*
-     * The exact approach to calculating guest ticks is:
-     *
-     *     muldiv64(qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL), cpu->gt_cntfrq_hz,
-     *              NANOSECONDS_PER_SECOND);
-     *
-     * We don't do that. Rather we intentionally use integer division
-     * truncation below and in the caller for the conversion of host monotonic
-     * time to guest ticks to provide the exact inverse for the semantics of
-     * the QEMUTimer scale factor. QEMUTimer's scale facter is an integer, so
-     * it loses precision when representing frequencies where
-     * `(NANOSECONDS_PER_SECOND % cpu->gt_cntfrq) > 0` holds. Failing to
-     * provide an exact inverse leads to scheduling timers with negative
-     * periods, which in turn leads to sticky behaviour in the guest.
-     *
-     * Finally, CNTFRQ is effectively capped at 1GHz to ensure our scale factor
-     * cannot become zero.
-     */
-    return NANOSECONDS_PER_SECOND > cpu->gt_cntfrq_hz ?
-      NANOSECONDS_PER_SECOND / cpu->gt_cntfrq_hz : 1;
+    uint64_t freq = cpu->gt_cntfrq_hz;
+    uint64_t ns = muldiv64(ticks, NANOSECONDS_PER_SECOND, freq);
+
+    if (muldiv64(ns, freq, NANOSECONDS_PER_SECOND) < ticks) {
+        ns++;
+    }
+    return ns > INT64_MAX ? INT64_MAX : ns;
 }
 
 static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
@@ -1236,21 +1223,19 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
     }
 
     {
-        uint64_t scale = gt_cntfrq_period_ns(cpu);
-
-        cpu->gt_timer[GTIMER_PHYS] = timer_new(QEMU_CLOCK_VIRTUAL, scale,
+        cpu->gt_timer[GTIMER_PHYS] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                                arm_gt_ptimer_cb, cpu);
-        cpu->gt_timer[GTIMER_VIRT] = timer_new(QEMU_CLOCK_VIRTUAL, scale,
+        cpu->gt_timer[GTIMER_VIRT] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                                arm_gt_vtimer_cb, cpu);
-        cpu->gt_timer[GTIMER_HYP] = timer_new(QEMU_CLOCK_VIRTUAL, scale,
+        cpu->gt_timer[GTIMER_HYP] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                               arm_gt_htimer_cb, cpu);
-        cpu->gt_timer[GTIMER_SEC] = timer_new(QEMU_CLOCK_VIRTUAL, scale,
+        cpu->gt_timer[GTIMER_SEC] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                               arm_gt_stimer_cb, cpu);
-        cpu->gt_timer[GTIMER_HYPVIRT] = timer_new(QEMU_CLOCK_VIRTUAL, scale,
+        cpu->gt_timer[GTIMER_HYPVIRT] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                                   arm_gt_hvtimer_cb, cpu);
-        cpu->gt_timer[GTIMER_S_EL2_PHYS] = timer_new(QEMU_CLOCK_VIRTUAL, scale,
+        cpu->gt_timer[GTIMER_S_EL2_PHYS] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                                      arm_gt_sel2timer_cb, cpu);
-        cpu->gt_timer[GTIMER_S_EL2_VIRT] = timer_new(QEMU_CLOCK_VIRTUAL, scale,
+        cpu->gt_timer[GTIMER_S_EL2_VIRT] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                                      arm_gt_sel2vtimer_cb, cpu);
     }
 
