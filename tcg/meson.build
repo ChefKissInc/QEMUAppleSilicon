@@ -22,8 +22,4 @@ if get_option('tcg_interpreter')
   tcg_ss.add(files('tci.c'))
 endif
 
-if host_os == 'linux'
-  tcg_ss.add(files('perf.c'))
-endif
-
 system_ss.add_all(tcg_ss)
