@@ -67,23 +67,6 @@ typedef struct KVMHostTopoInfo
     unsigned int* maxticks;
 } KVMHostTopoInfo;
 
-struct KVMMsrEnergy
-{
-    pid_t                pid;
-    bool                 enable;
-    char*                socket_path;
-    QIOChannelSocket*    sioc;
-    QemuThread           msr_thr;
-    unsigned int         guest_vcpus;
-    unsigned int         guest_vsockets;
-    KVMHostTopoInfo      host_topo;
-    const CPUArchIdList* guest_cpu_list;
-    uint64_t*            msr_value;
-    uint64_t             msr_unit;
-    uint64_t             msr_limit;
-    uint64_t             msr_info;
-};
-
 enum KVMDirtyRingReaperState
 {
     KVM_DIRTY_RING_REAPER_NONE = 0,
@@ -163,7 +146,6 @@ struct KVMState
     bool                      kvm_dirty_ring_with_bitmap;
     uint64_t                  kvm_eager_split_size; /* Eager Page Splitting chunk size */
     struct KVMDirtyRingReaper reaper;
-    struct KVMMsrEnergy       msr_energy;
     uint32_t                  notify_window;
     char*                     device;
 };

@@ -3429,7 +3429,6 @@ static void kvm_accel_instance_init(Object* obj)
     s->kvm_eager_split_size       = 0;
     s->notify_window              = 0;
     s->device                     = NULL;
-    s->msr_energy.enable          = false;
 }
 
 /**
