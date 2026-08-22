@@ -174,7 +174,6 @@ static const Property pcie_slot_props[] = {
     DEFINE_PROP_UINT8("chassis", PCIESlot, chassis, 0),
     DEFINE_PROP_UINT16("slot", PCIESlot, slot, 0),
     DEFINE_PROP_BOOL("hotplug", PCIESlot, hotplug, true),
-    DEFINE_PROP_BOOL("x-do-not-expose-native-hotplug-cap", PCIESlot, hide_native_hotplug_cap, false),
 };
 
 static void pcie_slot_class_init(ObjectClass* oc, const void* data)

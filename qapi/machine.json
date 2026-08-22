@@ -144,8 +144,6 @@
 # @default-ram-id: the default ID of initial RAM memory backend
 #     (since 5.2)
 #
-# @acpi: machine type supports ACPI (since 8.0)
-#
 # @compat-props: The machine type's compatibility properties.  Only
 #     present when `query-machines` argument @compat-props is true.
 #     (since 9.1)
@@ -161,7 +159,7 @@
             '*is-default': 'bool', 'cpu-max': 'int',
             'hotpluggable-cpus': 'bool',
             'deprecated': 'bool', '*default-cpu-type': 'str',
-            '*default-ram-id': 'str', 'acpi': 'bool',
+            '*default-ram-id': 'str',
             '*compat-props': { 'type': ['CompatProperty'],
                                'features': ['unstable'] } } }
 

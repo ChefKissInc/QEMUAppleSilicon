@@ -72,23 +72,12 @@ static const Property pci_props[] = {
     DEFINE_PROP_BIT("x-pcie-lnksta-dllla", PCIDevice, cap_present, QEMU_PCIE_LNKSTA_DLLLA_BITNR, true),
     DEFINE_PROP_BIT("x-pcie-extcap-init", PCIDevice, cap_present, QEMU_PCIE_EXTCAP_INIT_BITNR, true),
     DEFINE_PROP_STRING("failover_pair_id", PCIDevice, failover_pair_id),
-    DEFINE_PROP_UINT32("acpi-index", PCIDevice, acpi_index, 0),
     DEFINE_PROP_BIT("x-pcie-err-unc-mask", PCIDevice, cap_present, QEMU_PCIE_ERR_UNC_MASK_BITNR, true),
     DEFINE_PROP_BIT("x-pcie-ari-nextfn-1", PCIDevice, cap_present, QEMU_PCIE_ARI_NEXTFN_1_BITNR, false),
     DEFINE_PROP_SIZE32("x-max-bounce-buffer-size", PCIDevice, max_bounce_buffer_size, DEFAULT_MAX_BOUNCE_BUFFER_SIZE),
     DEFINE_PROP_BIT("x-pcie-ext-tag", PCIDevice, cap_present, QEMU_PCIE_EXT_TAG_BITNR, true),
     {.name = "busnr", .info = &prop_pci_busnr},
 };
-
-static gint g_cmp_uint32(gconstpointer a, gconstpointer b, gpointer user_data) { return a - b; }
-
-static GSequence* pci_acpi_index_list(void)
-{
-    static GSequence* used_acpi_index_list;
-
-    if (!used_acpi_index_list) { used_acpi_index_list = g_sequence_new(NULL); }
-    return used_acpi_index_list;
-}
 
 static void pci_set_master(PCIDevice* d, bool enable)
 {
@@ -1010,15 +999,6 @@ static void pci_qdev_unrealize(DeviceState* dev)
     do_pci_unregister_device(pci_dev);
 
     pci_dev->msi_trigger = NULL;
-
-    /*
-     * clean up acpi-index so it could reused by another device
-     */
-    if (pci_dev->acpi_index) {
-        GSequence* used_indexes = pci_acpi_index_list();
-
-        g_sequence_remove(g_sequence_lookup(used_indexes, GINT_TO_POINTER(pci_dev->acpi_index), g_cmp_uint32, NULL));
-    }
 }
 
 void pci_register_bar(PCIDevice* pci_dev, int region_num, uint8_t type, MemoryRegion* memory)
@@ -1599,29 +1579,6 @@ static void pci_qdev_realize(DeviceState* qdev, Error** errp)
     ObjectClass*    klass     = OBJECT_CLASS(pc);
     Error*          local_err = NULL;
     uint16_t        class_id;
-
-    /*
-     * capped by systemd (see: udev-builtin-net_id.c)
-     * as it's the only known user honor it to avoid users
-     * misconfigure QEMU and then wonder why acpi-index doesn't work
-     */
-    if (pci_dev->acpi_index > ONBOARD_INDEX_MAX) {
-        error_setg(errp, "acpi-index should be less or equal to %u", ONBOARD_INDEX_MAX);
-        return;
-    }
-
-    /*
-     * make sure that acpi-index is unique across all present PCI devices
-     */
-    if (pci_dev->acpi_index) {
-        GSequence* used_indexes = pci_acpi_index_list();
-
-        if (g_sequence_lookup(used_indexes, GINT_TO_POINTER(pci_dev->acpi_index), g_cmp_uint32, NULL)) {
-            error_setg(errp, "a PCI device with acpi-index = %" PRIu32 " already exist", pci_dev->acpi_index);
-            return;
-        }
-        g_sequence_insert_sorted(used_indexes, GINT_TO_POINTER(pci_dev->acpi_index), g_cmp_uint32, NULL);
-    }
 
     /* initialize cap_present for pci_is_express() and pci_config_size(),
      * Note that hybrid PCIs are not set automatically and need to manage

@@ -2049,38 +2049,6 @@ void kvm_arch_on_sigbus_vcpu(CPUState* c, int code, void* addr)
 
     assert(code == BUS_MCEERR_AR || code == BUS_MCEERR_AO);
 
-    if (acpi_ghes_present() && addr) {
-        ram_addr = qemu_ram_addr_from_host(addr);
-        if (ram_addr != RAM_ADDR_INVALID && kvm_physical_memory_addr_from_host(c->kvm_state, addr, &paddr)) {
-            kvm_hwpoison_page_add(ram_addr);
-            /*
-             * If this is a BUS_MCEERR_AR, we know we have been called
-             * synchronously from the vCPU thread, so we can easily
-             * synchronize the state and inject an error.
-             *
-             * TODO: we currently don't tell the guest at all about
-             * BUS_MCEERR_AO. In that case we might either be being
-             * called synchronously from the vCPU thread, or a bit
-             * later from the main thread, so doing the injection of
-             * the error would be more complicated.
-             */
-            if (code == BUS_MCEERR_AR) {
-                kvm_cpu_synchronize_state(c);
-                if (!acpi_ghes_memory_errors(ACPI_HEST_SRC_ID_SEA, paddr)) { kvm_inject_arm_sea(c); }
-                else {
-                    error_report("failed to record the error");
-                    abort();
-                }
-            }
-            return;
-        }
-        if (code == BUS_MCEERR_AO) {
-            error_report("Hardware memory error at addr %p for memory used by "
-                         "QEMU itself instead of guest system!",
-                         addr);
-        }
-    }
-
     if (code == BUS_MCEERR_AR) {
         error_report("Hardware memory error!");
         exit(1);

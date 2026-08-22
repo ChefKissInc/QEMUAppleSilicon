@@ -66,9 +66,6 @@ struct PCIESlot
     /* Indicates whether any type of hot-plug is allowed on the slot */
     bool hotplug;
 
-    /* broken ACPI hotplug compat knob to preserve 6.1 ABI intact */
-    bool hide_native_hotplug_cap;
-
     QLIST_ENTRY(PCIESlot) next;
 };
 

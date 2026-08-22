@@ -70,8 +70,6 @@
         'blockdev-reopen' ],
     # Externally visible types whose member names may use uppercase
     'member-name-exceptions': [     # visible in:
-        'ACPISlotType',             # query-acpi-ospm-status
-        'AcpiTableOptions',         # -acpitable
         'BlkdebugEvent',            # blockdev-add, -blockdev
         'BlkdebugSetStateOptions',  # blockdev-add, -blockdev
         'BlockDeviceInfo',          # query-block

@@ -389,9 +389,6 @@ SRST
     ::
 
         -smp 2
-
-    Note: The cluster topology will only be generated in ACPI and exposed
-    to guest if it's explicitly specified in -smp.
 ERST
 
 DEF("add-fd", HAS_ARG, QEMU_OPTION_add_fd,

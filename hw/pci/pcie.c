@@ -580,9 +580,8 @@ void pcie_cap_slot_init(PCIDevice* dev, PCIESlot* s)
 
     /*
      * Expose native hot-plug on all bridges if hot-plug is enabled on the slot.
-     * (unless broken 6.1 ABI is enforced for compat reasons)
      */
-    if (s->hotplug && (!s->hide_native_hotplug_cap || DEVICE(dev)->hotplugged)) {
+    if (s->hotplug) {
         pci_long_test_and_set_mask(dev->config + pos + PCI_EXP_SLTCAP, PCI_EXP_SLTCAP_HPS | PCI_EXP_SLTCAP_HPC);
     }
 
