@@ -7,7 +7,11 @@ on:
 jobs:
   build_linux:
     name: Linux Build
-    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm]
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     steps:
@@ -29,7 +33,11 @@ jobs:
 
   build_macos:
     name: macOS Build
-    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-26-intel]
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     steps:
@@ -39,28 +47,10 @@ jobs:
           submodules: true
       - name: Install dependencies
         run: |
-          brew install libtool meson ninja pkgconf glib gnutls jpeg-turbo libpng libslirp libssh libusb lzo ncurses nettle pixman snappy vde zstd lzfse nettle
+          brew install libtool meson ninja pkgconf glib gnutls jpeg-turbo libpng libslirp libssh libusb lzo ncurses nettle pixman snappy vde zstd lzfse
       - name: Build
         run: |
+          BREW_PREFIX=$(brew --prefix)
           mkdir build && cd build
-          LIBTOOL="glibtool" ../configure --target-list=aarch64-softmmu --extra-cflags=-DNCURSES_WIDECHAR=1 --disable-sdl --disable-gtk --enable-cocoa --disable-werror --extra-cflags="-I/opt/homebrew/include" --extra-ldflags="-L/opt/homebrew/lib"
-          make -j$(sysctl -n hw.logicalcpu)
-
-  build_macos_x86_64:
-    name: macOS Build (Intel)
-    runs-on: macos-26-intel
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          submodules: true
-      - name: Install dependencies
-        run: |
-          brew install libtool meson ninja pkgconf glib gnutls jpeg-turbo libpng libslirp libssh libusb lzo ncurses nettle pixman snappy vde zstd lzfse nettle
-      - name: Build
-        run: |
-          mkdir build && cd build
-          LIBTOOL="glibtool" ../configure --target-list=aarch64-softmmu --extra-cflags=-DNCURSES_WIDECHAR=1 --disable-sdl --disable-gtk --enable-cocoa --disable-werror --extra-cflags="-I/opt/homebrew/include" --extra-ldflags="-L/opt/homebrew/lib"
+          LIBTOOL="glibtool" ../configure --target-list=aarch64-softmmu --disable-sdl --disable-gtk --enable-cocoa --disable-werror --extra-cflags="-DNCURSES_WIDECHAR=1 -I$BREW_PREFIX/include" --extra-ldflags="-L$BREW_PREFIX/lib"
           make -j$(sysctl -n hw.logicalcpu)
