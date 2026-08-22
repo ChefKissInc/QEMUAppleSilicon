@@ -81,9 +81,6 @@
 #include "qemu/option.h"
 #include "qemu/config-file.h"
 #include "qemu/main-loop.h"
-#ifdef CONFIG_TCG
-#include "tcg/perf.h"
-#endif
 
 #include "trace.h"
 #include "trace/control.h"
@@ -2468,14 +2465,6 @@ void qemu_init(int argc, char **argv)
             case QEMU_OPTION_DFILTER:
                 qemu_set_dfilter_ranges(optarg, &error_fatal);
                 break;
-#if defined(CONFIG_TCG) && defined(CONFIG_LINUX)
-            case QEMU_OPTION_perfmap:
-                perf_enable_perfmap();
-                break;
-            case QEMU_OPTION_jitdump:
-                perf_enable_jitdump();
-                break;
-#endif
             case QEMU_OPTION_seed:
                 qemu_guest_random_seed_main(optarg, &error_fatal);
                 break;

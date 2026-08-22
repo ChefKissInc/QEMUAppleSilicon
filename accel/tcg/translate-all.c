@@ -32,7 +32,6 @@
 #include "tb-context.h"
 #include "tb-internal.h"
 #include "internal-common.h"
-#include "tcg/perf.h"
 #include "tcg/insn-start-words.h"
 
 TBContext tb_ctx;
@@ -379,12 +378,6 @@ TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
         goto buffer_overflow;
     }
     tb->tc.size = gen_code_size;
-
-    /*
-     * For CF_PCREL, attribute all executions of the generated code
-     * to its first mapping.
-     */
-    perf_report_code(s.pc, tb, tcg_splitwx_to_rx(gen_code_buf));
 
     if (qemu_loglevel_mask(CPU_LOG_TB_OUT_ASM) &&
         qemu_log_in_addr_range(s.pc)) {

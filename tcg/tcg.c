@@ -56,7 +56,6 @@
 #include "tcg/tcg-ldst.h"
 #include "tcg/tcg-temp-internal.h"
 #include "tcg-internal.h"
-#include "tcg/perf.h"
 #include "tcg-has.h"
 
 /* Forward declarations for functions declared in tcg-target.c.inc and
@@ -1875,7 +1874,6 @@ void tcg_prologue_init(void)
     }
 
     prologue_size = tcg_current_code_size(s);
-    perf_report_prologue(s->code_gen_ptr, prologue_size);
 
 #ifndef CONFIG_TCG_INTERPRETER
     flush_idcache_range((uintptr_t)tcg_splitwx_to_rx(s->code_buf),
