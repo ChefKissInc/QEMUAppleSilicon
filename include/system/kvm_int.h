@@ -15,7 +15,6 @@
 #include "system/kvm.h"
 #include "accel/accel-ops.h"
 #include "hw/boards.h"
-#include "hw/i386/topology.h"
 #include "io/channel-socket.h"
 
 typedef struct KVMSlot
@@ -77,7 +76,6 @@ struct KVMMsrEnergy
     QemuThread           msr_thr;
     unsigned int         guest_vcpus;
     unsigned int         guest_vsockets;
-    X86CPUTopoInfo       guest_topo_info;
     KVMHostTopoInfo      host_topo;
     const CPUArchIdList* guest_cpu_list;
     uint64_t*            msr_value;
