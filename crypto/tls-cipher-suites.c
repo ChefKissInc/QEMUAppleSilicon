@@ -13,7 +13,6 @@
 #include "qom/object_interfaces.h"
 #include "crypto/tlscreds.h"
 #include "crypto/tls-cipher-suites.h"
-#include "hw/nvram/fw_cfg.h"
 #include "tlscredspriv.h"
 #include "trace.h"
 
@@ -95,21 +94,12 @@ static void qcrypto_tls_cipher_suites_complete(UserCreatable *uc,
     }
 }
 
-static GByteArray *qcrypto_tls_cipher_suites_fw_cfg_gen_data(Object *obj,
-                                                             Error **errp)
-{
-    return qcrypto_tls_cipher_suites_get_data(QCRYPTO_TLS_CIPHER_SUITES(obj),
-                                              errp);
-}
-
 static void qcrypto_tls_cipher_suites_class_init(ObjectClass *oc,
                                                  const void *data)
 {
     UserCreatableClass *ucc = USER_CREATABLE_CLASS(oc);
-    FWCfgDataGeneratorClass *fwgc = FW_CFG_DATA_GENERATOR_CLASS(oc);
 
     ucc->complete = qcrypto_tls_cipher_suites_complete;
-    fwgc->get_data = qcrypto_tls_cipher_suites_fw_cfg_gen_data;
 }
 
 static const TypeInfo qcrypto_tls_cipher_suites_info = {
@@ -120,7 +110,6 @@ static const TypeInfo qcrypto_tls_cipher_suites_info = {
     .class_init = qcrypto_tls_cipher_suites_class_init,
     .interfaces = (const InterfaceInfo[]) {
         { TYPE_USER_CREATABLE },
-        { TYPE_FW_CFG_DATA_GENERATOR_INTERFACE },
         { }
     }
 };
