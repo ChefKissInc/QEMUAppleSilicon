@@ -146,8 +146,6 @@ option('lzo', type : 'feature', value : 'auto',
        description: 'lzo compression support')
 option('rbd', type : 'feature', value : 'auto',
        description: 'Ceph block device driver')
-option('rdma', type : 'feature', value : 'auto',
-       description: 'Enable RDMA-based migration')
 option('gtk', type : 'feature', value : 'auto',
        description: 'GTK+ user interface')
 option('sdl', type : 'feature', value : 'auto',
@@ -219,8 +217,6 @@ option('pipewire', type: 'feature', value: 'auto',
 option('sndio', type: 'feature', value: 'auto',
        description: 'sndio sound support')
 
-option('replication', type: 'feature', value: 'auto',
-       description: 'replication support')
 option('bochs', type: 'feature', value: 'auto',
        description: 'bochs image format support')
 option('cloop', type: 'feature', value: 'auto',

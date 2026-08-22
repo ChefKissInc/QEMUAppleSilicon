@@ -34,30 +34,17 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
     "                mem-merge=on|off controls memory merge support (default: on)\n"
     "                aes-key-wrap=on|off controls support for AES key wrapping (default=on)\n"
     "                dea-key-wrap=on|off controls support for DEA key wrapping (default=on)\n"
-    "                suppress-vmdesc=on|off disables self-describing migration (default=off)\n"
     "                memory-encryption=@var{} memory encryption object to use (default=none)\n"
 #ifdef CONFIG_POSIX
     "                aux-ram-share=on|off allocate auxiliary guest RAM as shared (default: off)\n"
 #endif
     "                memory-backend='backend-id' specifies explicitly provided backend for main RAM (default=none)\n"
-    "                cxl-fmw.0.targets.0=firsttarget,cxl-fmw.0.targets.1=secondtarget,cxl-fmw.0.size=size[,cxl-fmw.0.interleave-granularity=granularity]\n"
     "                smp-cache.0.cache=cachename,smp-cache.0.topology=topologylevel\n",
     QEMU_ARCH_ALL)
 SRST
 ``-machine [type=]name[,prop=value[,...]]``
     Select the emulated machine by name. Use ``-machine help`` to list
     available machines.
-
-    For architectures which aim to support live migration compatibility
-    across releases, each release will introduce a new versioned machine
-    type. For example, the 2.8.0 release introduced machine types
-    "pc-i440fx-2.8" and "pc-q35-2.8" for the x86\_64/i686 architectures.
-
-    To allow live migration of guests from QEMU version 2.8.0, to QEMU
-    version 2.9.0, the 2.9.0 version must support the "pc-i440fx-2.8"
-    and "pc-q35-2.8" machines too. To allow users live migrating VMs to
-    skip multiple intermediate releases when upgrading, new releases of
-    QEMU will support machine types from many previous versions.
 
     Supported machine properties are:
 
@@ -104,8 +91,6 @@ SRST
         specified on the command line, or implicitly created by the -m
         command line option.  The default is off.
 
-        To use the cpr-transfer migration mode, you must set aux-ram-share=on.
-
     ``memory-backend='id'``
         An alternative to legacy ``-mem-path`` and ``mem-prealloc`` options.
         Allows to use a memory backend as main RAM.
@@ -116,54 +101,6 @@ SRST
             -object memory-backend-file,id=pc.ram,size=512M,mem-path=/hugetlbfs,prealloc=on,share=on
             -machine memory-backend=pc.ram
             -m 512M
-
-        Migration compatibility note:
-
-        * as backend id one shall use value of 'default-ram-id', advertised by
-          machine type (available via ``query-machines`` QMP command), if migration
-          to/from old QEMU (<5.0) is expected.
-        * for machine types 4.0 and older, user shall
-          use ``x-use-canonical-path-for-ramblock-id=off`` backend option
-          if migration to/from old QEMU (<5.0) is expected.
-
-        For example:
-        ::
-
-            -object memory-backend-ram,id=pc.ram,size=512M,x-use-canonical-path-for-ramblock-id=off
-            -machine memory-backend=pc.ram
-            -m 512M
-
-    ``cxl-fmw.0.targets.0=firsttarget,cxl-fmw.0.targets.1=secondtarget,cxl-fmw.0.size=size[,cxl-fmw.0.interleave-granularity=granularity]``
-        Define a CXL Fixed Memory Window (CFMW).
-
-        Described in the CXL 2.0 ECN: CEDT CFMWS & QTG _DSM.
-
-        They are regions of Host Physical Addresses (HPA) on a system which
-        may be interleaved across one or more CXL host bridges.  The system
-        software will assign particular devices into these windows and
-        configure the downstream Host-managed Device Memory (HDM) decoders
-        in root ports, switch ports and devices appropriately to meet the
-        interleave requirements before enabling the memory devices.
-
-        ``targets.X=target`` provides the mapping to CXL host bridges
-        which may be identified by the id provided in the -device entry.
-        Multiple entries are needed to specify all the targets when
-        the fixed memory window represents interleaved memory. X is the
-        target index from 0.
-
-        ``size=size`` sets the size of the CFMW. This must be a multiple of
-        256MiB. The region will be aligned to 256MiB but the location is
-        platform and configuration dependent.
-
-        ``interleave-granularity=granularity`` sets the granularity of
-        interleave. Default 256 (bytes). Only 256, 512, 1k, 2k,
-        4k, 8k and 16k granularities supported.
-
-        Example:
-
-        ::
-
-            -machine cxl-fmw.0.targets.0=cxl.0,cxl-fmw.0.targets.1=cxl.1,cxl-fmw.0.size=128G,cxl-fmw.0.interleave-granularity=512
 
     ``smp-cache.0.cache=cachename,smp-cache.0.topology=topologylevel``
         Define cache properties for SMP system.

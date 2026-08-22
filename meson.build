@@ -1496,19 +1496,6 @@ if lzo.found() and not cc.links('''
   endif
 endif
 
-rdma = not_found
-if not get_option('rdma').auto() or have_system
-  rdma_libs = [cc.find_library('rdmacm', has_headers: ['rdma/rdma_cma.h'],
-                               required: get_option('rdma')),
-               cc.find_library('ibverbs', required: get_option('rdma'))]
-  rdma = declare_dependency(dependencies: rdma_libs)
-  foreach lib: rdma_libs
-    if not lib.found()
-      rdma = not_found
-    endif
-  endforeach
-endif
-
 usbredir = not_found
 if not get_option('usb_redir').auto() or have_system
   usbredir = dependency('libusbredirparser-0.5', required: get_option('usb_redir'),
@@ -1768,7 +1755,6 @@ config_host_data.set('CONFIG_LINUX_IO_URING', linux_io_uring.found())
 config_host_data.set('CONFIG_LIBPMEM', libpmem.found())
 config_host_data.set('CONFIG_MODULES', enable_modules)
 config_host_data.set('CONFIG_RBD', rbd.found())
-config_host_data.set('CONFIG_RDMA', rdma.found())
 config_host_data.set('CONFIG_RELOCATABLE', get_option('relocatable'))
 config_host_data.set('CONFIG_SAFESTACK', get_option('safe_stack'))
 config_host_data.set('CONFIG_SDL', sdl.found())
@@ -1827,7 +1813,6 @@ config_host_data.set('CONFIG_DEBUG_STACK_USAGE', get_option('debug_stack_usage')
 config_host_data.set('CONFIG_DEBUG_TCG', get_option('debug_tcg'))
 config_host_data.set('CONFIG_DEBUG_REMAP', get_option('debug_remap'))
 config_host_data.set('CONFIG_QOM_CAST_DEBUG', get_option('qom_cast_debug'))
-config_host_data.set('CONFIG_REPLICATION', get_option('replication').allowed())
 config_host_data.set('CONFIG_FSFREEZE', qga_fsfreeze)
 config_host_data.set('CONFIG_FSTRIM', qga_fstrim)
 
@@ -1891,12 +1876,6 @@ if rbd.found()
                        cc.has_function('rbd_namespace_exists',
                                        dependencies: rbd,
                                        prefix: '#include <rbd/librbd.h>'))
-endif
-if rdma.found()
-  config_host_data.set('HAVE_IBV_ADVISE_MR',
-                       cc.has_function('ibv_advise_mr',
-                                       dependencies: rdma,
-                                       prefix: '#include <infiniband/verbs.h>'))
 endif
 
 have_asan_fiber = false
@@ -2819,9 +2798,6 @@ if have_block
     'blockjob.c',
     'job.c',
   ))
-  if config_host_data.get('CONFIG_REPLICATION')
-    block_ss.add(files('replication.c'))
-  endif
 
   subdir('block')
 
@@ -3557,7 +3533,6 @@ if have_block
   summary_info += {'Block whitelist (rw)': get_option('block_drv_rw_whitelist')}
   summary_info += {'Block whitelist (ro)': get_option('block_drv_ro_whitelist')}
   summary_info += {'Use block whitelist in tools': get_option('block_drv_whitelist_in_tools')}
-  summary_info += {'replication support': config_host_data.get('CONFIG_REPLICATION')}
   summary_info += {'bochs support':     get_option('bochs').allowed()}
   summary_info += {'cloop support':     get_option('cloop').allowed()}
   summary_info += {'dmg support':       get_option('dmg').allowed()}
@@ -3645,7 +3620,6 @@ summary_info += {'Multipath support': mpathpersist}
 summary_info += {'Linux AIO support': libaio}
 summary_info += {'Linux io_uring support': linux_io_uring}
 summary_info += {'ATTR/XATTR support': libattr}
-summary_info += {'RDMA support':      rdma}
 summary_info += {'libcap-ng support': libcap_ng}
 summary_info += {'rbd support':       rbd}
 summary_info += {'libusb':            libusb}

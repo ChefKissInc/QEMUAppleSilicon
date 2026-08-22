@@ -87,9 +87,6 @@ if host_os == 'windows'
 else
   block_ss.add(files('file-posix.c'), coref, iokit)
 endif
-if get_option('replication').allowed()
-  block_ss.add(files('replication.c'))
-endif
 block_ss.add(when: libaio, if_true: files('linux-aio.c'))
 block_ss.add(when: linux_io_uring, if_true: files('io_uring.c'))
 

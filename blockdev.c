@@ -1281,15 +1281,6 @@ static void external_snapshot_action(TransactionAction* action, Transaction* tra
         goto unlock;
     }
 
-    /*
-     * Older QEMU versions have allowed adding an active parent node to an
-     * inactive child node. This is unsafe in the general case, but there is an
-     * important use case, which is taking a VM snapshot with migration to file
-     * and then adding an external snapshot while the VM is still stopped and
-     * images are inactive. Requiring the user to explicitly create the overlay
-     * as inactive would break compatibility, so just do it automatically here
-     * to keep this working.
-     */
     if (bdrv_is_inactive(state->old_bs) && !bdrv_is_inactive(state->new_bs)) {
         bdrv_graph_rdunlock_main_loop();
         bdrv_drain_all_begin();

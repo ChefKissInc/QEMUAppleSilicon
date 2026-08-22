@@ -34,7 +34,6 @@ void qemu_module_dummy(void);
 
 typedef enum
 {
-    MODULE_INIT_MIGRATION,
     MODULE_INIT_BLOCK,
     MODULE_INIT_OPTS,
     MODULE_INIT_QOM,

@@ -140,8 +140,6 @@ meson_options_help() {
   printf "%s\n" '  qcow1           qcow1 image format support'
   printf "%s\n" '  qed             qed image format support'
   printf "%s\n" '  rbd             Ceph block device driver'
-  printf "%s\n" '  rdma            Enable RDMA-based migration'
-  printf "%s\n" '  replication     replication support'
   printf "%s\n" '  sdl             SDL user interface'
   printf "%s\n" '  sdl-image       SDL Image support for icons'
   printf "%s\n" '  seccomp         seccomp support'
@@ -343,8 +341,6 @@ _meson_option_parse() {
     --disable-rdma) printf "%s" -Drdma=disabled ;;
     --enable-relocatable) printf "%s" -Drelocatable=true ;;
     --disable-relocatable) printf "%s" -Drelocatable=false ;;
-    --enable-replication) printf "%s" -Dreplication=enabled ;;
-    --disable-replication) printf "%s" -Dreplication=disabled ;;
     --enable-rng-none) printf "%s" -Drng_none=true ;;
     --disable-rng-none) printf "%s" -Drng_none=false ;;
     --rtsig-map=*) quote_sh "-Drtsig_map=$2" ;;

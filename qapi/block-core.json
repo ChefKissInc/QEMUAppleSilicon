@@ -3016,7 +3016,6 @@
             { 'name': 'nvme-io_uring', 'if': 'CONFIG_BLKIO' },
             'parallels', 'preallocate', 'qcow', 'qcow2', 'qed', 'quorum',
             'raw', 'rbd',
-            { 'name': 'replication', 'if': 'CONFIG_REPLICATION' },
             'ssh', 'vdi', 'vhdx',
             'vmdk', 'vpc', 'vvfat' ] }
 
@@ -3973,41 +3972,6 @@
             '*server': ['InetSocketAddressBase'] } }
 
 ##
-# @ReplicationMode:
-#
-# An enumeration of replication modes.
-#
-# @primary: Primary mode, the vm's state will be sent to secondary
-#     QEMU.
-#
-# @secondary: Secondary mode, receive the vm's state from primary
-#     QEMU.
-#
-# Since: 2.9
-##
-{ 'enum' : 'ReplicationMode', 'data' : [ 'primary', 'secondary' ],
-  'if': 'CONFIG_REPLICATION' }
-
-##
-# @BlockdevOptionsReplication:
-#
-# Driver specific block device options for replication
-#
-# @mode: the replication mode
-#
-# @top-id: In secondary mode, node name or device ID of the root node
-#     who owns the replication node chain.  Must not be given in
-#     primary mode.
-#
-# Since: 2.9
-##
-{ 'struct': 'BlockdevOptionsReplication',
-  'base': 'BlockdevOptionsGenericFormat',
-  'data': { 'mode': 'ReplicationMode',
-            '*top-id': 'str' },
-  'if': 'CONFIG_REPLICATION' }
-
-##
 # @NFSTransport:
 #
 # An enumeration of NFS transport types
@@ -4364,8 +4328,6 @@
       'quorum':     'BlockdevOptionsQuorum',
       'raw':        'BlockdevOptionsRaw',
       'rbd':        'BlockdevOptionsRbd',
-      'replication': { 'type': 'BlockdevOptionsReplication',
-                       'if': 'CONFIG_REPLICATION' },
       'snapshot-access': 'BlockdevOptionsGenericFormat',
       'ssh':        'BlockdevOptionsSsh',
       'vdi':        'BlockdevOptionsGenericFormat',

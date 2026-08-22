@@ -46,15 +46,6 @@ QEMU_BUILD_BUG_ON(TARGET_PAGE_BITS < TARGET_PAGE_BITS_MIN);
 
 QEMU_BUILD_BUG_ON(TLB_FLAGS_MASK & ((1u < TARGET_PAGE_BITS_MIN) - 1));
 
-int migration_legacy_page_bits(void)
-{
-#ifdef TARGET_PAGE_BITS_VARY
-    return TARGET_PAGE_BITS_LEGACY;
-#else
-    return TARGET_PAGE_BITS;
-#endif
-}
-
 bool set_preferred_target_page_bits(int bits)
 {
 #ifdef TARGET_PAGE_BITS_VARY
