@@ -444,16 +444,6 @@ raw_co_lock_medium(BlockDriverState *bs, bool locked)
     bdrv_co_lock_medium(bs->file->bs, locked);
 }
 
-static int coroutine_fn GRAPH_RDLOCK
-raw_co_ioctl(BlockDriverState *bs, unsigned long int req, void *buf)
-{
-    BDRVRawState *s = bs->opaque;
-    if (s->offset || s->has_size) {
-        return -ENOTSUP;
-    }
-    return bdrv_co_ioctl(bs->file->bs, req, buf);
-}
-
 static int GRAPH_RDLOCK raw_has_zero_init(BlockDriverState *bs)
 {
     return bdrv_has_zero_init(bs->file->bs);
@@ -666,7 +656,6 @@ BlockDriver bdrv_raw = {
     .bdrv_probe_geometry  = &raw_probe_geometry,
     .bdrv_co_eject        = &raw_co_eject,
     .bdrv_co_lock_medium  = &raw_co_lock_medium,
-    .bdrv_co_ioctl        = &raw_co_ioctl,
     .create_opts          = &raw_create_opts,
     .bdrv_has_zero_init   = &raw_has_zero_init,
     .strong_runtime_opts  = raw_strong_runtime_opts,

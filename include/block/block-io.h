@@ -102,10 +102,6 @@ bdrv_co_delete_file_noerr(BlockDriverState *bs);
 /* async block I/O */
 void bdrv_aio_cancel_async(BlockAIOCB *acb);
 
-/* sg packet commands */
-int coroutine_fn GRAPH_RDLOCK
-bdrv_co_ioctl(BlockDriverState *bs, int req, void *buf);
-
 /* Ensure contents are flushed to disk.  */
 int coroutine_fn GRAPH_RDLOCK bdrv_co_flush(BlockDriverState *bs);
 

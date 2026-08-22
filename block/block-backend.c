@@ -1655,52 +1655,6 @@ void blk_aio_cancel_async(BlockAIOCB *acb)
 
 /* To be called between exactly one pair of blk_inc/dec_in_flight() */
 static int coroutine_fn
-blk_co_do_ioctl(BlockBackend *blk, unsigned long int req, void *buf)
-{
-    IO_CODE();
-
-    blk_wait_while_drained(blk);
-    GRAPH_RDLOCK_GUARD();
-
-    if (!blk_co_is_available(blk)) {
-        return -ENOMEDIUM;
-    }
-
-    return bdrv_co_ioctl(blk_bs(blk), req, buf);
-}
-
-int coroutine_fn blk_co_ioctl(BlockBackend *blk, unsigned long int req,
-                              void *buf)
-{
-    int ret;
-    IO_OR_GS_CODE();
-
-    blk_inc_in_flight(blk);
-    ret = blk_co_do_ioctl(blk, req, buf);
-    blk_dec_in_flight(blk);
-
-    return ret;
-}
-
-static void coroutine_fn blk_aio_ioctl_entry(void *opaque)
-{
-    BlkAioEmAIOCB *acb = opaque;
-    BlkRwCo *rwco = &acb->rwco;
-
-    rwco->ret = blk_co_do_ioctl(rwco->blk, rwco->offset, rwco->iobuf);
-
-    blk_aio_complete(acb);
-}
-
-BlockAIOCB *blk_aio_ioctl(BlockBackend *blk, unsigned long int req, void *buf,
-                          BlockCompletionFunc *cb, void *opaque)
-{
-    IO_CODE();
-    return blk_aio_prwv(blk, req, 0, buf, blk_aio_ioctl_entry, 0, cb, opaque);
-}
-
-/* To be called between exactly one pair of blk_inc/dec_in_flight() */
-static int coroutine_fn
 blk_co_do_pdiscard(BlockBackend *blk, int64_t offset, int64_t bytes)
 {
     int ret;

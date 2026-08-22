@@ -3125,37 +3125,6 @@ out:
     return ret;
 }
 
-int coroutine_fn bdrv_co_ioctl(BlockDriverState *bs, int req, void *buf)
-{
-    BlockDriver *drv = bs->drv;
-    CoroutineIOCompletion co = {
-        .coroutine = qemu_coroutine_self(),
-    };
-    BlockAIOCB *acb;
-    IO_CODE();
-    assert_bdrv_graph_readable();
-
-    bdrv_inc_in_flight(bs);
-    if (!drv || (!drv->bdrv_aio_ioctl && !drv->bdrv_co_ioctl)) {
-        co.ret = -ENOTSUP;
-        goto out;
-    }
-
-    if (drv->bdrv_co_ioctl) {
-        co.ret = drv->bdrv_co_ioctl(bs, req, buf);
-    } else {
-        acb = drv->bdrv_aio_ioctl(bs, req, buf, bdrv_co_io_em_complete, &co);
-        if (!acb) {
-            co.ret = -ENOTSUP;
-            goto out;
-        }
-        qemu_coroutine_yield();
-    }
-out:
-    bdrv_dec_in_flight(bs);
-    return co.ret;
-}
-
 int coroutine_fn bdrv_co_zone_report(BlockDriverState *bs, int64_t offset,
                         unsigned int *nr_zones,
                         BlockZoneDescriptor *zones)

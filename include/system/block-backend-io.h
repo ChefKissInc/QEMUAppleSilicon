@@ -66,8 +66,6 @@ BlockAIOCB *blk_aio_zone_append(BlockBackend *blk, int64_t *offset,
 BlockAIOCB *blk_aio_pdiscard(BlockBackend *blk, int64_t offset, int64_t bytes,
                              BlockCompletionFunc *cb, void *opaque);
 void blk_aio_cancel_async(BlockAIOCB *acb);
-BlockAIOCB *blk_aio_ioctl(BlockBackend *blk, unsigned long int req, void *buf,
-                          BlockCompletionFunc *cb, void *opaque);
 
 void blk_inc_in_flight(BlockBackend *blk);
 void blk_dec_in_flight(BlockBackend *blk);
@@ -222,11 +220,6 @@ int coroutine_fn blk_co_pdiscard(BlockBackend *blk, int64_t offset,
 
 int co_wrapper_mixed blk_flush(BlockBackend *blk);
 int coroutine_fn blk_co_flush(BlockBackend *blk);
-
-int co_wrapper_mixed blk_ioctl(BlockBackend *blk, unsigned long int req,
-                               void *buf);
-int coroutine_fn blk_co_ioctl(BlockBackend *blk, unsigned long int req,
-                              void *buf);
 
 int co_wrapper_mixed blk_truncate(BlockBackend *blk, int64_t offset,
                                   bool exact, PreallocMode prealloc,

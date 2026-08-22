@@ -136,22 +136,6 @@
 #define RAW_LOCK_PERM_BASE             100
 #define RAW_LOCK_SHARED_BASE           200
 
-/*
- * Multiple retries are mostly meant for two separate scenarios:
- *
- * - DM_MPATH_PROBE_PATHS returns success, but before SG_IO completes, another
- *   path goes down.
- *
- * - DM_MPATH_PROBE_PATHS failed all paths in the current path group, so we have
- *   to send another SG_IO to switch to another path group to probe the paths in
- *   it.
- *
- * Even if each path is in a separate path group (path_grouping_policy set to
- * failover), it's rare to have more than eight path groups - and even then
- * pretty unlikely that only bad path groups would be chosen in eight retries.
- */
-#define SG_IO_MAX_RETRIES 8
-
 typedef struct BDRVRawState {
     int fd;
     bool use_lock;
@@ -4278,134 +4262,6 @@ hdev_open_Mac_error:
     return ret;
 }
 
-#if defined(__linux__)
-#if defined(DM_MPATH_PROBE_PATHS)
-static bool coroutine_fn sgio_path_error(int ret, sg_io_hdr_t *io_hdr)
-{
-    if (ret < 0) {
-        switch (ret) {
-        case -ENODEV:
-            return true;
-        case -EAGAIN:
-            /*
-             * The device is probably suspended. This happens while the dm table
-             * is reloaded, e.g. because a path is added or removed. This is an
-             * operation that should complete within 1ms, so just wait a bit and
-             * retry.
-             *
-             * If the device was suspended for another reason, we'll wait and
-             * retry SG_IO_MAX_RETRIES times. This is a tolerable delay before
-             * we return an error and potentially stop the VM.
-             */
-            qemu_co_sleep_ns(QEMU_CLOCK_REALTIME, 1000000);
-            return true;
-        default:
-            return false;
-        }
-    }
-
-    if (io_hdr->host_status != SCSI_HOST_OK) {
-        return true;
-    }
-
-    switch (io_hdr->status) {
-    case GOOD:
-    case CONDITION_GOOD:
-    case INTERMEDIATE_GOOD:
-    case INTERMEDIATE_C_GOOD:
-    case RESERVATION_CONFLICT:
-    case COMMAND_TERMINATED:
-        return false;
-    case CHECK_CONDITION:
-        return !scsi_sense_buf_is_guest_recoverable(io_hdr->sbp,
-                                                    io_hdr->mx_sb_len);
-    default:
-        return true;
-    }
-}
-
-static bool coroutine_fn hdev_co_ioctl_sgio_retry(RawPosixAIOData *acb, int ret)
-{
-    BDRVRawState *s = acb->bs->opaque;
-    RawPosixAIOData probe_acb;
-
-    if (!s->use_mpath) {
-        return false;
-    }
-
-    if (!sgio_path_error(ret, acb->ioctl.buf)) {
-        return false;
-    }
-
-    probe_acb = (RawPosixAIOData) {
-        .bs         = acb->bs,
-        .aio_type   = QEMU_AIO_IOCTL,
-        .aio_fildes = s->fd,
-        .aio_offset = 0,
-        .ioctl      = {
-            .buf        = NULL,
-            .cmd        = DM_MPATH_PROBE_PATHS,
-        },
-    };
-
-    ret = raw_thread_pool_submit(handle_aiocb_ioctl, &probe_acb);
-    if (ret == -ENOTTY) {
-        s->use_mpath = false;
-    } else if (ret == -EAGAIN) {
-        /* The device might be suspended for a table reload, worth retrying */
-        return true;
-    }
-
-    return ret == 0;
-}
-#else
-static bool coroutine_fn hdev_co_ioctl_sgio_retry(RawPosixAIOData *acb, int ret)
-{
-    return false;
-}
-#endif /* DM_MPATH_PROBE_PATHS */
-
-static int coroutine_fn
-hdev_co_ioctl(BlockDriverState *bs, unsigned long int req, void *buf)
-{
-    BDRVRawState *s = bs->opaque;
-    RawPosixAIOData acb;
-    int retries = SG_IO_MAX_RETRIES;
-    int ret;
-
-    ret = fd_open(bs);
-    if (ret < 0) {
-        return ret;
-    }
-
-    if (req == SG_IO && s->pr_mgr) {
-        struct sg_io_hdr *io_hdr = buf;
-        if (io_hdr->cmdp[0] == PERSISTENT_RESERVE_OUT ||
-            io_hdr->cmdp[0] == PERSISTENT_RESERVE_IN) {
-            return pr_manager_execute(s->pr_mgr, qemu_get_current_aio_context(),
-                                      s->fd, io_hdr);
-        }
-    }
-
-    acb = (RawPosixAIOData) {
-        .bs         = bs,
-        .aio_type   = QEMU_AIO_IOCTL,
-        .aio_fildes = s->fd,
-        .aio_offset = 0,
-        .ioctl      = {
-            .buf        = buf,
-            .cmd        = req,
-        },
-    };
-
-    do {
-        ret = raw_thread_pool_submit(handle_aiocb_ioctl, &acb);
-    } while (req == SG_IO && retries-- && hdev_co_ioctl_sgio_retry(&acb, ret));
-
-    return ret;
-}
-#endif /* linux */
-
 static coroutine_fn int
 hdev_co_pdiscard(BlockDriverState *bs, int64_t offset, int64_t bytes)
 {
@@ -4470,11 +4326,6 @@ static BlockDriver bdrv_host_device = {
     .bdrv_abort_perm_update = raw_abort_perm_update,
     .bdrv_probe_blocksizes = hdev_probe_blocksizes,
     .bdrv_probe_geometry = hdev_probe_geometry,
-
-    /* generic scsi device */
-#ifdef __linux__
-    .bdrv_co_ioctl          = hdev_co_ioctl,
-#endif
 
     /* zoned device */
 #if defined(CONFIG_BLKZONED)
@@ -4602,9 +4453,6 @@ static BlockDriver bdrv_host_cdrom = {
     .bdrv_co_is_inserted    = cdrom_co_is_inserted,
     .bdrv_co_eject          = cdrom_co_eject,
     .bdrv_co_lock_medium    = cdrom_co_lock_medium,
-
-    /* generic scsi device */
-    .bdrv_co_ioctl      = hdev_co_ioctl,
 };
 #endif /* __linux__ */
 

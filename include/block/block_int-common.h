@@ -761,14 +761,6 @@ struct BlockDriver {
     void coroutine_fn GRAPH_RDLOCK_PTR (*bdrv_co_lock_medium)(
         BlockDriverState *bs, bool locked);
 
-    /* to control generic scsi devices */
-    BlockAIOCB *coroutine_fn GRAPH_RDLOCK_PTR (*bdrv_aio_ioctl)(
-        BlockDriverState *bs, unsigned long int req, void *buf,
-        BlockCompletionFunc *cb, void *opaque);
-
-    int coroutine_fn GRAPH_RDLOCK_PTR (*bdrv_co_ioctl)(
-        BlockDriverState *bs, unsigned long int req, void *buf);
-
     /*
      * Returns 0 for completed check, -errno for internal errors.
      * The check results are stored in result.

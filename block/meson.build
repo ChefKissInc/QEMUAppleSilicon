@@ -87,9 +87,6 @@ if host_os == 'windows'
 else
   block_ss.add(files('file-posix.c'), coref, iokit)
 endif
-if host_os == 'linux'
-  block_ss.add(files('nvme.c'))
-endif
 if get_option('replication').allowed()
   block_ss.add(files('replication.c'))
 endif
