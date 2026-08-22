@@ -7,7 +7,7 @@ on:
 jobs:
   build_linux:
     name: Linux Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
@@ -18,17 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential libtool ninja-build pkg-config libglib2.0-dev gnutls-bin libjpeg-turbo8-dev libpng-dev libslirp-dev libssh-dev libusb-1.0-0-dev liblzo2-dev libncurses5-dev libpixman-1-dev libsnappy-dev vde2 zstd libgnutls28-dev libgmp10 libgmp3-dev lzfse liblzfse-dev python3-pip
-          pip3 install --user --upgrade meson
-      - name: Build nettle 3.10.2
-        run: |
-          wget https://ftpmirror.gnu.org/gnu/nettle/nettle-3.10.2.tar.gz
-          echo "fe9ff51cb1f2abb5e65a6b8c10a92da0ab5ab6eaf26e7fc2b675c45f1fb519b5 nettle-3.10.2.tar.gz" | sha256sum -c - || exit 1
-          tar -xvf nettle-3.10.2.tar.gz
-          cd nettle-3.10.2
-          ./configure
-          make -j$(nproc)
-          sudo make install
+          sudo apt-get install -y build-essential libtool ninja-build pkg-config libglib2.0-dev gnutls-bin libjpeg-turbo8-dev libpng-dev libslirp-dev libssh-dev libusb-1.0-0-dev liblzo2-dev libncurses5-dev libpixman-1-dev libsnappy-dev vde2 zstd libgnutls28-dev libgmp10 libgmp3-dev lzfse liblzfse-dev python3-pip nettle-bin nettle-dev meson
       - name: Build
         run: |
           mkdir build
