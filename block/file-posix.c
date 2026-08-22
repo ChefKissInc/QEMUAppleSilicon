@@ -1666,23 +1666,6 @@ static int hdev_probe_geometry(BlockDriverState *bs, HDGeometry *geo)
 }
 #endif
 
-#if defined(__linux__)
-static int handle_aiocb_ioctl(void *opaque)
-{
-    RawPosixAIOData *aiocb = opaque;
-    int ret;
-
-    ret = RETRY_ON_EINTR(
-        ioctl(aiocb->aio_fildes, aiocb->ioctl.cmd, aiocb->ioctl.buf)
-    );
-    if (ret == -1) {
-        return -errno;
-    }
-
-    return 0;
-}
-#endif /* linux */
-
 static int handle_aiocb_flush(void *opaque)
 {
     RawPosixAIOData *aiocb = opaque;
