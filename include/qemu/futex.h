@@ -26,51 +26,33 @@
 #define HAVE_FUTEX
 
 #ifdef CONFIG_LINUX
-#include <sys/syscall.h>
-#include <linux/futex.h>
+    #include <sys/syscall.h>
+    #include <linux/futex.h>
 
-#define qemu_futex(...)              syscall(__NR_futex, __VA_ARGS__)
+    #define qemu_futex(...) syscall(__NR_futex, __VA_ARGS__)
 
-static inline void qemu_futex_wake_all(void *f)
+static inline void qemu_futex_wake_all(void* f) { qemu_futex(f, FUTEX_WAKE, INT_MAX, NULL, NULL, 0); }
+
+static inline void qemu_futex_wake_single(void* f) { qemu_futex(f, FUTEX_WAKE, 1, NULL, NULL, 0); }
+
+static inline void qemu_futex_wait(void* f, unsigned val)
 {
-    qemu_futex(f, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
-}
-
-static inline void qemu_futex_wake_single(void *f)
-{
-    qemu_futex(f, FUTEX_WAKE, 1, NULL, NULL, 0);
-}
-
-static inline void qemu_futex_wait(void *f, unsigned val)
-{
-    while (qemu_futex(f, FUTEX_WAIT, (int) val, NULL, NULL, 0)) {
+    while (qemu_futex(f, FUTEX_WAIT, (int)val, NULL, NULL, 0)) {
         switch (errno) {
-        case EWOULDBLOCK:
-            return;
-        case EINTR:
-            break; /* get out of switch and retry */
-        default:
-            abort();
+            case EWOULDBLOCK: return;
+            case EINTR      : break; /* get out of switch and retry */
+            default         : abort();
         }
     }
 }
 #elif defined(CONFIG_WIN32)
-#include <synchapi.h>
+    #include <synchapi.h>
 
-static inline void qemu_futex_wake_all(void *f)
-{
-    WakeByAddressAll(f);
-}
+static inline void qemu_futex_wake_all(void* f) { WakeByAddressAll(f); }
 
-static inline void qemu_futex_wake_single(void *f)
-{
-    WakeByAddressSingle(f);
-}
+static inline void qemu_futex_wake_single(void* f) { WakeByAddressSingle(f); }
 
-static inline void qemu_futex_wait(void *f, unsigned val)
-{
-    WaitOnAddress(f, &val, sizeof(val), INFINITE);
-}
+static inline void qemu_futex_wait(void* f, unsigned val) { WaitOnAddress(f, &val, sizeof(val), INFINITE); }
 #else
-#undef HAVE_FUTEX
+    #undef HAVE_FUTEX
 #endif

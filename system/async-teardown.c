@@ -19,9 +19,9 @@
 #include "qemu/async-teardown.h"
 
 #ifdef _SC_THREAD_STACK_MIN
-#define CLONE_STACK_SIZE sysconf(_SC_THREAD_STACK_MIN)
+    #define CLONE_STACK_SIZE sysconf(_SC_THREAD_STACK_MIN)
 #else
-#define CLONE_STACK_SIZE 16384
+    #define CLONE_STACK_SIZE 16384
 #endif
 
 static pid_t the_ppid;
@@ -38,11 +38,11 @@ static void hup_handler(int signal)
     _exit(0);
 }
 
-static int async_teardown_fn(void *arg)
+static int async_teardown_fn(void* arg)
 {
-    struct sigaction sa = { .sa_handler = hup_handler };
-    sigset_t hup_signal;
-    char name[16];
+    struct sigaction sa = {.sa_handler = hup_handler};
+    sigset_t         hup_signal;
+    char             name[16];
 
     /* Set a meaningful name for this process. */
     snprintf(name, 16, "cleanup/%d", the_ppid);
@@ -68,9 +68,7 @@ static int async_teardown_fn(void *arg)
      * only interruption can come from the SIGHUP signal, which in normal
      * operation is received when the parent process dies.
      */
-    if (the_ppid == getppid()) {
-        pause();
-    }
+    if (the_ppid == getppid()) { pause(); }
 
     /* At this point the parent process has terminated completely. */
     _exit(0);
@@ -79,13 +77,13 @@ static int async_teardown_fn(void *arg)
 /*
  * Allocate a new stack of a reasonable size, and return a pointer to its top.
  */
-static void *new_stack_for_clone(void)
+static void* new_stack_for_clone(void)
 {
     size_t stack_size = CLONE_STACK_SIZE;
-    char *stack_ptr;
+    char*  stack_ptr;
 
     /* Allocate a new stack and get a pointer to its top. */
-    stack_ptr = qemu_alloc_stack(&stack_size);
+    stack_ptr  = qemu_alloc_stack(&stack_size);
     stack_ptr += stack_size;
 
     return stack_ptr;

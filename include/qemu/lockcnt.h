@@ -15,7 +15,8 @@
 
 typedef struct QemuLockCnt QemuLockCnt;
 
-struct QemuLockCnt {
+struct QemuLockCnt
+{
 #ifndef HAVE_FUTEX
     QemuMutex mutex;
 #endif
@@ -29,7 +30,7 @@ struct QemuLockCnt {
  * Initialize lockcnt's counter to zero and prepare its mutex
  * for usage.
  */
-void qemu_lockcnt_init(QemuLockCnt *lockcnt);
+void qemu_lockcnt_init(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_destroy: destroy a QemuLockcnt
@@ -37,7 +38,7 @@ void qemu_lockcnt_init(QemuLockCnt *lockcnt);
  *
  * Destroy lockcnt's mutex.
  */
-void qemu_lockcnt_destroy(QemuLockCnt *lockcnt);
+void qemu_lockcnt_destroy(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_inc: increment a QemuLockCnt's counter
@@ -59,13 +60,13 @@ void qemu_lockcnt_destroy(QemuLockCnt *lockcnt);
  *            qemu_lockcnt_inc(&lc2);
  *                                          qemu_lockcnt_inc(&lc1);
  */
-void qemu_lockcnt_inc(QemuLockCnt *lockcnt);
+void qemu_lockcnt_inc(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_dec: decrement a QemuLockCnt's counter
  * @lockcnt: the lockcnt to operate on
  */
-void qemu_lockcnt_dec(QemuLockCnt *lockcnt);
+void qemu_lockcnt_dec(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_dec_and_lock: decrement a QemuLockCnt's counter and
@@ -75,7 +76,7 @@ void qemu_lockcnt_dec(QemuLockCnt *lockcnt);
  * Decrement lockcnt's count.  If the new count is zero, lock
  * the mutex and return true.  Otherwise, return false.
  */
-bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt);
+bool qemu_lockcnt_dec_and_lock(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_dec_if_lock: possibly decrement a QemuLockCnt's counter and
@@ -85,7 +86,7 @@ bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt);
  * If the count is 1, decrement the count to zero, lock
  * the mutex and return true.  Otherwise, return false.
  */
-bool qemu_lockcnt_dec_if_lock(QemuLockCnt *lockcnt);
+bool qemu_lockcnt_dec_if_lock(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_lock: lock a QemuLockCnt's mutex.
@@ -95,13 +96,13 @@ bool qemu_lockcnt_dec_if_lock(QemuLockCnt *lockcnt);
  * also zero.  You can use qemu_lockcnt_count to check for this inside a
  * critical section.
  */
-void qemu_lockcnt_lock(QemuLockCnt *lockcnt);
+void qemu_lockcnt_lock(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_unlock: release a QemuLockCnt's mutex.
  * @lockcnt: the lockcnt to operate on.
  */
-void qemu_lockcnt_unlock(QemuLockCnt *lockcnt);
+void qemu_lockcnt_unlock(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_inc_and_unlock: combined unlock/increment on a QemuLockCnt.
@@ -114,7 +115,7 @@ void qemu_lockcnt_unlock(QemuLockCnt *lockcnt);
  *
  * but more efficient.
  */
-void qemu_lockcnt_inc_and_unlock(QemuLockCnt *lockcnt);
+void qemu_lockcnt_inc_and_unlock(QemuLockCnt* lockcnt);
 
 /**
  * qemu_lockcnt_count: query a LockCnt's count.
@@ -124,4 +125,4 @@ void qemu_lockcnt_inc_and_unlock(QemuLockCnt *lockcnt);
  * lockcnt is locked, one can usefully check whether the count
  * is non-zero.
  */
-unsigned qemu_lockcnt_count(QemuLockCnt *lockcnt);
+unsigned qemu_lockcnt_count(QemuLockCnt* lockcnt);

@@ -25,8 +25,7 @@
 
 #define TYPE_QCRYPTO_TLS_CREDS_PSK "tls-creds-psk"
 typedef struct QCryptoTLSCredsPSK QCryptoTLSCredsPSK;
-DECLARE_INSTANCE_CHECKER(QCryptoTLSCredsPSK, QCRYPTO_TLS_CREDS_PSK,
-                         TYPE_QCRYPTO_TLS_CREDS_PSK)
+DECLARE_INSTANCE_CHECKER(QCryptoTLSCredsPSK, QCRYPTO_TLS_CREDS_PSK, TYPE_QCRYPTO_TLS_CREDS_PSK)
 
 typedef struct QCryptoTLSCredsPSKClass QCryptoTLSCredsPSKClass;
 
@@ -86,6 +85,7 @@ typedef struct QCryptoTLSCredsPSKClass QCryptoTLSCredsPSKClass;
  * The PSK file can be created and managed using psktool.
  */
 
-struct QCryptoTLSCredsPSKClass {
+struct QCryptoTLSCredsPSKClass
+{
     QCryptoTLSCredsClass parent_class;
 };

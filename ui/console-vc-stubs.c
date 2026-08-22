@@ -10,24 +10,12 @@
 #include "chardev/char.h"
 #include "ui/console-priv.h"
 
-void qemu_text_console_update_size(QemuTextConsole *c)
-{
-}
+void qemu_text_console_update_size(QemuTextConsole* c) { }
 
-const char *
-qemu_text_console_get_label(QemuTextConsole *c)
-{
-    return NULL;
-}
+const char* qemu_text_console_get_label(QemuTextConsole* c) { return NULL; }
 
-void qemu_text_console_update_cursor(void)
-{
-}
+void qemu_text_console_update_cursor(void) { }
 
-void qemu_text_console_handle_keysym(QemuTextConsole *s, int keysym)
-{
-}
+void qemu_text_console_handle_keysym(QemuTextConsole* s, int keysym) { }
 
-void qemu_console_early_init(void)
-{
-}
+void qemu_console_early_init(void) { }

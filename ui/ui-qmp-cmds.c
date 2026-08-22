@@ -24,10 +24,10 @@
 #include "trace.h"
 #include "ui/console.h"
 #ifdef CONFIG_PNG
-#include <png.h>
+    #include <png.h>
 #endif
 
-void qmp_set_password(SetPasswordOptions *opts, Error **errp)
+void qmp_set_password(SetPasswordOptions* opts, Error** errp)
 {
     int rc;
 
@@ -35,7 +35,7 @@ void qmp_set_password(SetPasswordOptions *opts, Error **errp)
     if (opts->connected != SET_PASSWORD_ACTION_KEEP) {
         /* vnc supports "connected=keep" only */
         error_setg(errp, "parameter 'connected' must be 'keep'"
-                   " when 'protocol' is 'vnc'");
+                         " when 'protocol' is 'vnc'");
         return;
     }
     /*
@@ -44,35 +44,33 @@ void qmp_set_password(SetPasswordOptions *opts, Error **errp)
      */
     rc = vnc_display_password(opts->u.vnc.display, opts->password);
 
-    if (rc != 0) {
-        error_setg(errp, "Could not set password");
-    }
+    if (rc != 0) { error_setg(errp, "Could not set password"); }
 }
 
-void qmp_expire_password(ExpirePasswordOptions *opts, Error **errp)
+void qmp_expire_password(ExpirePasswordOptions* opts, Error** errp)
 {
-    time_t when;
-    int rc;
-    const char *whenstr = opts->time;
-    const char *numstr = NULL;
-    uint64_t num;
+    time_t      when;
+    int         rc;
+    const char* whenstr = opts->time;
+    const char* numstr  = NULL;
+    uint64_t    num;
 
-    if (strcmp(whenstr, "now") == 0) {
-        when = 0;
-    } else if (strcmp(whenstr, "never") == 0) {
+    if (strcmp(whenstr, "now") == 0) { when = 0; }
+    else if (strcmp(whenstr, "never") == 0) {
         when = TIME_MAX;
-    } else if (whenstr[0] == '+') {
-        when = time(NULL);
+    }
+    else if (whenstr[0] == '+') {
+        when   = time(NULL);
         numstr = whenstr + 1;
-    } else {
-        when = 0;
+    }
+    else {
+        when   = 0;
         numstr = whenstr;
     }
 
     if (numstr) {
         if (qemu_strtou64(numstr, NULL, 10, &num) < 0) {
-            error_setg(errp, "Parameter 'time' doesn't take value '%s'",
-                       whenstr);
+            error_setg(errp, "Parameter 'time' doesn't take value '%s'", whenstr);
             return;
         }
         when += num;
@@ -81,23 +79,18 @@ void qmp_expire_password(ExpirePasswordOptions *opts, Error **errp)
     assert(opts->protocol == DISPLAY_PROTOCOL_VNC);
     rc = vnc_display_pw_expire(opts->u.vnc.display, when);
 
-    if (rc != 0) {
-        error_setg(errp, "Could not set password expire time");
-    }
+    if (rc != 0) { error_setg(errp, "Could not set password expire time"); }
 }
 
 #ifdef CONFIG_VNC
-void qmp_change_vnc_password(const char *password, Error **errp)
+void qmp_change_vnc_password(const char* password, Error** errp)
 {
-    if (vnc_display_password(NULL, password) < 0) {
-        error_setg(errp, "Could not set password");
-    }
+    if (vnc_display_password(NULL, password) < 0) { error_setg(errp, "Could not set password"); }
 }
 #endif
 
 #ifdef CONFIG_VNC
-bool qmp_add_client_vnc(int fd, bool has_skipauth, bool skipauth,
-                        bool has_tls, bool tls, Error **errp)
+bool qmp_add_client_vnc(int fd, bool has_skipauth, bool skipauth, bool has_tls, bool tls, Error** errp)
 {
     skipauth = has_skipauth ? skipauth : false;
     vnc_display_add_client(NULL, fd, skipauth);
@@ -105,40 +98,36 @@ bool qmp_add_client_vnc(int fd, bool has_skipauth, bool skipauth,
 }
 #endif
 
-void qmp_display_reload(DisplayReloadOptions *arg, Error **errp)
+void qmp_display_reload(DisplayReloadOptions* arg, Error** errp)
 {
     switch (arg->type) {
-    case DISPLAY_RELOAD_TYPE_VNC:
+        case DISPLAY_RELOAD_TYPE_VNC:
 #ifdef CONFIG_VNC
-        if (arg->u.vnc.has_tls_certs && arg->u.vnc.tls_certs) {
-            vnc_display_reload_certs(NULL, errp);
-        }
+            if (arg->u.vnc.has_tls_certs && arg->u.vnc.tls_certs) { vnc_display_reload_certs(NULL, errp); }
 #else
-        error_setg(errp, "vnc is invalid, missing 'CONFIG_VNC'");
+            error_setg(errp, "vnc is invalid, missing 'CONFIG_VNC'");
 #endif
-        break;
-    default:
-        abort();
+            break;
+        default: abort();
     }
 }
 
-void qmp_display_update(DisplayUpdateOptions *arg, Error **errp)
+void qmp_display_update(DisplayUpdateOptions* arg, Error** errp)
 {
     switch (arg->type) {
-    case DISPLAY_UPDATE_TYPE_VNC:
+        case DISPLAY_UPDATE_TYPE_VNC:
 #ifdef CONFIG_VNC
-        vnc_display_update(&arg->u.vnc, errp);
+            vnc_display_update(&arg->u.vnc, errp);
 #else
-        error_setg(errp, "vnc is invalid, missing 'CONFIG_VNC'");
+            error_setg(errp, "vnc is invalid, missing 'CONFIG_VNC'");
 #endif
-        break;
-    default:
-        abort();
+            break;
+        default: abort();
     }
 }
 
 #ifdef CONFIG_PIXMAN
-#ifdef CONFIG_PNG
+    #ifdef CONFIG_PNG
 /**
  * png_save: Take a screenshot as PNG
  *
@@ -150,25 +139,22 @@ void qmp_display_update(DisplayUpdateOptions *arg, Error **errp)
  * @image: Image data in pixman format.
  * @errp: Pointer to an error.
  */
-static bool png_save(int fd, pixman_image_t *image, Error **errp)
+static bool png_save(int fd, pixman_image_t* image, Error** errp)
 {
-    int width = pixman_image_get_width(image);
-    int height = pixman_image_get_height(image);
-    png_struct *png_ptr;
-    png_info *info_ptr;
-    g_autoptr(pixman_image_t) linebuf =
-        qemu_pixman_linebuf_create(PIXMAN_BE_r8g8b8, width);
-    uint8_t *buf = (uint8_t *)pixman_image_get_data(linebuf);
-    FILE *f = fdopen(fd, "wb");
-    int y;
+    int         width  = pixman_image_get_width(image);
+    int         height = pixman_image_get_height(image);
+    png_struct* png_ptr;
+    png_info*   info_ptr;
+    g_autoptr(pixman_image_t) linebuf = qemu_pixman_linebuf_create(PIXMAN_BE_r8g8b8, width);
+    uint8_t* buf                      = (uint8_t*)pixman_image_get_data(linebuf);
+    FILE*    f                        = fdopen(fd, "wb");
+    int      y;
     if (!f) {
-        error_setg_errno(errp, errno,
-                         "Failed to create file from file descriptor");
+        error_setg_errno(errp, errno, "Failed to create file from file descriptor");
         return false;
     }
 
-    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,
-                                      NULL, NULL);
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png_ptr) {
         error_setg(errp, "PNG creation failed. Unable to write struct");
         fclose(f);
@@ -186,9 +172,8 @@ static bool png_save(int fd, pixman_image_t *image, Error **errp)
 
     png_init_io(png_ptr, f);
 
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8,
-                 PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+                 PNG_FILTER_TYPE_BASE);
 
     png_write_info(png_ptr, info_ptr);
 
@@ -202,47 +187,44 @@ static bool png_save(int fd, pixman_image_t *image, Error **errp)
     png_destroy_write_struct(&png_ptr, &info_ptr);
 
     if (fclose(f) != 0) {
-        error_setg_errno(errp, errno,
-                         "PNG creation failed. Unable to close file");
+        error_setg_errno(errp, errno, "PNG creation failed. Unable to close file");
         return false;
     }
 
     return true;
 }
 
-#else /* no png support */
+    #else /* no png support */
 
-static bool png_save(int fd, pixman_image_t *image, Error **errp)
+static bool png_save(int fd, pixman_image_t* image, Error** errp)
 {
     error_setg(errp, "Enable PNG support with libpng for screendump");
     return false;
 }
 
-#endif /* CONFIG_PNG */
+    #endif /* CONFIG_PNG */
 
-static bool ppm_save(int fd, pixman_image_t *image, Error **errp)
+static bool ppm_save(int fd, pixman_image_t* image, Error** errp)
 {
-    int width = pixman_image_get_width(image);
-    int height = pixman_image_get_height(image);
-    g_autoptr(Object) ioc = OBJECT(qio_channel_file_new_fd(fd));
-    g_autofree char *header = NULL;
+    int width                         = pixman_image_get_width(image);
+    int height                        = pixman_image_get_height(image);
+    g_autoptr(Object) ioc             = OBJECT(qio_channel_file_new_fd(fd));
+    g_autofree char* header           = NULL;
     g_autoptr(pixman_image_t) linebuf = NULL;
     int y;
 
     trace_ppm_save(fd, image);
 
     header = g_strdup_printf("P6\n%d %d\n%d\n", width, height, 255);
-    if (qio_channel_write_all(QIO_CHANNEL(ioc),
-                              header, strlen(header), errp) < 0) {
-        return false;
-    }
+    if (qio_channel_write_all(QIO_CHANNEL(ioc), header, strlen(header), errp) < 0) { return false; }
 
     linebuf = qemu_pixman_linebuf_create(PIXMAN_BE_r8g8b8, width);
     for (y = 0; y < height; y++) {
         qemu_pixman_linebuf_fill(linebuf, image, width, 0, y);
-        if (qio_channel_write_all(QIO_CHANNEL(ioc),
-                                  (char *)pixman_image_get_data(linebuf),
-                                  pixman_image_get_stride(linebuf), errp) < 0) {
+        if (qio_channel_write_all(QIO_CHANNEL(ioc), (char*)pixman_image_get_data(linebuf),
+                                  pixman_image_get_stride(linebuf), errp)
+            < 0)
+        {
             return false;
         }
     }
@@ -251,23 +233,19 @@ static bool ppm_save(int fd, pixman_image_t *image, Error **errp)
 }
 
 /* Safety: coroutine-only, concurrent-coroutine safe, main thread only */
-void coroutine_fn
-qmp_screendump(const char *filename, const char *device,
-               bool has_head, int64_t head,
-               bool has_format, ImageFormat format, Error **errp)
+void coroutine_fn qmp_screendump(const char* filename, const char* device, bool has_head, int64_t head, bool has_format,
+                                 ImageFormat format, Error** errp)
 {
     g_autoptr(pixman_image_t) image = NULL;
-    QemuConsole *con;
-    DisplaySurface *surface;
-    int fd;
+    QemuConsole*    con;
+    DisplaySurface* surface;
+    int             fd;
 
     if (device) {
-        con = qemu_console_lookup_by_device_name(device, has_head ? head : 0,
-                                                 errp);
-        if (!con) {
-            return;
-        }
-    } else {
+        con = qemu_console_lookup_by_device_name(device, has_head ? head : 0, errp);
+        if (!con) { return; }
+    }
+    else {
         if (has_head) {
             error_setg(errp, "'head' must be specified together with 'device'");
             return;
@@ -295,8 +273,7 @@ qmp_screendump(const char *filename, const char *device,
 
     fd = qemu_open_old(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
     if (fd == -1) {
-        error_setg(errp, "failed to open file '%s': %s", filename,
-                   strerror(errno));
+        error_setg(errp, "failed to open file '%s': %s", filename, strerror(errno));
         return;
     }
 
@@ -307,14 +284,11 @@ qmp_screendump(const char *filename, const char *device,
      */
     if (has_format && format == IMAGE_FORMAT_PNG) {
         /* PNG format specified for screendump */
-        if (!png_save(fd, image, errp)) {
-            qemu_unlink(filename);
-        }
-    } else {
+        if (!png_save(fd, image, errp)) { qemu_unlink(filename); }
+    }
+    else {
         /* PPM format specified/default for screendump */
-        if (!ppm_save(fd, image, errp)) {
-            qemu_unlink(filename);
-        }
+        if (!ppm_save(fd, image, errp)) { qemu_unlink(filename); }
     }
 }
 #endif /* CONFIG_PIXMAN */

@@ -17,20 +17,21 @@
 #include "qom/object.h"
 
 #define TYPE_THREAD_CONTEXT "thread-context"
-OBJECT_DECLARE_TYPE(ThreadContext, ThreadContextClass,
-                    THREAD_CONTEXT)
+OBJECT_DECLARE_TYPE(ThreadContext, ThreadContextClass, THREAD_CONTEXT)
 
-struct ThreadContextClass {
+struct ThreadContextClass
+{
     ObjectClass parent_class;
 };
 
-struct ThreadContext {
+struct ThreadContext
+{
     /* private */
     Object parent;
 
     /* private */
     unsigned int thread_id;
-    QemuThread thread;
+    QemuThread   thread;
 
     /* Semaphore to wait for context thread action. */
     QemuSemaphore sem;
@@ -40,15 +41,13 @@ struct ThreadContext {
     QemuMutex mutex;
 
     /* Commands for the thread to execute. */
-    int thread_cmd;
-    void *thread_cmd_data;
+    int   thread_cmd;
+    void* thread_cmd_data;
 
     /* CPU affinity bitmap used for initialization. */
-    unsigned long *init_cpu_bitmap;
-    int init_cpu_nbits;
+    unsigned long* init_cpu_bitmap;
+    int            init_cpu_nbits;
 };
 
-void thread_context_create_thread(ThreadContext *tc, QemuThread *thread,
-                                  const char *name,
-                                  void *(*start_routine)(void *), void *arg,
-                                  int mode);
+void thread_context_create_thread(ThreadContext* tc, QemuThread* thread, const char* name,
+                                  void* (*start_routine)(void*), void* arg, int mode);

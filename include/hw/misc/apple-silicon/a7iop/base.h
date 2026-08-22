@@ -21,17 +21,19 @@
 
 #include "qemu/osdep.h"
 
-#define APPLE_A7IOP_SEP_CPU_IRQ "apple-a7iop-sep-cpu-irq"
-#define APPLE_A7IOP_IOP_IRQ "apple-a7iop-iop-irq"
+#define APPLE_A7IOP_SEP_CPU_IRQ     "apple-a7iop-sep-cpu-irq"
+#define APPLE_A7IOP_IOP_IRQ         "apple-a7iop-iop-irq"
 #define APPLE_A7IOP_SEP_GPIO_TIMER0 "a7iop-sep-gpio-timer0"
 #define APPLE_A7IOP_SEP_GPIO_TIMER1 "a7iop-sep-gpio-timer1"
 
-typedef enum {
+typedef enum
+{
     APPLE_A7IOP_V2 = 0,
     APPLE_A7IOP_V4,
 } AppleA7IOPVersion;
 
-enum {
+enum
+{
     APPLE_A7IOP_IRQ_IOP_NONEMPTY = 0,
     APPLE_A7IOP_IRQ_IOP_EMPTY,
     APPLE_A7IOP_IRQ_AP_NONEMPTY,

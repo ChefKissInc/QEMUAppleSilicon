@@ -278,25 +278,26 @@
  * Based on the qapi type QapiErrorClass, but reproduced here for nicer
  * enum names.
  */
-typedef enum ErrorClass {
-    ERROR_CLASS_GENERIC_ERROR = QAPI_ERROR_CLASS_GENERICERROR,
+typedef enum ErrorClass
+{
+    ERROR_CLASS_GENERIC_ERROR     = QAPI_ERROR_CLASS_GENERICERROR,
     ERROR_CLASS_COMMAND_NOT_FOUND = QAPI_ERROR_CLASS_COMMANDNOTFOUND,
     ERROR_CLASS_DEVICE_NOT_ACTIVE = QAPI_ERROR_CLASS_DEVICENOTACTIVE,
-    ERROR_CLASS_DEVICE_NOT_FOUND = QAPI_ERROR_CLASS_DEVICENOTFOUND,
-    ERROR_CLASS_KVM_MISSING_CAP = QAPI_ERROR_CLASS_KVMMISSINGCAP,
+    ERROR_CLASS_DEVICE_NOT_FOUND  = QAPI_ERROR_CLASS_DEVICENOTFOUND,
+    ERROR_CLASS_KVM_MISSING_CAP   = QAPI_ERROR_CLASS_KVMMISSINGCAP,
 } ErrorClass;
 
 /*
  * Get @err's human-readable error message.
  */
-const char *error_get_pretty(const Error *err);
+const char* error_get_pretty(const Error* err);
 
 /*
  * Get @err's error class.
  * Note: use of error classes other than ERROR_CLASS_GENERIC_ERROR is
  * strongly discouraged.
  */
-ErrorClass error_get_class(const Error *err);
+ErrorClass error_get_class(const Error* err);
 
 /*
  * Create a new error object and assign it to *@errp.
@@ -313,12 +314,8 @@ ErrorClass error_get_class(const Error *err);
  * exit(), because that's more obvious.
  * Likewise, don't error_setg(&error_abort, ...), use assert().
  */
-#define error_setg(errp, fmt, ...)                              \
-    error_setg_internal((errp), __FILE__, __LINE__, __func__,   \
-                        (fmt), ## __VA_ARGS__)
-void error_setg_internal(Error **errp,
-                         const char *src, int line, const char *func,
-                         const char *fmt, ...)
+#define error_setg(errp, fmt, ...) error_setg_internal((errp), __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
+void error_setg_internal(Error** errp, const char* src, int line, const char* func, const char* fmt, ...)
     G_GNUC_PRINTF(5, 6);
 
 /*
@@ -329,27 +326,21 @@ void error_setg_internal(Error **errp,
  * The value of errno (which usually can get clobbered by almost any
  * function call) will be preserved.
  */
-#define error_setg_errno(errp, os_error, fmt, ...)                      \
-    error_setg_errno_internal((errp), __FILE__, __LINE__, __func__,     \
-                              (os_error), (fmt), ## __VA_ARGS__)
-void error_setg_errno_internal(Error **errp,
-                               const char *fname, int line, const char *func,
-                               int os_error, const char *fmt, ...)
-    G_GNUC_PRINTF(6, 7);
+#define error_setg_errno(errp, os_error, fmt, ...)                                                    \
+    error_setg_errno_internal((errp), __FILE__, __LINE__, __func__, (os_error), (fmt), ##__VA_ARGS__)
+void error_setg_errno_internal(Error** errp, const char* fname, int line, const char* func, int os_error,
+                               const char* fmt, ...) G_GNUC_PRINTF(6, 7);
 
 #ifdef _WIN32
-/*
- * Just like error_setg(), with @win32_error info added to the message.
- * If @win32_error is non-zero, ": " + g_win32_error_message(win32_err)
- * is appended to the human-readable error message.
- */
-#define error_setg_win32(errp, win32_err, fmt, ...)                     \
-    error_setg_win32_internal((errp), __FILE__, __LINE__, __func__,     \
-                              (win32_err), (fmt), ## __VA_ARGS__)
-void error_setg_win32_internal(Error **errp,
-                               const char *src, int line, const char *func,
-                               int win32_err, const char *fmt, ...)
-    G_GNUC_PRINTF(6, 7);
+    /*
+     * Just like error_setg(), with @win32_error info added to the message.
+     * If @win32_error is non-zero, ": " + g_win32_error_message(win32_err)
+     * is appended to the human-readable error message.
+     */
+    #define error_setg_win32(errp, win32_err, fmt, ...)                                                    \
+        error_setg_win32_internal((errp), __FILE__, __LINE__, __func__, (win32_err), (fmt), ##__VA_ARGS__)
+void error_setg_win32_internal(Error** errp, const char* src, int line, const char* func, int win32_err,
+                               const char* fmt, ...) G_GNUC_PRINTF(6, 7);
 #endif
 
 /*
@@ -370,8 +361,7 @@ void error_setg_win32_internal(Error **errp,
  * Please don't error_propagate(&error_fatal, ...), use
  * error_report_err() and exit(), because that's more obvious.
  */
-void error_propagate(Error **dst_errp, Error *local_err);
-
+void error_propagate(Error** dst_errp, Error* local_err);
 
 /*
  * Propagate error object (if any) with some text prepended.
@@ -380,23 +370,19 @@ void error_propagate(Error **dst_errp, Error *local_err);
  *     error_propagate(dst_errp, local_err);
  * Please use ERRP_GUARD() and error_prepend() instead when possible.
  */
-void error_propagate_prepend(Error **dst_errp, Error *local_err,
-                             const char *fmt, ...)
-    G_GNUC_PRINTF(3, 4);
+void error_propagate_prepend(Error** dst_errp, Error* local_err, const char* fmt, ...) G_GNUC_PRINTF(3, 4);
 
 /*
  * Prepend some text to @errp's human-readable error message.
  * The text is made by formatting @fmt, @ap like vprintf().
  */
-void error_vprepend(Error *const *errp, const char *fmt, va_list ap)
-    G_GNUC_PRINTF(2, 0);
+void error_vprepend(Error* const* errp, const char* fmt, va_list ap) G_GNUC_PRINTF(2, 0);
 
 /*
  * Prepend some text to @errp's human-readable error message.
  * The text is made by formatting @fmt, ... like printf().
  */
-void error_prepend(Error *const *errp, const char *fmt, ...)
-    G_GNUC_PRINTF(2, 3);
+void error_prepend(Error* const* errp, const char* fmt, ...) G_GNUC_PRINTF(2, 3);
 
 /*
  * Append a printf-style human-readable explanation to an existing error.
@@ -412,71 +398,66 @@ void error_prepend(Error *const *errp, const char *fmt, ...)
  * May be called multiple times.  The resulting hint should end with a
  * newline.
  */
-void error_append_hint(Error *const *errp, const char *fmt, ...)
-    G_GNUC_PRINTF(2, 3);
+void error_append_hint(Error* const* errp, const char* fmt, ...) G_GNUC_PRINTF(2, 3);
 
 /*
  * Convenience function to report open() failure.
  */
-#define error_setg_file_open(errp, os_errno, filename)                  \
-    error_setg_file_open_internal((errp), __FILE__, __LINE__, __func__, \
-                                  (os_errno), (filename))
-void error_setg_file_open_internal(Error **errp,
-                                   const char *src, int line, const char *func,
-                                   int os_errno, const char *filename);
+#define error_setg_file_open(errp, os_errno, filename)                                          \
+    error_setg_file_open_internal((errp), __FILE__, __LINE__, __func__, (os_errno), (filename))
+void error_setg_file_open_internal(Error** errp, const char* src, int line, const char* func, int os_errno,
+                                   const char* filename);
 
 /*
  * Return an exact copy of @err.
  */
-Error *error_copy(const Error *err);
+Error* error_copy(const Error* err);
 
 /*
  * Free @err.
  * @err may be NULL.
  */
-void error_free(Error *err);
+void error_free(Error* err);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(Error, error_free)
 
 /*
  * Convenience function to assert that *@errp is set, then silently free it.
  */
-void error_free_or_abort(Error **errp);
+void error_free_or_abort(Error** errp);
 
 /*
  * Convenience function to warn_report() and free @err.
  * The report includes hints added with error_append_hint().
  */
-void warn_report_err(Error *err);
+void warn_report_err(Error* err);
 
 /*
  * Convenience function to error_report() and free @err.
  * The report includes hints added with error_append_hint().
  */
-void error_report_err(Error *err);
+void error_report_err(Error* err);
 
 /*
  * Convenience function to error_prepend(), warn_report() and free @err.
  */
-void warn_reportf_err(Error *err, const char *fmt, ...)
-    G_GNUC_PRINTF(2, 3);
+void warn_reportf_err(Error* err, const char* fmt, ...) G_GNUC_PRINTF(2, 3);
 
 /*
  * Convenience function to error_prepend(), error_report() and free @err.
  */
-void error_reportf_err(Error *err, const char *fmt, ...)
-    G_GNUC_PRINTF(2, 3);
+void error_reportf_err(Error* err, const char* fmt, ...) G_GNUC_PRINTF(2, 3);
 
 /*
  * Similar to warn_report_err(), except it prints the message just once.
  * Return true when it prints, false otherwise.
  */
-bool warn_report_err_once_cond(bool *printed, Error *err);
+bool warn_report_err_once_cond(bool* printed, Error* err);
 
-#define warn_report_err_once(err)                           \
-    ({                                                      \
-        static bool print_once_;                            \
-        warn_report_err_once_cond(&print_once_, err);       \
+#define warn_report_err_once(err)                     \
+    ({                                                \
+        static bool print_once_;                      \
+        warn_report_err_once_cond(&print_once_, err); \
     })
 
 /*
@@ -484,13 +465,10 @@ bool warn_report_err_once_cond(bool *printed, Error *err);
  * Note: use of error classes other than ERROR_CLASS_GENERIC_ERROR is
  * strongly discouraged.
  */
-#define error_set(errp, err_class, fmt, ...)                    \
-    error_set_internal((errp), __FILE__, __LINE__, __func__,    \
-                       (err_class), (fmt), ## __VA_ARGS__)
-void error_set_internal(Error **errp,
-                        const char *src, int line, const char *func,
-                        ErrorClass err_class, const char *fmt, ...)
-    G_GNUC_PRINTF(6, 7);
+#define error_set(errp, err_class, fmt, ...)                                                    \
+    error_set_internal((errp), __FILE__, __LINE__, __func__, (err_class), (fmt), ##__VA_ARGS__)
+void error_set_internal(Error** errp, const char* src, int line, const char* func, ErrorClass err_class,
+                        const char* fmt, ...) G_GNUC_PRINTF(6, 7);
 
 /*
  * Make @errp parameter easier to use regardless of argument value
@@ -512,23 +490,20 @@ void error_set_internal(Error **errp,
  * abort from the place where the error is created to the place where
  * it's propagated.
  */
-#define ERRP_GUARD()                                            \
-    g_auto(ErrorPropagator) _auto_errp_prop = {.errp = errp};   \
-    do {                                                        \
-        if (!errp || errp == &error_fatal) {                    \
-            errp = &_auto_errp_prop.local_err;                  \
-        }                                                       \
-    } while (0)
+#define ERRP_GUARD()                                                              \
+    g_auto(ErrorPropagator) _auto_errp_prop = {.errp = errp};                     \
+    do {                                                                          \
+        if (!errp || errp == &error_fatal) { errp = &_auto_errp_prop.local_err; } \
+    }                                                                             \
+    while (0)
 
-typedef struct ErrorPropagator {
-    Error *local_err;
-    Error **errp;
+typedef struct ErrorPropagator
+{
+    Error*  local_err;
+    Error** errp;
 } ErrorPropagator;
 
-static inline void error_propagator_cleanup(ErrorPropagator *prop)
-{
-    error_propagate(prop->errp, prop->local_err);
-}
+static inline void error_propagator_cleanup(ErrorPropagator* prop) { error_propagate(prop->errp, prop->local_err); }
 
 G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(ErrorPropagator, error_propagator_cleanup);
 
@@ -536,16 +511,16 @@ G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(ErrorPropagator, error_propagator_cleanup);
  * Special error destination to warn on error.
  * See error_setg() and error_propagate() for details.
  */
-extern Error *error_warn;
+extern Error* error_warn;
 
 /*
  * Special error destination to abort on error.
  * See error_setg() and error_propagate() for details.
  */
-extern Error *error_abort;
+extern Error* error_abort;
 
 /*
  * Special error destination to exit(1) on error.
  * See error_setg() and error_propagate() for details.
  */
-extern Error *error_fatal;
+extern Error* error_fatal;

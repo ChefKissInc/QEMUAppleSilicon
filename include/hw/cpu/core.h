@@ -15,7 +15,8 @@
 
 OBJECT_DECLARE_SIMPLE_TYPE(CPUCore, CPU_CORE)
 
-struct CPUCore {
+struct CPUCore
+{
     /*< private >*/
     DeviceState parent_obj;
 

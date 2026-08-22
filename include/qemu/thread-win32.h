@@ -2,36 +2,41 @@
 
 #include <windows.h>
 
-struct QemuMutex {
+struct QemuMutex
+{
     SRWLOCK lock;
 #ifdef CONFIG_DEBUG_MUTEX
-    const char *file;
-    int line;
+    const char* file;
+    int         line;
 #endif
     bool initialized;
 };
 
 typedef struct QemuRecMutex QemuRecMutex;
-struct QemuRecMutex {
+struct QemuRecMutex
+{
     CRITICAL_SECTION lock;
-    bool initialized;
+    bool             initialized;
 };
 
-struct QemuCond {
+struct QemuCond
+{
     CONDITION_VARIABLE var;
-    bool initialized;
+    bool               initialized;
 };
 
-struct QemuSemaphore {
+struct QemuSemaphore
+{
     HANDLE sema;
-    bool initialized;
+    bool   initialized;
 };
 
 typedef struct QemuThreadData QemuThreadData;
-struct QemuThread {
-    QemuThreadData *data;
-    unsigned tid;
+struct QemuThread
+{
+    QemuThreadData* data;
+    unsigned        tid;
 };
 
 /* Only valid for joinable threads.  */
-HANDLE qemu_thread_get_handle(struct QemuThread *thread);
+HANDLE qemu_thread_get_handle(struct QemuThread* thread);

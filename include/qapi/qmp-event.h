@@ -13,4 +13,4 @@
 
 #pragma once
 
-QDict *qmp_event_build_dict(const char *event_name);
+QDict* qmp_event_build_dict(const char* event_name);

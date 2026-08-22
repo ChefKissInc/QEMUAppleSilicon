@@ -28,7 +28,8 @@
 #define TCG_TARGET_INSN_UNIT_SIZE 4
 #define MAX_CODE_GEN_BUFFER_SIZE  UINT32_MAX
 
-typedef enum {
+typedef enum
+{
     TCG_REG_R0 = 0,
     TCG_REG_R1,
     TCG_REG_R2,
@@ -63,7 +64,7 @@ typedef enum {
     TCG_REG_Q14,
     TCG_REG_Q15,
 
-    TCG_AREG0 = TCG_REG_R6,
+    TCG_AREG0          = TCG_REG_R6,
     TCG_REG_CALL_STACK = TCG_REG_R13,
 } TCGReg;
 

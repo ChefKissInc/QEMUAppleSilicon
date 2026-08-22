@@ -22,7 +22,7 @@
 
 #include "qapi/qapi-types-crypto.h"
 
-typedef struct QCryptoCipher QCryptoCipher;
+typedef struct QCryptoCipher       QCryptoCipher;
 typedef struct QCryptoCipherDriver QCryptoCipherDriver;
 
 /* See also "QCryptoCipherAlgo" and "QCryptoCipherMode"
@@ -76,10 +76,11 @@ typedef struct QCryptoCipherDriver QCryptoCipherDriver;
  *
  */
 
-struct QCryptoCipher {
-    QCryptoCipherAlgo alg;
-    QCryptoCipherMode mode;
-    const QCryptoCipherDriver *driver;
+struct QCryptoCipher
+{
+    QCryptoCipherAlgo          alg;
+    QCryptoCipherMode          mode;
+    const QCryptoCipherDriver* driver;
 };
 
 /**
@@ -92,8 +93,7 @@ struct QCryptoCipher {
  *
  * Returns: true if the algorithm is supported, false otherwise
  */
-bool qcrypto_cipher_supports(QCryptoCipherAlgo alg,
-                             QCryptoCipherMode mode);
+bool qcrypto_cipher_supports(QCryptoCipherAlgo alg, QCryptoCipherMode mode);
 
 /**
  * qcrypto_cipher_get_block_len:
@@ -107,7 +107,6 @@ bool qcrypto_cipher_supports(QCryptoCipherAlgo alg,
  */
 size_t qcrypto_cipher_get_block_len(QCryptoCipherAlgo alg);
 
-
 /**
  * qcrypto_cipher_get_key_len:
  * @alg: the cipher algorithm
@@ -117,7 +116,6 @@ size_t qcrypto_cipher_get_block_len(QCryptoCipherAlgo alg);
  * Returns: the key size in bytes
  */
 size_t qcrypto_cipher_get_key_len(QCryptoCipherAlgo alg);
-
 
 /**
  * qcrypto_cipher_get_iv_len:
@@ -129,9 +127,7 @@ size_t qcrypto_cipher_get_key_len(QCryptoCipherAlgo alg);
  *
  * Returns: the IV size in bytes, or 0 if no IV is permitted
  */
-size_t qcrypto_cipher_get_iv_len(QCryptoCipherAlgo alg,
-                                 QCryptoCipherMode mode);
-
+size_t qcrypto_cipher_get_iv_len(QCryptoCipherAlgo alg, QCryptoCipherMode mode);
 
 /**
  * qcrypto_cipher_new:
@@ -155,10 +151,8 @@ size_t qcrypto_cipher_get_iv_len(QCryptoCipherAlgo alg,
  *
  * Returns: a new cipher object, or NULL on error
  */
-QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgo alg,
-                                  QCryptoCipherMode mode,
-                                  const uint8_t *key, size_t nkey,
-                                  Error **errp);
+QCryptoCipher* qcrypto_cipher_new(QCryptoCipherAlgo alg, QCryptoCipherMode mode, const uint8_t* key, size_t nkey,
+                                  Error** errp);
 
 /**
  * qcrypto_cipher_free:
@@ -167,7 +161,7 @@ QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgo alg,
  * Release the memory associated with @cipher that
  * was previously allocated by qcrypto_cipher_new()
  */
-void qcrypto_cipher_free(QCryptoCipher *cipher);
+void qcrypto_cipher_free(QCryptoCipher* cipher);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoCipher, qcrypto_cipher_free)
 
@@ -186,12 +180,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoCipher, qcrypto_cipher_free)
  *
  * Returns: 0 on success, or -1 on error
  */
-int qcrypto_cipher_encrypt(QCryptoCipher *cipher,
-                           const void *in,
-                           void *out,
-                           size_t len,
-                           Error **errp);
-
+int qcrypto_cipher_encrypt(QCryptoCipher* cipher, const void* in, void* out, size_t len, Error** errp);
 
 /**
  * qcrypto_cipher_decrypt:
@@ -208,11 +197,7 @@ int qcrypto_cipher_encrypt(QCryptoCipher *cipher,
  *
  * Returns: 0 on success, or -1 on error
  */
-int qcrypto_cipher_decrypt(QCryptoCipher *cipher,
-                           const void *in,
-                           void *out,
-                           size_t len,
-                           Error **errp);
+int qcrypto_cipher_decrypt(QCryptoCipher* cipher, const void* in, void* out, size_t len, Error** errp);
 
 /**
  * qcrypto_cipher_setiv:
@@ -230,9 +215,7 @@ int qcrypto_cipher_decrypt(QCryptoCipher *cipher,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_cipher_setiv(QCryptoCipher *cipher,
-                         const uint8_t *iv, size_t niv,
-                         Error **errp);
+int qcrypto_cipher_setiv(QCryptoCipher* cipher, const uint8_t* iv, size_t niv, Error** errp);
 
 /**
  * qcrypto_cipher_getiv:
@@ -250,6 +233,4 @@ int qcrypto_cipher_setiv(QCryptoCipher *cipher,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_cipher_getiv(QCryptoCipher *cipher,
-                         uint8_t *iv, size_t niv,
-                         Error **errp);
+int qcrypto_cipher_getiv(QCryptoCipher* cipher, uint8_t* iv, size_t niv, Error** errp);

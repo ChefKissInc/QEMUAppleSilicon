@@ -20,5 +20,5 @@
  * QEMU_VERSION to guests in the past and need to keep compatibility.
  * Do not use qemu_hw_version() in new code.
  */
-void qemu_set_hw_version(const char *);
-const char *qemu_hw_version(void);
+void        qemu_set_hw_version(const char*);
+const char* qemu_hw_version(void);

@@ -9,12 +9,6 @@
 #include "qemu/osdep.h"
 #include "hvf_arm.h"
 
-uint32_t hvf_arm_get_default_ipa_bit_size(void)
-{
-    assert_not_reached();
-}
+uint32_t hvf_arm_get_default_ipa_bit_size(void) { assert_not_reached(); }
 
-uint32_t hvf_arm_get_max_ipa_bit_size(void)
-{
-    assert_not_reached();
-}
+uint32_t hvf_arm_get_max_ipa_bit_size(void) { assert_not_reached(); }

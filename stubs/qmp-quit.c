@@ -2,7 +2,4 @@
 #include "qapi/qapi-commands-control.h"
 #include "qapi/qmp-registry.h"
 
-void qmp_quit(Error **errp)
-{
-    assert_not_reached();
-}
+void qmp_quit(Error** errp) { assert_not_reached(); }

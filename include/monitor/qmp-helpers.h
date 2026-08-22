@@ -12,12 +12,10 @@
 
 #ifndef MONITOR_QMP_HELPERS_H
 
-#ifdef CONFIG_VNC
-bool qmp_add_client_vnc(int fd, bool has_skipauth, bool skipauth,
-                        bool has_tls, bool tls, Error **errp);
-#endif
-bool qmp_add_client_char(int fd, bool has_skipauth, bool skipauth,
-                         bool has_tls, bool tls, const char *protocol,
-                         Error **errp);
+    #ifdef CONFIG_VNC
+bool qmp_add_client_vnc(int fd, bool has_skipauth, bool skipauth, bool has_tls, bool tls, Error** errp);
+    #endif
+bool qmp_add_client_char(int fd, bool has_skipauth, bool skipauth, bool has_tls, bool tls, const char* protocol,
+                         Error** errp);
 
 #endif

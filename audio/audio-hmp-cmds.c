@@ -29,57 +29,57 @@
 #include "qapi/error.h"
 #include "qobject/qdict.h"
 
-static QLIST_HEAD (capture_list_head, CaptureState) capture_head;
+static QLIST_HEAD(capture_list_head, CaptureState) capture_head;
 
-void hmp_info_capture(Monitor *mon, const QDict *qdict)
+void hmp_info_capture(Monitor* mon, const QDict* qdict)
 {
-    int i;
-    CaptureState *s;
+    int           i;
+    CaptureState* s;
 
     for (s = capture_head.lh_first, i = 0; s; s = s->entries.le_next, ++i) {
         monitor_printf(mon, "[%d]: ", i);
-        s->ops.info (s->opaque);
+        s->ops.info(s->opaque);
     }
 }
 
-void hmp_stopcapture(Monitor *mon, const QDict *qdict)
+void hmp_stopcapture(Monitor* mon, const QDict* qdict)
 {
-    int i;
-    int n = qdict_get_int(qdict, "n");
-    CaptureState *s;
+    int           i;
+    int           n = qdict_get_int(qdict, "n");
+    CaptureState* s;
 
     for (s = capture_head.lh_first, i = 0; s; s = s->entries.le_next, ++i) {
         if (i == n) {
-            s->ops.destroy (s->opaque);
-            QLIST_REMOVE (s, entries);
-            g_free (s);
+            s->ops.destroy(s->opaque);
+            QLIST_REMOVE(s, entries);
+            g_free(s);
             return;
         }
     }
 }
 
-void hmp_wavcapture(Monitor *mon, const QDict *qdict)
+void hmp_wavcapture(Monitor* mon, const QDict* qdict)
 {
-    const char *path = qdict_get_str(qdict, "path");
-    int freq = qdict_get_try_int(qdict, "freq", 44100);
-    int bits = qdict_get_try_int(qdict, "bits", 16);
-    int nchannels = qdict_get_try_int(qdict, "nchannels", 2);
-    const char *audiodev = qdict_get_str(qdict, "audiodev");
-    CaptureState *s;
-    Error *local_err = NULL;
-    AudioState *as = audio_state_by_name(audiodev, &local_err);
+    const char*   path      = qdict_get_str(qdict, "path");
+    int           freq      = qdict_get_try_int(qdict, "freq", 44100);
+    int           bits      = qdict_get_try_int(qdict, "bits", 16);
+    int           nchannels = qdict_get_try_int(qdict, "nchannels", 2);
+    const char*   audiodev  = qdict_get_str(qdict, "audiodev");
+    CaptureState* s;
+    Error*        local_err = NULL;
+    AudioState*   as        = audio_state_by_name(audiodev, &local_err);
 
     if (!as) {
         error_report_err(local_err);
         return;
     }
 
-    s = g_malloc0 (sizeof (*s));
+    s = g_malloc0(sizeof(*s));
 
     if (wav_start_capture(as, s, path, freq, bits, nchannels)) {
         monitor_printf(mon, "Failed to add wave capture\n");
-        g_free (s);
+        g_free(s);
         return;
     }
-    QLIST_INSERT_HEAD (&capture_head, s, entries);
+    QLIST_INSERT_HEAD(&capture_head, s, entries);
 }

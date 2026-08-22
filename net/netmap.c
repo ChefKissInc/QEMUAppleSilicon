@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 
-
 #include "qemu/osdep.h"
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -39,27 +38,27 @@
 #include "qemu/cutils.h"
 #include "qemu/main-loop.h"
 
-typedef struct NetmapState {
+typedef struct NetmapState
+{
     NetClientState      nc;
-    struct nm_desc      *nmd;
+    struct nm_desc*     nmd;
     char                ifname[IFNAMSIZ];
-    struct netmap_ring  *tx;
-    struct netmap_ring  *rx;
+    struct netmap_ring* tx;
+    struct netmap_ring* rx;
     bool                read_poll;
     bool                write_poll;
     struct iovec        iov[IOV_MAX];
-    int                 vnet_hdr_len;  /* Current virtio-net header length. */
+    int                 vnet_hdr_len; /* Current virtio-net header length. */
 } NetmapState;
 
 #ifndef __FreeBSD__
-#define pkt_copy bcopy
+    #define pkt_copy bcopy
 #else
 /* A fast copy routine only for multiples of 64 bytes, non overlapped. */
-static inline void
-pkt_copy(const void *_src, void *_dst, int l)
+static inline void pkt_copy(const void* _src, void* _dst, int l)
 {
-    const uint64_t *src = _src;
-    uint64_t *dst = _dst;
+    const uint64_t* src = _src;
+    uint64_t*       dst = _dst;
     if (unlikely(l >= 1024)) {
         bcopy(src, dst, l);
         return;
@@ -81,39 +80,31 @@ pkt_copy(const void *_src, void *_dst, int l)
  * Open a netmap device. We assume there is only one queue
  * (which is the case for the VALE bridge).
  */
-static struct nm_desc *netmap_open(const NetdevNetmapOptions *nm_opts,
-                                   Error **errp)
+static struct nm_desc* netmap_open(const NetdevNetmapOptions* nm_opts, Error** errp)
 {
-    struct nm_desc *nmd;
-    struct nmreq req;
+    struct nm_desc* nmd;
+    struct nmreq    req;
 
     memset(&req, 0, sizeof(req));
 
-    nmd = nm_open(nm_opts->ifname, &req, NETMAP_NO_TX_POLL,
-                  NULL);
+    nmd = nm_open(nm_opts->ifname, &req, NETMAP_NO_TX_POLL, NULL);
     if (nmd == NULL) {
-        error_setg_errno(errp, errno, "Failed to nm_open() %s",
-                         nm_opts->ifname);
+        error_setg_errno(errp, errno, "Failed to nm_open() %s", nm_opts->ifname);
         return NULL;
     }
 
     return nmd;
 }
 
-static void netmap_send(void *opaque);
-static void netmap_writable(void *opaque);
+static void netmap_send(void* opaque);
+static void netmap_writable(void* opaque);
 
 /* Set the event-loop handlers for the netmap backend. */
-static void netmap_update_fd_handler(NetmapState *s)
-{
-    qemu_set_fd_handler(s->nmd->fd,
-                        s->read_poll ? netmap_send : NULL,
-                        s->write_poll ? netmap_writable : NULL,
-                        s);
-}
+static void netmap_update_fd_handler(NetmapState* s)
+{ qemu_set_fd_handler(s->nmd->fd, s->read_poll ? netmap_send : NULL, s->write_poll ? netmap_writable : NULL, s); }
 
 /* Update the read handler. */
-static void netmap_read_poll(NetmapState *s, bool enable)
+static void netmap_read_poll(NetmapState* s, bool enable)
 {
     if (s->read_poll != enable) { /* Do nothing if not changed. */
         s->read_poll = enable;
@@ -122,7 +113,7 @@ static void netmap_read_poll(NetmapState *s, bool enable)
 }
 
 /* Update the write handler. */
-static void netmap_write_poll(NetmapState *s, bool enable)
+static void netmap_write_poll(NetmapState* s, bool enable)
 {
     if (s->write_poll != enable) {
         s->write_poll = enable;
@@ -130,9 +121,9 @@ static void netmap_write_poll(NetmapState *s, bool enable)
     }
 }
 
-static void netmap_poll(NetClientState *nc, bool enable)
+static void netmap_poll(NetClientState* nc, bool enable)
 {
-    NetmapState *s = DO_UPCAST(NetmapState, nc, nc);
+    NetmapState* s = DO_UPCAST(NetmapState, nc, nc);
 
     if (s->read_poll != enable || s->write_poll != enable) {
         s->write_poll = enable;
@@ -146,26 +137,25 @@ static void netmap_poll(NetClientState *nc, bool enable)
  * writable after a poll. Unregister the handler and flush any
  * buffered packets.
  */
-static void netmap_writable(void *opaque)
+static void netmap_writable(void* opaque)
 {
-    NetmapState *s = opaque;
+    NetmapState* s = opaque;
 
     netmap_write_poll(s, false);
     qemu_flush_queued_packets(&s->nc);
 }
 
-static ssize_t netmap_receive_iov(NetClientState *nc,
-                    const struct iovec *iov, int iovcnt)
+static ssize_t netmap_receive_iov(NetClientState* nc, const struct iovec* iov, int iovcnt)
 {
-    NetmapState *s = DO_UPCAST(NetmapState, nc, nc);
-    struct netmap_ring *ring = s->tx;
-    unsigned int tail = ring->tail;
-    ssize_t totlen = 0;
-    uint32_t last;
-    uint32_t idx;
-    uint8_t *dst;
-    int j;
-    uint32_t i;
+    NetmapState*        s      = DO_UPCAST(NetmapState, nc, nc);
+    struct netmap_ring* ring   = s->tx;
+    unsigned int        tail   = ring->tail;
+    ssize_t             totlen = 0;
+    uint32_t            last;
+    uint32_t            idx;
+    uint8_t*            dst;
+    int                 j;
+    uint32_t            i;
 
     last = i = ring->head;
 
@@ -181,7 +171,7 @@ static ssize_t netmap_receive_iov(NetClientState *nc,
 
     for (j = 0; j < iovcnt; j++) {
         int iov_frag_size = iov[j].iov_len;
-        int offset = 0;
+        int offset        = 0;
         int nm_frag_size;
 
         totlen += iov_frag_size;
@@ -200,16 +190,16 @@ static ssize_t netmap_receive_iov(NetClientState *nc,
             }
 
             idx = ring->slot[i].buf_idx;
-            dst = (uint8_t *)NETMAP_BUF(ring, idx);
+            dst = (uint8_t*)NETMAP_BUF(ring, idx);
 
-            ring->slot[i].len = nm_frag_size;
+            ring->slot[i].len   = nm_frag_size;
             ring->slot[i].flags = NS_MOREFRAG;
             pkt_copy(iov[j].iov_base + offset, dst, nm_frag_size);
 
             last = i;
-            i = nm_ring_next(ring, i);
+            i    = nm_ring_next(ring, i);
 
-            offset += nm_frag_size;
+            offset        += nm_frag_size;
             iov_frag_size -= nm_frag_size;
         }
     }
@@ -225,50 +215,50 @@ static ssize_t netmap_receive_iov(NetClientState *nc,
     return totlen;
 }
 
-static ssize_t netmap_receive(NetClientState *nc,
-      const uint8_t *buf, size_t size)
+static ssize_t netmap_receive(NetClientState* nc, const uint8_t* buf, size_t size)
 {
     struct iovec iov;
 
-    iov.iov_base = (void *)buf;
-    iov.iov_len = size;
+    iov.iov_base = (void*)buf;
+    iov.iov_len  = size;
 
     return netmap_receive_iov(nc, &iov, 1);
 }
 
 /* Complete a previous send (backend --> guest) and enable the
    fd_read callback. */
-static void netmap_send_completed(NetClientState *nc, ssize_t len)
+static void netmap_send_completed(NetClientState* nc, ssize_t len)
 {
-    NetmapState *s = DO_UPCAST(NetmapState, nc, nc);
+    NetmapState* s = DO_UPCAST(NetmapState, nc, nc);
 
     netmap_read_poll(s, true);
 }
 
-static void netmap_send(void *opaque)
+static void netmap_send(void* opaque)
 {
-    NetmapState *s = opaque;
-    struct netmap_ring *ring = s->rx;
-    unsigned int tail = ring->tail;
+    NetmapState*        s    = opaque;
+    struct netmap_ring* ring = s->rx;
+    unsigned int        tail = ring->tail;
 
     /* Keep sending while there are available slots in the netmap
        RX ring and the forwarding path towards the peer is open. */
     while (ring->head != tail) {
         uint32_t i = ring->head;
         uint32_t idx;
-        bool morefrag;
-        int iovcnt = 0;
-        int iovsize;
+        bool     morefrag;
+        int      iovcnt = 0;
+        int      iovsize;
 
         /* Get a (possibly multi-slot) packet. */
         do {
-            idx = ring->slot[i].buf_idx;
-            morefrag = (ring->slot[i].flags & NS_MOREFRAG);
-            s->iov[iovcnt].iov_base = (void *)NETMAP_BUF(ring, idx);
-            s->iov[iovcnt].iov_len = ring->slot[i].len;
+            idx                     = ring->slot[i].buf_idx;
+            morefrag                = (ring->slot[i].flags & NS_MOREFRAG);
+            s->iov[iovcnt].iov_base = (void*)NETMAP_BUF(ring, idx);
+            s->iov[iovcnt].iov_len  = ring->slot[i].len;
             iovcnt++;
             i = nm_ring_next(ring, i);
-        } while (i != tail && morefrag);
+        }
+        while (i != tail && morefrag);
 
         /* Advance ring->cur to tell the kernel that we have seen the slots. */
         ring->cur = i;
@@ -280,8 +270,7 @@ static void netmap_send(void *opaque)
             break;
         }
 
-        iovsize = qemu_sendv_packet_async(&s->nc, s->iov, iovcnt,
-                                            netmap_send_completed);
+        iovsize = qemu_sendv_packet_async(&s->nc, s->iov, iovcnt, netmap_send_completed);
 
         /* Release the slots to the kernel. */
         ring->head = i;
@@ -296,9 +285,9 @@ static void netmap_send(void *opaque)
 }
 
 /* Flush and close. */
-static void netmap_cleanup(NetClientState *nc)
+static void netmap_cleanup(NetClientState* nc)
 {
-    NetmapState *s = DO_UPCAST(NetmapState, nc, nc);
+    NetmapState* s = DO_UPCAST(NetmapState, nc, nc);
 
     qemu_purge_queued_packets(nc);
 
@@ -308,7 +297,7 @@ static void netmap_cleanup(NetClientState *nc)
 }
 
 /* Offloading manipulation support callbacks. */
-static int netmap_fd_set_vnet_hdr_len(NetmapState *s, int len)
+static int netmap_fd_set_vnet_hdr_len(NetmapState* s, int len)
 {
     struct nmreq req;
 
@@ -318,26 +307,23 @@ static int netmap_fd_set_vnet_hdr_len(NetmapState *s, int len)
     memset(&req, 0, sizeof(req));
     pstrcpy(req.nr_name, sizeof(req.nr_name), s->ifname);
     req.nr_version = NETMAP_API;
-    req.nr_cmd = NETMAP_BDG_VNET_HDR;
-    req.nr_arg1 = len;
+    req.nr_cmd     = NETMAP_BDG_VNET_HDR;
+    req.nr_arg1    = len;
 
     return ioctl(s->nmd->fd, NIOCREGIF, &req);
 }
 
-static bool netmap_has_vnet_hdr_len(NetClientState *nc, int len)
+static bool netmap_has_vnet_hdr_len(NetClientState* nc, int len)
 {
-    NetmapState *s = DO_UPCAST(NetmapState, nc, nc);
-    int prev_len = s->vnet_hdr_len;
+    NetmapState* s        = DO_UPCAST(NetmapState, nc, nc);
+    int          prev_len = s->vnet_hdr_len;
 
     /* Check that we can set the new length. */
-    if (netmap_fd_set_vnet_hdr_len(s, len)) {
-        return false;
-    }
+    if (netmap_fd_set_vnet_hdr_len(s, len)) { return false; }
 
     /* Restore the previous length. */
     if (netmap_fd_set_vnet_hdr_len(s, prev_len)) {
-        error_report("Failed to restore vnet-hdr length %d on %s: %s",
-                     prev_len, s->ifname, strerror(errno));
+        error_report("Failed to restore vnet-hdr length %d on %s: %s", prev_len, s->ifname, strerror(errno));
         abort();
     }
 
@@ -346,50 +332,43 @@ static bool netmap_has_vnet_hdr_len(NetClientState *nc, int len)
 
 /* A netmap interface that supports virtio-net headers always
  * supports UFO, so we use this callback also for the has_ufo hook. */
-static bool netmap_has_vnet_hdr(NetClientState *nc)
-{
-    return netmap_has_vnet_hdr_len(nc, sizeof(struct virtio_net_hdr));
-}
+static bool netmap_has_vnet_hdr(NetClientState* nc)
+{ return netmap_has_vnet_hdr_len(nc, sizeof(struct virtio_net_hdr)); }
 
-static void netmap_set_vnet_hdr_len(NetClientState *nc, int len)
+static void netmap_set_vnet_hdr_len(NetClientState* nc, int len)
 {
-    NetmapState *s = DO_UPCAST(NetmapState, nc, nc);
-    int err;
+    NetmapState* s = DO_UPCAST(NetmapState, nc, nc);
+    int          err;
 
     err = netmap_fd_set_vnet_hdr_len(s, len);
-    if (err) {
-        error_report("Unable to set vnet-hdr length %d on %s: %s",
-                     len, s->ifname, strerror(errno));
-    } else {
+    if (err) { error_report("Unable to set vnet-hdr length %d on %s: %s", len, s->ifname, strerror(errno)); }
+    else {
         /* Keep track of the current length. */
         s->vnet_hdr_len = len;
     }
 }
 
-static void netmap_set_offload(NetClientState *nc, int csum, int tso4, int tso6,
-                               int ecn, int ufo, int uso4, int uso6)
+static void netmap_set_offload(NetClientState* nc, int csum, int tso4, int tso6, int ecn, int ufo, int uso4, int uso6)
 {
-    NetmapState *s = DO_UPCAST(NetmapState, nc, nc);
+    NetmapState* s = DO_UPCAST(NetmapState, nc, nc);
 
     /* Setting a virtio-net header length greater than zero automatically
      * enables the offloadings. */
-    if (!s->vnet_hdr_len) {
-        netmap_set_vnet_hdr_len(nc, sizeof(struct virtio_net_hdr));
-    }
+    if (!s->vnet_hdr_len) { netmap_set_vnet_hdr_len(nc, sizeof(struct virtio_net_hdr)); }
 }
 
 /* NetClientInfo methods */
 static NetClientInfo net_netmap_info = {
-    .type = NET_CLIENT_DRIVER_NETMAP,
-    .size = sizeof(NetmapState),
-    .receive = netmap_receive,
-    .receive_iov = netmap_receive_iov,
-    .poll = netmap_poll,
-    .cleanup = netmap_cleanup,
-    .has_ufo = netmap_has_vnet_hdr,
-    .has_vnet_hdr = netmap_has_vnet_hdr,
+    .type             = NET_CLIENT_DRIVER_NETMAP,
+    .size             = sizeof(NetmapState),
+    .receive          = netmap_receive,
+    .receive_iov      = netmap_receive_iov,
+    .poll             = netmap_poll,
+    .cleanup          = netmap_cleanup,
+    .has_ufo          = netmap_has_vnet_hdr,
+    .has_vnet_hdr     = netmap_has_vnet_hdr,
     .has_vnet_hdr_len = netmap_has_vnet_hdr_len,
-    .set_offload = netmap_set_offload,
+    .set_offload      = netmap_set_offload,
     .set_vnet_hdr_len = netmap_set_vnet_hdr_len,
 };
 
@@ -397,14 +376,13 @@ static NetClientInfo net_netmap_info = {
  *
  * ... -net netmap,ifname="..."
  */
-int net_init_netmap(const Netdev *netdev,
-                    const char *name, NetClientState *peer, Error **errp)
+int net_init_netmap(const Netdev* netdev, const char* name, NetClientState* peer, Error** errp)
 {
-    const NetdevNetmapOptions *netmap_opts = &netdev->u.netmap;
-    struct nm_desc *nmd;
-    NetClientState *nc;
-    Error *err = NULL;
-    NetmapState *s;
+    const NetdevNetmapOptions* netmap_opts = &netdev->u.netmap;
+    struct nm_desc*            nmd;
+    NetClientState*            nc;
+    Error*                     err = NULL;
+    NetmapState*               s;
 
     nmd = netmap_open(netmap_opts, &err);
     if (err) {
@@ -412,15 +390,14 @@ int net_init_netmap(const Netdev *netdev,
         return -1;
     }
     /* Create the object. */
-    nc = qemu_new_net_client(&net_netmap_info, peer, "netmap", name);
-    s = DO_UPCAST(NetmapState, nc, nc);
-    s->nmd = nmd;
-    s->tx = NETMAP_TXRING(nmd->nifp, 0);
-    s->rx = NETMAP_RXRING(nmd->nifp, 0);
+    nc              = qemu_new_net_client(&net_netmap_info, peer, "netmap", name);
+    s               = DO_UPCAST(NetmapState, nc, nc);
+    s->nmd          = nmd;
+    s->tx           = NETMAP_TXRING(nmd->nifp, 0);
+    s->rx           = NETMAP_RXRING(nmd->nifp, 0);
     s->vnet_hdr_len = 0;
     pstrcpy(s->ifname, sizeof(s->ifname), netmap_opts->ifname);
     netmap_read_poll(s, true); /* Initially only poll for reads. */
 
     return 0;
 }
-

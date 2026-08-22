@@ -26,13 +26,14 @@
 
 #include <sasl/sasl.h>
 
-typedef struct VncStateSASL VncStateSASL;
+typedef struct VncStateSASL   VncStateSASL;
 typedef struct VncDisplaySASL VncDisplaySASL;
 
 #include "authz/base.h"
 
-struct VncStateSASL {
-    sasl_conn_t *conn;
+struct VncStateSASL
+{
+    sasl_conn_t* conn;
     /* If we want to negotiate an SSF layer with client */
     bool wantSSF;
     /* If we are now running the SSF layer */
@@ -49,23 +50,24 @@ struct VncStateSASL {
      * Buffering encoded data to allow more clear data
      * to be stuffed onto the output buffer
      */
-    const uint8_t *encoded;
-    unsigned int encodedLength;
-    unsigned int encodedRawLength;
-    unsigned int encodedOffset;
-    char *username;
-    char *mechlist;
+    const uint8_t* encoded;
+    unsigned int   encodedLength;
+    unsigned int   encodedRawLength;
+    unsigned int   encodedOffset;
+    char*          username;
+    char*          mechlist;
 };
 
-struct VncDisplaySASL {
-    QAuthZ *authz;
-    char *authzid;
+struct VncDisplaySASL
+{
+    QAuthZ* authz;
+    char*   authzid;
 };
 
-bool vnc_sasl_server_init(Error **errp);
-void vnc_sasl_client_cleanup(VncState *vs);
+bool vnc_sasl_server_init(Error** errp);
+void vnc_sasl_client_cleanup(VncState* vs);
 
-size_t vnc_client_read_sasl(VncState *vs);
-size_t vnc_client_write_sasl(VncState *vs);
+size_t vnc_client_read_sasl(VncState* vs);
+size_t vnc_client_write_sasl(VncState* vs);
 
-void start_auth_sasl(VncState *vs);
+void start_auth_sasl(VncState* vs);

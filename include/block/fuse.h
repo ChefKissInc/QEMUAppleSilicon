@@ -20,7 +20,7 @@
 
 #ifdef CONFIG_FUSE
 
-#include "block/export.h"
+    #include "block/export.h"
 
 extern const BlockExportDriver blk_exp_fuse;
 

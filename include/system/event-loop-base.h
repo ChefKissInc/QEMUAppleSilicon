@@ -14,19 +14,20 @@
 #include "qom/object.h"
 #include "block/aio.h"
 
-#define TYPE_EVENT_LOOP_BASE         "event-loop-base"
-OBJECT_DECLARE_TYPE(EventLoopBase, EventLoopBaseClass,
-                    EVENT_LOOP_BASE)
+#define TYPE_EVENT_LOOP_BASE "event-loop-base"
+OBJECT_DECLARE_TYPE(EventLoopBase, EventLoopBaseClass, EVENT_LOOP_BASE)
 
-struct EventLoopBaseClass {
+struct EventLoopBaseClass
+{
     ObjectClass parent_class;
 
-    void (*init)(EventLoopBase *base, Error **errp);
-    void (*update_params)(EventLoopBase *base, Error **errp);
-    bool (*can_be_deleted)(EventLoopBase *base);
+    void (*init)(EventLoopBase* base, Error** errp);
+    void (*update_params)(EventLoopBase* base, Error** errp);
+    bool (*can_be_deleted)(EventLoopBase* base);
 };
 
-struct EventLoopBase {
+struct EventLoopBase
+{
     Object parent;
 
     /* AioContext AIO engine parameters */

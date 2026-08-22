@@ -24,22 +24,23 @@
 
 #pragma once
 
-typedef enum {
+typedef enum
+{
     /* Used to indicate the type of accesses on which ordering
        is to be ensured.  Modeled after SPARC barriers.
 
        This is of the form TCG_MO_A_B where A is before B in program order.
     */
-    TCG_MO_LD_LD  = 0x01,
-    TCG_MO_ST_LD  = 0x02,
-    TCG_MO_LD_ST  = 0x04,
-    TCG_MO_ST_ST  = 0x08,
-    TCG_MO_ALL    = 0x0F,  /* OR of the above */
+    TCG_MO_LD_LD = 0x01,
+    TCG_MO_ST_LD = 0x02,
+    TCG_MO_LD_ST = 0x04,
+    TCG_MO_ST_ST = 0x08,
+    TCG_MO_ALL   = 0x0F, /* OR of the above */
 
     /* Used to indicate the kind of ordering which is to be ensured by the
        instruction.  These types are derived from x86/aarch64 instructions.
        It should be noted that these are different from C11 semantics.  */
-    TCG_BAR_LDAQ  = 0x10,  /* Following ops will not come forward */
-    TCG_BAR_STRL  = 0x20,  /* Previous ops will not be delayed */
-    TCG_BAR_SC    = 0x30,  /* No ops cross barrier; OR of the above */
+    TCG_BAR_LDAQ = 0x10, /* Following ops will not come forward */
+    TCG_BAR_STRL = 0x20, /* Previous ops will not be delayed */
+    TCG_BAR_SC   = 0x30, /* No ops cross barrier; OR of the above */
 } TCGBar;

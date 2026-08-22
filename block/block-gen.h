@@ -28,13 +28,14 @@
 #include "block/block_int.h"
 
 /* Base structure for argument packing structures */
-typedef struct BdrvPollCo {
-    AioContext *ctx;
-    bool in_progress;
-    Coroutine *co; /* Keep pointer here for debugging */
+typedef struct BdrvPollCo
+{
+    AioContext* ctx;
+    bool        in_progress;
+    Coroutine*  co; /* Keep pointer here for debugging */
 } BdrvPollCo;
 
-static inline void bdrv_poll_co(BdrvPollCo *s)
+static inline void bdrv_poll_co(BdrvPollCo* s)
 {
     assert(!qemu_in_coroutine());
 

@@ -25,4 +25,4 @@
 #include "hw/sysbus.h"
 
 #define TYPE_APPLE_AES "apple-aes"
-SysBusDevice *apple_aes_create(AppleDTNode *node, uint32_t board_id);
+SysBusDevice* apple_aes_create(AppleDTNode* node, uint32_t board_id);

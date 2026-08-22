@@ -11,26 +11,26 @@
 
 #include "qobject/qobject.h"
 
-static inline void qobject_init(QObject *obj, QType type)
+static inline void qobject_init(QObject* obj, QType type)
 {
     assert(QTYPE_NONE < type && type < QTYPE__MAX);
     obj->base.refcnt = 1;
-    obj->base.type = type;
+    obj->base.type   = type;
 }
 
-void qbool_destroy_obj(QObject *obj);
-bool qbool_is_equal(const QObject *x, const QObject *y);
+void qbool_destroy_obj(QObject* obj);
+bool qbool_is_equal(const QObject* x, const QObject* y);
 
-void qdict_destroy_obj(QObject *obj);
-bool qdict_is_equal(const QObject *x, const QObject *y);
+void qdict_destroy_obj(QObject* obj);
+bool qdict_is_equal(const QObject* x, const QObject* y);
 
-void qlist_destroy_obj(QObject *obj);
-bool qlist_is_equal(const QObject *x, const QObject *y);
+void qlist_destroy_obj(QObject* obj);
+bool qlist_is_equal(const QObject* x, const QObject* y);
 
-bool qnull_is_equal(const QObject *x, const QObject *y);
+bool qnull_is_equal(const QObject* x, const QObject* y);
 
-void qnum_destroy_obj(QObject *obj);
-bool qnum_is_equal(const QObject *x, const QObject *y);
+void qnum_destroy_obj(QObject* obj);
+bool qnum_is_equal(const QObject* x, const QObject* y);
 
-void qstring_destroy_obj(QObject *obj);
-bool qstring_is_equal(const QObject *x, const QObject *y);
+void qstring_destroy_obj(QObject* obj);
+bool qstring_is_equal(const QObject* x, const QObject* y);

@@ -12,12 +12,13 @@
 
 void st_print_trace_file_status(void);
 bool st_set_trace_file_enabled(bool enable);
-void st_set_trace_file(const char *file);
+void st_set_trace_file(const char* file);
 bool st_init(void);
 void st_init_group(size_t group);
 void st_flush_trace_buffer(void);
 
-typedef struct {
+typedef struct
+{
     unsigned int tbuf_idx;
     unsigned int rec_off;
 } TraceBufferRecord;
@@ -29,21 +30,21 @@ typedef struct {
  *
  * @arglen  number of bytes required for arguments
  */
-int trace_record_start(TraceBufferRecord *rec, uint32_t id, size_t arglen);
+int trace_record_start(TraceBufferRecord* rec, uint32_t id, size_t arglen);
 
 /**
  * Append a 64-bit argument to a trace record
  */
-void trace_record_write_u64(TraceBufferRecord *rec, uint64_t val);
+void trace_record_write_u64(TraceBufferRecord* rec, uint64_t val);
 
 /**
  * Append a string argument to a trace record
  */
-void trace_record_write_str(TraceBufferRecord *rec, const char *s, uint32_t slen);
+void trace_record_write_str(TraceBufferRecord* rec, const char* s, uint32_t slen);
 
 /**
  * Mark a trace record completed
  *
  * Don't append any more arguments to the trace record after calling this.
  */
-void trace_record_finish(TraceBufferRecord *rec);
+void trace_record_finish(TraceBufferRecord* rec);

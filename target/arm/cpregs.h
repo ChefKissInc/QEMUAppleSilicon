@@ -24,90 +24,91 @@
 #include "target/arm/kvm-consts.h"
 #include "util/mlib.h"
 
-typedef struct ArchCPU ARMCPU;
+typedef struct ArchCPU      ARMCPU;
 typedef struct CPUArchState CPUARMState;
 
 /*
  * ARMCPRegInfo type field bits:
  */
-enum {
+enum
+{
     /*
      * Register must be handled specially during translation.
      * The method is one of the values below:
      */
-    ARM_CP_SPECIAL_MASK          = 0x000f,
+    ARM_CP_SPECIAL_MASK = 0x000f,
     /* Special: no change to PE state: writes ignored, reads ignored. */
-    ARM_CP_NOP                   = 0x0001,
+    ARM_CP_NOP = 0x0001,
     /* Special: sysreg is WFI, for v5 and v6. */
-    ARM_CP_WFI                   = 0x0002,
+    ARM_CP_WFI = 0x0002,
     /* Special: sysreg is NZCV. */
-    ARM_CP_NZCV                  = 0x0003,
+    ARM_CP_NZCV = 0x0003,
     /* Special: sysreg is CURRENTEL. */
-    ARM_CP_CURRENTEL             = 0x0004,
+    ARM_CP_CURRENTEL = 0x0004,
     /* Special: sysreg is DC ZVA or similar. */
-    ARM_CP_DC_ZVA                = 0x0005,
-    ARM_CP_DC_GVA                = 0x0006,
-    ARM_CP_DC_GZVA               = 0x0007,
+    ARM_CP_DC_ZVA  = 0x0005,
+    ARM_CP_DC_GVA  = 0x0006,
+    ARM_CP_DC_GZVA = 0x0007,
 
     /* Flag: reads produce resetvalue; writes ignored. */
-    ARM_CP_CONST                 = 1 << 4,
+    ARM_CP_CONST = 1 << 4,
     /* Flag: For ARM_CP_STATE_AA32, sysreg is 64-bit. */
-    ARM_CP_64BIT                 = 1 << 5,
+    ARM_CP_64BIT = 1 << 5,
     /*
      * Flag: TB should not be ended after a write to this register
      * (the default is that the TB ends after cp writes).
      */
-    ARM_CP_SUPPRESS_TB_END       = 1 << 6,
+    ARM_CP_SUPPRESS_TB_END = 1 << 6,
     /*
      * Flag: Permit a register definition to override a previous definition
      * for the same (cp, is64, crn, crm, opc1, opc2) tuple: either the new
      * or the old must have the ARM_CP_OVERRIDE bit set.
      */
-    ARM_CP_OVERRIDE              = 1 << 7,
+    ARM_CP_OVERRIDE = 1 << 7,
     /*
      * Flag: Register is an alias view of some underlying state which is also
      * visible via another register, and that the other register is handling
      * migration and reset; registers marked ARM_CP_ALIAS will not be migrated
      * but may have their state set by syncing of register state from KVM.
      */
-    ARM_CP_ALIAS                 = 1 << 8,
+    ARM_CP_ALIAS = 1 << 8,
     /*
      * Flag: Register does I/O and therefore its accesses need to be marked
      * with translator_io_start() and also end the TB. In particular,
      * registers which implement clocks or timers require this.
      */
-    ARM_CP_IO                    = 1 << 9,
+    ARM_CP_IO = 1 << 9,
     /*
      * Flag: Register has no underlying state and does not support raw access
      * for state saving/loading; it will not be used for either migration or
      * KVM state synchronization. Typically this is for "registers" which are
      * actually used as instructions for cache maintenance and so on.
      */
-    ARM_CP_NO_RAW                = 1 << 10,
+    ARM_CP_NO_RAW = 1 << 10,
     /*
      * Flag: The read or write hook might raise an exception; the generated
      * code will synchronize the CPU state before calling the hook so that it
      * is safe for the hook to call raise_exception().
      */
-    ARM_CP_RAISES_EXC            = 1 << 11,
+    ARM_CP_RAISES_EXC = 1 << 11,
     /*
      * Flag: Writes to the sysreg might change the exception level - typically
      * on older ARM chips. For those cases we need to re-read the new el when
      * recomputing the translation flags.
      */
-    ARM_CP_NEWEL                 = 1 << 12,
+    ARM_CP_NEWEL = 1 << 12,
     /*
      * Flag: Access check for this sysreg is identical to accessing FPU state
      * from an instruction: use translation fp_access_check().
      */
-    ARM_CP_FPU                   = 1 << 13,
+    ARM_CP_FPU = 1 << 13,
     /*
      * Flag: Access check for this sysreg is identical to accessing SVE state
      * from an instruction: use translation sve_access_check().
      */
-    ARM_CP_SVE                   = 1 << 14,
+    ARM_CP_SVE = 1 << 14,
     /* Flag: Do not expose in gdb sysreg xml. */
-    ARM_CP_NO_GDB                = 1 << 15,
+    ARM_CP_NO_GDB = 1 << 15,
     /*
      * Flags: If EL3 but not EL2...
      *   - UNDEF: discard the cpreg,
@@ -116,19 +117,19 @@ enum {
      *   -  else: set const on the cpreg, zero resetvalue, aka RES0.
      * See rule RJFFP in section D1.1.3 of DDI0487H.a.
      */
-    ARM_CP_EL3_NO_EL2_UNDEF      = 1 << 16,
-    ARM_CP_EL3_NO_EL2_KEEP       = 1 << 17,
-    ARM_CP_EL3_NO_EL2_C_NZ       = 1 << 18,
+    ARM_CP_EL3_NO_EL2_UNDEF = 1 << 16,
+    ARM_CP_EL3_NO_EL2_KEEP  = 1 << 17,
+    ARM_CP_EL3_NO_EL2_C_NZ  = 1 << 18,
     /*
      * Flag: Access check for this sysreg is constrained by the
      * ARM pseudocode function CheckSMEAccess().
      */
-    ARM_CP_SME                   = 1 << 19,
+    ARM_CP_SME = 1 << 19,
     /*
      * Flag: one of the four EL2 registers which redirect to the
      * equivalent EL1 register when FEAT_NV2 is enabled.
      */
-    ARM_CP_NV2_REDIRECT          = 1 << 20,
+    ARM_CP_NV2_REDIRECT = 1 << 20,
     /*
      * Flag: this is a TLBI insn which (when FEAT_XS is present) also has
      * an NXS variant at the same encoding except that crn is 1 greater,
@@ -136,7 +137,7 @@ enum {
      * for the TLBI NXS variant. (For QEMU the NXS variant behaves
      * identically to the normal one, other than FGT trapping handling.)
      */
-    ARM_CP_ADD_TLBI_NXS          = 1 << 21,
+    ARM_CP_ADD_TLBI_NXS = 1 << 21,
 };
 
 /*
@@ -169,7 +170,7 @@ enum {
  * in the upper bits of the 64 bit ID.
  */
 #define CP_REG_AA64_SHIFT 28
-#define CP_REG_AA64_MASK (1 << CP_REG_AA64_SHIFT)
+#define CP_REG_AA64_MASK  (1 << CP_REG_AA64_SHIFT)
 
 /*
  * To enable banking of coprocessor registers depending on ns-bit we
@@ -177,20 +178,15 @@ enum {
  * hashtable.
  */
 #define CP_REG_NS_SHIFT 29
-#define CP_REG_NS_MASK (1 << CP_REG_NS_SHIFT)
+#define CP_REG_NS_MASK  (1 << CP_REG_NS_SHIFT)
 
-#define ENCODE_CP_REG(cp, is64, ns, crn, crm, opc1, opc2)   \
-    ((ns) << CP_REG_NS_SHIFT | ((cp) << 16) | ((is64) << 15) |   \
-     ((crn) << 11) | ((crm) << 7) | ((opc1) << 3) | (opc2))
+#define ENCODE_CP_REG(cp, is64, ns, crn, crm, opc1, opc2)                                                             \
+    ((ns) << CP_REG_NS_SHIFT | ((cp) << 16) | ((is64) << 15) | ((crn) << 11) | ((crm) << 7) | ((opc1) << 3) | (opc2))
 
-#define ENCODE_AA64_CP_REG(cp, crn, crm, op0, op1, op2) \
-    (CP_REG_AA64_MASK |                                 \
-     ((cp) << CP_REG_ARM_COPROC_SHIFT) |                \
-     ((op0) << CP_REG_ARM64_SYSREG_OP0_SHIFT) |         \
-     ((op1) << CP_REG_ARM64_SYSREG_OP1_SHIFT) |         \
-     ((crn) << CP_REG_ARM64_SYSREG_CRN_SHIFT) |         \
-     ((crm) << CP_REG_ARM64_SYSREG_CRM_SHIFT) |         \
-     ((op2) << CP_REG_ARM64_SYSREG_OP2_SHIFT))
+#define ENCODE_AA64_CP_REG(cp, crn, crm, op0, op1, op2)                                              \
+    (CP_REG_AA64_MASK | ((cp) << CP_REG_ARM_COPROC_SHIFT) | ((op0) << CP_REG_ARM64_SYSREG_OP0_SHIFT) \
+     | ((op1) << CP_REG_ARM64_SYSREG_OP1_SHIFT) | ((crn) << CP_REG_ARM64_SYSREG_CRN_SHIFT)           \
+     | ((crm) << CP_REG_ARM64_SYSREG_CRM_SHIFT) | ((op2) << CP_REG_ARM64_SYSREG_OP2_SHIFT))
 
 /*
  * Convert a full 64 bit KVM register ID to the truncated 32 bit
@@ -199,18 +195,15 @@ enum {
 static inline uint32_t kvm_to_cpreg_id(uint64_t kvmid)
 {
     uint32_t cpregid = kvmid;
-    if ((kvmid & CP_REG_ARCH_MASK) == CP_REG_ARM64) {
-        cpregid |= CP_REG_AA64_MASK;
-    } else {
-        if ((kvmid & CP_REG_SIZE_MASK) == CP_REG_SIZE_U64) {
-            cpregid |= (1 << 15);
-        }
+    if ((kvmid & CP_REG_ARCH_MASK) == CP_REG_ARM64) { cpregid |= CP_REG_AA64_MASK; }
+    else {
+        if ((kvmid & CP_REG_SIZE_MASK) == CP_REG_SIZE_U64) { cpregid |= (1 << 15); }
 
         /*
          * KVM is always non-secure so add the NS flag on AArch32 register
          * entries.
          */
-         cpregid |= 1 << CP_REG_NS_SHIFT;
+        cpregid |= 1 << CP_REG_NS_SHIFT;
     }
     return cpregid;
 }
@@ -224,13 +217,13 @@ static inline uint64_t cpreg_to_kvm_id(uint32_t cpregid)
     uint64_t kvmid;
 
     if (cpregid & CP_REG_AA64_MASK) {
-        kvmid = cpregid & ~CP_REG_AA64_MASK;
+        kvmid  = cpregid & ~CP_REG_AA64_MASK;
         kvmid |= CP_REG_SIZE_U64 | CP_REG_ARM64;
-    } else {
+    }
+    else {
         kvmid = cpregid & ~(1 << 15);
-        if (cpregid & (1 << 15)) {
-            kvmid |= CP_REG_SIZE_U64 | CP_REG_ARM;
-        } else {
+        if (cpregid & (1 << 15)) { kvmid |= CP_REG_SIZE_U64 | CP_REG_ARM; }
+        else {
             kvmid |= CP_REG_SIZE_U32 | CP_REG_ARM;
         }
     }
@@ -247,7 +240,8 @@ static inline uint64_t cpreg_to_kvm_id(uint32_t cpregid)
  * Note that we rely on the values of these enums as we iterate through
  * the various states in some places.
  */
-typedef enum {
+typedef enum
+{
     ARM_CP_STATE_AA32 = 0,
     ARM_CP_STATE_AA64 = 1,
     ARM_CP_STATE_BOTH = 2,
@@ -264,10 +258,11 @@ typedef enum {
  * registered entry will only have one to identify whether the entry is secure
  * or non-secure.
  */
-typedef enum {
-    ARM_CP_SECSTATE_BOTH = 0,       /* define one cpreg for each secstate */
-    ARM_CP_SECSTATE_S =   (1 << 0), /* bit[0]: Secure state register */
-    ARM_CP_SECSTATE_NS =  (1 << 1), /* bit[1]: Non-secure state register */
+typedef enum
+{
+    ARM_CP_SECSTATE_BOTH = 0,        /* define one cpreg for each secstate */
+    ARM_CP_SECSTATE_S    = (1 << 0), /* bit[0]: Secure state register */
+    ARM_CP_SECSTATE_NS   = (1 << 1), /* bit[1]: Non-secure state register */
 } CPSecureState;
 
 /*
@@ -288,15 +283,16 @@ typedef enum {
  * described with these bits, then use a laxer set of restrictions, and
  * do the more restrictive/complex check inside a helper function.
  */
-typedef enum {
-    PL3_R = 0x80,
-    PL3_W = 0x40,
-    PL2_R = 0x20 | PL3_R,
-    PL2_W = 0x10 | PL3_W,
-    PL1_R = 0x08 | PL2_R,
-    PL1_W = 0x04 | PL2_W,
-    PL0_R = 0x02 | PL1_R,
-    PL0_W = 0x01 | PL1_W,
+typedef enum
+{
+    PL3_R  = 0x80,
+    PL3_W  = 0x40,
+    PL2_R  = 0x20 | PL3_R,
+    PL2_W  = 0x10 | PL3_W,
+    PL1_R  = 0x08 | PL2_R,
+    PL1_W  = 0x04 | PL2_W,
+    PL0_R  = 0x02 | PL1_R,
+    PL0_W  = 0x01 | PL1_W,
     PL0U_R = PL1_R,
     PL3_RW = PL3_R | PL3_W,
     PL2_RW = PL2_R | PL2_W,
@@ -304,7 +300,8 @@ typedef enum {
     PL0_RW = PL0_R | PL0_W,
 } CPAccessRights;
 
-typedef enum CPAccessResult {
+typedef enum CPAccessResult
+{
     /* Access is permitted */
     CP_ACCESS_OK = 0,
 
@@ -339,10 +336,10 @@ typedef enum CPAccessResult {
 } CPAccessResult;
 
 /* Indexes into fgt_read[] */
-#define FGTREG_HFGRTR 0
+#define FGTREG_HFGRTR  0
 #define FGTREG_HDFGRTR 1
 /* Indexes into fgt_write[] */
-#define FGTREG_HFGWTR 0
+#define FGTREG_HFGWTR  0
 #define FGTREG_HDFGWTR 1
 /* Indexes into fgt_exec[] */
 #define FGTREG_HFGITR 0
@@ -626,8 +623,8 @@ REG_FIELD(HDFGWTR_EL2, NPMSNEVFR_EL1, 62, 1)
 REG_FIELD(FGT, NXS, 13, 1) /* Honour HCR_EL2.FGTnXS to suppress FGT */
 /* Which fine-grained trap bit register to check, if any */
 REG_FIELD(FGT, TYPE, 10, 3)
-REG_FIELD(FGT, REV, 9, 1) /* Is bit sense reversed? */
-REG_FIELD(FGT, IDX, 6, 3) /* Index within a uint64_t[] array */
+REG_FIELD(FGT, REV, 9, 1)    /* Is bit sense reversed? */
+REG_FIELD(FGT, IDX, 6, 3)    /* Index within a uint64_t[] array */
 REG_FIELD(FGT, BITPOS, 0, 6) /* Bit position within the uint64_t */
 
 /*
@@ -635,12 +632,10 @@ REG_FIELD(FGT, BITPOS, 0, 6) /* Bit position within the uint64_t */
  * fields. We assume for brevity's sake that there are no duplicated
  * bit names across the various FGT registers.
  */
-#define DO_BIT(REG, BITNAME)                                    \
-    FGT_##BITNAME = FGT_##REG | R_##REG##_EL2_##BITNAME##_SHIFT
+#define DO_BIT(REG, BITNAME) FGT_##BITNAME = FGT_##REG | R_##REG##_EL2_##BITNAME##_SHIFT
 
 /* Some bits have reversed sense, so 0 means trap and 1 means not */
-#define DO_REV_BIT(REG, BITNAME)                                        \
-    FGT_##BITNAME = FGT_##REG | FGT_REV | R_##REG##_EL2_##BITNAME##_SHIFT
+#define DO_REV_BIT(REG, BITNAME) FGT_##BITNAME = FGT_##REG | FGT_REV | R_##REG##_EL2_##BITNAME##_SHIFT
 
 /*
  * The FGT bits for TLBI maintenance instructions accessible at EL1 always
@@ -649,11 +644,11 @@ REG_FIELD(FGT, BITPOS, 0, 6) /* Bit position within the uint64_t */
  * FGT_TLBIVAE1 to use for the normal insn, and FGT_TLBIVAE1NXS to use
  * for the nXS qualified insn.
  */
-#define DO_TLBINXS_BIT(REG, BITNAME)                             \
-    FGT_##BITNAME = FGT_##REG | R_##REG##_EL2_##BITNAME##_SHIFT, \
-    FGT_##BITNAME##NXS = FGT_##BITNAME | R_FGT_NXS_MASK
+#define DO_TLBINXS_BIT(REG, BITNAME)                                                                                 \
+    FGT_##BITNAME = FGT_##REG | R_##REG##_EL2_##BITNAME##_SHIFT, FGT_##BITNAME##NXS = FGT_##BITNAME | R_FGT_NXS_MASK
 
-typedef enum FGTBit {
+typedef enum FGTBit
+{
     /*
      * These bits tell us which register arrays to use:
      * if FGT_R is set then reads are checked against fgt_read[];
@@ -669,10 +664,10 @@ typedef enum FGTBit {
      *
      * Note that we arrange these bits so that a 0 FGTBit means "no trap".
      */
-    FGT_R = 1 << R_FGT_TYPE_SHIFT,
-    FGT_W = 2 << R_FGT_TYPE_SHIFT,
+    FGT_R    = 1 << R_FGT_TYPE_SHIFT,
+    FGT_W    = 2 << R_FGT_TYPE_SHIFT,
     FGT_EXEC = 4 << R_FGT_TYPE_SHIFT,
-    FGT_RW = FGT_R | FGT_W,
+    FGT_RW   = FGT_R | FGT_W,
     /* Bit to identify whether trap bit is reversed sense */
     FGT_REV = R_FGT_REV_MASK,
 
@@ -692,11 +687,11 @@ typedef enum FGTBit {
      * So for the DO_BIT/DO_REV_BIT macros: use FGT_HFGRTR/FGT_HDFGRTR if
      * the bit exists in that register. Otherwise use FGT_HFGWTR/FGT_HDFGWTR.
      */
-    FGT_HFGRTR = FGT_RW | (FGTREG_HFGRTR << R_FGT_IDX_SHIFT),
-    FGT_HFGWTR = FGT_W | (FGTREG_HFGWTR << R_FGT_IDX_SHIFT),
+    FGT_HFGRTR  = FGT_RW | (FGTREG_HFGRTR << R_FGT_IDX_SHIFT),
+    FGT_HFGWTR  = FGT_W | (FGTREG_HFGWTR << R_FGT_IDX_SHIFT),
     FGT_HDFGRTR = FGT_RW | (FGTREG_HDFGRTR << R_FGT_IDX_SHIFT),
     FGT_HDFGWTR = FGT_W | (FGTREG_HDFGWTR << R_FGT_IDX_SHIFT),
-    FGT_HFGITR = FGT_EXEC | (FGTREG_HFGITR << R_FGT_IDX_SHIFT),
+    FGT_HFGITR  = FGT_EXEC | (FGTREG_HFGITR << R_FGT_IDX_SHIFT),
 
     /* Trap bits in HFGRTR_EL2 / HFGWTR_EL2, starting from bit 0. */
     DO_BIT(HFGRTR, AFSR0_EL1),
@@ -831,27 +826,25 @@ typedef struct ARMCPRegInfo ARMCPRegInfo;
  * Access functions for coprocessor registers. These cannot fail and
  * may not raise exceptions.
  */
-typedef uint64_t CPReadFn(CPUARMState *env, const ARMCPRegInfo *opaque);
-typedef void CPWriteFn(CPUARMState *env, const ARMCPRegInfo *opaque,
-                       uint64_t value);
+typedef uint64_t CPReadFn(CPUARMState* env, const ARMCPRegInfo* opaque);
+typedef void     CPWriteFn(CPUARMState* env, const ARMCPRegInfo* opaque, uint64_t value);
 /* Access permission check functions for coprocessor registers. */
-typedef CPAccessResult CPAccessFn(CPUARMState *env,
-                                  const ARMCPRegInfo *opaque,
-                                  bool isread);
+typedef CPAccessResult CPAccessFn(CPUARMState* env, const ARMCPRegInfo* opaque, bool isread);
 /* Hook function for register reset */
-typedef void CPResetFn(CPUARMState *env, const ARMCPRegInfo *opaque);
+typedef void CPResetFn(CPUARMState* env, const ARMCPRegInfo* opaque);
 
 #define CP_ANY 0xff
 
 /* Flags in the high bits of nv2_redirect_offset */
-#define NV2_REDIR_NV1 0x4000 /* Only redirect when HCR_EL2.NV1 == 1 */
-#define NV2_REDIR_NO_NV1 0x8000 /* Only redirect when HCR_EL2.NV1 == 0 */
+#define NV2_REDIR_NV1       0x4000 /* Only redirect when HCR_EL2.NV1 == 1 */
+#define NV2_REDIR_NO_NV1    0x8000 /* Only redirect when HCR_EL2.NV1 == 0 */
 #define NV2_REDIR_FLAG_MASK 0xc000
 
 /* Definition of an ARM coprocessor register */
-struct ARMCPRegInfo {
+struct ARMCPRegInfo
+{
     /* Name of register (useful mainly for debugging, need not be unique) */
-    const char *name;
+    const char* name;
     /*
      * Location of register: coprocessor number and (crn,crm,opc1,opc2)
      * tuple. Any of crm, opc1 and opc2 may be CP_ANY to indicate a
@@ -901,7 +894,7 @@ struct ARMCPRegInfo {
      * this register was defined: can be used to hand data through to the
      * register read/write functions, since they are passed the ARMCPRegInfo*.
      */
-    void *opaque;
+    void* opaque;
     /*
      * Value of this register, if it is ARM_CP_CONST. Otherwise, if
      * fieldoffset is non-zero, the reset value of the register.
@@ -935,26 +928,26 @@ struct ARMCPRegInfo {
      * checks required. The access check is performed at runtime, not at
      * translate time.
      */
-    CPAccessFn *accessfn;
+    CPAccessFn* accessfn;
     /*
      * Function for handling reads of this register. If NULL, then reads
      * will be done by loading from the offset into CPUARMState specified
      * by fieldoffset.
      */
-    CPReadFn *readfn;
+    CPReadFn* readfn;
     /*
      * Function for handling writes of this register. If NULL, then writes
      * will be done by writing to the offset into CPUARMState specified
      * by fieldoffset.
      */
-    CPWriteFn *writefn;
+    CPWriteFn* writefn;
     /*
      * Function for doing a "raw" read; used when we need to copy
      * coprocessor state to the kernel for KVM or out for
      * migration. This only needs to be provided if there is also a
      * readfn and it has side effects (for instance clear-on-read bits).
      */
-    CPReadFn *raw_readfn;
+    CPReadFn* raw_readfn;
     /*
      * Function for doing a "raw" write; used when we need to copy KVM
      * kernel coprocessor state into userspace, or for inbound
@@ -962,13 +955,13 @@ struct ARMCPRegInfo {
      * writefn and it masks out "unwritable" bits or has write-one-to-clear
      * or similar behaviour.
      */
-    CPWriteFn *raw_writefn;
+    CPWriteFn* raw_writefn;
     /*
      * Function for resetting the register. If NULL, then reset will be done
      * by writing resetvalue to the field specified in fieldoffset. If
      * fieldoffset is 0 then no reset will be done.
      */
-    CPResetFn *resetfn;
+    CPResetFn* resetfn;
 
     /*
      * "Original" readfn, writefn, accessfn.
@@ -980,29 +973,19 @@ struct ARMCPRegInfo {
      * really do go to the EL1/EL0 version proceed normally.
      * (The corresponding EL2 register is linked via opaque.)
      */
-    CPReadFn *orig_readfn;
-    CPWriteFn *orig_writefn;
-    CPAccessFn *orig_accessfn;
+    CPReadFn*   orig_readfn;
+    CPWriteFn*  orig_writefn;
+    CPAccessFn* orig_accessfn;
 };
 
-static inline size_t arm_cp_reg_table_key_hash(uint32_t x)
-{
-    return (size_t)x;
-}
+static inline size_t arm_cp_reg_table_key_hash(uint32_t x) { return (size_t)x; }
 
-static inline void arm_cp_reg_table_oor_set(uint32_t *k, uint8_t n)
-{
-    *k = UINT32_MAX - (uint32_t)n;
-}
+static inline void arm_cp_reg_table_oor_set(uint32_t* k, uint8_t n) { *k = UINT32_MAX - (uint32_t)n; }
 
-static inline bool arm_cp_reg_table_oor_equal(uint32_t k, uint8_t n)
-{
-    return k == UINT32_MAX - (uint32_t)n;
-}
+static inline bool arm_cp_reg_table_oor_equal(uint32_t k, uint8_t n) { return k == UINT32_MAX - (uint32_t)n; }
 
 DICT_OA_DEF2(ARMCPRegTable, uint32_t,
-             M_OPEXTEND(M_BASIC_OPLIST, HASH(arm_cp_reg_table_key_hash),
-                        OOR_EQUAL(arm_cp_reg_table_oor_equal),
+             M_OPEXTEND(M_BASIC_OPLIST, HASH(arm_cp_reg_table_key_hash), OOR_EQUAL(arm_cp_reg_table_oor_equal),
                         OOR_SET(arm_cp_reg_table_oor_set M_IPTR)),
              ARMCPRegInfo, M_POD_OPLIST)
 
@@ -1010,31 +993,24 @@ DICT_OA_DEF2(ARMCPRegTable, uint32_t,
  * Macros which are lvalues for the field in CPUARMState for the
  * ARMCPRegInfo *ri.
  */
-#define CPREG_FIELD32(env, ri) \
-    (*(uint32_t *)((char *)(env) + (ri)->fieldoffset))
-#define CPREG_FIELD64(env, ri) \
-    (*(uint64_t *)((char *)(env) + (ri)->fieldoffset))
+#define CPREG_FIELD32(env, ri) (*(uint32_t*)((char*)(env) + (ri)->fieldoffset))
+#define CPREG_FIELD64(env, ri) (*(uint64_t*)((char*)(env) + (ri)->fieldoffset))
 
-void define_one_arm_cp_reg_with_opaque(ARMCPU *cpu, const ARMCPRegInfo *reg,
-                                       void *opaque);
+void define_one_arm_cp_reg_with_opaque(ARMCPU* cpu, const ARMCPRegInfo* reg, void* opaque);
 
-static inline void define_one_arm_cp_reg(ARMCPU *cpu, const ARMCPRegInfo *regs)
-{
-    define_one_arm_cp_reg_with_opaque(cpu, regs, NULL);
-}
+static inline void define_one_arm_cp_reg(ARMCPU* cpu, const ARMCPRegInfo* regs)
+{ define_one_arm_cp_reg_with_opaque(cpu, regs, NULL); }
 
-void define_arm_cp_regs_with_opaque_len(ARMCPU *cpu, const ARMCPRegInfo *regs,
-                                        void *opaque, size_t len);
+void define_arm_cp_regs_with_opaque_len(ARMCPU* cpu, const ARMCPRegInfo* regs, void* opaque, size_t len);
 
-#define define_arm_cp_regs_with_opaque(CPU, REGS, OPAQUE)               \
-    do {                                                                \
-        QEMU_BUILD_BUG_ON(ARRAY_SIZE(REGS) == 0);                       \
-        define_arm_cp_regs_with_opaque_len(CPU, REGS, OPAQUE,           \
-                                           ARRAY_SIZE(REGS));           \
-    } while (0)
+#define define_arm_cp_regs_with_opaque(CPU, REGS, OPAQUE)                        \
+    do {                                                                         \
+        QEMU_BUILD_BUG_ON(ARRAY_SIZE(REGS) == 0);                                \
+        define_arm_cp_regs_with_opaque_len(CPU, REGS, OPAQUE, ARRAY_SIZE(REGS)); \
+    }                                                                            \
+    while (0)
 
-#define define_arm_cp_regs(CPU, REGS) \
-    define_arm_cp_regs_with_opaque(CPU, REGS, NULL)
+#define define_arm_cp_regs(CPU, REGS) define_arm_cp_regs_with_opaque(CPU, REGS, NULL)
 
 /*
  * Definition of an ARM co-processor register as viewed from
@@ -1042,9 +1018,10 @@ void define_arm_cp_regs_with_opaque_len(ARMCPU *cpu, const ARMCPRegInfo *regs,
  * registers to userspace when emulating the Linux AArch64 CPU
  * ID/feature ABI (advertised as HWCAP_CPUID).
  */
-typedef struct ARMCPRegUserSpaceInfo {
+typedef struct ARMCPRegUserSpaceInfo
+{
     /* Name of register */
-    const char *name;
+    const char* name;
 
     /* Is the name actually a glob pattern */
     bool is_glob;
@@ -1056,81 +1033,68 @@ typedef struct ARMCPRegUserSpaceInfo {
     uint64_t fixed_bits;
 } ARMCPRegUserSpaceInfo;
 
-void modify_arm_cp_regs_with_len(ARMCPRegInfo *regs, size_t regs_len,
-                                 const ARMCPRegUserSpaceInfo *mods,
+void modify_arm_cp_regs_with_len(ARMCPRegInfo* regs, size_t regs_len, const ARMCPRegUserSpaceInfo* mods,
                                  size_t mods_len);
 
-#define modify_arm_cp_regs(REGS, MODS)                                  \
-    do {                                                                \
-        QEMU_BUILD_BUG_ON(ARRAY_SIZE(REGS) == 0);                       \
-        QEMU_BUILD_BUG_ON(ARRAY_SIZE(MODS) == 0);                       \
-        modify_arm_cp_regs_with_len(REGS, ARRAY_SIZE(REGS),             \
-                                    MODS, ARRAY_SIZE(MODS));            \
-    } while (0)
+#define modify_arm_cp_regs(REGS, MODS)                                               \
+    do {                                                                             \
+        QEMU_BUILD_BUG_ON(ARRAY_SIZE(REGS) == 0);                                    \
+        QEMU_BUILD_BUG_ON(ARRAY_SIZE(MODS) == 0);                                    \
+        modify_arm_cp_regs_with_len(REGS, ARRAY_SIZE(REGS), MODS, ARRAY_SIZE(MODS)); \
+    }                                                                                \
+    while (0)
 
 /* CPWriteFn that can be used to implement writes-ignored behaviour */
-void arm_cp_write_ignore(CPUARMState *env, const ARMCPRegInfo *ri,
-                         uint64_t value);
+void arm_cp_write_ignore(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value);
 /* CPReadFn that can be used for read-as-zero behaviour */
-uint64_t arm_cp_read_zero(CPUARMState *env, const ARMCPRegInfo *ri);
+uint64_t arm_cp_read_zero(CPUARMState* env, const ARMCPRegInfo* ri);
 
 /* CPReadFn that just reads the value from ri->fieldoffset */
-uint64_t raw_read(CPUARMState *env, const ARMCPRegInfo *ri);
+uint64_t raw_read(CPUARMState* env, const ARMCPRegInfo* ri);
 
 /* CPWriteFn that just writes the value to ri->fieldoffset */
-void raw_write(CPUARMState *env, const ARMCPRegInfo *ri, uint64_t value);
+void raw_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value);
 
 /*
  * CPResetFn that does nothing, for use if no reset is required even
  * if fieldoffset is non zero.
  */
-void arm_cp_reset_ignore(CPUARMState *env, const ARMCPRegInfo *opaque);
+void arm_cp_reset_ignore(CPUARMState* env, const ARMCPRegInfo* opaque);
 
 /*
  * Return true if this reginfo struct's field in the cpu state struct
  * is 64 bits wide.
  */
-static inline bool cpreg_field_is_64bit(const ARMCPRegInfo *ri)
-{
-    return (ri->state == ARM_CP_STATE_AA64) || (ri->type & ARM_CP_64BIT);
-}
+static inline bool cpreg_field_is_64bit(const ARMCPRegInfo* ri)
+{ return (ri->state == ARM_CP_STATE_AA64) || (ri->type & ARM_CP_64BIT); }
 
-static inline bool cp_access_ok(int current_el,
-                                const ARMCPRegInfo *ri, int isread)
-{
-    return (ri->access >> ((current_el * 2) + isread)) & 1;
-}
+static inline bool cp_access_ok(int current_el, const ARMCPRegInfo* ri, int isread)
+{ return (ri->access >> ((current_el * 2) + isread)) & 1; }
 
 /* Raw read of a coprocessor register (as needed for migration, etc) */
-uint64_t read_raw_cp_reg(CPUARMState *env, const ARMCPRegInfo *ri);
+uint64_t read_raw_cp_reg(CPUARMState* env, const ARMCPRegInfo* ri);
 
 /*
  * Return true if the cp register encoding is in the "feature ID space" as
  * defined by FEAT_IDST (and thus should be reported with ER_ELx.EC
  * as EC_SYSTEMREGISTERTRAP rather than EC_UNCATEGORIZED).
  */
-static inline bool arm_cpreg_encoding_in_idspace(uint8_t opc0, uint8_t opc1,
-                                                 uint8_t opc2,
-                                                 uint8_t crn, uint8_t crm)
-{
-    return opc0 == 3 && (opc1 == 0 || opc1 == 1 || opc1 == 3) &&
-        crn == 0 && crm < 8;
-}
+static inline bool arm_cpreg_encoding_in_idspace(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm)
+{ return opc0 == 3 && (opc1 == 0 || opc1 == 1 || opc1 == 3) && crn == 0 && crm < 8; }
 
 /*
  * As arm_cpreg_encoding_in_idspace(), but take the encoding from an
  * ARMCPRegInfo.
  */
-static inline bool arm_cpreg_in_idspace(const ARMCPRegInfo *ri)
+static inline bool arm_cpreg_in_idspace(const ARMCPRegInfo* ri)
 {
-    return ri->state == ARM_CP_STATE_AA64 &&
-        arm_cpreg_encoding_in_idspace(ri->opc0, ri->opc1, ri->opc2,
-                                      ri->crn, ri->crm);
+    return ri->state == ARM_CP_STATE_AA64
+           && arm_cpreg_encoding_in_idspace(ri->opc0, ri->opc1, ri->opc2, ri->crn, ri->crm);
 }
 
-void define_cortex_a72_a57_a53_cp_reginfo(ARMCPU *cpu);
+void define_cortex_a72_a57_a53_cp_reginfo(ARMCPU* cpu);
 
-CPAccessResult access_tvm_trvm(CPUARMState *, const ARMCPRegInfo *, bool);
+CPAccessResult access_tvm_trvm(CPUARMState*, const ARMCPRegInfo*, bool);
 
 /**
  * arm_cpreg_trap_in_nv: Return true if cpreg traps in nested virtualization
@@ -1138,7 +1102,7 @@ CPAccessResult access_tvm_trvm(CPUARMState *, const ARMCPRegInfo *, bool);
  * Return true if this cpreg is one which should be trapped to EL2 if
  * it is executed at EL1 when nested virtualization is enabled via HCR_EL2.NV.
  */
-static inline bool arm_cpreg_traps_in_nv(const ARMCPRegInfo *ri)
+static inline bool arm_cpreg_traps_in_nv(const ARMCPRegInfo* ri)
 {
     /*
      * The Arm ARM defines the registers to be trapped in terms of
@@ -1167,17 +1131,16 @@ static inline bool arm_cpreg_traps_in_nv(const ARMCPRegInfo *ri)
 }
 
 /* Macros for accessing a specified CP register bank */
-#define A32_BANKED_REG_GET(_env, _regname, _secure)                     \
-    ((_secure) ? (_env)->cp15._regname##_s : (_env)->cp15._regname##_ns)
+#define A32_BANKED_REG_GET(_env, _regname, _secure) ((_secure) ? (_env)->cp15._regname##_s : (_env)->cp15._regname##_ns)
 
-#define A32_BANKED_REG_SET(_env, _regname, _secure, _val)       \
-    do {                                                        \
-        if (_secure) {                                          \
-            (_env)->cp15._regname##_s = (_val);                 \
-        } else {                                                \
-            (_env)->cp15._regname##_ns = (_val);                \
-        }                                                       \
-    } while (0)
+#define A32_BANKED_REG_SET(_env, _regname, _secure, _val)    \
+    do {                                                     \
+        if (_secure) { (_env)->cp15._regname##_s = (_val); } \
+        else {                                               \
+            (_env)->cp15._regname##_ns = (_val);             \
+        }                                                    \
+    }                                                        \
+    while (0)
 
 /*
  * Macros for automatically accessing a specific CP register bank depending on
@@ -1185,11 +1148,8 @@ static inline bool arm_cpreg_traps_in_nv(const ARMCPRegInfo *ri)
  * supporting instruction translation reads/writes as these are dependent
  * solely on the SCR.NS bit and not the mode.
  */
-#define A32_BANKED_CURRENT_REG_GET(_env, _regname)                          \
-    A32_BANKED_REG_GET((_env), _regname,                                    \
-                       (arm_is_secure(_env) && !arm_el_is_aa64((_env), 3)))
+#define A32_BANKED_CURRENT_REG_GET(_env, _regname)                                            \
+    A32_BANKED_REG_GET((_env), _regname, (arm_is_secure(_env) && !arm_el_is_aa64((_env), 3)))
 
-#define A32_BANKED_CURRENT_REG_SET(_env, _regname, _val)                    \
-    A32_BANKED_REG_SET((_env), _regname,                                    \
-                       (arm_is_secure(_env) && !arm_el_is_aa64((_env), 3)), \
-                       (_val))
+#define A32_BANKED_CURRENT_REG_SET(_env, _regname, _val)                                              \
+    A32_BANKED_REG_SET((_env), _regname, (arm_is_secure(_env) && !arm_el_is_aa64((_env), 3)), (_val))

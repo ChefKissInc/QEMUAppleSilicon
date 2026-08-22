@@ -5,5 +5,4 @@
 
 #pragma once
 
-void store_atom_insert_al16(Int128 *ps, Int128 val, Int128 msk)
-    QEMU_ERROR("unsupported atomic");
+void store_atom_insert_al16(Int128* ps, Int128 val, Int128 msk) QEMU_ERROR("unsupported atomic");

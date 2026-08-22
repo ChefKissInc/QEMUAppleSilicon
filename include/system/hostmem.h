@@ -19,8 +19,7 @@
 #include "qemu/thread-context.h"
 
 #define TYPE_MEMORY_BACKEND "memory-backend"
-OBJECT_DECLARE_TYPE(HostMemoryBackend, HostMemoryBackendClass,
-                    MEMORY_BACKEND)
+OBJECT_DECLARE_TYPE(HostMemoryBackend, HostMemoryBackendClass, MEMORY_BACKEND)
 
 /* hostmem-ram.c */
 /**
@@ -39,12 +38,12 @@ OBJECT_DECLARE_TYPE(HostMemoryBackend, HostMemoryBackendClass,
 
 #define TYPE_MEMORY_BACKEND_MEMFD "memory-backend-memfd"
 
-
 /**
  * HostMemoryBackendClass:
  * @parent_class: opaque parent class container
  */
-struct HostMemoryBackendClass {
+struct HostMemoryBackendClass
+{
     ObjectClass parent_class;
 
     /**
@@ -55,7 +54,7 @@ struct HostMemoryBackendClass {
      *
      * Return: true on success, else false setting @errp with error.
      */
-    bool (*alloc)(HostMemoryBackend *backend, Error **errp);
+    bool (*alloc)(HostMemoryBackend* backend, Error** errp);
 };
 
 /**
@@ -66,28 +65,29 @@ struct HostMemoryBackendClass {
  * @mr: MemoryRegion representing host memory belonging to backend
  * @prealloc_threads: number of threads to be used for preallocatining RAM
  */
-struct HostMemoryBackend {
+struct HostMemoryBackend
+{
     /* private */
     Object parent;
 
     /* protected */
-    uint64_t size;
-    bool merge, dump, use_canonical_path;
-    bool prealloc, is_mapped, share, reserve;
-    bool aligned;
-    uint32_t prealloc_threads;
-    ThreadContext *prealloc_context;
+    uint64_t       size;
+    bool           merge, dump, use_canonical_path;
+    bool           prealloc, is_mapped, share, reserve;
+    bool           aligned;
+    uint32_t       prealloc_threads;
+    ThreadContext* prealloc_context;
 
     MemoryRegion mr;
 };
 
-bool host_memory_backend_mr_inited(HostMemoryBackend *backend);
-MemoryRegion *host_memory_backend_get_memory(HostMemoryBackend *backend);
+bool          host_memory_backend_mr_inited(HostMemoryBackend* backend);
+MemoryRegion* host_memory_backend_get_memory(HostMemoryBackend* backend);
 
-void host_memory_backend_set_mapped(HostMemoryBackend *backend, bool mapped);
-bool host_memory_backend_is_mapped(HostMemoryBackend *backend);
-size_t host_memory_backend_pagesize(HostMemoryBackend *memdev);
-char *host_memory_backend_get_name(HostMemoryBackend *backend);
+void   host_memory_backend_set_mapped(HostMemoryBackend* backend, bool mapped);
+bool   host_memory_backend_is_mapped(HostMemoryBackend* backend);
+size_t host_memory_backend_pagesize(HostMemoryBackend* memdev);
+char*  host_memory_backend_get_name(HostMemoryBackend* backend);
 
 long qemu_minrampagesize(void);
 long qemu_maxrampagesize(void);

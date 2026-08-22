@@ -33,38 +33,32 @@
    We hack round this by giving the FPA regs zero size when talking to a
    newer gdb.  */
 
-int arm_cpu_gdb_read_register(CPUState *cs, GByteArray *mem_buf, int n)
+int arm_cpu_gdb_read_register(CPUState* cs, GByteArray* mem_buf, int n)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
 
 #ifdef TARGET_AARCH64
-    if (arm_gdbstub_is_aarch64(cpu)) {
-        return aarch64_cpu_gdb_read_register(cs, mem_buf, n);
-    }
+    if (arm_gdbstub_is_aarch64(cpu)) { return aarch64_cpu_gdb_read_register(cs, mem_buf, n); }
 #endif
 
     if (n < 16) {
         /* Core integer register.  */
         return gdb_get_reg32(mem_buf, env->regs[n]);
     }
-    if (n == 25) {
-        return gdb_get_reg32(mem_buf, cpsr_read(env));
-    }
+    if (n == 25) { return gdb_get_reg32(mem_buf, cpsr_read(env)); }
     /* Unknown register.  */
     return 0;
 }
 
-int arm_cpu_gdb_write_register(CPUState *cs, uint8_t *mem_buf, int n)
+int arm_cpu_gdb_write_register(CPUState* cs, uint8_t* mem_buf, int n)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-    uint32_t tmp;
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
+    uint32_t     tmp;
 
 #ifdef TARGET_AARCH64
-    if (arm_gdbstub_is_aarch64(cpu)) {
-        return aarch64_cpu_gdb_write_register(cs, mem_buf, n);
-    }
+    if (arm_gdbstub_is_aarch64(cpu)) { return aarch64_cpu_gdb_write_register(cs, mem_buf, n); }
 #endif
 
     tmp = ldl_p(mem_buf);
@@ -76,9 +70,7 @@ int arm_cpu_gdb_write_register(CPUState *cs, uint8_t *mem_buf, int n)
      * This will probably cause problems if we ever implement the
      * Jazelle DBX extensions.
      */
-    if (n == 15) {
-        tmp &= ~1;
-    }
+    if (n == 15) { tmp &= ~1; }
 
     if (n < 16) {
         env->regs[n] = tmp;
@@ -92,36 +84,33 @@ int arm_cpu_gdb_write_register(CPUState *cs, uint8_t *mem_buf, int n)
     return 0;
 }
 
-static int vfp_gdb_get_reg(CPUState *cs, GByteArray *buf, int reg)
+static int vfp_gdb_get_reg(CPUState* cs, GByteArray* buf, int reg)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-    int nregs = cpu_isar_feature(aa32_simd_r32, cpu) ? 32 : 16;
+    ARMCPU*      cpu   = ARM_CPU(cs);
+    CPUARMState* env   = &cpu->env;
+    int          nregs = cpu_isar_feature(aa32_simd_r32, cpu) ? 32 : 16;
 
     /* VFP data registers are always little-endian.  */
-    if (reg < nregs) {
-        return gdb_get_reg64(buf, *aa32_vfp_dreg(env, reg));
-    }
+    if (reg < nregs) { return gdb_get_reg64(buf, *aa32_vfp_dreg(env, reg)); }
     if (arm_feature(env, ARM_FEATURE_NEON)) {
         /* Aliases for Q regs.  */
         nregs += 16;
         if (reg < nregs) {
-            uint64_t *q = aa32_vfp_qreg(env, reg - 32);
+            uint64_t* q = aa32_vfp_qreg(env, reg - 32);
             return gdb_get_reg128(buf, q[0], q[1]);
         }
     }
     switch (reg - nregs) {
-    case 0:
-        return gdb_get_reg32(buf, vfp_get_fpscr(env));
+        case 0: return gdb_get_reg32(buf, vfp_get_fpscr(env));
     }
     return 0;
 }
 
-static int vfp_gdb_set_reg(CPUState *cs, uint8_t *buf, int reg)
+static int vfp_gdb_set_reg(CPUState* cs, uint8_t* buf, int reg)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-    int nregs = cpu_isar_feature(aa32_simd_r32, cpu) ? 32 : 16;
+    ARMCPU*      cpu   = ARM_CPU(cs);
+    CPUARMState* env   = &cpu->env;
+    int          nregs = cpu_isar_feature(aa32_simd_r32, cpu) ? 32 : 16;
 
     if (reg < nregs) {
         *aa32_vfp_dreg(env, reg) = ldq_le_p(buf);
@@ -130,46 +119,38 @@ static int vfp_gdb_set_reg(CPUState *cs, uint8_t *buf, int reg)
     if (arm_feature(env, ARM_FEATURE_NEON)) {
         nregs += 16;
         if (reg < nregs) {
-            uint64_t *q = aa32_vfp_qreg(env, reg - 32);
-            q[0] = ldq_le_p(buf);
-            q[1] = ldq_le_p(buf + 8);
+            uint64_t* q = aa32_vfp_qreg(env, reg - 32);
+            q[0]        = ldq_le_p(buf);
+            q[1]        = ldq_le_p(buf + 8);
             return 16;
         }
     }
     switch (reg - nregs) {
-    case 0:
-        vfp_set_fpscr(env, ldl_p(buf));
-        return 4;
+        case 0: vfp_set_fpscr(env, ldl_p(buf)); return 4;
     }
     return 0;
 }
 
-static int vfp_gdb_get_sysreg(CPUState *cs, GByteArray *buf, int reg)
+static int vfp_gdb_get_sysreg(CPUState* cs, GByteArray* buf, int reg)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
 
     switch (reg) {
-    case 0:
-        return gdb_get_reg32(buf, env->vfp.xregs[ARM_VFP_FPSID]);
-    case 1:
-        return gdb_get_reg32(buf, env->vfp.xregs[ARM_VFP_FPEXC]);
+        case 0: return gdb_get_reg32(buf, env->vfp.xregs[ARM_VFP_FPSID]);
+        case 1: return gdb_get_reg32(buf, env->vfp.xregs[ARM_VFP_FPEXC]);
     }
     return 0;
 }
 
-static int vfp_gdb_set_sysreg(CPUState *cs, uint8_t *buf, int reg)
+static int vfp_gdb_set_sysreg(CPUState* cs, uint8_t* buf, int reg)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
 
     switch (reg) {
-    case 0:
-        env->vfp.xregs[ARM_VFP_FPSID] = ldl_p(buf);
-        return 4;
-    case 1:
-        env->vfp.xregs[ARM_VFP_FPEXC] = ldl_p(buf) & (1 << 30);
-        return 4;
+        case 0: env->vfp.xregs[ARM_VFP_FPSID] = ldl_p(buf); return 4;
+        case 1: env->vfp.xregs[ARM_VFP_FPEXC] = ldl_p(buf) & (1 << 30); return 4;
     }
     return 0;
 }
@@ -183,83 +164,69 @@ static int vfp_gdb_set_sysreg(CPUState *cs, uint8_t *buf, int reg)
  * We return the number of bytes copied
  */
 
-static int arm_gdb_get_sysreg(CPUState *cs, GByteArray *buf, int reg)
+static int arm_gdb_get_sysreg(CPUState* cs, GByteArray* buf, int reg)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    CPUARMState *env = &cpu->env;
-    const ARMCPRegInfo *ri;
-    uint32_t key;
+    ARMCPU*             cpu = ARM_CPU(cs);
+    CPUARMState*        env = &cpu->env;
+    const ARMCPRegInfo* ri;
+    uint32_t            key;
 
     key = cpu->dyn_sysreg_feature.data.cpregs.keys[reg];
-    ri = ARMCPRegTable_cget(cpu->cp_regs, key);
+    ri  = ARMCPRegTable_cget(cpu->cp_regs, key);
     if (ri) {
-        if (cpreg_field_is_64bit(ri)) {
-            return gdb_get_reg64(buf, (uint64_t)read_raw_cp_reg(env, ri));
-        } else {
+        if (cpreg_field_is_64bit(ri)) { return gdb_get_reg64(buf, (uint64_t)read_raw_cp_reg(env, ri)); }
+        else {
             return gdb_get_reg32(buf, (uint32_t)read_raw_cp_reg(env, ri));
         }
     }
     return 0;
 }
 
-static int arm_gdb_set_sysreg(CPUState *cs, uint8_t *buf, int reg)
-{
-    return 0;
-}
+static int arm_gdb_set_sysreg(CPUState* cs, uint8_t* buf, int reg) { return 0; }
 
-static void arm_gen_one_feature_sysreg(GDBFeatureBuilder *builder,
-                                       DynamicGDBFeatureInfo *dyn_feature,
-                                       ARMCPRegInfo *ri, uint32_t ri_key,
-                                       int bitsize, int n)
+static void arm_gen_one_feature_sysreg(GDBFeatureBuilder* builder, DynamicGDBFeatureInfo* dyn_feature, ARMCPRegInfo* ri,
+                                       uint32_t ri_key, int bitsize, int n)
 {
-    gdb_feature_builder_append_reg(builder, ri->name, bitsize, n,
-                                   "int", "cp_regs");
+    gdb_feature_builder_append_reg(builder, ri->name, bitsize, n, "int", "cp_regs");
 
     dyn_feature->data.cpregs.keys[n] = ri_key;
 }
 
-static GDBFeature *arm_gen_dynamic_sysreg_feature(CPUState *cs, int base_reg)
+static GDBFeature* arm_gen_dynamic_sysreg_feature(CPUState* cs, int base_reg)
 {
-    ARMCPU *cpu = ARM_CPU(cs);
-    size_t num_regs = ARMCPRegTable_size(cpu->cp_regs);
-    ARMCPRegTable_it_t it;
-    ARMCPRegTable_pair_ct *ref;
-    GDBFeatureBuilder builder;
-    uint32_t ri_key;
-    ARMCPRegInfo *ri;
-    int n = 0;
-    CPUARMState *env = &cpu->env;
-    DynamicGDBFeatureInfo *dyn_feature = &cpu->dyn_sysreg_feature;
+    ARMCPU*                cpu      = ARM_CPU(cs);
+    size_t                 num_regs = ARMCPRegTable_size(cpu->cp_regs);
+    ARMCPRegTable_it_t     it;
+    ARMCPRegTable_pair_ct* ref;
+    GDBFeatureBuilder      builder;
+    uint32_t               ri_key;
+    ARMCPRegInfo*          ri;
+    int                    n           = 0;
+    CPUARMState*           env         = &cpu->env;
+    DynamicGDBFeatureInfo* dyn_feature = &cpu->dyn_sysreg_feature;
 
-    gdb_feature_builder_init(&builder,
-                             &cpu->dyn_sysreg_feature.desc,
-                             "org.qemu.gdb.arm.sys.regs",
-                             "system-registers.xml",
-                             base_reg);
+    gdb_feature_builder_init(&builder, &cpu->dyn_sysreg_feature.desc, "org.qemu.gdb.arm.sys.regs",
+                             "system-registers.xml", base_reg);
     cpu->dyn_sysreg_feature.data.cpregs.keys = g_new(uint32_t, num_regs);
     for (ARMCPRegTable_it(it, cpu->cp_regs); !ARMCPRegTable_end_p(it); ARMCPRegTable_next(it)) {
-        ref = ARMCPRegTable_ref(it);
+        ref    = ARMCPRegTable_ref(it);
         ri_key = ref->key;
-        ri = &ref->value;
+        ri     = &ref->value;
 
         if (!(ri->type & (ARM_CP_NO_RAW | ARM_CP_NO_GDB))) {
             if (arm_feature(env, ARM_FEATURE_AARCH64)) {
                 if (ri->state == ARM_CP_STATE_AA64) {
-                    arm_gen_one_feature_sysreg(&builder, dyn_feature,
-                                               ri, ri_key, 64, n++);
+                    arm_gen_one_feature_sysreg(&builder, dyn_feature, ri, ri_key, 64, n++);
                 }
-            } else {
+            }
+            else {
                 if (ri->state == ARM_CP_STATE_AA32) {
-                    if (!arm_feature(env, ARM_FEATURE_EL3) &&
-                        (ri->secure & ARM_CP_SECSTATE_S)) {
-                        continue;
-                    }
+                    if (!arm_feature(env, ARM_FEATURE_EL3) && (ri->secure & ARM_CP_SECSTATE_S)) { continue; }
                     if (ri->type & ARM_CP_64BIT) {
-                        arm_gen_one_feature_sysreg(&builder, dyn_feature,
-                                                   ri, ri_key, 64, n++);
-                    } else {
-                        arm_gen_one_feature_sysreg(&builder, dyn_feature,
-                                                   ri, ri_key, 32, n++);
+                        arm_gen_one_feature_sysreg(&builder, dyn_feature, ri, ri_key, 64, n++);
+                    }
+                    else {
+                        arm_gen_one_feature_sysreg(&builder, dyn_feature, ri, ri_key, 32, n++);
                     }
                 }
             }
@@ -269,39 +236,32 @@ static GDBFeature *arm_gen_dynamic_sysreg_feature(CPUState *cs, int base_reg)
     return &cpu->dyn_sysreg_feature.desc;
 }
 
-void arm_cpu_register_gdb_commands(ARMCPU *cpu)
+void arm_cpu_register_gdb_commands(ARMCPU* cpu)
 {
-    g_autoptr(GPtrArray) query_table = g_ptr_array_new();
-    g_autoptr(GPtrArray) set_table = g_ptr_array_new();
+    g_autoptr(GPtrArray) query_table       = g_ptr_array_new();
+    g_autoptr(GPtrArray) set_table         = g_ptr_array_new();
     g_autoptr(GString) qsupported_features = g_string_new(NULL);
 
     if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
-    #ifdef TARGET_AARCH64
-        aarch64_cpu_register_gdb_commands(cpu, qsupported_features, query_table,
-                                          set_table);
-    #endif
+#ifdef TARGET_AARCH64
+        aarch64_cpu_register_gdb_commands(cpu, qsupported_features, query_table, set_table);
+#endif
     }
 
     /* Set arch-specific handlers for 'q' commands. */
-    if (query_table->len) {
-        gdb_extend_query_table(query_table);
-    }
+    if (query_table->len) { gdb_extend_query_table(query_table); }
 
     /* Set arch-specific handlers for 'Q' commands. */
-    if (set_table->len) {
-        gdb_extend_set_table(set_table);
-    }
+    if (set_table->len) { gdb_extend_set_table(set_table); }
 
     /* Set arch-specific qSupported feature. */
-    if (qsupported_features->len) {
-        gdb_extend_qsupported_features(qsupported_features->str);
-    }
+    if (qsupported_features->len) { gdb_extend_qsupported_features(qsupported_features->str); }
 }
 
-void arm_cpu_register_gdb_regs_for_features(ARMCPU *cpu)
+void arm_cpu_register_gdb_regs_for_features(ARMCPU* cpu)
 {
-    CPUState *cs = CPU(cpu);
-    CPUARMState *env = &cpu->env;
+    CPUState*    cs  = CPU(cpu);
+    CPUARMState* env = &cpu->env;
 
     if (arm_feature(env, ARM_FEATURE_AARCH64)) {
         /*
@@ -309,23 +269,18 @@ void arm_cpu_register_gdb_regs_for_features(ARMCPU *cpu)
          * registers so we don't need to include both.
          */
 #ifdef TARGET_AARCH64
-        if (isar_feature_aa64_sve(&cpu->isar) ||
-            isar_feature_aa64_sme(&cpu->isar)) {
-            GDBFeature *feature = arm_gen_dynamic_svereg_feature(cs, cs->gdb_num_regs);
-            gdb_register_coprocessor(cs, aarch64_gdb_get_sve_reg,
-                                     aarch64_gdb_set_sve_reg, feature, 0);
-        } else {
-            gdb_register_coprocessor(cs, aarch64_gdb_get_fpu_reg,
-                                     aarch64_gdb_set_fpu_reg,
-                                     gdb_find_static_feature("aarch64-fpu.xml"),
-                                     0);
+        if (isar_feature_aa64_sve(&cpu->isar) || isar_feature_aa64_sme(&cpu->isar)) {
+            GDBFeature* feature = arm_gen_dynamic_svereg_feature(cs, cs->gdb_num_regs);
+            gdb_register_coprocessor(cs, aarch64_gdb_get_sve_reg, aarch64_gdb_set_sve_reg, feature, 0);
+        }
+        else {
+            gdb_register_coprocessor(cs, aarch64_gdb_get_fpu_reg, aarch64_gdb_set_fpu_reg,
+                                     gdb_find_static_feature("aarch64-fpu.xml"), 0);
         }
 
         if (isar_feature_aa64_sme(&cpu->isar)) {
-            GDBFeature *sme_feature =
-                arm_gen_dynamic_smereg_feature(cs, cs->gdb_num_regs);
-            gdb_register_coprocessor(cs, aarch64_gdb_get_sme_reg,
-                                     aarch64_gdb_set_sme_reg, sme_feature, 0);
+            GDBFeature* sme_feature = arm_gen_dynamic_smereg_feature(cs, cs->gdb_num_regs);
+            gdb_register_coprocessor(cs, aarch64_gdb_get_sme_reg, aarch64_gdb_set_sme_reg, sme_feature, 0);
         }
         /*
          * Note that we report pauth information via the feature name
@@ -334,34 +289,28 @@ void arm_cpu_register_gdb_regs_for_features(ARMCPU *cpu)
          * if they see the latter XML from QEMU.
          */
         if (isar_feature_aa64_pauth(&cpu->isar)) {
-            gdb_register_coprocessor(cs, aarch64_gdb_get_pauth_reg,
-                                     aarch64_gdb_set_pauth_reg,
-                                     gdb_find_static_feature("aarch64-pauth.xml"),
-                                     0);
+            gdb_register_coprocessor(cs, aarch64_gdb_get_pauth_reg, aarch64_gdb_set_pauth_reg,
+                                     gdb_find_static_feature("aarch64-pauth.xml"), 0);
         }
 #endif
-    } else {
+    }
+    else {
         if (arm_feature(env, ARM_FEATURE_NEON)) {
-            gdb_register_coprocessor(cs, vfp_gdb_get_reg, vfp_gdb_set_reg,
-                                     gdb_find_static_feature("arm-neon.xml"),
-                                     0);
-        } else if (cpu_isar_feature(aa32_simd_r32, cpu)) {
-            gdb_register_coprocessor(cs, vfp_gdb_get_reg, vfp_gdb_set_reg,
-                                     gdb_find_static_feature("arm-vfp3.xml"),
-                                     0);
-        } else if (cpu_isar_feature(aa32_vfp_simd, cpu)) {
-            gdb_register_coprocessor(cs, vfp_gdb_get_reg, vfp_gdb_set_reg,
-                                     gdb_find_static_feature("arm-vfp.xml"), 0);
+            gdb_register_coprocessor(cs, vfp_gdb_get_reg, vfp_gdb_set_reg, gdb_find_static_feature("arm-neon.xml"), 0);
+        }
+        else if (cpu_isar_feature(aa32_simd_r32, cpu)) {
+            gdb_register_coprocessor(cs, vfp_gdb_get_reg, vfp_gdb_set_reg, gdb_find_static_feature("arm-vfp3.xml"), 0);
+        }
+        else if (cpu_isar_feature(aa32_vfp_simd, cpu)) {
+            gdb_register_coprocessor(cs, vfp_gdb_get_reg, vfp_gdb_set_reg, gdb_find_static_feature("arm-vfp.xml"), 0);
         }
         /*
          * A and R profile have FP sysregs FPEXC and FPSID that we
          * expose to gdb.
          */
         gdb_register_coprocessor(cs, vfp_gdb_get_sysreg, vfp_gdb_set_sysreg,
-                                 gdb_find_static_feature("arm-vfp-sysregs.xml"),
-                                 0);
+                                 gdb_find_static_feature("arm-vfp-sysregs.xml"), 0);
     }
     gdb_register_coprocessor(cs, arm_gdb_get_sysreg, arm_gdb_set_sysreg,
-                             arm_gen_dynamic_sysreg_feature(cs, cs->gdb_num_regs),
-                             0);
+                             arm_gen_dynamic_sysreg_feature(cs, cs->gdb_num_regs), 0);
 }

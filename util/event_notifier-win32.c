@@ -14,31 +14,28 @@
 #include "qemu/event_notifier.h"
 #include "qemu/main-loop.h"
 
-int event_notifier_init(EventNotifier *e, int active)
+int event_notifier_init(EventNotifier* e, int active)
 {
     e->event = CreateEvent(NULL, TRUE, FALSE, NULL);
     assert(e->event);
     return 0;
 }
 
-void event_notifier_cleanup(EventNotifier *e)
+void event_notifier_cleanup(EventNotifier* e)
 {
     CloseHandle(e->event);
     e->event = NULL;
 }
 
-HANDLE event_notifier_get_handle(EventNotifier *e)
-{
-    return e->event;
-}
+HANDLE event_notifier_get_handle(EventNotifier* e) { return e->event; }
 
-int event_notifier_set(EventNotifier *e)
+int event_notifier_set(EventNotifier* e)
 {
     SetEvent(e->event);
     return 0;
 }
 
-int event_notifier_test_and_clear(EventNotifier *e)
+int event_notifier_test_and_clear(EventNotifier* e)
 {
     int ret = WaitForSingleObject(e->event, 0);
     if (ret == WAIT_OBJECT_0) {

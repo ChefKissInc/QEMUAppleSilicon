@@ -44,10 +44,10 @@
  * for obvious reasons not to send data, which was already sent.
  * Called with chr_write_lock held.
  */
-static int hub_chr_write(Chardev *chr, const uint8_t *buf, int len)
+static int hub_chr_write(Chardev* chr, const uint8_t* buf, int len)
 {
-    HubChardev *d = HUB_CHARDEV(chr);
-    int r, i, ret = len;
+    HubChardev*  d = HUB_CHARDEV(chr);
+    int          r, i, ret = len;
     unsigned int written;
 
     /* Invalidate index on every write */
@@ -73,41 +73,36 @@ static int hub_chr_write(Chardev *chr, const uint8_t *buf, int len)
             return r;
         }
         d->be_written[i] += r;
-        ret = MIN(r, ret);
+        ret               = MIN(r, ret);
     }
     d->be_min_written += ret;
-
 
     return ret;
 }
 
-static int hub_chr_can_read(void *opaque)
+static int hub_chr_can_read(void* opaque)
 {
-    HubCharBackend *backend = opaque;
-    CharBackend *fe = backend->hub->parent.be;
+    HubCharBackend* backend = opaque;
+    CharBackend*    fe      = backend->hub->parent.be;
 
-    if (fe && fe->chr_can_read) {
-        return fe->chr_can_read(fe->opaque);
-    }
+    if (fe && fe->chr_can_read) { return fe->chr_can_read(fe->opaque); }
 
     return 0;
 }
 
-static void hub_chr_read(void *opaque, const uint8_t *buf, int size)
+static void hub_chr_read(void* opaque, const uint8_t* buf, int size)
 {
-    HubCharBackend *backend = opaque;
-    CharBackend *fe = backend->hub->parent.be;
+    HubCharBackend* backend = opaque;
+    CharBackend*    fe      = backend->hub->parent.be;
 
-    if (fe && fe->chr_read) {
-        fe->chr_read(fe->opaque, buf, size);
-    }
+    if (fe && fe->chr_read) { fe->chr_read(fe->opaque, buf, size); }
 }
 
-static void hub_chr_event(void *opaque, QEMUChrEvent event)
+static void hub_chr_event(void* opaque, QEMUChrEvent event)
 {
-    HubCharBackend *backend = opaque;
-    HubChardev *d = backend->hub;
-    CharBackend *fe = d->parent.be;
+    HubCharBackend* backend = opaque;
+    HubChardev*     d       = backend->hub;
+    CharBackend*    fe      = d->parent.be;
 
     if (event == CHR_EVENT_OPENED) {
         /*
@@ -120,7 +115,8 @@ static void hub_chr_event(void *opaque, QEMUChrEvent event)
             /* Ignore subsequent open events from other backends */
             return;
         }
-    } else if (event == CHR_EVENT_CLOSED) {
+    }
+    else if (event == CHR_EVENT_CLOSED) {
         if (!d->be_event_opened_cnt) {
             /* Don't go below zero. Probably assert is better */
             return;
@@ -131,83 +127,70 @@ static void hub_chr_event(void *opaque, QEMUChrEvent event)
         }
     }
 
-    if (fe && fe->chr_event) {
-        fe->chr_event(fe->opaque, event);
-    }
+    if (fe && fe->chr_event) { fe->chr_event(fe->opaque, event); }
 }
 
-static GSource *hub_chr_add_watch(Chardev *s, GIOCondition cond)
+static GSource* hub_chr_add_watch(Chardev* s, GIOCondition cond)
 {
-    HubChardev *d = HUB_CHARDEV(s);
-    Chardev *chr;
-    ChardevClass *cc;
+    HubChardev*   d = HUB_CHARDEV(s);
+    Chardev*      chr;
+    ChardevClass* cc;
 
-    if (d->be_eagain_ind == -1) {
-        return NULL;
-    }
+    if (d->be_eagain_ind == -1) { return NULL; }
 
     assert(d->be_eagain_ind < d->be_cnt);
     chr = qemu_chr_fe_get_driver(&d->backends[d->be_eagain_ind].be);
-    cc = CHARDEV_GET_CLASS(chr);
-    if (!cc->chr_add_watch) {
-        return NULL;
-    }
+    cc  = CHARDEV_GET_CLASS(chr);
+    if (!cc->chr_add_watch) { return NULL; }
 
     return cc->chr_add_watch(chr, cond);
 }
 
-static bool hub_chr_attach_chardev(HubChardev *d, Chardev *chr,
-                                   Error **errp)
+static bool hub_chr_attach_chardev(HubChardev* d, Chardev* chr, Error** errp)
 {
     bool ret;
 
     if (d->be_cnt >= MAX_HUB) {
-        error_setg(errp, "hub: too many uses of chardevs '%s'"
+        error_setg(errp,
+                   "hub: too many uses of chardevs '%s'"
                    " (maximum is " stringify(MAX_HUB) ")",
                    d->parent.label);
         return false;
     }
     ret = qemu_chr_fe_init(&d->backends[d->be_cnt].be, chr, errp);
     if (ret) {
-        d->backends[d->be_cnt].hub = d;
-        d->backends[d->be_cnt].be_ind = d->be_cnt;
-        d->be_cnt += 1;
+        d->backends[d->be_cnt].hub     = d;
+        d->backends[d->be_cnt].be_ind  = d->be_cnt;
+        d->be_cnt                     += 1;
     }
 
     return ret;
 }
 
-static void char_hub_finalize(Object *obj)
+static void char_hub_finalize(Object* obj)
 {
-    HubChardev *d = HUB_CHARDEV(obj);
-    int i;
+    HubChardev* d = HUB_CHARDEV(obj);
+    int         i;
+
+    for (i = 0; i < d->be_cnt; i++) { qemu_chr_fe_deinit(&d->backends[i].be, false); }
+}
+
+static void hub_chr_update_read_handlers(Chardev* chr)
+{
+    HubChardev* d = HUB_CHARDEV(chr);
+    int         i;
 
     for (i = 0; i < d->be_cnt; i++) {
-        qemu_chr_fe_deinit(&d->backends[i].be, false);
+        qemu_chr_fe_set_handlers_full(&d->backends[i].be, hub_chr_can_read, hub_chr_read, hub_chr_event, NULL,
+                                      &d->backends[i], chr->gcontext, true, false);
     }
 }
 
-static void hub_chr_update_read_handlers(Chardev *chr)
+static bool hub_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    HubChardev *d = HUB_CHARDEV(chr);
-    int i;
-
-    for (i = 0; i < d->be_cnt; i++) {
-        qemu_chr_fe_set_handlers_full(&d->backends[i].be,
-                                      hub_chr_can_read,
-                                      hub_chr_read,
-                                      hub_chr_event,
-                                      NULL,
-                                      &d->backends[i],
-                                      chr->gcontext, true, false);
-    }
-}
-
-static bool hub_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
-{
-    ChardevHub *hub = backend->u.hub.data;
-    HubChardev *d = HUB_CHARDEV(chr);
-    strList *list = hub->chardevs;
+    ChardevHub* hub  = backend->u.hub.data;
+    HubChardev* d    = HUB_CHARDEV(chr);
+    strList*    list = hub->chardevs;
 
     d->be_eagain_ind = -1;
 
@@ -217,24 +200,22 @@ static bool hub_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
     }
 
     while (list) {
-        Chardev *s;
+        Chardev* s;
 
         s = qemu_chr_find(list->value);
         if (s == NULL) {
-            error_setg(errp, "hub: chardev can't be found by id '%s'",
-                       list->value);
+            error_setg(errp, "hub: chardev can't be found by id '%s'", list->value);
             return false;
         }
         if (CHARDEV_IS_HUB(s) || CHARDEV_IS_MUX(s)) {
-            error_setg(errp, "hub: multiplexers and hub devices can't be "
+            error_setg(errp,
+                       "hub: multiplexers and hub devices can't be "
                        "stacked, check chardev '%s', chardev should not "
                        "be a hub device or have 'mux=on' enabled",
                        list->value);
             return false;
         }
-        if (!hub_chr_attach_chardev(d, s, errp)) {
-            return false;
-        }
+        if (!hub_chr_attach_chardev(d, s, errp)) { return false; }
         list = list->next;
     }
 
@@ -245,11 +226,11 @@ static bool hub_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
     return true;
 }
 
-static void hub_chr_parse(QemuOpts *opts, ChardevBackend *backend, Error **errp)
+static void hub_chr_parse(QemuOpts* opts, ChardevBackend* backend, Error** errp)
 {
-    ChardevHub *hub;
-    strList **tail;
-    int i;
+    ChardevHub* hub;
+    strList**   tail;
+    int         i;
 
     backend->type = CHARDEV_BACKEND_KIND_HUB;
     hub = backend->u.hub.data = g_new0(ChardevHub, 1);
@@ -258,43 +239,38 @@ static void hub_chr_parse(QemuOpts *opts, ChardevBackend *backend, Error **errp)
     tail = &hub->chardevs;
 
     for (i = 0; i < MAX_HUB; i++) {
-        char optbuf[16];
-        const char *dev;
+        char        optbuf[16];
+        const char* dev;
 
         snprintf(optbuf, sizeof(optbuf), "chardevs.%u", i);
         dev = qemu_opt_get(opts, optbuf);
-        if (!dev) {
-            break;
-        }
+        if (!dev) { break; }
 
         QAPI_LIST_APPEND(tail, g_strdup(dev));
     }
 }
 
-static void char_hub_class_init(ObjectClass *oc, const void *data)
+static void char_hub_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
-    cc->chr_parse = hub_chr_parse;
-    cc->chr_open = hub_chr_open;
-    cc->chr_write = hub_chr_write;
+    cc->chr_parse     = hub_chr_parse;
+    cc->chr_open      = hub_chr_open;
+    cc->chr_write     = hub_chr_write;
     cc->chr_add_watch = hub_chr_add_watch;
     /* We handle events from backends only */
-    cc->chr_be_event = NULL;
+    cc->chr_be_event            = NULL;
     cc->chr_update_read_handler = hub_chr_update_read_handlers;
 }
 
 static const TypeInfo char_hub_type_info = {
-    .name = TYPE_CHARDEV_HUB,
-    .parent = TYPE_CHARDEV,
-    .class_init = char_hub_class_init,
-    .instance_size = sizeof(HubChardev),
+    .name              = TYPE_CHARDEV_HUB,
+    .parent            = TYPE_CHARDEV,
+    .class_init        = char_hub_class_init,
+    .instance_size     = sizeof(HubChardev),
     .instance_finalize = char_hub_finalize,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_hub_type_info);
-}
+static void register_types(void) { type_register_static(&char_hub_type_info); }
 
 type_init(register_types);

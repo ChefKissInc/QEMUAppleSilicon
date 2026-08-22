@@ -29,40 +29,37 @@
 
 #define ZALLOC_ALIGNMENT 16
 
-void *vnc_zlib_zalloc(void *x, unsigned items, unsigned size)
+void* vnc_zlib_zalloc(void* x, unsigned items, unsigned size)
 {
-    void *p;
+    void* p;
 
     size *= items;
-    size = (size + ZALLOC_ALIGNMENT - 1) & ~(ZALLOC_ALIGNMENT - 1);
+    size  = (size + ZALLOC_ALIGNMENT - 1) & ~(ZALLOC_ALIGNMENT - 1);
 
     p = g_malloc0(size);
 
     return (p);
 }
 
-void vnc_zlib_zfree(void *x, void *addr)
-{
-    g_free(addr);
-}
+void vnc_zlib_zfree(void* x, void* addr) { g_free(addr); }
 
-static void vnc_zlib_start(VncState *vs, VncWorker *worker)
+static void vnc_zlib_start(VncState* vs, VncWorker* worker)
 {
     buffer_reset(&worker->zlib.zlib);
 
     // make the output buffer be the zlib buffer, so we can compress it later
     worker->zlib.tmp = vs->output;
-    vs->output = worker->zlib.zlib;
+    vs->output       = worker->zlib.zlib;
 }
 
-static int vnc_zlib_stop(VncState *vs, VncWorker *worker)
+static int vnc_zlib_stop(VncState* vs, VncWorker* worker)
 {
     z_streamp zstream = &worker->zlib.stream;
-    int previous_out;
+    int       previous_out;
 
     // switch back to normal output/zlib buffers
     worker->zlib.zlib = vs->output;
-    vs->output = worker->zlib.tmp;
+    vs->output        = worker->zlib.tmp;
 
     // compress the zlib buffer
 
@@ -74,11 +71,10 @@ static int vnc_zlib_stop(VncState *vs, VncWorker *worker)
         VNC_DEBUG("VNC: initializing zlib stream\n");
         VNC_DEBUG("VNC: opaque = %p | vs = %p\n", zstream->opaque, vs);
         zstream->zalloc = vnc_zlib_zalloc;
-        zstream->zfree = vnc_zlib_zfree;
+        zstream->zfree  = vnc_zlib_zfree;
 
-        err = deflateInit2(zstream, worker->tight.compression, Z_DEFLATED,
-                           MAX_WBITS,
-                           MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
+        err =
+            deflateInit2(zstream, worker->tight.compression, Z_DEFLATED, MAX_WBITS, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
 
         if (err != Z_OK) {
             fprintf(stderr, "VNC: error initializing zlib\n");
@@ -86,14 +82,11 @@ static int vnc_zlib_stop(VncState *vs, VncWorker *worker)
         }
 
         worker->zlib.level = worker->tight.compression;
-        zstream->opaque = vs;
+        zstream->opaque    = vs;
     }
 
     if (worker->tight.compression != worker->zlib.level) {
-        if (deflateParams(zstream, worker->tight.compression,
-                          Z_DEFAULT_STRATEGY) != Z_OK) {
-            return -1;
-        }
+        if (deflateParams(zstream, worker->tight.compression, Z_DEFAULT_STRATEGY) != Z_OK) { return -1; }
         worker->zlib.level = worker->tight.compression;
     }
 
@@ -101,11 +94,11 @@ static int vnc_zlib_stop(VncState *vs, VncWorker *worker)
     buffer_reserve(&vs->output, worker->zlib.zlib.offset + 64);
 
     // set pointers
-    zstream->next_in = worker->zlib.zlib.buffer;
-    zstream->avail_in = worker->zlib.zlib.offset;
-    zstream->next_out = vs->output.buffer + vs->output.offset;
+    zstream->next_in   = worker->zlib.zlib.buffer;
+    zstream->avail_in  = worker->zlib.zlib.offset;
+    zstream->next_out  = vs->output.buffer + vs->output.offset;
     zstream->avail_out = vs->output.capacity - vs->output.offset;
-    previous_out = zstream->avail_out;
+    previous_out       = zstream->avail_out;
     zstream->data_type = Z_BINARY;
 
     // start encoding
@@ -118,8 +111,7 @@ static int vnc_zlib_stop(VncState *vs, VncWorker *worker)
     return previous_out - zstream->avail_out;
 }
 
-int vnc_zlib_send_framebuffer_update(VncState *vs, VncWorker *worker,
-                                     int x, int y, int w, int h)
+int vnc_zlib_send_framebuffer_update(VncState* vs, VncWorker* worker, int x, int y, int w, int h)
 {
     int old_offset, new_offset, bytes_written;
 
@@ -134,11 +126,10 @@ int vnc_zlib_send_framebuffer_update(VncState *vs, VncWorker *worker,
     vnc_raw_send_framebuffer_update(vs, x, y, w, h);
     bytes_written = vnc_zlib_stop(vs, worker);
 
-    if (bytes_written == -1)
-        return 0;
+    if (bytes_written == -1) { return 0; }
 
     // hack in the size
-    new_offset = vs->output.offset;
+    new_offset        = vs->output.offset;
     vs->output.offset = old_offset;
     vnc_write_u32(vs, bytes_written);
     vs->output.offset = new_offset;
@@ -146,10 +137,8 @@ int vnc_zlib_send_framebuffer_update(VncState *vs, VncWorker *worker,
     return 1;
 }
 
-void vnc_zlib_clear(VncWorker *worker)
+void vnc_zlib_clear(VncWorker* worker)
 {
-    if (worker->zlib.stream.opaque) {
-        deflateEnd(&worker->zlib.stream);
-    }
+    if (worker->zlib.stream.opaque) { deflateEnd(&worker->zlib.stream); }
     buffer_free(&worker->zlib.zlib);
 }

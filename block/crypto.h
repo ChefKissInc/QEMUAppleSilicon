@@ -20,49 +20,46 @@
 
 #pragma once
 
-#define BLOCK_CRYPTO_OPT_DEF_KEY_SECRET(prefix, helpstr)                \
-    {                                                                   \
-        .name = prefix BLOCK_CRYPTO_OPT_QCOW_KEY_SECRET,                \
-        .type = QEMU_OPT_STRING,                                        \
-        .help = helpstr,                                                \
+#define BLOCK_CRYPTO_OPT_DEF_KEY_SECRET(prefix, helpstr) \
+    {                                                    \
+        .name = prefix BLOCK_CRYPTO_OPT_QCOW_KEY_SECRET, \
+        .type = QEMU_OPT_STRING,                         \
+        .help = helpstr,                                 \
     }
 
 #define BLOCK_CRYPTO_OPT_QCOW_KEY_SECRET "key-secret"
 
-#define BLOCK_CRYPTO_OPT_DEF_QCOW_KEY_SECRET(prefix)                    \
-    BLOCK_CRYPTO_OPT_DEF_KEY_SECRET(prefix,                             \
-        "ID of the secret that provides the AES encryption key")
+#define BLOCK_CRYPTO_OPT_DEF_QCOW_KEY_SECRET(prefix)                                                 \
+    BLOCK_CRYPTO_OPT_DEF_KEY_SECRET(prefix, "ID of the secret that provides the AES encryption key")
 
-#define BLOCK_CRYPTO_OPT_LUKS_KEY_SECRET "key-secret"
-#define BLOCK_CRYPTO_OPT_LUKS_CIPHER_ALG "cipher-alg"
-#define BLOCK_CRYPTO_OPT_LUKS_CIPHER_MODE "cipher-mode"
-#define BLOCK_CRYPTO_OPT_LUKS_IVGEN_ALG "ivgen-alg"
-#define BLOCK_CRYPTO_OPT_LUKS_IVGEN_HASH_ALG "ivgen-hash-alg"
-#define BLOCK_CRYPTO_OPT_LUKS_HASH_ALG "hash-alg"
-#define BLOCK_CRYPTO_OPT_LUKS_ITER_TIME "iter-time"
+#define BLOCK_CRYPTO_OPT_LUKS_KEY_SECRET      "key-secret"
+#define BLOCK_CRYPTO_OPT_LUKS_CIPHER_ALG      "cipher-alg"
+#define BLOCK_CRYPTO_OPT_LUKS_CIPHER_MODE     "cipher-mode"
+#define BLOCK_CRYPTO_OPT_LUKS_IVGEN_ALG       "ivgen-alg"
+#define BLOCK_CRYPTO_OPT_LUKS_IVGEN_HASH_ALG  "ivgen-hash-alg"
+#define BLOCK_CRYPTO_OPT_LUKS_HASH_ALG        "hash-alg"
+#define BLOCK_CRYPTO_OPT_LUKS_ITER_TIME       "iter-time"
 #define BLOCK_CRYPTO_OPT_LUKS_DETACHED_HEADER "detached-header"
-#define BLOCK_CRYPTO_OPT_LUKS_KEYSLOT "keyslot"
-#define BLOCK_CRYPTO_OPT_LUKS_STATE "state"
-#define BLOCK_CRYPTO_OPT_LUKS_OLD_SECRET "old-secret"
-#define BLOCK_CRYPTO_OPT_LUKS_NEW_SECRET "new-secret"
+#define BLOCK_CRYPTO_OPT_LUKS_KEYSLOT         "keyslot"
+#define BLOCK_CRYPTO_OPT_LUKS_STATE           "state"
+#define BLOCK_CRYPTO_OPT_LUKS_OLD_SECRET      "old-secret"
+#define BLOCK_CRYPTO_OPT_LUKS_NEW_SECRET      "new-secret"
 
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_KEY_SECRET(prefix)                                                 \
+    BLOCK_CRYPTO_OPT_DEF_KEY_SECRET(prefix, "ID of the secret that provides the keyslot passphrase")
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_KEY_SECRET(prefix)                    \
-    BLOCK_CRYPTO_OPT_DEF_KEY_SECRET(prefix,                             \
-        "ID of the secret that provides the keyslot passphrase")
-
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_CIPHER_ALG(prefix)       \
-    {                                                      \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_CIPHER_ALG,   \
-        .type = QEMU_OPT_STRING,                           \
-        .help = "Name of encryption cipher algorithm",     \
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_CIPHER_ALG(prefix)     \
+    {                                                    \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_CIPHER_ALG, \
+        .type = QEMU_OPT_STRING,                         \
+        .help = "Name of encryption cipher algorithm",   \
     }
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_CIPHER_MODE(prefix)      \
-    {                                                      \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_CIPHER_MODE,  \
-        .type = QEMU_OPT_STRING,                           \
-        .help = "Name of encryption cipher mode",          \
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_CIPHER_MODE(prefix)     \
+    {                                                     \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_CIPHER_MODE, \
+        .type = QEMU_OPT_STRING,                          \
+        .help = "Name of encryption cipher mode",         \
     }
 
 #define BLOCK_CRYPTO_OPT_DEF_LUKS_IVGEN_ALG(prefix)     \
@@ -72,32 +69,32 @@
         .help = "Name of IV generator algorithm",       \
     }
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_IVGEN_HASH_ALG(prefix)        \
-    {                                                           \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_IVGEN_HASH_ALG,    \
-        .type = QEMU_OPT_STRING,                                \
-        .help = "Name of IV generator hash algorithm",          \
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_IVGEN_HASH_ALG(prefix)     \
+    {                                                        \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_IVGEN_HASH_ALG, \
+        .type = QEMU_OPT_STRING,                             \
+        .help = "Name of IV generator hash algorithm",       \
     }
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_HASH_ALG(prefix)       \
-    {                                                    \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_HASH_ALG,   \
-        .type = QEMU_OPT_STRING,                         \
-        .help = "Name of encryption hash algorithm",     \
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_HASH_ALG(prefix)     \
+    {                                                  \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_HASH_ALG, \
+        .type = QEMU_OPT_STRING,                       \
+        .help = "Name of encryption hash algorithm",   \
     }
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_ITER_TIME(prefix)           \
-    {                                                         \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_ITER_TIME,       \
-        .type = QEMU_OPT_NUMBER,                              \
-        .help = "Time to spend in PBKDF in milliseconds",     \
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_ITER_TIME(prefix)       \
+    {                                                     \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_ITER_TIME,   \
+        .type = QEMU_OPT_NUMBER,                          \
+        .help = "Time to spend in PBKDF in milliseconds", \
     }
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_STATE(prefix)                           \
-    {                                                                     \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_STATE,                       \
-        .type = QEMU_OPT_STRING,                                          \
-        .help = "Select new state of affected keyslots (active/inactive)",\
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_STATE(prefix)                            \
+    {                                                                      \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_STATE,                        \
+        .type = QEMU_OPT_STRING,                                           \
+        .help = "Select new state of affected keyslots (active/inactive)", \
     }
 
 #define BLOCK_CRYPTO_OPT_DEF_LUKS_DETACHED_HEADER(prefix)     \
@@ -107,11 +104,11 @@
         .help = "Create a detached LUKS header",              \
     }
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_KEYSLOT(prefix)              \
-    {                                                          \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_KEYSLOT,          \
-        .type = QEMU_OPT_NUMBER,                               \
-        .help = "Select a single keyslot to modify explicitly",\
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_KEYSLOT(prefix)               \
+    {                                                           \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_KEYSLOT,           \
+        .type = QEMU_OPT_NUMBER,                                \
+        .help = "Select a single keyslot to modify explicitly", \
     }
 
 #define BLOCK_CRYPTO_OPT_DEF_LUKS_OLD_SECRET(prefix)            \
@@ -121,19 +118,16 @@
         .help = "Select all keyslots that match this password", \
     }
 
-#define BLOCK_CRYPTO_OPT_DEF_LUKS_NEW_SECRET(prefix)            \
-    {                                                           \
-        .name = prefix BLOCK_CRYPTO_OPT_LUKS_NEW_SECRET,        \
-        .type = QEMU_OPT_STRING,                                \
-        .help = "New secret to set in the matching keyslots. "  \
-                "Empty string to erase",                        \
+#define BLOCK_CRYPTO_OPT_DEF_LUKS_NEW_SECRET(prefix)           \
+    {                                                          \
+        .name = prefix BLOCK_CRYPTO_OPT_LUKS_NEW_SECRET,       \
+        .type = QEMU_OPT_STRING,                               \
+        .help = "New secret to set in the matching keyslots. " \
+                "Empty string to erase",                       \
     }
 
-QCryptoBlockCreateOptions *
-block_crypto_create_opts_init(QDict *opts, Error **errp);
+QCryptoBlockCreateOptions* block_crypto_create_opts_init(QDict* opts, Error** errp);
 
-QCryptoBlockAmendOptions *
-block_crypto_amend_opts_init(QDict *opts, Error **errp);
+QCryptoBlockAmendOptions* block_crypto_amend_opts_init(QDict* opts, Error** errp);
 
-QCryptoBlockOpenOptions *
-block_crypto_open_opts_init(QDict *opts, Error **errp);
+QCryptoBlockOpenOptions* block_crypto_open_opts_init(QDict* opts, Error** errp);

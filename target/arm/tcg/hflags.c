@@ -16,7 +16,7 @@
 #define HELPER_H "tcg/helper.h"
 #include "exec/helper-proto.h.inc"
 
-static inline bool fgt_svc(CPUARMState *env, int el)
+static inline bool fgt_svc(CPUARMState* env, int el)
 {
     /*
      * Assuming fine-grained-traps are active, return true if we
@@ -25,18 +25,15 @@ static inline bool fgt_svc(CPUARMState *env, int el)
      * because if this is AArch32 EL1 then arm_fgt_active() is false.
      * We also know el is 0 or 1.
      */
-    return el == 0 ?
-        REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL0) :
-        REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL1);
+    return el == 0 ? REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL0) :
+                     REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, SVC_EL1);
 }
 
 /* Return true if memory alignment should be enforced. */
-static bool aprofile_require_alignment(CPUARMState *env, int el, uint64_t sctlr)
+static bool aprofile_require_alignment(CPUARMState* env, int el, uint64_t sctlr)
 {
     /* Check the alignment enable bit. */
-    if (sctlr & SCTLR_A) {
-        return true;
-    }
+    if (sctlr & SCTLR_A) { return true; }
 
     /*
      * With VMSA, if translation is disabled, then the default memory type
@@ -55,114 +52,84 @@ static bool aprofile_require_alignment(CPUARMState *env, int el, uint64_t sctlr)
     return true;
 }
 
-bool access_secure_reg(CPUARMState *env)
+bool access_secure_reg(CPUARMState* env)
 {
-    bool ret = (arm_feature(env, ARM_FEATURE_EL3) &&
-                !arm_el_is_aa64(env, 3) &&
-                !(env->cp15.scr_el3 & SCR_NS));
+    bool ret = (arm_feature(env, ARM_FEATURE_EL3) && !arm_el_is_aa64(env, 3) && !(env->cp15.scr_el3 & SCR_NS));
 
     return ret;
 }
 
-static CPUARMTBFlags rebuild_hflags_common(CPUARMState *env, int fp_el,
-                                           ARMMMUIdx mmu_idx,
-                                           CPUARMTBFlags flags)
+static CPUARMTBFlags rebuild_hflags_common(CPUARMState* env, int fp_el, ARMMMUIdx mmu_idx, CPUARMTBFlags flags)
 {
     DP_TBFLAG_ANY(flags, FPEXC_EL, fp_el);
     DP_TBFLAG_ANY(flags, MMUIDX, arm_to_core_mmu_idx(mmu_idx));
 
-    if (arm_singlestep_active(env)) {
-        DP_TBFLAG_ANY(flags, SS_ACTIVE, 1);
-    }
+    if (arm_singlestep_active(env)) { DP_TBFLAG_ANY(flags, SS_ACTIVE, 1); }
 
     return flags;
 }
 
-static CPUARMTBFlags rebuild_hflags_common_32(CPUARMState *env, int fp_el,
-                                              ARMMMUIdx mmu_idx,
-                                              CPUARMTBFlags flags)
+static CPUARMTBFlags rebuild_hflags_common_32(CPUARMState* env, int fp_el, ARMMMUIdx mmu_idx, CPUARMTBFlags flags)
 {
     bool sctlr_b = arm_sctlr_b(env);
 
-    if (sctlr_b) {
-        DP_TBFLAG_A32(flags, SCTLR__B, 1);
-    }
-    if (arm_cpu_data_is_big_endian_a32(env, sctlr_b)) {
-        DP_TBFLAG_ANY(flags, BE_DATA, 1);
-    }
+    if (sctlr_b) { DP_TBFLAG_A32(flags, SCTLR__B, 1); }
+    if (arm_cpu_data_is_big_endian_a32(env, sctlr_b)) { DP_TBFLAG_ANY(flags, BE_DATA, 1); }
     DP_TBFLAG_A32(flags, NS, !access_secure_reg(env));
 
     return rebuild_hflags_common(env, fp_el, mmu_idx, flags);
 }
 
 /* This corresponds to the ARM pseudocode function IsFullA64Enabled(). */
-static bool sme_fa64(CPUARMState *env, int el)
+static bool sme_fa64(CPUARMState* env, int el)
 {
-    if (!cpu_isar_feature(aa64_sme_fa64, env_archcpu(env))) {
-        return false;
-    }
+    if (!cpu_isar_feature(aa64_sme_fa64, env_archcpu(env))) { return false; }
 
     if (el <= 1 && !el_is_in_host(env, el)) {
-        if (!REG_FIELD_EX64(env->vfp.smcr_el[1], SMCR, FA64)) {
-            return false;
-        }
+        if (!REG_FIELD_EX64(env->vfp.smcr_el[1], SMCR, FA64)) { return false; }
     }
     if (el <= 2 && arm_is_el2_enabled(env)) {
-        if (!REG_FIELD_EX64(env->vfp.smcr_el[2], SMCR, FA64)) {
-            return false;
-        }
+        if (!REG_FIELD_EX64(env->vfp.smcr_el[2], SMCR, FA64)) { return false; }
     }
     if (arm_feature(env, ARM_FEATURE_EL3)) {
-        if (!REG_FIELD_EX64(env->vfp.smcr_el[3], SMCR, FA64)) {
-            return false;
-        }
+        if (!REG_FIELD_EX64(env->vfp.smcr_el[3], SMCR, FA64)) { return false; }
     }
 
     return true;
 }
 
-static CPUARMTBFlags rebuild_hflags_a32(CPUARMState *env, int fp_el,
-                                        ARMMMUIdx mmu_idx)
+static CPUARMTBFlags rebuild_hflags_a32(CPUARMState* env, int fp_el, ARMMMUIdx mmu_idx)
 {
     CPUARMTBFlags flags = {};
-    int el = arm_current_el(env);
-    uint64_t sctlr = arm_sctlr(env, el);
+    int           el    = arm_current_el(env);
+    uint64_t      sctlr = arm_sctlr(env, el);
 
-    if (aprofile_require_alignment(env, el, sctlr)) {
-        DP_TBFLAG_ANY(flags, ALIGN_MEM, 1);
-    }
+    if (aprofile_require_alignment(env, el, sctlr)) { DP_TBFLAG_ANY(flags, ALIGN_MEM, 1); }
 
-    if (arm_el_is_aa64(env, 1)) {
-        DP_TBFLAG_A32(flags, VFPEN, 1);
-    }
+    if (arm_el_is_aa64(env, 1)) { DP_TBFLAG_A32(flags, VFPEN, 1); }
 
-    if (el < 2 && env->cp15.hstr_el2 && arm_is_el2_enabled(env) &&
-        (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE)) {
+    if (el < 2 && env->cp15.hstr_el2 && arm_is_el2_enabled(env)
+        && (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE))
+    {
         DP_TBFLAG_A32(flags, HSTR_ACTIVE, 1);
     }
 
     if (arm_fgt_active(env, el)) {
         DP_TBFLAG_ANY(flags, FGT_ACTIVE, 1);
-        if (fgt_svc(env, el)) {
-            DP_TBFLAG_ANY(flags, FGT_SVC, 1);
-        }
+        if (fgt_svc(env, el)) { DP_TBFLAG_ANY(flags, FGT_SVC, 1); }
     }
 
-    if (env->uncached_cpsr & CPSR_IL) {
-        DP_TBFLAG_ANY(flags, PSTATE__IL, 1);
-    }
+    if (env->uncached_cpsr & CPSR_IL) { DP_TBFLAG_ANY(flags, PSTATE__IL, 1); }
 
     /*
      * The SME exception we are testing for is raised via
      * AArch64.CheckFPAdvSIMDEnabled(), as called from
      * AArch32.CheckAdvSIMDOrFPEnabled().
      */
-    if (el == 0
-        && REG_FIELD_EX64(env->svcr, SVCR, SM)
-        && (!arm_is_el2_enabled(env)
-            || (arm_el_is_aa64(env, 2) && !(env->cp15.hcr_el2 & HCR_TGE)))
-        && arm_el_is_aa64(env, 1)
-        && !sme_fa64(env, el)) {
+    if (el == 0 && REG_FIELD_EX64(env->svcr, SVCR, SM)
+        && (!arm_is_el2_enabled(env) || (arm_el_is_aa64(env, 2) && !(env->cp15.hcr_el2 & HCR_TGE)))
+        && arm_el_is_aa64(env, 1) && !sme_fa64(env, el))
+    {
         DP_TBFLAG_A32(flags, SME_TRAP_NONSTREAMING, 1);
     }
 
@@ -173,35 +140,23 @@ static CPUARMTBFlags rebuild_hflags_a32(CPUARMState *env, int fp_el,
  * Return the exception level to which exceptions should be taken for ZT0.
  * C.f. the ARM pseudocode function CheckSMEZT0Enabled, after the ZA check.
  */
-static int zt0_exception_el(CPUARMState *env, int el)
+static int zt0_exception_el(CPUARMState* env, int el)
 {
-    if (el <= 1
-        && !el_is_in_host(env, el)
-        && !REG_FIELD_EX64(env->vfp.smcr_el[1], SMCR, EZT0)) {
-        return 1;
-    }
-    if (el <= 2
-        && arm_is_el2_enabled(env)
-        && !REG_FIELD_EX64(env->vfp.smcr_el[2], SMCR, EZT0)) {
-        return 2;
-    }
-    if (arm_feature(env, ARM_FEATURE_EL3)
-        && !REG_FIELD_EX64(env->vfp.smcr_el[3], SMCR, EZT0)) {
-        return 3;
-    }
+    if (el <= 1 && !el_is_in_host(env, el) && !REG_FIELD_EX64(env->vfp.smcr_el[1], SMCR, EZT0)) { return 1; }
+    if (el <= 2 && arm_is_el2_enabled(env) && !REG_FIELD_EX64(env->vfp.smcr_el[2], SMCR, EZT0)) { return 2; }
+    if (arm_feature(env, ARM_FEATURE_EL3) && !REG_FIELD_EX64(env->vfp.smcr_el[3], SMCR, EZT0)) { return 3; }
 
     return 0;
 }
 
-static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
-                                        ARMMMUIdx mmu_idx)
+static CPUARMTBFlags rebuild_hflags_a64(CPUARMState* env, int el, int fp_el, ARMMMUIdx mmu_idx)
 {
-    CPUARMTBFlags flags = {};
-    ARMMMUIdx stage1 = stage_1_mmu_idx(mmu_idx);
-    uint64_t tcr = regime_tcr(env, mmu_idx);
-    uint64_t hcr = arm_hcr_el2_eff(env);
-    uint64_t sctlr;
-    int tbii, tbid;
+    CPUARMTBFlags flags  = {};
+    ARMMMUIdx     stage1 = stage_1_mmu_idx(mmu_idx);
+    uint64_t      tcr    = regime_tcr(env, mmu_idx);
+    uint64_t      hcr    = arm_hcr_el2_eff(env);
+    uint64_t      sctlr;
+    int           tbii, tbid;
 
     DP_TBFLAG_ANY(flags, AARCH64_STATE, 1);
 
@@ -222,17 +177,16 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
          * the unneeded data to zero.
          */
         if (fp_el != 0) {
-            if (sve_el > fp_el) {
-                sve_el = 0;
-            }
-        } else if (sve_el == 0) {
+            if (sve_el > fp_el) { sve_el = 0; }
+        }
+        else if (sve_el == 0) {
             DP_TBFLAG_A64(flags, VL, sve_vqm1_for_el(env, el));
         }
         DP_TBFLAG_A64(flags, SVEEXC_EL, sve_el);
     }
     if (cpu_isar_feature(aa64_sme, env_archcpu(env))) {
-        int sme_el = sme_exception_el(env, el);
-        bool sm = REG_FIELD_EX64(env->svcr, SVCR, SM);
+        int  sme_el = sme_exception_el(env, el);
+        bool sm     = REG_FIELD_EX64(env->svcr, SVCR, SM);
 
         DP_TBFLAG_A64(flags, SMEEXC_EL, sme_el);
         if (sme_el == 0) {
@@ -260,81 +214,59 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
 
     sctlr = regime_sctlr(env, stage1);
 
-    if (aprofile_require_alignment(env, el, sctlr)) {
-        DP_TBFLAG_ANY(flags, ALIGN_MEM, 1);
-    }
+    if (aprofile_require_alignment(env, el, sctlr)) { DP_TBFLAG_ANY(flags, ALIGN_MEM, 1); }
 
-    if (arm_cpu_data_is_big_endian_a64(el, sctlr)) {
-        DP_TBFLAG_ANY(flags, BE_DATA, 1);
-    }
+    if (arm_cpu_data_is_big_endian_a64(el, sctlr)) { DP_TBFLAG_ANY(flags, BE_DATA, 1); }
 
-    if (cpu_isar_feature(aa64_pauth, env_archcpu(env)) &&
-        !cpu_isar_feature(aa64_pauth_noop, env_archcpu(env))) {
+    if (cpu_isar_feature(aa64_pauth, env_archcpu(env)) && !cpu_isar_feature(aa64_pauth_noop, env_archcpu(env))) {
         /*
          * In order to save space in flags, we record only whether
          * pauth is "inactive", meaning all insns are implemented as
          * a nop, or "active" when some action must be performed.
          * The decision of which action to take is left to a helper.
          */
-        if (sctlr & (SCTLR_EnIA | SCTLR_EnIB | SCTLR_EnDA | SCTLR_EnDB)) {
-            DP_TBFLAG_A64(flags, PAUTH_ACTIVE, 1);
-        }
+        if (sctlr & (SCTLR_EnIA | SCTLR_EnIB | SCTLR_EnDA | SCTLR_EnDB)) { DP_TBFLAG_A64(flags, PAUTH_ACTIVE, 1); }
     }
 
     if (cpu_isar_feature(aa64_bti, env_archcpu(env))) {
         /* Note that SCTLR_EL[23].BT == SCTLR_BT1.  */
-        if (sctlr & (el == 0 ? SCTLR_BT0 : SCTLR_BT1)) {
-            DP_TBFLAG_A64(flags, BT, 1);
-        }
+        if (sctlr & (el == 0 ? SCTLR_BT0 : SCTLR_BT1)) { DP_TBFLAG_A64(flags, BT, 1); }
     }
 
     if (cpu_isar_feature(aa64_lse2, env_archcpu(env))) {
-        if (sctlr & SCTLR_nAA) {
-            DP_TBFLAG_A64(flags, NAA, 1);
-        }
+        if (sctlr & SCTLR_nAA) { DP_TBFLAG_A64(flags, NAA, 1); }
     }
 
     /* Compute the condition for using AccType_UNPRIV for LDTR et al. */
     if (!(env->pstate & PSTATE_UAO)) {
         switch (mmu_idx) {
-        case ARMMMUIdx_E10_1:
-        case ARMMMUIdx_E10_1_PAN:
-        case ARMMMUIdx_GE10_1:
-        case ARMMMUIdx_GE10_1_PAN:
-            /* FEAT_NV: NV,NV1 == 1,1 means we don't do UNPRIV accesses */
-            if ((hcr & (HCR_NV | HCR_NV1)) != (HCR_NV | HCR_NV1)) {
-                DP_TBFLAG_A64(flags, UNPRIV, 1);
-            }
-            break;
-        case ARMMMUIdx_E20_2:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_GE20_2:
-        case ARMMMUIdx_GE20_2_PAN:
-            /*
-             * Note that EL20_2 is gated by HCR_EL2.E2H == 1, but EL20_0 is
-             * gated by HCR_EL2.<E2H,TGE> == '11', and so is LDTR.
-             */
-            if (env->cp15.hcr_el2 & HCR_TGE) {
-                DP_TBFLAG_A64(flags, UNPRIV, 1);
-            }
-            break;
-        default:
-            break;
+            case ARMMMUIdx_E10_1:
+            case ARMMMUIdx_E10_1_PAN:
+            case ARMMMUIdx_GE10_1:
+            case ARMMMUIdx_GE10_1_PAN:
+                /* FEAT_NV: NV,NV1 == 1,1 means we don't do UNPRIV accesses */
+                if ((hcr & (HCR_NV | HCR_NV1)) != (HCR_NV | HCR_NV1)) { DP_TBFLAG_A64(flags, UNPRIV, 1); }
+                break;
+            case ARMMMUIdx_E20_2:
+            case ARMMMUIdx_E20_2_PAN:
+            case ARMMMUIdx_GE20_2:
+            case ARMMMUIdx_GE20_2_PAN:
+                /*
+                 * Note that EL20_2 is gated by HCR_EL2.E2H == 1, but EL20_0 is
+                 * gated by HCR_EL2.<E2H,TGE> == '11', and so is LDTR.
+                 */
+                if (env->cp15.hcr_el2 & HCR_TGE) { DP_TBFLAG_A64(flags, UNPRIV, 1); }
+                break;
+            default: break;
         }
     }
 
-    if (env->pstate & PSTATE_IL) {
-        DP_TBFLAG_ANY(flags, PSTATE__IL, 1);
-    }
+    if (env->pstate & PSTATE_IL) { DP_TBFLAG_ANY(flags, PSTATE__IL, 1); }
 
     if (arm_fgt_active(env, el)) {
         DP_TBFLAG_ANY(flags, FGT_ACTIVE, 1);
-        if (REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, ERET)) {
-            DP_TBFLAG_A64(flags, TRAP_ERET, 1);
-        }
-        if (fgt_svc(env, el)) {
-            DP_TBFLAG_ANY(flags, FGT_SVC, 1);
-        }
+        if (REG_FIELD_EX64(env->cp15.fgt_exec[FGTREG_HFGITR], HFGITR_EL2, ERET)) { DP_TBFLAG_A64(flags, TRAP_ERET, 1); }
+        if (fgt_svc(env, el)) { DP_TBFLAG_ANY(flags, FGT_SVC, 1); }
     }
 
     /*
@@ -344,17 +276,11 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
     if (el == 1 && (hcr & HCR_NV)) {
         DP_TBFLAG_A64(flags, TRAP_ERET, 1);
         DP_TBFLAG_A64(flags, NV, 1);
-        if (hcr & HCR_NV1) {
-            DP_TBFLAG_A64(flags, NV1, 1);
-        }
+        if (hcr & HCR_NV1) { DP_TBFLAG_A64(flags, NV1, 1); }
         if (hcr & HCR_NV2) {
             DP_TBFLAG_A64(flags, NV2, 1);
-            if (hcr & HCR_E2H) {
-                DP_TBFLAG_A64(flags, NV2_MEM_E20, 1);
-            }
-            if (env->cp15.sctlr_el[2] & SCTLR_EE) {
-                DP_TBFLAG_A64(flags, NV2_MEM_BE, 1);
-            }
+            if (hcr & HCR_E2H) { DP_TBFLAG_A64(flags, NV2_MEM_E20, 1); }
+            if (env->cp15.sctlr_el[2] & SCTLR_EE) { DP_TBFLAG_A64(flags, NV2_MEM_BE, 1); }
         }
     }
 
@@ -369,9 +295,7 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
          */
         if (allocation_tag_access_enabled(env, el, sctlr)) {
             DP_TBFLAG_A64(flags, ATA, 1);
-            if (tbid
-                && !(env->pstate & PSTATE_TCO)
-                && (sctlr & (el == 0 ? SCTLR_TCF0 : SCTLR_TCF))) {
+            if (tbid && !(env->pstate & PSTATE_TCO) && (sctlr & (el == 0 ? SCTLR_TCF0 : SCTLR_TCF))) {
                 DP_TBFLAG_A64(flags, MTE_ACTIVE, 1);
                 if (!EX_TBFLAG_A64(flags, UNPRIV)) {
                     /*
@@ -385,11 +309,9 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
             }
         }
         /* And again for unprivileged accesses, if required.  */
-        if (EX_TBFLAG_A64(flags, UNPRIV)
-            && tbid
-            && !(env->pstate & PSTATE_TCO)
-            && (sctlr & SCTLR_TCF0)
-            && allocation_tag_access_enabled(env, 0, sctlr)) {
+        if (EX_TBFLAG_A64(flags, UNPRIV) && tbid && !(env->pstate & PSTATE_TCO) && (sctlr & SCTLR_TCF0)
+            && allocation_tag_access_enabled(env, 0, sctlr))
+        {
             DP_TBFLAG_A64(flags, MTE0_ACTIVE, 1);
         }
         /*
@@ -398,116 +320,105 @@ static CPUARMTBFlags rebuild_hflags_a64(CPUARMState *env, int el, int fp_el,
          * duplicate the ATA bit to save effort for translate-a64.c.
          */
         if (EX_TBFLAG_A64(flags, UNPRIV)) {
-            if (allocation_tag_access_enabled(env, 0, sctlr)) {
-                DP_TBFLAG_A64(flags, ATA0, 1);
-            }
-        } else {
+            if (allocation_tag_access_enabled(env, 0, sctlr)) { DP_TBFLAG_A64(flags, ATA0, 1); }
+        }
+        else {
             DP_TBFLAG_A64(flags, ATA0, EX_TBFLAG_A64(flags, ATA));
         }
         /* Cache TCMA as well as TBI. */
         DP_TBFLAG_A64(flags, TCMA, aa64_va_parameter_tcma(tcr, mmu_idx));
     }
 
-    if (env->vfp.fpcr & FPCR_AH) {
-        DP_TBFLAG_A64(flags, AH, 1);
-    }
+    if (env->vfp.fpcr & FPCR_AH) { DP_TBFLAG_A64(flags, AH, 1); }
     if (env->vfp.fpcr & FPCR_NEP) {
         /*
          * In streaming-SVE without FA64, NEP behaves as if zero;
          * compare pseudocode IsMerging()
          */
-        if (!(EX_TBFLAG_A64(flags, PSTATE_SM) && !sme_fa64(env, el))) {
-            DP_TBFLAG_A64(flags, NEP, 1);
-        }
+        if (!(EX_TBFLAG_A64(flags, PSTATE_SM) && !sme_fa64(env, el))) { DP_TBFLAG_A64(flags, NEP, 1); }
     }
 
     return rebuild_hflags_common(env, fp_el, mmu_idx, flags);
 }
 
-static CPUARMTBFlags rebuild_hflags_internal(CPUARMState *env)
+static CPUARMTBFlags rebuild_hflags_internal(CPUARMState* env)
 {
-    int el = arm_current_el(env);
-    int fp_el = fp_exception_el(env, el);
+    int       el      = arm_current_el(env);
+    int       fp_el   = fp_exception_el(env, el);
     ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, el);
 
-    if (is_a64(env)) {
-        return rebuild_hflags_a64(env, el, fp_el, mmu_idx);
-    } else {
+    if (is_a64(env)) { return rebuild_hflags_a64(env, el, fp_el, mmu_idx); }
+    else {
         return rebuild_hflags_a32(env, fp_el, mmu_idx);
     }
 }
 
-void arm_rebuild_hflags(CPUARMState *env)
-{
-    env->hflags = rebuild_hflags_internal(env);
-}
+void arm_rebuild_hflags(CPUARMState* env) { env->hflags = rebuild_hflags_internal(env); }
 
 /*
  * If we have triggered a EL state change we can't rely on the
  * translator having passed it to us, we need to recompute.
  */
-void HELPER(rebuild_hflags_a32_newel)(CPUARMState *env)
+void HELPER(rebuild_hflags_a32_newel)(CPUARMState* env)
 {
-    int el = arm_current_el(env);
-    int fp_el = fp_exception_el(env, el);
+    int       el      = arm_current_el(env);
+    int       fp_el   = fp_exception_el(env, el);
     ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, el);
+    env->hflags       = rebuild_hflags_a32(env, fp_el, mmu_idx);
+}
+
+void HELPER(rebuild_hflags_a32)(CPUARMState* env, int el)
+{
+    int       fp_el   = fp_exception_el(env, el);
+    ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, el);
+
     env->hflags = rebuild_hflags_a32(env, fp_el, mmu_idx);
 }
 
-void HELPER(rebuild_hflags_a32)(CPUARMState *env, int el)
+void HELPER(rebuild_hflags_a64)(CPUARMState* env, int el)
 {
-    int fp_el = fp_exception_el(env, el);
-    ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, el);
-
-    env->hflags = rebuild_hflags_a32(env, fp_el, mmu_idx);
-}
-
-void HELPER(rebuild_hflags_a64)(CPUARMState *env, int el)
-{
-    int fp_el = fp_exception_el(env, el);
+    int       fp_el   = fp_exception_el(env, el);
     ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, el);
 
     env->hflags = rebuild_hflags_a64(env, el, fp_el, mmu_idx);
 }
 
-static void assert_hflags_rebuild_correctly(CPUARMState *env)
+static void assert_hflags_rebuild_correctly(CPUARMState* env)
 {
 #ifdef CONFIG_DEBUG_TCG
     CPUARMTBFlags c = env->hflags;
     CPUARMTBFlags r = rebuild_hflags_internal(env);
 
     if (unlikely(c.flags != r.flags || c.flags2 != r.flags2)) {
-        fprintf(stderr, "TCG hflags mismatch "
-                        "(current:(0x%08x,0x%016" PRIx64 ")"
-                        " rebuilt:(0x%08x,0x%016" PRIx64 ")\n",
+        fprintf(stderr,
+                "TCG hflags mismatch "
+                "(current:(0x%08x,0x%016" PRIx64 ")"
+                " rebuilt:(0x%08x,0x%016" PRIx64 ")\n",
                 c.flags, c.flags2, r.flags, r.flags2);
         abort();
     }
 #endif
 }
 
-TCGTBCPUState arm_get_tb_cpu_state(CPUState *cs)
+TCGTBCPUState arm_get_tb_cpu_state(CPUState* cs)
 {
-    CPUARMState *env = cpu_env(cs);
+    CPUARMState*  env = cpu_env(cs);
     CPUARMTBFlags flags;
-    vaddr pc;
+    vaddr         pc;
 
     assert_hflags_rebuild_correctly(env);
     flags = env->hflags;
 
     if (EX_TBFLAG_ANY(flags, AARCH64_STATE)) {
         pc = env->pc;
-        if (cpu_isar_feature(aa64_bti, env_archcpu(env))) {
-            DP_TBFLAG_A64(flags, BTYPE, env->btype);
-        }
-    } else {
+        if (cpu_isar_feature(aa64_bti, env_archcpu(env))) { DP_TBFLAG_A64(flags, BTYPE, env->btype); }
+    }
+    else {
         pc = env->regs[15];
 
         DP_TBFLAG_A32(flags, VECLEN, env->vfp.vec_len);
         DP_TBFLAG_A32(flags, VECSTRIDE, env->vfp.vec_stride);
-        if (env->vfp.xregs[ARM_VFP_FPEXC] & (1 << 30)) {
-            DP_TBFLAG_A32(flags, VFPEN, 1);
-        }
+        if (env->vfp.xregs[ARM_VFP_FPEXC] & (1 << 30)) { DP_TBFLAG_A32(flags, VFPEN, 1); }
 
         DP_TBFLAG_A32(flags, THUMB, env->thumb);
         DP_TBFLAG_A32(flags, CONDEXEC, env->condexec_bits);
@@ -522,13 +433,11 @@ TCGTBCPUState arm_get_tb_cpu_state(CPUState *cs)
      *     1            1       Active-not-pending
      * SS_ACTIVE is set in hflags; PSTATE__SS is computed every TB.
      */
-    if (EX_TBFLAG_ANY(flags, SS_ACTIVE) && (env->pstate & PSTATE_SS)) {
-        DP_TBFLAG_ANY(flags, PSTATE__SS, 1);
-    }
+    if (EX_TBFLAG_ANY(flags, SS_ACTIVE) && (env->pstate & PSTATE_SS)) { DP_TBFLAG_ANY(flags, PSTATE__SS, 1); }
 
     return (TCGTBCPUState){
-        .pc = pc,
-        .flags = flags.flags,
+        .pc      = pc,
+        .flags   = flags.flags,
         .cs_base = flags.flags2,
     };
 }

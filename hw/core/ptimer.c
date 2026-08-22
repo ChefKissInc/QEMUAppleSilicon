@@ -12,22 +12,22 @@
 #include "block/aio.h"
 #include "hw/clock.h"
 
-#define DELTA_ADJUST     1
+#define DELTA_ADJUST    1
 #define DELTA_NO_ADJUST -1
 
 struct ptimer_state
 {
-    uint8_t enabled; /* 0 = disabled, 1 = periodic, 2 = oneshot.  */
-    uint64_t limit;
-    uint64_t delta;
-    uint32_t period_frac;
-    int64_t period;
-    int64_t last_event;
-    int64_t next_event;
-    uint8_t policy_mask;
-    QEMUTimer *timer;
-    ptimer_cb callback;
-    void *callback_opaque;
+    uint8_t    enabled; /* 0 = disabled, 1 = periodic, 2 = oneshot.  */
+    uint64_t   limit;
+    uint64_t   delta;
+    uint32_t   period_frac;
+    int64_t    period;
+    int64_t    last_event;
+    int64_t    next_event;
+    uint8_t    policy_mask;
+    QEMUTimer* timer;
+    ptimer_cb  callback;
+    void*      callback_opaque;
     /*
      * These track whether we're in a transaction block, and if we
      * need to do a timer reload when the block finishes. They don't
@@ -39,17 +39,14 @@ struct ptimer_state
 };
 
 /* Use a bottom-half routine to avoid reentrancy issues.  */
-static void ptimer_trigger(ptimer_state *s)
-{
-    s->callback(s->callback_opaque);
-}
+static void ptimer_trigger(ptimer_state* s) { s->callback(s->callback_opaque); }
 
-static void ptimer_reload(ptimer_state *s, int delta_adjust)
+static void ptimer_reload(ptimer_state* s, int delta_adjust)
 {
     uint32_t period_frac;
     uint64_t period;
     uint64_t delta;
-    bool suppress_trigger = false;
+    bool     suppress_trigger = false;
 
     /*
      * Note that if delta_adjust is 0 then we must be here because of
@@ -57,12 +54,8 @@ static void ptimer_reload(ptimer_state *s, int delta_adjust)
      * In that case the policy might require us to suppress the timer trigger
      * that we would otherwise generate for a zero delta.
      */
-    if (delta_adjust == 0 &&
-        (s->policy_mask & PTIMER_POLICY_TRIGGER_ONLY_ON_DECREMENT)) {
-        suppress_trigger = true;
-    }
-    if (s->delta == 0 && !(s->policy_mask & PTIMER_POLICY_NO_IMMEDIATE_TRIGGER)
-        && !suppress_trigger) {
+    if (delta_adjust == 0 && (s->policy_mask & PTIMER_POLICY_TRIGGER_ONLY_ON_DECREMENT)) { suppress_trigger = true; }
+    if (s->delta == 0 && !(s->policy_mask & PTIMER_POLICY_NO_IMMEDIATE_TRIGGER) && !suppress_trigger) {
         ptimer_trigger(s);
     }
 
@@ -71,13 +64,11 @@ static void ptimer_reload(ptimer_state *s, int delta_adjust)
      * which can then modify timer state, so we must not cache any fields
      * from ptimer_state until after we have called it.
      */
-    delta = s->delta;
-    period = s->period;
+    delta       = s->delta;
+    period      = s->period;
     period_frac = s->period_frac;
 
-    if (delta == 0 && !(s->policy_mask & PTIMER_POLICY_NO_IMMEDIATE_RELOAD)) {
-        delta = s->delta = s->limit;
-    }
+    if (delta == 0 && !(s->policy_mask & PTIMER_POLICY_NO_IMMEDIATE_RELOAD)) { delta = s->delta = s->limit; }
 
     if (s->period == 0 && s->period_frac == 0) {
         fprintf(stderr, "Timer with period zero, disabling\n");
@@ -87,27 +78,19 @@ static void ptimer_reload(ptimer_state *s, int delta_adjust)
     }
 
     if (s->policy_mask & PTIMER_POLICY_WRAP_AFTER_ONE_PERIOD) {
-        if (delta_adjust != DELTA_NO_ADJUST) {
-            delta += delta_adjust;
-        }
+        if (delta_adjust != DELTA_NO_ADJUST) { delta += delta_adjust; }
     }
 
     if (delta == 0 && (s->policy_mask & PTIMER_POLICY_CONTINUOUS_TRIGGER)) {
-        if (s->enabled == 1 && s->limit == 0) {
-            delta = 1;
-        }
+        if (s->enabled == 1 && s->limit == 0) { delta = 1; }
     }
 
     if (delta == 0 && (s->policy_mask & PTIMER_POLICY_NO_IMMEDIATE_TRIGGER)) {
-        if (delta_adjust != DELTA_NO_ADJUST) {
-            delta = 1;
-        }
+        if (delta_adjust != DELTA_NO_ADJUST) { delta = 1; }
     }
 
     if (delta == 0 && (s->policy_mask & PTIMER_POLICY_NO_IMMEDIATE_RELOAD)) {
-        if (s->enabled == 1 && s->limit != 0) {
-            delta = 1;
-        }
+        if (s->enabled == 1 && s->limit != 0) { delta = 1; }
     }
 
     if (delta == 0) {
@@ -131,22 +114,20 @@ static void ptimer_reload(ptimer_state *s, int delta_adjust)
      */
 
     if (s->enabled == 1 && (delta * period < 10000)) {
-        period = 10000 / delta;
+        period      = 10000 / delta;
         period_frac = 0;
     }
 
     s->last_event = s->next_event;
     s->next_event = s->last_event + delta * period;
-    if (period_frac) {
-        s->next_event += ((int64_t)period_frac * delta) >> 32;
-    }
+    if (period_frac) { s->next_event += ((int64_t)period_frac * delta) >> 32; }
     timer_mod(s->timer, s->next_event);
 }
 
-static void ptimer_tick(void *opaque)
+static void ptimer_tick(void* opaque)
 {
-    ptimer_state *s = (ptimer_state *)opaque;
-    bool trigger = true;
+    ptimer_state* s       = (ptimer_state*)opaque;
+    bool          trigger = true;
 
     /*
      * We perform all the tick actions within a begin/commit block
@@ -158,9 +139,10 @@ static void ptimer_tick(void *opaque)
     ptimer_transaction_begin(s);
 
     if (s->enabled == 2) {
-        s->delta = 0;
+        s->delta   = 0;
         s->enabled = 0;
-    } else {
+    }
+    else {
         int delta_adjust = DELTA_ADJUST;
 
         if (s->delta == 0 || s->limit == 0) {
@@ -182,39 +164,38 @@ static void ptimer_tick(void *opaque)
         ptimer_reload(s, delta_adjust);
     }
 
-    if (trigger) {
-        ptimer_trigger(s);
-    }
+    if (trigger) { ptimer_trigger(s); }
 
     ptimer_transaction_commit(s);
 }
 
-uint64_t ptimer_get_count(ptimer_state *s)
+uint64_t ptimer_get_count(ptimer_state* s)
 {
     uint64_t counter;
 
     if (s->enabled && s->delta != 0) {
-        int64_t now = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
-        int64_t next = s->next_event;
-        int64_t last = s->last_event;
-        bool expired = (now - next >= 0);
-        bool oneshot = (s->enabled == 2);
+        int64_t now     = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+        int64_t next    = s->next_event;
+        int64_t last    = s->last_event;
+        bool    expired = (now - next >= 0);
+        bool    oneshot = (s->enabled == 2);
 
         /* Figure out the current counter value.  */
         if (expired) {
             /* Prevent timer underflowing if it should already have
                triggered.  */
             counter = 0;
-        } else {
+        }
+        else {
             uint64_t rem;
             uint64_t div;
-            int clz1, clz2;
-            int shift;
+            int      clz1, clz2;
+            int      shift;
             uint32_t period_frac = s->period_frac;
-            uint64_t period = s->period;
+            uint64_t period      = s->period;
 
             if (!oneshot && (s->delta * period < 10000)) {
-                period = 10000 / s->delta;
+                period      = 10000 / s->delta;
                 period_frac = 0;
             }
 
@@ -231,21 +212,18 @@ uint64_t ptimer_get_count(ptimer_state *s)
             rem = next - now;
             div = period;
 
-            clz1 = clz64(rem);
-            clz2 = clz64(div);
+            clz1  = clz64(rem);
+            clz2  = clz64(div);
             shift = clz1 < clz2 ? clz1 : clz2;
 
             rem <<= shift;
             div <<= shift;
-            if (shift >= 32) {
-                div |= ((uint64_t)period_frac << (shift - 32));
-            } else {
-                if (shift != 0)
-                    div |= (period_frac >> (32 - shift));
+            if (shift >= 32) { div |= ((uint64_t)period_frac << (shift - 32)); }
+            else {
+                if (shift != 0) { div |= (period_frac >> (32 - shift)); }
                 /* Look at remaining bits of period_frac and round div up if
                    necessary.  */
-                if ((uint32_t)(period_frac << shift))
-                    div += 1;
+                if ((uint32_t)(period_frac << shift)) { div += 1; }
             }
             counter = rem / div;
 
@@ -257,10 +235,9 @@ uint64_t ptimer_get_count(ptimer_state *s)
                         /* Counter == delta here, check whether it was
                            adjusted and if it was, then right now it is
                            that "one period".  */
-                        if (counter == s->limit + DELTA_ADJUST) {
-                            return 0;
-                        }
-                    } else if (counter == s->limit) {
+                        if (counter == s->limit + DELTA_ADJUST) { return 0; }
+                    }
+                    else if (counter == s->limit) {
                         /* Since the counter is rounded down and now != last,
                            the counter == limit means that delta was adjusted
                            by +1 and right now it is that adjusted period.  */
@@ -274,26 +251,23 @@ uint64_t ptimer_get_count(ptimer_state *s)
             /* If now == last then delta == limit, i.e. the counter already
                represents the correct value. It would be rounded down a 1ns
                later.  */
-            if (now != last) {
-                counter += 1;
-            }
+            if (now != last) { counter += 1; }
         }
-    } else {
+    }
+    else {
         counter = s->delta;
     }
     return counter;
 }
 
-void ptimer_set_count(ptimer_state *s, uint64_t count)
+void ptimer_set_count(ptimer_state* s, uint64_t count)
 {
     assert(s->in_transaction);
     s->delta = count;
-    if (s->enabled) {
-        s->need_reload = true;
-    }
+    if (s->enabled) { s->need_reload = true; }
 }
 
-void ptimer_run(ptimer_state *s, int oneshot)
+void ptimer_run(ptimer_state* s, int oneshot)
 {
     bool was_disabled = !s->enabled;
 
@@ -304,41 +278,35 @@ void ptimer_run(ptimer_state *s, int oneshot)
         return;
     }
     s->enabled = oneshot ? 2 : 1;
-    if (was_disabled) {
-        s->need_reload = true;
-    }
+    if (was_disabled) { s->need_reload = true; }
 }
 
 /* Pause a timer.  Note that this may cause it to "lose" time, even if it
    is immediately restarted.  */
-void ptimer_stop(ptimer_state *s)
+void ptimer_stop(ptimer_state* s)
 {
     assert(s->in_transaction);
 
-    if (!s->enabled)
-        return;
+    if (!s->enabled) { return; }
 
     s->delta = ptimer_get_count(s);
     timer_del(s->timer);
-    s->enabled = 0;
+    s->enabled     = 0;
     s->need_reload = false;
 }
 
 /* Set counter increment interval in nanoseconds.  */
-void ptimer_set_period(ptimer_state *s, int64_t period)
+void ptimer_set_period(ptimer_state* s, int64_t period)
 {
     assert(s->in_transaction);
-    s->delta = ptimer_get_count(s);
-    s->period = period;
+    s->delta       = ptimer_get_count(s);
+    s->period      = period;
     s->period_frac = 0;
-    if (s->enabled) {
-        s->need_reload = true;
-    }
+    if (s->enabled) { s->need_reload = true; }
 }
 
 /* Set counter increment interval from a Clock */
-void ptimer_set_period_from_clock(ptimer_state *s, const Clock *clk,
-                                  unsigned int divisor)
+void ptimer_set_period_from_clock(ptimer_state* s, const Clock* clk, unsigned int divisor)
 {
     /*
      * The raw clock period is a 64-bit value in units of 2^-32 ns;
@@ -350,8 +318,8 @@ void ptimer_set_period_from_clock(ptimer_state *s, const Clock *clk,
     uint64_t period_frac;
 
     assert(s->in_transaction);
-    s->delta = ptimer_get_count(s);
-    s->period = extract64(raw_period, 32, 32);
+    s->delta    = ptimer_get_count(s);
+    s->period   = extract64(raw_period, 32, 32);
     period_frac = extract64(raw_period, 0, 32);
     /*
      * divisor specifies a possible frequency divisor between the
@@ -359,54 +327,44 @@ void ptimer_set_period_from_clock(ptimer_state *s, const Clock *clk,
      * We do the multiply after splitting the raw period out into
      * period and frac to avoid having to do a 32*64->96 multiply.
      */
-    s->period *= divisor;
-    period_frac *= divisor;
-    s->period += extract64(period_frac, 32, 32);
-    s->period_frac = (uint32_t)period_frac;
+    s->period      *= divisor;
+    period_frac    *= divisor;
+    s->period      += extract64(period_frac, 32, 32);
+    s->period_frac  = (uint32_t)period_frac;
 
-    if (s->enabled) {
-        s->need_reload = true;
-    }
+    if (s->enabled) { s->need_reload = true; }
 }
 
 /* Set counter frequency in Hz.  */
-void ptimer_set_freq(ptimer_state *s, uint32_t freq)
+void ptimer_set_freq(ptimer_state* s, uint32_t freq)
 {
     assert(s->in_transaction);
-    s->delta = ptimer_get_count(s);
-    s->period = 1000000000ll / freq;
+    s->delta       = ptimer_get_count(s);
+    s->period      = 1000000000ll / freq;
     s->period_frac = (1000000000ll << 32) / freq;
-    if (s->enabled) {
-        s->need_reload = true;
-    }
+    if (s->enabled) { s->need_reload = true; }
 }
 
 /* Set the initial countdown value.  If reload is nonzero then also set
    count = limit.  */
-void ptimer_set_limit(ptimer_state *s, uint64_t limit, int reload)
+void ptimer_set_limit(ptimer_state* s, uint64_t limit, int reload)
 {
     assert(s->in_transaction);
     s->limit = limit;
-    if (reload)
-        s->delta = limit;
-    if (s->enabled && reload) {
-        s->need_reload = true;
-    }
+    if (reload) { s->delta = limit; }
+    if (s->enabled && reload) { s->need_reload = true; }
 }
 
-uint64_t ptimer_get_limit(ptimer_state *s)
-{
-    return s->limit;
-}
+uint64_t ptimer_get_limit(ptimer_state* s) { return s->limit; }
 
-void ptimer_transaction_begin(ptimer_state *s)
+void ptimer_transaction_begin(ptimer_state* s)
 {
     assert(!s->in_transaction);
     s->in_transaction = true;
-    s->need_reload = false;
+    s->need_reload    = false;
 }
 
-void ptimer_transaction_commit(ptimer_state *s)
+void ptimer_transaction_commit(ptimer_state* s)
 {
     assert(s->in_transaction);
     /*
@@ -418,25 +376,24 @@ void ptimer_transaction_commit(ptimer_state *s)
      */
     while (s->need_reload && s->enabled) {
         s->need_reload = false;
-        s->next_event = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+        s->next_event  = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
         ptimer_reload(s, 0);
     }
     /* Now we've finished reload we can leave the transaction block. */
     s->in_transaction = false;
 }
 
-ptimer_state *ptimer_init(ptimer_cb callback, void *callback_opaque,
-                          uint8_t policy_mask)
+ptimer_state* ptimer_init(ptimer_cb callback, void* callback_opaque, uint8_t policy_mask)
 {
-    ptimer_state *s;
+    ptimer_state* s;
 
     /* The callback function is mandatory. */
     assert(callback);
 
-    s = g_new0(ptimer_state, 1);
-    s->timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, ptimer_tick, s);
-    s->policy_mask = policy_mask;
-    s->callback = callback;
+    s                  = g_new0(ptimer_state, 1);
+    s->timer           = timer_new_ns(QEMU_CLOCK_VIRTUAL, ptimer_tick, s);
+    s->policy_mask     = policy_mask;
+    s->callback        = callback;
     s->callback_opaque = callback_opaque;
 
     /*
@@ -444,12 +401,12 @@ ptimer_state *ptimer_init(ptimer_cb callback, void *callback_opaque,
      * a timer trigger when the count becomes 0, but no-immediate-trigger
      * implies a trigger when the count stops being 0.
      */
-    assert(!((policy_mask & PTIMER_POLICY_TRIGGER_ONLY_ON_DECREMENT) &&
-             (policy_mask & PTIMER_POLICY_NO_IMMEDIATE_TRIGGER)));
+    assert(!((policy_mask & PTIMER_POLICY_TRIGGER_ONLY_ON_DECREMENT)
+             && (policy_mask & PTIMER_POLICY_NO_IMMEDIATE_TRIGGER)));
     return s;
 }
 
-void ptimer_free(ptimer_state *s)
+void ptimer_free(ptimer_state* s)
 {
     timer_free(s->timer);
     g_free(s);

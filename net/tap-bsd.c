@@ -29,63 +29,57 @@
 #include "qemu/error-report.h"
 
 #if defined(__NetBSD__) || defined(__FreeBSD__)
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <net/if_tap.h>
+    #include <sys/ioctl.h>
+    #include <net/if.h>
+    #include <net/if_tap.h>
 #endif
 
 #ifndef __FreeBSD__
-int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
-             int vnet_hdr_required, int mq_required, Error **errp)
+int tap_open(char* ifname, int ifname_size, int* vnet_hdr, int vnet_hdr_required, int mq_required, Error** errp)
 {
     int fd;
-#ifdef TAPGIFNAME
+    #ifdef TAPGIFNAME
     struct ifreq ifr;
-#else
-    char *dev;
+    #else
+    char*       dev;
     struct stat s;
-#endif
+    #endif
 
     /* if no ifname is given, always start the search from tap0/tun0. */
-    int i;
+    int  i;
     char dname[100];
 
     for (i = 0; i < 10; i++) {
-        if (*ifname) {
-            snprintf(dname, sizeof dname, "/dev/%s", ifname);
-        } else {
+        if (*ifname) { snprintf(dname, sizeof dname, "/dev/%s", ifname); }
+        else {
             snprintf(dname, sizeof dname, "/dev/tap%d", i);
         }
         fd = RETRY_ON_EINTR(open(dname, O_RDWR));
-        if (fd >= 0) {
-            break;
-        }
+        if (fd >= 0) { break; }
         else if (errno == ENXIO || errno == ENOENT) {
             break;
         }
-        if (*ifname) {
-            break;
-        }
+        if (*ifname) { break; }
     }
     if (fd < 0) {
         error_setg_errno(errp, errno, "could not open %s", dname);
         return -1;
     }
 
-#ifdef TAPGIFNAME
-    if (ioctl(fd, TAPGIFNAME, (void *)&ifr) < 0) {
+    #ifdef TAPGIFNAME
+    if (ioctl(fd, TAPGIFNAME, (void*)&ifr) < 0) {
         error_setg_errno(errp, errno, "could not get tap name");
         return -1;
     }
     pstrcpy(ifname, ifname_size, ifr.ifr_name);
-#else
+    #else
     if (fstat(fd, &s) < 0) {
         error_setg_errno(errp, errno, "could not stat %s", dname);
         return -1;
     }
     dev = devname(s.st_rdev, S_IFCHR);
     pstrcpy(ifname, ifname_size, dev);
-#endif
+    #endif
 
     if (*vnet_hdr) {
         /* BSD doesn't have IFF_VNET_HDR */
@@ -93,7 +87,7 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
 
         if (vnet_hdr_required && !*vnet_hdr) {
             error_setg(errp, "vnet_hdr=1 requested, but no kernel "
-                       "support for IFF_VNET_HDR available");
+                             "support for IFF_VNET_HDR available");
             close(fd);
             return -1;
         }
@@ -109,11 +103,11 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
 
 #else /* __FreeBSD__ */
 
-#define PATH_NET_TAP "/dev/tap"
+    #define PATH_NET_TAP "/dev/tap"
 
-static int tap_open_clone(char *ifname, int ifname_size, Error **errp)
+static int tap_open_clone(char* ifname, int ifname_size, Error** errp)
 {
-    int fd, s, ret;
+    int          fd, s, ret;
     struct ifreq ifr;
 
     fd = RETRY_ON_EINTR(open(PATH_NET_TAP, O_RDWR));
@@ -124,7 +118,7 @@ static int tap_open_clone(char *ifname, int ifname_size, Error **errp)
 
     memset(&ifr, 0, sizeof(ifr));
 
-    ret = ioctl(fd, TAPGIFNAME, (void *)&ifr);
+    ret = ioctl(fd, TAPGIFNAME, (void*)&ifr);
     if (ret < 0) {
         error_setg_errno(errp, errno, "could not get tap interface name");
         close(fd);
@@ -135,28 +129,27 @@ static int tap_open_clone(char *ifname, int ifname_size, Error **errp)
         /* User requested the interface to have a specific name */
         s = socket(AF_LOCAL, SOCK_DGRAM, 0);
         if (s < 0) {
-            error_setg_errno(errp, errno,
-                             "could not open socket to set interface name");
+            error_setg_errno(errp, errno, "could not open socket to set interface name");
             close(fd);
             return -1;
         }
         ifr.ifr_data = ifname;
-        ret = ioctl(s, SIOCSIFNAME, (void *)&ifr);
+        ret          = ioctl(s, SIOCSIFNAME, (void*)&ifr);
         close(s);
         if (ret < 0) {
             error_setg(errp, "could not set tap interface name");
             close(fd);
             return -1;
         }
-    } else {
+    }
+    else {
         pstrcpy(ifname, ifname_size, ifr.ifr_name);
     }
 
     return fd;
 }
 
-int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
-             int vnet_hdr_required, int mq_required, Error **errp)
+int tap_open(char* ifname, int ifname_size, int* vnet_hdr, int vnet_hdr_required, int mq_required, Error** errp)
 {
     int fd = -1;
 
@@ -173,9 +166,7 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
 
     if (fd < 0) {
         /* Tap device not specified or does not exist. */
-        if ((fd = tap_open_clone(ifname, ifname_size, errp)) < 0) {
-            return -1;
-        }
+        if ((fd = tap_open_clone(ifname, ifname_size, errp)) < 0) { return -1; }
     }
 
     if (*vnet_hdr) {
@@ -184,19 +175,17 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
 
         if (vnet_hdr_required && !*vnet_hdr) {
             error_setg(errp, "vnet_hdr=1 requested, but no kernel "
-                       "support for IFF_VNET_HDR available");
+                             "support for IFF_VNET_HDR available");
             goto error;
         }
     }
     if (mq_required) {
         error_setg(errp, "mq_required requested, but no kernel support"
-                   " for IFF_MULTI_QUEUE available");
+                         " for IFF_MULTI_QUEUE available");
         goto error;
     }
 
-    if (!qemu_set_blocking(fd, false, errp)) {
-        goto error;
-    }
+    if (!qemu_set_blocking(fd, false, errp)) { goto error; }
 
     return fd;
 
@@ -206,60 +195,26 @@ error:
 }
 #endif /* __FreeBSD__ */
 
-void tap_set_sndbuf(int fd, const NetdevTapOptions *tap, Error **errp)
-{
-}
+void tap_set_sndbuf(int fd, const NetdevTapOptions* tap, Error** errp) { }
 
-int tap_probe_vnet_hdr(int fd, Error **errp)
-{
-    return 0;
-}
+int tap_probe_vnet_hdr(int fd, Error** errp) { return 0; }
 
-int tap_probe_has_ufo(int fd)
-{
-    return 0;
-}
+int tap_probe_has_ufo(int fd) { return 0; }
 
-int tap_probe_has_uso(int fd)
-{
-    return 0;
-}
+int tap_probe_has_uso(int fd) { return 0; }
 
-void tap_fd_set_vnet_hdr_len(int fd, int len)
-{
-}
+void tap_fd_set_vnet_hdr_len(int fd, int len) { }
 
-int tap_fd_set_vnet_le(int fd, int is_le)
-{
-    return -EINVAL;
-}
+int tap_fd_set_vnet_le(int fd, int is_le) { return -EINVAL; }
 
-int tap_fd_set_vnet_be(int fd, int is_be)
-{
-    return -EINVAL;
-}
+int tap_fd_set_vnet_be(int fd, int is_be) { return -EINVAL; }
 
-void tap_fd_set_offload(int fd, int csum, int tso4,
-                        int tso6, int ecn, int ufo, int uso4, int uso6)
-{
-}
+void tap_fd_set_offload(int fd, int csum, int tso4, int tso6, int ecn, int ufo, int uso4, int uso6) { }
 
-int tap_fd_enable(int fd)
-{
-    return -1;
-}
+int tap_fd_enable(int fd) { return -1; }
 
-int tap_fd_disable(int fd)
-{
-    return -1;
-}
+int tap_fd_disable(int fd) { return -1; }
 
-int tap_fd_get_ifname(int fd, char *ifname)
-{
-    return -1;
-}
+int tap_fd_get_ifname(int fd, char* ifname) { return -1; }
 
-int tap_fd_set_steering_ebpf(int fd, int prog_fd)
-{
-    return -1;
-}
+int tap_fd_set_steering_ebpf(int fd, int prog_fd) { return -1; }

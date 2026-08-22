@@ -22,8 +22,8 @@ struct RngRandom
 {
     RngBackend parent;
 
-    int fd;
-    char *filename;
+    int   fd;
+    char* filename;
 };
 
 /**
@@ -33,18 +33,16 @@ struct RngRandom
  * set the filename to use to open the backend.
  */
 
-static void entropy_available(void *opaque)
+static void entropy_available(void* opaque)
 {
-    RngRandom *s = RNG_RANDOM(opaque);
+    RngRandom* s = RNG_RANDOM(opaque);
 
     while (!QSIMPLEQ_EMPTY(&s->parent.requests)) {
-        RngRequest *req = QSIMPLEQ_FIRST(&s->parent.requests);
-        ssize_t len;
+        RngRequest* req = QSIMPLEQ_FIRST(&s->parent.requests);
+        ssize_t     len;
 
         len = read(s->fd, req->data, req->size);
-        if (len < 0 && errno == EAGAIN) {
-            return;
-        }
+        if (len < 0 && errno == EAGAIN) { return; }
         assert(len != -1);
 
         req->receive_entropy(req->opaque, req->data, len);
@@ -56,9 +54,9 @@ static void entropy_available(void *opaque)
     qemu_set_fd_handler(s->fd, NULL, NULL, NULL);
 }
 
-static void rng_random_request_entropy(RngBackend *b, RngRequest *req)
+static void rng_random_request_entropy(RngBackend* b, RngRequest* req)
 {
-    RngRandom *s = RNG_RANDOM(b);
+    RngRandom* s = RNG_RANDOM(b);
 
     if (QSIMPLEQ_EMPTY(&s->parent.requests)) {
         /* If there are no pending requests yet, we need to
@@ -67,30 +65,27 @@ static void rng_random_request_entropy(RngBackend *b, RngRequest *req)
     }
 }
 
-static void rng_random_opened(RngBackend *b, Error **errp)
+static void rng_random_opened(RngBackend* b, Error** errp)
 {
-    RngRandom *s = RNG_RANDOM(b);
+    RngRandom* s = RNG_RANDOM(b);
 
-    if (s->filename == NULL) {
-        error_setg(errp, QERR_INVALID_PARAMETER_VALUE,
-                   "filename", "a valid filename");
-    } else {
+    if (s->filename == NULL) { error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "filename", "a valid filename"); }
+    else {
         s->fd = qemu_open(s->filename, O_RDONLY | O_NONBLOCK, errp);
     }
 }
 
-static char *rng_random_get_filename(Object *obj, Error **errp)
+static char* rng_random_get_filename(Object* obj, Error** errp)
 {
-    RngRandom *s = RNG_RANDOM(obj);
+    RngRandom* s = RNG_RANDOM(obj);
 
     return g_strdup(s->filename);
 }
 
-static void rng_random_set_filename(Object *obj, const char *filename,
-                                 Error **errp)
+static void rng_random_set_filename(Object* obj, const char* filename, Error** errp)
 {
-    RngBackend *b = RNG_BACKEND(obj);
-    RngRandom *s = RNG_RANDOM(obj);
+    RngBackend* b = RNG_BACKEND(obj);
+    RngRandom*  s = RNG_RANDOM(obj);
 
     if (b->opened) {
         error_setg(errp, "Property 'filename' can no longer be set");
@@ -101,17 +96,17 @@ static void rng_random_set_filename(Object *obj, const char *filename,
     s->filename = g_strdup(filename);
 }
 
-static void rng_random_init(Object *obj)
+static void rng_random_init(Object* obj)
 {
-    RngRandom *s = RNG_RANDOM(obj);
+    RngRandom* s = RNG_RANDOM(obj);
 
     s->filename = g_strdup("/dev/urandom");
-    s->fd = -1;
+    s->fd       = -1;
 }
 
-static void rng_random_finalize(Object *obj)
+static void rng_random_finalize(Object* obj)
 {
-    RngRandom *s = RNG_RANDOM(obj);
+    RngRandom* s = RNG_RANDOM(obj);
 
     if (s->fd != -1) {
         qemu_set_fd_handler(s->fd, NULL, NULL, NULL);
@@ -121,30 +116,24 @@ static void rng_random_finalize(Object *obj)
     g_free(s->filename);
 }
 
-static void rng_random_class_init(ObjectClass *klass, const void *data)
+static void rng_random_class_init(ObjectClass* klass, const void* data)
 {
-    RngBackendClass *rbc = RNG_BACKEND_CLASS(klass);
+    RngBackendClass* rbc = RNG_BACKEND_CLASS(klass);
 
     rbc->request_entropy = rng_random_request_entropy;
-    rbc->opened = rng_random_opened;
-    object_class_property_add_str(klass, "filename",
-                                  rng_random_get_filename,
-                                  rng_random_set_filename);
-
+    rbc->opened          = rng_random_opened;
+    object_class_property_add_str(klass, "filename", rng_random_get_filename, rng_random_set_filename);
 }
 
 static const TypeInfo rng_random_info = {
-    .name = TYPE_RNG_RANDOM,
-    .parent = TYPE_RNG_BACKEND,
-    .instance_size = sizeof(RngRandom),
-    .class_init = rng_random_class_init,
-    .instance_init = rng_random_init,
+    .name              = TYPE_RNG_RANDOM,
+    .parent            = TYPE_RNG_BACKEND,
+    .instance_size     = sizeof(RngRandom),
+    .class_init        = rng_random_class_init,
+    .instance_init     = rng_random_init,
     .instance_finalize = rng_random_finalize,
 };
 
-static void register_types(void)
-{
-    type_register_static(&rng_random_info);
-}
+static void register_types(void) { type_register_static(&rng_random_info); }
 
 type_init(register_types);

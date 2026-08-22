@@ -36,8 +36,7 @@
 #include "cpregs.h"
 
 /* convert between <register>_IDX and SYS_<register> */
-#define DEF(NAME, OP0, OP1, CRN, CRM, OP2)      \
-    [NAME##_IDX] = SYS_##NAME,
+#define DEF(NAME, OP0, OP1, CRN, CRM, OP2) [NAME##_IDX] = SYS_##NAME,
 
 const uint32_t id_register_sysreg[NUM_ID_IDX] = {
 #include "cpu-sysregs.h.inc"
@@ -57,7 +56,7 @@ int get_sysreg_idx(ARMSysRegs sysreg)
 
 #undef DEF
 
-void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
+void arm_cpu_sve_finalize(ARMCPU* cpu, Error** errp)
 {
     /*
      * If any vector lengths are explicitly enabled with sve<N> properties,
@@ -74,7 +73,7 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
      * any of the above.  Finally, if SVE is not disabled, then at least one
      * vector length must be enabled.
      */
-    uint32_t vq_map = cpu->sve_vq.map;
+    uint32_t vq_map  = cpu->sve_vq.map;
     uint32_t vq_init = cpu->sve_vq.init;
     uint32_t vq_supported;
     uint32_t vq_mask = 0;
@@ -89,12 +88,14 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
     if (kvm_enabled()) {
         if (kvm_arm_sve_supported()) {
             cpu->sve_vq.supported = kvm_arm_sve_get_vls(cpu);
-            vq_supported = cpu->sve_vq.supported;
-        } else {
+            vq_supported          = cpu->sve_vq.supported;
+        }
+        else {
             assert(!cpu_isar_feature(aa64_sve, cpu));
             vq_supported = 0;
         }
-    } else {
+    }
+    else {
         vq_supported = cpu->sve_vq.supported;
     }
 
@@ -104,15 +105,15 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
      * Check first for any sve<N> enabled.
      */
     if (vq_map != 0) {
-        max_vq = 32 - clz32(vq_map);
+        max_vq  = 32 - clz32(vq_map);
         vq_mask = MAKE_64BIT_MASK(0, max_vq);
 
         if (cpu->sve_max_vq && max_vq > cpu->sve_max_vq) {
             error_setg(errp, "cannot enable sve%d", max_vq * 128);
-            error_append_hint(errp, "sve%d is larger than the maximum vector "
+            error_append_hint(errp,
+                              "sve%d is larger than the maximum vector "
                               "length, sve-max-vq=%d (%d bits)\n",
-                              max_vq * 128, cpu->sve_max_vq,
-                              cpu->sve_max_vq * 128);
+                              max_vq * 128, cpu->sve_max_vq, cpu->sve_max_vq * 128);
             return;
         }
 
@@ -122,11 +123,13 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
              * lengths, even when the smaller lengths are not all powers-of-two.
              */
             vq_map |= vq_supported & ~vq_init & vq_mask;
-        } else {
+        }
+        else {
             /* Propagate enabled bits down through required powers-of-two. */
             vq_map |= SVE_VQ_POW2_MAP & ~vq_init & vq_mask;
         }
-    } else if (cpu->sve_max_vq == 0) {
+    }
+    else if (cpu->sve_max_vq == 0) {
         /*
          * No explicit bits enabled, and no implicit bits from sve-max-vq.
          */
@@ -142,27 +145,29 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
         if (kvm_enabled()) {
             /* Disabling a supported length disables all larger lengths. */
             tmp = vq_init & vq_supported;
-        } else {
+        }
+        else {
             /* Disabling a power-of-two disables all larger lengths. */
             tmp = vq_init & SVE_VQ_POW2_MAP;
         }
         vq = ctz32(tmp) + 1;
 
-        max_vq = vq <= ARM_MAX_VQ ? vq - 1 : ARM_MAX_VQ;
+        max_vq  = vq <= ARM_MAX_VQ ? vq - 1 : ARM_MAX_VQ;
         vq_mask = max_vq > 0 ? MAKE_64BIT_MASK(0, max_vq) : 0;
-        vq_map = vq_supported & ~vq_init & vq_mask;
+        vq_map  = vq_supported & ~vq_init & vq_mask;
 
         if (vq_map == 0) {
             error_setg(errp, "cannot disable sve%d", vq * 128);
-            error_append_hint(errp, "Disabling sve%d results in all "
+            error_append_hint(errp,
+                              "Disabling sve%d results in all "
                               "vector lengths being disabled.\n",
                               vq * 128);
             error_append_hint(errp, "With SVE enabled, at least one "
-                              "vector length must be enabled.\n");
+                                    "vector length must be enabled.\n");
             return;
         }
 
-        max_vq = 32 - clz32(vq_map);
+        max_vq  = 32 - clz32(vq_map);
         vq_mask = MAKE_64BIT_MASK(0, max_vq);
     }
 
@@ -172,12 +177,13 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
      * sve-max-vq is currently set.
      */
     if (cpu->sve_max_vq != 0) {
-        max_vq = cpu->sve_max_vq;
+        max_vq  = cpu->sve_max_vq;
         vq_mask = MAKE_64BIT_MASK(0, max_vq);
 
         if (vq_init & ~vq_map & (1 << (max_vq - 1))) {
             error_setg(errp, "cannot disable sve%d", max_vq * 128);
-            error_append_hint(errp, "The maximum vector length must be "
+            error_append_hint(errp,
+                              "The maximum vector length must be "
                               "enabled, sve-max-vq=%d (%d bits)\n",
                               max_vq, max_vq * 128);
             return;
@@ -203,37 +209,47 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
         if (vq_map & (1 << (vq - 1))) {
             if (cpu->sve_max_vq) {
                 error_setg(errp, "cannot set sve-max-vq=%d", cpu->sve_max_vq);
-                error_append_hint(errp, "This CPU does not support "
-                                  "the vector length %d-bits.\n", vq * 128);
+                error_append_hint(errp,
+                                  "This CPU does not support "
+                                  "the vector length %d-bits.\n",
+                                  vq * 128);
                 error_append_hint(errp, "It may not be possible to use "
-                                  "sve-max-vq with this CPU. Try "
-                                  "using only sve<N> properties.\n");
-            } else {
+                                        "sve-max-vq with this CPU. Try "
+                                        "using only sve<N> properties.\n");
+            }
+            else {
                 error_setg(errp, "cannot enable sve%d", vq * 128);
                 if (vq_supported) {
-                    error_append_hint(errp, "This CPU does not support "
-                                      "the vector length %d-bits.\n", vq * 128);
-                } else {
+                    error_append_hint(errp,
+                                      "This CPU does not support "
+                                      "the vector length %d-bits.\n",
+                                      vq * 128);
+                }
+                else {
                     error_append_hint(errp, "SVE not supported by KVM "
-                                      "on this host\n");
+                                            "on this host\n");
                 }
             }
             return;
-        } else {
+        }
+        else {
             if (kvm_enabled()) {
                 error_setg(errp, "cannot disable sve%d", vq * 128);
-                error_append_hint(errp, "The KVM host requires all "
+                error_append_hint(errp,
+                                  "The KVM host requires all "
                                   "supported vector lengths smaller "
                                   "than %d bits to also be enabled.\n",
                                   max_vq * 128);
                 return;
-            } else {
+            }
+            else {
                 /* Ensure all required powers-of-two are enabled. */
                 tmp = SVE_VQ_POW2_MAP & vq_mask & ~vq_map;
                 if (tmp) {
                     vq = 32 - clz32(tmp);
                     error_setg(errp, "cannot disable sve%d", vq * 128);
-                    error_append_hint(errp, "sve%d is required as it "
+                    error_append_hint(errp,
+                                      "sve%d is required as it "
                                       "is a power-of-two length smaller "
                                       "than the maximum, sve%d\n",
                                       vq * 128, max_vq * 128);
@@ -250,7 +266,7 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
     if (!cpu_isar_feature(aa64_sve, cpu)) {
         error_setg(errp, "cannot enable sve%d", max_vq * 128);
         error_append_hint(errp, "SVE must be enabled to enable vector "
-                          "lengths.\n");
+                                "lengths.\n");
         error_append_hint(errp, "Add sve=on to the CPU property list.\n");
         return;
     }
@@ -262,7 +278,7 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
     /* FEAT_F64MM requires the existence of a 256-bit vector size. */
     if (max_vq < 2) {
         uint64_t t = GET_IDREG(&cpu->isar, ID_AA64ZFR0);
-        t = REG_FIELD_DP64(t, ID_AA64ZFR0, F64MM, 0);
+        t          = REG_FIELD_DP64(t, ID_AA64ZFR0, F64MM, 0);
         SET_IDREG(&cpu->isar, ID_AA64ZFR0, t);
     }
 }
@@ -272,50 +288,43 @@ void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
  * object_property_add_bool interface because they make use of the
  * contents of "name" to determine which bit on which to operate.
  */
-static void cpu_arm_get_vq(Object *obj, Visitor *v, const char *name,
-                           void *opaque, Error **errp)
+static void cpu_arm_get_vq(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
-    ARMVQMap *vq_map = opaque;
-    uint32_t vq = atoi(&name[3]) / 128;
-    bool sve = vq_map == &cpu->sve_vq;
-    bool value;
+    ARMCPU*   cpu    = ARM_CPU(obj);
+    ARMVQMap* vq_map = opaque;
+    uint32_t  vq     = atoi(&name[3]) / 128;
+    bool      sve    = vq_map == &cpu->sve_vq;
+    bool      value;
 
     /* All vector lengths are disabled when feature is off. */
-    if (sve
-        ? !cpu_isar_feature(aa64_sve, cpu)
-        : !cpu_isar_feature(aa64_sme, cpu)) {
-        value = false;
-    } else {
+    if (sve ? !cpu_isar_feature(aa64_sve, cpu) : !cpu_isar_feature(aa64_sme, cpu)) { value = false; }
+    else {
         value = extract32(vq_map->map, vq - 1, 1);
     }
     visit_type_bool(v, name, &value, errp);
 }
 
-static void cpu_arm_set_vq(Object *obj, Visitor *v, const char *name,
-                           void *opaque, Error **errp)
+static void cpu_arm_set_vq(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
 {
-    ARMVQMap *vq_map = opaque;
-    uint32_t vq = atoi(&name[3]) / 128;
-    bool value;
+    ARMVQMap* vq_map = opaque;
+    uint32_t  vq     = atoi(&name[3]) / 128;
+    bool      value;
 
-    if (!visit_type_bool(v, name, &value, errp)) {
-        return;
-    }
+    if (!visit_type_bool(v, name, &value, errp)) { return; }
 
-    vq_map->map = deposit32(vq_map->map, vq - 1, 1, value);
+    vq_map->map   = deposit32(vq_map->map, vq - 1, 1, value);
     vq_map->init |= 1 << (vq - 1);
 }
 
-static bool cpu_arm_get_sve(Object *obj, Error **errp)
+static bool cpu_arm_get_sve(Object* obj, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
     return cpu_isar_feature(aa64_sve, cpu);
 }
 
-static void cpu_arm_set_sve(Object *obj, bool value, Error **errp)
+static void cpu_arm_set_sve(Object* obj, bool value, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     if (value && kvm_enabled() && !kvm_arm_sve_supported()) {
         error_setg(errp, "'sve' feature not supported by KVM on this host");
@@ -325,10 +334,10 @@ static void cpu_arm_set_sve(Object *obj, bool value, Error **errp)
     FIELD_DP64_IDREG(&cpu->isar, ID_AA64PFR0, SVE, value);
 }
 
-void arm_cpu_sme_finalize(ARMCPU *cpu, Error **errp)
+void arm_cpu_sme_finalize(ARMCPU* cpu, Error** errp)
 {
-    uint32_t vq_map = cpu->sme_vq.map;
-    uint32_t vq_init = cpu->sme_vq.init;
+    uint32_t vq_map       = cpu->sme_vq.map;
+    uint32_t vq_init      = cpu->sme_vq.init;
     uint32_t vq_supported = cpu->sme_vq.supported;
     uint32_t vq;
 
@@ -346,15 +355,16 @@ void arm_cpu_sme_finalize(ARMCPU *cpu, Error **errp)
             error_setg(errp, "cannot disable sme%d", vq * 128);
             error_append_hint(errp, "All SME vector lengths are disabled.\n");
             error_append_hint(errp, "With SME enabled, at least one "
-                              "vector length must be enabled.\n");
+                                    "vector length must be enabled.\n");
             return;
         }
-    } else {
+    }
+    else {
         if (!cpu_isar_feature(aa64_sme, cpu)) {
             vq = 32 - clz32(vq_map);
             error_setg(errp, "cannot enable sme%d", vq * 128);
             error_append_hint(errp, "SME must be enabled to enable "
-                              "vector lengths.\n");
+                                    "vector lengths.\n");
             error_append_hint(errp, "Add sme=on to the CPU property list.\n");
             return;
         }
@@ -365,36 +375,35 @@ void arm_cpu_sme_finalize(ARMCPU *cpu, Error **errp)
     cpu->sme_max_vq = 32 - clz32(vq_map);
 }
 
-static bool cpu_arm_get_sme(Object *obj, Error **errp)
+static bool cpu_arm_get_sme(Object* obj, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
     return cpu_isar_feature(aa64_sme, cpu);
 }
 
-static void cpu_arm_set_sme(Object *obj, bool value, Error **errp)
+static void cpu_arm_set_sme(Object* obj, bool value, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     FIELD_DP64_IDREG(&cpu->isar, ID_AA64PFR1, SME, value);
 }
 
-static bool cpu_arm_get_sme_fa64(Object *obj, Error **errp)
+static bool cpu_arm_get_sme_fa64(Object* obj, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
-    return cpu_isar_feature(aa64_sme, cpu) &&
-           cpu_isar_feature(aa64_sme_fa64, cpu);
+    ARMCPU* cpu = ARM_CPU(obj);
+    return cpu_isar_feature(aa64_sme, cpu) && cpu_isar_feature(aa64_sme_fa64, cpu);
 }
 
-static void cpu_arm_set_sme_fa64(Object *obj, bool value, Error **errp)
+static void cpu_arm_set_sme_fa64(Object* obj, bool value, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     FIELD_DP64_IDREG(&cpu->isar, ID_AA64SMFR0, FA64, value);
 }
 
-void aarch64_add_sve_properties(Object *obj)
+void aarch64_add_sve_properties(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU*  cpu = ARM_CPU(obj);
     uint32_t vq;
 
     object_property_add_bool(obj, "sve", cpu_arm_get_sve, cpu_arm_set_sve);
@@ -402,33 +411,30 @@ void aarch64_add_sve_properties(Object *obj)
     for (vq = 1; vq <= ARM_MAX_VQ; ++vq) {
         char name[8];
         snprintf(name, sizeof(name), "sve%d", vq * 128);
-        object_property_add(obj, name, "bool", cpu_arm_get_vq,
-                            cpu_arm_set_vq, NULL, &cpu->sve_vq);
+        object_property_add(obj, name, "bool", cpu_arm_get_vq, cpu_arm_set_vq, NULL, &cpu->sve_vq);
     }
 }
 
-void aarch64_add_sme_properties(Object *obj)
+void aarch64_add_sme_properties(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU*  cpu = ARM_CPU(obj);
     uint32_t vq;
 
     object_property_add_bool(obj, "sme", cpu_arm_get_sme, cpu_arm_set_sme);
-    object_property_add_bool(obj, "sme_fa64", cpu_arm_get_sme_fa64,
-                             cpu_arm_set_sme_fa64);
+    object_property_add_bool(obj, "sme_fa64", cpu_arm_get_sme_fa64, cpu_arm_set_sme_fa64);
 
     for (vq = 1; vq <= ARM_MAX_VQ; vq <<= 1) {
         char name[8];
         snprintf(name, sizeof(name), "sme%d", vq * 128);
-        object_property_add(obj, name, "bool", cpu_arm_get_vq,
-                            cpu_arm_set_vq, NULL, &cpu->sme_vq);
+        object_property_add(obj, name, "bool", cpu_arm_get_vq, cpu_arm_set_vq, NULL, &cpu->sme_vq);
     }
 }
 
-void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
+void arm_cpu_pauth_finalize(ARMCPU* cpu, Error** errp)
 {
-    ARMPauthFeature features = cpu_isar_feature(pauth_feature, cpu);
-    ARMISARegisters *isar = &cpu->isar;
-    uint64_t isar1, isar2;
+    ARMPauthFeature  features = cpu_isar_feature(pauth_feature, cpu);
+    ARMISARegisters* isar     = &cpu->isar;
+    uint64_t         isar1, isar2;
 
     /*
      * These properties enable or disable Pauth as a whole, or change
@@ -455,12 +461,15 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
          */
         if (cpu->prop_pauth) {
             if (features == 0) {
-                error_setg(errp, "'pauth' feature not supported by "
-                           "%s on this host", current_accel_name());
+                error_setg(errp,
+                           "'pauth' feature not supported by "
+                           "%s on this host",
+                           current_accel_name());
             }
             return;
         }
-    } else {
+    }
+    else {
         /* Pauth properties are only present when the model supports it. */
         if (features == 0) {
             assert(!cpu->prop_pauth);
@@ -468,18 +477,15 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
         }
 
         if (cpu->prop_pauth) {
-            if ((cpu->prop_pauth_impdef && cpu->prop_pauth_qarma3) ||
-                (cpu->prop_pauth_impdef && cpu->prop_pauth_qarma5) ||
-                (cpu->prop_pauth_qarma3 && cpu->prop_pauth_qarma5)) {
-                error_setg(errp,
-                           "cannot enable pauth-impdef, pauth-qarma3 and "
-                           "pauth-qarma5 at the same time");
+            if ((cpu->prop_pauth_impdef && cpu->prop_pauth_qarma3) || (cpu->prop_pauth_impdef && cpu->prop_pauth_qarma5)
+                || (cpu->prop_pauth_qarma3 && cpu->prop_pauth_qarma5))
+            {
+                error_setg(errp, "cannot enable pauth-impdef, pauth-qarma3 and "
+                                 "pauth-qarma5 at the same time");
                 return;
             }
 
-            bool use_default = !cpu->prop_pauth_qarma5 &&
-                               !cpu->prop_pauth_qarma3 &&
-                               !cpu->prop_pauth_impdef;
+            bool use_default = !cpu->prop_pauth_qarma5 && !cpu->prop_pauth_qarma3 && !cpu->prop_pauth_impdef;
 
             if (cpu->prop_pauth_noop) { /* NOOP PAC */
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
@@ -488,39 +494,38 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, PauthFeat_NOOP);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
-            } else if (cpu->prop_pauth_qarma5 ||
-                (use_default &&
-                 cpu->backcompat_pauth_default_use_qarma5)) {
+            }
+            else if (cpu->prop_pauth_qarma5 || (use_default && cpu->backcompat_pauth_default_use_qarma5)) {
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, features);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 1);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
-            } else if (cpu->prop_pauth_qarma3) {
+            }
+            else if (cpu->prop_pauth_qarma3) {
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, features);
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 1);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
-            } else if (cpu->prop_pauth_impdef ||
-                       (use_default &&
-                        !cpu->backcompat_pauth_default_use_qarma5)) {
+            }
+            else if (cpu->prop_pauth_impdef || (use_default && !cpu->backcompat_pauth_default_use_qarma5)) {
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPA, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, features);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
-            } else {
+            }
+            else {
                 assert_not_reached();
             }
-        } else if (cpu->prop_pauth_impdef ||
-                   cpu->prop_pauth_qarma3 ||
-                   cpu->prop_pauth_qarma5) {
+        }
+        else if (cpu->prop_pauth_impdef || cpu->prop_pauth_qarma3 || cpu->prop_pauth_qarma5) {
             error_setg(errp, "cannot enable pauth-impdef, pauth-qarma3 or "
-                       "pauth-qarma5 without pauth");
+                             "pauth-qarma5 without pauth");
             error_append_hint(errp, "Add pauth=on to the CPU property list.\n");
         }
     }
@@ -529,20 +534,17 @@ void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
     SET_IDREG(isar, ID_AA64ISAR2, isar2);
 }
 
-static const Property arm_cpu_pauth_property =
-    DEFINE_PROP_BOOL("pauth", ARMCPU, prop_pauth, true);
+static const Property arm_cpu_pauth_property = DEFINE_PROP_BOOL("pauth", ARMCPU, prop_pauth, true);
 static const Property arm_cpu_pauth_impdef_property =
     DEFINE_PROP_BOOL("pauth-impdef", ARMCPU, prop_pauth_impdef, false);
 static const Property arm_cpu_pauth_qarma3_property =
     DEFINE_PROP_BOOL("pauth-qarma3", ARMCPU, prop_pauth_qarma3, false);
-static Property arm_cpu_pauth_qarma5_property =
-    DEFINE_PROP_BOOL("pauth-qarma5", ARMCPU, prop_pauth_qarma5, false);
-static Property arm_cpu_pauth_noop_property =
-    DEFINE_PROP_BOOL("pauth-noop", ARMCPU, prop_pauth_noop, true);
+static Property arm_cpu_pauth_qarma5_property = DEFINE_PROP_BOOL("pauth-qarma5", ARMCPU, prop_pauth_qarma5, false);
+static Property arm_cpu_pauth_noop_property   = DEFINE_PROP_BOOL("pauth-noop", ARMCPU, prop_pauth_noop, true);
 
-void aarch64_add_pauth_properties(Object *obj)
+void aarch64_add_pauth_properties(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     /* Default to PAUTH on, with the architected algorithm on TCG. */
     qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_property);
@@ -556,7 +558,8 @@ void aarch64_add_pauth_properties(Object *obj)
          * only for TCG.
          */
         cpu->prop_pauth = cpu_isar_feature(aa64_pauth, cpu);
-    } else {
+    }
+    else {
         qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_impdef_property);
         qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_qarma3_property);
         qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_qarma5_property);
@@ -564,7 +567,7 @@ void aarch64_add_pauth_properties(Object *obj)
     }
 }
 
-void arm_cpu_lpa2_finalize(ARMCPU *cpu, Error **errp)
+void arm_cpu_lpa2_finalize(ARMCPU* cpu, Error** errp)
 {
     uint64_t t;
 
@@ -572,9 +575,7 @@ void arm_cpu_lpa2_finalize(ARMCPU *cpu, Error **errp)
      * We only install the property for tcg -cpu max; this is the
      * only situation in which the cpu field can be true.
      */
-    if (!cpu->prop_lpa2) {
-        return;
-    }
+    if (!cpu->prop_lpa2) { return; }
 
     t = GET_IDREG(&cpu->isar, ID_AA64MMFR0);
     t = REG_FIELD_DP64(t, ID_AA64MMFR0, TGRAN16, 2);   /* 16k pages w/ LPA2 */
@@ -584,10 +585,10 @@ void arm_cpu_lpa2_finalize(ARMCPU *cpu, Error **errp)
     SET_IDREG(&cpu->isar, ID_AA64MMFR0, t);
 }
 
-static void aarch64_a57_initfn(Object *obj)
+static void aarch64_a57_initfn(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
-    ARMISARegisters *isar = &cpu->isar;
+    ARMCPU*          cpu  = ARM_CPU(obj);
+    ARMISARegisters* isar = &cpu->isar;
 
     cpu->dtb_compatible = "arm,cortex-a57";
     set_feature(&cpu->env, ARM_FEATURE_V8);
@@ -598,14 +599,14 @@ static void aarch64_a57_initfn(Object *obj)
     set_feature(&cpu->env, ARM_FEATURE_EL2);
     set_feature(&cpu->env, ARM_FEATURE_EL3);
     set_feature(&cpu->env, ARM_FEATURE_PMU);
-    cpu->kvm_target = QEMU_KVM_ARM_TARGET_CORTEX_A57;
-    cpu->midr = 0x411fd070;
-    cpu->revidr = 0x00000000;
+    cpu->kvm_target  = QEMU_KVM_ARM_TARGET_CORTEX_A57;
+    cpu->midr        = 0x411fd070;
+    cpu->revidr      = 0x00000000;
     cpu->reset_fpsid = 0x41034070;
-    cpu->isar.mvfr0 = 0x10110222;
-    cpu->isar.mvfr1 = 0x12111111;
-    cpu->isar.mvfr2 = 0x00000043;
-    cpu->ctr = 0x8444c004;
+    cpu->isar.mvfr0  = 0x10110222;
+    cpu->isar.mvfr1  = 0x12111111;
+    cpu->isar.mvfr2  = 0x00000043;
+    cpu->ctr         = 0x8444c004;
     cpu->reset_sctlr = 0x00c50838;
     SET_IDREG(isar, ID_PFR0, 0x00000131);
     SET_IDREG(isar, ID_PFR1, 0x00011011);
@@ -626,9 +627,9 @@ static void aarch64_a57_initfn(Object *obj)
     SET_IDREG(isar, ID_AA64DFR0, 0x10305106);
     SET_IDREG(isar, ID_AA64ISAR0, 0x00011120);
     SET_IDREG(isar, ID_AA64MMFR0, 0x00001124);
-    cpu->isar.dbgdidr = 0x3516d000;
-    cpu->isar.dbgdevid = 0x01110f13;
-    cpu->isar.dbgdevid1 = 0x2;
+    cpu->isar.dbgdidr        = 0x3516d000;
+    cpu->isar.dbgdevid       = 0x01110f13;
+    cpu->isar.dbgdevid1      = 0x2;
     cpu->isar.reset_pmcr_el0 = 0x41013000;
     SET_IDREG(isar, CLIDR, 0x0a200023);
     /* 32KB L1 dcache */
@@ -636,26 +637,26 @@ static void aarch64_a57_initfn(Object *obj)
     /* 48KB L1 icache */
     cpu->ccsidr[1] = make_ccsidr(CCSIDR_FORMAT_LEGACY, 3, 64, 48 * KiB, 2);
     /* 2048KB L2 cache */
-    cpu->ccsidr[2] = make_ccsidr(CCSIDR_FORMAT_LEGACY, 16, 64, 2 * MiB, 7);
+    cpu->ccsidr[2]     = make_ccsidr(CCSIDR_FORMAT_LEGACY, 16, 64, 2 * MiB, 7);
     cpu->dcz_blocksize = 4; /* 64 bytes */
-    cpu->gic_num_lrs = 4;
-    cpu->gic_vpribits = 5;
-    cpu->gic_vprebits = 5;
-    cpu->gic_pribits = 5;
+    cpu->gic_num_lrs   = 4;
+    cpu->gic_vpribits  = 5;
+    cpu->gic_vprebits  = 5;
+    cpu->gic_pribits   = 5;
     define_cortex_a72_a57_a53_cp_reginfo(cpu);
 }
 
-static void aarch64_host_initfn(Object *obj)
+static void aarch64_host_initfn(Object* obj)
 {
 #if defined(CONFIG_KVM)
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
     kvm_arm_set_cpu_features_from_host(cpu);
     if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
         aarch64_add_sve_properties(obj);
         aarch64_add_pauth_properties(obj);
     }
 #elif defined(CONFIG_HVF)
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
     hvf_arm_set_cpu_features_from_host(cpu);
     aarch64_add_pauth_properties(obj);
 #else
@@ -663,7 +664,7 @@ static void aarch64_host_initfn(Object *obj)
 #endif
 }
 
-static void aarch64_max_initfn(Object *obj)
+static void aarch64_max_initfn(Object* obj)
 {
     if (kvm_enabled() || hvf_enabled()) {
         /* With KVM or HVF, '-cpu max' is identical to '-cpu host' */
@@ -671,35 +672,30 @@ static void aarch64_max_initfn(Object *obj)
         return;
     }
 
-    if (tcg_enabled()) {
-        aarch64_a57_initfn(obj);
-    }
+    if (tcg_enabled()) { aarch64_a57_initfn(obj); }
 
     /* '-cpu max' for TCG: we currently do this as "A57 with extra things" */
-    if (tcg_enabled()) {
-        aarch64_max_tcg_initfn(obj);
-    }
+    if (tcg_enabled()) { aarch64_max_tcg_initfn(obj); }
 }
 
-static void aarch64_apple_gxf_initfn(Object *obj)
+static void aarch64_apple_gxf_initfn(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     aarch64_max_initfn(obj);
-    SET_IDREG(&cpu->isar, ID_AA64ISAR1, REG_FIELD_DP64(GET_IDREG(&cpu->isar, ID_AA64ISAR1), ID_AA64ISAR1, APA, PauthFeat_2));
+    SET_IDREG(&cpu->isar, ID_AA64ISAR1,
+              REG_FIELD_DP64(GET_IDREG(&cpu->isar, ID_AA64ISAR1), ID_AA64ISAR1, APA, PauthFeat_2));
 
-    if (tcg_enabled()) {
-        object_property_set_bool(obj, "pauth-noop", true, NULL);
-    }
+    if (tcg_enabled()) { object_property_set_bool(obj, "pauth-noop", true, NULL); }
 
     set_feature(&ARM_CPU(obj)->env, ARM_FEATURE_GXF);
 }
 
 static const ARMCPUInfo aarch64_cpus[] = {
-    { .name = "max",                .initfn = aarch64_max_initfn },
-    { .name = "apple-gxf",          .initfn = aarch64_apple_gxf_initfn },
+    {.name = "max", .initfn = aarch64_max_initfn},
+    {.name = "apple-gxf", .initfn = aarch64_apple_gxf_initfn},
 #if defined(CONFIG_KVM) || defined(CONFIG_HVF)
-    { .name = "host",               .initfn = aarch64_host_initfn },
+    {.name = "host", .initfn = aarch64_host_initfn},
 #endif
 };
 
@@ -707,9 +703,7 @@ static void aarch64_cpu_register_types(void)
 {
     size_t i;
 
-    for (i = 0; i < ARRAY_SIZE(aarch64_cpus); ++i) {
-        arm_cpu_register(&aarch64_cpus[i]);
-    }
+    for (i = 0; i < ARRAY_SIZE(aarch64_cpus); ++i) { arm_cpu_register(&aarch64_cpus[i]); }
 }
 
 type_init(aarch64_cpu_register_types)

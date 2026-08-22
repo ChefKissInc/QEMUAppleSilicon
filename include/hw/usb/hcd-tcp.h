@@ -30,24 +30,26 @@
 #define TYPE_USB_TCP_HOST "usb-tcp-host"
 OBJECT_DECLARE_SIMPLE_TYPE(USBTCPHostState, USB_TCP_HOST)
 
-typedef struct USBTCPPacket {
-    USBPacket p;
-    void *buffer;
-    USBDevice *dev;
-    USBTCPHostState *s;
-    uint8_t addr;
+typedef struct USBTCPPacket
+{
+    USBPacket        p;
+    void*            buffer;
+    USBDevice*       dev;
+    USBTCPHostState* s;
+    uint8_t          addr;
 } USBTCPPacket;
 
-struct USBTCPHostState {
+struct USBTCPHostState
+{
     SysBusDevice parent_obj;
 
-    USBBus bus;
-    USBPort ports[3];
-    QIOChannel *ioc;
-    CoMutex write_mutex;
-    bool closed;
-    bool stopped;
+    USBBus               bus;
+    USBPort              ports[3];
+    QIOChannel*          ioc;
+    CoMutex              write_mutex;
+    bool                 closed;
+    bool                 stopped;
     USBTCPRemoteConnType conn_type;
-    char *conn_addr;
-    uint16_t conn_port;
+    char*                conn_addr;
+    uint16_t             conn_port;
 };

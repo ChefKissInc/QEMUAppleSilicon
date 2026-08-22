@@ -1,8 +1,8 @@
 #pragma once
 
-#define TYPE_XHCI "base-xhci"
-#define TYPE_NEC_XHCI "nec-usb-xhci"
-#define TYPE_QEMU_XHCI "qemu-xhci"
+#define TYPE_XHCI        "base-xhci"
+#define TYPE_NEC_XHCI    "nec-usb-xhci"
+#define TYPE_QEMU_XHCI   "qemu-xhci"
 #define TYPE_XHCI_SYSBUS "sysbus-xhci"
 
 #define XHCI_MAXPORTS_2 15
@@ -15,4 +15,4 @@
 /* must be power of 2 */
 #define XHCI_LEN_REGS 0x4000
 
-void xhci_sysbus_build_aml(Aml *scope, uint32_t mmio, unsigned int irq);
+void xhci_sysbus_build_aml(Aml* scope, uint32_t mmio, unsigned int irq);

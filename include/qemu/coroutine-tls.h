@@ -88,10 +88,10 @@
  *   my_count = c + 1;
  *   *(&my_count) = 0;
  */
-#define QEMU_DECLARE_CO_TLS(type, var)                                       \
-    __attribute__((noinline)) type get_##var(void);                          \
-    __attribute__((noinline)) void set_##var(type v);                        \
-    __attribute__((noinline)) type *get_ptr_##var(void);
+#define QEMU_DECLARE_CO_TLS(type, var)                   \
+    __attribute__((noinline)) type  get_##var(void);     \
+    __attribute__((noinline)) void  set_##var(type v);   \
+    __attribute__((noinline)) type* get_ptr_##var(void);
 
 /**
  * QEMU_DEFINE_CO_TLS:
@@ -114,12 +114,24 @@
  *
  *   __thread int my_count;
  */
-#define QEMU_DEFINE_CO_TLS(type, var)                                        \
-    static __thread type co_tls_##var;                                       \
-    type get_##var(void) { asm volatile(""); return co_tls_##var; }          \
-    void set_##var(type v) { asm volatile(""); co_tls_##var = v; }           \
-    type *get_ptr_##var(void)                                                \
-    { type *ptr = &co_tls_##var; asm volatile("" : "+rm" (ptr)); return ptr; }
+#define QEMU_DEFINE_CO_TLS(type, var)    \
+    static __thread type co_tls_##var;   \
+    type                 get_##var(void) \
+    {                                    \
+        asm volatile("");                \
+        return co_tls_##var;             \
+    }                                    \
+    void set_##var(type v)               \
+    {                                    \
+        asm volatile("");                \
+        co_tls_##var = v;                \
+    }                                    \
+    type* get_ptr_##var(void)            \
+    {                                    \
+        type* ptr = &co_tls_##var;       \
+        asm volatile("" : "+rm"(ptr));   \
+        return ptr;                      \
+    }
 
 /**
  * QEMU_DEFINE_STATIC_CO_TLS:
@@ -149,14 +161,21 @@
  *   my_count = c + 1;
  *   *(&my_count) = 0;
  */
-#define QEMU_DEFINE_STATIC_CO_TLS(type, var)                                 \
-    static __thread type co_tls_##var;                                       \
-    static __attribute__((noinline, unused))                                 \
-    type get_##var(void)                                                     \
-    { asm volatile(""); return co_tls_##var; }                               \
-    static __attribute__((noinline, unused))                                 \
-    void set_##var(type v)                                                   \
-    { asm volatile(""); co_tls_##var = v; }                                  \
-    static __attribute__((noinline, unused))                                 \
-    type *get_ptr_##var(void)                                                \
-    { type *ptr = &co_tls_##var; asm volatile("" : "+rm" (ptr)); return ptr; }
+#define QEMU_DEFINE_STATIC_CO_TLS(type, var)                           \
+    static __thread type                          co_tls_##var;        \
+    static __attribute__((noinline, unused)) type get_##var(void)      \
+    {                                                                  \
+        asm volatile("");                                              \
+        return co_tls_##var;                                           \
+    }                                                                  \
+    static __attribute__((noinline, unused)) void set_##var(type v)    \
+    {                                                                  \
+        asm volatile("");                                              \
+        co_tls_##var = v;                                              \
+    }                                                                  \
+    static __attribute__((noinline, unused)) type* get_ptr_##var(void) \
+    {                                                                  \
+        type* ptr = &co_tls_##var;                                     \
+        asm volatile("" : "+rm"(ptr));                                 \
+        return ptr;                                                    \
+    }

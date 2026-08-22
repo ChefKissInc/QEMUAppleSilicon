@@ -66,24 +66,21 @@
  * interrupt number.
  */
 #define GIC_DECLARE_BITMAP(name) DECLARE_BITMAP32(name, GICV3_MAXIRQ)
-#define GICV3_BMP_SIZE BITS_TO_U32S(GICV3_MAXIRQ)
+#define GICV3_BMP_SIZE           BITS_TO_U32S(GICV3_MAXIRQ)
 
-static inline void gic_bmp_replace_bit(int nr, uint32_t *addr, int val)
+static inline void gic_bmp_replace_bit(int nr, uint32_t* addr, int val)
 {
-    uint32_t mask = BIT32_MASK(nr);
-    uint32_t *p = addr + BIT32_WORD(nr);
+    uint32_t  mask = BIT32_MASK(nr);
+    uint32_t* p    = addr + BIT32_WORD(nr);
 
     *p &= ~mask;
     *p |= (val & 1U) << (nr % 32);
 }
 
 /* Return a pointer to the 32-bit word containing the specified bit. */
-static inline uint32_t *gic_bmp_ptr32(uint32_t *addr, int nr)
-{
-    return addr + BIT32_WORD(nr);
-}
+static inline uint32_t* gic_bmp_ptr32(uint32_t* addr, int nr) { return addr + BIT32_WORD(nr); }
 
-typedef struct GICv3State GICv3State;
+typedef struct GICv3State    GICv3State;
 typedef struct GICv3CPUState GICv3CPUState;
 
 /* Some CPU interface registers come in three flavours:
@@ -104,8 +101,8 @@ typedef struct GICv3CPUState GICv3CPUState;
  * in a no-EL3 CPU:  we would otherwise have to translate back and forth
  * between (G0, G1NS) from the distributor and (G0, G1) in the CPU i/f.)
  */
-#define GICV3_G0 0
-#define GICV3_G1 1
+#define GICV3_G0   0
+#define GICV3_G1   1
 #define GICV3_G1NS 2
 
 /* ICC_CTLR_EL1, GICD_STATUSR and GICR_STATUSR are banked but not
@@ -113,28 +110,30 @@ typedef struct GICv3CPUState GICv3CPUState;
  * (If the CPU or the GIC, respectively, don't support the Security
  * extensions then the S element is unused.)
  */
-#define GICV3_S 0
+#define GICV3_S  0
 #define GICV3_NS 1
 
-typedef struct {
-    int irq;
+typedef struct
+{
+    int     irq;
     uint8_t prio;
-    int grp;
-    bool nmi;
+    int     grp;
+    bool    nmi;
 } PendingIrq;
 
-struct GICv3CPUState {
-    GICv3State *gic;
-    CPUState *cpu;
-    qemu_irq parent_irq;
-    qemu_irq parent_fiq;
-    qemu_irq parent_virq;
-    qemu_irq parent_vfiq;
-    qemu_irq parent_nmi;
-    qemu_irq parent_vnmi;
+struct GICv3CPUState
+{
+    GICv3State* gic;
+    CPUState*   cpu;
+    qemu_irq    parent_irq;
+    qemu_irq    parent_fiq;
+    qemu_irq    parent_virq;
+    qemu_irq    parent_vfiq;
+    qemu_irq    parent_nmi;
+    qemu_irq    parent_vnmi;
 
     /* Redistributor */
-    uint32_t level;                  /* Current IRQ level */
+    uint32_t level; /* Current IRQ level */
     /* RD_base page registers */
     uint32_t gicr_ctlr;
     uint64_t gicr_typer;
@@ -151,7 +150,7 @@ struct GICv3CPUState {
     uint32_t edge_trigger; /* ICFGR0 and ICFGR1 even bits */
     uint32_t gicr_igrpmodr0;
     uint32_t gicr_nsacr;
-    uint8_t gicr_ipriorityr[GIC_INTERNAL];
+    uint8_t  gicr_ipriorityr[GIC_INTERNAL];
     /* VLPI_base page registers */
     uint64_t gicr_vpropbaser;
     uint64_t gicr_vpendbaser;
@@ -179,8 +178,8 @@ struct GICv3CPUState {
     int num_list_regs;
     int vpribits; /* number of virtual priority bits */
     int vprebits; /* number of virtual preemption bits */
-    int pribits; /* number of physical priority bits */
-    int prebits; /* number of physical preemption bits */
+    int pribits;  /* number of physical priority bits */
+    int prebits;  /* number of physical preemption bits */
 
     /* Current highest priority pending interrupt for this CPU.
      * This is cached information that can be recalculated from the
@@ -212,36 +211,38 @@ struct GICv3CPUState {
  * The redistributor pages might be split into more than one region
  * on some machine types if there are many CPUs.
  */
-typedef struct GICv3RedistRegion {
-    GICv3State *gic;
+typedef struct GICv3RedistRegion
+{
+    GICv3State*  gic;
     MemoryRegion iomem;
-    uint32_t cpuidx; /* index of first CPU this region covers */
+    uint32_t     cpuidx; /* index of first CPU this region covers */
 } GICv3RedistRegion;
 
-struct GICv3State {
+struct GICv3State
+{
     /*< private >*/
     SysBusDevice parent_obj;
     /*< public >*/
 
-    MemoryRegion iomem_dist; /* Distributor */
-    GICv3RedistRegion *redist_regions; /* Redistributor Regions */
-    uint32_t *redist_region_count; /* redistributor count within each region */
-    uint32_t nb_redist_regions; /* number of redist regions */
+    MemoryRegion       iomem_dist;          /* Distributor */
+    GICv3RedistRegion* redist_regions;      /* Redistributor Regions */
+    uint32_t*          redist_region_count; /* redistributor count within each region */
+    uint32_t           nb_redist_regions;   /* number of redist regions */
 
     uint32_t num_cpu;
     uint32_t num_irq;
     uint32_t revision;
     uint32_t maint_irq;
-    bool lpi_enable;
-    bool nmi_support;
-    bool security_extn;
-    bool force_8bit_prio;
-    bool irq_reset_nonsecure;
+    bool     lpi_enable;
+    bool     nmi_support;
+    bool     security_extn;
+    bool     force_8bit_prio;
+    bool     irq_reset_nonsecure;
 
     int dev_fd; /* kvm device fd if backed by kvm vgic support */
 
-    MemoryRegion *dma;
-    AddressSpace dma_as;
+    MemoryRegion* dma;
+    AddressSpace  dma_as;
 
     /* Distributor */
 
@@ -258,37 +259,25 @@ struct GICv3State {
     GIC_DECLARE_BITMAP(level);        /* Current level */
     GIC_DECLARE_BITMAP(edge_trigger); /* GICD_ICFGR even bits */
     GIC_DECLARE_BITMAP(nmi);          /* GICD_INMIR */
-    uint8_t gicd_ipriority[GICV3_MAXIRQ];
+    uint8_t  gicd_ipriority[GICV3_MAXIRQ];
     uint64_t gicd_irouter[GICV3_MAXIRQ];
     /* Cached information: pointer to the cpu i/f for the CPUs specified
      * in the IROUTER registers
      */
-    GICv3CPUState *gicd_irouter_target[GICV3_MAXIRQ];
-    uint32_t gicd_nsacr[DIV_ROUND_UP(GICV3_MAXIRQ, 16)];
+    GICv3CPUState* gicd_irouter_target[GICV3_MAXIRQ];
+    uint32_t       gicd_nsacr[DIV_ROUND_UP(GICV3_MAXIRQ, 16)];
 
-    GICv3CPUState *cpu;
+    GICv3CPUState* cpu;
     /* List of all ITSes connected to this GIC */
-    GPtrArray *itslist;
+    GPtrArray* itslist;
 };
 
-#define GICV3_BITMAP_ACCESSORS(BMP)                                     \
-    static inline void gicv3_gicd_##BMP##_set(GICv3State *s, int irq)   \
-    {                                                                   \
-        set_bit32(irq, s->BMP);                                         \
-    }                                                                   \
-    static inline int gicv3_gicd_##BMP##_test(GICv3State *s, int irq)   \
-    {                                                                   \
-        return test_bit32(irq, s->BMP);                                 \
-    }                                                                   \
-    static inline void gicv3_gicd_##BMP##_clear(GICv3State *s, int irq) \
-    {                                                                   \
-        clear_bit32(irq, s->BMP);                                       \
-    }                                                                   \
-    static inline void gicv3_gicd_##BMP##_replace(GICv3State *s,        \
-                                                  int irq, int value)   \
-    {                                                                   \
-        gic_bmp_replace_bit(irq, s->BMP, value);                        \
-    }
+#define GICV3_BITMAP_ACCESSORS(BMP)                                                                        \
+    static inline void gicv3_gicd_##BMP##_set(GICv3State* s, int irq) { set_bit32(irq, s->BMP); }          \
+    static inline int  gicv3_gicd_##BMP##_test(GICv3State* s, int irq) { return test_bit32(irq, s->BMP); } \
+    static inline void gicv3_gicd_##BMP##_clear(GICv3State* s, int irq) { clear_bit32(irq, s->BMP); }      \
+    static inline void gicv3_gicd_##BMP##_replace(GICv3State* s, int irq, int value)                       \
+    { gic_bmp_replace_bit(irq, s->BMP, value); }
 
 GICV3_BITMAP_ACCESSORS(group)
 GICV3_BITMAP_ACCESSORS(grpmod)
@@ -301,17 +290,16 @@ GICV3_BITMAP_ACCESSORS(nmi)
 
 #define TYPE_ARM_GICV3_COMMON "arm-gicv3-common"
 typedef struct ARMGICv3CommonClass ARMGICv3CommonClass;
-DECLARE_OBJ_CHECKERS(GICv3State, ARMGICv3CommonClass,
-                     ARM_GICV3_COMMON, TYPE_ARM_GICV3_COMMON)
+DECLARE_OBJ_CHECKERS(GICv3State, ARMGICv3CommonClass, ARM_GICV3_COMMON, TYPE_ARM_GICV3_COMMON)
 
-struct ARMGICv3CommonClass {
+struct ARMGICv3CommonClass
+{
     /*< private >*/
     SysBusDeviceClass parent_class;
     /*< public >*/
 };
 
-void gicv3_init_irqs_and_mmio(GICv3State *s, qemu_irq_handler handler,
-                              const MemoryRegionOps *ops);
+void gicv3_init_irqs_and_mmio(GICv3State* s, qemu_irq_handler handler, const MemoryRegionOps* ops);
 
 /**
  * gicv3_class_name
@@ -321,4 +309,4 @@ void gicv3_init_irqs_and_mmio(GICv3State *s, qemu_irq_handler handler,
  *
  * Returns: class name to use
  */
-const char *gicv3_class_name(void);
+const char* gicv3_class_name(void);

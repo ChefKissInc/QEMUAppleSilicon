@@ -22,65 +22,62 @@
 #include "hw/misc/apple-silicon/tempsensor.h"
 #include "system/memory.h"
 
-struct AppleTempSensorState {
+struct AppleTempSensorState
+{
     /*< private >*/
     SysBusDevice parent_obj;
     MemoryRegion iomem;
-    qemu_irq irq;
+    qemu_irq     irq;
 
     /*< public >*/
 };
 
-static void apple_temp_sensor_reg_write(void *opaque, hwaddr addr,
-                                        uint64_t data, unsigned size)
+static void apple_temp_sensor_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
-    AppleTempSensorState *s = opaque;
+    AppleTempSensorState* s = opaque;
 
     switch (addr) {
-    default:
-        break;
+        default: break;
     }
 }
 
-static uint64_t apple_temp_sensor_reg_read(void *opaque, hwaddr addr,
-                                           unsigned size)
+static uint64_t apple_temp_sensor_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
-    AppleTempSensorState *s = opaque;
+    AppleTempSensorState* s = opaque;
 
     switch (addr) {
-    default:
-        return 0xAFAFAFAF;
+        default: return 0xAFAFAFAF;
     }
 }
 
 static const MemoryRegionOps apple_temp_sensor_reg_ops = {
-    .write = apple_temp_sensor_reg_write,
-    .read = apple_temp_sensor_reg_read,
-    .endianness = DEVICE_LITTLE_ENDIAN,
-    .impl.min_access_size = 4,
-    .impl.max_access_size = 4,
+    .write                 = apple_temp_sensor_reg_write,
+    .read                  = apple_temp_sensor_reg_read,
+    .endianness            = DEVICE_LITTLE_ENDIAN,
+    .impl.min_access_size  = 4,
+    .impl.max_access_size  = 4,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .valid.unaligned = false,
+    .valid.unaligned       = false,
 };
 
-SysBusDevice *apple_temp_sensor_create(AppleDTNode *node)
+SysBusDevice* apple_temp_sensor_create(AppleDTNode* node)
 {
-    DeviceState *dev;
-    AppleTempSensorState *s;
-    SysBusDevice *sbd;
-    AppleDTProp *prop;
-    uint64_t *reg;
+    DeviceState*          dev;
+    AppleTempSensorState* s;
+    SysBusDevice*         sbd;
+    AppleDTProp*          prop;
+    uint64_t*             reg;
 
     dev = qdev_new(TYPE_APPLE_TEMP_SENSOR);
-    s = APPLE_TEMP_SENSOR(dev);
+    s   = APPLE_TEMP_SENSOR(dev);
     sbd = SYS_BUS_DEVICE(dev);
 
     prop = apple_dt_get_prop(node, "reg");
     assert_nonnull(prop);
-    reg = (uint64_t *)prop->data;
-    memory_region_init_io(&s->iomem, OBJECT(dev), &apple_temp_sensor_reg_ops, s,
-                          TYPE_APPLE_TEMP_SENSOR ".regs", reg[1]);
+    reg = (uint64_t*)prop->data;
+    memory_region_init_io(&s->iomem, OBJECT(dev), &apple_temp_sensor_reg_ops, s, TYPE_APPLE_TEMP_SENSOR ".regs",
+                          reg[1]);
     sysbus_init_mmio(sbd, &s->iomem);
 
     sysbus_init_irq(sbd, &s->irq);
@@ -88,41 +85,34 @@ SysBusDevice *apple_temp_sensor_create(AppleDTNode *node)
     return sbd;
 }
 
-static void apple_temp_sensor_reset_hold(Object *obj, ResetType type)
-{
-    AppleTempSensorState *s = APPLE_TEMP_SENSOR(obj);
-}
+static void apple_temp_sensor_reset_hold(Object* obj, ResetType type)
+{ AppleTempSensorState* s = APPLE_TEMP_SENSOR(obj); }
 
-static void apple_temp_sensor_realize(DeviceState *dev, Error **errp)
-{
-}
+static void apple_temp_sensor_realize(DeviceState* dev, Error** errp) { }
 
-static void apple_temp_sensor_class_init(ObjectClass *oc, const void *data)
+static void apple_temp_sensor_class_init(ObjectClass* oc, const void* data)
 {
-    ResettableClass *rc;
-    DeviceClass *dc;
+    ResettableClass* rc;
+    DeviceClass*     dc;
 
     rc = RESETTABLE_CLASS(oc);
     dc = DEVICE_CLASS(oc);
 
     rc->phases.hold = apple_temp_sensor_reset_hold;
 
-    dc->desc = "Apple Temp Sensor";
+    dc->desc           = "Apple Temp Sensor";
     dc->user_creatable = false;
-    dc->realize = apple_temp_sensor_realize;
+    dc->realize        = apple_temp_sensor_realize;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
 
 static const TypeInfo apple_temp_sensor_info = {
-    .name = TYPE_APPLE_TEMP_SENSOR,
-    .parent = TYPE_SYS_BUS_DEVICE,
+    .name          = TYPE_APPLE_TEMP_SENSOR,
+    .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(AppleTempSensorState),
-    .class_init = apple_temp_sensor_class_init,
+    .class_init    = apple_temp_sensor_class_init,
 };
 
-static void apple_temp_sensor_register_types(void)
-{
-    type_register_static(&apple_temp_sensor_info);
-}
+static void apple_temp_sensor_register_types(void) { type_register_static(&apple_temp_sensor_info); }
 
 type_init(apple_temp_sensor_register_types);

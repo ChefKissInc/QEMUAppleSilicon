@@ -61,7 +61,7 @@
 /**
  * Initialize the L2 cache
  */
-void qed_init_l2_cache(L2TableCache *l2_cache)
+void qed_init_l2_cache(L2TableCache* l2_cache)
 {
     QTAILQ_INIT(&l2_cache->entries);
     l2_cache->n_entries = 0;
@@ -70,11 +70,11 @@ void qed_init_l2_cache(L2TableCache *l2_cache)
 /**
  * Free the L2 cache
  */
-void qed_free_l2_cache(L2TableCache *l2_cache)
+void qed_free_l2_cache(L2TableCache* l2_cache)
 {
     CachedL2Table *entry, *next_entry;
 
-    QTAILQ_FOREACH_SAFE(entry, &l2_cache->entries, node, next_entry) {
+    QTAILQ_FOREACH_SAFE (entry, &l2_cache->entries, node, next_entry) {
         qemu_vfree(entry->table);
         g_free(entry);
     }
@@ -87,9 +87,9 @@ void qed_free_l2_cache(L2TableCache *l2_cache)
  * The caller must allocate the actual table field for this entry and it must
  * be freeable using qemu_vfree().
  */
-CachedL2Table *qed_alloc_l2_cache_entry(L2TableCache *l2_cache)
+CachedL2Table* qed_alloc_l2_cache_entry(L2TableCache* l2_cache)
 {
-    CachedL2Table *entry;
+    CachedL2Table* entry;
 
     entry = g_malloc0(sizeof(*entry));
     entry->ref++;
@@ -105,11 +105,9 @@ CachedL2Table *qed_alloc_l2_cache_entry(L2TableCache *l2_cache)
  *
  * Called with table_lock held.
  */
-void qed_unref_l2_cache_entry(CachedL2Table *entry)
+void qed_unref_l2_cache_entry(CachedL2Table* entry)
 {
-    if (!entry) {
-        return;
-    }
+    if (!entry) { return; }
 
     entry->ref--;
     trace_qed_unref_l2_cache_entry(entry, entry->ref);
@@ -128,11 +126,11 @@ void qed_unref_l2_cache_entry(CachedL2Table *entry)
  *
  * Called with table_lock held.
  */
-CachedL2Table *qed_find_l2_cache_entry(L2TableCache *l2_cache, uint64_t offset)
+CachedL2Table* qed_find_l2_cache_entry(L2TableCache* l2_cache, uint64_t offset)
 {
-    CachedL2Table *entry;
+    CachedL2Table* entry;
 
-    QTAILQ_FOREACH(entry, &l2_cache->entries, node) {
+    QTAILQ_FOREACH (entry, &l2_cache->entries, node) {
         if (entry->offset == offset) {
             trace_qed_find_l2_cache_entry(l2_cache, entry, offset, entry->ref);
             entry->ref++;
@@ -158,9 +156,9 @@ CachedL2Table *qed_find_l2_cache_entry(L2TableCache *l2_cache, uint64_t offset)
  *
  * Called with table_lock held.
  */
-void qed_commit_l2_cache_entry(L2TableCache *l2_cache, CachedL2Table *l2_table)
+void qed_commit_l2_cache_entry(L2TableCache* l2_cache, CachedL2Table* l2_table)
 {
-    CachedL2Table *entry;
+    CachedL2Table* entry;
 
     entry = qed_find_l2_cache_entry(l2_cache, l2_table->offset);
     if (entry) {
@@ -173,20 +171,16 @@ void qed_commit_l2_cache_entry(L2TableCache *l2_cache, CachedL2Table *l2_table)
      * we can grow the cache temporarily and we try to shrink back down later.
      */
     if (l2_cache->n_entries >= MAX_L2_CACHE_SIZE) {
-        CachedL2Table *next;
-        QTAILQ_FOREACH_SAFE(entry, &l2_cache->entries, node, next) {
-            if (entry->ref > 1) {
-                continue;
-            }
+        CachedL2Table* next;
+        QTAILQ_FOREACH_SAFE (entry, &l2_cache->entries, node, next) {
+            if (entry->ref > 1) { continue; }
 
             QTAILQ_REMOVE(&l2_cache->entries, entry, node);
             l2_cache->n_entries--;
             qed_unref_l2_cache_entry(entry);
 
             /* Stop evicting when we've shrunk back to max size */
-            if (l2_cache->n_entries < MAX_L2_CACHE_SIZE) {
-                break;
-            }
+            if (l2_cache->n_entries < MAX_L2_CACHE_SIZE) { break; }
         }
     }
 

@@ -24,36 +24,23 @@
 #include "crypto/cipher.h"
 #include "cipherpriv.h"
 
-
 static const size_t alg_key_len[QCRYPTO_CIPHER_ALGO__MAX] = {
-    [QCRYPTO_CIPHER_ALGO_AES_128] = 16,
-    [QCRYPTO_CIPHER_ALGO_AES_192] = 24,
-    [QCRYPTO_CIPHER_ALGO_AES_256] = 32,
-    [QCRYPTO_CIPHER_ALGO_DES] = 8,
-    [QCRYPTO_CIPHER_ALGO_3DES] = 24,
-    [QCRYPTO_CIPHER_ALGO_CAST5_128] = 16,
-    [QCRYPTO_CIPHER_ALGO_SERPENT_128] = 16,
-    [QCRYPTO_CIPHER_ALGO_SERPENT_192] = 24,
-    [QCRYPTO_CIPHER_ALGO_SERPENT_256] = 32,
-    [QCRYPTO_CIPHER_ALGO_TWOFISH_128] = 16,
-    [QCRYPTO_CIPHER_ALGO_TWOFISH_192] = 24,
-    [QCRYPTO_CIPHER_ALGO_TWOFISH_256] = 32,
+    [QCRYPTO_CIPHER_ALGO_AES_128] = 16,     [QCRYPTO_CIPHER_ALGO_AES_192] = 24,
+    [QCRYPTO_CIPHER_ALGO_AES_256] = 32,     [QCRYPTO_CIPHER_ALGO_DES] = 8,
+    [QCRYPTO_CIPHER_ALGO_3DES] = 24,        [QCRYPTO_CIPHER_ALGO_CAST5_128] = 16,
+    [QCRYPTO_CIPHER_ALGO_SERPENT_128] = 16, [QCRYPTO_CIPHER_ALGO_SERPENT_192] = 24,
+    [QCRYPTO_CIPHER_ALGO_SERPENT_256] = 32, [QCRYPTO_CIPHER_ALGO_TWOFISH_128] = 16,
+    [QCRYPTO_CIPHER_ALGO_TWOFISH_192] = 24, [QCRYPTO_CIPHER_ALGO_TWOFISH_256] = 32,
     [QCRYPTO_CIPHER_ALGO_SM4] = 16,
 };
 
 static const size_t alg_block_len[QCRYPTO_CIPHER_ALGO__MAX] = {
-    [QCRYPTO_CIPHER_ALGO_AES_128] = 16,
-    [QCRYPTO_CIPHER_ALGO_AES_192] = 16,
-    [QCRYPTO_CIPHER_ALGO_AES_256] = 16,
-    [QCRYPTO_CIPHER_ALGO_DES] = 8,
-    [QCRYPTO_CIPHER_ALGO_3DES] = 8,
-    [QCRYPTO_CIPHER_ALGO_CAST5_128] = 8,
-    [QCRYPTO_CIPHER_ALGO_SERPENT_128] = 16,
-    [QCRYPTO_CIPHER_ALGO_SERPENT_192] = 16,
-    [QCRYPTO_CIPHER_ALGO_SERPENT_256] = 16,
-    [QCRYPTO_CIPHER_ALGO_TWOFISH_128] = 16,
-    [QCRYPTO_CIPHER_ALGO_TWOFISH_192] = 16,
-    [QCRYPTO_CIPHER_ALGO_TWOFISH_256] = 16,
+    [QCRYPTO_CIPHER_ALGO_AES_128] = 16,     [QCRYPTO_CIPHER_ALGO_AES_192] = 16,
+    [QCRYPTO_CIPHER_ALGO_AES_256] = 16,     [QCRYPTO_CIPHER_ALGO_DES] = 8,
+    [QCRYPTO_CIPHER_ALGO_3DES] = 8,         [QCRYPTO_CIPHER_ALGO_CAST5_128] = 8,
+    [QCRYPTO_CIPHER_ALGO_SERPENT_128] = 16, [QCRYPTO_CIPHER_ALGO_SERPENT_192] = 16,
+    [QCRYPTO_CIPHER_ALGO_SERPENT_256] = 16, [QCRYPTO_CIPHER_ALGO_TWOFISH_128] = 16,
+    [QCRYPTO_CIPHER_ALGO_TWOFISH_192] = 16, [QCRYPTO_CIPHER_ALGO_TWOFISH_256] = 16,
     [QCRYPTO_CIPHER_ALGO_SM4] = 16,
 };
 
@@ -64,13 +51,11 @@ static const bool mode_need_iv[QCRYPTO_CIPHER_MODE__MAX] = {
     [QCRYPTO_CIPHER_MODE_CTR] = true,
 };
 
-
 size_t qcrypto_cipher_get_block_len(QCryptoCipherAlgo alg)
 {
     assert(alg < G_N_ELEMENTS(alg_key_len));
     return alg_block_len[alg];
 }
-
 
 size_t qcrypto_cipher_get_key_len(QCryptoCipherAlgo alg)
 {
@@ -78,39 +63,24 @@ size_t qcrypto_cipher_get_key_len(QCryptoCipherAlgo alg)
     return alg_key_len[alg];
 }
 
-
-size_t qcrypto_cipher_get_iv_len(QCryptoCipherAlgo alg,
-                                 QCryptoCipherMode mode)
+size_t qcrypto_cipher_get_iv_len(QCryptoCipherAlgo alg, QCryptoCipherMode mode)
 {
-    if (alg >= G_N_ELEMENTS(alg_block_len)) {
-        return 0;
-    }
-    if (mode >= G_N_ELEMENTS(mode_need_iv)) {
-        return 0;
-    }
+    if (alg >= G_N_ELEMENTS(alg_block_len)) { return 0; }
+    if (mode >= G_N_ELEMENTS(mode_need_iv)) { return 0; }
 
-    if (mode_need_iv[mode]) {
-        return alg_block_len[alg];
-    }
+    if (mode_need_iv[mode]) { return alg_block_len[alg]; }
     return 0;
 }
 
-
-static bool
-qcrypto_cipher_validate_key_length(QCryptoCipherAlgo alg,
-                                   QCryptoCipherMode mode,
-                                   size_t nkey,
-                                   Error **errp)
+static bool qcrypto_cipher_validate_key_length(QCryptoCipherAlgo alg, QCryptoCipherMode mode, size_t nkey, Error** errp)
 {
     if ((unsigned)alg >= QCRYPTO_CIPHER_ALGO__MAX) {
-        error_setg(errp, "Cipher algorithm %d out of range",
-                   alg);
+        error_setg(errp, "Cipher algorithm %d out of range", alg);
         return false;
     }
 
     if (mode == QCRYPTO_CIPHER_MODE_XTS) {
-        if (alg == QCRYPTO_CIPHER_ALGO_DES ||
-            alg == QCRYPTO_CIPHER_ALGO_3DES) {
+        if (alg == QCRYPTO_CIPHER_ALGO_DES || alg == QCRYPTO_CIPHER_ALGO_3DES) {
             error_setg(errp, "XTS mode not compatible with DES/3DES");
             return false;
         }
@@ -120,14 +90,13 @@ qcrypto_cipher_validate_key_length(QCryptoCipherAlgo alg,
         }
 
         if (alg_key_len[alg] != (nkey / 2)) {
-            error_setg(errp, "Cipher key length %zu should be %zu",
-                       nkey, alg_key_len[alg] * 2);
+            error_setg(errp, "Cipher key length %zu should be %zu", nkey, alg_key_len[alg] * 2);
             return false;
         }
-    } else {
+    }
+    else {
         if (alg_key_len[alg] != nkey) {
-            error_setg(errp, "Cipher key length %zu should be %zu",
-                       nkey, alg_key_len[alg]);
+            error_setg(errp, "Cipher key length %zu should be %zu", nkey, alg_key_len[alg]);
             return false;
         }
     }
@@ -136,75 +105,51 @@ qcrypto_cipher_validate_key_length(QCryptoCipherAlgo alg,
 
 #include "cipher-nettle.c.inc"
 
-QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgo alg,
-                                  QCryptoCipherMode mode,
-                                  const uint8_t *key, size_t nkey,
-                                  Error **errp)
+QCryptoCipher* qcrypto_cipher_new(QCryptoCipherAlgo alg, QCryptoCipherMode mode, const uint8_t* key, size_t nkey,
+                                  Error** errp)
 {
-    QCryptoCipher *cipher = NULL;
+    QCryptoCipher* cipher = NULL;
 
     if (!cipher) {
         cipher = qcrypto_cipher_ctx_new(alg, mode, key, nkey, errp);
-        if (!cipher) {
-            return NULL;
-        }
+        if (!cipher) { return NULL; }
     }
 
-    cipher->alg = alg;
+    cipher->alg  = alg;
     cipher->mode = mode;
 
     return cipher;
 }
 
-
-int qcrypto_cipher_encrypt(QCryptoCipher *cipher,
-                           const void *in,
-                           void *out,
-                           size_t len,
-                           Error **errp)
+int qcrypto_cipher_encrypt(QCryptoCipher* cipher, const void* in, void* out, size_t len, Error** errp)
 {
-    const QCryptoCipherDriver *drv = cipher->driver;
+    const QCryptoCipherDriver* drv = cipher->driver;
     return drv->cipher_encrypt(cipher, in, out, len, errp);
 }
 
-
-int qcrypto_cipher_decrypt(QCryptoCipher *cipher,
-                           const void *in,
-                           void *out,
-                           size_t len,
-                           Error **errp)
+int qcrypto_cipher_decrypt(QCryptoCipher* cipher, const void* in, void* out, size_t len, Error** errp)
 {
-    const QCryptoCipherDriver *drv = cipher->driver;
+    const QCryptoCipherDriver* drv = cipher->driver;
     return drv->cipher_decrypt(cipher, in, out, len, errp);
 }
 
-
-int qcrypto_cipher_setiv(QCryptoCipher *cipher,
-                         const uint8_t *iv, size_t niv,
-                         Error **errp)
+int qcrypto_cipher_setiv(QCryptoCipher* cipher, const uint8_t* iv, size_t niv, Error** errp)
 {
-    const QCryptoCipherDriver *drv = cipher->driver;
+    const QCryptoCipherDriver* drv = cipher->driver;
     return drv->cipher_setiv(cipher, iv, niv, errp);
 }
 
-
-int qcrypto_cipher_getiv(QCryptoCipher *cipher,
-                         uint8_t *iv, size_t niv,
-                         Error **errp)
+int qcrypto_cipher_getiv(QCryptoCipher* cipher, uint8_t* iv, size_t niv, Error** errp)
 {
-    const QCryptoCipherDriver *drv = cipher->driver;
-    if (drv->cipher_getiv) {
-        return drv->cipher_getiv(cipher, iv, niv, errp);
-    } else {
+    const QCryptoCipherDriver* drv = cipher->driver;
+    if (drv->cipher_getiv) { return drv->cipher_getiv(cipher, iv, niv, errp); }
+    else {
         error_setg(errp, "Get IV is not supported for cipher");
         return -1;
     }
 }
 
-
-void qcrypto_cipher_free(QCryptoCipher *cipher)
+void qcrypto_cipher_free(QCryptoCipher* cipher)
 {
-    if (cipher) {
-        cipher->driver->cipher_free(cipher);
-    }
+    if (cipher) { cipher->driver->cipher_free(cipher); }
 }

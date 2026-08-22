@@ -34,121 +34,98 @@
 #include "chardev/char-io.h"
 
 /* Called with chr_write_lock held.  */
-static int fd_chr_write(Chardev *chr, const uint8_t *buf, int len)
+static int fd_chr_write(Chardev* chr, const uint8_t* buf, int len)
 {
-    FDChardev *s = container_of(chr, FDChardev, parent);
+    FDChardev* s = container_of(chr, FDChardev, parent);
 
-    if (!s->ioc_out) {
-        return -1;
-    }
+    if (!s->ioc_out) { return -1; }
 
     return io_channel_send(s->ioc_out, buf, len);
 }
 
-static gboolean fd_chr_read(QIOChannel *chan, GIOCondition cond, void *opaque)
+static gboolean fd_chr_read(QIOChannel* chan, GIOCondition cond, void* opaque)
 {
-    Chardev *chr = opaque;
-    FDChardev *s = opaque;
-    int len;
+    Chardev*                   chr = opaque;
+    FDChardev*                 s   = opaque;
+    int                        len;
     QEMU_UNINITIALIZED uint8_t buf[CHR_READ_BUF_LEN];
-    ssize_t ret;
+    ssize_t                    ret;
 
     len = sizeof(buf);
-    if (len > s->max_size) {
-        len = s->max_size;
-    }
-    if (len == 0) {
-        return TRUE;
-    }
+    if (len > s->max_size) { len = s->max_size; }
+    if (len == 0) { return TRUE; }
 
-    ret = qio_channel_read(
-        chan, (gchar *)buf, len, NULL);
+    ret = qio_channel_read(chan, (gchar*)buf, len, NULL);
     if (ret == 0) {
         remove_fd_in_watch(chr);
         qemu_chr_be_event(chr, CHR_EVENT_CLOSED);
         return FALSE;
     }
-    if (ret > 0) {
-        qemu_chr_be_write(chr, buf, ret);
-    }
+    if (ret > 0) { qemu_chr_be_write(chr, buf, ret); }
 
     return TRUE;
 }
 
-static int fd_chr_read_poll(void *opaque)
+static int fd_chr_read_poll(void* opaque)
 {
-    Chardev *chr = opaque;
-    FDChardev *s = opaque;
+    Chardev*   chr = opaque;
+    FDChardev* s   = opaque;
 
     s->max_size = qemu_chr_be_can_write(chr);
     return s->max_size;
 }
 
-typedef struct FDSource {
+typedef struct FDSource
+{
     GSource parent;
 
     GIOCondition cond;
 } FDSource;
 
-static gboolean
-fd_source_prepare(GSource *source,
-                  gint *timeout_)
+static gboolean fd_source_prepare(GSource* source, gint* timeout_)
 {
-    FDSource *src = (FDSource *)source;
+    FDSource* src = (FDSource*)source;
 
     return src->cond != 0;
 }
 
-static gboolean
-fd_source_check(GSource *source)
+static gboolean fd_source_check(GSource* source)
 {
-    FDSource *src = (FDSource *)source;
+    FDSource* src = (FDSource*)source;
 
     return src->cond != 0;
 }
 
-static gboolean
-fd_source_dispatch(GSource *source, GSourceFunc callback,
-                   gpointer user_data)
+static gboolean fd_source_dispatch(GSource* source, GSourceFunc callback, gpointer user_data)
 {
-    FDSource *src = (FDSource *)source;
+    FDSource*   src  = (FDSource*)source;
     FEWatchFunc func = (FEWatchFunc)callback;
-    gboolean ret = G_SOURCE_CONTINUE;
+    gboolean    ret  = G_SOURCE_CONTINUE;
 
     if (src->cond) {
-        ret = func(NULL, src->cond, user_data);
+        ret       = func(NULL, src->cond, user_data);
         src->cond = 0;
     }
 
     return ret;
 }
 
-static GSourceFuncs fd_source_funcs = {
-  fd_source_prepare,
-  fd_source_check,
-  fd_source_dispatch,
-  NULL, NULL, NULL
-};
+static GSourceFuncs fd_source_funcs = {fd_source_prepare, fd_source_check, fd_source_dispatch, NULL, NULL, NULL};
 
-static GSource *fd_source_new(FDChardev *chr)
-{
-    return g_source_new(&fd_source_funcs, sizeof(FDSource));
-}
+static GSource* fd_source_new(FDChardev* chr) { return g_source_new(&fd_source_funcs, sizeof(FDSource)); }
 
-static gboolean child_func(GIOChannel *source,
-                           GIOCondition condition,
-                           gpointer data)
+static gboolean child_func(GIOChannel* source, GIOCondition condition, gpointer data)
 {
-    FDSource *parent = data;
+    FDSource* parent = data;
 
     parent->cond |= condition;
 
     return G_SOURCE_CONTINUE;
 }
 
-static GSource *fd_chr_add_watch(Chardev *chr, GIOCondition cond)
+static GSource* fd_chr_add_watch(Chardev* chr, GIOCondition cond)
 {
-    FDChardev *s = container_of(chr, FDChardev, parent);
+    FDChardev* s              = container_of(chr, FDChardev, parent);
     g_autoptr(GSource) source = fd_source_new(s);
 
     if (s->ioc_out) {
@@ -165,62 +142,50 @@ static GSource *fd_chr_add_watch(Chardev *chr, GIOCondition cond)
     return g_steal_pointer(&source);
 }
 
-static void fd_chr_update_read_handler(Chardev *chr)
+static void fd_chr_update_read_handler(Chardev* chr)
 {
-    FDChardev *s = container_of(chr, FDChardev, parent);
+    FDChardev* s = container_of(chr, FDChardev, parent);
 
     remove_fd_in_watch(chr);
     if (s->ioc_in) {
-        chr->gsource = io_add_watch_poll(chr, s->ioc_in,
-                                           fd_chr_read_poll,
-                                           fd_chr_read, chr,
-                                           chr->gcontext);
+        chr->gsource = io_add_watch_poll(chr, s->ioc_in, fd_chr_read_poll, fd_chr_read, chr, chr->gcontext);
     }
 }
 
-static void char_fd_finalize(Object *obj)
+static void char_fd_finalize(Object* obj)
 {
-    Chardev *chr = CHARDEV(obj);
-    FDChardev *s = FD_CHARDEV(obj);
+    Chardev*   chr = CHARDEV(obj);
+    FDChardev* s   = FD_CHARDEV(obj);
 
     remove_fd_in_watch(chr);
-    if (s->ioc_in) {
-        object_unref(OBJECT(s->ioc_in));
-    }
-    if (s->ioc_out) {
-        object_unref(OBJECT(s->ioc_out));
-    }
+    if (s->ioc_in) { object_unref(OBJECT(s->ioc_in)); }
+    if (s->ioc_out) { object_unref(OBJECT(s->ioc_out)); }
 
     qemu_chr_be_event(chr, CHR_EVENT_CLOSED);
 }
 
-int qmp_chardev_open_file_source(char *src, int flags, Error **errp)
+int qmp_chardev_open_file_source(char* src, int flags, Error** errp)
 {
     int fd = -1;
 
     fd = RETRY_ON_EINTR(qemu_open_old(src, flags, 0666));
-    if (fd == -1) {
-        error_setg_file_open(errp, errno, src);
-    }
+    if (fd == -1) { error_setg_file_open(errp, errno, src); }
     return fd;
 }
 
 /* open a character device to a unix fd */
-bool qemu_chr_open_fd(Chardev *chr,
-                      int fd_in, int fd_out, Error **errp)
+bool qemu_chr_open_fd(Chardev* chr, int fd_in, int fd_out, Error** errp)
 {
-    FDChardev *s = container_of(chr, FDChardev, parent);
-    g_autofree char *name = NULL;
+    FDChardev*       s    = container_of(chr, FDChardev, parent);
+    g_autofree char* name = NULL;
 
     if (fd_out >= 0) {
-        if (!qemu_set_blocking(fd_out, false, errp)) {
-            return false;
-        }
+        if (!qemu_set_blocking(fd_out, false, errp)) { return false; }
     }
 
     if (fd_out == fd_in && fd_in >= 0) {
         s->ioc_in = QIO_CHANNEL(qio_channel_file_new_fd(fd_in));
-        name = g_strdup_printf("chardev-file-%s", chr->label);
+        name      = g_strdup_printf("chardev-file-%s", chr->label);
         qio_channel_set_name(QIO_CHANNEL(s->ioc_in), name);
         s->ioc_out = QIO_CHANNEL(object_ref(s->ioc_in));
         return true;
@@ -228,7 +193,7 @@ bool qemu_chr_open_fd(Chardev *chr,
 
     if (fd_in >= 0) {
         s->ioc_in = QIO_CHANNEL(qio_channel_file_new_fd(fd_in));
-        name = g_strdup_printf("chardev-file-in-%s", chr->label);
+        name      = g_strdup_printf("chardev-file-in-%s", chr->label);
         qio_channel_set_name(QIO_CHANNEL(s->ioc_in), name);
     }
 
@@ -242,27 +207,24 @@ bool qemu_chr_open_fd(Chardev *chr,
     return true;
 }
 
-static void char_fd_class_init(ObjectClass *oc, const void *data)
+static void char_fd_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
-    cc->chr_add_watch = fd_chr_add_watch;
-    cc->chr_write = fd_chr_write;
+    cc->chr_add_watch           = fd_chr_add_watch;
+    cc->chr_write               = fd_chr_write;
     cc->chr_update_read_handler = fd_chr_update_read_handler;
 }
 
 static const TypeInfo char_fd_type_info = {
-    .name = TYPE_CHARDEV_FD,
-    .parent = TYPE_CHARDEV,
-    .instance_size = sizeof(FDChardev),
+    .name              = TYPE_CHARDEV_FD,
+    .parent            = TYPE_CHARDEV,
+    .instance_size     = sizeof(FDChardev),
     .instance_finalize = char_fd_finalize,
-    .class_init = char_fd_class_init,
-    .abstract = true,
+    .class_init        = char_fd_class_init,
+    .abstract          = true,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_fd_type_info);
-}
+static void register_types(void) { type_register_static(&char_fd_type_info); }
 
 type_init(register_types);

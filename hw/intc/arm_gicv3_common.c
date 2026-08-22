@@ -31,13 +31,11 @@
 #include "gicv3_internal.h"
 #include "system/kvm.h"
 
-
-void gicv3_init_irqs_and_mmio(GICv3State *s, qemu_irq_handler handler,
-                              const MemoryRegionOps *ops)
+void gicv3_init_irqs_and_mmio(GICv3State* s, qemu_irq_handler handler, const MemoryRegionOps* ops)
 {
-    SysBusDevice *sbd = SYS_BUS_DEVICE(s);
-    int i;
-    int cpuidx;
+    SysBusDevice* sbd = SYS_BUS_DEVICE(s);
+    int           i;
+    int           cpuidx;
 
     /* For the GIC, also expose incoming GPIO lines for PPIs for each CPU.
      * GPIO array layout is thus:
@@ -49,51 +47,37 @@ void gicv3_init_irqs_and_mmio(GICv3State *s, qemu_irq_handler handler,
     i = s->num_irq - GIC_INTERNAL + GIC_INTERNAL * s->num_cpu;
     qdev_init_gpio_in(DEVICE(s), handler, i);
 
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->cpu[i].parent_irq);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->cpu[i].parent_fiq);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->cpu[i].parent_virq);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->cpu[i].parent_vfiq);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->cpu[i].parent_nmi);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->cpu[i].parent_vnmi);
-    }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->cpu[i].parent_irq); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->cpu[i].parent_fiq); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->cpu[i].parent_virq); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->cpu[i].parent_vfiq); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->cpu[i].parent_nmi); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->cpu[i].parent_vnmi); }
 
-    memory_region_init_io(&s->iomem_dist, OBJECT(s), ops, s,
-                          "gicv3_dist", 0x10000);
+    memory_region_init_io(&s->iomem_dist, OBJECT(s), ops, s, "gicv3_dist", 0x10000);
     sysbus_init_mmio(sbd, &s->iomem_dist);
 
     s->redist_regions = g_new0(GICv3RedistRegion, s->nb_redist_regions);
-    cpuidx = 0;
+    cpuidx            = 0;
     for (i = 0; i < s->nb_redist_regions; i++) {
-        char *name = g_strdup_printf("gicv3_redist_region[%d]", i);
-        GICv3RedistRegion *region = &s->redist_regions[i];
+        char*              name   = g_strdup_printf("gicv3_redist_region[%d]", i);
+        GICv3RedistRegion* region = &s->redist_regions[i];
 
-        region->gic = s;
-        region->cpuidx = cpuidx;
-        cpuidx += s->redist_region_count[i];
+        region->gic     = s;
+        region->cpuidx  = cpuidx;
+        cpuidx         += s->redist_region_count[i];
 
-        memory_region_init_io(&region->iomem, OBJECT(s),
-                              ops ? &ops[1] : NULL, region, name,
+        memory_region_init_io(&region->iomem, OBJECT(s), ops ? &ops[1] : NULL, region, name,
                               s->redist_region_count[i] * gicv3_redist_size(s));
         sysbus_init_mmio(sbd, &region->iomem);
         g_free(name);
     }
 }
 
-static void arm_gicv3_common_realize(DeviceState *dev, Error **errp)
+static void arm_gicv3_common_realize(DeviceState* dev, Error** errp)
 {
-    GICv3State *s = ARM_GICV3_COMMON(dev);
-    int i, rdist_capacity, cpuidx;
+    GICv3State* s = ARM_GICV3_COMMON(dev);
+    int         i, rdist_capacity, cpuidx;
 
     /*
      * This GIC device supports only revisions 3 and 4. The GICv1/v2
@@ -108,15 +92,11 @@ static void arm_gicv3_common_realize(DeviceState *dev, Error **errp)
     }
 
     if (s->num_irq > GICV3_MAXIRQ) {
-        error_setg(errp,
-                   "requested %u interrupt lines exceeds GIC maximum %d",
-                   s->num_irq, GICV3_MAXIRQ);
+        error_setg(errp, "requested %u interrupt lines exceeds GIC maximum %d", s->num_irq, GICV3_MAXIRQ);
         return;
     }
     if (s->num_irq < GIC_INTERNAL) {
-        error_setg(errp,
-                   "requested %u interrupt lines is below GIC minimum %d",
-                   s->num_irq, GIC_INTERNAL);
+        error_setg(errp, "requested %u interrupt lines is below GIC minimum %d", s->num_irq, GIC_INTERNAL);
         return;
     }
     if (s->num_cpu == 0) {
@@ -130,9 +110,7 @@ static void arm_gicv3_common_realize(DeviceState *dev, Error **errp)
      * bits in a 32-bit word should be valid.
      */
     if (s->num_irq % 32) {
-        error_setg(errp,
-                   "%d interrupt lines unsupported: not divisible by 32",
-                   s->num_irq);
+        error_setg(errp, "%d interrupt lines unsupported: not divisible by 32", s->num_irq);
         return;
     }
 
@@ -142,26 +120,22 @@ static void arm_gicv3_common_realize(DeviceState *dev, Error **errp)
     }
 
     rdist_capacity = 0;
-    for (i = 0; i < s->nb_redist_regions; i++) {
-        rdist_capacity += s->redist_region_count[i];
-    }
+    for (i = 0; i < s->nb_redist_regions; i++) { rdist_capacity += s->redist_region_count[i]; }
     if (rdist_capacity != s->num_cpu) {
-        error_setg(errp, "Capacity of the redist regions(%d) "
+        error_setg(errp,
+                   "Capacity of the redist regions(%d) "
                    "does not match the number of vcpus(%d)",
                    rdist_capacity, s->num_cpu);
         return;
     }
 
-    if (s->lpi_enable) {
-        address_space_init(&s->dma_as, s->dma,
-                           "gicv3-its-sysmem");
-    }
+    if (s->lpi_enable) { address_space_init(&s->dma_as, s->dma, "gicv3-its-sysmem"); }
 
     s->cpu = g_new0(GICv3CPUState, s->num_cpu);
 
     for (i = 0; i < s->num_cpu; i++) {
-        CPUState *cpu = qemu_get_cpu(i);
-        uint64_t cpu_affid;
+        CPUState* cpu = qemu_get_cpu(i);
+        uint64_t  cpu_affid;
 
         s->cpu[i].cpu = cpu;
         s->cpu[i].gic = s;
@@ -185,17 +159,12 @@ static void arm_gicv3_common_realize(DeviceState *dev, Error **errp)
         /* The CPU mp-affinity property is in MPIDR register format; squash
          * the affinity bytes into 32 bits as the GICR_TYPER has them.
          */
-        cpu_affid = ((cpu_affid & 0xFF00000000ULL) >> 8) |
-                     (cpu_affid & 0xFFFFFF);
-        s->cpu[i].gicr_typer = (cpu_affid << 32) |
-            (1 << 24) |
-            (i << 8);
+        cpu_affid            = ((cpu_affid & 0xFF00000000ULL) >> 8) | (cpu_affid & 0xFFFFFF);
+        s->cpu[i].gicr_typer = (cpu_affid << 32) | (1 << 24) | (i << 8);
 
         if (s->lpi_enable) {
             s->cpu[i].gicr_typer |= GICR_TYPER_PLPIS;
-            if (s->revision > 3) {
-                s->cpu[i].gicr_typer |= GICR_TYPER_VLPIS;
-            }
+            if (s->revision > 3) { s->cpu[i].gicr_typer |= GICR_TYPER_VLPIS; }
         }
     }
 
@@ -205,66 +174,65 @@ static void arm_gicv3_common_realize(DeviceState *dev, Error **errp)
      */
     cpuidx = 0;
     for (i = 0; i < s->nb_redist_regions; i++) {
-        cpuidx += s->redist_region_count[i];
+        cpuidx                        += s->redist_region_count[i];
         s->cpu[cpuidx - 1].gicr_typer |= GICR_TYPER_LAST;
     }
 
     s->itslist = g_ptr_array_new();
 }
 
-static void arm_gicv3_finalize(Object *obj)
+static void arm_gicv3_finalize(Object* obj)
 {
-    GICv3State *s = ARM_GICV3_COMMON(obj);
+    GICv3State* s = ARM_GICV3_COMMON(obj);
 
     g_free(s->redist_region_count);
 }
 
-static void arm_gicv3_common_reset_hold(Object *obj, ResetType type)
+static void arm_gicv3_common_reset_hold(Object* obj, ResetType type)
 {
-    GICv3State *s = ARM_GICV3_COMMON(obj);
-    int i;
+    GICv3State* s = ARM_GICV3_COMMON(obj);
+    int         i;
 
     for (i = 0; i < s->num_cpu; i++) {
-        GICv3CPUState *cs = &s->cpu[i];
+        GICv3CPUState* cs = &s->cpu[i];
 
-        cs->level = 0;
+        cs->level     = 0;
         cs->gicr_ctlr = 0;
         if (s->lpi_enable) {
             /* Our implementation supports clearing GICR_CTLR.EnableLPIs */
             cs->gicr_ctlr |= GICR_CTLR_CES;
         }
-        cs->gicr_statusr[GICV3_S] = 0;
+        cs->gicr_statusr[GICV3_S]  = 0;
         cs->gicr_statusr[GICV3_NS] = 0;
-        cs->gicr_waker = GICR_WAKER_ProcessorSleep | GICR_WAKER_ChildrenAsleep;
-        cs->gicr_propbaser = 0;
-        cs->gicr_pendbaser = 0;
-        cs->gicr_vpropbaser = 0;
-        cs->gicr_vpendbaser = 0;
+        cs->gicr_waker             = GICR_WAKER_ProcessorSleep | GICR_WAKER_ChildrenAsleep;
+        cs->gicr_propbaser         = 0;
+        cs->gicr_pendbaser         = 0;
+        cs->gicr_vpropbaser        = 0;
+        cs->gicr_vpendbaser        = 0;
         /* If we're resetting a TZ-aware GIC as if secure firmware
          * had set it up ready to start a kernel in non-secure, we
          * need to set interrupts to group 1 so the kernel can use them.
          * Otherwise they reset to group 0 like the hardware.
          */
-        if (s->irq_reset_nonsecure) {
-            cs->gicr_igroupr0 = 0xffffffff;
-        } else {
+        if (s->irq_reset_nonsecure) { cs->gicr_igroupr0 = 0xffffffff; }
+        else {
             cs->gicr_igroupr0 = 0;
         }
 
         cs->gicr_ienabler0 = 0;
-        cs->gicr_ipendr0 = 0;
+        cs->gicr_ipendr0   = 0;
         cs->gicr_iactiver0 = 0;
-        cs->edge_trigger = 0xffff;
+        cs->edge_trigger   = 0xffff;
         cs->gicr_igrpmodr0 = 0;
-        cs->gicr_nsacr = 0;
+        cs->gicr_nsacr     = 0;
         memset(cs->gicr_ipriorityr, 0, sizeof(cs->gicr_ipriorityr));
 
-        cs->hppi.prio = 0xff;
-        cs->hppi.nmi = false;
-        cs->hpplpi.prio = 0xff;
-        cs->hpplpi.nmi = false;
+        cs->hppi.prio    = 0xff;
+        cs->hppi.nmi     = false;
+        cs->hpplpi.prio  = 0xff;
+        cs->hpplpi.nmi   = false;
         cs->hppvlpi.prio = 0xff;
-        cs->hppvlpi.nmi = false;
+        cs->hppvlpi.nmi  = false;
 
         /* State in the CPU interface must *not* be reset here, because it
          * is part of the CPU's reset domain, not the GIC device's.
@@ -272,13 +240,12 @@ static void arm_gicv3_common_reset_hold(Object *obj, ResetType type)
     }
 
     /* For our implementation affinity routing is always enabled */
-    if (s->security_extn) {
-        s->gicd_ctlr = GICD_CTLR_ARE_S | GICD_CTLR_ARE_NS;
-    } else {
+    if (s->security_extn) { s->gicd_ctlr = GICD_CTLR_ARE_S | GICD_CTLR_ARE_NS; }
+    else {
         s->gicd_ctlr = GICD_CTLR_DS | GICD_CTLR_ARE;
     }
 
-    s->gicd_statusr[GICV3_S] = 0;
+    s->gicd_statusr[GICV3_S]  = 0;
     s->gicd_statusr[GICV3_NS] = 0;
 
     memset(s->group, 0, sizeof(s->group));
@@ -305,9 +272,7 @@ static void arm_gicv3_common_reset_hold(Object *obj, ResetType type)
          * need to set interrupts to group 1 so the kernel can use them.
          * Otherwise they reset to group 0 like the hardware.
          */
-        for (i = GIC_INTERNAL; i < s->num_irq; i++) {
-            gicv3_gicd_group_set(s, i);
-        }
+        for (i = GIC_INTERNAL; i < s->num_irq; i++) { gicv3_gicd_group_set(s, i); }
     }
 }
 
@@ -324,44 +289,37 @@ static const Property arm_gicv3_common_properties[] = {
      * if the CPU being emulated should have fewer.
      */
     DEFINE_PROP_BOOL("force-8-bit-prio", GICv3State, force_8bit_prio, 0),
-    DEFINE_PROP_ARRAY("redist-region-count", GICv3State, nb_redist_regions,
-                      redist_region_count, qdev_prop_uint32, uint32_t),
-    DEFINE_PROP_LINK("sysmem", GICv3State, dma, TYPE_MEMORY_REGION,
-                     MemoryRegion *),
+    DEFINE_PROP_ARRAY("redist-region-count", GICv3State, nb_redist_regions, redist_region_count, qdev_prop_uint32,
+                      uint32_t),
+    DEFINE_PROP_LINK("sysmem", GICv3State, dma, TYPE_MEMORY_REGION, MemoryRegion*),
 };
 
-static void arm_gicv3_common_class_init(ObjectClass *klass, const void *data)
+static void arm_gicv3_common_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
-    ResettableClass *rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
 
     rc->phases.hold = arm_gicv3_common_reset_hold;
-    dc->realize = arm_gicv3_common_realize;
+    dc->realize     = arm_gicv3_common_realize;
     device_class_set_props(dc, arm_gicv3_common_properties);
 }
 
 static const TypeInfo arm_gicv3_common_type = {
-    .name = TYPE_ARM_GICV3_COMMON,
-    .parent = TYPE_SYS_BUS_DEVICE,
-    .instance_size = sizeof(GICv3State),
-    .class_size = sizeof(ARMGICv3CommonClass),
-    .class_init = arm_gicv3_common_class_init,
+    .name              = TYPE_ARM_GICV3_COMMON,
+    .parent            = TYPE_SYS_BUS_DEVICE,
+    .instance_size     = sizeof(GICv3State),
+    .class_size        = sizeof(ARMGICv3CommonClass),
+    .class_init        = arm_gicv3_common_class_init,
     .instance_finalize = arm_gicv3_finalize,
-    .abstract = true,
+    .abstract          = true,
 };
 
-static void register_types(void)
-{
-    type_register_static(&arm_gicv3_common_type);
-}
+static void register_types(void) { type_register_static(&arm_gicv3_common_type); }
 
-type_init(register_types)
-
-const char *gicv3_class_name(void)
+type_init(register_types) const char* gicv3_class_name(void)
 {
-    if (kvm_irqchip_in_kernel()) {
-        return "kvm-arm-gicv3";
-    } else {
+    if (kvm_irqchip_in_kernel()) { return "kvm-arm-gicv3"; }
+    else {
         if (kvm_enabled()) {
             error_report("Userspace GICv3 is not supported with KVM");
             exit(1);

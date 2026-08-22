@@ -26,4 +26,4 @@
 
 #pragma once
 
-void start_auth_vencrypt(VncState *vs);
+void start_auth_vencrypt(VncState* vs);

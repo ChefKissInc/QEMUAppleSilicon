@@ -23,12 +23,9 @@
 #include "qapi/error.h"
 #include "qom/object.h"
 
-
 #define TYPE_QAUTHZ "authz"
 
-OBJECT_DECLARE_TYPE(QAuthZ, QAuthZClass,
-                    QAUTHZ)
-
+OBJECT_DECLARE_TYPE(QAuthZ, QAuthZClass, QAUTHZ)
 
 /**
  * QAuthZ:
@@ -38,19 +35,17 @@ OBJECT_DECLARE_TYPE(QAuthZ, QAuthZClass,
  * with user identities.
  */
 
-struct QAuthZ {
+struct QAuthZ
+{
     Object parent_obj;
 };
 
-
-struct QAuthZClass {
+struct QAuthZClass
+{
     ObjectClass parent_class;
 
-    bool (*is_allowed)(QAuthZ *authz,
-                       const char *identity,
-                       Error **errp);
+    bool (*is_allowed)(QAuthZ* authz, const char* identity, Error** errp);
 };
-
 
 /**
  * qauthz_is_allowed:
@@ -70,10 +65,7 @@ struct QAuthZClass {
  * Returns: true if @identity is authorized, false if denied or if
  * an error occurred.
  */
-bool qauthz_is_allowed(QAuthZ *authz,
-                       const char *identity,
-                       Error **errp);
-
+bool qauthz_is_allowed(QAuthZ* authz, const char* identity, Error** errp);
 
 /**
  * qauthz_is_allowed_by_id:
@@ -93,6 +85,4 @@ bool qauthz_is_allowed(QAuthZ *authz,
  * Returns: true if @identity is authorized, false if denied or if
  * an error occurred.
  */
-bool qauthz_is_allowed_by_id(const char *authzid,
-                             const char *identity,
-                             Error **errp);
+bool qauthz_is_allowed_by_id(const char* authzid, const char* identity, Error** errp);

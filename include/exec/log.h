@@ -11,9 +11,9 @@
  *
  * Logs the output of cpu_dump_state().
  */
-static inline void log_cpu_state(CPUState *cpu, int flags)
+static inline void log_cpu_state(CPUState* cpu, int flags)
 {
-    FILE *f = qemu_log_trylock();
+    FILE* f = qemu_log_trylock();
     if (f) {
         cpu_dump_state(cpu, f, flags);
         qemu_log_unlock(f);
@@ -28,9 +28,7 @@ static inline void log_cpu_state(CPUState *cpu, int flags)
  *
  * Logs the output of cpu_dump_state() if loglevel includes @mask.
  */
-static inline void log_cpu_state_mask(int mask, CPUState *cpu, int flags)
+static inline void log_cpu_state_mask(int mask, CPUState* cpu, int flags)
 {
-    if (qemu_loglevel & mask) {
-        log_cpu_state(cpu, flags);
-    }
+    if (qemu_loglevel & mask) { log_cpu_state(cpu, flags); }
 }

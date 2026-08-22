@@ -21,4 +21,4 @@ typedef struct ForwardFieldVisitor ForwardFieldVisitor;
  * toplevel fields.  It is converted to @to and forwarded to the @target visitor.
  * Calls within a struct are forwarded without changing the name.
  */
-Visitor *visitor_forward_field(Visitor *target, const char *from, const char *to);
+Visitor* visitor_forward_field(Visitor* target, const char* from, const char* to);

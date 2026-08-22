@@ -4,7 +4,7 @@
 
 #ifdef _WIN32
 
-int inet_aton(const char *cp, struct in_addr *ia);
+int inet_aton(const char* cp, struct in_addr* ia);
 
 #endif /* !_WIN32 */
 
@@ -12,7 +12,7 @@ int inet_aton(const char *cp, struct in_addr *ia);
 
 /* misc helpers */
 bool fd_is_socket(int fd);
-int qemu_socket(int domain, int type, int protocol);
+int  qemu_socket(int domain, int type, int protocol);
 
 /**
  * qemu_socketpair:
@@ -29,7 +29,7 @@ int qemu_socket(int domain, int type, int protocol);
  */
 int qemu_socketpair(int domain, int type, int protocol, int sv[2]);
 
-int qemu_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+int qemu_accept(int s, struct sockaddr* addr, socklen_t* addrlen);
 /*
  * A variant of send(2) which handles partial send.
  *
@@ -41,41 +41,37 @@ int qemu_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
  *   - return a short write (then name is wrong)
  *   - busy wait adding (errno == EAGAIN) to the loop
  */
-ssize_t qemu_send_full(int s, const void *buf, size_t count)
-    G_GNUC_WARN_UNUSED_RESULT;
-int socket_set_cork(int fd, int v);
-int socket_set_nodelay(int fd);
-int socket_set_fast_reuse(int fd);
+ssize_t qemu_send_full(int s, const void* buf, size_t count) G_GNUC_WARN_UNUSED_RESULT;
+int     socket_set_cork(int fd, int v);
+int     socket_set_nodelay(int fd);
+int     socket_set_fast_reuse(int fd);
 
 #ifdef WIN32
-/* Windows has different names for the same constants with the same values */
-#define SHUT_RD   0
-#define SHUT_WR   1
-#define SHUT_RDWR 2
+    /* Windows has different names for the same constants with the same values */
+    #define SHUT_RD   0
+    #define SHUT_WR   1
+    #define SHUT_RDWR 2
 #endif
 
-int inet_ai_family_from_address(InetSocketAddress *addr,
-                                Error **errp);
-int inet_parse(InetSocketAddress *addr, const char *str, Error **errp);
-int inet_connect_saddr(InetSocketAddress *saddr, Error **errp);
+int inet_ai_family_from_address(InetSocketAddress* addr, Error** errp);
+int inet_parse(InetSocketAddress* addr, const char* str, Error** errp);
+int inet_connect_saddr(InetSocketAddress* saddr, Error** errp);
 
 NetworkAddressFamily inet_netfamily(int family);
 
-int unix_listen(const char *path, Error **errp);
-int unix_connect(const char *path, Error **errp);
+int unix_listen(const char* path, Error** errp);
+int unix_connect(const char* path, Error** errp);
 
-char *socket_uri(SocketAddress *addr);
-SocketAddress *socket_parse(const char *str, Error **errp);
-int socket_connect(SocketAddress *addr, Error **errp);
-int socket_listen(SocketAddress *addr, int num, Error **errp);
-void socket_listen_cleanup(int fd, Error **errp);
-int socket_dgram(SocketAddress *remote, SocketAddress *local, Error **errp);
+char*          socket_uri(SocketAddress* addr);
+SocketAddress* socket_parse(const char* str, Error** errp);
+int            socket_connect(SocketAddress* addr, Error** errp);
+int            socket_listen(SocketAddress* addr, int num, Error** errp);
+void           socket_listen_cleanup(int fd, Error** errp);
+int            socket_dgram(SocketAddress* remote, SocketAddress* local, Error** errp);
 
 /* Old, ipv4 only bits.  Don't use for new code. */
-int convert_host_port(struct sockaddr_in *saddr, const char *host,
-                      const char *port, Error **errp);
-int parse_host_port(struct sockaddr_in *saddr, const char *str,
-                    Error **errp);
+int convert_host_port(struct sockaddr_in* saddr, const char* host, const char* port, Error** errp);
+int parse_host_port(struct sockaddr_in* saddr, const char* str, Error** errp);
 int socket_init(void);
 
 /**
@@ -92,10 +88,7 @@ int socket_init(void);
  *
  * Returns: the socket address struct, or NULL on error
  */
-SocketAddress *
-socket_sockaddr_to_address(struct sockaddr_storage *sa,
-                           socklen_t salen,
-                           Error **errp);
+SocketAddress* socket_sockaddr_to_address(struct sockaddr_storage* sa, socklen_t salen, Error** errp);
 
 /**
  * socket_local_address:
@@ -110,7 +103,7 @@ socket_sockaddr_to_address(struct sockaddr_storage *sa,
  *
  * Returns: the socket address struct, or NULL on error
  */
-SocketAddress *socket_local_address(int fd, Error **errp);
+SocketAddress* socket_local_address(int fd, Error** errp);
 
 /**
  * socket_address_flatten:
@@ -121,7 +114,7 @@ SocketAddress *socket_local_address(int fd, Error **errp);
  *
  * Returns: the argument converted to SocketAddress.
  */
-SocketAddress *socket_address_flatten(SocketAddressLegacy *addr);
+SocketAddress* socket_address_flatten(SocketAddressLegacy* addr);
 
 /**
  * socket_address_parse_named_fd:
@@ -132,4 +125,4 @@ SocketAddress *socket_address_flatten(SocketAddressLegacy *addr);
  *
  * Return 0 on success.
  */
-int socket_address_parse_named_fd(SocketAddress *addr, Error **errp);
+int socket_address_parse_named_fd(SocketAddress* addr, Error** errp);

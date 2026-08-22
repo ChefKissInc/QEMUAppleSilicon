@@ -31,24 +31,26 @@
 OBJECT_DECLARE_TYPE(AppleA9State, AppleA9Class, APPLE_A9)
 
 #define A9_CPREG_VAR_NAME(name) cpreg_##name
-#define A9_CPREG_VAR_DEF(name) uint64_t A9_CPREG_VAR_NAME(name)
+#define A9_CPREG_VAR_DEF(name)  uint64_t A9_CPREG_VAR_NAME(name)
 
-typedef struct AppleA9Class {
+typedef struct AppleA9Class
+{
     /*< private >*/
     ARMCPUClass base_class;
     /*< public >*/
 
-    DeviceRealize parent_realize;
+    DeviceRealize   parent_realize;
     DeviceUnrealize parent_unrealize;
-    DeviceReset parent_reset;
+    DeviceReset     parent_reset;
 } AppleA9Class;
 
-typedef struct AppleA9State {
-    ARMCPU parent_obj;
+typedef struct AppleA9State
+{
+    ARMCPU       parent_obj;
     MemoryRegion memory;
     MemoryRegion sysmem;
-    uint32_t cpu_id;
-    uint32_t phys_id;
+    uint32_t     cpu_id;
+    uint32_t     phys_id;
     A9_CPREG_VAR_DEF(HID11);
     A9_CPREG_VAR_DEF(HID3);
     A9_CPREG_VAR_DEF(HID4);
@@ -82,9 +84,8 @@ typedef struct AppleA9State {
     A9_CPREG_VAR_DEF(MMU_ERR_STS);
 } AppleA9State;
 
-AppleA9State *apple_a9_create(const char *name, uint32_t cpu_id,
-                              uint32_t phys_id);
-AppleA9State *apple_a9_from_node(AppleDTNode *node);
-bool apple_a9_cpu_is_asleep(AppleA9State *acpu);
-bool apple_a9_cpu_is_off(AppleA9State *acpu);
-void apple_a9_cpu_set_on(AppleA9State *acpu);
+AppleA9State* apple_a9_create(const char* name, uint32_t cpu_id, uint32_t phys_id);
+AppleA9State* apple_a9_from_node(AppleDTNode* node);
+bool          apple_a9_cpu_is_asleep(AppleA9State* acpu);
+bool          apple_a9_cpu_is_off(AppleA9State* acpu);
+void          apple_a9_cpu_set_on(AppleA9State* acpu);

@@ -34,44 +34,41 @@ typedef struct AccelClass AccelClass;
 #define ACCEL_CLASS_NAME(a) (a ACCEL_CLASS_SUFFIX)
 
 DO_OBJECT_INTERFACE_INFO(ACCEL, false);
-#define ACCEL_CLASS(klass) \
-    OBJECT_CLASS_CHECK(AccelClass, (klass), ACCEL, TYPE_ACCEL)
-#define ACCEL(obj) \
-    OBJECT_CHECK(AccelState, (obj), TYPE_ACCEL)
-#define ACCEL_GET_CLASS(obj) \
-    OBJECT_GET_CLASS(AccelClass, (obj), ACCEL, TYPE_ACCEL)
+#define ACCEL_CLASS(klass)   OBJECT_CLASS_CHECK(AccelClass, (klass), ACCEL, TYPE_ACCEL)
+#define ACCEL(obj)           OBJECT_CHECK(AccelState, (obj), TYPE_ACCEL)
+#define ACCEL_GET_CLASS(obj) OBJECT_GET_CLASS(AccelClass, (obj), ACCEL, TYPE_ACCEL)
 
-AccelClass *accel_find(const char *opt_name);
-AccelState *current_accel(void);
-const char *current_accel_name(void);
+AccelClass* accel_find(const char* opt_name);
+AccelState* current_accel(void);
+const char* current_accel_name(void);
 
-void accel_init_interfaces(AccelClass *ac);
+void accel_init_interfaces(AccelClass* ac);
 
-int accel_init_machine(AccelState *accel, MachineState *ms);
+int accel_init_machine(AccelState* accel, MachineState* ms);
 
 /* Called just before os_setup_post (ie just before drop OS privs) */
-void accel_setup_post(MachineState *ms);
+void accel_setup_post(MachineState* ms);
 
-void accel_pre_resume(MachineState *ms, bool step_pending);
+void accel_pre_resume(MachineState* ms, bool step_pending);
 
 /**
  * accel_cpu_instance_init:
  * @cpu: The CPU that needs to do accel-specific object initializations.
  */
-void accel_cpu_instance_init(CPUState *cpu);
+void accel_cpu_instance_init(CPUState* cpu);
 
 /**
  * accel_cpu_common_realize:
  * @cpu: The CPU that needs to call accel-specific cpu realization.
  * @errp: currently unused.
  */
-bool accel_cpu_common_realize(CPUState *cpu, Error **errp);
+bool accel_cpu_common_realize(CPUState* cpu, Error** errp);
 
 /**
  * accel_cpu_common_unrealize:
  * @cpu: The CPU that needs to call accel-specific cpu unrealization.
  */
-void accel_cpu_common_unrealize(CPUState *cpu);
+void accel_cpu_common_unrealize(CPUState* cpu);
 
 /**
  * accel_supported_gdbstub_sstep_flags:

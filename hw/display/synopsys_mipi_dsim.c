@@ -34,112 +34,96 @@ REG32(GENERAL_CTRL, 0x80004)
 REG32(TOP_PLL_CTRL, 0x80034)
 // clang-format on
 
-struct SynopsysMIPIDSIMState {
+struct SynopsysMIPIDSIMState
+{
     /*< private >*/
     SysBusDevice parent_obj;
     MemoryRegion iomems[2];
-    qemu_irq irqs[2];
+    qemu_irq     irqs[2];
 
     /*< public >*/
     uint32_t power_up;
 };
 
-static void synopsys_mipi_dsim_reg_write(void *opaque, hwaddr addr,
-                                         uint64_t data, unsigned size)
+static void synopsys_mipi_dsim_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
-    SynopsysMIPIDSIMState *s = opaque;
+    SynopsysMIPIDSIMState* s = opaque;
 
     switch (addr >> 2) {
-    case R_CORE_PWR_UP:
-        s->power_up = data;
-        break;
-    default:
-        break;
+        case R_CORE_PWR_UP: s->power_up = data; break;
+        default           : break;
     }
 }
 
-static uint64_t synopsys_mipi_dsim_reg_read(void *opaque, hwaddr addr,
-                                            unsigned size)
+static uint64_t synopsys_mipi_dsim_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
-    SynopsysMIPIDSIMState *s = opaque;
+    SynopsysMIPIDSIMState* s = opaque;
 
     switch (addr >> 2) {
-    case R_CORE_VERSION:
-        return 0x3133302A;
-    case R_CORE_PWR_UP:
-        return s->power_up;
-    case R_CORE_CMD_PKT_STATUS:
-        return REG_FIELD_DP32(0, CORE_CMD_PKT_STATUS, GEN_CMD_EMPTY, 1);
-    case R_GENERAL_CTRL:
-        return REG_FIELD_DP32(0, GENERAL_CTRL, PHYLOCK_HW_LOCK, 1);
-    case R_TOP_PLL_CTRL:
-        return 0;
-    default:
-        return UINT32_MAX;
+        case R_CORE_VERSION       : return 0x3133302A;
+        case R_CORE_PWR_UP        : return s->power_up;
+        case R_CORE_CMD_PKT_STATUS: return REG_FIELD_DP32(0, CORE_CMD_PKT_STATUS, GEN_CMD_EMPTY, 1);
+        case R_GENERAL_CTRL       : return REG_FIELD_DP32(0, GENERAL_CTRL, PHYLOCK_HW_LOCK, 1);
+        case R_TOP_PLL_CTRL       : return 0;
+        default                   : return UINT32_MAX;
     }
 }
 
 static const MemoryRegionOps synopsys_mipi_dsim_reg_ops = {
-    .write = synopsys_mipi_dsim_reg_write,
-    .read = synopsys_mipi_dsim_reg_read,
-    .endianness = DEVICE_LITTLE_ENDIAN,
-    .impl.min_access_size = 4,
-    .impl.max_access_size = 4,
+    .write                 = synopsys_mipi_dsim_reg_write,
+    .read                  = synopsys_mipi_dsim_reg_read,
+    .endianness            = DEVICE_LITTLE_ENDIAN,
+    .impl.min_access_size  = 4,
+    .impl.max_access_size  = 4,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .valid.unaligned = false,
+    .valid.unaligned       = false,
 };
 
-static void synopsys_mipi_dsim_swmpr_reg_write(void *opaque, hwaddr addr,
-                                               uint64_t data, unsigned size)
+static void synopsys_mipi_dsim_swmpr_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     switch (addr >> 2) {
-    default:
-        break;
+        default: break;
     }
 }
 
-static uint64_t synopsys_mipi_dsim_swmpr_reg_read(void *opaque, hwaddr addr,
-                                                  unsigned size)
+static uint64_t synopsys_mipi_dsim_swmpr_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
     switch (addr >> 2) {
-    default:
-        return UINT32_MAX;
+        default: return UINT32_MAX;
     }
 }
 
 static const MemoryRegionOps synopsys_mipi_dsim_swmpr_reg_ops = {
-    .write = synopsys_mipi_dsim_swmpr_reg_write,
-    .read = synopsys_mipi_dsim_swmpr_reg_read,
-    .endianness = DEVICE_LITTLE_ENDIAN,
-    .impl.min_access_size = 4,
-    .impl.max_access_size = 4,
+    .write                 = synopsys_mipi_dsim_swmpr_reg_write,
+    .read                  = synopsys_mipi_dsim_swmpr_reg_read,
+    .endianness            = DEVICE_LITTLE_ENDIAN,
+    .impl.min_access_size  = 4,
+    .impl.max_access_size  = 4,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .valid.unaligned = false,
+    .valid.unaligned       = false,
 };
 
-SysBusDevice *synopsys_mipi_dsim_create(AppleDTNode *node)
+SysBusDevice* synopsys_mipi_dsim_create(AppleDTNode* node)
 {
-    DeviceState *dev;
-    SynopsysMIPIDSIMState *s;
-    SysBusDevice *sbd;
-    AppleDTProp *prop;
-    uint64_t *reg;
+    DeviceState*           dev;
+    SynopsysMIPIDSIMState* s;
+    SysBusDevice*          sbd;
+    AppleDTProp*           prop;
+    uint64_t*              reg;
 
     dev = qdev_new(TYPE_SYNOPSYS_MIPI_DSIM);
-    s = SYNOPSYS_MIPI_DSIM(dev);
+    s   = SYNOPSYS_MIPI_DSIM(dev);
     sbd = SYS_BUS_DEVICE(dev);
 
     prop = apple_dt_get_prop(node, "reg");
     assert_nonnull(prop);
-    reg = (uint64_t *)prop->data;
-    memory_region_init_io(&s->iomems[0], OBJECT(dev),
-                          &synopsys_mipi_dsim_reg_ops, s,
-                          TYPE_SYNOPSYS_MIPI_DSIM ".regs", reg[1]);
+    reg = (uint64_t*)prop->data;
+    memory_region_init_io(&s->iomems[0], OBJECT(dev), &synopsys_mipi_dsim_reg_ops, s, TYPE_SYNOPSYS_MIPI_DSIM ".regs",
+                          reg[1]);
     sysbus_init_mmio(sbd, &s->iomems[0]);
-    memory_region_init_io(&s->iomems[1], OBJECT(dev),
-                          &synopsys_mipi_dsim_swmpr_reg_ops, s,
+    memory_region_init_io(&s->iomems[1], OBJECT(dev), &synopsys_mipi_dsim_swmpr_reg_ops, s,
                           TYPE_SYNOPSYS_MIPI_DSIM ".swmpr_regs", reg[3]);
     sysbus_init_mmio(sbd, &s->iomems[1]);
 
@@ -149,39 +133,36 @@ SysBusDevice *synopsys_mipi_dsim_create(AppleDTNode *node)
     return sbd;
 }
 
-static void synopsys_mipi_dsim_reset_hold(Object *obj, ResetType type)
+static void synopsys_mipi_dsim_reset_hold(Object* obj, ResetType type)
 {
-    SynopsysMIPIDSIMState *s = SYNOPSYS_MIPI_DSIM(obj);
+    SynopsysMIPIDSIMState* s = SYNOPSYS_MIPI_DSIM(obj);
 
     // Default to display powered on
     s->power_up = REG_FIELD_DP32(0, CORE_PWR_UP, SHUTDOWNZ, 1);
 }
 
-static void synopsys_mipi_dsim_class_init(ObjectClass *oc, const void *data)
+static void synopsys_mipi_dsim_class_init(ObjectClass* oc, const void* data)
 {
-    ResettableClass *rc;
-    DeviceClass *dc;
+    ResettableClass* rc;
+    DeviceClass*     dc;
 
     rc = RESETTABLE_CLASS(oc);
     dc = DEVICE_CLASS(oc);
 
     rc->phases.hold = synopsys_mipi_dsim_reset_hold;
 
-    dc->desc = "Synopsys MIPI DSIM";
+    dc->desc           = "Synopsys MIPI DSIM";
     dc->user_creatable = false;
     set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
 }
 
 static const TypeInfo synopsys_mipi_dsim_info = {
-    .name = TYPE_SYNOPSYS_MIPI_DSIM,
-    .parent = TYPE_SYS_BUS_DEVICE,
+    .name          = TYPE_SYNOPSYS_MIPI_DSIM,
+    .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(SynopsysMIPIDSIMState),
-    .class_init = synopsys_mipi_dsim_class_init,
+    .class_init    = synopsys_mipi_dsim_class_init,
 };
 
-static void synopsys_mipi_dsim_register_types(void)
-{
-    type_register_static(&synopsys_mipi_dsim_info);
-}
+static void synopsys_mipi_dsim_register_types(void) { type_register_static(&synopsys_mipi_dsim_info); }
 
 type_init(synopsys_mipi_dsim_register_types);

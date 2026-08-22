@@ -19,14 +19,14 @@
 
 #ifndef UTIL_MLIB_H
 
-// Speed up compilation and runtime speed.
-#ifdef NDEBUG
-#define M_ASSERT(expr) (void)0
-#define M_ASSERT_SLOW(expr) (void)0
-#endif
+    // Speed up compilation and runtime speed.
+    #ifdef NDEBUG
+        #define M_ASSERT(expr)      (void)0
+        #define M_ASSERT_SLOW(expr) (void)0
+    #endif
 
-#include "mlib/m-algo.h"
-#include "mlib/m-array.h"
-#include "mlib/m-dict.h"
+    #include "mlib/m-algo.h"
+    #include "mlib/m-array.h"
+    #include "mlib/m-dict.h"
 
 #endif /* UTIL_MLIB_H */

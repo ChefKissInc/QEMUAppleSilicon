@@ -40,20 +40,18 @@ TBContext tb_ctx;
  * Encode VAL as a signed leb128 sequence at P.
  * Return P incremented past the encoded value.
  */
-static uint8_t *encode_sleb128(uint8_t *p, int64_t val)
+static uint8_t* encode_sleb128(uint8_t* p, int64_t val)
 {
     int more, byte;
 
     do {
-        byte = val & 0x7f;
-        val >>= 7;
-        more = !((val == 0 && (byte & 0x40) == 0)
-                 || (val == -1 && (byte & 0x40) != 0));
-        if (more) {
-            byte |= 0x80;
-        }
+        byte   = val & 0x7f;
+        val  >>= 7;
+        more   = !((val == 0 && (byte & 0x40) == 0) || (val == -1 && (byte & 0x40) != 0));
+        if (more) { byte |= 0x80; }
         *p++ = byte;
-    } while (more);
+    }
+    while (more);
 
     return p;
 }
@@ -62,20 +60,19 @@ static uint8_t *encode_sleb128(uint8_t *p, int64_t val)
  * Decode a signed leb128 sequence at *PP; increment *PP past the
  * decoded value.  Return the decoded value.
  */
-static int64_t decode_sleb128(const uint8_t **pp)
+static int64_t decode_sleb128(const uint8_t** pp)
 {
-    const uint8_t *p = *pp;
-    int64_t val = 0;
-    int byte, shift = 0;
+    const uint8_t* p   = *pp;
+    int64_t        val = 0;
+    int            byte, shift = 0;
 
     do {
-        byte = *p++;
-        val |= (int64_t)(byte & 0x7f) << shift;
+        byte   = *p++;
+        val   |= (int64_t)(byte & 0x7f) << shift;
         shift += 7;
-    } while (byte & 0x80);
-    if (shift < 64 && (byte & 0x40)) {
-        val |= -(int64_t)1 << shift;
     }
+    while (byte & 0x80);
+    if (shift < 64 && (byte & 0x40)) { val |= -(int64_t)1 << shift; }
 
     *pp = p;
     return val;
@@ -93,72 +90,60 @@ static int64_t decode_sleb128(const uint8_t **pp)
    That is, the first column is seeded with the guest pc, the last column
    with the host pc, and the middle columns with zeros.  */
 
-static int encode_search(TranslationBlock *tb, uint8_t *block)
+static int encode_search(TranslationBlock* tb, uint8_t* block)
 {
-    uint8_t *highwater = tcg_ctx->code_gen_highwater;
-    uint64_t *insn_data = tcg_ctx->gen_insn_data;
-    uint16_t *insn_end_off = tcg_ctx->gen_insn_end_off;
-    uint8_t *p = block;
-    int i, j, n;
+    uint8_t*  highwater    = tcg_ctx->code_gen_highwater;
+    uint64_t* insn_data    = tcg_ctx->gen_insn_data;
+    uint16_t* insn_end_off = tcg_ctx->gen_insn_end_off;
+    uint8_t*  p            = block;
+    int       i, j, n;
 
     for (i = 0, n = tb->icount; i < n; ++i) {
         uint64_t prev, curr;
 
         for (j = 0; j < INSN_START_WORDS; ++j) {
-            if (i == 0) {
-                prev = (!(tb_cflags(tb) & CF_PCREL) && j == 0 ? tb->pc : 0);
-            } else {
+            if (i == 0) { prev = (!(tb_cflags(tb) & CF_PCREL) && j == 0 ? tb->pc : 0); }
+            else {
                 prev = insn_data[(i - 1) * INSN_START_WORDS + j];
             }
             curr = insn_data[i * INSN_START_WORDS + j];
-            p = encode_sleb128(p, curr - prev);
+            p    = encode_sleb128(p, curr - prev);
         }
         prev = (i == 0 ? 0 : insn_end_off[i - 1]);
         curr = insn_end_off[i];
-        p = encode_sleb128(p, curr - prev);
+        p    = encode_sleb128(p, curr - prev);
 
         /* Test for (pending) buffer overflow.  The assumption is that any
            one row beginning below the high water mark cannot overrun
            the buffer completely.  Thus we can test for overflow after
            encoding a row without having to check during encoding.  */
-        if (unlikely(p > highwater)) {
-            return -1;
-        }
+        if (unlikely(p > highwater)) { return -1; }
     }
 
     return p - block;
 }
 
-static int cpu_unwind_data_from_tb(TranslationBlock *tb, uintptr_t host_pc,
-                                   uint64_t *data)
+static int cpu_unwind_data_from_tb(TranslationBlock* tb, uintptr_t host_pc, uint64_t* data)
 {
-    uintptr_t iter_pc = (uintptr_t)tb->tc.ptr;
-    const uint8_t *p = tb->tc.ptr + tb->tc.size;
-    int i, j, num_insns = tb->icount;
+    uintptr_t      iter_pc = (uintptr_t)tb->tc.ptr;
+    const uint8_t* p       = tb->tc.ptr + tb->tc.size;
+    int            i, j, num_insns = tb->icount;
 
     host_pc -= GETPC_ADJ;
 
-    if (host_pc < iter_pc) {
-        return -1;
-    }
+    if (host_pc < iter_pc) { return -1; }
 
     memset(data, 0, sizeof(uint64_t) * INSN_START_WORDS);
-    if (!(tb_cflags(tb) & CF_PCREL)) {
-        data[0] = tb->pc;
-    }
+    if (!(tb_cflags(tb) & CF_PCREL)) { data[0] = tb->pc; }
 
     /*
      * Reconstruct the stored insn data while looking for the point
      * at which the end of the insn exceeds host_pc.
      */
     for (i = 0; i < num_insns; ++i) {
-        for (j = 0; j < INSN_START_WORDS; ++j) {
-            data[j] += decode_sleb128(&p);
-        }
+        for (j = 0; j < INSN_START_WORDS; ++j) { data[j] += decode_sleb128(&p); }
         iter_pc += decode_sleb128(&p);
-        if (iter_pc > host_pc) {
-            return num_insns - i;
-        }
+        if (iter_pc > host_pc) { return num_insns - i; }
     }
     return -1;
 }
@@ -167,20 +152,17 @@ static int cpu_unwind_data_from_tb(TranslationBlock *tb, uintptr_t host_pc,
  * The cpu state corresponding to 'host_pc' is restored in
  * preparation for exiting the TB.
  */
-void cpu_restore_state_from_tb(CPUState *cpu, TranslationBlock *tb,
-                               uintptr_t host_pc)
+void cpu_restore_state_from_tb(CPUState* cpu, TranslationBlock* tb, uintptr_t host_pc)
 {
     uint64_t data[INSN_START_WORDS];
-    int insns_left = cpu_unwind_data_from_tb(tb, host_pc, data);
+    int      insns_left = cpu_unwind_data_from_tb(tb, host_pc, data);
 
-    if (insns_left < 0) {
-        return;
-    }
+    if (insns_left < 0) { return; }
 
     cpu->cc->tcg_ops->restore_state_to_opc(cpu, tb, data);
 }
 
-bool cpu_restore_state(CPUState *cpu, uintptr_t host_pc)
+bool cpu_restore_state(CPUState* cpu, uintptr_t host_pc)
 {
     /*
      * The host_pc has to be in the rx region of the code buffer.
@@ -192,8 +174,8 @@ bool cpu_restore_state(CPUState *cpu, uintptr_t host_pc)
      *
      * Either way we need return early as we can't resolve it here.
      */
-    if (in_code_gen_buffer((const void *)(host_pc - tcg_splitwx_diff))) {
-        TranslationBlock *tb = tcg_tb_lookup(host_pc);
+    if (in_code_gen_buffer((const void*)(host_pc - tcg_splitwx_diff))) {
+        TranslationBlock* tb = tcg_tb_lookup(host_pc);
         if (tb) {
             cpu_restore_state_from_tb(cpu, tb, host_pc);
             return true;
@@ -202,57 +184,49 @@ bool cpu_restore_state(CPUState *cpu, uintptr_t host_pc)
     return false;
 }
 
-bool cpu_unwind_state_data(CPUState *cpu, uintptr_t host_pc, uint64_t *data)
+bool cpu_unwind_state_data(CPUState* cpu, uintptr_t host_pc, uint64_t* data)
 {
-    if (in_code_gen_buffer((const void *)(host_pc - tcg_splitwx_diff))) {
-        TranslationBlock *tb = tcg_tb_lookup(host_pc);
-        if (tb) {
-            return cpu_unwind_data_from_tb(tb, host_pc, data) >= 0;
-        }
+    if (in_code_gen_buffer((const void*)(host_pc - tcg_splitwx_diff))) {
+        TranslationBlock* tb = tcg_tb_lookup(host_pc);
+        if (tb) { return cpu_unwind_data_from_tb(tb, host_pc, data) >= 0; }
     }
     return false;
 }
 
-void page_init(void)
-{
-    page_table_config_init();
-}
+void page_init(void) { page_table_config_init(); }
 
 /*
  * Isolate the portion of code gen which can setjmp/longjmp.
  * Return the size of the generated code, or negative on error.
  */
-static int setjmp_gen_code(CPUArchState *env, TranslationBlock *tb,
-                           vaddr pc, void *host_pc,
-                           int *max_insns, int64_t *ti)
+static int setjmp_gen_code(CPUArchState* env, TranslationBlock* tb, vaddr pc, void* host_pc, int* max_insns,
+                           int64_t* ti)
 {
     int ret = sigsetjmp(tcg_ctx->jmp_trans, 0);
-    if (unlikely(ret != 0)) {
-        return ret;
-    }
+    if (unlikely(ret != 0)) { return ret; }
 
     tcg_func_start(tcg_ctx);
 
-    CPUState *cs = env_cpu(env);
+    CPUState* cs = env_cpu(env);
     tcg_ctx->cpu = cs;
     cs->cc->tcg_ops->translate_code(cs, tb, max_insns, pc, host_pc);
 
     assert(tb->size != 0);
     tcg_ctx->cpu = NULL;
-    *max_insns = tb->icount;
+    *max_insns   = tb->icount;
 
     return tcg_gen_code(tcg_ctx, tb, pc);
 }
 
-TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
+TranslationBlock* tb_gen_code(CPUState* cpu, TCGTBCPUState s)
 {
-    CPUArchState *env = cpu_env(cpu);
+    CPUArchState*     env = cpu_env(cpu);
     TranslationBlock *tb, *existing_tb;
-    tb_page_addr_t phys_pc, phys_p2;
-    tcg_insn_unit *gen_code_buf;
-    int gen_code_size, search_size, max_insns;
-    int64_t ti;
-    void *host_pc;
+    tb_page_addr_t    phys_pc, phys_p2;
+    tcg_insn_unit*    gen_code_buf;
+    int               gen_code_size, search_size, max_insns;
+    int64_t           ti;
+    void*             host_pc;
 
     qemu_thread_jit_write();
 
@@ -264,12 +238,10 @@ TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
     }
 
     max_insns = s.cflags & CF_COUNT_MASK;
-    if (max_insns == 0) {
-        max_insns = TCG_MAX_INSNS;
-    }
+    if (max_insns == 0) { max_insns = TCG_MAX_INSNS; }
     QEMU_BUILD_BUG_ON(CF_COUNT_MASK + 1 != TCG_MAX_INSNS);
 
- buffer_overflow:
+buffer_overflow:
     assert_no_pages_locked();
     tb = tcg_tb_alloc(tcg_ctx);
     if (unlikely(!tb)) {
@@ -286,122 +258,114 @@ TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
     }
 
     gen_code_buf = tcg_ctx->code_gen_ptr;
-    tb->tc.ptr = tcg_splitwx_to_rx(gen_code_buf);
-    if (!(s.cflags & CF_PCREL)) {
-        tb->pc = s.pc;
-    }
+    tb->tc.ptr   = tcg_splitwx_to_rx(gen_code_buf);
+    if (!(s.cflags & CF_PCREL)) { tb->pc = s.pc; }
     tb->cs_base = s.cs_base;
-    tb->flags = s.flags;
-    tb->cflags = s.cflags;
+    tb->flags   = s.flags;
+    tb->cflags  = s.cflags;
     tb_set_page_addr0(tb, phys_pc);
     tb_set_page_addr1(tb, -1);
-    if (phys_pc != -1) {
-        tb_lock_page0(phys_pc);
-    }
+    if (phys_pc != -1) { tb_lock_page0(phys_pc); }
 
-    tcg_ctx->gen_tb = tb;
+    tcg_ctx->gen_tb    = tb;
     tcg_ctx->addr_type = target_long_bits() == 32 ? TCG_TYPE_I32 : TCG_TYPE_I64;
-    tcg_ctx->guest_mo = cpu->cc->tcg_ops->guest_default_memory_order;
+    tcg_ctx->guest_mo  = cpu->cc->tcg_ops->guest_default_memory_order;
 
- restart_translate:
+restart_translate:
     trace_translate_block(tb, s.pc, tb->tc.ptr);
 
     gen_code_size = setjmp_gen_code(env, tb, s.pc, host_pc, &max_insns, &ti);
     if (unlikely(gen_code_size < 0)) {
         switch (gen_code_size) {
-        case -1:
-            /*
-             * Overflow of code_gen_buffer, or the current slice of it.
-             *
-             * TODO: We don't need to re-do tcg_ops->translate_code, nor
-             * should we re-do the tcg optimization currently hidden
-             * inside tcg_gen_code.  All that should be required is to
-             * flush the TBs, allocate a new TB, re-initialize it per
-             * above, and re-do the actual code generation.
-             */
-            qemu_log_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT,
-                          "Restarting code generation for "
-                          "code_gen_buffer overflow\n");
-            tb_unlock_pages(tb);
-            tcg_ctx->gen_tb = NULL;
-            goto buffer_overflow;
+            case -1:
+                /*
+                 * Overflow of code_gen_buffer, or the current slice of it.
+                 *
+                 * TODO: We don't need to re-do tcg_ops->translate_code, nor
+                 * should we re-do the tcg optimization currently hidden
+                 * inside tcg_gen_code.  All that should be required is to
+                 * flush the TBs, allocate a new TB, re-initialize it per
+                 * above, and re-do the actual code generation.
+                 */
+                qemu_log_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT, "Restarting code generation for "
+                                                                 "code_gen_buffer overflow\n");
+                tb_unlock_pages(tb);
+                tcg_ctx->gen_tb = NULL;
+                goto buffer_overflow;
 
-        case -2:
-            /*
-             * The code generated for the TranslationBlock is too large.
-             * The maximum size allowed by the unwind info is 64k.
-             * There may be stricter constraints from relocations
-             * in the tcg backend.
-             *
-             * Try again with half as many insns as we attempted this time.
-             * If a single insn overflows, there's a bug somewhere...
-             */
-            assert(max_insns > 1);
-            max_insns /= 2;
-            qemu_log_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT,
-                          "Restarting code generation with "
-                          "smaller translation block (max %d insns)\n",
-                          max_insns);
+            case -2:
+                /*
+                 * The code generated for the TranslationBlock is too large.
+                 * The maximum size allowed by the unwind info is 64k.
+                 * There may be stricter constraints from relocations
+                 * in the tcg backend.
+                 *
+                 * Try again with half as many insns as we attempted this time.
+                 * If a single insn overflows, there's a bug somewhere...
+                 */
+                assert(max_insns > 1);
+                max_insns /= 2;
+                qemu_log_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT,
+                              "Restarting code generation with "
+                              "smaller translation block (max %d insns)\n",
+                              max_insns);
 
-            /*
-             * The half-sized TB may not cross pages.
-             * TODO: Fix all targets that cross pages except with
-             * the first insn, at which point this can't be reached.
-             */
-            phys_p2 = tb_page_addr1(tb);
-            if (unlikely(phys_p2 != -1)) {
-                tb_unlock_page1(phys_pc, phys_p2);
-                tb_set_page_addr1(tb, -1);
-            }
-            goto restart_translate;
+                /*
+                 * The half-sized TB may not cross pages.
+                 * TODO: Fix all targets that cross pages except with
+                 * the first insn, at which point this can't be reached.
+                 */
+                phys_p2 = tb_page_addr1(tb);
+                if (unlikely(phys_p2 != -1)) {
+                    tb_unlock_page1(phys_pc, phys_p2);
+                    tb_set_page_addr1(tb, -1);
+                }
+                goto restart_translate;
 
-        case -3:
-            /*
-             * We had a page lock ordering problem.  In order to avoid
-             * deadlock we had to drop the lock on page0, which means
-             * that everything we translated so far is compromised.
-             * Restart with locks held on both pages.
-             */
-            qemu_log_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT,
-                          "Restarting code generation with re-locked pages");
-            goto restart_translate;
+            case -3:
+                /*
+                 * We had a page lock ordering problem.  In order to avoid
+                 * deadlock we had to drop the lock on page0, which means
+                 * that everything we translated so far is compromised.
+                 * Restart with locks held on both pages.
+                 */
+                qemu_log_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT, "Restarting code generation with re-locked pages");
+                goto restart_translate;
 
-        default:
-            assert_not_reached();
+            default: assert_not_reached();
         }
     }
     tcg_ctx->gen_tb = NULL;
 
-    search_size = encode_search(tb, (void *)gen_code_buf + gen_code_size);
+    search_size = encode_search(tb, (void*)gen_code_buf + gen_code_size);
     if (unlikely(search_size < 0)) {
         tb_unlock_pages(tb);
         goto buffer_overflow;
     }
     tb->tc.size = gen_code_size;
 
-    if (qemu_loglevel_mask(CPU_LOG_TB_OUT_ASM) &&
-        qemu_log_in_addr_range(s.pc)) {
-        FILE *logfile = qemu_log_trylock();
+    if (qemu_loglevel_mask(CPU_LOG_TB_OUT_ASM) && qemu_log_in_addr_range(s.pc)) {
+        FILE* logfile = qemu_log_trylock();
         if (logfile) {
-            int code_size, data_size;
-            const tcg_target_ulong *rx_data_gen_ptr;
-            size_t chunk_start;
-            int insn = 0;
+            int                     code_size, data_size;
+            const tcg_target_ulong* rx_data_gen_ptr;
+            size_t                  chunk_start;
+            int                     insn = 0;
 
             if (tcg_ctx->data_gen_ptr) {
                 rx_data_gen_ptr = tcg_splitwx_to_rx(tcg_ctx->data_gen_ptr);
-                code_size = (const void *)rx_data_gen_ptr - tb->tc.ptr;
-                data_size = gen_code_size - code_size;
-            } else {
+                code_size       = (const void*)rx_data_gen_ptr - tb->tc.ptr;
+                data_size       = gen_code_size - code_size;
+            }
+            else {
                 rx_data_gen_ptr = 0;
-                code_size = gen_code_size;
-                data_size = 0;
+                code_size       = gen_code_size;
+                data_size       = 0;
             }
 
             /* Dump header and the first instruction */
             fprintf(logfile, "OUT: [size=%d]\n", gen_code_size);
-            fprintf(logfile,
-                    "  -- guest addr 0x%016" PRIx64 " + tb prologue\n",
+            fprintf(logfile, "  -- guest addr 0x%016" PRIx64 " + tb prologue\n",
                     tcg_ctx->gen_insn_data[insn * INSN_START_WORDS]);
             chunk_start = tcg_ctx->gen_insn_end_off[insn];
 
@@ -420,9 +384,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
                 insn++;
             }
 
-            if (chunk_start < code_size) {
-                fprintf(logfile, "  -- tb slow paths + alignment\n");
-            }
+            if (chunk_start < code_size) { fprintf(logfile, "  -- tb slow paths + alignment\n"); }
 
             /* Finally dump any data we may have after the block */
             if (data_size) {
@@ -430,14 +392,14 @@ TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
                 fprintf(logfile, "  data: [size=%d]\n", data_size);
                 for (i = 0; i < data_size / sizeof(tcg_target_ulong); i++) {
                     if (sizeof(tcg_target_ulong) == 8) {
-                        fprintf(logfile,
-                                "0x%08" PRIxPTR ":  .quad  0x%016" TCG_PRIlx "\n",
+                        fprintf(logfile, "0x%08" PRIxPTR ":  .quad  0x%016" TCG_PRIlx "\n",
                                 (uintptr_t)&rx_data_gen_ptr[i], rx_data_gen_ptr[i]);
-                    } else if (sizeof(tcg_target_ulong) == 4) {
-                        fprintf(logfile,
-                                "0x%08" PRIxPTR ":  .long  0x%08" TCG_PRIlx "\n",
+                    }
+                    else if (sizeof(tcg_target_ulong) == 4) {
+                        fprintf(logfile, "0x%08" PRIxPTR ":  .long  0x%08" TCG_PRIlx "\n",
                                 (uintptr_t)&rx_data_gen_ptr[i], rx_data_gen_ptr[i]);
-                    } else {
+                    }
+                    else {
                         qemu_build_not_reached();
                     }
                 }
@@ -447,25 +409,20 @@ TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
         }
     }
 
-    qatomic_set(&tcg_ctx->code_gen_ptr, (void *)
-        ROUND_UP((uintptr_t)gen_code_buf + gen_code_size + search_size,
-                 CODE_GEN_ALIGN));
+    qatomic_set(&tcg_ctx->code_gen_ptr,
+                (void*)ROUND_UP((uintptr_t)gen_code_buf + gen_code_size + search_size, CODE_GEN_ALIGN));
 
     /* init jump list */
     qemu_spin_init(&tb->jmp_lock);
-    tb->jmp_list_head = (uintptr_t)NULL;
+    tb->jmp_list_head    = (uintptr_t)NULL;
     tb->jmp_list_next[0] = (uintptr_t)NULL;
     tb->jmp_list_next[1] = (uintptr_t)NULL;
-    tb->jmp_dest[0] = (uintptr_t)NULL;
-    tb->jmp_dest[1] = (uintptr_t)NULL;
+    tb->jmp_dest[0]      = (uintptr_t)NULL;
+    tb->jmp_dest[1]      = (uintptr_t)NULL;
 
     /* init original jump addresses which have been set during tcg_gen_code() */
-    if (tb->jmp_reset_offset[0] != TB_JMP_OFFSET_INVALID) {
-        tb_reset_jump(tb, 0);
-    }
-    if (tb->jmp_reset_offset[1] != TB_JMP_OFFSET_INVALID) {
-        tb_reset_jump(tb, 1);
-    }
+    if (tb->jmp_reset_offset[0] != TB_JMP_OFFSET_INVALID) { tb_reset_jump(tb, 0); }
+    if (tb->jmp_reset_offset[1] != TB_JMP_OFFSET_INVALID) { tb_reset_jump(tb, 1); }
 
     /*
      * Insert TB into the corresponding region tree before publishing it
@@ -505,32 +462,31 @@ TranslationBlock *tb_gen_code(CPUState *cpu, TCGTBCPUState s)
         uintptr_t orig_aligned = (uintptr_t)gen_code_buf;
 
         orig_aligned -= ROUND_UP(sizeof(*tb), qemu_icache_linesize);
-        qatomic_set(&tcg_ctx->code_gen_ptr, (void *)orig_aligned);
+        qatomic_set(&tcg_ctx->code_gen_ptr, (void*)orig_aligned);
         tcg_tb_remove(tb);
         return existing_tb;
     }
     return tb;
 }
 
-void tb_check_watchpoint(CPUState *cpu, uintptr_t retaddr)
+void tb_check_watchpoint(CPUState* cpu, uintptr_t retaddr)
 {
-    TranslationBlock *tb;
+    TranslationBlock* tb;
 
     tb = tcg_tb_lookup(retaddr);
     if (tb) {
         /* We can use retranslation to find the PC.  */
         cpu_restore_state_from_tb(cpu, tb, retaddr);
         tb_phys_invalidate(tb, -1);
-    } else {
+    }
+    else {
         /* The exception probably happened in a helper.  The CPU state should
            have been saved before calling it. Fetch the PC from there.  */
-        CPUArchState *env = cpu_env(cpu);
-        TCGTBCPUState s = cpu->cc->tcg_ops->get_tb_cpu_state(cpu);
+        CPUArchState*  env  = cpu_env(cpu);
+        TCGTBCPUState  s    = cpu->cc->tcg_ops->get_tb_cpu_state(cpu);
         tb_page_addr_t addr = get_page_addr_code(env, s.pc);
 
-        if (addr != -1) {
-            tb_invalidate_phys_range(cpu, addr, addr);
-        }
+        if (addr != -1) { tb_invalidate_phys_range(cpu, addr, addr); }
     }
 }
 
@@ -540,15 +496,12 @@ void tb_check_watchpoint(CPUState *cpu, uintptr_t retaddr)
  *
  * Called by softmmu_template.h, with iothread mutex not held.
  */
-void cpu_io_recompile(CPUState *cpu, uintptr_t retaddr)
+void cpu_io_recompile(CPUState* cpu, uintptr_t retaddr)
 {
-    TranslationBlock *tb;
+    TranslationBlock* tb;
 
     tb = tcg_tb_lookup(retaddr);
-    if (!tb) {
-        cpu_abort(cpu, "cpu_io_recompile: could not find TB for pc=%p",
-                  (void *)retaddr);
-    }
+    if (!tb) { cpu_abort(cpu, "cpu_io_recompile: could not find TB for pc=%p", (void*)retaddr); }
     cpu_restore_state_from_tb(cpu, tb, retaddr);
 
     /*
@@ -563,8 +516,7 @@ void cpu_io_recompile(CPUState *cpu, uintptr_t retaddr)
     if (qemu_loglevel_mask(CPU_LOG_EXEC)) {
         vaddr pc = cpu->cc->get_pc(cpu);
         if (qemu_log_in_addr_range(pc)) {
-            qemu_log("cpu_io_recompile: rewound execution of TB to %016"
-                     VADDR_PRIx "\n", pc);
+            qemu_log("cpu_io_recompile: rewound execution of TB to %016" VADDR_PRIx "\n", pc);
         }
     }
 
@@ -575,16 +527,12 @@ void cpu_io_recompile(CPUState *cpu, uintptr_t retaddr)
  * Called by generic code at e.g. cpu reset after cpu creation,
  * therefore we must be prepared to allocate the jump cache.
  */
-void tcg_flush_jmp_cache(CPUState *cpu)
+void tcg_flush_jmp_cache(CPUState* cpu)
 {
-    CPUJumpCache *jc = cpu->tb_jmp_cache;
+    CPUJumpCache* jc = cpu->tb_jmp_cache;
 
     /* During early initialization, the cache may not yet be allocated. */
-    if (unlikely(jc == NULL)) {
-        return;
-    }
+    if (unlikely(jc == NULL)) { return; }
 
-    for (int i = 0; i < TB_JMP_CACHE_SIZE; i++) {
-        qatomic_set(&jc->array[i].tb, NULL);
-    }
+    for (int i = 0; i < TB_JMP_CACHE_SIZE; i++) { qatomic_set(&jc->array[i].tb, NULL); }
 }

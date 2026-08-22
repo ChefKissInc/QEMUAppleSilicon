@@ -7,7 +7,7 @@
  * Return a SI prefix (n, u, m, K, M, etc.) corresponding
  * to the given exponent of 10.
  */
-const char *si_prefix(unsigned int exp10);
+const char* si_prefix(unsigned int exp10);
 
 /*
  * iec_binary_prefix:
@@ -16,7 +16,7 @@ const char *si_prefix(unsigned int exp10);
  * Return an IEC binary prefix (Ki, Mi, etc.) corresponding
  * to the given exponent of 2.
  */
-const char *iec_binary_prefix(unsigned int exp2);
+const char* iec_binary_prefix(unsigned int exp2);
 
 /**
  * pstrcpy:
@@ -36,7 +36,7 @@ const char *iec_binary_prefix(unsigned int exp2);
  *  * if @str is too long, pstrcpy() will copy the first @buf_size-1
  *    bytes and then add a NUL
  */
-void pstrcpy(char *buf, int buf_size, const char *str);
+void pstrcpy(char* buf, int buf_size, const char* str);
 /**
  * strpadcpy:
  * @buf: buffer to copy string into
@@ -49,7 +49,7 @@ void pstrcpy(char *buf, int buf_size, const char *str);
  * for the buffer then it is truncated, so that @buf contains the
  * first @buf_size characters of @str, with no terminator.
  */
-void strpadcpy(char *buf, int buf_size, const char *str, char pad);
+void strpadcpy(char* buf, int buf_size, const char* str, char pad);
 /**
  * pstrcat:
  * @buf: buffer containing existing string
@@ -66,7 +66,7 @@ void strpadcpy(char *buf, int buf_size, const char *str, char pad);
  *
  * Returns: @buf.
  */
-char *pstrcat(char *buf, int buf_size, const char *s);
+char* pstrcat(char* buf, int buf_size, const char* s);
 /**
  * strstart:
  * @str: string to test
@@ -83,7 +83,7 @@ char *pstrcat(char *buf, int buf_size, const char *s);
  *
  * Returns: true if @str starts with prefix @val, false otherwise.
  */
-int strstart(const char *str, const char *val, const char **ptr);
+int strstart(const char* str, const char* val, const char** ptr);
 /**
  * stristart:
  * @str: string to test
@@ -99,7 +99,7 @@ int strstart(const char *str, const char *val, const char **ptr);
  * Returns: true if @str starts with case-insensitive prefix @val,
  *          false otherwise.
  */
-int stristart(const char *str, const char *val, const char **ptr);
+int stristart(const char* str, const char* val, const char** ptr);
 /**
  * qemu_strnlen:
  * @s: string
@@ -115,7 +115,7 @@ int stristart(const char *str, const char *val, const char **ptr);
  *
  * Returns: length of @s in bytes, or @max_len, whichever is smaller.
  */
-int qemu_strnlen(const char *s, int max_len);
+int qemu_strnlen(const char* s, int max_len);
 /**
  * qemu_strsep:
  * @input: pointer to string to parse
@@ -136,40 +136,31 @@ int qemu_strnlen(const char *s, int max_len);
  *
  * Returns: the pointer originally in @input.
  */
-char *qemu_strsep(char **input, const char *delim);
+char* qemu_strsep(char** input, const char* delim);
 #ifdef HAVE_STRCHRNUL
-static inline const char *qemu_strchrnul(const char *s, int c)
-{
-    return strchrnul(s, c);
-}
+static inline const char* qemu_strchrnul(const char* s, int c) { return strchrnul(s, c); }
 #else
-const char *qemu_strchrnul(const char *s, int c);
+const char* qemu_strchrnul(const char* s, int c);
 #endif
-time_t mktimegm(struct tm *tm);
-int qemu_parse_fd(const char *param);
-int qemu_strtoi(const char *nptr, const char **endptr, int base,
-                int *result);
-int qemu_strtoui(const char *nptr, const char **endptr, int base,
-                 unsigned int *result);
-int qemu_strtol(const char *nptr, const char **endptr, int base,
-                long *result);
-int qemu_strtoul(const char *nptr, const char **endptr, int base,
-                 unsigned long *result);
-int qemu_strtoi64(const char *nptr, const char **endptr, int base,
-                  int64_t *result);
-int qemu_strtou64(const char *nptr, const char **endptr, int base,
-                  uint64_t *result);
-int qemu_strtod(const char *nptr, const char **endptr, double *result);
-int qemu_strtod_finite(const char *nptr, const char **endptr, double *result);
+time_t mktimegm(struct tm* tm);
+int    qemu_parse_fd(const char* param);
+int    qemu_strtoi(const char* nptr, const char** endptr, int base, int* result);
+int    qemu_strtoui(const char* nptr, const char** endptr, int base, unsigned int* result);
+int    qemu_strtol(const char* nptr, const char** endptr, int base, long* result);
+int    qemu_strtoul(const char* nptr, const char** endptr, int base, unsigned long* result);
+int    qemu_strtoi64(const char* nptr, const char** endptr, int base, int64_t* result);
+int    qemu_strtou64(const char* nptr, const char** endptr, int base, uint64_t* result);
+int    qemu_strtod(const char* nptr, const char** endptr, double* result);
+int    qemu_strtod_finite(const char* nptr, const char** endptr, double* result);
 
-int parse_uint(const char *s, const char **endptr, int base, uint64_t *value);
-int parse_uint_full(const char *s, int base, uint64_t *value);
+int parse_uint(const char* s, const char** endptr, int base, uint64_t* value);
+int parse_uint_full(const char* s, int base, uint64_t* value);
 
-int qemu_strtosz(const char *nptr, const char **end, uint64_t *result);
-int qemu_strtosz_MiB(const char *nptr, const char **end, uint64_t *result);
-int qemu_strtosz_metric(const char *nptr, const char **end, uint64_t *result);
+int qemu_strtosz(const char* nptr, const char** end, uint64_t* result);
+int qemu_strtosz_MiB(const char* nptr, const char** end, uint64_t* result);
+int qemu_strtosz_metric(const char* nptr, const char** end, uint64_t* result);
 
-char *size_to_str(uint64_t val);
+char* size_to_str(uint64_t val);
 
 /**
  * freq_to_str:
@@ -181,7 +172,7 @@ char *size_to_str(uint64_t val);
  * The caller is responsible for releasing the value returned
  * with g_free() after use.
  */
-char *freq_to_str(uint64_t freq_hz);
+char* freq_to_str(uint64_t freq_hz);
 
 /* used to print char* safely */
 #define STR_OR_NULL(str) ((str) ? (str) : "null")
@@ -190,11 +181,11 @@ char *freq_to_str(uint64_t freq_hz);
  * Check if a buffer is all zeroes.
  */
 
-bool buffer_is_zero_ool(const void *vbuf, size_t len);
-bool buffer_is_zero_ge256(const void *vbuf, size_t len);
+bool buffer_is_zero_ool(const void* vbuf, size_t len);
+bool buffer_is_zero_ge256(const void* vbuf, size_t len);
 bool test_buffer_is_zero_next_accel(void);
 
-static inline bool buffer_is_zero_sample3(const char *buf, size_t len)
+static inline bool buffer_is_zero_sample3(const char* buf, size_t len)
 {
     /*
      * For any reasonably sized buffer, these three samples come from
@@ -208,15 +199,14 @@ static inline bool buffer_is_zero_sample3(const char *buf, size_t len)
 }
 
 #ifdef __OPTIMIZE__
-static inline bool buffer_is_zero(const void *buf, size_t len)
+static inline bool buffer_is_zero(const void* buf, size_t len)
 {
-    return (__builtin_constant_p(len) && len >= 256
-            ? buffer_is_zero_sample3(buf, len) &&
-              buffer_is_zero_ge256(buf, len)
-            : buffer_is_zero_ool(buf, len));
+    return (__builtin_constant_p(len) && len >= 256 ?
+                buffer_is_zero_sample3(buf, len) && buffer_is_zero_ge256(buf, len) :
+                buffer_is_zero_ool(buf, len));
 }
 #else
-#define buffer_is_zero  buffer_is_zero_ool
+    #define buffer_is_zero buffer_is_zero_ool
 #endif
 
 /*
@@ -224,8 +214,8 @@ static inline bool buffer_is_zero(const void *buf, size_t len)
  * Input is limited to 14-bit numbers
  */
 
-int uleb128_encode_small(uint8_t *out, uint32_t n);
-int uleb128_decode_small(const uint8_t *in, uint32_t *n);
+int uleb128_encode_small(uint8_t* out, uint32_t n);
+int uleb128_decode_small(const uint8_t* in, uint32_t* n);
 
 /**
  * qemu_pstrcmp0:
@@ -237,12 +227,12 @@ int uleb128_decode_small(const uint8_t *in, uint32_t *n);
  * Returns: an integer less than, equal to, or greater than zero, if
  * *str1 is <, == or > than *str2.
  */
-int qemu_pstrcmp0(const char **str1, const char **str2);
+int qemu_pstrcmp0(const char** str1, const char** str2);
 
 /* Find program directory, and save it for later usage with
  * get_relocated_path().
  * Try OS specific API first, if not working, parse from argv0. */
-void qemu_init_exec_dir(const char *argv0);
+void qemu_init_exec_dir(const char* argv0);
 
 /**
  * get_relocated_path:
@@ -266,17 +256,14 @@ void qemu_init_exec_dir(const char *argv0);
  *
  * The returned string should be freed by the caller.
  */
-char *get_relocated_path(const char *dir);
+char* get_relocated_path(const char* dir);
 
-static inline const char *yes_no(bool b)
-{
-     return b ? "yes" : "no";
-}
+static inline const char* yes_no(bool b) { return b ? "yes" : "no"; }
 
 /*
  * helper to parse debug environment variables
  */
-int parse_debug_env(const char *name, int max, int initial);
+int parse_debug_env(const char* name, int max, int initial);
 
 /**
  * qemu_hexdump_line:
@@ -291,15 +278,13 @@ int parse_debug_env(const char *name, int max, int initial);
  * If @str is NULL, allocate a new string and return it;
  * otherwise return @str.
  */
-GString *qemu_hexdump_line(GString *str, const void *buf, size_t len,
-                           size_t unit_len, size_t block_len);
+GString* qemu_hexdump_line(GString* str, const void* buf, size_t len, size_t unit_len, size_t block_len);
 
 /*
  * Hexdump a buffer to a file. An optional string prefix is added to every line
  */
 
-void qemu_hexdump(FILE *fp, const char *prefix,
-                  const void *bufptr, size_t size);
+void qemu_hexdump(FILE* fp, const char* prefix, const void* bufptr, size_t size);
 
 /**
  * qemu_hexdump_to_buffer:
@@ -313,5 +298,4 @@ void qemu_hexdump(FILE *fp, const char *prefix,
  * @buffer. Finally, a nul terminating character is written; @buffer therefore
  * needs space for (data_size*2+1) chars.
  */
-void qemu_hexdump_to_buffer(char *restrict buffer, size_t buffer_size,
-                            const uint8_t *restrict data, size_t data_size);
+void qemu_hexdump_to_buffer(char* restrict buffer, size_t buffer_size, const uint8_t* restrict data, size_t data_size);

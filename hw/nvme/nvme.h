@@ -25,9 +25,9 @@
 
 #define NVME_MAX_CONTROLLERS 256
 #define NVME_MAX_NAMESPACES  16
-#define NVME_EUI64_DEFAULT ((uint64_t)0x5254000000000000)
-#define NVME_FDP_MAX_EVENTS 63
-#define NVME_FDP_MAXPIDS 128
+#define NVME_EUI64_DEFAULT   ((uint64_t)0x5254000000000000)
+#define NVME_FDP_MAX_EVENTS  63
+#define NVME_FDP_MAXPIDS     128
 
 /*
  * The controller only supports Submission and Completion Queue Entry Sizes of
@@ -38,26 +38,28 @@
 
 QEMU_BUILD_BUG_ON(NVME_MAX_NAMESPACES > NVME_NSID_BROADCAST - 1);
 
-typedef struct NvmeCtrl NvmeCtrl;
+typedef struct NvmeCtrl      NvmeCtrl;
 typedef struct NvmeNamespace NvmeNamespace;
 
 #define TYPE_NVME_BUS "nvme-bus"
 OBJECT_DECLARE_SIMPLE_TYPE(NvmeBus, NVME_BUS)
 
-typedef struct NvmeBus {
+typedef struct NvmeBus
+{
     BusState parent_bus;
 } NvmeBus;
 
 #define TYPE_NVME_SUBSYS "nvme-subsys"
-#define NVME_SUBSYS(obj) \
-    OBJECT_CHECK(NvmeSubsystem, (obj), TYPE_NVME_SUBSYS)
-#define SUBSYS_SLOT_RSVD (void *)0xFFFF
+#define NVME_SUBSYS(obj) OBJECT_CHECK(NvmeSubsystem, (obj), TYPE_NVME_SUBSYS)
+#define SUBSYS_SLOT_RSVD (void*)0xFFFF
 
-typedef struct NvmeReclaimUnit {
+typedef struct NvmeReclaimUnit
+{
     uint64_t ruamw;
 } NvmeReclaimUnit;
 
-typedef struct NvmeRuHandle {
+typedef struct NvmeRuHandle
+{
     uint8_t  ruht;
     uint8_t  ruha;
     uint64_t event_filter;
@@ -65,20 +67,23 @@ typedef struct NvmeRuHandle {
     uint64_t ruamw;
 
     /* reclaim units indexed by reclaim group */
-    NvmeReclaimUnit *rus;
+    NvmeReclaimUnit* rus;
 } NvmeRuHandle;
 
-typedef struct NvmeFdpEventBuffer {
-    NvmeFdpEvent     events[NVME_FDP_MAX_EVENTS];
-    unsigned int     nelems;
-    unsigned int     start;
-    unsigned int     next;
+typedef struct NvmeFdpEventBuffer
+{
+    NvmeFdpEvent events[NVME_FDP_MAX_EVENTS];
+    unsigned int nelems;
+    unsigned int start;
+    unsigned int next;
 } NvmeFdpEventBuffer;
 
-typedef struct NvmeEnduranceGroup {
+typedef struct NvmeEnduranceGroup
+{
     uint8_t event_conf;
 
-    struct {
+    struct
+    {
         NvmeFdpEventBuffer host_events, ctrl_events;
 
         uint16_t nruh;
@@ -92,24 +97,27 @@ typedef struct NvmeEnduranceGroup {
 
         bool enabled;
 
-        NvmeRuHandle *ruhs;
+        NvmeRuHandle* ruhs;
     } fdp;
 } NvmeEnduranceGroup;
 
-typedef struct NvmeSubsystem {
+typedef struct NvmeSubsystem
+{
     DeviceState parent_obj;
     NvmeBus     bus;
     uint8_t     subnqn[256];
-    char        *serial;
+    char*       serial;
 
-    NvmeCtrl           *ctrls[NVME_MAX_CONTROLLERS];
-    NvmeNamespace      *namespaces[NVME_MAX_NAMESPACES + 1];
+    NvmeCtrl*          ctrls[NVME_MAX_CONTROLLERS];
+    NvmeNamespace*     namespaces[NVME_MAX_NAMESPACES + 1];
     NvmeEnduranceGroup endgrp;
 
-    struct {
-        char *nqn;
+    struct
+    {
+        char* nqn;
 
-        struct {
+        struct
+        {
             bool     enabled;
             uint64_t runs;
             uint16_t nruh;
@@ -118,72 +126,66 @@ typedef struct NvmeSubsystem {
     } params;
 } NvmeSubsystem;
 
-int nvme_subsys_register_ctrl(NvmeCtrl *n, Error **errp);
-void nvme_subsys_unregister_ctrl(NvmeSubsystem *subsys, NvmeCtrl *n);
+int  nvme_subsys_register_ctrl(NvmeCtrl* n, Error** errp);
+void nvme_subsys_unregister_ctrl(NvmeSubsystem* subsys, NvmeCtrl* n);
 
-static inline NvmeCtrl *nvme_subsys_ctrl(NvmeSubsystem *subsys,
-                                         uint32_t cntlid)
+static inline NvmeCtrl* nvme_subsys_ctrl(NvmeSubsystem* subsys, uint32_t cntlid)
 {
-    if (!subsys || cntlid >= NVME_MAX_CONTROLLERS) {
-        return NULL;
-    }
+    if (!subsys || cntlid >= NVME_MAX_CONTROLLERS) { return NULL; }
 
-    if (subsys->ctrls[cntlid] == SUBSYS_SLOT_RSVD) {
-        return NULL;
-    }
+    if (subsys->ctrls[cntlid] == SUBSYS_SLOT_RSVD) { return NULL; }
 
     return subsys->ctrls[cntlid];
 }
 
-static inline NvmeNamespace *nvme_subsys_ns(NvmeSubsystem *subsys,
-                                            uint32_t nsid)
+static inline NvmeNamespace* nvme_subsys_ns(NvmeSubsystem* subsys, uint32_t nsid)
 {
-    if (!subsys || !nsid || nsid > NVME_MAX_NAMESPACES) {
-        return NULL;
-    }
+    if (!subsys || !nsid || nsid > NVME_MAX_NAMESPACES) { return NULL; }
 
     return subsys->namespaces[nsid];
 }
 
 #define TYPE_NVME_NS "nvme-ns"
-#define NVME_NS(obj) \
-    OBJECT_CHECK(NvmeNamespace, (obj), TYPE_NVME_NS)
+#define NVME_NS(obj) OBJECT_CHECK(NvmeNamespace, (obj), TYPE_NVME_NS)
 
-typedef struct NvmeZone {
-    NvmeZoneDescr   d;
-    uint64_t        w_ptr;
+typedef struct NvmeZone
+{
+    NvmeZoneDescr d;
+    uint64_t      w_ptr;
     QTAILQ_ENTRY(NvmeZone) entry;
 } NvmeZone;
 
-#define FDP_EVT_MAX 0xff
+#define FDP_EVT_MAX          0xff
 #define NVME_FDP_MAX_NS_RUHS 32u
-#define FDPVSS 0
+#define FDPVSS               0
 
 static const uint8_t nvme_fdp_evf_shifts[FDP_EVT_MAX] = {
     /* Host events */
-    [FDP_EVT_RU_NOT_FULLY_WRITTEN]      = 0,
-    [FDP_EVT_RU_ATL_EXCEEDED]           = 1,
-    [FDP_EVT_CTRL_RESET_RUH]            = 2,
-    [FDP_EVT_INVALID_PID]               = 3,
+    [FDP_EVT_RU_NOT_FULLY_WRITTEN] = 0,
+    [FDP_EVT_RU_ATL_EXCEEDED]      = 1,
+    [FDP_EVT_CTRL_RESET_RUH]       = 2,
+    [FDP_EVT_INVALID_PID]          = 3,
     /* CTRL events */
-    [FDP_EVT_MEDIA_REALLOC]             = 32,
-    [FDP_EVT_RUH_IMPLICIT_RU_CHANGE]    = 33,
+    [FDP_EVT_MEDIA_REALLOC]          = 32,
+    [FDP_EVT_RUH_IMPLICIT_RU_CHANGE] = 33,
 };
 
 #define NGUID_LEN 16
 
-typedef struct {
+typedef struct
+{
     uint8_t data[NGUID_LEN];
 } NvmeNGUID;
 
-bool nvme_nguid_is_null(const NvmeNGUID *nguid);
+bool nvme_nguid_is_null(const NvmeNGUID* nguid);
 
 extern const PropertyInfo qdev_prop_nguid;
 
-#define DEFINE_PROP_NGUID_NODEFAULT(_name, _state, _field) \
+#define DEFINE_PROP_NGUID_NODEFAULT(_name, _state, _field)         \
     DEFINE_PROP(_name, _state, _field, qdev_prop_nguid, NvmeNGUID)
 
-typedef struct NvmeNamespaceParams {
+typedef struct NvmeNamespaceParams
+{
     bool      detached;
     bool      shared;
     uint32_t  nsid;
@@ -215,17 +217,20 @@ typedef struct NvmeNamespaceParams {
     uint64_t zrwas;
     uint64_t zrwafg;
 
-    struct {
-        char *ruhs;
+    struct
+    {
+        char* ruhs;
     } fdp;
 } NvmeNamespaceParams;
 
-typedef struct NvmeAtomic {
-    uint32_t    atomic_max_write_size;
-    bool        atomic_writes;
+typedef struct NvmeAtomic
+{
+    uint32_t atomic_max_write_size;
+    bool     atomic_writes;
 } NvmeAtomic;
 
-typedef struct NvmeNamespace {
+typedef struct NvmeNamespace
+{
     DeviceState  parent_obj;
     BlockConf    blkconf;
     int32_t      bootindex;
@@ -243,7 +248,8 @@ typedef struct NvmeNamespace {
     int          attached;
     uint8_t      pif;
 
-    struct {
+    struct
+    {
         uint16_t zrwas;
         uint16_t zrwafg;
         uint32_t numzrwa;
@@ -251,103 +257,75 @@ typedef struct NvmeNamespace {
 
     QTAILQ_ENTRY(NvmeNamespace) entry;
 
-    NvmeIdNsZoned   *id_ns_zoned;
-    NvmeZone        *zone_array;
+    NvmeIdNsZoned* id_ns_zoned;
+    NvmeZone*      zone_array;
     QTAILQ_HEAD(, NvmeZone) exp_open_zones;
     QTAILQ_HEAD(, NvmeZone) imp_open_zones;
     QTAILQ_HEAD(, NvmeZone) closed_zones;
     QTAILQ_HEAD(, NvmeZone) full_zones;
-    uint32_t        num_zones;
-    uint64_t        zone_size;
-    uint64_t        zone_capacity;
-    uint32_t        zone_size_log2;
-    uint8_t         *zd_extensions;
-    int32_t         nr_open_zones;
-    int32_t         nr_active_zones;
+    uint32_t num_zones;
+    uint64_t zone_size;
+    uint64_t zone_capacity;
+    uint32_t zone_size_log2;
+    uint8_t* zd_extensions;
+    int32_t  nr_open_zones;
+    int32_t  nr_active_zones;
 
     NvmeNamespaceParams params;
-    NvmeSubsystem *subsys;
-    NvmeEnduranceGroup *endgrp;
+    NvmeSubsystem*      subsys;
+    NvmeEnduranceGroup* endgrp;
 
     /* NULL for shared namespaces; set to specific controller if private */
-    NvmeCtrl *ctrl;
+    NvmeCtrl* ctrl;
 
-    struct {
+    struct
+    {
         uint32_t err_rec;
     } features;
 
-    struct {
+    struct
+    {
         uint16_t nphs;
         /* reclaim unit handle identifiers indexed by placement handle */
-        uint16_t *phs;
+        uint16_t* phs;
     } fdp;
 } NvmeNamespace;
 
-static inline uint32_t nvme_nsid(NvmeNamespace *ns)
+static inline uint32_t nvme_nsid(NvmeNamespace* ns)
 {
-    if (ns) {
-        return ns->params.nsid;
-    }
+    if (ns) { return ns->params.nsid; }
 
     return 0;
 }
 
-static inline size_t nvme_l2b(NvmeNamespace *ns, uint64_t lba)
-{
-    return lba << ns->lbaf.ds;
-}
+static inline size_t nvme_l2b(NvmeNamespace* ns, uint64_t lba) { return lba << ns->lbaf.ds; }
 
-static inline size_t nvme_m2b(NvmeNamespace *ns, uint64_t lba)
-{
-    return ns->lbaf.ms * lba;
-}
+static inline size_t nvme_m2b(NvmeNamespace* ns, uint64_t lba) { return ns->lbaf.ms * lba; }
 
-static inline int64_t nvme_moff(NvmeNamespace *ns, uint64_t lba)
-{
-    return ns->moff + nvme_m2b(ns, lba);
-}
+static inline int64_t nvme_moff(NvmeNamespace* ns, uint64_t lba) { return ns->moff + nvme_m2b(ns, lba); }
 
-static inline bool nvme_ns_ext(NvmeNamespace *ns)
-{
-    return !!NVME_ID_NS_FLBAS_EXTENDED(ns->id_ns.flbas);
-}
+static inline bool nvme_ns_ext(NvmeNamespace* ns) { return !!NVME_ID_NS_FLBAS_EXTENDED(ns->id_ns.flbas); }
 
-static inline NvmeZoneState nvme_get_zone_state(NvmeZone *zone)
-{
-    return zone->d.zs >> 4;
-}
+static inline NvmeZoneState nvme_get_zone_state(NvmeZone* zone) { return zone->d.zs >> 4; }
 
-static inline void nvme_set_zone_state(NvmeZone *zone, NvmeZoneState state)
-{
-    zone->d.zs = state << 4;
-}
+static inline void nvme_set_zone_state(NvmeZone* zone, NvmeZoneState state) { zone->d.zs = state << 4; }
 
-static inline uint64_t nvme_zone_rd_boundary(NvmeNamespace *ns, NvmeZone *zone)
-{
-    return zone->d.zslba + ns->zone_size;
-}
+static inline uint64_t nvme_zone_rd_boundary(NvmeNamespace* ns, NvmeZone* zone)
+{ return zone->d.zslba + ns->zone_size; }
 
-static inline uint64_t nvme_zone_wr_boundary(NvmeZone *zone)
-{
-    return zone->d.zslba + zone->d.zcap;
-}
+static inline uint64_t nvme_zone_wr_boundary(NvmeZone* zone) { return zone->d.zslba + zone->d.zcap; }
 
-static inline bool nvme_wp_is_valid(NvmeZone *zone)
+static inline bool nvme_wp_is_valid(NvmeZone* zone)
 {
     uint8_t st = nvme_get_zone_state(zone);
 
-    return st != NVME_ZONE_STATE_FULL &&
-           st != NVME_ZONE_STATE_READ_ONLY &&
-           st != NVME_ZONE_STATE_OFFLINE;
+    return st != NVME_ZONE_STATE_FULL && st != NVME_ZONE_STATE_READ_ONLY && st != NVME_ZONE_STATE_OFFLINE;
 }
 
-static inline uint8_t *nvme_get_zd_extension(NvmeNamespace *ns,
-                                             uint32_t zone_idx)
-{
-    return &ns->zd_extensions[zone_idx * ns->params.zd_extension_size];
-}
+static inline uint8_t* nvme_get_zd_extension(NvmeNamespace* ns, uint32_t zone_idx)
+{ return &ns->zd_extensions[zone_idx * ns->params.zd_extension_size]; }
 
-static inline void nvme_aor_inc_open(NvmeNamespace *ns)
+static inline void nvme_aor_inc_open(NvmeNamespace* ns)
 {
     assert(ns->nr_open_zones >= 0);
     if (ns->params.max_open_zones) {
@@ -356,7 +334,7 @@ static inline void nvme_aor_inc_open(NvmeNamespace *ns)
     }
 }
 
-static inline void nvme_aor_dec_open(NvmeNamespace *ns)
+static inline void nvme_aor_dec_open(NvmeNamespace* ns)
 {
     if (ns->params.max_open_zones) {
         assert(ns->nr_open_zones > 0);
@@ -365,7 +343,7 @@ static inline void nvme_aor_dec_open(NvmeNamespace *ns)
     assert(ns->nr_open_zones >= 0);
 }
 
-static inline void nvme_aor_inc_active(NvmeNamespace *ns)
+static inline void nvme_aor_inc_active(NvmeNamespace* ns)
 {
     assert(ns->nr_active_zones >= 0);
     if (ns->params.max_active_zones) {
@@ -374,7 +352,7 @@ static inline void nvme_aor_inc_active(NvmeNamespace *ns)
     }
 }
 
-static inline void nvme_aor_dec_active(NvmeNamespace *ns)
+static inline void nvme_aor_dec_active(NvmeNamespace* ns)
 {
     if (ns->params.max_active_zones) {
         assert(ns->nr_active_zones > 0);
@@ -384,156 +362,166 @@ static inline void nvme_aor_dec_active(NvmeNamespace *ns)
     assert(ns->nr_active_zones >= 0);
 }
 
-static inline void nvme_fdp_stat_inc(uint64_t *a, uint64_t b)
+static inline void nvme_fdp_stat_inc(uint64_t* a, uint64_t b)
 {
     uint64_t ret = *a + b;
-    *a = ret < *a ? UINT64_MAX : ret;
+    *a           = ret < *a ? UINT64_MAX : ret;
 }
 
-void nvme_ns_init_format(NvmeNamespace *ns);
-int nvme_ns_setup(NvmeNamespace *ns, Error **errp);
-void nvme_ns_drain(NvmeNamespace *ns);
-void nvme_ns_shutdown(NvmeNamespace *ns);
-void nvme_ns_cleanup(NvmeNamespace *ns);
+void nvme_ns_init_format(NvmeNamespace* ns);
+int  nvme_ns_setup(NvmeNamespace* ns, Error** errp);
+void nvme_ns_drain(NvmeNamespace* ns);
+void nvme_ns_shutdown(NvmeNamespace* ns);
+void nvme_ns_cleanup(NvmeNamespace* ns);
 
-typedef struct NvmeAsyncEvent {
+typedef struct NvmeAsyncEvent
+{
     QTAILQ_ENTRY(NvmeAsyncEvent) entry;
     NvmeAerResult result;
 } NvmeAsyncEvent;
 
-enum {
+enum
+{
     NVME_SG_ALLOC = 1 << 0,
     NVME_SG_DMA   = 1 << 1,
 };
 
-typedef struct NvmeSg {
+typedef struct NvmeSg
+{
     int flags;
 
-    union {
+    union
+    {
         QEMUSGList   qsg;
         QEMUIOVector iov;
     };
 } NvmeSg;
 
-typedef enum NvmeTxDirection {
+typedef enum NvmeTxDirection
+{
     NVME_TX_DIRECTION_TO_DEVICE   = 0,
     NVME_TX_DIRECTION_FROM_DEVICE = 1,
 } NvmeTxDirection;
 
-typedef struct NvmeRequest {
-    struct NvmeSQueue       *sq;
-    struct NvmeNamespace    *ns;
-    BlockAIOCB              *aiocb;
-    uint16_t                status;
-    void                    *opaque;
-    NvmeCqe                 cqe;
-    NvmeCmd                 cmd;
-    BlockAcctCookie         acct;
-    NvmeSg                  sg;
-    bool                    atomic_write;
-    QTAILQ_ENTRY(NvmeRequest)entry;
+typedef struct NvmeRequest
+{
+    struct NvmeSQueue*    sq;
+    struct NvmeNamespace* ns;
+    BlockAIOCB*           aiocb;
+    uint16_t              status;
+    void*                 opaque;
+    NvmeCqe               cqe;
+    NvmeCmd               cmd;
+    BlockAcctCookie       acct;
+    NvmeSg                sg;
+    bool                  atomic_write;
+    QTAILQ_ENTRY(NvmeRequest) entry;
 } NvmeRequest;
 
-typedef struct NvmeBounceContext {
-    NvmeRequest *req;
+typedef struct NvmeBounceContext
+{
+    NvmeRequest* req;
 
-    struct {
+    struct
+    {
         QEMUIOVector iov;
-        uint8_t *bounce;
+        uint8_t*     bounce;
     } data, mdata;
 } NvmeBounceContext;
 
-static inline const char *nvme_adm_opc_str(uint8_t opc)
+static inline const char* nvme_adm_opc_str(uint8_t opc)
 {
     switch (opc) {
-    case NVME_ADM_CMD_DELETE_SQ:        return "NVME_ADM_CMD_DELETE_SQ";
-    case NVME_ADM_CMD_CREATE_SQ:        return "NVME_ADM_CMD_CREATE_SQ";
-    case NVME_ADM_CMD_GET_LOG_PAGE:     return "NVME_ADM_CMD_GET_LOG_PAGE";
-    case NVME_ADM_CMD_DELETE_CQ:        return "NVME_ADM_CMD_DELETE_CQ";
-    case NVME_ADM_CMD_CREATE_CQ:        return "NVME_ADM_CMD_CREATE_CQ";
-    case NVME_ADM_CMD_IDENTIFY:         return "NVME_ADM_CMD_IDENTIFY";
-    case NVME_ADM_CMD_ABORT:            return "NVME_ADM_CMD_ABORT";
-    case NVME_ADM_CMD_SET_FEATURES:     return "NVME_ADM_CMD_SET_FEATURES";
-    case NVME_ADM_CMD_GET_FEATURES:     return "NVME_ADM_CMD_GET_FEATURES";
-    case NVME_ADM_CMD_ASYNC_EV_REQ:     return "NVME_ADM_CMD_ASYNC_EV_REQ";
-    case NVME_ADM_CMD_NS_ATTACHMENT:    return "NVME_ADM_CMD_NS_ATTACHMENT";
-    case NVME_ADM_CMD_DIRECTIVE_SEND:   return "NVME_ADM_CMD_DIRECTIVE_SEND";
-    case NVME_ADM_CMD_DIRECTIVE_RECV:   return "NVME_ADM_CMD_DIRECTIVE_RECV";
-    case NVME_ADM_CMD_DBBUF_CONFIG:     return "NVME_ADM_CMD_DBBUF_CONFIG";
-    case NVME_ADM_CMD_FORMAT_NVM:       return "NVME_ADM_CMD_FORMAT_NVM";
-    case NVME_ADM_CMD_TUNNEL:           return "NVME_ADM_CMD_TUNNEL";
-    case NVME_ADM_CMD_MAYBE_BFH_OFW:    return "NVME_ADM_CMD_MAYBE_BFH_OFW";
-    case NVME_ADM_CMD_DOWNLOAD_FW:      return "NVME_ADM_CMD_DOWNLOAD_FW";
-    case NVME_ADM_CMD_ACTIVATE_FW:      return "NVME_ADM_CMD_ACTIVATE_FW";
-    case NVME_ADM_CMD_CREATE_NS:        return "NVME_ADM_CMD_CREATE_NS";
-    default:                            return "NVME_ADM_CMD_UNKNOWN";
+        case NVME_ADM_CMD_DELETE_SQ     : return "NVME_ADM_CMD_DELETE_SQ";
+        case NVME_ADM_CMD_CREATE_SQ     : return "NVME_ADM_CMD_CREATE_SQ";
+        case NVME_ADM_CMD_GET_LOG_PAGE  : return "NVME_ADM_CMD_GET_LOG_PAGE";
+        case NVME_ADM_CMD_DELETE_CQ     : return "NVME_ADM_CMD_DELETE_CQ";
+        case NVME_ADM_CMD_CREATE_CQ     : return "NVME_ADM_CMD_CREATE_CQ";
+        case NVME_ADM_CMD_IDENTIFY      : return "NVME_ADM_CMD_IDENTIFY";
+        case NVME_ADM_CMD_ABORT         : return "NVME_ADM_CMD_ABORT";
+        case NVME_ADM_CMD_SET_FEATURES  : return "NVME_ADM_CMD_SET_FEATURES";
+        case NVME_ADM_CMD_GET_FEATURES  : return "NVME_ADM_CMD_GET_FEATURES";
+        case NVME_ADM_CMD_ASYNC_EV_REQ  : return "NVME_ADM_CMD_ASYNC_EV_REQ";
+        case NVME_ADM_CMD_NS_ATTACHMENT : return "NVME_ADM_CMD_NS_ATTACHMENT";
+        case NVME_ADM_CMD_DIRECTIVE_SEND: return "NVME_ADM_CMD_DIRECTIVE_SEND";
+        case NVME_ADM_CMD_DIRECTIVE_RECV: return "NVME_ADM_CMD_DIRECTIVE_RECV";
+        case NVME_ADM_CMD_DBBUF_CONFIG  : return "NVME_ADM_CMD_DBBUF_CONFIG";
+        case NVME_ADM_CMD_FORMAT_NVM    : return "NVME_ADM_CMD_FORMAT_NVM";
+        case NVME_ADM_CMD_TUNNEL        : return "NVME_ADM_CMD_TUNNEL";
+        case NVME_ADM_CMD_MAYBE_BFH_OFW : return "NVME_ADM_CMD_MAYBE_BFH_OFW";
+        case NVME_ADM_CMD_DOWNLOAD_FW   : return "NVME_ADM_CMD_DOWNLOAD_FW";
+        case NVME_ADM_CMD_ACTIVATE_FW   : return "NVME_ADM_CMD_ACTIVATE_FW";
+        case NVME_ADM_CMD_CREATE_NS     : return "NVME_ADM_CMD_CREATE_NS";
+        default                         : return "NVME_ADM_CMD_UNKNOWN";
     }
 }
 
-static inline const char *nvme_io_opc_str(uint8_t opc)
+static inline const char* nvme_io_opc_str(uint8_t opc)
 {
     switch (opc) {
-    case NVME_CMD_FLUSH:            return "NVME_NVM_CMD_FLUSH";
-    case NVME_CMD_WRITE:            return "NVME_NVM_CMD_WRITE";
-    case NVME_CMD_READ:             return "NVME_NVM_CMD_READ";
-    case NVME_CMD_COMPARE:          return "NVME_NVM_CMD_COMPARE";
-    case NVME_CMD_WRITE_ZEROES:     return "NVME_NVM_CMD_WRITE_ZEROES";
-    case NVME_CMD_DSM:              return "NVME_NVM_CMD_DSM";
-    case NVME_CMD_VERIFY:           return "NVME_NVM_CMD_VERIFY";
-    case NVME_CMD_COPY:             return "NVME_NVM_CMD_COPY";
-    case NVME_CMD_ZONE_MGMT_SEND:   return "NVME_ZONED_CMD_MGMT_SEND";
-    case NVME_CMD_ZONE_MGMT_RECV:   return "NVME_ZONED_CMD_MGMT_RECV";
-    case NVME_CMD_ZONE_APPEND:      return "NVME_ZONED_CMD_ZONE_APPEND";
-    case NVME_CMD_REPRIORITIZE:     return "NVME_CMD_REPRIORITIZE";
-    default:                        return "NVME_NVM_CMD_UNKNOWN";
+        case NVME_CMD_FLUSH         : return "NVME_NVM_CMD_FLUSH";
+        case NVME_CMD_WRITE         : return "NVME_NVM_CMD_WRITE";
+        case NVME_CMD_READ          : return "NVME_NVM_CMD_READ";
+        case NVME_CMD_COMPARE       : return "NVME_NVM_CMD_COMPARE";
+        case NVME_CMD_WRITE_ZEROES  : return "NVME_NVM_CMD_WRITE_ZEROES";
+        case NVME_CMD_DSM           : return "NVME_NVM_CMD_DSM";
+        case NVME_CMD_VERIFY        : return "NVME_NVM_CMD_VERIFY";
+        case NVME_CMD_COPY          : return "NVME_NVM_CMD_COPY";
+        case NVME_CMD_ZONE_MGMT_SEND: return "NVME_ZONED_CMD_MGMT_SEND";
+        case NVME_CMD_ZONE_MGMT_RECV: return "NVME_ZONED_CMD_MGMT_RECV";
+        case NVME_CMD_ZONE_APPEND   : return "NVME_ZONED_CMD_ZONE_APPEND";
+        case NVME_CMD_REPRIORITIZE  : return "NVME_CMD_REPRIORITIZE";
+        default                     : return "NVME_NVM_CMD_UNKNOWN";
     }
 }
 
-typedef struct NvmeSQueue {
-    struct NvmeCtrl *ctrl;
-    uint16_t    sqid;
-    uint16_t    cqid;
-    uint32_t    entry_count;
-    uint32_t    head;
-    uint32_t    tail;
-    uint32_t    size;
-    uint64_t    dma_addr;
-    uint64_t    db_addr;
-    uint64_t    ei_addr;
-    QEMUBH      *bh;
-    EventNotifier notifier;
-    bool        ioeventfd_enabled;
-    NvmeRequest *io_req;
+typedef struct NvmeSQueue
+{
+    struct NvmeCtrl* ctrl;
+    uint16_t         sqid;
+    uint16_t         cqid;
+    uint32_t         entry_count;
+    uint32_t         head;
+    uint32_t         tail;
+    uint32_t         size;
+    uint64_t         dma_addr;
+    uint64_t         db_addr;
+    uint64_t         ei_addr;
+    QEMUBH*          bh;
+    EventNotifier    notifier;
+    bool             ioeventfd_enabled;
+    NvmeRequest*     io_req;
     QTAILQ_HEAD(, NvmeRequest) req_list;
     QTAILQ_HEAD(, NvmeRequest) out_req_list;
     QTAILQ_ENTRY(NvmeSQueue) entry;
 } NvmeSQueue;
 
-typedef struct NvmeCQueue {
-    struct NvmeCtrl *ctrl;
-    uint8_t     phase;
-    uint16_t    cqid;
-    uint16_t    irq_enabled;
-    uint32_t    head;
-    uint32_t    tail;
-    uint32_t    vector;
-    uint32_t    size;
-    uint64_t    dma_addr;
-    uint64_t    db_addr;
-    uint64_t    ei_addr;
-    QEMUBH      *bh;
-    EventNotifier notifier;
-    bool        ioeventfd_enabled;
+typedef struct NvmeCQueue
+{
+    struct NvmeCtrl* ctrl;
+    uint8_t          phase;
+    uint16_t         cqid;
+    uint16_t         irq_enabled;
+    uint32_t         head;
+    uint32_t         tail;
+    uint32_t         vector;
+    uint32_t         size;
+    uint64_t         dma_addr;
+    uint64_t         db_addr;
+    uint64_t         ei_addr;
+    QEMUBH*          bh;
+    EventNotifier    notifier;
+    bool             ioeventfd_enabled;
     QTAILQ_HEAD(, NvmeSQueue) sq_list;
     QTAILQ_HEAD(, NvmeRequest) req_list;
 } NvmeCQueue;
 
 #define TYPE_NVME "nvme"
-#define NVME(obj) \
-        OBJECT_CHECK(NvmeCtrl, (obj), TYPE_NVME)
+#define NVME(obj) OBJECT_CHECK(NvmeCtrl, (obj), TYPE_NVME)
 
-typedef struct NvmeParams {
-    char     *serial;
+typedef struct NvmeParams
+{
+    char*    serial;
     uint32_t num_queues; /* deprecated since 5.1 */
     uint32_t max_ioqpairs;
     uint16_t msix_qsize;
@@ -553,7 +541,8 @@ typedef struct NvmeParams {
     bool     msix_exclusive_bar;
     bool     ocp;
 
-    struct {
+    struct
+    {
         bool mem;
     } ctratt;
 
@@ -562,7 +551,8 @@ typedef struct NvmeParams {
     bool     atomic_dn;
 } NvmeParams;
 
-typedef struct NvmeCtrl {
+typedef struct NvmeCtrl
+{
     PCIDevice    parent_obj;
     MemoryRegion bar0;
     MemoryRegion iomem;
@@ -570,70 +560,76 @@ typedef struct NvmeCtrl {
     NvmeParams   params;
     NvmeBus      bus;
 
-    uint16_t    cntlid;
-    bool        qs_created;
-    uint32_t    page_size;
-    uint16_t    page_bits;
-    uint16_t    max_prp_ents;
-    uint32_t    max_q_ents;
-    uint8_t     outstanding_aers;
-    uint32_t    irq_status;
-    int         cq_pending;
-    uint64_t    host_timestamp;                 /* Timestamp sent by the host */
-    uint64_t    timestamp_set_qemu_clock_ms;    /* QEMU clock time */
-    uint64_t    starttime_ms;
-    uint16_t    temperature;
-    uint8_t     smart_critical_warning;
-    uint32_t    conf_msix_qsize;
-    uint32_t    conf_ioqpairs;
-    uint64_t    dbbuf_dbs;
-    uint64_t    dbbuf_eis;
-    bool        dbbuf_enabled;
+    uint16_t cntlid;
+    bool     qs_created;
+    uint32_t page_size;
+    uint16_t page_bits;
+    uint16_t max_prp_ents;
+    uint32_t max_q_ents;
+    uint8_t  outstanding_aers;
+    uint32_t irq_status;
+    int      cq_pending;
+    uint64_t host_timestamp;              /* Timestamp sent by the host */
+    uint64_t timestamp_set_qemu_clock_ms; /* QEMU clock time */
+    uint64_t starttime_ms;
+    uint16_t temperature;
+    uint8_t  smart_critical_warning;
+    uint32_t conf_msix_qsize;
+    uint32_t conf_ioqpairs;
+    uint64_t dbbuf_dbs;
+    uint64_t dbbuf_eis;
+    bool     dbbuf_enabled;
 
-    struct {
+    struct
+    {
         uint32_t acs[256];
-        struct {
+        struct
+        {
             uint32_t nvm[256];
             uint32_t zoned[256];
         } iocs;
     } cse;
 
-    struct {
+    struct
+    {
         MemoryRegion mem;
-        uint8_t      *buf;
+        uint8_t*     buf;
         bool         cmse;
         hwaddr       cba;
     } cmb;
 
-    struct {
-        HostMemoryBackend *dev;
-        bool              cmse;
-        hwaddr            cba;
+    struct
+    {
+        HostMemoryBackend* dev;
+        bool               cmse;
+        hwaddr             cba;
     } pmr;
 
-    uint8_t     aer_mask;
-    NvmeRequest **aer_reqs;
+    uint8_t       aer_mask;
+    NvmeRequest** aer_reqs;
     QTAILQ_HEAD(, NvmeAsyncEvent) aer_queue;
-    int         aer_queued;
+    int aer_queued;
 
-    uint32_t    dmrsl;
+    uint32_t dmrsl;
 
     /* Namespace ID is started with 1 so bitmap should be 1-based */
-#define NVME_CHANGED_NSID_SIZE  (NVME_MAX_NAMESPACES + 1)
+#define NVME_CHANGED_NSID_SIZE (NVME_MAX_NAMESPACES + 1)
     DECLARE_BITMAP(changed_nsids, NVME_CHANGED_NSID_SIZE);
 
-    NvmeSubsystem   *subsys;
+    NvmeSubsystem* subsys;
 
-    NvmeNamespace   namespace;
-    NvmeNamespace   *namespaces[NVME_MAX_NAMESPACES + 1];
-    NvmeSQueue      **sq;
-    NvmeCQueue      **cq;
-    NvmeSQueue      admin_sq;
-    NvmeCQueue      admin_cq;
-    NvmeIdCtrl      id_ctrl;
+    NvmeNamespace namespace;
+    NvmeNamespace* namespaces[NVME_MAX_NAMESPACES + 1];
+    NvmeSQueue**   sq;
+    NvmeCQueue**   cq;
+    NvmeSQueue     admin_sq;
+    NvmeCQueue     admin_cq;
+    NvmeIdCtrl     id_ctrl;
 
-    struct {
-        struct {
+    struct
+    {
+        struct
+        {
             uint16_t temp_thresh_hi;
             uint16_t temp_thresh_low;
         };
@@ -642,57 +638,52 @@ typedef struct NvmeCtrl {
         NvmeHostBehaviorSupport hbs;
     } features;
 
-    NvmePriCtrlCap  pri_ctrl_cap;
-    struct {
-        uint16_t    vqrfap;
-        uint16_t    virfap;
-    } next_pri_ctrl_cap;    /* These override pri_ctrl_cap after reset */
-    uint32_t    dn; /* Disable Normal */
-    NvmeAtomic  atomic;
+    NvmePriCtrlCap pri_ctrl_cap;
+    struct
+    {
+        uint16_t vqrfap;
+        uint16_t virfap;
+    } next_pri_ctrl_cap; /* These override pri_ctrl_cap after reset */
+    uint32_t   dn;       /* Disable Normal */
+    NvmeAtomic atomic;
 } NvmeCtrl;
 
-typedef enum NvmeResetType {
+typedef enum NvmeResetType
+{
     NVME_RESET_FUNCTION   = 0,
     NVME_RESET_CONTROLLER = 1,
 } NvmeResetType;
 
-static inline NvmeNamespace *nvme_ns(NvmeCtrl *n, uint32_t nsid)
+static inline NvmeNamespace* nvme_ns(NvmeCtrl* n, uint32_t nsid)
 {
-    if (!nsid || nsid > NVME_MAX_NAMESPACES) {
-        return NULL;
-    }
+    if (!nsid || nsid > NVME_MAX_NAMESPACES) { return NULL; }
 
     return n->namespaces[nsid];
 }
 
-static inline NvmeCQueue *nvme_cq(NvmeRequest *req)
+static inline NvmeCQueue* nvme_cq(NvmeRequest* req)
 {
-    NvmeSQueue *sq = req->sq;
-    NvmeCtrl *n = sq->ctrl;
+    NvmeSQueue* sq = req->sq;
+    NvmeCtrl*   n  = sq->ctrl;
 
     return n->cq[sq->cqid];
 }
 
-static inline NvmeCtrl *nvme_ctrl(NvmeRequest *req)
+static inline NvmeCtrl* nvme_ctrl(NvmeRequest* req)
 {
-    NvmeSQueue *sq = req->sq;
+    NvmeSQueue* sq = req->sq;
     return sq->ctrl;
 }
 
-static inline uint16_t nvme_cid(NvmeRequest *req)
+static inline uint16_t nvme_cid(NvmeRequest* req)
 {
-    if (!req) {
-        return 0xffff;
-    }
+    if (!req) { return 0xffff; }
 
     return le16_to_cpu(req->cqe.cid);
 }
 
-void nvme_attach_ns(NvmeCtrl *n, NvmeNamespace *ns);
-uint16_t nvme_bounce_data(NvmeCtrl *n, void *ptr, uint32_t len,
-                          NvmeTxDirection dir, NvmeRequest *req);
-uint16_t nvme_bounce_mdata(NvmeCtrl *n, void *ptr, uint32_t len,
-                           NvmeTxDirection dir, NvmeRequest *req);
-void nvme_rw_complete_cb(void *opaque, int ret);
-uint16_t nvme_map_dptr(NvmeCtrl *n, NvmeSg *sg, size_t len,
-                       NvmeCmd *cmd);
+void     nvme_attach_ns(NvmeCtrl* n, NvmeNamespace* ns);
+uint16_t nvme_bounce_data(NvmeCtrl* n, void* ptr, uint32_t len, NvmeTxDirection dir, NvmeRequest* req);
+uint16_t nvme_bounce_mdata(NvmeCtrl* n, void* ptr, uint32_t len, NvmeTxDirection dir, NvmeRequest* req);
+void     nvme_rw_complete_cb(void* opaque, int ret);
+uint16_t nvme_map_dptr(NvmeCtrl* n, NvmeSg* sg, size_t len, NvmeCmd* cmd);

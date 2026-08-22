@@ -22,23 +22,21 @@
 #include "der.h"
 #include "rsakey.h"
 
-static int extract_mpi(void *ctx, const uint8_t *value,
-                       size_t vlen, Error **errp)
+static int extract_mpi(void* ctx, const uint8_t* value, size_t vlen, Error** errp)
 {
-    QCryptoAkCipherMPI *mpi = (QCryptoAkCipherMPI *)ctx;
+    QCryptoAkCipherMPI* mpi = (QCryptoAkCipherMPI*)ctx;
     if (vlen == 0) {
         error_setg(errp, "Empty mpi field");
         return -1;
     }
     mpi->data = g_memdup2(value, vlen);
-    mpi->len = vlen;
+    mpi->len  = vlen;
     return 0;
 }
 
-static int extract_version(void *ctx, const uint8_t *value,
-                           size_t vlen, Error **errp)
+static int extract_version(void* ctx, const uint8_t* value, size_t vlen, Error** errp)
 {
-    uint8_t *version = (uint8_t *)ctx;
+    uint8_t* version = (uint8_t*)ctx;
     if (vlen != 1 || *value > 1) {
         error_setg(errp, "Invalid rsakey version");
         return -1;
@@ -47,10 +45,9 @@ static int extract_version(void *ctx, const uint8_t *value,
     return 0;
 }
 
-static int extract_seq_content(void *ctx, const uint8_t *value,
-                               size_t vlen, Error **errp)
+static int extract_seq_content(void* ctx, const uint8_t* value, size_t vlen, Error** errp)
 {
-    const uint8_t **content = (const uint8_t **)ctx;
+    const uint8_t** content = (const uint8_t**)ctx;
     if (vlen == 0) {
         error_setg(errp, "Empty sequence");
         return -1;
@@ -66,25 +63,20 @@ static int extract_seq_content(void *ctx, const uint8_t *value,
  *             e           INTEGER
  *         }
  */
-static QCryptoAkCipherRSAKey *qcrypto_builtin_rsa_public_key_parse(
-    const uint8_t *key, size_t keylen, Error **errp)
+static QCryptoAkCipherRSAKey* qcrypto_builtin_rsa_public_key_parse(const uint8_t* key, size_t keylen, Error** errp)
 {
-    QCryptoAkCipherRSAKey *rsa = g_new0(QCryptoAkCipherRSAKey, 1);
-    const uint8_t *seq;
-    size_t seq_length;
-    int decode_ret;
+    QCryptoAkCipherRSAKey* rsa = g_new0(QCryptoAkCipherRSAKey, 1);
+    const uint8_t*         seq;
+    size_t                 seq_length;
+    int                    decode_ret;
 
-    decode_ret = qcrypto_der_decode_seq(&key, &keylen,
-                                        extract_seq_content, &seq, errp);
-    if (decode_ret < 0 || keylen != 0) {
-        goto error;
-    }
+    decode_ret = qcrypto_der_decode_seq(&key, &keylen, extract_seq_content, &seq, errp);
+    if (decode_ret < 0 || keylen != 0) { goto error; }
     seq_length = decode_ret;
 
-    if (qcrypto_der_decode_int(&seq, &seq_length, extract_mpi,
-                               &rsa->n, errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi,
-                               &rsa->e, errp) < 0) {
+    if (qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->n, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->e, errp) < 0)
+    {
         goto error;
     }
     if (seq_length != 0) {
@@ -113,41 +105,29 @@ error:
  *       otherPrimeInfos   OtherPrimeInfos OPTIONAL
  *         }
  */
-static QCryptoAkCipherRSAKey *qcrypto_builtin_rsa_private_key_parse(
-    const uint8_t *key, size_t keylen, Error **errp)
+static QCryptoAkCipherRSAKey* qcrypto_builtin_rsa_private_key_parse(const uint8_t* key, size_t keylen, Error** errp)
 {
-    QCryptoAkCipherRSAKey *rsa = g_new0(QCryptoAkCipherRSAKey, 1);
-    uint8_t version;
-    const uint8_t *seq;
-    int decode_ret;
-    size_t seq_length;
+    QCryptoAkCipherRSAKey* rsa = g_new0(QCryptoAkCipherRSAKey, 1);
+    uint8_t                version;
+    const uint8_t*         seq;
+    int                    decode_ret;
+    size_t                 seq_length;
 
-    decode_ret = qcrypto_der_decode_seq(&key, &keylen, extract_seq_content,
-                                        &seq, errp);
-    if (decode_ret < 0 || keylen != 0) {
-        goto error;
-    }
+    decode_ret = qcrypto_der_decode_seq(&key, &keylen, extract_seq_content, &seq, errp);
+    if (decode_ret < 0 || keylen != 0) { goto error; }
     seq_length = decode_ret;
 
-    decode_ret = qcrypto_der_decode_int(&seq, &seq_length, extract_version,
-                                        &version, errp);
+    decode_ret = qcrypto_der_decode_int(&seq, &seq_length, extract_version, &version, errp);
 
-    if (qcrypto_der_decode_int(&seq, &seq_length, extract_mpi,
-                               &rsa->n, errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi,
-                               &rsa->e, errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi,
-                               &rsa->d, errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->p,
-                               errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->q,
-                               errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->dp,
-                               errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->dq,
-                               errp) < 0 ||
-        qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->u,
-                               errp) < 0) {
+    if (qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->n, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->e, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->d, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->p, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->q, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->dp, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->dq, errp) < 0
+        || qcrypto_der_decode_int(&seq, &seq_length, extract_mpi, &rsa->u, errp) < 0)
+    {
         goto error;
     }
 
@@ -158,12 +138,8 @@ static QCryptoAkCipherRSAKey *qcrypto_builtin_rsa_private_key_parse(
      * unit-test is fixed.
      */
     if (version == 1 && seq_length != 0) {
-        if (qcrypto_der_decode_seq(&seq, &seq_length, NULL, NULL, errp) < 0) {
-            goto error;
-        }
-        if (seq_length != 0) {
-            goto error;
-        }
+        if (qcrypto_der_decode_seq(&seq, &seq_length, NULL, NULL, errp) < 0) { goto error; }
+        if (seq_length != 0) { goto error; }
         return rsa;
     }
     if (seq_length != 0) {
@@ -178,19 +154,14 @@ error:
     return NULL;
 }
 
-QCryptoAkCipherRSAKey *qcrypto_akcipher_rsakey_parse(
-    QCryptoAkCipherKeyType type, const uint8_t *key,
-    size_t keylen, Error **errp)
+QCryptoAkCipherRSAKey* qcrypto_akcipher_rsakey_parse(QCryptoAkCipherKeyType type, const uint8_t* key, size_t keylen,
+                                                     Error** errp)
 {
     switch (type) {
-    case QCRYPTO_AK_CIPHER_KEY_TYPE_PRIVATE:
-        return qcrypto_builtin_rsa_private_key_parse(key, keylen, errp);
+        case QCRYPTO_AK_CIPHER_KEY_TYPE_PRIVATE: return qcrypto_builtin_rsa_private_key_parse(key, keylen, errp);
 
-    case QCRYPTO_AK_CIPHER_KEY_TYPE_PUBLIC:
-        return qcrypto_builtin_rsa_public_key_parse(key, keylen, errp);
+        case QCRYPTO_AK_CIPHER_KEY_TYPE_PUBLIC: return qcrypto_builtin_rsa_public_key_parse(key, keylen, errp);
 
-    default:
-        error_setg(errp, "Unknown key type: %d", type);
-        return NULL;
+        default: error_setg(errp, "Unknown key type: %d", type); return NULL;
     }
 }

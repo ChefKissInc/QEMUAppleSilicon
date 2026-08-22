@@ -31,67 +31,66 @@
 #include "qemu/main-loop.h"
 #include "qapi/error.h"
 
-typedef struct VDEState {
+typedef struct VDEState
+{
     NetClientState nc;
-    VDECONN *vde;
+    VDECONN*       vde;
 } VDEState;
 
-static void vde_to_qemu(void *opaque)
+static void vde_to_qemu(void* opaque)
 {
-    VDEState *s = opaque;
-    uint8_t buf[NET_BUFSIZE];
-    int size;
+    VDEState* s = opaque;
+    uint8_t   buf[NET_BUFSIZE];
+    int       size;
 
-    size = vde_recv(s->vde, (char *)buf, sizeof(buf), 0);
-    if (size > 0) {
-        qemu_send_packet(&s->nc, buf, size);
-    }
+    size = vde_recv(s->vde, (char*)buf, sizeof(buf), 0);
+    if (size > 0) { qemu_send_packet(&s->nc, buf, size); }
 }
 
-static ssize_t vde_receive(NetClientState *nc, const uint8_t *buf, size_t size)
+static ssize_t vde_receive(NetClientState* nc, const uint8_t* buf, size_t size)
 {
-    VDEState *s = DO_UPCAST(VDEState, nc, nc);
-    ssize_t ret;
+    VDEState* s = DO_UPCAST(VDEState, nc, nc);
+    ssize_t   ret;
 
     do {
-      ret = vde_send(s->vde, (const char *)buf, size, 0);
-    } while (ret < 0 && errno == EINTR);
+        ret = vde_send(s->vde, (const char*)buf, size, 0);
+    }
+    while (ret < 0 && errno == EINTR);
 
     return ret;
 }
 
-static void vde_cleanup(NetClientState *nc)
+static void vde_cleanup(NetClientState* nc)
 {
-    VDEState *s = DO_UPCAST(VDEState, nc, nc);
+    VDEState* s = DO_UPCAST(VDEState, nc, nc);
     qemu_set_fd_handler(vde_datafd(s->vde), NULL, NULL, NULL);
     vde_close(s->vde);
 }
 
 static NetClientInfo net_vde_info = {
-    .type = NET_CLIENT_DRIVER_VDE,
-    .size = sizeof(VDEState),
+    .type    = NET_CLIENT_DRIVER_VDE,
+    .size    = sizeof(VDEState),
     .receive = vde_receive,
     .cleanup = vde_cleanup,
 };
 
-static int net_vde_init(NetClientState *peer, const char *model,
-                        const char *name, const char *sock,
-                        int port, const char *group, int mode, Error **errp)
+static int net_vde_init(NetClientState* peer, const char* model, const char* name, const char* sock, int port,
+                        const char* group, int mode, Error** errp)
 {
-    NetClientState *nc;
-    VDEState *s;
-    VDECONN *vde;
-    char *init_group = (char *)group;
-    char *init_sock = (char *)sock;
+    NetClientState* nc;
+    VDEState*       s;
+    VDECONN*        vde;
+    char*           init_group = (char*)group;
+    char*           init_sock  = (char*)sock;
 
     struct vde_open_args args = {
-        .port = port,
+        .port  = port,
         .group = init_group,
-        .mode = mode,
+        .mode  = mode,
     };
 
-    vde = vde_open(init_sock, (char *)"QEMU", &args);
-    if (!vde){
+    vde = vde_open(init_sock, (char*)"QEMU", &args);
+    if (!vde) {
         error_setg_errno(errp, errno, "Could not open vde");
         return -1;
     }
@@ -109,17 +108,16 @@ static int net_vde_init(NetClientState *peer, const char *model,
     return 0;
 }
 
-int net_init_vde(const Netdev *netdev, const char *name,
-                 NetClientState *peer, Error **errp)
+int net_init_vde(const Netdev* netdev, const char* name, NetClientState* peer, Error** errp)
 {
-    const NetdevVdeOptions *vde;
+    const NetdevVdeOptions* vde;
 
     assert(netdev->type == NET_CLIENT_DRIVER_VDE);
     vde = &netdev->u.vde;
 
     /* missing optional values have been initialized to "all bits zero" */
-    if (net_vde_init(peer, "vde", name, vde->sock, vde->port, vde->group,
-                     vde->has_mode ? vde->mode : 0700, errp) == -1) {
+    if (net_vde_init(peer, "vde", name, vde->sock, vde->port, vde->group, vde->has_mode ? vde->mode : 0700, errp) == -1)
+    {
         return -1;
     }
 

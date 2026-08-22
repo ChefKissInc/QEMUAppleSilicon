@@ -11,10 +11,10 @@
  */
 
 #ifdef CONFIG_LINUX
-#include <linux/mman.h>
-#else  /* !CONFIG_LINUX */
-#define MAP_SYNC              0x0
-#define MAP_SHARED_VALIDATE   0x0
+    #include <linux/mman.h>
+#else /* !CONFIG_LINUX */
+    #define MAP_SYNC            0x0
+    #define MAP_SHARED_VALIDATE 0x0
 #endif /* CONFIG_LINUX */
 
 #include "qemu/osdep.h"
@@ -23,34 +23,30 @@
 #include "qemu/cutils.h"
 #include "qemu/error-report.h"
 
-#define HUGETLBFS_MAGIC       0x958458f6
+#define HUGETLBFS_MAGIC 0x958458f6
 
 #ifdef CONFIG_LINUX
-#include <sys/vfs.h>
-#include <linux/magic.h>
+    #include <sys/vfs.h>
+    #include <linux/magic.h>
 #endif
 
 QemuFsType qemu_fd_getfs(int fd)
 {
 #ifdef CONFIG_LINUX
     struct statfs fs;
-    int ret;
+    int           ret;
 
-    if (fd < 0) {
-        return QEMU_FS_TYPE_UNKNOWN;
-    }
+    if (fd < 0) { return QEMU_FS_TYPE_UNKNOWN; }
 
     do {
         ret = fstatfs(fd, &fs);
-    } while (ret != 0 && errno == EINTR);
+    }
+    while (ret != 0 && errno == EINTR);
 
     switch (fs.f_type) {
-    case TMPFS_MAGIC:
-        return QEMU_FS_TYPE_TMPFS;
-    case HUGETLBFS_MAGIC:
-        return QEMU_FS_TYPE_HUGETLBFS;
-    default:
-        return QEMU_FS_TYPE_UNKNOWN;
+        case TMPFS_MAGIC    : return QEMU_FS_TYPE_TMPFS;
+        case HUGETLBFS_MAGIC: return QEMU_FS_TYPE_HUGETLBFS;
+        default             : return QEMU_FS_TYPE_UNKNOWN;
     }
 #else
     return QEMU_FS_TYPE_UNKNOWN;
@@ -61,21 +57,20 @@ size_t qemu_fd_getpagesize(int fd)
 {
 #ifdef CONFIG_LINUX
     struct statfs fs;
-    int ret;
+    int           ret;
 
     if (fd != -1) {
         do {
             ret = fstatfs(fd, &fs);
-        } while (ret != 0 && errno == EINTR);
-
-        if (ret == 0 && fs.f_type == HUGETLBFS_MAGIC) {
-            return fs.f_bsize;
         }
+        while (ret != 0 && errno == EINTR);
+
+        if (ret == 0 && fs.f_type == HUGETLBFS_MAGIC) { return fs.f_bsize; }
     }
-#ifdef __sparc__
+    #ifdef __sparc__
     /* SPARC Linux needs greater alignment than the pagesize */
     return QEMU_VMALLOC_ALIGN;
-#endif
+    #endif
 #endif
 
     return qemu_real_host_page_size();
@@ -85,10 +80,10 @@ size_t qemu_fd_getpagesize(int fd)
 static bool map_noreserve_effective(int fd, uint32_t qemu_map_flags)
 {
 #if defined(__linux__)
-    const bool readonly = qemu_map_flags & QEMU_MAP_READONLY;
-    const bool shared = qemu_map_flags & QEMU_MAP_SHARED;
-    gchar *content = NULL;
-    const char *endptr;
+    const bool   readonly = qemu_map_flags & QEMU_MAP_READONLY;
+    const bool   shared   = qemu_map_flags & QEMU_MAP_SHARED;
+    gchar*       content  = NULL;
+    const char*  endptr;
     unsigned int tmp;
 
     /*
@@ -98,9 +93,7 @@ static bool map_noreserve_effective(int fd, uint32_t qemu_map_flags)
      *    MAP_NORESERVE.
      * b) MAP_NORESERVE is not affected by /proc/sys/vm/overcommit_memory.
      */
-    if (qemu_fd_getpagesize(fd) != qemu_real_host_page_size()) {
-        return true;
-    }
+    if (qemu_fd_getpagesize(fd) != qemu_real_host_page_size()) { return true; }
 
     /*
      * Accountable mappings in the kernel that can be affected by MAP_NORESEVE
@@ -110,9 +103,7 @@ static bool map_noreserve_effective(int fd, uint32_t qemu_map_flags)
      * exception is shared anonymous memory, it is accounted like private
      * anonymous memory.
      */
-    if (readonly || (shared && fd >= 0)) {
-        return true;
-    }
+    if (readonly || (shared && fd >= 0)) { return true; }
 
     /*
      * MAP_NORESERVE is globally ignored for applicable !hugetlb mappings when
@@ -122,9 +113,9 @@ static bool map_noreserve_effective(int fd, uint32_t qemu_map_flags)
      * Bail out now instead of silently committing way more memory than
      * currently desired by the user.
      */
-    if (g_file_get_contents(OVERCOMMIT_MEMORY_PATH, &content, NULL, NULL) &&
-        !qemu_strtoui(content, &endptr, 0, &tmp) &&
-        (!endptr || *endptr == '\n')) {
+    if (g_file_get_contents(OVERCOMMIT_MEMORY_PATH, &content, NULL, NULL) && !qemu_strtoui(content, &endptr, 0, &tmp)
+        && (!endptr || *endptr == '\n'))
+    {
         if (tmp == 2) {
             error_report("Skipping reservation of swap space is not supported:"
                          " \"" OVERCOMMIT_MEMORY_PATH "\" is \"2\"");
@@ -149,7 +140,7 @@ static bool map_noreserve_effective(int fd, uint32_t qemu_map_flags)
  * Reserve a new memory region of the requested size to be used for mapping
  * from the given fd (if any).
  */
-static void *mmap_reserve(size_t size, int fd)
+static void* mmap_reserve(size_t size, int fd)
 {
     int flags = MAP_PRIVATE;
 
@@ -164,13 +155,14 @@ static void *mmap_reserve(size_t size, int fd)
      * anonymous memory is OK.
      */
     if (fd == -1 || qemu_fd_getpagesize(fd) == qemu_real_host_page_size()) {
-        fd = -1;
+        fd     = -1;
         flags |= MAP_ANONYMOUS;
-    } else {
+    }
+    else {
         flags |= MAP_NORESERVE;
     }
 #else
-    fd = -1;
+    fd     = -1;
     flags |= MAP_ANONYMOUS;
 #endif
 
@@ -181,45 +173,39 @@ static void *mmap_reserve(size_t size, int fd)
  * Activate memory in a reserved region from the given fd (if any), to make
  * it accessible.
  */
-static void *mmap_activate(void *ptr, size_t size, int fd,
-                           uint32_t qemu_map_flags, off_t map_offset)
+static void* mmap_activate(void* ptr, size_t size, int fd, uint32_t qemu_map_flags, off_t map_offset)
 {
-    const bool noreserve = qemu_map_flags & QEMU_MAP_NORESERVE;
-    const bool readonly = qemu_map_flags & QEMU_MAP_READONLY;
-    const bool shared = qemu_map_flags & QEMU_MAP_SHARED;
-    const bool sync = qemu_map_flags & QEMU_MAP_SYNC;
-    const int prot = PROT_READ | (readonly ? 0 : PROT_WRITE);
-    int map_sync_flags = 0;
-    int flags = MAP_FIXED;
-    void *activated_ptr;
+    const bool noreserve      = qemu_map_flags & QEMU_MAP_NORESERVE;
+    const bool readonly       = qemu_map_flags & QEMU_MAP_READONLY;
+    const bool shared         = qemu_map_flags & QEMU_MAP_SHARED;
+    const bool sync           = qemu_map_flags & QEMU_MAP_SYNC;
+    const int  prot           = PROT_READ | (readonly ? 0 : PROT_WRITE);
+    int        map_sync_flags = 0;
+    int        flags          = MAP_FIXED;
+    void*      activated_ptr;
 
-    if (noreserve && !map_noreserve_effective(fd, qemu_map_flags)) {
-        return MAP_FAILED;
-    }
+    if (noreserve && !map_noreserve_effective(fd, qemu_map_flags)) { return MAP_FAILED; }
 
     flags |= fd == -1 ? MAP_ANONYMOUS : 0;
     flags |= shared ? MAP_SHARED : MAP_PRIVATE;
     flags |= noreserve ? MAP_NORESERVE : 0;
-    if (shared && sync) {
-        map_sync_flags = MAP_SYNC | MAP_SHARED_VALIDATE;
-    }
+    if (shared && sync) { map_sync_flags = MAP_SYNC | MAP_SHARED_VALIDATE; }
 
-    activated_ptr = mmap(ptr, size, prot, flags | map_sync_flags, fd,
-                         map_offset);
+    activated_ptr = mmap(ptr, size, prot, flags | map_sync_flags, fd, map_offset);
     if (activated_ptr == MAP_FAILED && map_sync_flags) {
         if (errno == ENOTSUP) {
-            char *proc_link = g_strdup_printf("/proc/self/fd/%d", fd);
-            char *file_name = g_malloc0(PATH_MAX);
-            int len = readlink(proc_link, file_name, PATH_MAX - 1);
+            char* proc_link = g_strdup_printf("/proc/self/fd/%d", fd);
+            char* file_name = g_malloc0(PATH_MAX);
+            int   len       = readlink(proc_link, file_name, PATH_MAX - 1);
 
-            if (len < 0) {
-                len = 0;
-            }
+            if (len < 0) { len = 0; }
             file_name[len] = '\0';
-            fprintf(stderr, "Warning: requesting persistence across crashes "
+            fprintf(stderr,
+                    "Warning: requesting persistence across crashes "
                     "for backend file %s failed. Proceeding without "
                     "persistence, data might become corrupted in case of host "
-                    "crash.\n", file_name);
+                    "crash.\n",
+                    file_name);
             g_free(proc_link);
             g_free(file_name);
             warn_report("Using non DAX backing file with 'pmem=on' option"
@@ -244,15 +230,11 @@ static inline size_t mmap_guard_pagesize(int fd)
 #endif
 }
 
-void *qemu_ram_mmap(int fd,
-                    size_t size,
-                    size_t align,
-                    uint32_t qemu_map_flags,
-                    off_t map_offset)
+void* qemu_ram_mmap(int fd, size_t size, size_t align, uint32_t qemu_map_flags, off_t map_offset)
 {
     const size_t guard_pagesize = mmap_guard_pagesize(fd);
-    size_t offset, total;
-    void *ptr, *guardptr;
+    size_t       offset, total;
+    void *       ptr, *guardptr;
 
     /*
      * Note: this always allocates at least one extra page of virtual address
@@ -261,9 +243,7 @@ void *qemu_ram_mmap(int fd,
     total = size + align;
 
     guardptr = mmap_reserve(total, fd);
-    if (guardptr == MAP_FAILED) {
-        return MAP_FAILED;
-    }
+    if (guardptr == MAP_FAILED) { return MAP_FAILED; }
 
     assert(is_power_of_2(align));
     /* Always align to host page size */
@@ -271,30 +251,25 @@ void *qemu_ram_mmap(int fd,
 
     offset = QEMU_ALIGN_UP((uintptr_t)guardptr, align) - (uintptr_t)guardptr;
 
-    ptr = mmap_activate(guardptr + offset, size, fd, qemu_map_flags,
-                        map_offset);
+    ptr = mmap_activate(guardptr + offset, size, fd, qemu_map_flags, map_offset);
     if (ptr == MAP_FAILED) {
         munmap(guardptr, total);
         return MAP_FAILED;
     }
 
-    if (offset > 0) {
-        munmap(guardptr, offset);
-    }
+    if (offset > 0) { munmap(guardptr, offset); }
 
     /*
      * Leave a single PROT_NONE page allocated after the RAM block, to serve as
      * a guard page guarding against potential buffer overflows.
      */
     total -= offset;
-    if (total > size + guard_pagesize) {
-        munmap(ptr + size + guard_pagesize, total - size - guard_pagesize);
-    }
+    if (total > size + guard_pagesize) { munmap(ptr + size + guard_pagesize, total - size - guard_pagesize); }
 
     return ptr;
 }
 
-void qemu_ram_munmap(int fd, void *ptr, size_t size)
+void qemu_ram_munmap(int fd, void* ptr, size_t size)
 {
     if (ptr) {
         /* Unmap both the RAM block and the guard page */

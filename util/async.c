@@ -41,38 +41,40 @@
 /* bottom halves (can be seen as timers which expire ASAP) */
 
 /* QEMUBH::flags values */
-enum {
+enum
+{
     /* Already enqueued and waiting for aio_bh_poll() */
-    BH_PENDING   = (1 << 0),
+    BH_PENDING = (1 << 0),
 
     /* Invoke the callback */
     BH_SCHEDULED = (1 << 1),
 
     /* Delete without invoking callback */
-    BH_DELETED   = (1 << 2),
+    BH_DELETED = (1 << 2),
 
     /* Delete after invoking callback */
-    BH_ONESHOT   = (1 << 3),
+    BH_ONESHOT = (1 << 3),
 
     /* Schedule periodically when the event loop is idle */
-    BH_IDLE      = (1 << 4),
+    BH_IDLE = (1 << 4),
 };
 
-struct QEMUBH {
-    AioContext *ctx;
-    const char *name;
-    QEMUBHFunc *cb;
-    void *opaque;
+struct QEMUBH
+{
+    AioContext* ctx;
+    const char* name;
+    QEMUBHFunc* cb;
+    void*       opaque;
     QSLIST_ENTRY(QEMUBH) next;
-    unsigned flags;
-    MemReentrancyGuard *reentrancy_guard;
+    unsigned            flags;
+    MemReentrancyGuard* reentrancy_guard;
 };
 
 /* Called concurrently from any thread */
-static void aio_bh_enqueue(QEMUBH *bh, unsigned new_flags)
+static void aio_bh_enqueue(QEMUBH* bh, unsigned new_flags)
 {
-    AioContext *ctx = bh->ctx;
-    unsigned old_flags;
+    AioContext* ctx = bh->ctx;
+    unsigned    old_flags;
 
     /*
      * Synchronizes with atomic_fetch_and() in aio_bh_dequeue(), ensuring that
@@ -97,13 +99,11 @@ static void aio_bh_enqueue(QEMUBH *bh, unsigned new_flags)
 }
 
 /* Only called from aio_bh_poll() and aio_ctx_finalize() */
-static QEMUBH *aio_bh_dequeue(BHList *head, unsigned *flags)
+static QEMUBH* aio_bh_dequeue(BHList* head, unsigned* flags)
 {
-    QEMUBH *bh = QSLIST_FIRST_RCU(head);
+    QEMUBH* bh = QSLIST_FIRST_RCU(head);
 
-    if (!bh) {
-        return NULL;
-    }
+    if (!bh) { return NULL; }
 
     QSLIST_REMOVE_HEAD(head, next);
 
@@ -111,67 +111,61 @@ static QEMUBH *aio_bh_dequeue(BHList *head, unsigned *flags)
      * Synchronizes with qatomic_fetch_or() in aio_bh_enqueue(), ensuring that
      * the removal finishes before BH_PENDING is reset.
      */
-    *flags = qatomic_fetch_and(&bh->flags,
-                              ~(BH_PENDING | BH_SCHEDULED | BH_IDLE));
+    *flags = qatomic_fetch_and(&bh->flags, ~(BH_PENDING | BH_SCHEDULED | BH_IDLE));
     return bh;
 }
 
-void aio_bh_schedule_oneshot_full(AioContext *ctx, QEMUBHFunc *cb,
-                                  void *opaque, const char *name)
+void aio_bh_schedule_oneshot_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const char* name)
 {
-    QEMUBH *bh;
-    bh = g_new(QEMUBH, 1);
+    QEMUBH* bh;
+    bh  = g_new(QEMUBH, 1);
     *bh = (QEMUBH){
-        .ctx = ctx,
-        .cb = cb,
+        .ctx    = ctx,
+        .cb     = cb,
         .opaque = opaque,
-        .name = name,
+        .name   = name,
     };
     aio_bh_enqueue(bh, BH_SCHEDULED | BH_ONESHOT);
 }
 
-QEMUBH *aio_bh_new_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
-                        const char *name, MemReentrancyGuard *reentrancy_guard)
+QEMUBH* aio_bh_new_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const char* name,
+                        MemReentrancyGuard* reentrancy_guard)
 {
-    QEMUBH *bh;
-    bh = g_new(QEMUBH, 1);
+    QEMUBH* bh;
+    bh  = g_new(QEMUBH, 1);
     *bh = (QEMUBH){
-        .ctx = ctx,
-        .cb = cb,
-        .opaque = opaque,
-        .name = name,
+        .ctx              = ctx,
+        .cb               = cb,
+        .opaque           = opaque,
+        .name             = name,
         .reentrancy_guard = reentrancy_guard,
     };
     return bh;
 }
 
-void aio_bh_call(QEMUBH *bh)
+void aio_bh_call(QEMUBH* bh)
 {
     bool last_engaged_in_io = false;
 
     /* Make a copy of the guard-pointer as cb may free the bh */
-    MemReentrancyGuard *reentrancy_guard = bh->reentrancy_guard;
+    MemReentrancyGuard* reentrancy_guard = bh->reentrancy_guard;
     if (reentrancy_guard) {
         last_engaged_in_io = reentrancy_guard->engaged_in_io;
-        if (reentrancy_guard->engaged_in_io) {
-            trace_reentrant_aio(bh->ctx, bh->name);
-        }
+        if (reentrancy_guard->engaged_in_io) { trace_reentrant_aio(bh->ctx, bh->name); }
         reentrancy_guard->engaged_in_io = true;
     }
 
     bh->cb(bh->opaque);
 
-    if (reentrancy_guard) {
-        reentrancy_guard->engaged_in_io = last_engaged_in_io;
-    }
+    if (reentrancy_guard) { reentrancy_guard->engaged_in_io = last_engaged_in_io; }
 }
 
 /* Multiple occurrences of aio_bh_poll cannot be called concurrently. */
-int aio_bh_poll(AioContext *ctx)
+int aio_bh_poll(AioContext* ctx)
 {
-    BHListSlice slice;
-    BHListSlice *s;
-    int ret = 0;
+    BHListSlice  slice;
+    BHListSlice* s;
+    int          ret = 0;
 
     /* Synchronizes with QSLIST_INSERT_HEAD_ATOMIC in aio_bh_enqueue().  */
     QSLIST_MOVE_ATOMIC(&slice.bh_list, &ctx->bh_list);
@@ -182,17 +176,17 @@ int aio_bh_poll(AioContext *ctx)
      * list is emptied before this function returns.
      */
 #if !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpragmas"
-#pragma GCC diagnostic ignored "-Wdangling-pointer="
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpragmas"
+    #pragma GCC diagnostic ignored "-Wdangling-pointer="
 #endif
     QSIMPLEQ_INSERT_TAIL(&ctx->bh_slice_list, &slice, next);
 #if !defined(__clang__)
-#pragma GCC diagnostic pop
+    #pragma GCC diagnostic pop
 #endif
 
     while ((s = QSIMPLEQ_FIRST(&ctx->bh_slice_list))) {
-        QEMUBH *bh;
+        QEMUBH*  bh;
         unsigned flags;
 
         bh = aio_bh_dequeue(&s->bh_list, &flags);
@@ -203,56 +197,42 @@ int aio_bh_poll(AioContext *ctx)
 
         if ((flags & (BH_SCHEDULED | BH_DELETED)) == BH_SCHEDULED) {
             /* Idle BHs don't count as progress */
-            if (!(flags & BH_IDLE)) {
-                ret = 1;
-            }
+            if (!(flags & BH_IDLE)) { ret = 1; }
             aio_bh_call(bh);
         }
-        if (flags & (BH_DELETED | BH_ONESHOT)) {
-            g_free(bh);
-        }
+        if (flags & (BH_DELETED | BH_ONESHOT)) { g_free(bh); }
     }
 
     return ret;
 }
 
-void qemu_bh_schedule_idle(QEMUBH *bh)
-{
-    aio_bh_enqueue(bh, BH_SCHEDULED | BH_IDLE);
-}
+void qemu_bh_schedule_idle(QEMUBH* bh) { aio_bh_enqueue(bh, BH_SCHEDULED | BH_IDLE); }
 
-void qemu_bh_schedule(QEMUBH *bh)
-{
-    aio_bh_enqueue(bh, BH_SCHEDULED);
-}
+void qemu_bh_schedule(QEMUBH* bh) { aio_bh_enqueue(bh, BH_SCHEDULED); }
 
 /* This func is async.
  */
-void qemu_bh_cancel(QEMUBH *bh)
-{
-    qatomic_and(&bh->flags, ~BH_SCHEDULED);
-}
+void qemu_bh_cancel(QEMUBH* bh) { qatomic_and(&bh->flags, ~BH_SCHEDULED); }
 
 /* This func is async.The bottom half will do the delete action at the finial
  * end.
  */
-void qemu_bh_delete(QEMUBH *bh)
-{
-    aio_bh_enqueue(bh, BH_DELETED);
-}
+void qemu_bh_delete(QEMUBH* bh) { aio_bh_enqueue(bh, BH_DELETED); }
 
-static int64_t aio_compute_bh_timeout(BHList *head, int timeout)
+static int64_t aio_compute_bh_timeout(BHList* head, int timeout)
 {
-    QEMUBH *bh;
+    QEMUBH* bh;
 
-    QSLIST_FOREACH_RCU(bh, head, next) {
+    QSLIST_FOREACH_RCU(bh, head, next)
+    {
         int flags = qatomic_load_acquire(&bh->flags);
         if ((flags & (BH_SCHEDULED | BH_DELETED)) == BH_SCHEDULED) {
             if (flags & BH_IDLE) {
                 /* idle bottom halves will be polled at least
                  * every 10ms */
                 timeout = 10000000;
-            } else {
+            }
+            else {
                 /* non-idle bottom halves will be executed
                  * immediately */
                 return 0;
@@ -263,37 +243,30 @@ static int64_t aio_compute_bh_timeout(BHList *head, int timeout)
     return timeout;
 }
 
-int64_t
-aio_compute_timeout(AioContext *ctx)
+int64_t aio_compute_timeout(AioContext* ctx)
 {
-    BHListSlice *s;
-    int64_t deadline;
-    int timeout = -1;
+    BHListSlice* s;
+    int64_t      deadline;
+    int          timeout = -1;
 
     timeout = aio_compute_bh_timeout(&ctx->bh_list, timeout);
-    if (timeout == 0) {
-        return 0;
-    }
+    if (timeout == 0) { return 0; }
 
-    QSIMPLEQ_FOREACH(s, &ctx->bh_slice_list, next) {
+    QSIMPLEQ_FOREACH (s, &ctx->bh_slice_list, next) {
         timeout = aio_compute_bh_timeout(&s->bh_list, timeout);
-        if (timeout == 0) {
-            return 0;
-        }
+        if (timeout == 0) { return 0; }
     }
 
     deadline = timerlistgroup_deadline_ns(&ctx->tlg);
-    if (deadline == 0) {
-        return 0;
-    } else {
+    if (deadline == 0) { return 0; }
+    else {
         return qemu_soonest_timeout(timeout, deadline);
     }
 }
 
-static gboolean
-aio_ctx_prepare(GSource *source, gint    *timeout)
+static gboolean aio_ctx_prepare(GSource* source, gint* timeout)
 {
-    AioContext *ctx = (AioContext *) source;
+    AioContext* ctx = (AioContext*)source;
 
     qatomic_set(&ctx->notify_me, qatomic_read(&ctx->notify_me) | 1);
 
@@ -307,60 +280,51 @@ aio_ctx_prepare(GSource *source, gint    *timeout)
     /* We assume there is no timeout already supplied */
     *timeout = qemu_timeout_ns_to_ms(aio_compute_timeout(ctx));
 
-    if (aio_prepare(ctx)) {
-        *timeout = 0;
-    }
+    if (aio_prepare(ctx)) { *timeout = 0; }
 
     return *timeout == 0;
 }
 
-static gboolean
-aio_ctx_check(GSource *source)
+static gboolean aio_ctx_check(GSource* source)
 {
-    AioContext *ctx = (AioContext *) source;
-    QEMUBH *bh;
-    BHListSlice *s;
+    AioContext*  ctx = (AioContext*)source;
+    QEMUBH*      bh;
+    BHListSlice* s;
 
     /* Finish computing the timeout before clearing the flag.  */
     qatomic_store_release(&ctx->notify_me, qatomic_read(&ctx->notify_me) & ~1);
     aio_notify_accept(ctx);
 
-    QSLIST_FOREACH_RCU(bh, &ctx->bh_list, next) {
+    QSLIST_FOREACH_RCU(bh, &ctx->bh_list, next)
+    {
         int flags = qatomic_load_acquire(&bh->flags);
-        if ((flags & (BH_SCHEDULED | BH_DELETED)) == BH_SCHEDULED) {
-            return true;
-        }
+        if ((flags & (BH_SCHEDULED | BH_DELETED)) == BH_SCHEDULED) { return true; }
     }
 
-    QSIMPLEQ_FOREACH(s, &ctx->bh_slice_list, next) {
-        QSLIST_FOREACH_RCU(bh, &s->bh_list, next) {
+    QSIMPLEQ_FOREACH (s, &ctx->bh_slice_list, next) {
+        QSLIST_FOREACH_RCU(bh, &s->bh_list, next)
+        {
             int flags = qatomic_load_acquire(&bh->flags);
-            if ((flags & (BH_SCHEDULED | BH_DELETED)) == BH_SCHEDULED) {
-                return true;
-            }
+            if ((flags & (BH_SCHEDULED | BH_DELETED)) == BH_SCHEDULED) { return true; }
         }
     }
     return aio_pending(ctx) || (timerlistgroup_deadline_ns(&ctx->tlg) == 0);
 }
 
-static gboolean
-aio_ctx_dispatch(GSource     *source,
-                 GSourceFunc  callback,
-                 gpointer     user_data)
+static gboolean aio_ctx_dispatch(GSource* source, GSourceFunc callback, gpointer user_data)
 {
-    AioContext *ctx = (AioContext *) source;
+    AioContext* ctx = (AioContext*)source;
 
     assert(callback == NULL);
     aio_dispatch(ctx);
     return true;
 }
 
-static void
-aio_ctx_finalize(GSource     *source)
+static void aio_ctx_finalize(GSource* source)
 {
-    AioContext *ctx = (AioContext *) source;
-    QEMUBH *bh;
-    unsigned flags;
+    AioContext* ctx = (AioContext*)source;
+    QEMUBH*     bh;
+    unsigned    flags;
 
     thread_pool_free_aio(ctx->thread_pool);
 
@@ -397,8 +361,7 @@ aio_ctx_finalize(GSource     *source)
          * AioContext is finalized.
          */
         if (unlikely(!(flags & BH_DELETED))) {
-            fprintf(stderr, "%s: BH '%s' leaked, aborting...\n",
-                    __func__, bh->name);
+            fprintf(stderr, "%s: BH '%s' leaked, aborting...\n", __func__, bh->name);
             abort();
         }
 
@@ -414,41 +377,32 @@ aio_ctx_finalize(GSource     *source)
     aio_context_destroy(ctx);
 }
 
-static GSourceFuncs aio_source_funcs = {
-    aio_ctx_prepare,
-    aio_ctx_check,
-    aio_ctx_dispatch,
-    aio_ctx_finalize
-};
+static GSourceFuncs aio_source_funcs = {aio_ctx_prepare, aio_ctx_check, aio_ctx_dispatch, aio_ctx_finalize};
 
-GSource *aio_get_g_source(AioContext *ctx)
+GSource* aio_get_g_source(AioContext* ctx)
 {
     aio_context_use_g_source(ctx);
     g_source_ref(&ctx->source);
     return &ctx->source;
 }
 
-ThreadPoolAio *aio_get_thread_pool(AioContext *ctx)
+ThreadPoolAio* aio_get_thread_pool(AioContext* ctx)
 {
-    if (!ctx->thread_pool) {
-        ctx->thread_pool = thread_pool_new_aio(ctx);
-    }
+    if (!ctx->thread_pool) { ctx->thread_pool = thread_pool_new_aio(ctx); }
     return ctx->thread_pool;
 }
 
 #ifdef CONFIG_LINUX_AIO
-LinuxAioState *aio_setup_linux_aio(AioContext *ctx, Error **errp)
+LinuxAioState* aio_setup_linux_aio(AioContext* ctx, Error** errp)
 {
     if (!ctx->linux_aio) {
         ctx->linux_aio = laio_init(errp);
-        if (ctx->linux_aio) {
-            laio_attach_aio_context(ctx->linux_aio, ctx);
-        }
+        if (ctx->linux_aio) { laio_attach_aio_context(ctx->linux_aio, ctx); }
     }
     return ctx->linux_aio;
 }
 
-LinuxAioState *aio_get_linux_aio(AioContext *ctx)
+LinuxAioState* aio_get_linux_aio(AioContext* ctx)
 {
     assert(ctx->linux_aio);
     return ctx->linux_aio;
@@ -456,29 +410,25 @@ LinuxAioState *aio_get_linux_aio(AioContext *ctx)
 #endif
 
 #ifdef CONFIG_LINUX_IO_URING
-LuringState *aio_setup_linux_io_uring(AioContext *ctx, Error **errp)
+LuringState* aio_setup_linux_io_uring(AioContext* ctx, Error** errp)
 {
-    if (ctx->linux_io_uring) {
-        return ctx->linux_io_uring;
-    }
+    if (ctx->linux_io_uring) { return ctx->linux_io_uring; }
 
     ctx->linux_io_uring = luring_init(errp);
-    if (!ctx->linux_io_uring) {
-        return NULL;
-    }
+    if (!ctx->linux_io_uring) { return NULL; }
 
     luring_attach_aio_context(ctx->linux_io_uring, ctx);
     return ctx->linux_io_uring;
 }
 
-LuringState *aio_get_linux_io_uring(AioContext *ctx)
+LuringState* aio_get_linux_io_uring(AioContext* ctx)
 {
     assert(ctx->linux_io_uring);
     return ctx->linux_io_uring;
 }
 #endif
 
-void aio_notify(AioContext *ctx)
+void aio_notify(AioContext* ctx)
 {
     /*
      * Write e.g. ctx->bh_list before writing ctx->notified.  Pairs with
@@ -492,12 +442,10 @@ void aio_notify(AioContext *ctx)
      * Pairs with smp_mb() in aio_ctx_prepare or aio_poll.
      */
     smp_mb();
-    if (qatomic_read(&ctx->notify_me)) {
-        event_notifier_set(&ctx->notifier);
-    }
+    if (qatomic_read(&ctx->notify_me)) { event_notifier_set(&ctx->notifier); }
 }
 
-void aio_notify_accept(AioContext *ctx)
+void aio_notify_accept(AioContext* ctx)
 {
     qatomic_set(&ctx->notified, false);
 
@@ -509,23 +457,20 @@ void aio_notify_accept(AioContext *ctx)
     smp_mb();
 }
 
-static void aio_timerlist_notify(void *opaque, QEMUClockType type)
-{
-    aio_notify(opaque);
-}
+static void aio_timerlist_notify(void* opaque, QEMUClockType type) { aio_notify(opaque); }
 
-static void aio_context_notifier_cb(EventNotifier *e)
+static void aio_context_notifier_cb(EventNotifier* e)
 {
-    AioContext *ctx = container_of(e, AioContext, notifier);
+    AioContext* ctx = container_of(e, AioContext, notifier);
 
     event_notifier_test_and_clear(&ctx->notifier);
 }
 
 /* Returns true if aio_notify() was called (e.g. a BH was scheduled) */
-static bool aio_context_notifier_poll(void *opaque)
+static bool aio_context_notifier_poll(void* opaque)
 {
-    EventNotifier *e = opaque;
-    AioContext *ctx = container_of(e, AioContext, notifier);
+    EventNotifier* e   = opaque;
+    AioContext*    ctx = container_of(e, AioContext, notifier);
 
     /*
      * No need for load-acquire because we just want to kick the
@@ -535,27 +480,25 @@ static bool aio_context_notifier_poll(void *opaque)
     return qatomic_read(&ctx->notified);
 }
 
-static void aio_context_notifier_poll_ready(EventNotifier *e)
-{
-    /* Do nothing, we just wanted to kick the event loop */
-}
+static void aio_context_notifier_poll_ready(EventNotifier* e)
+{ /* Do nothing, we just wanted to kick the event loop */ }
 
-static void co_schedule_bh_cb(void *opaque)
+static void co_schedule_bh_cb(void* opaque)
 {
-    AioContext *ctx = opaque;
+    AioContext* ctx = opaque;
     QSLIST_HEAD(, Coroutine) straight, reversed;
 
     QSLIST_MOVE_ATOMIC(&reversed, &ctx->scheduled_coroutines);
     QSLIST_INIT(&straight);
 
     while (!QSLIST_EMPTY(&reversed)) {
-        Coroutine *co = QSLIST_FIRST(&reversed);
+        Coroutine* co = QSLIST_FIRST(&reversed);
         QSLIST_REMOVE_HEAD(&reversed, co_scheduled_next);
         QSLIST_INSERT_HEAD(&straight, co, co_scheduled_next);
     }
 
     while (!QSLIST_EMPTY(&straight)) {
-        Coroutine *co = QSLIST_FIRST(&straight);
+        Coroutine* co = QSLIST_FIRST(&straight);
         QSLIST_REMOVE_HEAD(&straight, co_scheduled_next);
         trace_aio_co_schedule_bh_cb(ctx, co);
 
@@ -565,12 +508,12 @@ static void co_schedule_bh_cb(void *opaque)
     }
 }
 
-AioContext *aio_context_new(Error **errp)
+AioContext* aio_context_new(Error** errp)
 {
-    int ret;
-    AioContext *ctx;
+    int         ret;
+    AioContext* ctx;
 
-    ctx = (AioContext *) g_source_new(&aio_source_funcs, sizeof(AioContext));
+    ctx = (AioContext*)g_source_new(&aio_source_funcs, sizeof(AioContext));
     QSLIST_INIT(&ctx->bh_list);
     QSIMPLEQ_INIT(&ctx->bh_slice_list);
     aio_context_setup(ctx);
@@ -586,9 +529,7 @@ AioContext *aio_context_new(Error **errp)
     ctx->co_schedule_bh = aio_bh_new(ctx, co_schedule_bh_cb, ctx);
     QSLIST_INIT(&ctx->scheduled_coroutines);
 
-    aio_set_event_notifier(ctx, &ctx->notifier,
-                           aio_context_notifier_cb,
-                           aio_context_notifier_poll,
+    aio_set_event_notifier(ctx, &ctx->notifier, aio_context_notifier_cb, aio_context_notifier_poll,
                            aio_context_notifier_poll_ready);
 #ifdef CONFIG_LINUX_AIO
     ctx->linux_aio = NULL;
@@ -603,7 +544,7 @@ AioContext *aio_context_new(Error **errp)
     timerlistgroup_init(&ctx->tlg, aio_timerlist_notify, ctx);
 
     ctx->poll_max_ns = 0;
-    ctx->poll_grow = 0;
+    ctx->poll_grow   = 0;
     ctx->poll_shrink = 0;
 
     ctx->aio_max_batch = 0;
@@ -619,16 +560,13 @@ fail:
     return NULL;
 }
 
-void aio_co_schedule(AioContext *ctx, Coroutine *co)
+void aio_co_schedule(AioContext* ctx, Coroutine* co)
 {
     trace_aio_co_schedule(ctx, co);
-    const char *scheduled = qatomic_cmpxchg(&co->scheduled, NULL,
-                                           __func__);
+    const char* scheduled = qatomic_cmpxchg(&co->scheduled, NULL, __func__);
 
     if (scheduled) {
-        fprintf(stderr,
-                "%s: Co-routine was already scheduled in '%s'\n",
-                __func__, scheduled);
+        fprintf(stderr, "%s: Co-routine was already scheduled in '%s'\n", __func__, scheduled);
         abort();
     }
 
@@ -638,31 +576,31 @@ void aio_co_schedule(AioContext *ctx, Coroutine *co)
      */
     aio_context_ref(ctx);
 
-    QSLIST_INSERT_HEAD_ATOMIC(&ctx->scheduled_coroutines,
-                              co, co_scheduled_next);
+    QSLIST_INSERT_HEAD_ATOMIC(&ctx->scheduled_coroutines, co, co_scheduled_next);
     qemu_bh_schedule(ctx->co_schedule_bh);
 
     aio_context_unref(ctx);
 }
 
-typedef struct AioCoRescheduleSelf {
-    Coroutine *co;
-    AioContext *new_ctx;
+typedef struct AioCoRescheduleSelf
+{
+    Coroutine*  co;
+    AioContext* new_ctx;
 } AioCoRescheduleSelf;
 
-static void aio_co_reschedule_self_bh(void *opaque)
+static void aio_co_reschedule_self_bh(void* opaque)
 {
-    AioCoRescheduleSelf *data = opaque;
+    AioCoRescheduleSelf* data = opaque;
     aio_co_schedule(data->new_ctx, data->co);
 }
 
-void coroutine_fn aio_co_reschedule_self(AioContext *new_ctx)
+void coroutine_fn aio_co_reschedule_self(AioContext* new_ctx)
 {
-    AioContext *old_ctx = qemu_get_current_aio_context();
+    AioContext* old_ctx = qemu_get_current_aio_context();
 
     if (old_ctx != new_ctx) {
         AioCoRescheduleSelf data = {
-            .co = qemu_coroutine_self(),
+            .co      = qemu_coroutine_self(),
             .new_ctx = new_ctx,
         };
         /*
@@ -675,9 +613,9 @@ void coroutine_fn aio_co_reschedule_self(AioContext *new_ctx)
     }
 }
 
-void aio_co_wake(Coroutine *co)
+void aio_co_wake(Coroutine* co)
 {
-    AioContext *ctx;
+    AioContext* ctx;
 
     /* Read coroutine before co->ctx.  Matches smp_wmb in
      * qemu_coroutine_enter.
@@ -688,7 +626,7 @@ void aio_co_wake(Coroutine *co)
     aio_co_enter(ctx, co);
 }
 
-void aio_co_enter(AioContext *ctx, Coroutine *co)
+void aio_co_enter(AioContext* ctx, Coroutine* co)
 {
     if (ctx != qemu_get_current_aio_context()) {
         aio_co_schedule(ctx, co);
@@ -696,32 +634,25 @@ void aio_co_enter(AioContext *ctx, Coroutine *co)
     }
 
     if (qemu_in_coroutine()) {
-        Coroutine *self = qemu_coroutine_self();
+        Coroutine* self = qemu_coroutine_self();
         assert(self != co);
         QSIMPLEQ_INSERT_TAIL(&self->co_queue_wakeup, co, co_queue_next);
-    } else {
+    }
+    else {
         qemu_aio_coroutine_enter(ctx, co);
     }
 }
 
-void aio_context_ref(AioContext *ctx)
-{
-    g_source_ref(&ctx->source);
-}
+void aio_context_ref(AioContext* ctx) { g_source_ref(&ctx->source); }
 
-void aio_context_unref(AioContext *ctx)
-{
-    g_source_unref(&ctx->source);
-}
+void aio_context_unref(AioContext* ctx) { g_source_unref(&ctx->source); }
 
-QEMU_DEFINE_STATIC_CO_TLS(AioContext *, my_aiocontext)
+QEMU_DEFINE_STATIC_CO_TLS(AioContext*, my_aiocontext)
 
-AioContext *qemu_get_current_aio_context(void)
+AioContext* qemu_get_current_aio_context(void)
 {
-    AioContext *ctx = get_my_aiocontext();
-    if (ctx) {
-        return ctx;
-    }
+    AioContext* ctx = get_my_aiocontext();
+    if (ctx) { return ctx; }
     if (bql_locked()) {
         /* Possibly in a vCPU thread.  */
         return qemu_get_aio_context();
@@ -729,14 +660,13 @@ AioContext *qemu_get_current_aio_context(void)
     return NULL;
 }
 
-void qemu_set_current_aio_context(AioContext *ctx)
+void qemu_set_current_aio_context(AioContext* ctx)
 {
     assert(!get_my_aiocontext());
     set_my_aiocontext(ctx);
 }
 
-void aio_context_set_thread_pool_params(AioContext *ctx, int64_t min,
-                                        int64_t max, Error **errp)
+void aio_context_set_thread_pool_params(AioContext* ctx, int64_t min, int64_t max, Error** errp)
 {
 
     if (min > max || max <= 0 || min < 0 || min > INT_MAX || max > INT_MAX) {
@@ -747,7 +677,5 @@ void aio_context_set_thread_pool_params(AioContext *ctx, int64_t min,
     ctx->thread_pool_min = min;
     ctx->thread_pool_max = max;
 
-    if (ctx->thread_pool) {
-        thread_pool_update_params(ctx->thread_pool, ctx);
-    }
+    if (ctx->thread_pool) { thread_pool_update_params(ctx->thread_pool, ctx); }
 }

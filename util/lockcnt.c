@@ -22,22 +22,17 @@
  * to mutex2 in the paper.
  */
 
-#define QEMU_LOCKCNT_STATE_MASK    3
-#define QEMU_LOCKCNT_STATE_FREE    0   /* free, uncontended */
-#define QEMU_LOCKCNT_STATE_LOCKED  1   /* locked, uncontended */
-#define QEMU_LOCKCNT_STATE_WAITING 2   /* locked, contended */
+    #define QEMU_LOCKCNT_STATE_MASK    3
+    #define QEMU_LOCKCNT_STATE_FREE    0 /* free, uncontended */
+    #define QEMU_LOCKCNT_STATE_LOCKED  1 /* locked, uncontended */
+    #define QEMU_LOCKCNT_STATE_WAITING 2 /* locked, contended */
 
-#define QEMU_LOCKCNT_COUNT_STEP    4
-#define QEMU_LOCKCNT_COUNT_SHIFT   2
+    #define QEMU_LOCKCNT_COUNT_STEP  4
+    #define QEMU_LOCKCNT_COUNT_SHIFT 2
 
-void qemu_lockcnt_init(QemuLockCnt *lockcnt)
-{
-    lockcnt->count = 0;
-}
+void qemu_lockcnt_init(QemuLockCnt* lockcnt) { lockcnt->count = 0; }
 
-void qemu_lockcnt_destroy(QemuLockCnt *lockcnt)
-{
-}
+void qemu_lockcnt_destroy(QemuLockCnt* lockcnt) { }
 
 /* *val is the current value of lockcnt->count.
  *
@@ -55,8 +50,7 @@ void qemu_lockcnt_destroy(QemuLockCnt *lockcnt)
  * is set the caller has effectively acquired the lock.  If it returns
  * with the lock not taken, it must wake another futex waiter.
  */
-static bool qemu_lockcnt_cmpxchg_or_wait(QemuLockCnt *lockcnt, int *val,
-                                         int new_if_free, bool *waited)
+static bool qemu_lockcnt_cmpxchg_or_wait(QemuLockCnt* lockcnt, int* val, int new_if_free, bool* waited)
 {
     /* Fast path for when the lock is free.  */
     if ((*val & QEMU_LOCKCNT_STATE_MASK) == QEMU_LOCKCNT_STATE_FREE) {
@@ -80,13 +74,11 @@ static bool qemu_lockcnt_cmpxchg_or_wait(QemuLockCnt *lockcnt, int *val,
     while ((*val & QEMU_LOCKCNT_STATE_MASK) != QEMU_LOCKCNT_STATE_FREE) {
         if ((*val & QEMU_LOCKCNT_STATE_MASK) == QEMU_LOCKCNT_STATE_LOCKED) {
             int expected = *val;
-            int new = expected - QEMU_LOCKCNT_STATE_LOCKED + QEMU_LOCKCNT_STATE_WAITING;
+            int new      = expected - QEMU_LOCKCNT_STATE_LOCKED + QEMU_LOCKCNT_STATE_WAITING;
 
             trace_lockcnt_futex_wait_prepare(lockcnt, expected, new);
             *val = qatomic_cmpxchg(&lockcnt->count, expected, new);
-            if (*val == expected) {
-                *val = new;
-            }
+            if (*val == expected) { *val = new; }
             continue;
         }
 
@@ -104,31 +96,26 @@ static bool qemu_lockcnt_cmpxchg_or_wait(QemuLockCnt *lockcnt, int *val,
     return false;
 }
 
-static void lockcnt_wake(QemuLockCnt *lockcnt)
+static void lockcnt_wake(QemuLockCnt* lockcnt)
 {
     trace_lockcnt_futex_wake(lockcnt);
     qemu_futex_wake_single(&lockcnt->count);
 }
 
-void qemu_lockcnt_inc(QemuLockCnt *lockcnt)
+void qemu_lockcnt_inc(QemuLockCnt* lockcnt)
 {
-    int val = qatomic_read(&lockcnt->count);
+    int  val    = qatomic_read(&lockcnt->count);
     bool waited = false;
 
     for (;;) {
         if (val >= QEMU_LOCKCNT_COUNT_STEP) {
             int expected = val;
-            val = qatomic_cmpxchg(&lockcnt->count, val,
-                                  val + QEMU_LOCKCNT_COUNT_STEP);
-            if (val == expected) {
-                break;
-            }
-        } else {
+            val          = qatomic_cmpxchg(&lockcnt->count, val, val + QEMU_LOCKCNT_COUNT_STEP);
+            if (val == expected) { break; }
+        }
+        else {
             /* The fast path is (0, unlocked)->(1, unlocked).  */
-            if (qemu_lockcnt_cmpxchg_or_wait(lockcnt, &val, QEMU_LOCKCNT_COUNT_STEP,
-                                             &waited)) {
-                break;
-            }
+            if (qemu_lockcnt_cmpxchg_or_wait(lockcnt, &val, QEMU_LOCKCNT_COUNT_STEP, &waited)) { break; }
         }
     }
 
@@ -138,41 +125,32 @@ void qemu_lockcnt_inc(QemuLockCnt *lockcnt)
      * in the low bits, and qemu_lockcnt_inc_and_unlock would find it and
      * wake someone.
      */
-    if (waited) {
-        lockcnt_wake(lockcnt);
-    }
+    if (waited) { lockcnt_wake(lockcnt); }
 }
 
-void qemu_lockcnt_dec(QemuLockCnt *lockcnt)
-{
-    qatomic_sub(&lockcnt->count, QEMU_LOCKCNT_COUNT_STEP);
-}
+void qemu_lockcnt_dec(QemuLockCnt* lockcnt) { qatomic_sub(&lockcnt->count, QEMU_LOCKCNT_COUNT_STEP); }
 
 /* Decrement a counter, and return locked if it is decremented to zero.
  * If the function returns true, it is impossible for the counter to
  * become nonzero until the next qemu_lockcnt_unlock.
  */
-bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt)
+bool qemu_lockcnt_dec_and_lock(QemuLockCnt* lockcnt)
 {
-    int val = qatomic_read(&lockcnt->count);
-    int locked_state = QEMU_LOCKCNT_STATE_LOCKED;
-    bool waited = false;
+    int  val          = qatomic_read(&lockcnt->count);
+    int  locked_state = QEMU_LOCKCNT_STATE_LOCKED;
+    bool waited       = false;
 
     for (;;) {
         if (val >= 2 * QEMU_LOCKCNT_COUNT_STEP) {
             int expected = val;
-            val = qatomic_cmpxchg(&lockcnt->count, val,
-                                  val - QEMU_LOCKCNT_COUNT_STEP);
-            if (val == expected) {
-                break;
-            }
-        } else {
+            val          = qatomic_cmpxchg(&lockcnt->count, val, val - QEMU_LOCKCNT_COUNT_STEP);
+            if (val == expected) { break; }
+        }
+        else {
             /* If count is going 1->0, take the lock. The fast path is
              * (1, unlocked)->(0, locked) or (1, unlocked)->(0, waiting).
              */
-            if (qemu_lockcnt_cmpxchg_or_wait(lockcnt, &val, locked_state, &waited)) {
-                return true;
-            }
+            if (qemu_lockcnt_cmpxchg_or_wait(lockcnt, &val, locked_state, &waited)) { return true; }
 
             if (waited) {
                 /* At this point we do not know if there are more waiters.  Assume
@@ -189,9 +167,7 @@ bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt)
      * qemu_lockcnt_lock would leave QEMU_LOCKCNT_STATE_WAITING in the low
      * bits, and qemu_lockcnt_unlock would find it and wake someone.
      */
-    if (waited) {
-        lockcnt_wake(lockcnt);
-    }
+    if (waited) { lockcnt_wake(lockcnt); }
     return false;
 }
 
@@ -201,19 +177,17 @@ bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt)
  * If the function returns true, it is impossible for the counter to
  * become nonzero until the next qemu_lockcnt_unlock.
  */
-bool qemu_lockcnt_dec_if_lock(QemuLockCnt *lockcnt)
+bool qemu_lockcnt_dec_if_lock(QemuLockCnt* lockcnt)
 {
-    int val = qatomic_read(&lockcnt->count);
-    int locked_state = QEMU_LOCKCNT_STATE_LOCKED;
-    bool waited = false;
+    int  val          = qatomic_read(&lockcnt->count);
+    int  locked_state = QEMU_LOCKCNT_STATE_LOCKED;
+    bool waited       = false;
 
     while (val < 2 * QEMU_LOCKCNT_COUNT_STEP) {
         /* If count is going 1->0, take the lock. The fast path is
          * (1, unlocked)->(0, locked) or (1, unlocked)->(0, waiting).
          */
-        if (qemu_lockcnt_cmpxchg_or_wait(lockcnt, &val, locked_state, &waited)) {
-            return true;
-        }
+        if (qemu_lockcnt_cmpxchg_or_wait(lockcnt, &val, locked_state, &waited)) { return true; }
 
         if (waited) {
             /* At this point we do not know if there are more waiters.  Assume
@@ -229,16 +203,14 @@ bool qemu_lockcnt_dec_if_lock(QemuLockCnt *lockcnt)
      * qemu_lockcnt_lock would leave QEMU_LOCKCNT_STATE_WAITING in the low
      * bits, and qemu_lockcnt_inc_and_unlock would find it and wake someone.
      */
-    if (waited) {
-        lockcnt_wake(lockcnt);
-    }
+    if (waited) { lockcnt_wake(lockcnt); }
     return false;
 }
 
-void qemu_lockcnt_lock(QemuLockCnt *lockcnt)
+void qemu_lockcnt_lock(QemuLockCnt* lockcnt)
 {
-    int val = qatomic_read(&lockcnt->count);
-    int step = QEMU_LOCKCNT_STATE_LOCKED;
+    int  val    = qatomic_read(&lockcnt->count);
+    int  step   = QEMU_LOCKCNT_STATE_LOCKED;
     bool waited = false;
 
     /* The third argument is only used if the low bits of val are 0
@@ -255,59 +227,51 @@ void qemu_lockcnt_lock(QemuLockCnt *lockcnt)
     }
 }
 
-void qemu_lockcnt_inc_and_unlock(QemuLockCnt *lockcnt)
+void qemu_lockcnt_inc_and_unlock(QemuLockCnt* lockcnt)
 {
     int expected, new, val;
 
     val = qatomic_read(&lockcnt->count);
     do {
         expected = val;
-        new = (val + QEMU_LOCKCNT_COUNT_STEP) & ~QEMU_LOCKCNT_STATE_MASK;
+        new      = (val + QEMU_LOCKCNT_COUNT_STEP) & ~QEMU_LOCKCNT_STATE_MASK;
         trace_lockcnt_unlock_attempt(lockcnt, val, new);
         val = qatomic_cmpxchg(&lockcnt->count, val, new);
-    } while (val != expected);
+    }
+    while (val != expected);
 
     trace_lockcnt_unlock_success(lockcnt, val, new);
-    if (val & QEMU_LOCKCNT_STATE_WAITING) {
-        lockcnt_wake(lockcnt);
-    }
+    if (val & QEMU_LOCKCNT_STATE_WAITING) { lockcnt_wake(lockcnt); }
 }
 
-void qemu_lockcnt_unlock(QemuLockCnt *lockcnt)
+void qemu_lockcnt_unlock(QemuLockCnt* lockcnt)
 {
     int expected, new, val;
 
     val = qatomic_read(&lockcnt->count);
     do {
         expected = val;
-        new = val & ~QEMU_LOCKCNT_STATE_MASK;
+        new      = val & ~QEMU_LOCKCNT_STATE_MASK;
         trace_lockcnt_unlock_attempt(lockcnt, val, new);
         val = qatomic_cmpxchg(&lockcnt->count, val, new);
-    } while (val != expected);
+    }
+    while (val != expected);
 
     trace_lockcnt_unlock_success(lockcnt, val, new);
-    if (val & QEMU_LOCKCNT_STATE_WAITING) {
-        lockcnt_wake(lockcnt);
-    }
+    if (val & QEMU_LOCKCNT_STATE_WAITING) { lockcnt_wake(lockcnt); }
 }
 
-unsigned qemu_lockcnt_count(QemuLockCnt *lockcnt)
-{
-    return qatomic_read(&lockcnt->count) >> QEMU_LOCKCNT_COUNT_SHIFT;
-}
+unsigned qemu_lockcnt_count(QemuLockCnt* lockcnt) { return qatomic_read(&lockcnt->count) >> QEMU_LOCKCNT_COUNT_SHIFT; }
 #else
-void qemu_lockcnt_init(QemuLockCnt *lockcnt)
+void qemu_lockcnt_init(QemuLockCnt* lockcnt)
 {
     qemu_mutex_init(&lockcnt->mutex);
     lockcnt->count = 0;
 }
 
-void qemu_lockcnt_destroy(QemuLockCnt *lockcnt)
-{
-    qemu_mutex_destroy(&lockcnt->mutex);
-}
+void qemu_lockcnt_destroy(QemuLockCnt* lockcnt) { qemu_mutex_destroy(&lockcnt->mutex); }
 
-void qemu_lockcnt_inc(QemuLockCnt *lockcnt)
+void qemu_lockcnt_inc(QemuLockCnt* lockcnt)
 {
     int old;
     for (;;) {
@@ -316,24 +280,20 @@ void qemu_lockcnt_inc(QemuLockCnt *lockcnt)
             qemu_lockcnt_lock(lockcnt);
             qemu_lockcnt_inc_and_unlock(lockcnt);
             return;
-        } else {
-            if (qatomic_cmpxchg(&lockcnt->count, old, old + 1) == old) {
-                return;
-            }
+        }
+        else {
+            if (qatomic_cmpxchg(&lockcnt->count, old, old + 1) == old) { return; }
         }
     }
 }
 
-void qemu_lockcnt_dec(QemuLockCnt *lockcnt)
-{
-    qatomic_dec(&lockcnt->count);
-}
+void qemu_lockcnt_dec(QemuLockCnt* lockcnt) { qatomic_dec(&lockcnt->count); }
 
 /* Decrement a counter, and return locked if it is decremented to zero.
  * It is impossible for the counter to become nonzero while the mutex
  * is taken.
  */
-bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt)
+bool qemu_lockcnt_dec_and_lock(QemuLockCnt* lockcnt)
 {
     int val = qatomic_read(&lockcnt->count);
     while (val > 1) {
@@ -347,9 +307,7 @@ bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt)
     }
 
     qemu_lockcnt_lock(lockcnt);
-    if (qatomic_fetch_dec(&lockcnt->count) == 1) {
-        return true;
-    }
+    if (qatomic_fetch_dec(&lockcnt->count) == 1) { return true; }
 
     qemu_lockcnt_unlock(lockcnt);
     return false;
@@ -361,41 +319,28 @@ bool qemu_lockcnt_dec_and_lock(QemuLockCnt *lockcnt)
  * It is impossible for the counter to become nonzero while the mutex
  * is taken.
  */
-bool qemu_lockcnt_dec_if_lock(QemuLockCnt *lockcnt)
+bool qemu_lockcnt_dec_if_lock(QemuLockCnt* lockcnt)
 {
     /* No need for acquire semantics if we return false.  */
     int val = qatomic_read(&lockcnt->count);
-    if (val > 1) {
-        return false;
-    }
+    if (val > 1) { return false; }
 
     qemu_lockcnt_lock(lockcnt);
-    if (qatomic_fetch_dec(&lockcnt->count) == 1) {
-        return true;
-    }
+    if (qatomic_fetch_dec(&lockcnt->count) == 1) { return true; }
 
     qemu_lockcnt_inc_and_unlock(lockcnt);
     return false;
 }
 
-void qemu_lockcnt_lock(QemuLockCnt *lockcnt)
-{
-    qemu_mutex_lock(&lockcnt->mutex);
-}
+void qemu_lockcnt_lock(QemuLockCnt* lockcnt) { qemu_mutex_lock(&lockcnt->mutex); }
 
-void qemu_lockcnt_inc_and_unlock(QemuLockCnt *lockcnt)
+void qemu_lockcnt_inc_and_unlock(QemuLockCnt* lockcnt)
 {
     qatomic_inc(&lockcnt->count);
     qemu_mutex_unlock(&lockcnt->mutex);
 }
 
-void qemu_lockcnt_unlock(QemuLockCnt *lockcnt)
-{
-    qemu_mutex_unlock(&lockcnt->mutex);
-}
+void qemu_lockcnt_unlock(QemuLockCnt* lockcnt) { qemu_mutex_unlock(&lockcnt->mutex); }
 
-unsigned qemu_lockcnt_count(QemuLockCnt *lockcnt)
-{
-    return qatomic_read(&lockcnt->count);
-}
+unsigned qemu_lockcnt_count(QemuLockCnt* lockcnt) { return qatomic_read(&lockcnt->count); }
 #endif

@@ -42,9 +42,9 @@
 
 #define CPU_NONE 0xFFFFFFFF
 
-static void generic_loader_reset(void *opaque)
+static void generic_loader_reset(void* opaque)
 {
-    GenericLoaderState *s = GENERIC_LOADER(opaque);
+    GenericLoaderState* s = GENERIC_LOADER(opaque);
 
     if (s->set_pc) {
         cpu_reset(s->cpu);
@@ -53,64 +53,68 @@ static void generic_loader_reset(void *opaque)
 
     if (s->data_len) {
         assert(s->data_len <= sizeof(s->data));
-        dma_memory_write(s->cpu->as, s->addr, &s->data, s->data_len,
-                         MEMTXATTRS_UNSPECIFIED);
+        dma_memory_write(s->cpu->as, s->addr, &s->data, s->data_len, MEMTXATTRS_UNSPECIFIED);
     }
 }
 
-static void generic_loader_realize(DeviceState *dev, Error **errp)
+static void generic_loader_realize(DeviceState* dev, Error** errp)
 {
-    GenericLoaderState *s = GENERIC_LOADER(dev);
-    hwaddr entry;
-    ssize_t size = 0;
+    GenericLoaderState* s = GENERIC_LOADER(dev);
+    hwaddr              entry;
+    ssize_t             size = 0;
 
     s->set_pc = false;
 
     /* Perform some error checking on the user's options */
-    if (s->data || s->data_len  || s->data_be) {
+    if (s->data || s->data_len || s->data_be) {
         /* User is loading memory values */
         if (s->file) {
             error_setg(errp, "Specifying a file is not supported when loading "
-                       "memory values");
+                             "memory values");
             return;
-        } else if (s->force_raw) {
+        }
+        else if (s->force_raw) {
             error_setg(errp, "Specifying force-raw is not supported when "
-                       "loading memory values");
+                             "loading memory values");
             return;
-        } else if (!s->data_len) {
+        }
+        else if (!s->data_len) {
             /* We can't check for !data here as a value of 0 is still valid. */
             error_setg(errp, "Both data and data-len must be specified");
             return;
-        } else if (s->data_len > 8) {
+        }
+        else if (s->data_len > 8) {
             error_setg(errp, "data-len cannot be greater then 8 bytes");
             return;
         }
-    } else if (s->file || s->force_raw)  {
+    }
+    else if (s->file || s->force_raw) {
         /* User is loading an image */
         if (s->data || s->data_len || s->data_be) {
             error_setg(errp, "data can not be specified when loading an "
-                       "image");
+                             "image");
             return;
         }
         /* The user specified a file, only set the PC if they also specified
          * a CPU to use.
          */
-        if (s->cpu_num != CPU_NONE) {
-            s->set_pc = true;
-        }
-    } else if (s->addr) {
+        if (s->cpu_num != CPU_NONE) { s->set_pc = true; }
+    }
+    else if (s->addr) {
         /* User is setting the PC */
         if (s->data || s->data_len || s->data_be) {
             error_setg(errp, "data can not be specified when setting a "
-                       "program counter");
+                             "program counter");
             return;
-        } else if (s->cpu_num == CPU_NONE) {
+        }
+        else if (s->cpu_num == CPU_NONE) {
             error_setg(errp, "cpu_num must be specified when setting a "
-                       "program counter");
+                             "program counter");
             return;
         }
         s->set_pc = true;
-    } else {
+    }
+    else {
         /* Did the user specify anything? */
         error_setg(errp, "please include valid arguments");
         return;
@@ -121,35 +125,30 @@ static void generic_loader_realize(DeviceState *dev, Error **errp)
     if (s->cpu_num != CPU_NONE) {
         s->cpu = qemu_get_cpu(s->cpu_num);
         if (!s->cpu) {
-            error_setg(errp, "Specified boot CPU#%d is nonexistent",
-                       s->cpu_num);
+            error_setg(errp, "Specified boot CPU#%d is nonexistent", s->cpu_num);
             return;
         }
-    } else {
+    }
+    else {
         s->cpu = first_cpu;
     }
 
     if (s->file) {
-        AddressSpace *as = s->cpu ? s->cpu->as :  NULL;
+        AddressSpace* as = s->cpu ? s->cpu->as : NULL;
 
         if (!s->force_raw) {
-            size = load_elf_as(s->file, NULL, NULL, NULL, &entry, NULL, NULL,
-                               NULL, ELFDATANONE, 0, 0, 0, as);
+            size = load_elf_as(s->file, NULL, NULL, NULL, &entry, NULL, NULL, NULL, ELFDATANONE, 0, 0, 0, as);
 
-            if (size < 0) {
-                size = load_uimage_as(s->file, &entry, NULL, NULL, NULL, NULL,
-                                      as);
-            }
+            if (size < 0) { size = load_uimage_as(s->file, &entry, NULL, NULL, NULL, NULL, as); }
 
-            if (size < 0) {
-                size = load_targphys_hex_as(s->file, &entry, as);
-            }
+            if (size < 0) { size = load_targphys_hex_as(s->file, &entry, as); }
         }
 
         if (size < 0 || s->force_raw) {
             /* Default to the maximum size being the machine's ram size */
             size = load_image_targphys_as(s->file, s->addr, current_machine->ram_size, as);
-        } else {
+        }
+        else {
             s->addr = entry;
         }
 
@@ -160,17 +159,13 @@ static void generic_loader_realize(DeviceState *dev, Error **errp)
     }
 
     /* Convert the data endianness */
-    if (s->data_be) {
-        s->data = cpu_to_be64(s->data);
-    } else {
+    if (s->data_be) { s->data = cpu_to_be64(s->data); }
+    else {
         s->data = cpu_to_le64(s->data);
     }
 }
 
-static void generic_loader_unrealize(DeviceState *dev)
-{
-    qemu_unregister_reset(generic_loader_reset, dev);
-}
+static void generic_loader_unrealize(DeviceState* dev) { qemu_unregister_reset(generic_loader_reset, dev); }
 
 static const Property generic_loader_props[] = {
     DEFINE_PROP_UINT64("addr", GenericLoaderState, addr, 0),
@@ -182,9 +177,9 @@ static const Property generic_loader_props[] = {
     DEFINE_PROP_STRING("file", GenericLoaderState, file),
 };
 
-static void generic_loader_class_init(ObjectClass *klass, const void *data)
+static void generic_loader_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
+    DeviceClass* dc = DEVICE_CLASS(klass);
 
     /* The reset function is not registered here and is instead registered in
      * the realize function to allow this device to be added via the device_add
@@ -192,7 +187,7 @@ static void generic_loader_class_init(ObjectClass *klass, const void *data)
      * TODO: Improve the device_add functionality to allow resets to be
      * connected
      */
-    dc->realize = generic_loader_realize;
+    dc->realize   = generic_loader_realize;
     dc->unrealize = generic_loader_unrealize;
     device_class_set_props(dc, generic_loader_props);
     dc->desc = "Generic Loader";
@@ -200,15 +195,12 @@ static void generic_loader_class_init(ObjectClass *klass, const void *data)
 }
 
 static const TypeInfo generic_loader_info = {
-    .name = TYPE_GENERIC_LOADER,
-    .parent = TYPE_DEVICE,
+    .name          = TYPE_GENERIC_LOADER,
+    .parent        = TYPE_DEVICE,
     .instance_size = sizeof(GenericLoaderState),
-    .class_init = generic_loader_class_init,
+    .class_init    = generic_loader_class_init,
 };
 
-static void generic_loader_register_type(void)
-{
-    type_register_static(&generic_loader_info);
-}
+static void generic_loader_register_type(void) { type_register_static(&generic_loader_info); }
 
 type_init(generic_loader_register_type)

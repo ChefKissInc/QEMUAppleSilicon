@@ -1,8 +1,9 @@
 #pragma once
 
-typedef struct {
+typedef struct
+{
     /* All fields are private */
-    uint8_t *data;
+    uint8_t* data;
     uint32_t capacity;
     uint32_t head;
     uint32_t num;
@@ -16,7 +17,7 @@ typedef struct {
  * Create a FIFO of the specified capacity. Clients should call fifo8_destroy()
  * when finished using the fifo. The FIFO is initially empty.
  */
-void fifo8_create(Fifo8 *fifo, uint32_t capacity);
+void fifo8_create(Fifo8* fifo, uint32_t capacity);
 
 /**
  * fifo8_destroy:
@@ -25,7 +26,7 @@ void fifo8_create(Fifo8 *fifo, uint32_t capacity);
  * Cleanup a FIFO created with fifo8_create(). Frees memory created for FIFO
  * storage. The FIFO is no longer usable after this has been called.
  */
-void fifo8_destroy(Fifo8 *fifo);
+void fifo8_destroy(Fifo8* fifo);
 
 /**
  * fifo8_push:
@@ -35,7 +36,7 @@ void fifo8_destroy(Fifo8 *fifo);
  * Push a data byte to the FIFO. Behaviour is undefined if the FIFO is full.
  * Clients are responsible for checking for fullness using fifo8_is_full().
  */
-void fifo8_push(Fifo8 *fifo, uint8_t data);
+void fifo8_push(Fifo8* fifo, uint8_t data);
 
 /**
  * fifo8_push_all:
@@ -47,7 +48,7 @@ void fifo8_push(Fifo8 *fifo, uint8_t data);
  * Clients are responsible for checking the space left in the FIFO using
  * fifo8_num_free().
  */
-void fifo8_push_all(Fifo8 *fifo, const uint8_t *data, uint32_t num);
+void fifo8_push_all(Fifo8* fifo, const uint8_t* data, uint32_t num);
 
 /**
  * fifo8_pop:
@@ -58,7 +59,7 @@ void fifo8_push_all(Fifo8 *fifo, const uint8_t *data, uint32_t num);
  *
  * Returns: The popped data byte.
  */
-uint8_t fifo8_pop(Fifo8 *fifo);
+uint8_t fifo8_pop(Fifo8* fifo);
 
 /**
  * fifo8_peek:
@@ -69,7 +70,7 @@ uint8_t fifo8_pop(Fifo8 *fifo);
  *
  * Returns: The peeked data byte.
  */
-uint8_t fifo8_peek(const Fifo8 *fifo);
+uint8_t fifo8_peek(const Fifo8* fifo);
 
 /**
  * fifo8_pop_buf:
@@ -83,7 +84,7 @@ uint8_t fifo8_peek(const Fifo8 *fifo);
  *
  * Returns: number of bytes popped.
  */
-uint32_t fifo8_pop_buf(Fifo8 *fifo, uint8_t *dest, uint32_t destlen);
+uint32_t fifo8_pop_buf(Fifo8* fifo, uint8_t* dest, uint32_t destlen);
 
 /**
  * fifo8_peek_buf:
@@ -97,7 +98,7 @@ uint32_t fifo8_pop_buf(Fifo8 *fifo, uint8_t *dest, uint32_t destlen);
  *
  * Returns: number of bytes peeked.
  */
-uint32_t fifo8_peek_buf(Fifo8 *fifo, uint8_t *dest, uint32_t destlen);
+uint32_t fifo8_peek_buf(Fifo8* fifo, uint8_t* dest, uint32_t destlen);
 
 /**
  * fifo8_pop_bufptr:
@@ -125,7 +126,7 @@ uint32_t fifo8_peek_buf(Fifo8 *fifo, uint8_t *dest, uint32_t destlen);
  *
  * Returns: A pointer to popped data.
  */
-const uint8_t *fifo8_pop_bufptr(Fifo8 *fifo, uint32_t max, uint32_t *numptr);
+const uint8_t* fifo8_pop_bufptr(Fifo8* fifo, uint32_t max, uint32_t* numptr);
 
 /**
  * fifo8_peek_bufptr: read upto max bytes from the fifo
@@ -152,7 +153,7 @@ const uint8_t *fifo8_pop_bufptr(Fifo8 *fifo, uint32_t max, uint32_t *numptr);
  *
  * Returns: A pointer to peekable data.
  */
-const uint8_t *fifo8_peek_bufptr(Fifo8 *fifo, uint32_t max, uint32_t *numptr);
+const uint8_t* fifo8_peek_bufptr(Fifo8* fifo, uint32_t max, uint32_t* numptr);
 
 /**
  * fifo8_drop:
@@ -161,7 +162,7 @@ const uint8_t *fifo8_peek_bufptr(Fifo8 *fifo, uint32_t max, uint32_t *numptr);
  *
  * Drop (consume) bytes from a FIFO.
  */
-void fifo8_drop(Fifo8 *fifo, uint32_t len);
+void fifo8_drop(Fifo8* fifo, uint32_t len);
 
 /**
  * fifo8_reset:
@@ -169,7 +170,7 @@ void fifo8_drop(Fifo8 *fifo, uint32_t len);
  *
  * Reset a FIFO. All data is discarded and the FIFO is emptied.
  */
-void fifo8_reset(Fifo8 *fifo);
+void fifo8_reset(Fifo8* fifo);
 
 /**
  * fifo8_is_empty:
@@ -179,7 +180,7 @@ void fifo8_reset(Fifo8 *fifo);
  *
  * Returns: True if the fifo is empty, false otherwise.
  */
-bool fifo8_is_empty(const Fifo8 *fifo);
+bool fifo8_is_empty(const Fifo8* fifo);
 
 /**
  * fifo8_is_full:
@@ -189,7 +190,7 @@ bool fifo8_is_empty(const Fifo8 *fifo);
  *
  * Returns: True if the fifo is full, false otherwise.
  */
-bool fifo8_is_full(const Fifo8 *fifo);
+bool fifo8_is_full(const Fifo8* fifo);
 
 /**
  * fifo8_num_free:
@@ -199,7 +200,7 @@ bool fifo8_is_full(const Fifo8 *fifo);
  *
  * Returns: Number of free bytes.
  */
-uint32_t fifo8_num_free(const Fifo8 *fifo);
+uint32_t fifo8_num_free(const Fifo8* fifo);
 
 /**
  * fifo8_num_used:
@@ -209,4 +210,4 @@ uint32_t fifo8_num_free(const Fifo8 *fifo);
  *
  * Returns: Number of used bytes.
  */
-uint32_t fifo8_num_used(const Fifo8 *fifo);
+uint32_t fifo8_num_used(const Fifo8* fifo);

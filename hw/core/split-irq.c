@@ -30,29 +30,22 @@
 #include "qapi/error.h"
 #include "qemu/module.h"
 
-static void split_irq_handler(void *opaque, int n, int level)
+static void split_irq_handler(void* opaque, int n, int level)
 {
-    SplitIRQ *s = SPLIT_IRQ(opaque);
-    int i;
+    SplitIRQ* s = SPLIT_IRQ(opaque);
+    int       i;
 
-    for (i = 0; i < s->num_lines; i++) {
-        qemu_set_irq(s->out_irq[i], level);
-    }
+    for (i = 0; i < s->num_lines; i++) { qemu_set_irq(s->out_irq[i], level); }
 }
 
-static void split_irq_init(Object *obj)
-{
-    qdev_init_gpio_in(DEVICE(obj), split_irq_handler, 1);
-}
+static void split_irq_init(Object* obj) { qdev_init_gpio_in(DEVICE(obj), split_irq_handler, 1); }
 
-static void split_irq_realize(DeviceState *dev, Error **errp)
+static void split_irq_realize(DeviceState* dev, Error** errp)
 {
-    SplitIRQ *s = SPLIT_IRQ(dev);
+    SplitIRQ* s = SPLIT_IRQ(dev);
 
     if (s->num_lines < 1 || s->num_lines >= MAX_SPLIT_LINES) {
-        error_setg(errp,
-                   "IRQ splitter number of lines %d is not between 1 and %d",
-                   s->num_lines, MAX_SPLIT_LINES);
+        error_setg(errp, "IRQ splitter number of lines %d is not between 1 and %d", s->num_lines, MAX_SPLIT_LINES);
         return;
     }
 
@@ -63,9 +56,9 @@ static const Property split_irq_properties[] = {
     DEFINE_PROP_UINT16("num-lines", SplitIRQ, num_lines, 1),
 };
 
-static void split_irq_class_init(ObjectClass *klass, const void *data)
+static void split_irq_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
+    DeviceClass* dc = DEVICE_CLASS(klass);
 
     /* No state to reset or migrate */
     device_class_set_props(dc, split_irq_properties);
@@ -76,16 +69,13 @@ static void split_irq_class_init(ObjectClass *klass, const void *data)
 }
 
 static const TypeInfo split_irq_type_info = {
-   .name = TYPE_SPLIT_IRQ,
-   .parent = TYPE_DEVICE,
-   .instance_size = sizeof(SplitIRQ),
-   .instance_init = split_irq_init,
-   .class_init = split_irq_class_init,
+    .name          = TYPE_SPLIT_IRQ,
+    .parent        = TYPE_DEVICE,
+    .instance_size = sizeof(SplitIRQ),
+    .instance_init = split_irq_init,
+    .class_init    = split_irq_class_init,
 };
 
-static void split_irq_register_types(void)
-{
-    type_register_static(&split_irq_type_info);
-}
+static void split_irq_register_types(void) { type_register_static(&split_irq_type_info); }
 
 type_init(split_irq_register_types)

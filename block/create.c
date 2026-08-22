@@ -31,16 +31,17 @@
 #include "qapi/clone-visitor.h"
 #include "qapi/error.h"
 
-typedef struct BlockdevCreateJob {
-    Job common;
-    BlockDriver *drv;
-    BlockdevCreateOptions *opts;
+typedef struct BlockdevCreateJob
+{
+    Job                    common;
+    BlockDriver*           drv;
+    BlockdevCreateOptions* opts;
 } BlockdevCreateJob;
 
-static int coroutine_fn blockdev_create_run(Job *job, Error **errp)
+static int coroutine_fn blockdev_create_run(Job* job, Error** errp)
 {
-    BlockdevCreateJob *s = container_of(job, BlockdevCreateJob, common);
-    int ret;
+    BlockdevCreateJob* s = container_of(job, BlockdevCreateJob, common);
+    int                ret;
 
     GLOBAL_STATE_CODE();
 
@@ -60,17 +61,13 @@ static const JobDriver blockdev_create_job_driver = {
 };
 
 /* Checking whether the function is present doesn't require the graph lock */
-static inline bool TSA_NO_TSA has_bdrv_co_create(BlockDriver *drv)
-{
-    return drv->bdrv_co_create;
-}
+static inline bool TSA_NO_TSA has_bdrv_co_create(BlockDriver* drv) { return drv->bdrv_co_create; }
 
-void qmp_blockdev_create(const char *job_id, BlockdevCreateOptions *options,
-                         Error **errp)
+void qmp_blockdev_create(const char* job_id, BlockdevCreateOptions* options, Error** errp)
 {
-    BlockdevCreateJob *s;
-    const char *fmt = BlockdevDriver_str(options->driver);
-    BlockDriver *drv = bdrv_find_format(fmt);
+    BlockdevCreateJob* s;
+    const char*        fmt = BlockdevDriver_str(options->driver);
+    BlockDriver*       drv = bdrv_find_format(fmt);
 
     if (!drv) {
         error_setg(errp, "Block driver '%s' not found or not supported", fmt);
@@ -93,15 +90,9 @@ void qmp_blockdev_create(const char *job_id, BlockdevCreateOptions *options,
     /* Create the block job */
     /* TODO Running in the main context. Block drivers need to error out or add
      * locking when they use a BDS in a different AioContext. */
-    s = job_create(job_id, &blockdev_create_job_driver, NULL,
-                   qemu_get_aio_context(), JOB_DEFAULT | JOB_MANUAL_DISMISS,
+    s = job_create(job_id, &blockdev_create_job_driver, NULL, qemu_get_aio_context(), JOB_DEFAULT | JOB_MANUAL_DISMISS,
                    NULL, NULL, errp);
-    if (!s) {
-        return;
-    }
+    if (!s) { return; }
 
-    s->drv = drv,
-    s->opts = QAPI_CLONE(BlockdevCreateOptions, options),
-
-    job_start(&s->common);
+    s->drv = drv, s->opts = QAPI_CLONE(BlockdevCreateOptions, options), job_start(&s->common);
 }

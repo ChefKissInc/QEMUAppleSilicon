@@ -14,10 +14,11 @@
 #include "qom/object.h"
 #include "qapi/error.h"
 #ifdef CONFIG_LINUX
-#include "linux/iommufd.h"
+    #include "linux/iommufd.h"
 
-typedef union VendorCaps {
-    struct iommu_hw_info_vtd vtd;
+typedef union VendorCaps
+{
+    struct iommu_hw_info_vtd        vtd;
     struct iommu_hw_info_arm_smmuv3 smmuv3;
 } VendorCaps;
 
@@ -33,9 +34,10 @@ typedef union VendorCaps {
  *               IOMMUFD this represents a user-space buffer filled by kernel
  *               with host IOMMU @type specific hardware information data)
  */
-typedef struct HostIOMMUDeviceCaps {
-    uint32_t type;
-    uint64_t hw_caps;
+typedef struct HostIOMMUDeviceCaps
+{
+    uint32_t   type;
+    uint64_t   hw_caps;
     VendorCaps vendor_caps;
 } HostIOMMUDeviceCaps;
 #endif
@@ -43,13 +45,14 @@ typedef struct HostIOMMUDeviceCaps {
 #define TYPE_HOST_IOMMU_DEVICE "host-iommu-device"
 OBJECT_DECLARE_TYPE(HostIOMMUDevice, HostIOMMUDeviceClass, HOST_IOMMU_DEVICE)
 
-struct HostIOMMUDevice {
+struct HostIOMMUDevice
+{
     Object parent_obj;
 
-    char *name;
-    void *agent; /* pointer to agent device, ie. VFIO or VDPA device */
-    PCIBus *aliased_bus;
-    int aliased_devfn;
+    char*   name;
+    void*   agent; /* pointer to agent device, ie. VFIO or VDPA device */
+    PCIBus* aliased_bus;
+    int     aliased_devfn;
 #ifdef CONFIG_LINUX
     HostIOMMUDeviceCaps caps;
 #endif
@@ -62,7 +65,8 @@ struct HostIOMMUDevice {
  * with different backend (e.g., VFIO legacy container or IOMMUFD backend)
  * will have different implementations of the HostIOMMUDeviceClass.
  */
-struct HostIOMMUDeviceClass {
+struct HostIOMMUDeviceClass
+{
     ObjectClass parent_class;
 
     /**
@@ -79,7 +83,7 @@ struct HostIOMMUDeviceClass {
      *
      * Returns: true on success, false on failure.
      */
-    bool (*realize)(HostIOMMUDevice *hiod, void *opaque, Error **errp);
+    bool (*realize)(HostIOMMUDevice* hiod, void* opaque, Error** errp);
     /**
      * @get_cap: check if a host IOMMU device capability is supported.
      *
@@ -96,14 +100,14 @@ struct HostIOMMUDeviceClass {
      * 1 or some positive value for some special @cap,
      * i.e., HOST_IOMMU_DEVICE_CAP_AW_BITS.
      */
-    int (*get_cap)(HostIOMMUDevice *hiod, int cap, Error **errp);
+    int (*get_cap)(HostIOMMUDevice* hiod, int cap, Error** errp);
     /**
      * @get_iova_ranges: Return the list of usable iova_ranges along with
      * @hiod Host IOMMU device
      *
      * @hiod: handle to the host IOMMU device
      */
-    GList* (*get_iova_ranges)(HostIOMMUDevice *hiod);
+    GList* (*get_iova_ranges)(HostIOMMUDevice* hiod);
     /**
      *
      * @get_page_size_mask: Return the page size mask supported along this
@@ -111,13 +115,13 @@ struct HostIOMMUDeviceClass {
      *
      * @hiod: handle to the host IOMMU device
      */
-    uint64_t (*get_page_size_mask)(HostIOMMUDevice *hiod);
+    uint64_t (*get_page_size_mask)(HostIOMMUDevice* hiod);
 };
 
 /*
  * Host IOMMU device capability list.
  */
-#define HOST_IOMMU_DEVICE_CAP_IOMMU_TYPE        0
-#define HOST_IOMMU_DEVICE_CAP_AW_BITS           1
+#define HOST_IOMMU_DEVICE_CAP_IOMMU_TYPE 0
+#define HOST_IOMMU_DEVICE_CAP_AW_BITS    1
 
-#define HOST_IOMMU_DEVICE_CAP_AW_BITS_MAX       64
+#define HOST_IOMMU_DEVICE_CAP_AW_BITS_MAX 64

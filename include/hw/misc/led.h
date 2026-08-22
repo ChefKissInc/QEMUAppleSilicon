@@ -21,28 +21,30 @@
  * Line' of the 'DS68 LUXEON Rebel Color Line' datasheet available at:
  * https://www.lumileds.com/products/color-leds/luxeon-rebel-color/
  */
-typedef enum {          /* Coarse wavelength range */
-    LED_COLOR_VIOLET,   /* 425 nm */
-    LED_COLOR_BLUE,     /* 475 nm */
-    LED_COLOR_CYAN,     /* 500 nm */
-    LED_COLOR_GREEN,    /* 535 nm */
-    LED_COLOR_YELLOW,   /* 567 nm */
-    LED_COLOR_AMBER,    /* 590 nm */
-    LED_COLOR_ORANGE,   /* 615 nm */
-    LED_COLOR_RED,      /* 630 nm */
+typedef enum
+{                   /* Coarse wavelength range */
+  LED_COLOR_VIOLET, /* 425 nm */
+  LED_COLOR_BLUE,   /* 475 nm */
+  LED_COLOR_CYAN,   /* 500 nm */
+  LED_COLOR_GREEN,  /* 535 nm */
+  LED_COLOR_YELLOW, /* 567 nm */
+  LED_COLOR_AMBER,  /* 590 nm */
+  LED_COLOR_ORANGE, /* 615 nm */
+  LED_COLOR_RED,    /* 630 nm */
 } LEDColor;
 
-struct LEDState {
+struct LEDState
+{
     /* Private */
     DeviceState parent_obj;
     /* Public */
 
-    uint8_t intensity_percent;
+    uint8_t  intensity_percent;
     qemu_irq irq;
 
     /* Properties */
-    char *description;
-    char *color;
+    char* description;
+    char* color;
     /*
      * Determines whether a GPIO is using a positive (active-high)
      * logic (when used with GPIO, the intensity at reset is related
@@ -58,7 +60,7 @@ DECLARE_INSTANCE_CHECKER(LEDState, LED, TYPE_LED)
  * @s: the LED object
  * @intensity_percent: intensity as percentage in range 0 to 100.
  */
-void led_set_intensity(LEDState *s, unsigned intensity_percent);
+void led_set_intensity(LEDState* s, unsigned intensity_percent);
 
 /**
  * led_get_intensity:
@@ -66,7 +68,7 @@ void led_set_intensity(LEDState *s, unsigned intensity_percent);
  *
  * Returns: The LED intensity as percentage in range 0 to 100.
  */
-unsigned led_get_intensity(LEDState *s);
+unsigned led_get_intensity(LEDState* s);
 
 /**
  * led_set_state: Set the state of a LED device
@@ -75,7 +77,7 @@ unsigned led_get_intensity(LEDState *s);
  *
  * This utility is meant for LED connected to GPIO.
  */
-void led_set_state(LEDState *s, bool is_emitting);
+void led_set_state(LEDState* s, bool is_emitting);
 
 /**
  * led_create_simple: Create and realize a LED device
@@ -89,7 +91,4 @@ void led_set_state(LEDState *s, bool is_emitting);
  *
  * Returns: The newly allocated and instantiated LED object.
  */
-LEDState *led_create_simple(Object *parentobj,
-                            GpioPolarity gpio_polarity,
-                            LEDColor color,
-                            const char *description);
+LEDState* led_create_simple(Object* parentobj, GpioPolarity gpio_polarity, LEDColor color, const char* description);

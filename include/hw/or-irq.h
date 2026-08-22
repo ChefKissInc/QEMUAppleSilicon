@@ -32,14 +32,15 @@
 /* This can safely be increased if necessary without breaking
  * migration compatibility (as long as it remains greater than 15).
  */
-#define MAX_OR_LINES      48
+#define MAX_OR_LINES 48
 
 OBJECT_DECLARE_SIMPLE_TYPE(OrIRQState, OR_IRQ)
 
-struct OrIRQState {
+struct OrIRQState
+{
     DeviceState parent_obj;
 
     qemu_irq out_irq;
-    bool levels[MAX_OR_LINES];
+    bool     levels[MAX_OR_LINES];
     uint16_t num_lines;
 };

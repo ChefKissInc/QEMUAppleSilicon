@@ -34,18 +34,18 @@
 #include "net/can_emu.h"
 #include "net/can_host.h"
 
-static void can_host_disconnect(CanHostState *ch)
+static void can_host_disconnect(CanHostState* ch)
 {
-    CanHostClass *chc = CAN_HOST_GET_CLASS(ch);
+    CanHostClass* chc = CAN_HOST_GET_CLASS(ch);
 
     can_bus_remove_client(&ch->bus_client);
     chc->disconnect(ch);
 }
 
-static void can_host_connect(CanHostState *ch, Error **errp)
+static void can_host_connect(CanHostState* ch, Error** errp)
 {
-    CanHostClass *chc = CAN_HOST_GET_CLASS(ch);
-    Error *local_err = NULL;
+    CanHostClass* chc       = CAN_HOST_GET_CLASS(ch);
+    Error*        local_err = NULL;
 
     if (ch->bus == NULL) {
         error_setg(errp, "'canbus' property not set");
@@ -61,46 +61,29 @@ static void can_host_connect(CanHostState *ch, Error **errp)
     can_bus_insert_client(ch->bus, &ch->bus_client);
 }
 
-static void can_host_unparent(Object *obj)
+static void can_host_unparent(Object* obj) { can_host_disconnect(CAN_HOST(obj)); }
+
+static void can_host_complete(UserCreatable* uc, Error** errp) { can_host_connect(CAN_HOST(uc), errp); }
+
+static void can_host_class_init(ObjectClass* klass, const void* class_data G_GNUC_UNUSED)
 {
-    can_host_disconnect(CAN_HOST(obj));
-}
+    UserCreatableClass* uc_klass = USER_CREATABLE_CLASS(klass);
 
-static void can_host_complete(UserCreatable *uc, Error **errp)
-{
-    can_host_connect(CAN_HOST(uc), errp);
-}
+    object_class_property_add_link(klass, "canbus", TYPE_CAN_BUS, offsetof(CanHostState, bus),
+                                   object_property_allow_set_link, OBJ_PROP_LINK_STRONG);
 
-static void can_host_class_init(ObjectClass *klass,
-                                const void *class_data G_GNUC_UNUSED)
-{
-    UserCreatableClass *uc_klass = USER_CREATABLE_CLASS(klass);
-
-    object_class_property_add_link(klass, "canbus", TYPE_CAN_BUS,
-                                   offsetof(CanHostState, bus),
-                                   object_property_allow_set_link,
-                                   OBJ_PROP_LINK_STRONG);
-
-    klass->unparent = can_host_unparent;
+    klass->unparent    = can_host_unparent;
     uc_klass->complete = can_host_complete;
 }
 
-static const TypeInfo can_host_info = {
-    .parent = TYPE_OBJECT,
-    .name = TYPE_CAN_HOST,
-    .instance_size = sizeof(CanHostState),
-    .class_size = sizeof(CanHostClass),
-    .abstract = true,
-    .class_init = can_host_class_init,
-    .interfaces = (const InterfaceInfo[]) {
-        { TYPE_USER_CREATABLE },
-        { }
-    }
-};
+static const TypeInfo can_host_info = {.parent        = TYPE_OBJECT,
+                                       .name          = TYPE_CAN_HOST,
+                                       .instance_size = sizeof(CanHostState),
+                                       .class_size    = sizeof(CanHostClass),
+                                       .abstract      = true,
+                                       .class_init    = can_host_class_init,
+                                       .interfaces    = (const InterfaceInfo[]){{TYPE_USER_CREATABLE}, {}}};
 
-static void can_host_register_types(void)
-{
-    type_register_static(&can_host_info);
-}
+static void can_host_register_types(void) { type_register_static(&can_host_info); }
 
 type_init(can_host_register_types);

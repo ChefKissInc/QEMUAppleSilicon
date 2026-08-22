@@ -93,7 +93,6 @@
  */
 bool qcrypto_pbkdf2_supports(QCryptoHashAlgo hash);
 
-
 /**
  * qcrypto_pbkdf2:
  * @hash: the hash algorithm to use
@@ -118,12 +117,8 @@ bool qcrypto_pbkdf2_supports(QCryptoHashAlgo hash);
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_pbkdf2(QCryptoHashAlgo hash,
-                   const uint8_t *key, size_t nkey,
-                   const uint8_t *salt, size_t nsalt,
-                   uint64_t iterations,
-                   uint8_t *out, size_t nout,
-                   Error **errp);
+int qcrypto_pbkdf2(QCryptoHashAlgo hash, const uint8_t* key, size_t nkey, const uint8_t* salt, size_t nsalt,
+                   uint64_t iterations, uint8_t* out, size_t nout, Error** errp);
 
 /**
  * qcrypto_pbkdf2_count_iters:
@@ -146,8 +141,5 @@ int qcrypto_pbkdf2(QCryptoHashAlgo hash,
  *
  * Returns: number of iterations in 1 second, -1 on error
  */
-uint64_t qcrypto_pbkdf2_count_iters(QCryptoHashAlgo hash,
-                                    const uint8_t *key, size_t nkey,
-                                    const uint8_t *salt, size_t nsalt,
-                                    size_t nout,
-                                    Error **errp);
+uint64_t qcrypto_pbkdf2_count_iters(QCryptoHashAlgo hash, const uint8_t* key, size_t nkey, const uint8_t* salt,
+                                    size_t nsalt, size_t nout, Error** errp);

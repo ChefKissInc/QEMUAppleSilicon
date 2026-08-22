@@ -22,4 +22,4 @@
 
 #include "qapi/error.h"
 
-int qcrypto_init(Error **errp);
+int qcrypto_init(Error** errp);

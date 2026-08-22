@@ -11,4 +11,4 @@
  * on the host.  But if you want performance, you use the normal backend.
  * We prefer consistency across hosts on this.
  */
-#define TCG_TARGET_DEFAULT_MO  0
+#define TCG_TARGET_DEFAULT_MO 0

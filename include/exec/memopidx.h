@@ -36,10 +36,7 @@ static inline MemOpIdx make_memop_idx(MemOp op, unsigned idx)
  *
  * Extract the memory operation from the combined value.
  */
-static inline MemOp get_memop(MemOpIdx oi)
-{
-    return oi >> 5;
-}
+static inline MemOp get_memop(MemOpIdx oi) { return oi >> 5; }
 
 /**
  * get_mmuidx
@@ -47,7 +44,4 @@ static inline MemOp get_memop(MemOpIdx oi)
  *
  * Extract the mmu index from the combined value.
  */
-static inline unsigned get_mmuidx(MemOpIdx oi)
-{
-    return oi & 31;
-}
+static inline unsigned get_mmuidx(MemOpIdx oi) { return oi & 31; }

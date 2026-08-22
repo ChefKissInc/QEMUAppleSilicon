@@ -29,5 +29,5 @@
 #define TYPE_APPLE_SPI "apple-spi"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleSPIState, APPLE_SPI)
 
-SysBusDevice *apple_spi_from_node(AppleDTNode *node);
-SSIBus *apple_spi_get_bus(AppleSPIState *s);
+SysBusDevice* apple_spi_from_node(AppleDTNode* node);
+SSIBus*       apple_spi_get_bus(AppleSPIState* s);

@@ -10,7 +10,8 @@
 
 typedef enum QKbdModifier QKbdModifier;
 
-enum QKbdModifier {
+enum QKbdModifier
+{
     QKBD_MOD_NONE = 0,
 
     QKBD_MOD_SHIFT,
@@ -34,14 +35,14 @@ typedef struct QKbdState QKbdState;
  * @con: QemuConsole for this state tracker.  Gets passed down to
  * qemu_input_*() functions when sending key events to the guest.
  */
-QKbdState *qkbd_state_init(QemuConsole *con);
+QKbdState* qkbd_state_init(QemuConsole* con);
 
 /**
  * qkbd_state_free: free keyboard tracker state.
  *
  * @kbd: state tracker state.
  */
-void qkbd_state_free(QKbdState *kbd);
+void qkbd_state_free(QKbdState* kbd);
 
 /**
  * qkbd_state_key_event: process key event.
@@ -55,7 +56,7 @@ void qkbd_state_free(QKbdState *kbd);
  * @qcode: the key pressed or released.
  * @down: true for key down events, false otherwise.
  */
-void qkbd_state_key_event(QKbdState *kbd, QKeyCode qcode, bool down);
+void qkbd_state_key_event(QKbdState* kbd, QKeyCode qcode, bool down);
 
 /**
  * qkbd_state_set_delay: set key press delay.
@@ -66,7 +67,7 @@ void qkbd_state_key_event(QKbdState *kbd, QKeyCode qcode, bool down);
  * @kbd: state tracker state.
  * @delay_ms: the delay in milliseconds.
  */
-void qkbd_state_set_delay(QKbdState *kbd, int delay_ms);
+void qkbd_state_set_delay(QKbdState* kbd, int delay_ms);
 
 /**
  * qkbd_state_key_get: get key state.
@@ -76,7 +77,7 @@ void qkbd_state_set_delay(QKbdState *kbd, int delay_ms);
  * @kbd: state tracker state.
  * @qcode: the key to query.
  */
-bool qkbd_state_key_get(QKbdState *kbd, QKeyCode qcode);
+bool qkbd_state_key_get(QKbdState* kbd, QKeyCode qcode);
 
 /**
  * qkbd_state_modifier_get: get modifier state.
@@ -86,7 +87,7 @@ bool qkbd_state_key_get(QKbdState *kbd, QKeyCode qcode);
  * @kbd: state tracker state.
  * @mod: the modifier to query.
  */
-bool qkbd_state_modifier_get(QKbdState *kbd, QKbdModifier mod);
+bool qkbd_state_modifier_get(QKbdState* kbd, QKbdModifier mod);
 
 /**
  * qkbd_state_lift_all_keys: lift all pressed keys.
@@ -96,7 +97,7 @@ bool qkbd_state_modifier_get(QKbdState *kbd, QKbdModifier mod);
  *
  * @kbd: state tracker state.
  */
-void qkbd_state_lift_all_keys(QKbdState *kbd);
+void qkbd_state_lift_all_keys(QKbdState* kbd);
 
 /**
  * qkbd_state_switch_console: Switch console.
@@ -107,4 +108,4 @@ void qkbd_state_lift_all_keys(QKbdState *kbd);
  * @kbd: state tracker state.
  * @con: new QemuConsole for this state tracker.
  */
-void qkbd_state_switch_console(QKbdState *kbd, QemuConsole *con);
+void qkbd_state_switch_console(QKbdState* kbd, QemuConsole* con);

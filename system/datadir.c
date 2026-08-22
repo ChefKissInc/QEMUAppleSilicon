@@ -27,14 +27,14 @@
 #include "qemu/cutils.h"
 #include "trace.h"
 
-static const char *data_dir[16];
-static int data_dir_idx;
+static const char* data_dir[16];
+static int         data_dir_idx;
 
-char *qemu_find_file(QemuFileType type, const char *name)
+char* qemu_find_file(QemuFileType type, const char* name)
 {
-    int i;
-    const char *subdir;
-    char *buf;
+    int         i;
+    const char* subdir;
+    char*       buf;
 
     /* Try the name as a straight path first */
     if (access(name, R_OK) == 0) {
@@ -43,17 +43,10 @@ char *qemu_find_file(QemuFileType type, const char *name)
     }
 
     switch (type) {
-    case QEMU_FILE_TYPE_BIOS:
-        subdir = "";
-        break;
-    case QEMU_FILE_TYPE_DTB:
-        subdir = "dtb/";
-        break;
-    case QEMU_FILE_TYPE_KEYMAP:
-        subdir = "keymaps/";
-        break;
-    default:
-        abort();
+        case QEMU_FILE_TYPE_BIOS  : subdir = ""; break;
+        case QEMU_FILE_TYPE_DTB   : subdir = "dtb/"; break;
+        case QEMU_FILE_TYPE_KEYMAP: subdir = "keymaps/"; break;
+        default                   : abort();
     }
 
     for (i = 0; i < data_dir_idx; i++) {
@@ -67,16 +60,12 @@ char *qemu_find_file(QemuFileType type, const char *name)
     return NULL;
 }
 
-void qemu_add_data_dir(char *path)
+void qemu_add_data_dir(char* path)
 {
     int i;
 
-    if (path == NULL) {
-        return;
-    }
-    if (data_dir_idx == ARRAY_SIZE(data_dir)) {
-        return;
-    }
+    if (path == NULL) { return; }
+    if (data_dir_idx == ARRAY_SIZE(data_dir)) { return; }
     for (i = 0; i < data_dir_idx; i++) {
         if (strcmp(data_dir[i], path) == 0) {
             g_free(path); /* duplicate */
@@ -95,7 +84,5 @@ void qemu_add_default_firmwarepath(void)
 void qemu_list_data_dirs(void)
 {
     int i;
-    for (i = 0; i < data_dir_idx; i++) {
-        printf("%s\n", data_dir[i]);
-    }
+    for (i = 0; i < data_dir_idx; i++) { printf("%s\n", data_dir[i]); }
 }

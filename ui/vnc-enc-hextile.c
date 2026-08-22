@@ -27,7 +27,7 @@
 #include "qemu/osdep.h"
 #include "vnc.h"
 
-static void hextile_enc_cord(uint8_t *ptr, int x, int y, int w, int h)
+static void hextile_enc_cord(uint8_t* ptr, int x, int y, int w, int h)
 {
     ptr[0] = ((x & 0x0F) << 4) | (y & 0x0F);
     ptr[1] = (((w - 1) & 0x0F) << 4) | ((h - 1) & 0x0F);
@@ -43,11 +43,10 @@ static void hextile_enc_cord(uint8_t *ptr, int x, int y, int w, int h)
 #undef BPP
 #undef GENERIC
 
-int vnc_hextile_send_framebuffer_update(VncState *vs, int x,
-                                        int y, int w, int h)
+int vnc_hextile_send_framebuffer_update(VncState* vs, int x, int y, int w, int h)
 {
-    int i, j;
-    int has_fg, has_bg;
+    int      i, j;
+    int      has_fg, has_bg;
     uint8_t *last_fg, *last_bg;
 
     last_fg = g_malloc(VNC_SERVER_FB_BYTES);
@@ -55,9 +54,7 @@ int vnc_hextile_send_framebuffer_update(VncState *vs, int x,
     has_fg = has_bg = 0;
     for (j = y; j < (y + h); j += 16) {
         for (i = x; i < (x + w); i += 16) {
-            vs->hextile.send_tile(vs, i, j,
-                                  MIN(16, x + w - i), MIN(16, y + h - j),
-                                  last_bg, last_fg, &has_bg, &has_fg);
+            vs->hextile.send_tile(vs, i, j, MIN(16, x + w - i), MIN(16, y + h - j), last_bg, last_fg, &has_bg, &has_fg);
         }
     }
     g_free(last_fg);
@@ -66,19 +63,16 @@ int vnc_hextile_send_framebuffer_update(VncState *vs, int x,
     return 1;
 }
 
-void vnc_hextile_set_pixel_conversion(VncState *vs, int generic)
+void vnc_hextile_set_pixel_conversion(VncState* vs, int generic)
 {
     if (!generic) {
         switch (VNC_SERVER_FB_BITS) {
-        case 32:
-            vs->hextile.send_tile = send_hextile_tile_32;
-            break;
+            case 32: vs->hextile.send_tile = send_hextile_tile_32; break;
         }
-    } else {
+    }
+    else {
         switch (VNC_SERVER_FB_BITS) {
-        case 32:
-            vs->hextile.send_tile = send_hextile_tile_generic_32;
-            break;
+            case 32: vs->hextile.send_tile = send_hextile_tile_generic_32; break;
         }
     }
 }

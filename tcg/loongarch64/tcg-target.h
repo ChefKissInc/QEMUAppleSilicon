@@ -29,11 +29,12 @@
 #pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE 4
-#define TCG_TARGET_NB_REGS 64
+#define TCG_TARGET_NB_REGS        64
 
-#define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
+#define MAX_CODE_GEN_BUFFER_SIZE ((size_t)-1)
 
-typedef enum {
+typedef enum
+{
     TCG_REG_ZERO,
     TCG_REG_RA,
     TCG_REG_TP,
@@ -67,14 +68,38 @@ typedef enum {
     TCG_REG_S7,
     TCG_REG_S8,
 
-    TCG_REG_V0 = 32, TCG_REG_V1, TCG_REG_V2, TCG_REG_V3,
-    TCG_REG_V4, TCG_REG_V5, TCG_REG_V6, TCG_REG_V7,
-    TCG_REG_V8, TCG_REG_V9, TCG_REG_V10, TCG_REG_V11,
-    TCG_REG_V12, TCG_REG_V13, TCG_REG_V14, TCG_REG_V15,
-    TCG_REG_V16, TCG_REG_V17, TCG_REG_V18, TCG_REG_V19,
-    TCG_REG_V20, TCG_REG_V21, TCG_REG_V22, TCG_REG_V23,
-    TCG_REG_V24, TCG_REG_V25, TCG_REG_V26, TCG_REG_V27,
-    TCG_REG_V28, TCG_REG_V29, TCG_REG_V30, TCG_REG_V31,
+    TCG_REG_V0 = 32,
+    TCG_REG_V1,
+    TCG_REG_V2,
+    TCG_REG_V3,
+    TCG_REG_V4,
+    TCG_REG_V5,
+    TCG_REG_V6,
+    TCG_REG_V7,
+    TCG_REG_V8,
+    TCG_REG_V9,
+    TCG_REG_V10,
+    TCG_REG_V11,
+    TCG_REG_V12,
+    TCG_REG_V13,
+    TCG_REG_V14,
+    TCG_REG_V15,
+    TCG_REG_V16,
+    TCG_REG_V17,
+    TCG_REG_V18,
+    TCG_REG_V19,
+    TCG_REG_V20,
+    TCG_REG_V21,
+    TCG_REG_V22,
+    TCG_REG_V23,
+    TCG_REG_V24,
+    TCG_REG_V25,
+    TCG_REG_V26,
+    TCG_REG_V27,
+    TCG_REG_V28,
+    TCG_REG_V29,
+    TCG_REG_V30,
+    TCG_REG_V31,
 
     /* aliases */
     TCG_AREG0    = TCG_REG_S0,
@@ -84,4 +109,4 @@ typedef enum {
     TCG_VEC_TMP0 = TCG_REG_V23,
 } TCGReg;
 
-#define TCG_REG_ZERO  TCG_REG_ZERO
+#define TCG_REG_ZERO TCG_REG_ZERO

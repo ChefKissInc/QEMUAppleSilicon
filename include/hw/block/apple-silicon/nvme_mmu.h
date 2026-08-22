@@ -30,36 +30,37 @@
 #define TYPE_APPLE_NVME_MMU "apple-nvme-mmu"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleNVMeMMUState, APPLE_NVME_MMU)
 
-#define NVME_APPLE_MAX_PEND_CMDS 0x1210
+#define NVME_APPLE_MAX_PEND_CMDS     0x1210
 #define NVME_APPLE_MAX_PEND_CMDS_VAL ((64 << 16) | 64)
-#define NVME_APPLE_BOOT_STATUS 0x1300
-#define NVME_APPLE_BOOT_STATUS_OK 0xde71ce55
-#define NVME_APPLE_BASE_CMD_ID 0x1308
-#define NVME_APPLE_BASE_CMD_ID_MASK 0xffff
-#define NVME_APPLE_LINEAR_SQ_CTRL 0x24908
+#define NVME_APPLE_BOOT_STATUS       0x1300
+#define NVME_APPLE_BOOT_STATUS_OK    0xde71ce55
+#define NVME_APPLE_BASE_CMD_ID       0x1308
+#define NVME_APPLE_BASE_CMD_ID_MASK  0xffff
+#define NVME_APPLE_LINEAR_SQ_CTRL    0x24908
 #define NVME_APPLE_LINEAR_SQ_CTRL_EN (1 << 0)
-#define NVME_APPLE_MODESEL 0x1304
-#define NVME_APPLE_VENDOR_REG_SIZE (0x60000)
+#define NVME_APPLE_MODESEL           0x1304
+#define NVME_APPLE_VENDOR_REG_SIZE   (0x60000)
 
-struct AppleNVMeMMUState {
+struct AppleNVMeMMUState
+{
     /*< private >*/
     SysBusDevice parent_obj;
 
     /*< public >*/
-    MemoryRegion iomems[4];
-    MemoryRegion io_mmio;
-    MemoryRegion io_ioport;
-    MemoryRegion io_ioport_for_alias;
-    MemoryRegion bar0;
-    qemu_irq irq;
-    NvmeCtrl *nvme;
-    MemoryRegion *dma_mr;
-    AddressSpace dma_as;
-    PCIBus *pci_bus;
-    uint32_t vendor_reg[NVME_APPLE_VENDOR_REG_SIZE / sizeof(uint32_t)];
+    MemoryRegion  iomems[4];
+    MemoryRegion  io_mmio;
+    MemoryRegion  io_ioport;
+    MemoryRegion  io_ioport_for_alias;
+    MemoryRegion  bar0;
+    qemu_irq      irq;
+    NvmeCtrl*     nvme;
+    MemoryRegion* dma_mr;
+    AddressSpace  dma_as;
+    PCIBus*       pci_bus;
+    uint32_t      vendor_reg[NVME_APPLE_VENDOR_REG_SIZE / sizeof(uint32_t)];
 
     MemoryRegion common;
-    uint32_t common_reg[0x4000 / sizeof(uint32_t)];
+    uint32_t     common_reg[0x4000 / sizeof(uint32_t)];
 };
 
-SysBusDevice *apple_nvme_mmu_from_node(AppleDTNode *node, PCIBus *pci_bus);
+SysBusDevice* apple_nvme_mmu_from_node(AppleDTNode* node, PCIBus* pci_bus);

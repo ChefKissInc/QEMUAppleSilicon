@@ -29,64 +29,29 @@
 bool msi_nonbroken;
 bool pci_available;
 
-PciInfoList *qmp_query_pci(Error **errp)
-{
-    return NULL;
-}
+PciInfoList* qmp_query_pci(Error** errp) { return NULL; }
 
-void hmp_info_pci(Monitor *mon, const QDict *qdict)
-{
-}
+void hmp_info_pci(Monitor* mon, const QDict* qdict) { }
 
-void hmp_pcie_aer_inject_error(Monitor *mon, const QDict *qdict)
-{
-    monitor_printf(mon, "PCI devices not supported\n");
-}
+void hmp_pcie_aer_inject_error(Monitor* mon, const QDict* qdict) { monitor_printf(mon, "PCI devices not supported\n"); }
 
 /* kvm-all wants this */
-MSIMessage pci_get_msi_message(PCIDevice *dev, int vector)
-{
-    assert_not_reached();
-}
+MSIMessage pci_get_msi_message(PCIDevice* dev, int vector) { assert_not_reached(); }
 
-uint16_t pci_requester_id(PCIDevice *dev)
-{
-    assert_not_reached();
-}
+uint16_t pci_requester_id(PCIDevice* dev) { assert_not_reached(); }
 
 /* Required by ahci.c */
-bool msi_enabled(const PCIDevice *dev)
-{
-    return false;
-}
+bool msi_enabled(const PCIDevice* dev) { return false; }
 
-void msi_notify(PCIDevice *dev, unsigned int vector)
-{
-    assert_not_reached();
-}
+void msi_notify(PCIDevice* dev, unsigned int vector) { assert_not_reached(); }
 
 /* Required by target/i386/kvm.c */
-bool msi_is_masked(const PCIDevice *dev, unsigned vector)
-{
-    assert_not_reached();
-}
+bool msi_is_masked(const PCIDevice* dev, unsigned vector) { assert_not_reached(); }
 
-MSIMessage msi_get_message(PCIDevice *dev, unsigned int vector)
-{
-    assert_not_reached();
-}
+MSIMessage msi_get_message(PCIDevice* dev, unsigned int vector) { assert_not_reached(); }
 
-int msix_enabled(PCIDevice *dev)
-{
-    return false;
-}
+int msix_enabled(PCIDevice* dev) { return false; }
 
-bool msix_is_masked(PCIDevice *dev, unsigned vector)
-{
-    assert_not_reached();
-}
+bool msix_is_masked(PCIDevice* dev, unsigned vector) { assert_not_reached(); }
 
-MSIMessage msix_get_message(PCIDevice *dev, unsigned int vector)
-{
-    assert_not_reached();
-}
+MSIMessage msix_get_message(PCIDevice* dev, unsigned int vector) { assert_not_reached(); }

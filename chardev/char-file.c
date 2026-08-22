@@ -29,18 +29,18 @@
 #include "chardev/char.h"
 
 #ifdef _WIN32
-#include "chardev/char-win.h"
+    #include "chardev/char-win.h"
 #else
-#include "chardev/char-fd.h"
+    #include "chardev/char-fd.h"
 #endif
 
-static bool file_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
+static bool file_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevFile *file = backend->u.file.data;
+    ChardevFile* file = backend->u.file.data;
 #ifdef _WIN32
     HANDLE out;
-    DWORD accessmode;
-    DWORD flags;
+    DWORD  accessmode;
+    DWORD  flags;
 
     if (file->in) {
         error_setg(errp, "input file not supported");
@@ -50,15 +50,15 @@ static bool file_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
     if (file->has_append && file->append) {
         /* Append to file if it already exists. */
         accessmode = FILE_GENERIC_WRITE & ~FILE_WRITE_DATA;
-        flags = OPEN_ALWAYS;
-    } else {
+        flags      = OPEN_ALWAYS;
+    }
+    else {
         /* Truncate file if it already exists. */
         accessmode = GENERIC_WRITE;
-        flags = CREATE_ALWAYS;
+        flags      = CREATE_ALWAYS;
     }
 
-    out = CreateFile(file->out, accessmode, FILE_SHARE_READ, NULL, flags,
-                     FILE_ATTRIBUTE_NORMAL, NULL);
+    out = CreateFile(file->out, accessmode, FILE_SHARE_READ, NULL, flags, FILE_ATTRIBUTE_NORMAL, NULL);
     if (out == INVALID_HANDLE_VALUE) {
         error_setg(errp, "open %s failed", file->out);
         return false;
@@ -69,20 +69,17 @@ static bool file_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
     int flags, in = -1, out;
 
     flags = O_WRONLY | O_CREAT | O_BINARY;
-    if (file->has_append && file->append) {
-        flags |= O_APPEND;
-    } else {
+    if (file->has_append && file->append) { flags |= O_APPEND; }
+    else {
         flags |= O_TRUNC;
     }
 
     out = qmp_chardev_open_file_source(file->out, flags, errp);
-    if (out < 0) {
-        return false;
-    }
+    if (out < 0) { return false; }
 
     if (file->in) {
         flags = O_RDONLY;
-        in = qmp_chardev_open_file_source(file->in, flags, errp);
+        in    = qmp_chardev_open_file_source(file->in, flags, errp);
         if (in < 0) {
             qemu_close(out);
             return false;
@@ -91,9 +88,7 @@ static bool file_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
 
     if (!qemu_chr_open_fd(chr, in, out, errp)) {
         qemu_close(out);
-        if (in >= 0) {
-            qemu_close(in);
-        }
+        if (in >= 0) { qemu_close(in); }
         return false;
     }
 #endif
@@ -102,12 +97,11 @@ static bool file_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
     return true;
 }
 
-static void file_chr_parse(QemuOpts *opts, ChardevBackend *backend,
-                           Error **errp)
+static void file_chr_parse(QemuOpts* opts, ChardevBackend* backend, Error** errp)
 {
-    const char *path = qemu_opt_get(opts, "path");
-    const char *inpath = qemu_opt_get(opts, "input-path");
-    ChardevFile *file;
+    const char*  path   = qemu_opt_get(opts, "path");
+    const char*  inpath = qemu_opt_get(opts, "input-path");
+    ChardevFile* file;
 
     backend->type = CHARDEV_BACKEND_KIND_FILE;
     if (path == NULL) {
@@ -123,18 +117,18 @@ static void file_chr_parse(QemuOpts *opts, ChardevBackend *backend,
     file = backend->u.file.data = g_new0(ChardevFile, 1);
     qemu_chr_parse_common(opts, qapi_ChardevFile_base(file));
     file->out = g_strdup(path);
-    file->in = g_strdup(inpath);
+    file->in  = g_strdup(inpath);
 
     file->has_append = true;
-    file->append = qemu_opt_get_bool(opts, "append", false);
+    file->append     = qemu_opt_get_bool(opts, "append", false);
 }
 
-static void char_file_class_init(ObjectClass *oc, const void *data)
+static void char_file_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
     cc->chr_parse = file_chr_parse;
-    cc->chr_open = file_chr_open;
+    cc->chr_open  = file_chr_open;
 }
 
 static const TypeInfo char_file_type_info = {
@@ -147,9 +141,6 @@ static const TypeInfo char_file_type_info = {
     .class_init = char_file_class_init,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_file_type_info);
-}
+static void register_types(void) { type_register_static(&char_file_type_info); }
 
 type_init(register_types);

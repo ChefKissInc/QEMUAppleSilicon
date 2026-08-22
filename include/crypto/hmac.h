@@ -14,10 +14,11 @@
 #include "qapi/qapi-types-crypto.h"
 
 typedef struct QCryptoHmac QCryptoHmac;
-struct QCryptoHmac {
+struct QCryptoHmac
+{
     QCryptoHashAlgo alg;
-    void *opaque;
-    void *driver;
+    void*           opaque;
+    void*           driver;
 };
 
 /**
@@ -51,9 +52,7 @@ bool qcrypto_hmac_supports(QCryptoHashAlgo alg);
  * Returns:
  *  a new hmac object, or NULL on error
  */
-QCryptoHmac *qcrypto_hmac_new(QCryptoHashAlgo alg,
-                              const uint8_t *key, size_t nkey,
-                              Error **errp);
+QCryptoHmac* qcrypto_hmac_new(QCryptoHashAlgo alg, const uint8_t* key, size_t nkey, Error** errp);
 
 /**
  * qcrypto_hmac_free:
@@ -62,7 +61,7 @@ QCryptoHmac *qcrypto_hmac_new(QCryptoHashAlgo alg,
  * Release the memory associated with @hmac that was
  * previously allocated by qcrypto_hmac_new()
  */
-void qcrypto_hmac_free(QCryptoHmac *hmac);
+void qcrypto_hmac_free(QCryptoHmac* hmac);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoHmac, qcrypto_hmac_free)
 
@@ -98,12 +97,8 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoHmac, qcrypto_hmac_free)
  * Returns:
  *  0 on success, -1 on error
  */
-int qcrypto_hmac_bytesv(QCryptoHmac *hmac,
-                        const struct iovec *iov,
-                        size_t niov,
-                        uint8_t **result,
-                        size_t *resultlen,
-                        Error **errp);
+int qcrypto_hmac_bytesv(QCryptoHmac* hmac, const struct iovec* iov, size_t niov, uint8_t** result, size_t* resultlen,
+                        Error** errp);
 
 /**
  * qcrypto_hmac_bytes:
@@ -137,12 +132,8 @@ int qcrypto_hmac_bytesv(QCryptoHmac *hmac,
  * Returns:
  *  0 on success, -1 on error
  */
-int qcrypto_hmac_bytes(QCryptoHmac *hmac,
-                       const char *buf,
-                       size_t len,
-                       uint8_t **result,
-                       size_t *resultlen,
-                       Error **errp);
+int qcrypto_hmac_bytes(QCryptoHmac* hmac, const char* buf, size_t len, uint8_t** result, size_t* resultlen,
+                       Error** errp);
 
 /**
  * qcrypto_hmac_digestv:
@@ -162,11 +153,7 @@ int qcrypto_hmac_bytes(QCryptoHmac *hmac,
  * Returns:
  *  0 on success, -1 on error
  */
-int qcrypto_hmac_digestv(QCryptoHmac *hmac,
-                         const struct iovec *iov,
-                         size_t niov,
-                         char **digest,
-                         Error **errp);
+int qcrypto_hmac_digestv(QCryptoHmac* hmac, const struct iovec* iov, size_t niov, char** digest, Error** errp);
 
 /**
  * qcrypto_hmac_digest:
@@ -185,8 +172,4 @@ int qcrypto_hmac_digestv(QCryptoHmac *hmac,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hmac_digest(QCryptoHmac *hmac,
-                        const char *buf,
-                        size_t len,
-                        char **digest,
-                        Error **errp);
+int qcrypto_hmac_digest(QCryptoHmac* hmac, const char* buf, size_t len, char** digest, Error** errp);

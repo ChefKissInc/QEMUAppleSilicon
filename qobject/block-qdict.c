@@ -22,44 +22,37 @@
  * value of 'key' in 'src' is copied there (and the refcount increased
  * accordingly).
  */
-void qdict_copy_default(QDict *dst, QDict *src, const char *key)
+void qdict_copy_default(QDict* dst, QDict* src, const char* key)
 {
-    QObject *val;
+    QObject* val;
 
-    if (qdict_haskey(dst, key)) {
-        return;
-    }
+    if (qdict_haskey(dst, key)) { return; }
 
     val = qdict_get(src, key);
-    if (val) {
-        qdict_put_obj(dst, key, qobject_ref(val));
-    }
+    if (val) { qdict_put_obj(dst, key, qobject_ref(val)); }
 }
 
 /**
  * qdict_set_default_str(): If no entry mapped by 'key' exists in 'dst' yet, a
  * new QString initialised by 'val' is put there.
  */
-void qdict_set_default_str(QDict *dst, const char *key, const char *val)
+void qdict_set_default_str(QDict* dst, const char* key, const char* val)
 {
-    if (qdict_haskey(dst, key)) {
-        return;
-    }
+    if (qdict_haskey(dst, key)) { return; }
 
     qdict_put_str(dst, key, val);
 }
 
-static void qdict_flatten_qdict(QDict *qdict, QDict *target,
-                                const char *prefix);
+static void qdict_flatten_qdict(QDict* qdict, QDict* target, const char* prefix);
 
-static void qdict_flatten_qlist(QList *qlist, QDict *target, const char *prefix)
+static void qdict_flatten_qlist(QList* qlist, QDict* target, const char* prefix)
 {
-    QObject *value;
-    const QListEntry *entry;
-    QDict *dict_val;
-    QList *list_val;
-    char *new_key;
-    int i;
+    QObject*          value;
+    const QListEntry* entry;
+    QDict*            dict_val;
+    QList*            list_val;
+    char*             new_key;
+    int               i;
 
     /* This function is never called with prefix == NULL, i.e., it is always
      * called from within qdict_flatten_q(list|dict)(). Therefore, it does not
@@ -70,20 +63,20 @@ static void qdict_flatten_qlist(QList *qlist, QDict *target, const char *prefix)
     entry = qlist_first(qlist);
 
     for (i = 0; entry; entry = qlist_next(entry), i++) {
-        value = qlist_entry_obj(entry);
+        value    = qlist_entry_obj(entry);
         dict_val = qobject_to(QDict, value);
         list_val = qobject_to(QList, value);
-        new_key = g_strdup_printf("%s.%i", prefix, i);
+        new_key  = g_strdup_printf("%s.%i", prefix, i);
 
         /*
          * Flatten non-empty QDict and QList recursively into @target,
          * copy other objects to @target
          */
-        if (dict_val && qdict_size(dict_val)) {
-            qdict_flatten_qdict(dict_val, target, new_key);
-        } else if (list_val && !qlist_empty(list_val)) {
+        if (dict_val && qdict_size(dict_val)) { qdict_flatten_qdict(dict_val, target, new_key); }
+        else if (list_val && !qlist_empty(list_val)) {
             qdict_flatten_qlist(list_val, target, new_key);
-        } else {
+        }
+        else {
             qdict_put_obj(target, new_key, qobject_ref(value));
         }
 
@@ -91,26 +84,25 @@ static void qdict_flatten_qlist(QList *qlist, QDict *target, const char *prefix)
     }
 }
 
-static void qdict_flatten_qdict(QDict *qdict, QDict *target, const char *prefix)
+static void qdict_flatten_qdict(QDict* qdict, QDict* target, const char* prefix)
 {
-    QObject *value;
+    QObject*          value;
     const QDictEntry *entry, *next;
-    QDict *dict_val;
-    QList *list_val;
-    char *key, *new_key;
+    QDict*            dict_val;
+    QList*            list_val;
+    char *            key, *new_key;
 
     entry = qdict_first(qdict);
 
     while (entry != NULL) {
-        next = qdict_next(qdict, entry);
-        value = qdict_entry_value(entry);
+        next     = qdict_next(qdict, entry);
+        value    = qdict_entry_value(entry);
         dict_val = qobject_to(QDict, value);
         list_val = qobject_to(QList, value);
 
-        if (prefix) {
-            key = new_key = g_strdup_printf("%s.%s", prefix, entry->key);
-        } else {
-            key = entry->key;
+        if (prefix) { key = new_key = g_strdup_printf("%s.%s", prefix, entry->key); }
+        else {
+            key     = entry->key;
             new_key = NULL;
         }
 
@@ -128,15 +120,13 @@ static void qdict_flatten_qdict(QDict *qdict, QDict *target, const char *prefix)
          */
         if (dict_val && qdict_size(dict_val)) {
             qdict_flatten_qdict(dict_val, target, key);
-            if (target == qdict) {
-                qdict_del(qdict, entry->key);
-            }
-        } else if (list_val && !qlist_empty(list_val)) {
+            if (target == qdict) { qdict_del(qdict, entry->key); }
+        }
+        else if (list_val && !qlist_empty(list_val)) {
             qdict_flatten_qlist(list_val, target, key);
-            if (target == qdict) {
-                qdict_del(qdict, entry->key);
-            }
-        } else if (target != qdict) {
+            if (target == qdict) { qdict_del(qdict, entry->key); }
+        }
+        else if (target != qdict) {
             qdict_put_obj(target, key, qobject_ref(value));
         }
 
@@ -153,46 +143,37 @@ static void qdict_flatten_qdict(QDict *qdict, QDict *target, const char *prefix)
  * reverse of what qdict_array_split() does).
  * This operation is applied recursively for nested QDicts and QLists.
  */
-void qdict_flatten(QDict *qdict)
-{
-    qdict_flatten_qdict(qdict, qdict, NULL);
-}
+void qdict_flatten(QDict* qdict) { qdict_flatten_qdict(qdict, qdict, NULL); }
 
 /* extract all the src QDict entries starting by start into dst.
  * If dst is NULL then the entries are simply removed from src. */
-void qdict_extract_subqdict(QDict *src, QDict **dst, const char *start)
+void qdict_extract_subqdict(QDict* src, QDict** dst, const char* start)
 
 {
     const QDictEntry *entry, *next;
-    const char *p;
+    const char*       p;
 
-    if (dst) {
-        *dst = qdict_new();
-    }
+    if (dst) { *dst = qdict_new(); }
     entry = qdict_first(src);
 
     while (entry != NULL) {
         next = qdict_next(src, entry);
         if (strstart(entry->key, start, &p)) {
-            if (dst) {
-                qdict_put_obj(*dst, p, qobject_ref(entry->value));
-            }
+            if (dst) { qdict_put_obj(*dst, p, qobject_ref(entry->value)); }
             qdict_del(src, entry->key);
         }
         entry = next;
     }
 }
 
-static int qdict_count_prefixed_entries(const QDict *src, const char *start)
+static int qdict_count_prefixed_entries(const QDict* src, const char* start)
 {
-    const QDictEntry *entry;
-    int count = 0;
+    const QDictEntry* entry;
+    int               count = 0;
 
     for (entry = qdict_first(src); entry; entry = qdict_next(src, entry)) {
         if (strstart(entry->key, start, NULL)) {
-            if (count == INT_MAX) {
-                return -ERANGE;
-            }
+            if (count == INT_MAX) { return -ERANGE; }
             count++;
         }
     }
@@ -215,18 +196,18 @@ static int qdict_count_prefixed_entries(const QDict *src, const char *start)
  *       => [{"a": 42, "b": 23}, {"x": 0}, 66]
  *      and {"4.y": 1, "o.o": 7} (remainder of the old QDict)
  */
-void qdict_array_split(QDict *src, QList **dst)
+void qdict_array_split(QDict* src, QList** dst)
 {
     unsigned i;
 
     *dst = qlist_new();
 
     for (i = 0; i < UINT_MAX; i++) {
-        QObject *subqobj;
-        bool is_subqdict;
-        QDict *subqdict;
-        char indexstr[32], prefix[32];
-        size_t snprintf_ret;
+        QObject* subqobj;
+        bool     is_subqdict;
+        QDict*   subqdict;
+        char     indexstr[32], prefix[32];
+        size_t   snprintf_ret;
 
         snprintf_ret = snprintf(indexstr, 32, "%u", i);
         assert(snprintf_ret < 32);
@@ -244,15 +225,14 @@ void qdict_array_split(QDict *src, QList **dst)
          * "%u") or multiple objects (each with a key prefixed "%u."),
          * but not both.
          */
-        if (!subqobj == !is_subqdict) {
-            break;
-        }
+        if (!subqobj == !is_subqdict) { break; }
 
         if (is_subqdict) {
             qdict_extract_subqdict(src, &subqdict, prefix);
             assert(qdict_size(subqdict) > 0);
             qlist_append_obj(*dst, QOBJECT(subqdict));
-        } else {
+        }
+        else {
             qobject_ref(subqobj);
             qdict_del(src, indexstr);
             qlist_append_obj(*dst, subqobj);
@@ -282,28 +262,28 @@ void qdict_array_split(QDict *src, QList **dst)
  * The caller is responsible for freeing the string returned in @prefix
  * using g_free().
  */
-static void qdict_split_flat_key(const char *key, char **prefix,
-                                 const char **suffix)
+static void qdict_split_flat_key(const char* key, char** prefix, const char** suffix)
 {
-    const char *separator;
-    size_t i, j;
+    const char* separator;
+    size_t      i, j;
 
     /* Find first '.' separator, but if there is a pair '..'
      * that acts as an escape, so skip over '..' */
     separator = NULL;
     do {
-        if (separator) {
-            separator += 2;
-        } else {
+        if (separator) { separator += 2; }
+        else {
             separator = key;
         }
         separator = strchr(separator, '.');
-    } while (separator && separator[1] == '.');
+    }
+    while (separator && separator[1] == '.');
 
     if (separator) {
         *prefix = g_strndup(key, separator - key);
         *suffix = separator + 1;
-    } else {
+    }
+    else {
         *prefix = g_strdup(key);
         *suffix = NULL;
     }
@@ -332,21 +312,18 @@ static void qdict_split_flat_key(const char *key, char **prefix,
  *
  * Returns: 1 if a valid list, 0 if a dict, -1 on error
  */
-static int qdict_is_list(QDict *maybe_list, Error **errp)
+static int qdict_is_list(QDict* maybe_list, Error** errp)
 {
-    const QDictEntry *ent;
-    ssize_t len = 0;
-    ssize_t max = -1;
-    int is_list = -1;
-    int64_t val;
+    const QDictEntry* ent;
+    ssize_t           len     = 0;
+    ssize_t           max     = -1;
+    int               is_list = -1;
+    int64_t           val;
 
-    for (ent = qdict_first(maybe_list); ent != NULL;
-         ent = qdict_next(maybe_list, ent)) {
+    for (ent = qdict_first(maybe_list); ent != NULL; ent = qdict_next(maybe_list, ent)) {
         int is_index = !qemu_strtoi64(ent->key, NULL, 10, &val);
 
-        if (is_list == -1) {
-            is_list = is_index;
-        }
+        if (is_list == -1) { is_list = is_index; }
 
         if (is_index != is_list) {
             error_setg(errp, "Cannot mix list and non-list keys");
@@ -355,9 +332,7 @@ static int qdict_is_list(QDict *maybe_list, Error **errp)
 
         if (is_index) {
             len++;
-            if (val > max) {
-                max = val;
-            }
+            if (val > max) { max = val; }
         }
     }
 
@@ -372,7 +347,8 @@ static int qdict_is_list(QDict *maybe_list, Error **errp)
      * input is a list. It is up the caller to do a
      * stricter check if desired */
     if (len != (max + 1)) {
-        error_setg(errp, "List indices are not contiguous, "
+        error_setg(errp,
+                   "List indices are not contiguous, "
                    "saw %zd elements but %zd largest index",
                    len, max);
         return -1;
@@ -420,17 +396,17 @@ static int qdict_is_list(QDict *maybe_list, Error **errp)
  * Returns: either a QDict or QList for the nested data structure, or NULL
  * on error
  */
-QObject *qdict_crumple(const QDict *src, Error **errp)
+QObject* qdict_crumple(const QDict* src, Error** errp)
 {
-    const QDictEntry *ent;
-    QDict *two_level, *multi_level = NULL, *child_dict;
-    QDict *dict_val;
-    QList *list_val;
-    QObject *dst = NULL, *child;
-    size_t i;
-    char *prefix = NULL;
-    const char *suffix = NULL;
-    int is_list;
+    const QDictEntry* ent;
+    QDict *           two_level, *multi_level = NULL, *child_dict;
+    QDict*            dict_val;
+    QList*            list_val;
+    QObject *         dst = NULL, *child;
+    size_t            i;
+    char*             prefix = NULL;
+    const char*       suffix = NULL;
+    int               is_list;
 
     two_level = qdict_new();
 
@@ -438,14 +414,13 @@ QObject *qdict_crumple(const QDict *src, Error **errp)
     for (ent = qdict_first(src); ent != NULL; ent = qdict_next(src, ent)) {
         dict_val = qobject_to(QDict, ent->value);
         list_val = qobject_to(QList, ent->value);
-        if ((dict_val && qdict_size(dict_val))
-            || (list_val && !qlist_empty(list_val))) {
+        if ((dict_val && qdict_size(dict_val)) || (list_val && !qlist_empty(list_val))) {
             error_setg(errp, "Value %s is not flat", ent->key);
             goto error;
         }
 
         qdict_split_flat_key(ent->key, &prefix, &suffix);
-        child = qdict_get(two_level, prefix);
+        child      = qdict_get(two_level, prefix);
         child_dict = qobject_to(QDict, child);
 
         if (child) {
@@ -466,7 +441,8 @@ QObject *qdict_crumple(const QDict *src, Error **errp)
                 qdict_put(two_level, prefix, child_dict);
             }
             qdict_put_obj(child_dict, suffix, qobject_ref(ent->value));
-        } else {
+        }
+        else {
             qdict_put_obj(two_level, prefix, qobject_ref(ent->value));
         }
 
@@ -477,17 +453,15 @@ QObject *qdict_crumple(const QDict *src, Error **errp)
     /* Step 2: optionally process the two level dict recursively
      * into a multi-level dict */
     multi_level = qdict_new();
-    for (ent = qdict_first(two_level); ent != NULL;
-         ent = qdict_next(two_level, ent)) {
+    for (ent = qdict_first(two_level); ent != NULL; ent = qdict_next(two_level, ent)) {
         dict_val = qobject_to(QDict, ent->value);
         if (dict_val && qdict_size(dict_val)) {
             child = qdict_crumple(dict_val, errp);
-            if (!child) {
-                goto error;
-            }
+            if (!child) { goto error; }
 
             qdict_put_obj(multi_level, ent->key, child);
-        } else {
+        }
+        else {
             qdict_put_obj(multi_level, ent->key, qobject_ref(ent->value));
         }
     }
@@ -496,15 +470,13 @@ QObject *qdict_crumple(const QDict *src, Error **errp)
 
     /* Step 3: detect if we need to turn our dict into list */
     is_list = qdict_is_list(multi_level, errp);
-    if (is_list < 0) {
-        goto error;
-    }
+    if (is_list < 0) { goto error; }
 
     if (is_list) {
         dst = QOBJECT(qlist_new());
 
         for (i = 0; i < qdict_size(multi_level); i++) {
-            char *key = g_strdup_printf("%zu", i);
+            char* key = g_strdup_printf("%zu", i);
 
             child = qdict_get(multi_level, key);
             g_free(key);
@@ -518,13 +490,14 @@ QObject *qdict_crumple(const QDict *src, Error **errp)
         }
         qobject_unref(multi_level);
         multi_level = NULL;
-    } else {
+    }
+    else {
         dst = QOBJECT(multi_level);
     }
 
     return dst;
 
- error:
+error:
     g_free(prefix);
     qobject_unref(multi_level);
     qobject_unref(two_level);
@@ -545,38 +518,29 @@ QObject *qdict_crumple(const QDict *src, Error **errp)
  * used for anything else, and it should go away once the block
  * subsystem has been cleaned up.
  */
-static QObject *qdict_crumple_for_keyval_qiv(QDict *src, Error **errp)
+static QObject* qdict_crumple_for_keyval_qiv(QDict* src, Error** errp)
 {
-    QDict *tmp = NULL;
-    char *buf;
-    const char *s;
-    const QDictEntry *ent;
-    QObject *dst;
+    QDict*            tmp = NULL;
+    char*             buf;
+    const char*       s;
+    const QDictEntry* ent;
+    QObject*          dst;
 
     for (ent = qdict_first(src); ent; ent = qdict_next(src, ent)) {
         buf = NULL;
         switch (qobject_type(ent->value)) {
-        case QTYPE_QNULL:
-        case QTYPE_QSTRING:
-            continue;
-        case QTYPE_QNUM:
-            s = buf = qnum_to_string(qobject_to(QNum, ent->value));
-            break;
-        case QTYPE_QDICT:
-        case QTYPE_QLIST:
-            /* @src isn't flat; qdict_crumple() will fail */
-            continue;
-        case QTYPE_QBOOL:
-            s = qbool_get_bool(qobject_to(QBool, ent->value))
-                ? "on" : "off";
-            break;
-        default:
-            abort();
+            case QTYPE_QNULL:
+            case QTYPE_QSTRING: continue;
+            case QTYPE_QNUM   : s = buf = qnum_to_string(qobject_to(QNum, ent->value)); break;
+            case QTYPE_QDICT:
+            case QTYPE_QLIST:
+                /* @src isn't flat; qdict_crumple() will fail */
+                continue;
+            case QTYPE_QBOOL: s = qbool_get_bool(qobject_to(QBool, ent->value)) ? "on" : "off"; break;
+            default         : abort();
         }
 
-        if (!tmp) {
-            tmp = qdict_clone_shallow(src);
-        }
+        if (!tmp) { tmp = qdict_clone_shallow(src); }
         qdict_put_str(tmp, ent->key, s);
         g_free(buf);
     }
@@ -593,12 +557,12 @@ static QObject *qdict_crumple_for_keyval_qiv(QDict *src, Error **errp)
  * the sub-QDict would become empty after calling qdict_array_split() on it. If
  * the array is not valid, -EINVAL is returned.
  */
-int qdict_array_entries(QDict *src, const char *subqdict)
+int qdict_array_entries(QDict* src, const char* subqdict)
 {
-    const QDictEntry *entry;
-    unsigned i;
-    unsigned entries = 0;
-    size_t subqdict_len = strlen(subqdict);
+    const QDictEntry* entry;
+    unsigned          i;
+    unsigned          entries      = 0;
+    size_t            subqdict_len = strlen(subqdict);
 
     assert(!subqdict_len || subqdict[subqdict_len - 1] == '.');
 
@@ -606,27 +570,24 @@ int qdict_array_entries(QDict *src, const char *subqdict)
      * negative errors, we only have a signed return value here. Any additional
      * entries will lead to -EINVAL. */
     for (i = 0; i < INT_MAX; i++) {
-        QObject *subqobj;
-        int subqdict_entries;
-        char *prefix = g_strdup_printf("%s%u.", subqdict, i);
+        QObject* subqobj;
+        int      subqdict_entries;
+        char*    prefix = g_strdup_printf("%s%u.", subqdict, i);
 
         subqdict_entries = qdict_count_prefixed_entries(src, prefix);
 
         /* Remove ending "." */
         prefix[strlen(prefix) - 1] = 0;
-        subqobj = qdict_get(src, prefix);
+        subqobj                    = qdict_get(src, prefix);
 
         g_free(prefix);
 
-        if (subqdict_entries < 0) {
-            return subqdict_entries;
-        }
+        if (subqdict_entries < 0) { return subqdict_entries; }
 
         /* There may be either a single subordinate object (named "%u") or
          * multiple objects (each with a key prefixed "%u."), but not both. */
-        if (subqobj && subqdict_entries) {
-            return -EINVAL;
-        } else if (!subqobj && !subqdict_entries) {
+        if (subqobj && subqdict_entries) { return -EINVAL; }
+        else if (!subqobj && !subqdict_entries) {
             break;
         }
 
@@ -635,15 +596,11 @@ int qdict_array_entries(QDict *src, const char *subqdict)
 
     /* Consider everything handled that isn't part of the given sub-QDict */
     for (entry = qdict_first(src); entry; entry = qdict_next(src, entry)) {
-        if (!strstart(qdict_entry_key(entry), subqdict, NULL)) {
-            entries++;
-        }
+        if (!strstart(qdict_entry_key(entry), subqdict, NULL)) { entries++; }
     }
 
     /* Anything left in the sub-QDict that wasn't handled? */
-    if (qdict_size(src) != entries) {
-        return -EINVAL;
-    }
+    if (qdict_size(src) != entries) { return -EINVAL; }
 
     return i;
 }
@@ -662,7 +619,7 @@ int qdict_array_entries(QDict *src, const char *subqdict)
  * this function returns. If overwrite is false, the src QDict will be empty
  * iff there were no conflicts.
  */
-void qdict_join(QDict *dest, QDict *src, bool overwrite)
+void qdict_join(QDict* dest, QDict* src, bool overwrite)
 {
     const QDictEntry *entry, *next;
 
@@ -690,15 +647,17 @@ void qdict_join(QDict *dest, QDict *src, bool overwrite)
  *
  * Returns true for success, false in error cases.
  */
-bool qdict_rename_keys(QDict *qdict, const QDictRenames *renames, Error **errp)
+bool qdict_rename_keys(QDict* qdict, const QDictRenames* renames, Error** errp)
 {
-    QObject *qobj;
+    QObject* qobj;
 
     while (renames->from) {
         if (qdict_haskey(qdict, renames->from)) {
             if (qdict_haskey(qdict, renames->to)) {
-                error_setg(errp, "'%s' and its alias '%s' can't be used at the "
-                           "same time", renames->to, renames->from);
+                error_setg(errp,
+                           "'%s' and its alias '%s' can't be used at the "
+                           "same time",
+                           renames->to, renames->from);
                 return false;
             }
 
@@ -721,16 +680,13 @@ bool qdict_rename_keys(QDict *qdict, const QDictRenames *renames, Error **errp)
  * else, and it should go away once the block subsystem has been
  * cleaned up.
  */
-Visitor *qobject_input_visitor_new_flat_confused(QDict *qdict,
-                                                 Error **errp)
+Visitor* qobject_input_visitor_new_flat_confused(QDict* qdict, Error** errp)
 {
-    QObject *crumpled;
-    Visitor *v;
+    QObject* crumpled;
+    Visitor* v;
 
     crumpled = qdict_crumple_for_keyval_qiv(qdict, errp);
-    if (!crumpled) {
-        return NULL;
-    }
+    if (!crumpled) { return NULL; }
 
     v = qobject_input_visitor_new_keyval(crumpled);
     qobject_unref(crumpled);

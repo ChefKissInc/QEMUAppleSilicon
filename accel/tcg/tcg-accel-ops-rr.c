@@ -35,13 +35,11 @@
 #include "tcg-accel-ops-rr.h"
 
 /* Kick all RR vCPUs */
-void rr_kick_vcpu_thread(CPUState *unused)
+void rr_kick_vcpu_thread(CPUState* unused)
 {
-    CPUState *cpu;
+    CPUState* cpu;
 
-    CPU_FOREACH(cpu) {
-        tcg_kick_vcpu_thread(cpu);
-    };
+    CPU_FOREACH (cpu) { tcg_kick_vcpu_thread(cpu); };
 }
 
 /*
@@ -56,29 +54,25 @@ void rr_kick_vcpu_thread(CPUState *unused)
  * idleness is complete.
  */
 
-static QEMUTimer *rr_kick_vcpu_timer;
-static CPUState *rr_current_cpu;
+static QEMUTimer* rr_kick_vcpu_timer;
+static CPUState*  rr_current_cpu;
 
-static inline int64_t rr_next_kick_time(void)
-{
-    return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + TCG_KICK_PERIOD;
-}
+static inline int64_t rr_next_kick_time(void) { return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + TCG_KICK_PERIOD; }
 
 /* Kick the currently round-robin scheduled vCPU to next */
 static void rr_kick_next_cpu(void)
 {
-    CPUState *cpu;
+    CPUState* cpu;
     do {
         cpu = qatomic_read(&rr_current_cpu);
-        if (cpu) {
-            cpu_exit(cpu);
-        }
+        if (cpu) { cpu_exit(cpu); }
         /* Finish kicking this cpu before reading again.  */
         smp_mb();
-    } while (cpu != qatomic_read(&rr_current_cpu));
+    }
+    while (cpu != qatomic_read(&rr_current_cpu));
 }
 
-static void rr_kick_thread(void *opaque)
+static void rr_kick_thread(void* opaque)
 {
     timer_mod(rr_kick_vcpu_timer, rr_next_kick_time());
     rr_kick_next_cpu();
@@ -87,8 +81,7 @@ static void rr_kick_thread(void *opaque)
 static void rr_start_kick_timer(void)
 {
     if (!rr_kick_vcpu_timer && CPU_NEXT(first_cpu)) {
-        rr_kick_vcpu_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                           rr_kick_thread, NULL);
+        rr_kick_vcpu_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, rr_kick_thread, NULL);
     }
     if (rr_kick_vcpu_timer && !timer_pending(rr_kick_vcpu_timer)) {
         timer_mod(rr_kick_vcpu_timer, rr_next_kick_time());
@@ -97,14 +90,12 @@ static void rr_start_kick_timer(void)
 
 static void rr_stop_kick_timer(void)
 {
-    if (rr_kick_vcpu_timer && timer_pending(rr_kick_vcpu_timer)) {
-        timer_del(rr_kick_vcpu_timer);
-    }
+    if (rr_kick_vcpu_timer && timer_pending(rr_kick_vcpu_timer)) { timer_del(rr_kick_vcpu_timer); }
 }
 
 static void rr_wait_io_event(void)
 {
-    CPUState *cpu;
+    CPUState* cpu;
 
     while (all_cpu_threads_idle()) {
         rr_stop_kick_timer();
@@ -113,9 +104,7 @@ static void rr_wait_io_event(void)
 
     rr_start_kick_timer();
 
-    CPU_FOREACH(cpu) {
-        qemu_process_cpu_events_common(cpu);
-    }
+    CPU_FOREACH (cpu) { qemu_process_cpu_events_common(cpu); }
 }
 
 /*
@@ -124,9 +113,9 @@ static void rr_wait_io_event(void)
  */
 static void rr_deal_with_unplugged_cpus(void)
 {
-    CPUState *cpu;
+    CPUState* cpu;
 
-    CPU_FOREACH(cpu) {
+    CPU_FOREACH (cpu) {
         if (cpu->unplug && !cpu_can_run(cpu)) {
             tcg_cpu_destroy(cpu);
             break;
@@ -134,10 +123,7 @@ static void rr_deal_with_unplugged_cpus(void)
     }
 }
 
-static void rr_force_rcu(Notifier *notify, void *data)
-{
-    rr_kick_next_cpu();
-}
+static void rr_force_rcu(Notifier* notify, void* data) { rr_kick_next_cpu(); }
 
 /*
  * Calculate the number of CPUs that we will process in a single iteration of
@@ -150,16 +136,14 @@ static void rr_force_rcu(Notifier *notify, void *data)
 static int rr_cpu_count(void)
 {
     static unsigned int last_gen_id = ~0;
-    static int cpu_count;
-    CPUState *cpu;
+    static int          cpu_count;
+    CPUState*           cpu;
 
     QEMU_LOCK_GUARD(&qemu_cpu_list_lock);
 
     if (cpu_list_generation_id_get() != last_gen_id) {
         cpu_count = 0;
-        CPU_FOREACH(cpu) {
-            ++cpu_count;
-        }
+        CPU_FOREACH (cpu) { ++cpu_count; }
         last_gen_id = cpu_list_generation_id_get();
     }
 
@@ -174,10 +158,10 @@ static int rr_cpu_count(void)
  * elsewhere.
  */
 
-static void *rr_cpu_thread_fn(void *arg)
+static void* rr_cpu_thread_fn(void* arg)
 {
-    Notifier force_rcu;
-    CPUState *cpu = arg;
+    Notifier  force_rcu;
+    CPUState* cpu = arg;
 
     assert(tcg_enabled());
     rcu_register_thread();
@@ -188,7 +172,7 @@ static void *rr_cpu_thread_fn(void *arg)
     bql_lock();
     qemu_thread_get_self(cpu->thread);
 
-    cpu->thread_id = qemu_get_thread_id();
+    cpu->thread_id     = qemu_get_thread_id();
     cpu->neg.can_do_io = true;
     cpu_thread_signal_created(cpu);
     qemu_guest_random_seed_thread_part2(cpu->random_seed);
@@ -198,7 +182,7 @@ static void *rr_cpu_thread_fn(void *arg)
         qemu_cond_wait_bql(first_cpu->halt_cond);
 
         /* process any pending work */
-        CPU_FOREACH(cpu) {
+        CPU_FOREACH (cpu) {
             current_cpu = cpu;
             qemu_process_cpu_events_common(cpu);
         }
@@ -221,9 +205,7 @@ static void *rr_cpu_thread_fn(void *arg)
         rr_wait_io_event();
         rr_deal_with_unplugged_cpus();
 
-        if (!cpu) {
-            cpu = first_cpu;
-        }
+        if (!cpu) { cpu = first_cpu; }
 
         while (cpu && cpu_work_list_empty(cpu)) {
             /*
@@ -233,13 +215,10 @@ static void *rr_cpu_thread_fn(void *arg)
             qatomic_set_mb(&rr_current_cpu, cpu);
 
             /* Pairs with store-release in cpu_exit.  */
-            if (qatomic_load_acquire(&cpu->exit_request)) {
-                break;
-            }
+            if (qatomic_load_acquire(&cpu->exit_request)) { break; }
             current_cpu = cpu;
 
-            qemu_clock_enable(QEMU_CLOCK_VIRTUAL,
-                              (cpu->singlestep_enabled & SSTEP_NOTIMER) == 0);
+            qemu_clock_enable(QEMU_CLOCK_VIRTUAL, (cpu->singlestep_enabled & SSTEP_NOTIMER) == 0);
 
             if (cpu_can_run(cpu)) {
                 int r;
@@ -251,16 +230,16 @@ static void *rr_cpu_thread_fn(void *arg)
                 if (r == EXCP_DEBUG) {
                     cpu_handle_guest_debug(cpu);
                     break;
-                } else if (r == EXCP_ATOMIC) {
+                }
+                else if (r == EXCP_ATOMIC) {
                     bql_unlock();
                     cpu_exec_step_atomic(cpu);
                     bql_lock();
                     break;
                 }
-            } else if (cpu->stop) {
-                if (cpu->unplug) {
-                    cpu = CPU_NEXT(cpu);
-                }
+            }
+            else if (cpu->stop) {
+                if (cpu->unplug) { cpu = CPU_NEXT(cpu); }
                 break;
             }
 
@@ -274,35 +253,34 @@ static void *rr_cpu_thread_fn(void *arg)
     assert_not_reached();
 }
 
-void rr_start_vcpu_thread(CPUState *cpu)
+void rr_start_vcpu_thread(CPUState* cpu)
 {
-    char thread_name[VCPU_THREAD_NAME_SIZE];
-    static QemuCond *single_tcg_halt_cond;
-    static QemuThread *single_tcg_cpu_thread;
+    char               thread_name[VCPU_THREAD_NAME_SIZE];
+    static QemuCond*   single_tcg_halt_cond;
+    static QemuThread* single_tcg_cpu_thread;
 
     assert(tcg_enabled());
     tcg_cpu_init_cflags(cpu, false);
 
     if (!single_tcg_cpu_thread) {
-        single_tcg_halt_cond = cpu->halt_cond;
+        single_tcg_halt_cond  = cpu->halt_cond;
         single_tcg_cpu_thread = cpu->thread;
 
         /* share a single thread for all cpus with TCG */
         snprintf(thread_name, VCPU_THREAD_NAME_SIZE, "ALL CPUs/TCG");
-        qemu_thread_create(cpu->thread, thread_name,
-                           rr_cpu_thread_fn,
-                           cpu, QEMU_THREAD_JOINABLE);
-    } else {
+        qemu_thread_create(cpu->thread, thread_name, rr_cpu_thread_fn, cpu, QEMU_THREAD_JOINABLE);
+    }
+    else {
         /* we share the thread, dump spare data */
         g_free(cpu->thread);
         qemu_cond_destroy(cpu->halt_cond);
         g_free(cpu->halt_cond);
-        cpu->thread = single_tcg_cpu_thread;
+        cpu->thread    = single_tcg_cpu_thread;
         cpu->halt_cond = single_tcg_halt_cond;
 
         /* copy the stuff done at start of rr_cpu_thread_fn */
-        cpu->thread_id = first_cpu->thread_id;
+        cpu->thread_id     = first_cpu->thread_id;
         cpu->neg.can_do_io = 1;
-        cpu->created = true;
+        cpu->created       = true;
     }
 }

@@ -23,16 +23,16 @@
 #include "qom/object.h"
 
 /* A simple I2C slave which just returns the contents of its EDID blob. */
-struct I2CDDCState {
+struct I2CDDCState
+{
     /*< private >*/
     I2CSlave i2c;
     /*< public >*/
-    bool firstbyte;
-    uint8_t reg;
+    bool           firstbyte;
+    uint8_t        reg;
     qemu_edid_info edid_info;
-    uint8_t edid_blob[128];
+    uint8_t        edid_blob[128];
 };
-
 
 #define TYPE_I2CDDC "i2c-ddc"
 OBJECT_DECLARE_SIMPLE_TYPE(I2CDDCState, I2CDDC)

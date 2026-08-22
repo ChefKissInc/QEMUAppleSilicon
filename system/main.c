@@ -28,19 +28,19 @@
 #include "system/system.h"
 
 #ifdef CONFIG_SDL
-/*
- * SDL insists on wrapping the main() function with its own implementation on
- * some platforms; it does so via a macro that renames our main function, so
- * <SDL.h> must be #included here even with no SDL code called from this file.
- */
-#include <SDL.h>
+    /*
+     * SDL insists on wrapping the main() function with its own implementation on
+     * some platforms; it does so via a macro that renames our main function, so
+     * <SDL.h> must be #included here even with no SDL code called from this file.
+     */
+    #include <SDL.h>
 #endif
 
 #ifdef CONFIG_DARWIN
-#include <CoreFoundation/CoreFoundation.h>
+    #include <CoreFoundation/CoreFoundation.h>
 #endif
 
-static void *qemu_default_main(void *opaque)
+static void* qemu_default_main(void* opaque)
 {
     int status;
 
@@ -63,7 +63,7 @@ static int os_darwin_cfrunloop_main(void)
 int (*qemu_main)(void) = os_darwin_cfrunloop_main;
 #endif
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     qemu_init(argc, argv);
 
@@ -81,10 +81,10 @@ int main(int argc, char **argv)
 
     if (qemu_main) {
         QemuThread main_loop_thread;
-        qemu_thread_create(&main_loop_thread, "qemu_main",
-                           qemu_default_main, NULL, QEMU_THREAD_DETACHED);
+        qemu_thread_create(&main_loop_thread, "qemu_main", qemu_default_main, NULL, QEMU_THREAD_DETACHED);
         return qemu_main();
-    } else {
+    }
+    else {
         qemu_default_main(NULL);
         assert_not_reached();
     }

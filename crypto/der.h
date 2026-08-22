@@ -34,8 +34,7 @@ typedef struct QCryptoEncodeContext QCryptoEncodeContext;
  *  @vlen: length of the |value|.
  *  Returns: 0 for success, any other value is considered an error.
  */
-typedef int (*QCryptoDERDecodeCb) (void *opaque, const uint8_t *value,
-                                   size_t vlen, Error **errp);
+typedef int (*QCryptoDERDecodeCb)(void* opaque, const uint8_t* value, size_t vlen, Error** errp);
 
 /**
  * qcrypto_der_decode_int:
@@ -53,11 +52,7 @@ typedef int (*QCryptoDERDecodeCb) (void *opaque, const uint8_t *value,
  * part of the decoded INTEGER will be returned. Otherwise, -1 is
  * returned and the valued of *data and *dlen keep unchanged.
  */
-int qcrypto_der_decode_int(const uint8_t **data,
-                           size_t *dlen,
-                           QCryptoDERDecodeCb cb,
-                           void *opaque,
-                           Error **errp);
+int qcrypto_der_decode_int(const uint8_t** data, size_t* dlen, QCryptoDERDecodeCb cb, void* opaque, Error** errp);
 /**
  * qcrypto_der_decode_seq:
  *
@@ -75,11 +70,7 @@ int qcrypto_der_decode_int(const uint8_t **data,
  * part of the decoded SEQUENCE will be returned. Otherwise, -1 is
  * returned and the valued of *data and *dlen keep unchanged.
  */
-int qcrypto_der_decode_seq(const uint8_t **data,
-                           size_t *dlen,
-                           QCryptoDERDecodeCb cb,
-                           void *opaque,
-                           Error **errp);
+int qcrypto_der_decode_seq(const uint8_t** data, size_t* dlen, QCryptoDERDecodeCb cb, void* opaque, Error** errp);
 
 /**
  * qcrypto_der_decode_oid:
@@ -98,11 +89,7 @@ int qcrypto_der_decode_seq(const uint8_t **data,
  * part of the decoded OID will be returned. Otherwise, -1 is
  * returned and the valued of *data and *dlen keep unchanged.
  */
-int qcrypto_der_decode_oid(const uint8_t **data,
-                           size_t *dlen,
-                           QCryptoDERDecodeCb cb,
-                           void *opaque,
-                           Error **errp);
+int qcrypto_der_decode_oid(const uint8_t** data, size_t* dlen, QCryptoDERDecodeCb cb, void* opaque, Error** errp);
 
 /**
  * qcrypto_der_decode_octet_str:
@@ -121,11 +108,7 @@ int qcrypto_der_decode_oid(const uint8_t **data,
  * part of the decoded OCTET STRING will be returned. Otherwise, -1 is
  * returned and the valued of *data and *dlen keep unchanged.
  */
-int qcrypto_der_decode_octet_str(const uint8_t **data,
-                                 size_t *dlen,
-                                 QCryptoDERDecodeCb cb,
-                                 void *opaque,
-                                 Error **errp);
+int qcrypto_der_decode_octet_str(const uint8_t** data, size_t* dlen, QCryptoDERDecodeCb cb, void* opaque, Error** errp);
 
 /**
  * qcrypto_der_decode_bit_str:
@@ -144,12 +127,7 @@ int qcrypto_der_decode_octet_str(const uint8_t **data,
  * part of the decoded BIT STRING will be returned. Otherwise, -1 is
  * returned and the valued of *data and *dlen keep unchanged.
  */
-int qcrypto_der_decode_bit_str(const uint8_t **data,
-                               size_t *dlen,
-                               QCryptoDERDecodeCb cb,
-                               void *opaque,
-                               Error **errp);
-
+int qcrypto_der_decode_bit_str(const uint8_t** data, size_t* dlen, QCryptoDERDecodeCb cb, void* opaque, Error** errp);
 
 /**
  * qcrypto_der_decode_ctx_tag:
@@ -169,18 +147,15 @@ int qcrypto_der_decode_bit_str(const uint8_t **data,
  * part of the decoded BIT STRING will be returned. Otherwise, -1 is
  * returned and the valued of *data and *dlen keep unchanged.
  */
-int qcrypto_der_decode_ctx_tag(const uint8_t **data,
-                               size_t *dlen, int tag_id,
-                               QCryptoDERDecodeCb cb,
-                               void *opaque,
-                               Error **errp);
+int qcrypto_der_decode_ctx_tag(const uint8_t** data, size_t* dlen, int tag_id, QCryptoDERDecodeCb cb, void* opaque,
+                               Error** errp);
 
 /**
  * qcrypto_der_encode_ctx_new:
  *
  * Allocate a context used for der encoding.
  */
-QCryptoEncodeContext *qcrypto_der_encode_ctx_new(void);
+QCryptoEncodeContext* qcrypto_der_encode_ctx_new(void);
 
 /**
  * qcrypto_der_encode_seq_begin:
@@ -189,7 +164,7 @@ QCryptoEncodeContext *qcrypto_der_encode_ctx_new(void);
  * Start encoding a SEQUENCE for ctx.
  *
  */
-void qcrypto_der_encode_seq_begin(QCryptoEncodeContext *ctx);
+void qcrypto_der_encode_seq_begin(QCryptoEncodeContext* ctx);
 
 /**
  * qcrypto_der_encode_seq_begin:
@@ -198,8 +173,7 @@ void qcrypto_der_encode_seq_begin(QCryptoEncodeContext *ctx);
  * Finish uencoding a SEQUENCE for ctx.
  *
  */
-void qcrypto_der_encode_seq_end(QCryptoEncodeContext *ctx);
-
+void qcrypto_der_encode_seq_end(QCryptoEncodeContext* ctx);
 
 /**
  * qcrypto_der_encode_oid:
@@ -209,8 +183,7 @@ void qcrypto_der_encode_seq_end(QCryptoEncodeContext *ctx);
  *
  * Encode an oid into ctx.
  */
-void qcrypto_der_encode_oid(QCryptoEncodeContext *ctx,
-                            const uint8_t *src, size_t src_len);
+void qcrypto_der_encode_oid(QCryptoEncodeContext* ctx, const uint8_t* src, size_t src_len);
 
 /**
  * qcrypto_der_encode_int:
@@ -220,8 +193,7 @@ void qcrypto_der_encode_oid(QCryptoEncodeContext *ctx,
  *
  * Encode an integer into ctx.
  */
-void qcrypto_der_encode_int(QCryptoEncodeContext *ctx,
-                            const uint8_t *src, size_t src_len);
+void qcrypto_der_encode_int(QCryptoEncodeContext* ctx, const uint8_t* src, size_t src_len);
 
 /**
  * qcrypto_der_encode_null:
@@ -229,7 +201,7 @@ void qcrypto_der_encode_int(QCryptoEncodeContext *ctx,
  *
  * Encode a null into ctx.
  */
-void qcrypto_der_encode_null(QCryptoEncodeContext *ctx);
+void qcrypto_der_encode_null(QCryptoEncodeContext* ctx);
 
 /**
  * qcrypto_der_encode_octet_str:
@@ -238,8 +210,7 @@ void qcrypto_der_encode_null(QCryptoEncodeContext *ctx);
  *
  * Encode a octet string into ctx.
  */
-void qcrypto_der_encode_octet_str(QCryptoEncodeContext *ctx,
-                                  const uint8_t *src, size_t src_len);
+void qcrypto_der_encode_octet_str(QCryptoEncodeContext* ctx, const uint8_t* src, size_t src_len);
 
 /**
  * qcrypto_der_encode_ctx_buffer_len:
@@ -247,7 +218,7 @@ void qcrypto_der_encode_octet_str(QCryptoEncodeContext *ctx,
  *
  * Compute the expected buffer size to save all encoded things.
  */
-size_t qcrypto_der_encode_ctx_buffer_len(QCryptoEncodeContext *ctx);
+size_t qcrypto_der_encode_ctx_buffer_len(QCryptoEncodeContext* ctx);
 
 /**
  * qcrypto_der_encode_ctx_flush_and_free:
@@ -257,5 +228,4 @@ size_t qcrypto_der_encode_ctx_buffer_len(QCryptoEncodeContext *ctx);
  *
  * Flush all encoded data into dst, then free ctx.
  */
-void qcrypto_der_encode_ctx_flush_and_free(QCryptoEncodeContext *ctx,
-                                           uint8_t *dst);
+void qcrypto_der_encode_ctx_flush_and_free(QCryptoEncodeContext* ctx, uint8_t* dst);

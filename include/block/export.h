@@ -18,7 +18,8 @@
 
 typedef struct BlockExport BlockExport;
 
-typedef struct BlockExportDriver {
+typedef struct BlockExportDriver
+{
     /* The export type that this driver services */
     BlockExportType type;
 
@@ -32,13 +33,13 @@ typedef struct BlockExportDriver {
     bool supports_inactive;
 
     /* Creates and starts a new block export */
-    int (*create)(BlockExport *, BlockExportOptions *, Error **);
+    int (*create)(BlockExport*, BlockExportOptions*, Error**);
 
     /*
      * Frees a removed block export. This function is only called after all
      * references have been dropped.
      */
-    void (*delete)(BlockExport *);
+    void (*delete)(BlockExport*);
 
     /*
      * Start to disconnect all clients and drop other references held
@@ -46,14 +47,15 @@ typedef struct BlockExportDriver {
      * still be active references while the export is in the process of
      * shutting down.
      */
-    void (*request_shutdown)(BlockExport *);
+    void (*request_shutdown)(BlockExport*);
 } BlockExportDriver;
 
-struct BlockExport {
-    const BlockExportDriver *drv;
+struct BlockExport
+{
+    const BlockExportDriver* drv;
 
     /* Unique identifier for the export */
-    char *id;
+    char* id;
 
     /*
      * Reference count for this block export. This includes strong references
@@ -73,19 +75,19 @@ struct BlockExport {
     bool user_owned;
 
     /* The AioContext whose lock protects this BlockExport object. */
-    AioContext *ctx;
+    AioContext* ctx;
 
     /* The block device to export */
-    BlockBackend *blk;
+    BlockBackend* blk;
 
     /* List entry for block_exports */
     QLIST_ENTRY(BlockExport) next;
 };
 
-BlockExport *blk_exp_add(BlockExportOptions *export, Error **errp);
-BlockExport *blk_exp_find(const char *id);
-void blk_exp_ref(BlockExport *exp);
-void blk_exp_unref(BlockExport *exp);
-void blk_exp_request_shutdown(BlockExport *exp);
-void blk_exp_close_all(void);
-void blk_exp_close_all_type(BlockExportType type);
+BlockExport* blk_exp_add(BlockExportOptions* export, Error** errp);
+BlockExport* blk_exp_find(const char* id);
+void         blk_exp_ref(BlockExport* exp);
+void         blk_exp_unref(BlockExport* exp);
+void         blk_exp_request_shutdown(BlockExport* exp);
+void         blk_exp_close_all(void);
+void         blk_exp_close_all_type(BlockExportType type);

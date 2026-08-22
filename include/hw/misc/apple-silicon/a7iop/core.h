@@ -24,41 +24,42 @@
 #include "hw/misc/apple-silicon/a7iop/mailbox/core.h"
 #include "hw/sysbus.h"
 
-#define CPU_CTRL_RUN BIT(4)
+#define CPU_CTRL_RUN         BIT(4)
 #define SEP_BOOT_MONITOR_RUN BIT(16)
 
 #define TYPE_APPLE_A7IOP "apple-a7iop"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleA7IOP, APPLE_A7IOP)
 
-typedef struct {
-    void (*start)(AppleA7IOP *s);
-    void (*wakeup)(AppleA7IOP *s);
+typedef struct
+{
+    void (*start)(AppleA7IOP* s);
+    void (*wakeup)(AppleA7IOP* s);
 } AppleA7IOPOps;
 
-struct AppleA7IOP {
+struct AppleA7IOP
+{
     /*< private >*/
     SysBusDevice parent_obj;
 
     /*< public >*/
-    const char *role;
-    MemoryRegion mmio;
-    const AppleA7IOPOps *ops;
-    QemuMutex lock;
-    AppleA7IOPMailbox *ap_mailbox;
-    AppleA7IOPMailbox *iop_mailbox;
-    uint32_t cpu_status;
-    uint32_t cpu_ctrl;
+    const char*          role;
+    MemoryRegion         mmio;
+    const AppleA7IOPOps* ops;
+    QemuMutex            lock;
+    AppleA7IOPMailbox*   ap_mailbox;
+    AppleA7IOPMailbox*   iop_mailbox;
+    uint32_t             cpu_status;
+    uint32_t             cpu_ctrl;
 };
 
-void apple_a7iop_send_ap(AppleA7IOP *s, AppleA7IOPMessage *msg);
-AppleA7IOPMessage *apple_a7iop_recv_ap(AppleA7IOP *s);
-void apple_a7iop_send_iop(AppleA7IOP *s, AppleA7IOPMessage *msg);
-AppleA7IOPMessage *apple_a7iop_recv_iop(AppleA7IOP *s);
-void apple_a7iop_cpu_start(AppleA7IOP *s, bool wake);
-uint32_t apple_a7iop_get_cpu_status(AppleA7IOP *s);
-void apple_a7iop_set_cpu_status(AppleA7IOP *s, uint32_t value);
-uint32_t apple_a7iop_get_cpu_ctrl(AppleA7IOP *s);
-void apple_a7iop_set_cpu_ctrl(AppleA7IOP *s, uint32_t value);
-void apple_a7iop_init(AppleA7IOP *s, const char *role, uint64_t mmio_size,
-                      AppleA7IOPVersion version, const AppleA7IOPOps *ops,
-                      QEMUBHFunc *handle_messages_func);
+void               apple_a7iop_send_ap(AppleA7IOP* s, AppleA7IOPMessage* msg);
+AppleA7IOPMessage* apple_a7iop_recv_ap(AppleA7IOP* s);
+void               apple_a7iop_send_iop(AppleA7IOP* s, AppleA7IOPMessage* msg);
+AppleA7IOPMessage* apple_a7iop_recv_iop(AppleA7IOP* s);
+void               apple_a7iop_cpu_start(AppleA7IOP* s, bool wake);
+uint32_t           apple_a7iop_get_cpu_status(AppleA7IOP* s);
+void               apple_a7iop_set_cpu_status(AppleA7IOP* s, uint32_t value);
+uint32_t           apple_a7iop_get_cpu_ctrl(AppleA7IOP* s);
+void               apple_a7iop_set_cpu_ctrl(AppleA7IOP* s, uint32_t value);
+void               apple_a7iop_init(AppleA7IOP* s, const char* role, uint64_t mmio_size, AppleA7IOPVersion version,
+                                    const AppleA7IOPOps* ops, QEMUBHFunc* handle_messages_func);

@@ -24,17 +24,18 @@
 
 #pragma once
 
-#define TCG_TARGET_INSN_UNIT_SIZE  1
+#define TCG_TARGET_INSN_UNIT_SIZE 1
 
 #ifdef __x86_64__
-# define TCG_TARGET_NB_REGS   32
-# define MAX_CODE_GEN_BUFFER_SIZE  (2 * GiB)
+    #define TCG_TARGET_NB_REGS       32
+    #define MAX_CODE_GEN_BUFFER_SIZE (2 * GiB)
 #else
-# define TCG_TARGET_NB_REGS   24
-# define MAX_CODE_GEN_BUFFER_SIZE  UINT32_MAX
+    #define TCG_TARGET_NB_REGS       24
+    #define MAX_CODE_GEN_BUFFER_SIZE UINT32_MAX
 #endif
 
-typedef enum {
+typedef enum
+{
     TCG_REG_EAX = 0,
     TCG_REG_ECX,
     TCG_REG_EDX,
@@ -83,6 +84,6 @@ typedef enum {
     TCG_REG_RSI = TCG_REG_ESI,
     TCG_REG_RDI = TCG_REG_EDI,
 
-    TCG_AREG0 = TCG_REG_EBP,
+    TCG_AREG0          = TCG_REG_EBP,
     TCG_REG_CALL_STACK = TCG_REG_ESP
 } TCGReg;

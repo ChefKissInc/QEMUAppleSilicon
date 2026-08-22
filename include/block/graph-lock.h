@@ -53,7 +53,8 @@
 typedef struct BdrvGraphRWlock BdrvGraphRWlock;
 
 /* Dummy lock object to use for Thread Safety Analysis (TSA) */
-typedef struct TSA_CAPABILITY("mutex") BdrvGraphLock {
+typedef struct TSA_CAPABILITY("mutex") BdrvGraphLock
+{
 } BdrvGraphLock;
 
 extern BdrvGraphLock graph_lock;
@@ -68,8 +69,8 @@ extern BdrvGraphLock graph_lock;
  * Therefore, as a convention, for public functions, GRAPH_RDLOCK and
  * GRAPH_WRLOCK annotations should be present only in the header file.
  */
-#define GRAPH_WRLOCK TSA_REQUIRES(graph_lock)
-#define GRAPH_RDLOCK TSA_REQUIRES_SHARED(graph_lock)
+#define GRAPH_WRLOCK   TSA_REQUIRES(graph_lock)
+#define GRAPH_RDLOCK   TSA_REQUIRES_SHARED(graph_lock)
 #define GRAPH_UNLOCKED TSA_EXCLUDES(graph_lock)
 
 /*
@@ -89,13 +90,13 @@ extern BdrvGraphLock graph_lock;
  * This list is used to obtain the total number of readers
  * currently running the graph.
  */
-void register_aiocontext(AioContext *ctx);
+void register_aiocontext(AioContext* ctx);
 
 /*
  * unregister_aiocontext:
  * Removes AioContext @ctx to the list of AioContext.
  */
-void unregister_aiocontext(AioContext *ctx);
+void unregister_aiocontext(AioContext* ctx);
 
 /*
  * bdrv_graph_wrlock:
@@ -108,7 +109,8 @@ void unregister_aiocontext(AioContext *ctx);
  * The wrlock can only be taken from the main loop, with BQL held, as only the
  * main loop is allowed to modify the graph.
  */
-void no_coroutine_fn TSA_ACQUIRE(graph_lock) TSA_NO_TSA
+void no_coroutine_fn TSA_ACQUIRE(graph_lock)
+TSA_NO_TSA
 bdrv_graph_wrlock(void);
 
 /*
@@ -116,7 +118,8 @@ bdrv_graph_wrlock(void);
  * Similar to bdrv_graph_wrlock, but will begin a drained section before
  * locking.
  */
-void no_coroutine_fn TSA_ACQUIRE(graph_lock) TSA_NO_TSA
+void no_coroutine_fn TSA_ACQUIRE(graph_lock)
+TSA_NO_TSA
 bdrv_graph_wrlock_drained(void);
 
 /*
@@ -127,7 +130,8 @@ bdrv_graph_wrlock_drained(void);
  * Also ends the drained section if bdrv_graph_wrlock_drained() was used to lock
  * the graph.
  */
-void no_coroutine_fn TSA_RELEASE(graph_lock) TSA_NO_TSA
+void no_coroutine_fn TSA_RELEASE(graph_lock)
+TSA_NO_TSA
 bdrv_graph_wrunlock(void);
 
 /*
@@ -152,7 +156,8 @@ bdrv_graph_wrunlock(void);
  * loop) to take it and wait that the coroutine ends, so that
  * we always signal that a reader is running.
  */
-void coroutine_fn TSA_ACQUIRE_SHARED(graph_lock) TSA_NO_TSA
+void coroutine_fn TSA_ACQUIRE_SHARED(graph_lock)
+TSA_NO_TSA
 bdrv_graph_co_rdlock(void);
 
 /*
@@ -161,7 +166,8 @@ bdrv_graph_co_rdlock(void);
  * If the writer is waiting for reads to finish (has_writer == 1), signal
  * the writer that we are done via aio_wait_kick() to let it continue.
  */
-void coroutine_fn TSA_RELEASE_SHARED(graph_lock) TSA_NO_TSA
+void coroutine_fn TSA_RELEASE_SHARED(graph_lock)
+TSA_NO_TSA
 bdrv_graph_co_rdunlock(void);
 
 /*
@@ -170,11 +176,9 @@ bdrv_graph_co_rdunlock(void);
  * in the main loop. It is just asserting that we are not
  * in a coroutine and in GLOBAL_STATE_CODE.
  */
-void TSA_ACQUIRE_SHARED(graph_lock) TSA_NO_TSA
-bdrv_graph_rdlock_main_loop(void);
+void TSA_ACQUIRE_SHARED(graph_lock) TSA_NO_TSA bdrv_graph_rdlock_main_loop(void);
 
-void TSA_RELEASE_SHARED(graph_lock) TSA_NO_TSA
-bdrv_graph_rdunlock_main_loop(void);
+void TSA_RELEASE_SHARED(graph_lock) TSA_NO_TSA bdrv_graph_rdunlock_main_loop(void);
 
 /*
  * assert_bdrv_graph_readable:
@@ -197,19 +201,18 @@ void GRAPH_WRLOCK assert_bdrv_graph_writable(void);
  * useful in intermediate stages of a conversion to using the GRAPH_RDLOCK
  * macro.
  */
-static inline void TSA_ASSERT_SHARED(graph_lock) TSA_NO_TSA
-assume_graph_lock(void)
-{
-}
+static inline void TSA_ASSERT_SHARED(graph_lock) TSA_NO_TSA assume_graph_lock(void) { }
 
-typedef struct GraphLockable { } GraphLockable;
+typedef struct GraphLockable
+{
+} GraphLockable;
 
 /*
  * In C, compound literals have the lifetime of an automatic variable.
  * In C++ it would be different, but then C++ wouldn't need QemuLockable
  * either...
  */
-#define GML_OBJ_() (&(GraphLockable) { })
+#define GML_OBJ_() (&(GraphLockable){})
 
 /*
  * This is not marked as TSA_ACQUIRE_SHARED() because TSA doesn't understand the
@@ -217,18 +220,15 @@ typedef struct GraphLockable { } GraphLockable;
  * unlocked. TSA_ASSERT_SHARED() makes sure that the following calls know that
  * we hold the lock while unlocking is left unchecked.
  */
-static inline GraphLockable * TSA_ACQUIRE_SHARED(graph_lock) coroutine_fn
-graph_lockable_auto_lock(GraphLockable *x)
+static inline GraphLockable* TSA_ACQUIRE_SHARED(graph_lock)
+coroutine_fn                 graph_lockable_auto_lock(GraphLockable* x)
 {
     bdrv_graph_co_rdlock();
     return x;
 }
 
-static inline void TSA_RELEASE_SHARED(graph_lock) coroutine_fn
-graph_lockable_auto_unlock(GraphLockable **x)
-{
-    bdrv_graph_co_rdunlock();
-}
+static inline void TSA_RELEASE_SHARED(graph_lock) coroutine_fn graph_lockable_auto_unlock(GraphLockable** x)
+{ bdrv_graph_co_rdunlock(); }
 
 #define GRAPH_AUTO_UNLOCK __attribute__((cleanup(graph_lockable_auto_unlock)))
 
@@ -237,30 +237,26 @@ graph_lockable_auto_unlock(GraphLockable **x)
  * @unlock_var can't be unlocked and then set to NULL because TSA wants the lock
  * to be held at the start of every iteration of the loop.
  */
-#define WITH_GRAPH_RDLOCK_GUARD_(var)                                         \
-    for (GraphLockable *unlock_var GRAPH_AUTO_UNLOCK =                        \
-            graph_lockable_auto_lock(GML_OBJ_()),                             \
-            *var = unlock_var;                                                \
-         var;                                                                 \
+#define WITH_GRAPH_RDLOCK_GUARD_(var)                                                                                \
+    for (GraphLockable *unlock_var GRAPH_AUTO_UNLOCK = graph_lockable_auto_lock(GML_OBJ_()), *var = unlock_var; var; \
          var = NULL)
 
-#define WITH_GRAPH_RDLOCK_GUARD() \
-    WITH_GRAPH_RDLOCK_GUARD_(glue(graph_lockable_auto, __COUNTER__))
+#define WITH_GRAPH_RDLOCK_GUARD() WITH_GRAPH_RDLOCK_GUARD_(glue(graph_lockable_auto, __COUNTER__))
 
-#define GRAPH_RDLOCK_GUARD(x)                                       \
-    GraphLockable * GRAPH_AUTO_UNLOCK                               \
-    glue(graph_lockable_auto, __COUNTER__) G_GNUC_UNUSED =          \
-            graph_lockable_auto_lock(GML_OBJ_())
+#define GRAPH_RDLOCK_GUARD(x)                                                               \
+    GraphLockable* GRAPH_AUTO_UNLOCK glue(graph_lockable_auto, __COUNTER__) G_GNUC_UNUSED = \
+        graph_lockable_auto_lock(GML_OBJ_())
 
-
-typedef struct GraphLockableMainloop { } GraphLockableMainloop;
+typedef struct GraphLockableMainloop
+{
+} GraphLockableMainloop;
 
 /*
  * In C, compound literals have the lifetime of an automatic variable.
  * In C++ it would be different, but then C++ wouldn't need QemuLockable
  * either...
  */
-#define GMLML_OBJ_() (&(GraphLockableMainloop) { })
+#define GMLML_OBJ_() (&(GraphLockableMainloop){})
 
 /*
  * This is not marked as TSA_ACQUIRE_SHARED() because TSA doesn't understand the
@@ -268,23 +264,19 @@ typedef struct GraphLockableMainloop { } GraphLockableMainloop;
  * unlocked. TSA_ASSERT_SHARED() makes sure that the following calls know that
  * we hold the lock while unlocking is left unchecked.
  */
-static inline GraphLockableMainloop * TSA_ASSERT_SHARED(graph_lock) TSA_NO_TSA
-graph_lockable_auto_lock_mainloop(GraphLockableMainloop *x)
+static inline GraphLockableMainloop* TSA_ASSERT_SHARED(graph_lock)
+TSA_NO_TSA
+graph_lockable_auto_lock_mainloop(GraphLockableMainloop* x)
 {
     bdrv_graph_rdlock_main_loop();
     return x;
 }
 
-static inline void TSA_NO_TSA
-graph_lockable_auto_unlock_mainloop(GraphLockableMainloop *x)
-{
-    bdrv_graph_rdunlock_main_loop();
-}
+static inline void TSA_NO_TSA graph_lockable_auto_unlock_mainloop(GraphLockableMainloop* x)
+{ bdrv_graph_rdunlock_main_loop(); }
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(GraphLockableMainloop,
-                              graph_lockable_auto_unlock_mainloop)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(GraphLockableMainloop, graph_lockable_auto_unlock_mainloop)
 
-#define GRAPH_RDLOCK_GUARD_MAINLOOP(x)                              \
-    g_autoptr(GraphLockableMainloop)                                \
-    glue(graph_lockable_auto, __COUNTER__) G_GNUC_UNUSED =          \
-            graph_lockable_auto_lock_mainloop(GMLML_OBJ_())
+#define GRAPH_RDLOCK_GUARD_MAINLOOP(x)                                                      \
+    g_autoptr(GraphLockableMainloop) glue(graph_lockable_auto, __COUNTER__) G_GNUC_UNUSED = \
+        graph_lockable_auto_lock_mainloop(GMLML_OBJ_())

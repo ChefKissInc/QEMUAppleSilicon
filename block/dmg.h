@@ -28,7 +28,8 @@
 #include "block/block_int.h"
 #include <zlib.h>
 
-typedef struct BDRVDMGState {
+typedef struct BDRVDMGState
+{
     CoMutex lock;
     /* each chunk contains a certain number of sectors,
      * offsets[i] is the offset in the .dmg file,
@@ -38,20 +39,19 @@ typedef struct BDRVDMGState {
      * the sectors array is ordered
      * 0<=i<n_chunks */
 
-    uint32_t n_chunks;
-    uint32_t *types;
-    uint64_t *offsets;
-    uint64_t *lengths;
-    uint64_t *sectors;
-    uint64_t *sectorcounts;
-    uint32_t current_chunk;
-    uint8_t *compressed_chunk;
-    uint8_t *uncompressed_chunk;
-    z_stream zstream;
+    uint32_t  n_chunks;
+    uint32_t* types;
+    uint64_t* offsets;
+    uint64_t* lengths;
+    uint64_t* sectors;
+    uint64_t* sectorcounts;
+    uint32_t  current_chunk;
+    uint8_t*  compressed_chunk;
+    uint8_t*  uncompressed_chunk;
+    z_stream  zstream;
 } BDRVDMGState;
 
-typedef int BdrvDmgUncompressFunc(char *next_in, unsigned int avail_in,
-                                  char *next_out, unsigned int avail_out);
+typedef int BdrvDmgUncompressFunc(char* next_in, unsigned int avail_in, char* next_out, unsigned int avail_out);
 
-extern BdrvDmgUncompressFunc *dmg_uncompress_bz2;
-extern BdrvDmgUncompressFunc *dmg_uncompress_lzfse;
+extern BdrvDmgUncompressFunc* dmg_uncompress_bz2;
+extern BdrvDmgUncompressFunc* dmg_uncompress_lzfse;

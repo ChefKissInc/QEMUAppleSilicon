@@ -16,7 +16,8 @@
 
 #include "qemu/fifo8.h"
 
-typedef struct {
+typedef struct
+{
     Fifo8 fifo;
 } Fifo32;
 
@@ -29,10 +30,8 @@ typedef struct {
  * when finished using the fifo. The FIFO is initially empty.
  */
 
-static inline void fifo32_create(Fifo32 *fifo, uint32_t capacity)
-{
-    fifo8_create(&fifo->fifo, capacity * sizeof(uint32_t));
-}
+static inline void fifo32_create(Fifo32* fifo, uint32_t capacity)
+{ fifo8_create(&fifo->fifo, capacity * sizeof(uint32_t)); }
 
 /**
  * fifo32_destroy:
@@ -42,10 +41,7 @@ static inline void fifo32_create(Fifo32 *fifo, uint32_t capacity)
  * storage. The FIFO is no longer usable after this has been called.
  */
 
-static inline void fifo32_destroy(Fifo32 *fifo)
-{
-    fifo8_destroy(&fifo->fifo);
-}
+static inline void fifo32_destroy(Fifo32* fifo) { fifo8_destroy(&fifo->fifo); }
 
 /**
  * fifo32_num_free:
@@ -56,10 +52,8 @@ static inline void fifo32_destroy(Fifo32 *fifo)
  * Returns: Number of free 32 bit words.
  */
 
-static inline uint32_t fifo32_num_free(Fifo32 *fifo)
-{
-    return DIV_ROUND_UP(fifo8_num_free(&fifo->fifo), sizeof(uint32_t));
-}
+static inline uint32_t fifo32_num_free(Fifo32* fifo)
+{ return DIV_ROUND_UP(fifo8_num_free(&fifo->fifo), sizeof(uint32_t)); }
 
 /**
  * fifo32_num_used:
@@ -70,10 +64,8 @@ static inline uint32_t fifo32_num_free(Fifo32 *fifo)
  * Returns: Number of used 32 bit words.
  */
 
-static inline uint32_t fifo32_num_used(Fifo32 *fifo)
-{
-    return DIV_ROUND_UP(fifo8_num_used(&fifo->fifo), sizeof(uint32_t));
-}
+static inline uint32_t fifo32_num_used(Fifo32* fifo)
+{ return DIV_ROUND_UP(fifo8_num_used(&fifo->fifo), sizeof(uint32_t)); }
 
 /**
  * fifo32_push:
@@ -85,7 +77,7 @@ static inline uint32_t fifo32_num_used(Fifo32 *fifo)
  * fifo32_is_full().
  */
 
-static inline void fifo32_push(Fifo32 *fifo, uint32_t data)
+static inline void fifo32_push(Fifo32* fifo, uint32_t data)
 {
     int i;
 
@@ -106,14 +98,11 @@ static inline void fifo32_push(Fifo32 *fifo, uint32_t data)
  * using fifo32_num_free().
  */
 
-static inline void fifo32_push_all(Fifo32 *fifo, const uint32_t *data,
-                                   uint32_t num)
+static inline void fifo32_push_all(Fifo32* fifo, const uint32_t* data, uint32_t num)
 {
     int i;
 
-    for (i = 0; i < num; i++) {
-        fifo32_push(fifo, data[i]);
-    }
+    for (i = 0; i < num; i++) { fifo32_push(fifo, data[i]); }
 }
 
 /**
@@ -127,14 +116,12 @@ static inline void fifo32_push_all(Fifo32 *fifo, const uint32_t *data,
  * Returns: The popped 32 bits data word.
  */
 
-static inline uint32_t fifo32_pop(Fifo32 *fifo)
+static inline uint32_t fifo32_pop(Fifo32* fifo)
 {
     uint32_t ret = 0;
-    int i;
+    int      i;
 
-    for (i = 0; i < sizeof(uint32_t); i++) {
-        ret |= (fifo8_pop(&fifo->fifo) << (i * 8));
-    }
+    for (i = 0; i < sizeof(uint32_t); i++) { ret |= (fifo8_pop(&fifo->fifo) << (i * 8)); }
 
     return ret;
 }
@@ -151,10 +138,7 @@ static inline uint32_t fifo32_pop(Fifo32 *fifo)
  * Reset a FIFO. All data is discarded and the FIFO is emptied.
  */
 
-static inline void fifo32_reset(Fifo32 *fifo)
-{
-    fifo8_reset(&fifo->fifo);
-}
+static inline void fifo32_reset(Fifo32* fifo) { fifo8_reset(&fifo->fifo); }
 
 /**
  * fifo32_is_empty:
@@ -165,10 +149,7 @@ static inline void fifo32_reset(Fifo32 *fifo)
  * Returns: True if the fifo is empty, false otherwise.
  */
 
-static inline bool fifo32_is_empty(Fifo32 *fifo)
-{
-    return fifo8_is_empty(&fifo->fifo);
-}
+static inline bool fifo32_is_empty(Fifo32* fifo) { return fifo8_is_empty(&fifo->fifo); }
 
 /**
  * fifo32_is_full:
@@ -179,7 +160,4 @@ static inline bool fifo32_is_empty(Fifo32 *fifo)
  * Returns: True if the fifo is full, false otherwise.
  */
 
-static inline bool fifo32_is_full(Fifo32 *fifo)
-{
-    return fifo8_num_free(&fifo->fifo) < sizeof(uint32_t);
-}
+static inline bool fifo32_is_full(Fifo32* fifo) { return fifo8_num_free(&fifo->fifo) < sizeof(uint32_t); }

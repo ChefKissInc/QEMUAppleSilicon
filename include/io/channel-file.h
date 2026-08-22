@@ -26,7 +26,6 @@
 #define TYPE_QIO_CHANNEL_FILE "qio-channel-file"
 OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelFile, QIO_CHANNEL_FILE)
 
-
 /**
  * QIOChannelFile:
  *
@@ -40,11 +39,11 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelFile, QIO_CHANNEL_FILE)
  *
  */
 
-struct QIOChannelFile {
+struct QIOChannelFile
+{
     QIOChannel parent;
-    int fd;
+    int        fd;
 };
-
 
 /**
  * qio_channel_file_new_fd:
@@ -64,8 +63,7 @@ struct QIOChannelFile {
  *
  * Returns: the new channel object
  */
-QIOChannelFile *
-qio_channel_file_new_fd(int fd);
+QIOChannelFile* qio_channel_file_new_fd(int fd);
 
 /**
  * qio_channel_file_new_dupfd:
@@ -82,8 +80,7 @@ qio_channel_file_new_fd(int fd);
  *
  * Returns: the new channel object
  */
-QIOChannelFile *
-qio_channel_file_new_dupfd(int fd, Error **errp);
+QIOChannelFile* qio_channel_file_new_dupfd(int fd, Error** errp);
 
 /**
  * qio_channel_file_new_path:
@@ -100,8 +97,4 @@ qio_channel_file_new_dupfd(int fd, Error **errp);
  *
  * Returns: the new channel object
  */
-QIOChannelFile *
-qio_channel_file_new_path(const char *path,
-                          int flags,
-                          mode_t mode,
-                          Error **errp);
+QIOChannelFile* qio_channel_file_new_path(const char* path, int flags, mode_t mode, Error** errp);

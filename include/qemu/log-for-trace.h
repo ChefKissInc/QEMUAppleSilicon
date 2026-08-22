@@ -20,13 +20,10 @@
 /* Private global variable, don't use */
 extern int qemu_loglevel;
 
-#define LOG_TRACE          (1 << 15)
+#define LOG_TRACE (1 << 15)
 
 /* Returns true if a bit is set in the current loglevel mask */
-static inline bool qemu_loglevel_mask(int mask)
-{
-    return (qemu_loglevel & mask) != 0;
-}
+static inline bool qemu_loglevel_mask(int mask) { return (qemu_loglevel & mask) != 0; }
 
 /* main logging function */
-void G_GNUC_PRINTF(1, 2) qemu_log(const char *fmt, ...);
+void G_GNUC_PRINTF(1, 2) qemu_log(const char* fmt, ...);

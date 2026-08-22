@@ -10,33 +10,34 @@
 #include "qemu/accel.h"
 #include "qom/object.h"
 
-struct AccelState {
+struct AccelState
+{
     Object parent_obj;
 };
 
-struct AccelClass {
+struct AccelClass
+{
     ObjectClass parent_class;
 
-    const char *name;
+    const char* name;
     /* Cached by accel_init_ops_interfaces() when created */
-    AccelOpsClass *ops;
+    AccelOpsClass* ops;
 
-    int (*init_machine)(AccelState *as, MachineState *ms);
-    bool (*cpu_common_realize)(CPUState *cpu, Error **errp);
-    void (*cpu_common_unrealize)(CPUState *cpu);
+    int  (*init_machine)(AccelState* as, MachineState* ms);
+    bool (*cpu_common_realize)(CPUState* cpu, Error** errp);
+    void (*cpu_common_unrealize)(CPUState* cpu);
     /* get_stats: Append statistics to @buf */
-    void (*get_stats)(AccelState *as, GString *buf);
+    void (*get_stats)(AccelState* as, GString* buf);
 
     /* system related hooks */
-    void (*setup_post)(AccelState *as);
-    void (*pre_resume_vm)(AccelState *as, bool step_pending);
-    bool (*has_memory)(AccelState *accel, AddressSpace *as,
-                       hwaddr start_addr, hwaddr size);
+    void (*setup_post)(AccelState* as);
+    void (*pre_resume_vm)(AccelState* as, bool step_pending);
+    bool (*has_memory)(AccelState* accel, AddressSpace* as, hwaddr start_addr, hwaddr size);
 
     /* gdbstub related hooks */
-    int (*gdbstub_supported_sstep_flags)(AccelState *as);
+    int (*gdbstub_supported_sstep_flags)(AccelState* as);
 
-    bool *allowed;
+    bool* allowed;
     /*
      * Array of global properties that would be applied when specific
      * accelerator is chosen. It works like MachineClass.compat_props
@@ -44,5 +45,5 @@ struct AccelClass {
      * global properties may be overridden by machine-type
      * compat_props or user-provided global properties.
      */
-    GPtrArray *compat_props;
+    GPtrArray* compat_props;
 };

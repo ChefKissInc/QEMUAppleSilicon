@@ -16,10 +16,9 @@
 
 #include "stream_data.h"
 
-static gboolean net_stream_data_writable(QIOChannel *ioc,
-                                         GIOCondition condition, gpointer data)
+static gboolean net_stream_data_writable(QIOChannel* ioc, GIOCondition condition, gpointer data)
 {
-    NetStreamData *d = data;
+    NetStreamData* d = data;
 
     d->ioc_write_tag = 0;
 
@@ -28,62 +27,53 @@ static gboolean net_stream_data_writable(QIOChannel *ioc,
     return G_SOURCE_REMOVE;
 }
 
-ssize_t net_stream_data_receive(NetStreamData *d, const uint8_t *buf,
-                                size_t size)
+ssize_t net_stream_data_receive(NetStreamData* d, const uint8_t* buf, size_t size)
 {
-    uint32_t len = htonl(size);
+    uint32_t     len   = htonl(size);
     struct iovec iov[] = {
         {
             .iov_base = &len,
             .iov_len  = sizeof(len),
-        }, {
-            .iov_base = (void *)buf,
+        },
+        {
+            .iov_base = (void*)buf,
             .iov_len  = size,
         },
     };
     struct iovec local_iov[2];
     unsigned int nlocal_iov;
-    size_t remaining;
-    ssize_t ret;
+    size_t       remaining;
+    ssize_t      ret;
 
-    remaining = iov_size(iov, 2) - d->send_index;
+    remaining  = iov_size(iov, 2) - d->send_index;
     nlocal_iov = iov_copy(local_iov, 2, iov, 2, d->send_index, remaining);
-    ret = qio_channel_writev(d->ioc, local_iov, nlocal_iov, NULL);
-    if (ret == QIO_CHANNEL_ERR_BLOCK) {
-        ret = 0; /* handled further down */
-    }
+    ret        = qio_channel_writev(d->ioc, local_iov, nlocal_iov, NULL);
+    if (ret == QIO_CHANNEL_ERR_BLOCK) { ret = 0; /* handled further down */ }
     if (ret == -1) {
         d->send_index = 0;
         return -errno;
     }
     if (ret < (ssize_t)remaining) {
-        d->send_index += ret;
-        d->ioc_write_tag = qio_channel_add_watch(d->ioc, G_IO_OUT,
-                                                 net_stream_data_writable, d,
-                                                 NULL);
+        d->send_index    += ret;
+        d->ioc_write_tag  = qio_channel_add_watch(d->ioc, G_IO_OUT, net_stream_data_writable, d, NULL);
         return 0;
     }
     d->send_index = 0;
     return size;
 }
 
-static void net_stream_data_send_completed(NetClientState *nc, ssize_t len)
+static void net_stream_data_send_completed(NetClientState* nc, ssize_t len)
 {
-    NetStreamData *d = DO_UPCAST(NetStreamData, nc, nc);
+    NetStreamData* d = DO_UPCAST(NetStreamData, nc, nc);
 
-    if (!d->ioc_read_tag) {
-        d->ioc_read_tag = qio_channel_add_watch(d->ioc, G_IO_IN, d->send, d,
-                                                NULL);
-    }
+    if (!d->ioc_read_tag) { d->ioc_read_tag = qio_channel_add_watch(d->ioc, G_IO_IN, d->send, d, NULL); }
 }
 
-void net_stream_data_rs_finalize(SocketReadState *rs)
+void net_stream_data_rs_finalize(SocketReadState* rs)
 {
-    NetStreamData *d = container_of(rs, NetStreamData, rs);
+    NetStreamData* d = container_of(rs, NetStreamData, rs);
 
-    if (qemu_send_packet_async(&d->nc, rs->buf,
-                               rs->packet_len,
-                               net_stream_data_send_completed) == 0) {
+    if (qemu_send_packet_async(&d->nc, rs->buf, rs->packet_len, net_stream_data_send_completed) == 0) {
         if (d->ioc_read_tag) {
             g_source_remove(d->ioc_read_tag);
             d->ioc_read_tag = 0;
@@ -91,20 +81,18 @@ void net_stream_data_rs_finalize(SocketReadState *rs)
     }
 }
 
-gboolean net_stream_data_send(QIOChannel *ioc, GIOCondition condition,
-                              NetStreamData *d)
+gboolean net_stream_data_send(QIOChannel* ioc, GIOCondition condition, NetStreamData* d)
 {
-    int size;
-    int ret;
+    int                     size;
+    int                     ret;
     QEMU_UNINITIALIZED char buf1[NET_BUFSIZE];
-    const char *buf;
+    const char*             buf;
 
     size = qio_channel_read(d->ioc, buf1, sizeof(buf1), NULL);
     if (size < 0) {
-        if (errno != EWOULDBLOCK) {
-            goto eoc;
-        }
-    } else if (size == 0) {
+        if (errno != EWOULDBLOCK) { goto eoc; }
+    }
+    else if (size == 0) {
         /* end of connection */
     eoc:
         d->ioc_read_tag = 0;
@@ -114,8 +102,7 @@ gboolean net_stream_data_send(QIOChannel *ioc, GIOCondition condition,
         }
         if (d->listener) {
             qemu_set_info_str(&d->nc, "listening");
-            qio_net_listener_set_client_func(d->listener,
-                                             d->listen, d, NULL);
+            qio_net_listener_set_client_func(d->listener, d->listen, d, NULL);
         }
         object_unref(OBJECT(d->ioc));
         d->ioc = NULL;
@@ -127,18 +114,14 @@ gboolean net_stream_data_send(QIOChannel *ioc, GIOCondition condition,
     }
     buf = buf1;
 
-    ret = net_fill_rstate(&d->rs, (const uint8_t *)buf, size);
+    ret = net_fill_rstate(&d->rs, (const uint8_t*)buf, size);
 
-    if (ret == -1) {
-        goto eoc;
-    }
+    if (ret == -1) { goto eoc; }
 
     return G_SOURCE_CONTINUE;
 }
 
-void net_stream_data_listen(QIONetListener *listener,
-                            QIOChannelSocket *cioc,
-                            NetStreamData *d)
+void net_stream_data_listen(QIONetListener* listener, QIOChannelSocket* cioc, NetStreamData* d)
 {
     object_ref(OBJECT(cioc));
 
@@ -151,11 +134,11 @@ void net_stream_data_listen(QIONetListener *listener,
     d->ioc_read_tag = qio_channel_add_watch(d->ioc, G_IO_IN, d->send, d, NULL);
 }
 
-int net_stream_data_client_connected(QIOTask *task, NetStreamData *d)
+int net_stream_data_client_connected(QIOTask* task, NetStreamData* d)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(d->ioc);
-    SocketAddress *addr;
-    Error *err = NULL;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(d->ioc);
+    SocketAddress*    addr;
+    Error*            err = NULL;
 
     if (qio_task_propagate_error(task, &err)) {
         qemu_set_info_str(&d->nc, "error: %s", error_get_pretty(err));

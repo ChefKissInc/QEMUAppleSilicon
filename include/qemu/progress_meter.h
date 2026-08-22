@@ -28,7 +28,8 @@
 
 #include "qemu/thread.h"
 
-typedef struct ProgressMeter {
+typedef struct ProgressMeter
+{
     /**
      * Current progress. The unit is arbitrary as long as the ratio between
      * current and total represents the estimated percentage
@@ -42,18 +43,17 @@ typedef struct ProgressMeter {
     QemuMutex lock; /* protects concurrent access to above fields */
 } ProgressMeter;
 
-void progress_init(ProgressMeter *pm);
-void progress_destroy(ProgressMeter *pm);
+void progress_init(ProgressMeter* pm);
+void progress_destroy(ProgressMeter* pm);
 
 /* Get a snapshot of internal current and total values  */
-void progress_get_snapshot(ProgressMeter *pm, uint64_t *current,
-                           uint64_t *total);
+void progress_get_snapshot(ProgressMeter* pm, uint64_t* current, uint64_t* total);
 
 /* Increases the amount of work done so far by @done */
-void progress_work_done(ProgressMeter *pm, uint64_t done);
+void progress_work_done(ProgressMeter* pm, uint64_t done);
 
 /* Sets how much work has to be done to complete to @remaining */
-void progress_set_remaining(ProgressMeter *pm, uint64_t remaining);
+void progress_set_remaining(ProgressMeter* pm, uint64_t remaining);
 
 /* Increases the total work to do by @delta */
-void progress_increase_remaining(ProgressMeter *pm, uint64_t delta);
+void progress_increase_remaining(ProgressMeter* pm, uint64_t delta);

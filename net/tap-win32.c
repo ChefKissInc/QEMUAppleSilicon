@@ -29,10 +29,10 @@
 #include "qemu/osdep.h"
 #include "tap_int.h"
 
-#include "clients.h"            /* net_init_tap */
+#include "clients.h" /* net_init_tap */
 #include "net/eth.h"
 #include "net/net.h"
-#include "net/tap.h"            /* tap_has_ufo, ... */
+#include "net/tap.h" /* tap_has_ufo, ... */
 #include "qemu/error-report.h"
 #include "qemu/main-loop.h"
 #include <windows.h>
@@ -42,18 +42,17 @@
 // TAP IOCTLs
 //=============
 
-#define TAP_CONTROL_CODE(request,method) \
-  CTL_CODE (FILE_DEVICE_UNKNOWN, request, method, FILE_ANY_ACCESS)
+#define TAP_CONTROL_CODE(request, method) CTL_CODE(FILE_DEVICE_UNKNOWN, request, method, FILE_ANY_ACCESS)
 
-#define TAP_IOCTL_GET_MAC               TAP_CONTROL_CODE (1, METHOD_BUFFERED)
-#define TAP_IOCTL_GET_VERSION           TAP_CONTROL_CODE (2, METHOD_BUFFERED)
-#define TAP_IOCTL_GET_MTU               TAP_CONTROL_CODE (3, METHOD_BUFFERED)
-#define TAP_IOCTL_GET_INFO              TAP_CONTROL_CODE (4, METHOD_BUFFERED)
-#define TAP_IOCTL_CONFIG_POINT_TO_POINT TAP_CONTROL_CODE (5, METHOD_BUFFERED)
-#define TAP_IOCTL_SET_MEDIA_STATUS      TAP_CONTROL_CODE (6, METHOD_BUFFERED)
-#define TAP_IOCTL_CONFIG_DHCP_MASQ      TAP_CONTROL_CODE (7, METHOD_BUFFERED)
-#define TAP_IOCTL_GET_LOG_LINE          TAP_CONTROL_CODE (8, METHOD_BUFFERED)
-#define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE (9, METHOD_BUFFERED)
+#define TAP_IOCTL_GET_MAC               TAP_CONTROL_CODE(1, METHOD_BUFFERED)
+#define TAP_IOCTL_GET_VERSION           TAP_CONTROL_CODE(2, METHOD_BUFFERED)
+#define TAP_IOCTL_GET_MTU               TAP_CONTROL_CODE(3, METHOD_BUFFERED)
+#define TAP_IOCTL_GET_INFO              TAP_CONTROL_CODE(4, METHOD_BUFFERED)
+#define TAP_IOCTL_CONFIG_POINT_TO_POINT TAP_CONTROL_CODE(5, METHOD_BUFFERED)
+#define TAP_IOCTL_SET_MEDIA_STATUS      TAP_CONTROL_CODE(6, METHOD_BUFFERED)
+#define TAP_IOCTL_CONFIG_DHCP_MASQ      TAP_CONTROL_CODE(7, METHOD_BUFFERED)
+#define TAP_IOCTL_GET_LOG_LINE          TAP_CONTROL_CODE(8, METHOD_BUFFERED)
+#define TAP_IOCTL_CONFIG_DHCP_SET_OPT   TAP_CONTROL_CODE(9, METHOD_BUFFERED)
 
 //=================
 // Registry keys
@@ -70,12 +69,11 @@
 #define USERMODEDEVICEDIR "\\\\.\\Global\\"
 #define TAPSUFFIX         ".tap"
 
-
 //======================
 // Compile time configuration
 //======================
 
-//#define DEBUG_TAP_WIN32
+// #define DEBUG_TAP_WIN32
 
 /* FIXME: The asynch write path appears to be broken at
  * present. WriteFile() ignores the lpNumberOfBytesWritten parameter
@@ -84,34 +82,36 @@
  * interface. */
 /* #define TUN_ASYNCHRONOUS_WRITES 1 */
 
-#define TUN_BUFFER_SIZE 1560
+#define TUN_BUFFER_SIZE      1560
 #define TUN_MAX_BUFFER_COUNT 32
 
 /*
  * The data member "buffer" must be the first element in the tun_buffer
  * structure. See the function, tap_win32_free_buffer.
  */
-typedef struct tun_buffer_s {
-    unsigned char buffer [TUN_BUFFER_SIZE];
-    unsigned long read_size;
+typedef struct tun_buffer_s
+{
+    unsigned char        buffer[TUN_BUFFER_SIZE];
+    unsigned long        read_size;
     struct tun_buffer_s* next;
 } tun_buffer_t;
 
-typedef struct tap_win32_overlapped {
-    HANDLE handle;
-    HANDLE read_event;
-    HANDLE write_event;
-    HANDLE output_queue_semaphore;
-    HANDLE free_list_semaphore;
-    HANDLE tap_semaphore;
+typedef struct tap_win32_overlapped
+{
+    HANDLE           handle;
+    HANDLE           read_event;
+    HANDLE           write_event;
+    HANDLE           output_queue_semaphore;
+    HANDLE           free_list_semaphore;
+    HANDLE           tap_semaphore;
     CRITICAL_SECTION output_queue_cs;
     CRITICAL_SECTION free_list_cs;
-    OVERLAPPED read_overlapped;
-    OVERLAPPED write_overlapped;
-    tun_buffer_t buffers[TUN_MAX_BUFFER_COUNT];
-    tun_buffer_t* free_list;
-    tun_buffer_t* output_queue_front;
-    tun_buffer_t* output_queue_back;
+    OVERLAPPED       read_overlapped;
+    OVERLAPPED       write_overlapped;
+    tun_buffer_t     buffers[TUN_MAX_BUFFER_COUNT];
+    tun_buffer_t*    free_list;
+    tun_buffer_t*    output_queue_front;
+    tun_buffer_t*    output_queue_back;
 } tap_win32_overlapped_t;
 
 static tap_win32_overlapped_t tap_overlapped;
@@ -122,7 +122,7 @@ static tun_buffer_t* get_buffer_from_free_list(tap_win32_overlapped_t* const ove
     WaitForSingleObject(overlapped->free_list_semaphore, INFINITE);
     EnterCriticalSection(&overlapped->free_list_cs);
     buffer = overlapped->free_list;
-//    assert(buffer != NULL);
+    //    assert(buffer != NULL);
     overlapped->free_list = buffer->next;
     LeaveCriticalSection(&overlapped->free_list_cs);
     buffer->next = NULL;
@@ -132,7 +132,7 @@ static tun_buffer_t* get_buffer_from_free_list(tap_win32_overlapped_t* const ove
 static void put_buffer_on_free_list(tap_win32_overlapped_t* const overlapped, tun_buffer_t* const buffer)
 {
     EnterCriticalSection(&overlapped->free_list_cs);
-    buffer->next = overlapped->free_list;
+    buffer->next          = overlapped->free_list;
     overlapped->free_list = buffer;
     LeaveCriticalSection(&overlapped->free_list_cs);
     ReleaseSemaphore(overlapped->free_list_semaphore, 1, NULL);
@@ -141,23 +141,20 @@ static void put_buffer_on_free_list(tap_win32_overlapped_t* const overlapped, tu
 static tun_buffer_t* get_buffer_from_output_queue(tap_win32_overlapped_t* const overlapped, const int block)
 {
     tun_buffer_t* buffer = NULL;
-    DWORD result, timeout = block ? INFINITE : 0L;
+    DWORD         result, timeout = block ? INFINITE : 0L;
 
     // Non-blocking call
     result = WaitForSingleObject(overlapped->output_queue_semaphore, timeout);
 
-    switch (result)
-    {
+    switch (result) {
         // The semaphore object was signaled.
         case WAIT_OBJECT_0:
             EnterCriticalSection(&overlapped->output_queue_cs);
 
-            buffer = overlapped->output_queue_front;
+            buffer                         = overlapped->output_queue_front;
             overlapped->output_queue_front = buffer->next;
 
-            if(overlapped->output_queue_front == NULL) {
-                overlapped->output_queue_back = NULL;
-            }
+            if (overlapped->output_queue_front == NULL) { overlapped->output_queue_back = NULL; }
 
             LeaveCriticalSection(&overlapped->output_queue_cs);
             break;
@@ -171,21 +168,20 @@ static tun_buffer_t* get_buffer_from_output_queue(tap_win32_overlapped_t* const 
     return buffer;
 }
 
-static tun_buffer_t* get_buffer_from_output_queue_immediate (tap_win32_overlapped_t* const overlapped)
-{
-    return get_buffer_from_output_queue(overlapped, 0);
-}
+static tun_buffer_t* get_buffer_from_output_queue_immediate(tap_win32_overlapped_t* const overlapped)
+{ return get_buffer_from_output_queue(overlapped, 0); }
 
 static void put_buffer_on_output_queue(tap_win32_overlapped_t* const overlapped, tun_buffer_t* const buffer)
 {
     EnterCriticalSection(&overlapped->output_queue_cs);
 
-    if(overlapped->output_queue_front == NULL && overlapped->output_queue_back == NULL) {
+    if (overlapped->output_queue_front == NULL && overlapped->output_queue_back == NULL) {
         overlapped->output_queue_front = overlapped->output_queue_back = buffer;
-    } else {
-        buffer->next = NULL;
+    }
+    else {
+        buffer->next                        = NULL;
         overlapped->output_queue_back->next = buffer;
-        overlapped->output_queue_back = buffer;
+        overlapped->output_queue_back       = buffer;
     }
 
     LeaveCriticalSection(&overlapped->output_queue_cs);
@@ -193,169 +189,103 @@ static void put_buffer_on_output_queue(tap_win32_overlapped_t* const overlapped,
     ReleaseSemaphore(overlapped->output_queue_semaphore, 1, NULL);
 }
 
-
-static int is_tap_win32_dev(const char *guid)
+static int is_tap_win32_dev(const char* guid)
 {
-    HKEY netcard_key;
-    LONG status;
+    HKEY  netcard_key;
+    LONG  status;
     DWORD len;
-    int i = 0;
+    int   i = 0;
 
-    status = RegOpenKeyEx(
-        HKEY_LOCAL_MACHINE,
-        ADAPTER_KEY,
-        0,
-        KEY_READ,
-        &netcard_key);
+    status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, ADAPTER_KEY, 0, KEY_READ, &netcard_key);
 
-    if (status != ERROR_SUCCESS) {
-        return FALSE;
-    }
+    if (status != ERROR_SUCCESS) { return FALSE; }
 
     for (;;) {
-        char enum_name[256];
-        g_autofree char *unit_string = NULL;
-        HKEY unit_key;
-        char component_id_string[] = "ComponentId";
-        char component_id[256];
-        char net_cfg_instance_id_string[] = "NetCfgInstanceId";
-        char net_cfg_instance_id[256];
-        DWORD data_type;
+        char             enum_name[256];
+        g_autofree char* unit_string = NULL;
+        HKEY             unit_key;
+        char             component_id_string[] = "ComponentId";
+        char             component_id[256];
+        char             net_cfg_instance_id_string[] = "NetCfgInstanceId";
+        char             net_cfg_instance_id[256];
+        DWORD            data_type;
 
-        len = sizeof (enum_name);
-        status = RegEnumKeyEx(
-            netcard_key,
-            i,
-            enum_name,
-            &len,
-            NULL,
-            NULL,
-            NULL,
-            NULL);
+        len    = sizeof(enum_name);
+        status = RegEnumKeyEx(netcard_key, i, enum_name, &len, NULL, NULL, NULL, NULL);
 
-        if (status == ERROR_NO_MORE_ITEMS)
-            break;
+        if (status == ERROR_NO_MORE_ITEMS) { break; }
         else if (status != ERROR_SUCCESS) {
             return FALSE;
         }
 
         unit_string = g_strdup_printf("%s\\%s", ADAPTER_KEY, enum_name);
 
-        status = RegOpenKeyEx(
-            HKEY_LOCAL_MACHINE,
-            unit_string,
-            0,
-            KEY_READ,
-            &unit_key);
+        status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, unit_string, 0, KEY_READ, &unit_key);
 
-        if (status != ERROR_SUCCESS) {
-            return FALSE;
-        } else {
-            len = sizeof (component_id);
-            status = RegQueryValueEx(
-                unit_key,
-                component_id_string,
-                NULL,
-                &data_type,
-                (LPBYTE)component_id,
-                &len);
+        if (status != ERROR_SUCCESS) { return FALSE; }
+        else {
+            len    = sizeof(component_id);
+            status = RegQueryValueEx(unit_key, component_id_string, NULL, &data_type, (LPBYTE)component_id, &len);
 
             if (!(status != ERROR_SUCCESS || data_type != REG_SZ)) {
-                len = sizeof (net_cfg_instance_id);
-                status = RegQueryValueEx(
-                    unit_key,
-                    net_cfg_instance_id_string,
-                    NULL,
-                    &data_type,
-                    (LPBYTE)net_cfg_instance_id,
-                    &len);
+                len    = sizeof(net_cfg_instance_id);
+                status = RegQueryValueEx(unit_key, net_cfg_instance_id_string, NULL, &data_type,
+                                         (LPBYTE)net_cfg_instance_id, &len);
 
                 if (status == ERROR_SUCCESS && data_type == REG_SZ) {
                     if (/* !strcmp (component_id, TAP_COMPONENT_ID) &&*/
-                        !strcmp (net_cfg_instance_id, guid)) {
-                        RegCloseKey (unit_key);
-                        RegCloseKey (netcard_key);
+                        !strcmp(net_cfg_instance_id, guid))
+                    {
+                        RegCloseKey(unit_key);
+                        RegCloseKey(netcard_key);
                         return TRUE;
                     }
                 }
             }
-            RegCloseKey (unit_key);
+            RegCloseKey(unit_key);
         }
         ++i;
     }
 
-    RegCloseKey (netcard_key);
+    RegCloseKey(netcard_key);
     return FALSE;
 }
 
-static int get_device_guid(
-    char *name,
-    int name_size,
-    char *actual_name,
-    int actual_name_size)
+static int get_device_guid(char* name, int name_size, char* actual_name, int actual_name_size)
 {
-    LONG status;
-    HKEY control_net_key;
+    LONG  status;
+    HKEY  control_net_key;
     DWORD len;
-    int i = 0;
-    int stop = 0;
+    int   i    = 0;
+    int   stop = 0;
 
-    status = RegOpenKeyEx(
-        HKEY_LOCAL_MACHINE,
-        NETWORK_CONNECTIONS_KEY,
-        0,
-        KEY_READ,
-        &control_net_key);
+    status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, NETWORK_CONNECTIONS_KEY, 0, KEY_READ, &control_net_key);
 
-    if (status != ERROR_SUCCESS) {
-        return -1;
-    }
+    if (status != ERROR_SUCCESS) { return -1; }
 
-    while (!stop)
-    {
-        char enum_name[256];
-        g_autofree char *connection_string = NULL;
-        HKEY connection_key;
-        char name_data[256];
-        DWORD name_type;
-        const char name_string[] = "Name";
+    while (!stop) {
+        char             enum_name[256];
+        g_autofree char* connection_string = NULL;
+        HKEY             connection_key;
+        char             name_data[256];
+        DWORD            name_type;
+        const char       name_string[] = "Name";
 
-        len = sizeof (enum_name);
-        status = RegEnumKeyEx(
-            control_net_key,
-            i,
-            enum_name,
-            &len,
-            NULL,
-            NULL,
-            NULL,
-            NULL);
+        len    = sizeof(enum_name);
+        status = RegEnumKeyEx(control_net_key, i, enum_name, &len, NULL, NULL, NULL, NULL);
 
-        if (status == ERROR_NO_MORE_ITEMS)
-            break;
+        if (status == ERROR_NO_MORE_ITEMS) { break; }
         else if (status != ERROR_SUCCESS) {
             return -1;
         }
 
-        connection_string = g_strdup_printf("%s\\%s\\Connection",
-             NETWORK_CONNECTIONS_KEY, enum_name);
+        connection_string = g_strdup_printf("%s\\%s\\Connection", NETWORK_CONNECTIONS_KEY, enum_name);
 
-        status = RegOpenKeyEx(
-            HKEY_LOCAL_MACHINE,
-            connection_string,
-            0,
-            KEY_READ,
-            &connection_key);
+        status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, connection_string, 0, KEY_READ, &connection_key);
 
         if (status == ERROR_SUCCESS) {
-            len = sizeof (name_data);
-            status = RegQueryValueEx(
-                connection_key,
-                name_string,
-                NULL,
-                &name_type,
-                (LPBYTE)name_data,
-                &len);
+            len    = sizeof(name_data);
+            status = RegQueryValueEx(connection_key, name_string, NULL, &name_type, (LPBYTE)name_data, &len);
 
             if (status != ERROR_SUCCESS || name_type != REG_SZ) {
                 ++i;
@@ -367,7 +297,7 @@ static int get_device_guid(
                     if (actual_name) {
                         if (strcmp(actual_name, "") != 0) {
                             if (strcmp(name_data, actual_name) != 0) {
-                                RegCloseKey (connection_key);
+                                RegCloseKey(connection_key);
                                 ++i;
                                 continue;
                             }
@@ -380,15 +310,14 @@ static int get_device_guid(
                 }
             }
 
-            RegCloseKey (connection_key);
+            RegCloseKey(connection_key);
         }
         ++i;
     }
 
-    RegCloseKey (control_net_key);
+    RegCloseKey(control_net_key);
 
-    if (stop == 0)
-        return -1;
+    if (stop == 0) { return -1; }
 
     return 0;
 }
@@ -397,82 +326,70 @@ static int tap_win32_set_status(HANDLE handle, int status)
 {
     unsigned long len = 0;
 
-    return DeviceIoControl(handle, TAP_IOCTL_SET_MEDIA_STATUS,
-                &status, sizeof (status),
-                &status, sizeof (status), &len, NULL);
+    return DeviceIoControl(handle, TAP_IOCTL_SET_MEDIA_STATUS, &status, sizeof(status), &status, sizeof(status), &len,
+                           NULL);
 }
 
 static void tap_win32_overlapped_init(tap_win32_overlapped_t* const overlapped, const HANDLE handle)
 {
     overlapped->handle = handle;
 
-    overlapped->read_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    overlapped->read_event  = CreateEvent(NULL, FALSE, FALSE, NULL);
     overlapped->write_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-    overlapped->read_overlapped.Offset = 0;
+    overlapped->read_overlapped.Offset     = 0;
     overlapped->read_overlapped.OffsetHigh = 0;
-    overlapped->read_overlapped.hEvent = overlapped->read_event;
+    overlapped->read_overlapped.hEvent     = overlapped->read_event;
 
-    overlapped->write_overlapped.Offset = 0;
+    overlapped->write_overlapped.Offset     = 0;
     overlapped->write_overlapped.OffsetHigh = 0;
-    overlapped->write_overlapped.hEvent = overlapped->write_event;
+    overlapped->write_overlapped.hEvent     = overlapped->write_event;
 
     InitializeCriticalSection(&overlapped->output_queue_cs);
     InitializeCriticalSection(&overlapped->free_list_cs);
 
-    overlapped->output_queue_semaphore = CreateSemaphore(
-        NULL,   // default security attributes
-        0,   // initial count
-        TUN_MAX_BUFFER_COUNT,   // maximum count
-        NULL);  // unnamed semaphore
+    overlapped->output_queue_semaphore = CreateSemaphore(NULL,                    // default security attributes
+                                                         0,                       // initial count
+                                                         TUN_MAX_BUFFER_COUNT,    // maximum count
+                                                         NULL);                   // unnamed semaphore
 
-    if(!overlapped->output_queue_semaphore)  {
-        fprintf(stderr, "error creating output queue semaphore!\n");
-    }
+    if (!overlapped->output_queue_semaphore) { fprintf(stderr, "error creating output queue semaphore!\n"); }
 
-    overlapped->free_list_semaphore = CreateSemaphore(
-        NULL,   // default security attributes
-        TUN_MAX_BUFFER_COUNT,   // initial count
-        TUN_MAX_BUFFER_COUNT,   // maximum count
-        NULL);  // unnamed semaphore
+    overlapped->free_list_semaphore = CreateSemaphore(NULL,                    // default security attributes
+                                                      TUN_MAX_BUFFER_COUNT,    // initial count
+                                                      TUN_MAX_BUFFER_COUNT,    // maximum count
+                                                      NULL);                   // unnamed semaphore
 
-    if(!overlapped->free_list_semaphore)  {
-        fprintf(stderr, "error creating free list semaphore!\n");
-    }
+    if (!overlapped->free_list_semaphore) { fprintf(stderr, "error creating free list semaphore!\n"); }
 
     overlapped->free_list = overlapped->output_queue_front = overlapped->output_queue_back = NULL;
 
     {
         unsigned index;
-        for(index = 0; index < TUN_MAX_BUFFER_COUNT; index++) {
+        for (index = 0; index < TUN_MAX_BUFFER_COUNT; index++) {
             tun_buffer_t* element = &overlapped->buffers[index];
-            element->next = overlapped->free_list;
+            element->next         = overlapped->free_list;
             overlapped->free_list = element;
         }
     }
     /* To count buffers, initially no-signal. */
     overlapped->tap_semaphore = CreateSemaphore(NULL, 0, TUN_MAX_BUFFER_COUNT, NULL);
-    if(!overlapped->tap_semaphore)
-        fprintf(stderr, "error creating tap_semaphore.\n");
+    if (!overlapped->tap_semaphore) { fprintf(stderr, "error creating tap_semaphore.\n"); }
 }
 
-static int tap_win32_write(tap_win32_overlapped_t *overlapped,
-                           const void *buffer, unsigned long size)
+static int tap_win32_write(tap_win32_overlapped_t* overlapped, const void* buffer, unsigned long size)
 {
     unsigned long write_size;
-    BOOL result;
-    DWORD error;
+    BOOL          result;
+    DWORD         error;
 
 #ifdef TUN_ASYNCHRONOUS_WRITES
-    result = GetOverlappedResult( overlapped->handle, &overlapped->write_overlapped,
-                                  &write_size, FALSE);
+    result = GetOverlappedResult(overlapped->handle, &overlapped->write_overlapped, &write_size, FALSE);
 
-    if (!result && GetLastError() == ERROR_IO_INCOMPLETE)
-        WaitForSingleObject(overlapped->write_event, INFINITE);
+    if (!result && GetLastError() == ERROR_IO_INCOMPLETE) { WaitForSingleObject(overlapped->write_event, INFINITE); }
 #endif
 
-    result = WriteFile(overlapped->handle, buffer, size,
-                       &write_size, &overlapped->write_overlapped);
+    result = WriteFile(overlapped->handle, buffer, size, &write_size, &overlapped->write_overlapped);
 
 #ifdef TUN_ASYNCHRONOUS_WRITES
     /* FIXME: we can't sensibly set write_size here, without waiting
@@ -481,14 +398,12 @@ static int tap_win32_write(tap_win32_overlapped_t *overlapped,
      * also can't assume it will succeed and return the full size,
      * because that will result in the buffer being reclaimed while
      * the IO is in progress. */
-#error Async writes are broken. Please disable TUN_ASYNCHRONOUS_WRITES.
+    #error Async writes are broken. Please disable TUN_ASYNCHRONOUS_WRITES.
 #else /* !TUN_ASYNCHRONOUS_WRITES */
     if (!result) {
         error = GetLastError();
         if (error == ERROR_IO_PENDING) {
-            result = GetOverlappedResult(overlapped->handle,
-                                         &overlapped->write_overlapped,
-                                         &write_size, TRUE);
+            result = GetOverlappedResult(overlapped->handle, &overlapped->write_overlapped, &write_size, TRUE);
         }
     }
 #endif
@@ -497,9 +412,8 @@ static int tap_win32_write(tap_win32_overlapped_t *overlapped,
 #ifdef DEBUG_TAP_WIN32
         LPTSTR msgbuf;
         error = GetLastError();
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
-                      NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                      &msgbuf, 0, NULL);
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, error,
+                      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &msgbuf, 0, NULL);
         fprintf(stderr, "Tap-Win32: Error WriteFile %d - %s\n", error, msgbuf);
         LocalFree(msgbuf);
 #endif
@@ -511,49 +425,43 @@ static int tap_win32_write(tap_win32_overlapped_t *overlapped,
 
 static DWORD WINAPI tap_win32_thread_entry(LPVOID param)
 {
-    tap_win32_overlapped_t *overlapped = (tap_win32_overlapped_t*)param;
-    unsigned long read_size;
-    BOOL result;
-    DWORD dwError;
-    tun_buffer_t* buffer = get_buffer_from_free_list(overlapped);
-
+    tap_win32_overlapped_t* overlapped = (tap_win32_overlapped_t*)param;
+    unsigned long           read_size;
+    BOOL                    result;
+    DWORD                   dwError;
+    tun_buffer_t*           buffer = get_buffer_from_free_list(overlapped);
 
     for (;;) {
-        result = ReadFile(overlapped->handle,
-                          buffer->buffer,
-                          sizeof(buffer->buffer),
-                          &read_size,
+        result = ReadFile(overlapped->handle, buffer->buffer, sizeof(buffer->buffer), &read_size,
                           &overlapped->read_overlapped);
         if (!result) {
             dwError = GetLastError();
             if (dwError == ERROR_IO_PENDING) {
                 WaitForSingleObject(overlapped->read_event, INFINITE);
-                result = GetOverlappedResult( overlapped->handle, &overlapped->read_overlapped,
-                                              &read_size, FALSE);
+                result = GetOverlappedResult(overlapped->handle, &overlapped->read_overlapped, &read_size, FALSE);
                 if (!result) {
 #ifdef DEBUG_TAP_WIN32
                     LPVOID lpBuffer;
                     dwError = GetLastError();
-                    FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                                   NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                   (LPTSTR) & lpBuffer, 0, NULL );
+                    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwError,
+                                  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpBuffer, 0, NULL);
                     fprintf(stderr, "Tap-Win32: Error GetOverlappedResult %d - %s\n", dwError, lpBuffer);
-                    LocalFree( lpBuffer );
+                    LocalFree(lpBuffer);
 #endif
                 }
-            } else {
+            }
+            else {
 #ifdef DEBUG_TAP_WIN32
                 LPVOID lpBuffer;
-                FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                               NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                               (LPTSTR) & lpBuffer, 0, NULL );
+                FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwError,
+                              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpBuffer, 0, NULL);
                 fprintf(stderr, "Tap-Win32: Error ReadFile %d - %s\n", dwError, lpBuffer);
-                LocalFree( lpBuffer );
+                LocalFree(lpBuffer);
 #endif
             }
         }
 
-        if(read_size > 0) {
+        if (read_size > 0) {
             buffer->read_size = read_size;
             put_buffer_on_output_queue(overlapped, buffer);
             ReleaseSemaphore(overlapped->tap_semaphore, 1, NULL);
@@ -564,41 +472,39 @@ static DWORD WINAPI tap_win32_thread_entry(LPVOID param)
     return 0;
 }
 
-static int tap_win32_read(tap_win32_overlapped_t *overlapped,
-                          uint8_t **pbuf, int max_size)
+static int tap_win32_read(tap_win32_overlapped_t* overlapped, uint8_t** pbuf, int max_size)
 {
     int size = 0;
 
     tun_buffer_t* buffer = get_buffer_from_output_queue_immediate(overlapped);
 
-    if(buffer != NULL) {
+    if (buffer != NULL) {
         *pbuf = buffer->buffer;
-        size = (int)buffer->read_size;
-        if(size > max_size) {
-            size = max_size;
-        }
+        size  = (int)buffer->read_size;
+        if (size > max_size) { size = max_size; }
     }
 
     return size;
 }
 
-static void tap_win32_free_buffer(tap_win32_overlapped_t *overlapped,
-                                  uint8_t *pbuf)
+static void tap_win32_free_buffer(tap_win32_overlapped_t* overlapped, uint8_t* pbuf)
 {
     tun_buffer_t* buffer = (tun_buffer_t*)pbuf;
     put_buffer_on_free_list(overlapped, buffer);
 }
 
-static int tap_win32_open(tap_win32_overlapped_t **phandle,
-                          const char *preferred_name)
+static int tap_win32_open(tap_win32_overlapped_t** phandle, const char* preferred_name)
 {
-    g_autofree char *device_path = NULL;
-    char device_guid[0x100];
-    int rc;
-    HANDLE handle;
-    BOOL bret;
-    char name_buffer[0x100] = {0, };
-    struct {
+    g_autofree char* device_path = NULL;
+    char             device_guid[0x100];
+    int              rc;
+    HANDLE           handle;
+    BOOL             bret;
+    char             name_buffer[0x100] = {
+        0,
+    };
+    struct
+    {
         unsigned long major;
         unsigned long minor;
         unsigned long debug;
@@ -606,64 +512,47 @@ static int tap_win32_open(tap_win32_overlapped_t **phandle,
     DWORD version_len;
     DWORD idThread;
 
-    if (preferred_name != NULL) {
-        snprintf(name_buffer, sizeof(name_buffer), "%s", preferred_name);
-    }
+    if (preferred_name != NULL) { snprintf(name_buffer, sizeof(name_buffer), "%s", preferred_name); }
 
     rc = get_device_guid(device_guid, sizeof(device_guid), name_buffer, sizeof(name_buffer));
-    if (rc)
-        return -1;
+    if (rc) { return -1; }
 
-    device_path = g_strdup_printf("%s%s%s",
-              USERMODEDEVICEDIR,
-              device_guid,
-              TAPSUFFIX);
+    device_path = g_strdup_printf("%s%s%s", USERMODEDEVICEDIR, device_guid, TAPSUFFIX);
 
-    handle = CreateFile (
-        device_path,
-        GENERIC_READ | GENERIC_WRITE,
-        0,
-        0,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
-        0 );
+    handle = CreateFile(device_path, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING,
+                        FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED, 0);
 
-    if (handle == INVALID_HANDLE_VALUE) {
-        return -1;
-    }
+    if (handle == INVALID_HANDLE_VALUE) { return -1; }
 
-    bret = DeviceIoControl(handle, TAP_IOCTL_GET_VERSION,
-                           &version, sizeof (version),
-                           &version, sizeof (version), &version_len, NULL);
+    bret = DeviceIoControl(handle, TAP_IOCTL_GET_VERSION, &version, sizeof(version), &version, sizeof(version),
+                           &version_len, NULL);
 
     if (bret == FALSE) {
         CloseHandle(handle);
         return -1;
     }
 
-    if (!tap_win32_set_status(handle, TRUE)) {
-        return -1;
-    }
+    if (!tap_win32_set_status(handle, TRUE)) { return -1; }
 
     tap_win32_overlapped_init(&tap_overlapped, handle);
 
     *phandle = &tap_overlapped;
 
-    CreateThread(NULL, 0, tap_win32_thread_entry,
-                 (LPVOID)&tap_overlapped, 0, &idThread);
+    CreateThread(NULL, 0, tap_win32_thread_entry, (LPVOID)&tap_overlapped, 0, &idThread);
     return 0;
 }
 
 /********************************************/
 
- typedef struct TAPState {
-     NetClientState nc;
-     tap_win32_overlapped_t *handle;
- } TAPState;
-
-static void tap_cleanup(NetClientState *nc)
+typedef struct TAPState
 {
-    TAPState *s = DO_UPCAST(TAPState, nc, nc);
+    NetClientState          nc;
+    tap_win32_overlapped_t* handle;
+} TAPState;
+
+static void tap_cleanup(NetClientState* nc)
+{
+    TAPState* s = DO_UPCAST(TAPState, nc, nc);
 
     qemu_del_wait_object(s->handle->tap_semaphore, NULL, NULL);
 
@@ -672,21 +561,21 @@ static void tap_cleanup(NetClientState *nc)
     */
 }
 
-static ssize_t tap_receive(NetClientState *nc, const uint8_t *buf, size_t size)
+static ssize_t tap_receive(NetClientState* nc, const uint8_t* buf, size_t size)
 {
-    TAPState *s = DO_UPCAST(TAPState, nc, nc);
+    TAPState* s = DO_UPCAST(TAPState, nc, nc);
 
     return tap_win32_write(s->handle, buf, size);
 }
 
-static void tap_win32_send(void *opaque)
+static void tap_win32_send(void* opaque)
 {
-    TAPState *s = opaque;
-    uint8_t *buf, *orig_buf;
-    int max_size = 4096;
-    int size;
-    uint8_t min_pkt[ETH_ZLEN];
-    size_t min_pktsz = sizeof(min_pkt);
+    TAPState* s = opaque;
+    uint8_t * buf, *orig_buf;
+    int       max_size = 4096;
+    int       size;
+    uint8_t   min_pkt[ETH_ZLEN];
+    size_t    min_pktsz = sizeof(min_pkt);
 
     size = tap_win32_read(s->handle, &buf, max_size);
     if (size > 0) {
@@ -694,7 +583,7 @@ static void tap_win32_send(void *opaque)
 
         if (net_peer_needs_padding(&s->nc)) {
             if (eth_pad_short_frame(min_pkt, &min_pktsz, buf, size)) {
-                buf = min_pkt;
+                buf  = min_pkt;
                 size = min_pktsz;
             }
         }
@@ -705,18 +594,17 @@ static void tap_win32_send(void *opaque)
 }
 
 static NetClientInfo net_tap_win32_info = {
-    .type = NET_CLIENT_DRIVER_TAP,
-    .size = sizeof(TAPState),
+    .type    = NET_CLIENT_DRIVER_TAP,
+    .size    = sizeof(TAPState),
     .receive = tap_receive,
     .cleanup = tap_cleanup,
 };
 
-static int tap_win32_init(NetClientState *peer, const char *model,
-                          const char *name, const char *ifname)
+static int tap_win32_init(NetClientState* peer, const char* model, const char* name, const char* ifname)
 {
-    NetClientState *nc;
-    TAPState *s;
-    tap_win32_overlapped_t *handle;
+    NetClientState*         nc;
+    TAPState*               s;
+    tap_win32_overlapped_t* handle;
 
     if (tap_win32_open(&handle, ifname) < 0) {
         printf("tap: Could not open '%s'\n", ifname);
@@ -736,11 +624,10 @@ static int tap_win32_init(NetClientState *peer, const char *model,
     return 0;
 }
 
-int net_init_tap(const Netdev *netdev, const char *name,
-                 NetClientState *peer, Error **errp)
+int net_init_tap(const Netdev* netdev, const char* name, NetClientState* peer, Error** errp)
 {
     /* FIXME error_setg(errp, ...) on failure */
-    const NetdevTapOptions *tap;
+    const NetdevTapOptions* tap;
 
     assert(netdev->type == NET_CLIENT_DRIVER_TAP);
     tap = &netdev->u.tap;
@@ -750,19 +637,11 @@ int net_init_tap(const Netdev *netdev, const char *name,
         return -1;
     }
 
-    if (tap_win32_init(peer, "tap", name, tap->ifname) == -1) {
-        return -1;
-    }
+    if (tap_win32_init(peer, "tap", name, tap->ifname) == -1) { return -1; }
 
     return 0;
 }
 
-int tap_enable(NetClientState *nc)
-{
-    abort();
-}
+int tap_enable(NetClientState* nc) { abort(); }
 
-int tap_disable(NetClientState *nc)
-{
-    abort();
-}
+int tap_disable(NetClientState* nc) { abort(); }

@@ -26,10 +26,7 @@
 
 #define TYPE_QAUTHZ_LIST "authz-list"
 
-OBJECT_DECLARE_SIMPLE_TYPE(QAuthZList,
-                           QAUTHZ_LIST)
-
-
+OBJECT_DECLARE_SIMPLE_TYPE(QAuthZList, QAUTHZ_LIST)
 
 /**
  * QAuthZList:
@@ -59,32 +56,20 @@ OBJECT_DECLARE_SIMPLE_TYPE(QAuthZList,
  *  }
  *
  */
-struct QAuthZList {
+struct QAuthZList
+{
     QAuthZ parent_obj;
 
-    QAuthZListPolicy policy;
-    QAuthZListRuleList *rules;
+    QAuthZListPolicy    policy;
+    QAuthZListRuleList* rules;
 };
 
+QAuthZList* qauthz_list_new(const char* id, QAuthZListPolicy policy, Error** errp);
 
+ssize_t qauthz_list_append_rule(QAuthZList* auth, const char* match, QAuthZListPolicy policy, QAuthZListFormat format,
+                                Error** errp);
 
+ssize_t qauthz_list_insert_rule(QAuthZList* auth, const char* match, QAuthZListPolicy policy, QAuthZListFormat format,
+                                size_t index, Error** errp);
 
-QAuthZList *qauthz_list_new(const char *id,
-                            QAuthZListPolicy policy,
-                            Error **errp);
-
-ssize_t qauthz_list_append_rule(QAuthZList *auth,
-                                const char *match,
-                                QAuthZListPolicy policy,
-                                QAuthZListFormat format,
-                                Error **errp);
-
-ssize_t qauthz_list_insert_rule(QAuthZList *auth,
-                                const char *match,
-                                QAuthZListPolicy policy,
-                                QAuthZListFormat format,
-                                size_t index,
-                                Error **errp);
-
-ssize_t qauthz_list_delete_rule(QAuthZList *auth,
-                                const char *match);
+ssize_t qauthz_list_delete_rule(QAuthZList* auth, const char* match);

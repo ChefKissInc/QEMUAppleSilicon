@@ -31,56 +31,57 @@
 
 #define TYPE_APPLE_T8030 MACHINE_TYPE_NAME("t8030")
 
-#define APPLE_T8030(obj) \
-    OBJECT_CHECK(AppleT8030MachineState, (obj), TYPE_APPLE_T8030)
+#define APPLE_T8030(obj) OBJECT_CHECK(AppleT8030MachineState, (obj), TYPE_APPLE_T8030)
 
-typedef struct {
+typedef struct
+{
     MachineClass parent;
 } AppleT8030MachineClass;
 
-typedef struct {
+typedef struct
+{
     MachineState parent;
 
-    hwaddr armio_base;
-    hwaddr armio_size;
-    unsigned long dram_size;
-    AppleA13State *cpus[A13_MAX_CPU];
-    AppleA13Cluster clusters[A13_MAX_CLUSTER];
-    SysBusDevice *aic;
-    MachoHeader64 *kernel;
-    AppleDTNode *device_tree;
-    uint8_t *trustcache;
-    char *securerom;
-    gsize securerom_size;
-    AppleBootInfo boot_info;
-    AppleVideoArgs video_args;
-    char *trustcache_filename;
-    char *ticket_filename;
-    char *sep_rom_filename;
-    char *sep_fw_filename;
-    char *securerom_filename;
-    uint32_t sio_protocol;
-    uint32_t build_version;
-    uint64_t ecid;
-    Notifier init_done_notifier;
-    hwaddr panic_base;
-    hwaddr panic_size;
-    uint8_t pmgr_reg[0x100000];
-    MemoryRegion amcc;
-    uint8_t amcc_reg[0x100000];
-    bool kaslr_off;
-    bool force_dfu;
-    uint32_t board_id;
-    uint32_t chip_revision;
+    hwaddr               armio_base;
+    hwaddr               armio_size;
+    unsigned long        dram_size;
+    AppleA13State*       cpus[A13_MAX_CPU];
+    AppleA13Cluster      clusters[A13_MAX_CLUSTER];
+    SysBusDevice*        aic;
+    MachoHeader64*       kernel;
+    AppleDTNode*         device_tree;
+    uint8_t*             trustcache;
+    char*                securerom;
+    gsize                securerom_size;
+    AppleBootInfo        boot_info;
+    AppleVideoArgs       video_args;
+    char*                trustcache_filename;
+    char*                ticket_filename;
+    char*                sep_rom_filename;
+    char*                sep_fw_filename;
+    char*                securerom_filename;
+    uint32_t             sio_protocol;
+    uint32_t             build_version;
+    uint64_t             ecid;
+    Notifier             init_done_notifier;
+    hwaddr               panic_base;
+    hwaddr               panic_size;
+    uint8_t              pmgr_reg[0x100000];
+    MemoryRegion         amcc;
+    uint8_t              amcc_reg[0x100000];
+    bool                 kaslr_off;
+    bool                 force_dfu;
+    uint32_t             board_id;
+    uint32_t             chip_revision;
     USBTCPRemoteConnType usb_conn_type;
-    char *usb_conn_addr;
-    uint16_t usb_conn_port;
-    char *model_number;
-    char *region_info;
-    char *config_number;
-    char *serial_number;
-    char *mlb_serial_number;
-    char *regulatory_model;
-    uint32_t disp_width;
-    uint32_t disp_height;
+    char*                usb_conn_addr;
+    uint16_t             usb_conn_port;
+    char*                model_number;
+    char*                region_info;
+    char*                config_number;
+    char*                serial_number;
+    char*                mlb_serial_number;
+    char*                regulatory_model;
+    uint32_t             disp_width;
+    uint32_t             disp_height;
 } AppleT8030MachineState;

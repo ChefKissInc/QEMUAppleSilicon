@@ -31,9 +31,7 @@
  *
  * Returns 0 on success, -1 on error
  */
-int qcrypto_random_bytes(void *buf,
-                         size_t buflen,
-                         Error **errp);
+int qcrypto_random_bytes(void* buf, size_t buflen, Error** errp);
 
 /**
  * qcrypto_random_init:
@@ -43,4 +41,4 @@ int qcrypto_random_bytes(void *buf,
  *
  * Returns 0 on success, -1 on error
  */
-int qcrypto_random_init(Error **errp);
+int qcrypto_random_init(Error** errp);

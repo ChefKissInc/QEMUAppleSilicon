@@ -55,7 +55,7 @@ typedef struct QObjectInputVisitor QObjectInputVisitor;
  * The caller is responsible for freeing the visitor with
  * visit_free().
  */
-Visitor *qobject_input_visitor_new(QObject *obj);
+Visitor* qobject_input_visitor_new(QObject* obj);
 
 /*
  * Create a QObject input visitor for @obj for use with keyval_parse()
@@ -64,7 +64,7 @@ Visitor *qobject_input_visitor_new(QObject *obj);
  * QString, and error messages refer to parts of @obj in the syntax
  * keyval_parse() uses for KEYs.
  */
-Visitor *qobject_input_visitor_new_keyval(QObject *obj);
+Visitor* qobject_input_visitor_new_keyval(QObject* obj);
 
 /*
  * Create a QObject input visitor for parsing @str.
@@ -74,6 +74,4 @@ Visitor *qobject_input_visitor_new_keyval(QObject *obj);
  * On failure, store an error through @errp and return NULL.
  * On success, return a new QObject input visitor for the parse.
  */
-Visitor *qobject_input_visitor_new_str(const char *str,
-                                       const char *implied_key,
-                                       Error **errp);
+Visitor* qobject_input_visitor_new_str(const char* str, const char* implied_key, Error** errp);

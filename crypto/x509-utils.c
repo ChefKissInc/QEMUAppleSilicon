@@ -16,25 +16,19 @@
 #include <gnutls/x509.h>
 
 static const int qcrypto_to_gnutls_hash_alg_map[QCRYPTO_HASH_ALGO__MAX] = {
-    [QCRYPTO_HASH_ALGO_MD5] = GNUTLS_DIG_MD5,
-    [QCRYPTO_HASH_ALGO_SHA1] = GNUTLS_DIG_SHA1,
-    [QCRYPTO_HASH_ALGO_SHA224] = GNUTLS_DIG_SHA224,
-    [QCRYPTO_HASH_ALGO_SHA256] = GNUTLS_DIG_SHA256,
-    [QCRYPTO_HASH_ALGO_SHA384] = GNUTLS_DIG_SHA384,
-    [QCRYPTO_HASH_ALGO_SHA512] = GNUTLS_DIG_SHA512,
+    [QCRYPTO_HASH_ALGO_MD5] = GNUTLS_DIG_MD5,          [QCRYPTO_HASH_ALGO_SHA1] = GNUTLS_DIG_SHA1,
+    [QCRYPTO_HASH_ALGO_SHA224] = GNUTLS_DIG_SHA224,    [QCRYPTO_HASH_ALGO_SHA256] = GNUTLS_DIG_SHA256,
+    [QCRYPTO_HASH_ALGO_SHA384] = GNUTLS_DIG_SHA384,    [QCRYPTO_HASH_ALGO_SHA512] = GNUTLS_DIG_SHA512,
     [QCRYPTO_HASH_ALGO_RIPEMD160] = GNUTLS_DIG_RMD160,
 };
 
-int qcrypto_get_x509_cert_fingerprint(uint8_t *cert, size_t size,
-                                      QCryptoHashAlgo alg,
-                                      uint8_t *result,
-                                      size_t *resultlen,
-                                      Error **errp)
+int qcrypto_get_x509_cert_fingerprint(uint8_t* cert, size_t size, QCryptoHashAlgo alg, uint8_t* result,
+                                      size_t* resultlen, Error** errp)
 {
-    int ret = -1;
-    int hlen;
+    int               ret = -1;
+    int               hlen;
     gnutls_x509_crt_t crt;
-    gnutls_datum_t datum = {.data = cert, .size = size};
+    gnutls_datum_t    datum = {.data = cert, .size = size};
 
     if (alg >= G_N_ELEMENTS(qcrypto_to_gnutls_hash_alg_map)) {
         error_setg(errp, "Unknown hash algorithm");
@@ -47,8 +41,7 @@ int qcrypto_get_x509_cert_fingerprint(uint8_t *cert, size_t size,
     }
 
     if (gnutls_x509_crt_init(&crt) < 0) {
-        error_setg(errp, "Unable to initialize certificate: %s",
-                   gnutls_strerror(ret));
+        error_setg(errp, "Unable to initialize certificate: %s", gnutls_strerror(ret));
         return -1;
     }
 
@@ -59,22 +52,18 @@ int qcrypto_get_x509_cert_fingerprint(uint8_t *cert, size_t size,
 
     hlen = gnutls_hash_get_len(qcrypto_to_gnutls_hash_alg_map[alg]);
     if (*resultlen < hlen) {
-        error_setg(errp,
-                   "Result buffer size %zu is smaller than hash %d",
-                   *resultlen, hlen);
+        error_setg(errp, "Result buffer size %zu is smaller than hash %d", *resultlen, hlen);
         goto cleanup;
     }
 
-    if (gnutls_x509_crt_get_fingerprint(crt,
-                                        qcrypto_to_gnutls_hash_alg_map[alg],
-                                        result, resultlen) != 0) {
+    if (gnutls_x509_crt_get_fingerprint(crt, qcrypto_to_gnutls_hash_alg_map[alg], result, resultlen) != 0) {
         error_setg(errp, "Failed to get fingerprint from certificate");
         goto cleanup;
     }
 
     ret = 0;
 
- cleanup:
+cleanup:
     gnutls_x509_crt_deinit(crt);
     return ret;
 }

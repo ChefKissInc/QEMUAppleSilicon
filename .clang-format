@@ -1,39 +1,143 @@
+# ChefKiss Coding Style v2.1
 ---
-Language: Cpp
+AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false # although we like it, it creates churn
-AlignConsecutiveDeclarations: false
-AlignEscapedNewlines: Left
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: true
+  AlignFunctionPointers: true
+  PadOperators: true
+  AlignFunctionDeclarations: true
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: true
+  AlignFunctionPointers: true
+  PadOperators: true
+  AlignFunctionDeclarations: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: true
+  AlignFunctionPointers: true
+  PadOperators: true
+  AlignFunctionDeclarations: true
+AlignEscapedNewlines: LeftWithLastLine
 AlignOperands: Align
-AlignTrailingComments: false # churn
-AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: true
-BinPackParameters: true
-BraceWrapping:
-  AfterControlStatement: false
-  AfterEnum: false
-  AfterFunction: true
-  AfterStruct: false
-  AfterUnion: false
-  BeforeElse: false
-  IndentBraces: false
-BreakBeforeBinaryOperators: None
+BinPackParameters: BinPack
+BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: MultiLine
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+  BeforeWhile: true
+  BeforeLambdaBody: true
 BreakBeforeTernaryOperators: false
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
 BreakStringLiterals: true
-ColumnLimit: 80
-# CommentPragmas:  '^ IWYU pragma:'
+ColumnLimit: 120
+CompactNamespaces: false
+ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
-Cpp11BracedListStyle: false
+Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat: false
+FixNamespaceComments: true
+IncludeBlocks: Merge
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+IndentWidth: 4
+IndentWrappedFunctionNames: true
+NamespaceIndentation: All
+PointerAlignment: Left
+ReflowComments: true
+SortIncludes: false
+SortUsingDeclarations: true
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpacesBeforeTrailingComments: 4
+SpacesInAngles: false
+SpacesInContainerLiterals: true
+Standard: Latest
+UseTab: Never
+AlignConsecutiveBitFields:
+  Enabled: true
+  AlignFunctionDeclarations: true
+  AlignFunctionPointers: true
+  PadOperators: true
+  AlignCompound: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AlignCaseColons: true
+  AlignCaseArrows: true
+AllowBreakBeforeNoexceptSpecifier: Always
+AllowShortCaseExpressionOnASingleLine: true
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortNamespacesOnASingleLine: true
+BinPackLongBracedList: true
+BitFieldColonSpacing: Both
+BreakAdjacentStringLiterals: true
+BreakAfterAttributes: Always
+RemoveEmptyLinesInUnwrappedLines: true
+PackConstructorInitializers: Never
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: true
+  AfterFunctionDeclarationName: true
+  AfterFunctionDefinitionName: true
+  AfterIfMacros: true
+  AfterNot: true
+  AfterOverloadedOperator: true
+  AfterPlacementOperator: true
+  AfterRequiresInClause: true
+  AfterRequiresInExpression: true
+  BeforeNonEmptyParentheses: false
+SpaceInEmptyBlock: true
+SpacesInParensOptions: {}
+WrapNamespaceBodyWithEmptyLines: Always
+ReferenceAlignment: Pointer
+QualifierAlignment: Left
+InsertBraces: true
+InsertNewlineAtEOF: true
 ForEachMacros:
   [
     "CPU_FOREACH",
@@ -56,38 +160,42 @@ ForEachMacros:
     "RAMBLOCK_FOREACH",
   ]
 IncludeCategories:
-  - Regex: '^"qemu/osdep.h'
+  - Regex: '^".*-internal\.h"'
+    Priority: 2
+  - Regex: '^"qemu/osdep\.h"'
+    Priority: -14
+  - Regex: '^"(linux|standard-headers)'
+    Priority: -13
+  - Regex: '^"qemu/'
+    Priority: -12
+  - Regex: '^"qapi/qapi-(commands|types|visit)'
+    Priority: -11
+  - Regex: '^"qapi/error\.h"'
+    Priority: -10
+  - Regex: '^"qapi/'
+    Priority: -9
+  - Regex: '^"qom/'
+    Priority: -8
+  - Regex: '^"hw/qdev'
+    Priority: -7
+  - Regex: '^"hw/core/qdev'
+    Priority: -6
+  - Regex: '^"ui/input-keymap'
+    Priority: 1
+  - Regex: '^"exec/helper-proto-common\.h"'
+    Priority: -6
+  - Regex: '^"exec/'
+    Priority: -5
+  - Regex: '^"tcg/tcg.h"'
+    Priority: -4
+  - Regex: '^"tcg/'
     Priority: -3
-  - Regex: '^"(block|chardev|crypto|disas|exec|fpu|hw|io|monitor|net|qapi|qemu|qom|standard-headers|system|ui|tcg|accel|target|plugins|authz|audio)/'
+  - Regex: '^"(block|chardev|crypto|disas|fpu|hw|io|net|qemu|qom|system|ui|accel|target|plugins|authz|audio)/'
     Priority: -2
-  - Regex: '^"(elf.h|qemu-common.h|glib-compat.h|trace-tcg.h)'
+  - Regex: '^"(elf\.h|qemu-common\.h|glib-compat\.h|qemu-io\.h|trace-tcg\.h)'
     Priority: -1
   - Regex: ".*"
-    Priority: 1
+    Priority: 0
 IncludeIsMainRegex: "$"
-IndentCaseLabels: false
-IndentWidth: 4
-IndentWrappedFunctionNames: false
-KeepEmptyLinesAtTheStartOfBlocks: false
-MacroBlockBegin: ".*_BEGIN$" # only PREC_BEGIN ?
+MacroBlockBegin: ".*_BEGIN$"
 MacroBlockEnd: ".*_END$"
-MaxEmptyLinesToKeep: 2
-#PenaltyBreakBeforeFirstCallParameter: 19
-#PenaltyBreakComment: 300
-#PenaltyBreakFirstLessLess: 120
-#PenaltyBreakString: 1000
-#PenaltyExcessCharacter: 1000000
-#PenaltyReturnTypeOnItsOwnLine: 60
-PointerAlignment: Right
-ReflowComments: true
-SortIncludes: CaseSensitive
-SpaceAfterCStyleCast: false
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeParens: ControlStatements
-SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 1
-SpacesInContainerLiterals: true
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-Standard: Auto
-UseTab: Never

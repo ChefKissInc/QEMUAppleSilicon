@@ -25,9 +25,7 @@
 #include "io/task.h"
 
 #define TYPE_QIO_DNS_RESOLVER "qio-dns-resolver"
-OBJECT_DECLARE_SIMPLE_TYPE(QIODNSResolver,
-                           QIO_DNS_RESOLVER)
-
+OBJECT_DECLARE_SIMPLE_TYPE(QIODNSResolver, QIO_DNS_RESOLVER)
 
 /**
  * QIODNSResolver:
@@ -128,11 +126,10 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIODNSResolver,
  *   </programlisting>
  * </example>
  */
-struct QIODNSResolver {
+struct QIODNSResolver
+{
     Object parent;
 };
-
-
 
 /**
  * qio_dns_resolver_get_instance:
@@ -142,7 +139,7 @@ struct QIODNSResolver {
  *
  * Returns: the single dns resolver instance
  */
-QIODNSResolver *qio_dns_resolver_get_instance(void);
+QIODNSResolver* qio_dns_resolver_get_instance(void);
 
 /**
  * qio_dns_resolver_lookup_sync:
@@ -166,11 +163,8 @@ QIODNSResolver *qio_dns_resolver_get_instance(void);
  *
  * Returns: 0 if resolution was successful, -1 on error
  */
-int qio_dns_resolver_lookup_sync(QIODNSResolver *resolver,
-                                 SocketAddress *addr,
-                                 size_t *naddrs,
-                                 SocketAddress ***addrs,
-                                 Error **errp);
+int qio_dns_resolver_lookup_sync(QIODNSResolver* resolver, SocketAddress* addr, size_t* naddrs, SocketAddress*** addrs,
+                                 Error** errp);
 
 /**
  * qio_dns_resolver_lookup_async:
@@ -190,10 +184,7 @@ int qio_dns_resolver_lookup_sync(QIODNSResolver *resolver,
  * DNS resolution will be done asynchronously so execution
  * of the caller will not be blocked.
  */
-void qio_dns_resolver_lookup_async(QIODNSResolver *resolver,
-                                   SocketAddress *addr,
-                                   QIOTaskFunc func,
-                                   gpointer opaque,
+void qio_dns_resolver_lookup_async(QIODNSResolver* resolver, SocketAddress* addr, QIOTaskFunc func, gpointer opaque,
                                    GDestroyNotify notify);
 
 /**
@@ -210,7 +201,4 @@ void qio_dns_resolver_lookup_async(QIODNSResolver *resolver,
  * allocated in @addrs. The caller is responsible for
  * freeing each entry in @addrs, as well as @addrs itself.
  */
-void qio_dns_resolver_lookup_result(QIODNSResolver *resolver,
-                                    QIOTask *task,
-                                    size_t *naddrs,
-                                    SocketAddress ***addrs);
+void qio_dns_resolver_lookup_result(QIODNSResolver* resolver, QIOTask* task, size_t* naddrs, SocketAddress*** addrs);

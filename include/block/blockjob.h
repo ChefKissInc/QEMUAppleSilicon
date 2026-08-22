@@ -37,7 +37,8 @@ typedef struct BlockJobDriver BlockJobDriver;
  *
  * Long-running operation on a BlockDriverState.
  */
-typedef struct BlockJob {
+typedef struct BlockJob
+{
     /**
      * Data belonging to the generic Job infrastructure.
      * Protected by job mutex.
@@ -54,7 +55,7 @@ typedef struct BlockJob {
      * Block other operations when block job is running.
      * Always modified and read under the BQL (GLOBAL_STATE_CODE).
      */
-    Error *blocker;
+    Error* blocker;
 
     /** All notifiers are set once in block_job_create() and never modified. */
 
@@ -77,7 +78,7 @@ typedef struct BlockJob {
      * BlockDriverStates that are involved in this block job.
      * Always modified and read under the BQL (GLOBAL_STATE_CODE).
      */
-    GSList *nodes;
+    GSList* nodes;
 } BlockJob;
 
 /*
@@ -97,7 +98,7 @@ typedef struct BlockJob {
  * Returns the requested job, or %NULL if there are no more jobs left.
  * Called with job lock held.
  */
-BlockJob *block_job_next_locked(BlockJob *job);
+BlockJob* block_job_next_locked(BlockJob* job);
 
 /**
  * block_job_get:
@@ -108,10 +109,10 @@ BlockJob *block_job_next_locked(BlockJob *job);
  * Returns the requested job, or %NULL if it doesn't exist.
  * Called with job lock *not* held.
  */
-BlockJob *block_job_get(const char *id);
+BlockJob* block_job_get(const char* id);
 
 /* Same as block_job_get(), but called with job lock held. */
-BlockJob *block_job_get_locked(const char *id);
+BlockJob* block_job_get_locked(const char* id);
 
 /**
  * block_job_add_bdrv:
@@ -126,9 +127,8 @@ BlockJob *block_job_get_locked(const char *id);
  *
  * All block nodes must be drained.
  */
-int GRAPH_WRLOCK
-block_job_add_bdrv(BlockJob *job, const char *name, BlockDriverState *bs,
-                   uint64_t perm, uint64_t shared_perm, Error **errp);
+int GRAPH_WRLOCK block_job_add_bdrv(BlockJob* job, const char* name, BlockDriverState* bs, uint64_t perm,
+                                    uint64_t shared_perm, Error** errp);
 
 /**
  * block_job_remove_all_bdrv:
@@ -137,7 +137,7 @@ block_job_add_bdrv(BlockJob *job, const char *name, BlockDriverState *bs,
  * Remove all BlockDriverStates from the list of nodes that are involved in the
  * job. This removes the blockers added with block_job_add_bdrv().
  */
-void GRAPH_UNLOCKED block_job_remove_all_bdrv(BlockJob *job);
+void GRAPH_UNLOCKED block_job_remove_all_bdrv(BlockJob* job);
 
 /**
  * block_job_has_bdrv:
@@ -146,7 +146,7 @@ void GRAPH_UNLOCKED block_job_remove_all_bdrv(BlockJob *job);
  * Searches for @bs in the list of nodes that are involved in the
  * job.
  */
-bool block_job_has_bdrv(BlockJob *job, BlockDriverState *bs);
+bool block_job_has_bdrv(BlockJob* job, BlockDriverState* bs);
 
 /**
  * block_job_change_locked:
@@ -156,8 +156,7 @@ bool block_job_has_bdrv(BlockJob *job, BlockDriverState *bs);
  *
  * Change the job according to opts.
  */
-void block_job_change_locked(BlockJob *job, BlockJobChangeOptions *opts,
-                             Error **errp);
+void block_job_change_locked(BlockJob* job, BlockJobChangeOptions* opts, Error** errp);
 
 /**
  * block_job_query_locked:
@@ -167,7 +166,7 @@ void block_job_change_locked(BlockJob *job, BlockJobChangeOptions *opts,
  *
  * Called with job lock held.
  */
-BlockJobInfo *block_job_query_locked(BlockJob *job, Error **errp);
+BlockJobInfo* block_job_query_locked(BlockJob* job, Error** errp);
 
 /**
  * block_job_iostatus_reset_locked:
@@ -178,15 +177,14 @@ BlockJobInfo *block_job_query_locked(BlockJob *job, Error **errp);
  *
  * Called with job lock held.
  */
-void block_job_iostatus_reset_locked(BlockJob *job);
+void block_job_iostatus_reset_locked(BlockJob* job);
 
 /*
  * block_job_get_aio_context:
  *
  * Returns aio context associated with a block job.
  */
-AioContext *block_job_get_aio_context(BlockJob *job);
-
+AioContext* block_job_get_aio_context(BlockJob* job);
 
 /*
  * Common functions that are neither I/O nor Global State.
@@ -201,11 +199,11 @@ AioContext *block_job_get_aio_context(BlockJob *job);
  *
  * Returns true if the job should not be visible to the management layer.
  */
-bool block_job_is_internal(BlockJob *job);
+bool block_job_is_internal(BlockJob* job);
 
 /**
  * block_job_driver:
  *
  * Returns the driver associated with a block job.
  */
-const BlockJobDriver *block_job_driver(BlockJob *job);
+const BlockJobDriver* block_job_driver(BlockJob* job);

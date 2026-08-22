@@ -25,19 +25,21 @@
 #include "crypto/akcipher.h"
 
 typedef struct QCryptoAkCipherRSAKey QCryptoAkCipherRSAKey;
-typedef struct QCryptoAkCipherMPI QCryptoAkCipherMPI;
+typedef struct QCryptoAkCipherMPI    QCryptoAkCipherMPI;
 
 /**
  * Multiple precious integer, encoded as two' complement,
  * copied directly from DER encoded ASN.1 structures.
  */
-struct QCryptoAkCipherMPI {
-    uint8_t *data;
-    size_t len;
+struct QCryptoAkCipherMPI
+{
+    uint8_t* data;
+    size_t   len;
 };
 
 /* See rfc2437: https://datatracker.ietf.org/doc/html/rfc2437 */
-struct QCryptoAkCipherRSAKey {
+struct QCryptoAkCipherRSAKey
+{
     /* The modulus */
     QCryptoAkCipherMPI n;
     /* The public exponent */
@@ -78,21 +80,16 @@ struct QCryptoAkCipherRSAKey {
  *
  * Returns: On success QCryptoAkCipherRSAKey is returned, otherwise returns NULL
  */
-QCryptoAkCipherRSAKey *qcrypto_akcipher_rsakey_parse(
-    QCryptoAkCipherKeyType type,
-    const uint8_t *key, size_t keylen, Error **errp);
+QCryptoAkCipherRSAKey* qcrypto_akcipher_rsakey_parse(QCryptoAkCipherKeyType type, const uint8_t* key, size_t keylen,
+                                                     Error** errp);
 
 /**
  * qcrypto_akcipher_rsakey_export_as_p8info:
  *
  * Export RSA private key to PKCS#8 private key info.
  */
-void qcrypto_akcipher_rsakey_export_p8info(const uint8_t *key,
-                                           size_t keylen,
-                                           uint8_t **dst,
-                                           size_t *dlen);
+void qcrypto_akcipher_rsakey_export_p8info(const uint8_t* key, size_t keylen, uint8_t** dst, size_t* dlen);
 
-void qcrypto_akcipher_rsakey_free(QCryptoAkCipherRSAKey *key);
+void qcrypto_akcipher_rsakey_free(QCryptoAkCipherRSAKey* key);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoAkCipherRSAKey,
-                              qcrypto_akcipher_rsakey_free);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoAkCipherRSAKey, qcrypto_akcipher_rsakey_free);

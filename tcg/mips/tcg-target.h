@@ -27,11 +27,12 @@
 #pragma once
 
 #define TCG_TARGET_INSN_UNIT_SIZE 4
-#define TCG_TARGET_NB_REGS 32
+#define TCG_TARGET_NB_REGS        32
 
-#define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
+#define MAX_CODE_GEN_BUFFER_SIZE ((size_t)-1)
 
-typedef enum {
+typedef enum
+{
     TCG_REG_ZERO = 0,
     TCG_REG_AT,
     TCG_REG_V0,
@@ -66,7 +67,7 @@ typedef enum {
     TCG_REG_RA,
 
     TCG_REG_CALL_STACK = TCG_REG_SP,
-    TCG_AREG0 = TCG_REG_S8,
+    TCG_AREG0          = TCG_REG_S8,
 } TCGReg;
 
-#define TCG_REG_ZERO  TCG_REG_ZERO
+#define TCG_REG_ZERO TCG_REG_ZERO

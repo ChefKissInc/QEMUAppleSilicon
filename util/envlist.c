@@ -2,12 +2,14 @@
 #include "qemu/queue.h"
 #include "qemu/envlist.h"
 
-struct envlist_entry {
-    const char *ev_var;            /* actual env value */
+struct envlist_entry
+{
+    const char* ev_var; /* actual env value */
     QLIST_ENTRY(envlist_entry) ev_link;
 };
 
-struct envlist {
+struct envlist
+{
     QLIST_HEAD(, envlist_entry) el_entries; /* actual entries */
     size_t el_count;                        /* number of entries */
 };
@@ -15,10 +17,9 @@ struct envlist {
 /*
  * Allocates new envlist and returns pointer to it.
  */
-envlist_t *
-envlist_create(void)
+envlist_t* envlist_create(void)
 {
-    envlist_t *envlist;
+    envlist_t* envlist;
 
     envlist = g_malloc(sizeof(*envlist));
 
@@ -31,10 +32,9 @@ envlist_create(void)
 /*
  * Releases given envlist and its entries.
  */
-void
-envlist_free(envlist_t *envlist)
+void envlist_free(envlist_t* envlist)
 {
-    struct envlist_entry *entry;
+    struct envlist_entry* entry;
 
     assert(envlist != NULL);
 
@@ -42,7 +42,7 @@ envlist_free(envlist_t *envlist)
         entry = envlist->el_entries.lh_first;
         QLIST_REMOVE(entry, ev_link);
 
-        g_free((char *)entry->ev_var);
+        g_free((char*)entry->ev_var);
         g_free(entry);
     }
     g_free(envlist);
@@ -54,19 +54,16 @@ envlist_free(envlist_t *envlist)
  *
  * Returns 0 in success, errno otherwise.
  */
-int
-envlist_setenv(envlist_t *envlist, const char *env)
+int envlist_setenv(envlist_t* envlist, const char* env)
 {
-    struct envlist_entry *entry = NULL;
-    const char *eq_sign;
-    size_t envname_len;
+    struct envlist_entry* entry = NULL;
+    const char*           eq_sign;
+    size_t                envname_len;
 
-    if ((envlist == NULL) || (env == NULL))
-        return (EINVAL);
+    if ((envlist == NULL) || (env == NULL)) { return (EINVAL); }
 
     /* find out first equals sign in given env */
-    if ((eq_sign = strchr(env, '=')) == NULL)
-        return (EINVAL);
+    if ((eq_sign = strchr(env, '=')) == NULL) { return (EINVAL); }
     envname_len = eq_sign - env + 1;
 
     /*
@@ -74,21 +71,20 @@ envlist_setenv(envlist_t *envlist, const char *env)
      * we remove and release it before allocating a whole
      * new entry.
      */
-    for (entry = envlist->el_entries.lh_first; entry != NULL;
-        entry = entry->ev_link.le_next) {
-        if (strncmp(entry->ev_var, env, envname_len) == 0)
-            break;
+    for (entry = envlist->el_entries.lh_first; entry != NULL; entry = entry->ev_link.le_next) {
+        if (strncmp(entry->ev_var, env, envname_len) == 0) { break; }
     }
 
     if (entry != NULL) {
         QLIST_REMOVE(entry, ev_link);
-        g_free((char *)entry->ev_var);
+        g_free((char*)entry->ev_var);
         g_free(entry);
-    } else {
+    }
+    else {
         envlist->el_count++;
     }
 
-    entry = g_malloc(sizeof(*entry));
+    entry         = g_malloc(sizeof(*entry));
     entry->ev_var = g_strdup(env);
     QLIST_INSERT_HEAD(&envlist->el_entries, entry, ev_link);
 
@@ -99,32 +95,27 @@ envlist_setenv(envlist_t *envlist, const char *env)
  * Removes given env value from envlist in similar manner
  * than unsetenv(3).  Returns 0 in success, errno otherwise.
  */
-int
-envlist_unsetenv(envlist_t *envlist, const char *env)
+int envlist_unsetenv(envlist_t* envlist, const char* env)
 {
-    struct envlist_entry *entry;
-    size_t envname_len;
+    struct envlist_entry* entry;
+    size_t                envname_len;
 
-    if ((envlist == NULL) || (env == NULL))
-        return (EINVAL);
+    if ((envlist == NULL) || (env == NULL)) { return (EINVAL); }
 
     /* env is not allowed to contain '=' */
-    if (strchr(env, '=') != NULL)
-        return (EINVAL);
+    if (strchr(env, '=') != NULL) { return (EINVAL); }
 
     /*
      * Find out the requested entry and remove
      * it from the list.
      */
     envname_len = strlen(env);
-    for (entry = envlist->el_entries.lh_first; entry != NULL;
-        entry = entry->ev_link.le_next) {
-        if (strncmp(entry->ev_var, env, envname_len) == 0)
-            break;
+    for (entry = envlist->el_entries.lh_first; entry != NULL; entry = entry->ev_link.le_next) {
+        if (strncmp(entry->ev_var, env, envname_len) == 0) { break; }
     }
     if (entry != NULL) {
         QLIST_REMOVE(entry, ev_link);
-        g_free((char *)entry->ev_var);
+        g_free((char*)entry->ev_var);
         g_free(entry);
 
         envlist->el_count--;
@@ -142,22 +133,19 @@ envlist_unsetenv(envlist_t *envlist, const char *env)
  * If caller provides count pointer, number of items in array is
  * stored there.
  */
-char **
-envlist_to_environ(const envlist_t *envlist, size_t *count)
+char** envlist_to_environ(const envlist_t* envlist, size_t* count)
 {
-    struct envlist_entry *entry;
-    char **env, **penv;
+    struct envlist_entry* entry;
+    char **               env, **penv;
 
-    penv = env = g_new(char *, envlist->el_count + 1);
+    penv = env = g_new(char*, envlist->el_count + 1);
 
-    for (entry = envlist->el_entries.lh_first; entry != NULL;
-        entry = entry->ev_link.le_next) {
+    for (entry = envlist->el_entries.lh_first; entry != NULL; entry = entry->ev_link.le_next) {
         *(penv++) = g_strdup(entry->ev_var);
     }
     *penv = NULL; /* NULL terminate the list */
 
-    if (count != NULL)
-        *count = envlist->el_count;
+    if (count != NULL) { *count = envlist->el_count; }
 
     return (env);
 }

@@ -33,31 +33,30 @@
 #define VNC_PALETTE_HASH_SIZE 256
 #define VNC_PALETTE_MAX_SIZE  256
 
-typedef struct VncPaletteEntry {
-    int idx;
+typedef struct VncPaletteEntry
+{
+    int      idx;
     uint32_t color;
     QLIST_ENTRY(VncPaletteEntry) next;
 } VncPaletteEntry;
 
-typedef struct VncPalette {
+typedef struct VncPalette
+{
     VncPaletteEntry pool[VNC_PALETTE_MAX_SIZE];
-    size_t size;
-    size_t max;
-    int bpp;
-    QLIST_HEAD(,VncPaletteEntry) table[VNC_PALETTE_HASH_SIZE];
+    size_t          size;
+    size_t          max;
+    int             bpp;
+    QLIST_HEAD(, VncPaletteEntry) table[VNC_PALETTE_HASH_SIZE];
 } VncPalette;
 
-VncPalette *palette_new(size_t max, int bpp);
-void palette_init(VncPalette *palette, size_t max, int bpp);
-void palette_destroy(VncPalette *palette);
+VncPalette* palette_new(size_t max, int bpp);
+void        palette_init(VncPalette* palette, size_t max, int bpp);
+void        palette_destroy(VncPalette* palette);
 
-int palette_put(VncPalette *palette, uint32_t color);
-int palette_idx(const VncPalette *palette, uint32_t color);
-size_t palette_size(const VncPalette *palette);
+int    palette_put(VncPalette* palette, uint32_t color);
+int    palette_idx(const VncPalette* palette, uint32_t color);
+size_t palette_size(const VncPalette* palette);
 
-void palette_iter(const VncPalette *palette,
-                  void (*iter)(int idx, uint32_t color, void *opaque),
-                  void *opaque);
-uint32_t palette_color(const VncPalette *palette, int idx, bool *found);
-size_t palette_fill(const VncPalette *palette,
-                    uint32_t colors[VNC_PALETTE_MAX_SIZE]);
+void     palette_iter(const VncPalette* palette, void (*iter)(int idx, uint32_t color, void* opaque), void* opaque);
+uint32_t palette_color(const VncPalette* palette, int idx, bool* found);
+size_t   palette_fill(const VncPalette* palette, uint32_t colors[VNC_PALETTE_MAX_SIZE]);

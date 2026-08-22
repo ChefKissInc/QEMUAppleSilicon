@@ -22,11 +22,9 @@
 
 typedef struct QIOTask QIOTask;
 
-typedef void (*QIOTaskFunc)(QIOTask *task,
-                            gpointer opaque);
+typedef void (*QIOTaskFunc)(QIOTask* task, gpointer opaque);
 
-typedef void (*QIOTaskWorker)(QIOTask *task,
-                              gpointer opaque);
+typedef void (*QIOTaskWorker)(QIOTask* task, gpointer opaque);
 
 /**
  * QIOTask:
@@ -212,10 +210,7 @@ typedef void (*QIOTaskWorker)(QIOTask *task,
  *
  * Returns: the task struct
  */
-QIOTask *qio_task_new(Object *source,
-                      QIOTaskFunc func,
-                      gpointer opaque,
-                      GDestroyNotify destroy);
+QIOTask* qio_task_new(Object* source, QIOTaskFunc func, gpointer opaque, GDestroyNotify destroy);
 
 /**
  * qio_task_run_in_thread:
@@ -231,12 +226,8 @@ QIOTask *qio_task_new(Object *source,
  * the thread that is running the main loop associated
  * with @context.
  */
-void qio_task_run_in_thread(QIOTask *task,
-                            QIOTaskWorker worker,
-                            gpointer opaque,
-                            GDestroyNotify destroy,
-                            GMainContext *context);
-
+void qio_task_run_in_thread(QIOTask* task, QIOTaskWorker worker, gpointer opaque, GDestroyNotify destroy,
+                            GMainContext* context);
 
 /**
  * qio_task_wait_thread:
@@ -260,8 +251,7 @@ void qio_task_run_in_thread(QIOTask *task,
  * so @task must not be referenced after this
  * method completes.
  */
-void qio_task_wait_thread(QIOTask *task);
-
+void qio_task_wait_thread(QIOTask* task);
 
 /**
  * qio_task_complete:
@@ -270,8 +260,7 @@ void qio_task_wait_thread(QIOTask *task);
  * Invoke the completion callback for @task and
  * then free its memory.
  */
-void qio_task_complete(QIOTask *task);
-
+void qio_task_complete(QIOTask* task);
 
 /**
  * qio_task_set_error:
@@ -287,9 +276,7 @@ void qio_task_complete(QIOTask *task);
  * provided @err will be recorded, later ones will
  * be discarded and freed.
  */
-void qio_task_set_error(QIOTask *task,
-                        Error *err);
-
+void qio_task_set_error(QIOTask* task, Error* err);
 
 /**
  * qio_task_propagate_error:
@@ -301,9 +288,7 @@ void qio_task_set_error(QIOTask *task,
  *
  * Returns: true if an error was propagated, false otherwise
  */
-bool qio_task_propagate_error(QIOTask *task,
-                              Error **errp);
-
+bool qio_task_propagate_error(QIOTask* task, Error** errp);
 
 /**
  * qio_task_set_result_pointer:
@@ -315,10 +300,7 @@ bool qio_task_propagate_error(QIOTask *task,
  * qio_task_get_result_pointer() method
  *
  */
-void qio_task_set_result_pointer(QIOTask *task,
-                                 gpointer result,
-                                 GDestroyNotify notify);
-
+void qio_task_set_result_pointer(QIOTask* task, gpointer result, GDestroyNotify notify);
 
 /**
  * qio_task_get_result_pointer:
@@ -329,8 +311,7 @@ void qio_task_set_result_pointer(QIOTask *task,
  *
  * Returns: the task result, or NULL
  */
-gpointer qio_task_get_result_pointer(QIOTask *task);
-
+gpointer qio_task_get_result_pointer(QIOTask* task);
 
 /**
  * qio_task_get_source:
@@ -344,4 +325,4 @@ gpointer qio_task_get_result_pointer(QIOTask *task);
  *
  * Returns: the source object
  */
-Object *qio_task_get_source(QIOTask *task);
+Object* qio_task_get_source(QIOTask* task);

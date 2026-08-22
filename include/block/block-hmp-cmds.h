@@ -16,31 +16,31 @@
 
 #include "qemu/coroutine.h"
 
-void hmp_drive_add(Monitor *mon, const QDict *qdict);
+void hmp_drive_add(Monitor* mon, const QDict* qdict);
 
-void hmp_commit(Monitor *mon, const QDict *qdict);
-void hmp_drive_del(Monitor *mon, const QDict *qdict);
+void hmp_commit(Monitor* mon, const QDict* qdict);
+void hmp_drive_del(Monitor* mon, const QDict* qdict);
 
-void hmp_drive_mirror(Monitor *mon, const QDict *qdict);
-void hmp_drive_backup(Monitor *mon, const QDict *qdict);
+void hmp_drive_mirror(Monitor* mon, const QDict* qdict);
+void hmp_drive_backup(Monitor* mon, const QDict* qdict);
 
-void hmp_block_job_cancel(Monitor *mon, const QDict *qdict);
-void hmp_block_job_pause(Monitor *mon, const QDict *qdict);
-void hmp_block_job_resume(Monitor *mon, const QDict *qdict);
-void hmp_block_job_complete(Monitor *mon, const QDict *qdict);
+void hmp_block_job_cancel(Monitor* mon, const QDict* qdict);
+void hmp_block_job_pause(Monitor* mon, const QDict* qdict);
+void hmp_block_job_resume(Monitor* mon, const QDict* qdict);
+void hmp_block_job_complete(Monitor* mon, const QDict* qdict);
 
-void hmp_snapshot_blkdev(Monitor *mon, const QDict *qdict);
-void hmp_snapshot_blkdev_internal(Monitor *mon, const QDict *qdict);
-void hmp_snapshot_delete_blkdev_internal(Monitor *mon, const QDict *qdict);
+void hmp_snapshot_blkdev(Monitor* mon, const QDict* qdict);
+void hmp_snapshot_blkdev_internal(Monitor* mon, const QDict* qdict);
+void hmp_snapshot_delete_blkdev_internal(Monitor* mon, const QDict* qdict);
 
-void coroutine_fn hmp_block_resize(Monitor *mon, const QDict *qdict);
-void hmp_block_stream(Monitor *mon, const QDict *qdict);
-void hmp_block_passwd(Monitor *mon, const QDict *qdict);
-void hmp_eject(Monitor *mon, const QDict *qdict);
+void coroutine_fn hmp_block_resize(Monitor* mon, const QDict* qdict);
+void              hmp_block_stream(Monitor* mon, const QDict* qdict);
+void              hmp_block_passwd(Monitor* mon, const QDict* qdict);
+void              hmp_eject(Monitor* mon, const QDict* qdict);
 
-void hmp_qemu_io(Monitor *mon, const QDict *qdict);
+void hmp_qemu_io(Monitor* mon, const QDict* qdict);
 
-void hmp_info_block(Monitor *mon, const QDict *qdict);
-void hmp_info_blockstats(Monitor *mon, const QDict *qdict);
-void hmp_info_block_jobs(Monitor *mon, const QDict *qdict);
-void hmp_info_snapshots(Monitor *mon, const QDict *qdict);
+void hmp_info_block(Monitor* mon, const QDict* qdict);
+void hmp_info_blockstats(Monitor* mon, const QDict* qdict);
+void hmp_info_block_jobs(Monitor* mon, const QDict* qdict);
+void hmp_info_snapshots(Monitor* mon, const QDict* qdict);

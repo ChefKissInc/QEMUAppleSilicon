@@ -11,15 +11,15 @@
 
 #include "event-internal.h"
 
-typedef struct TraceEventIter {
+typedef struct TraceEventIter
+{
     /* iter state */
     size_t event;
     size_t group;
     /* filter conditions */
-    size_t group_id;
-    const char *pattern;
+    size_t      group_id;
+    const char* pattern;
 } TraceEventIter;
-
 
 /**
  * trace_event_iter_init_all:
@@ -28,7 +28,7 @@ typedef struct TraceEventIter {
  * Initialize the event iterator struct @iter,
  * for all events.
  */
-void trace_event_iter_init_all(TraceEventIter *iter);
+void trace_event_iter_init_all(TraceEventIter* iter);
 
 /**
  * trace_event_iter_init_pattern:
@@ -39,7 +39,7 @@ void trace_event_iter_init_all(TraceEventIter *iter);
  * using @pattern to filter out events
  * with non-matching names.
  */
-void trace_event_iter_init_pattern(TraceEventIter *iter, const char *pattern);
+void trace_event_iter_init_pattern(TraceEventIter* iter, const char* pattern);
 
 /**
  * trace_event_iter_init_group:
@@ -49,7 +49,7 @@ void trace_event_iter_init_pattern(TraceEventIter *iter, const char *pattern);
  * Initialize the event iterator struct @iter,
  * using @group_id to filter for events in the group.
  */
-void trace_event_iter_init_group(TraceEventIter *iter, size_t group_id);
+void trace_event_iter_init_group(TraceEventIter* iter, size_t group_id);
 
 /**
  * trace_event_iter_next:
@@ -60,8 +60,7 @@ void trace_event_iter_init_group(TraceEventIter *iter, size_t group_id);
  *
  * Returns: the next event, or NULL if no more events exist
  */
-TraceEvent *trace_event_iter_next(TraceEventIter *iter);
-
+TraceEvent* trace_event_iter_next(TraceEventIter* iter);
 
 /**
  * trace_event_name:
@@ -71,29 +70,28 @@ TraceEvent *trace_event_iter_next(TraceEventIter *iter);
  *
  * Returns: pointer to #TraceEvent or NULL if not found.
  */
-TraceEvent *trace_event_name(const char *name);
+TraceEvent* trace_event_name(const char* name);
 
 /**
  * trace_event_is_pattern:
  *
  * Whether the given string is an event name pattern.
  */
-static bool trace_event_is_pattern(const char *str);
-
+static bool trace_event_is_pattern(const char* str);
 
 /**
  * trace_event_get_id:
  *
  * Get the identifier of an event.
  */
-static uint32_t trace_event_get_id(TraceEvent *ev);
+static uint32_t trace_event_get_id(TraceEvent* ev);
 
 /**
  * trace_event_get_name:
  *
  * Get the name of an event.
  */
-static const char * trace_event_get_name(TraceEvent *ev);
+static const char* trace_event_get_name(TraceEvent* ev);
 
 /**
  * trace_event_get_state:
@@ -104,8 +102,7 @@ static const char * trace_event_get_name(TraceEvent *ev);
  * If the event has the disabled property, the check will have no performance
  * impact.
  */
-#define trace_event_get_state(id)                       \
-    ((id ##_ENABLED) && trace_event_get_state_dynamic_by_id(id))
+#define trace_event_get_state(id) ((id##_ENABLED) && trace_event_get_state_dynamic_by_id(id))
 
 /**
  * trace_event_get_state_backends:
@@ -120,8 +117,7 @@ static const char * trace_event_get_name(TraceEvent *ev);
  * Returns: true if at least one backend has the event enabled and the event
  * does not have the disabled property.
  */
-#define trace_event_get_state_backends(id)              \
-    ((id ##_ENABLED) && id ##_BACKEND_DSTATE())
+#define trace_event_get_state_backends(id) ((id##_ENABLED) && id##_BACKEND_DSTATE())
 
 /**
  * trace_event_get_state_static:
@@ -132,7 +128,7 @@ static const char * trace_event_get_name(TraceEvent *ev);
  * Use the define 'TRACE_${EVENT_NAME}_ENABLED' for compile-time checks (it will
  * be set to 1 or 0 according to the presence of the disabled property).
  */
-static bool trace_event_get_state_static(TraceEvent *ev);
+static bool trace_event_get_state_static(TraceEvent* ev);
 
 /**
  * trace_event_get_state_dynamic:
@@ -141,7 +137,7 @@ static bool trace_event_get_state_static(TraceEvent *ev);
  *
  * If the event has the 'vcpu' property, gets the OR'ed state of all vCPUs.
  */
-static bool trace_event_get_state_dynamic(TraceEvent *ev);
+static bool trace_event_get_state_dynamic(TraceEvent* ev);
 
 /**
  * trace_event_set_state_dynamic:
@@ -152,7 +148,7 @@ static bool trace_event_get_state_dynamic(TraceEvent *ev);
  *
  * Pre-condition: trace_event_get_state_static(ev) == true
  */
-void trace_event_set_state_dynamic(TraceEvent *ev, bool state);
+void trace_event_set_state_dynamic(TraceEvent* ev, bool state);
 
 /**
  * trace_init_backends:
@@ -178,7 +174,7 @@ void trace_init_file(void);
  *
  * List all available events.
  */
-void trace_list_events(FILE *f);
+void trace_list_events(FILE* f);
 
 /**
  * trace_enable_events:
@@ -187,7 +183,7 @@ void trace_list_events(FILE *f);
  *
  * Enable or disable matching events.
  */
-void trace_enable_events(const char *line_buf);
+void trace_enable_events(const char* line_buf);
 
 /**
  * Definition of QEMU options describing trace subsystem configuration
@@ -200,7 +196,7 @@ extern QemuOptsList qemu_trace_opts;
  *
  * Initialize tracing subsystem.
  */
-void trace_opt_parse(const char *optstr);
+void trace_opt_parse(const char* optstr);
 
 /**
  * trace_get_vcpu_event_count:
@@ -208,6 +204,5 @@ void trace_opt_parse(const char *optstr);
  * Return the number of known vcpu-specific events
  */
 uint32_t trace_get_vcpu_event_count(void);
-
 
 #include "control-internal.h"

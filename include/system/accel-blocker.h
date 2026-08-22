@@ -27,8 +27,8 @@ void accel_blocker_init(void);
  */
 void accel_ioctl_begin(void);
 void accel_ioctl_end(void);
-void accel_cpu_ioctl_begin(CPUState *cpu);
-void accel_cpu_ioctl_end(CPUState *cpu);
+void accel_cpu_ioctl_begin(CPUState* cpu);
+void accel_cpu_ioctl_end(CPUState* cpu);
 
 /*
  * accel_ioctl_inhibit_begin: start critical section

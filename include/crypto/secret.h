@@ -26,8 +26,7 @@
 
 #define TYPE_QCRYPTO_SECRET "secret"
 typedef struct QCryptoSecret QCryptoSecret;
-DECLARE_INSTANCE_CHECKER(QCryptoSecret, QCRYPTO_SECRET,
-                         TYPE_QCRYPTO_SECRET)
+DECLARE_INSTANCE_CHECKER(QCryptoSecret, QCRYPTO_SECRET, TYPE_QCRYPTO_SECRET)
 
 typedef struct QCryptoSecretClass QCryptoSecretClass;
 
@@ -118,13 +117,14 @@ typedef struct QCryptoSecretClass QCryptoSecretClass;
  * be in raw format.
  */
 
-struct QCryptoSecret {
+struct QCryptoSecret
+{
     QCryptoSecretCommon parent_obj;
-    char *data;
-    char *file;
+    char*               data;
+    char*               file;
 };
 
-
-struct QCryptoSecretClass {
+struct QCryptoSecretClass
+{
     QCryptoSecretCommonClass parent_class;
 };

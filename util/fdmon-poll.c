@@ -21,12 +21,12 @@
  * any lock, the arrays cannot be stored in AioContext.  Thread-local data
  * has none of the disadvantages of these three options.
  */
-static __thread GPollFD *pollfds;
-static __thread AioHandler **nodes;
-static __thread unsigned npfd, nalloc;
-static __thread Notifier pollfds_cleanup_notifier;
+static __thread GPollFD*     pollfds;
+static __thread AioHandler** nodes;
+static __thread unsigned     npfd, nalloc;
+static __thread Notifier     pollfds_cleanup_notifier;
 
-static void pollfds_cleanup(Notifier *n, void *unused)
+static void pollfds_cleanup(Notifier* n, void* unused)
 {
     assert(npfd == 0);
     g_free(pollfds);
@@ -34,40 +34,38 @@ static void pollfds_cleanup(Notifier *n, void *unused)
     nalloc = 0;
 }
 
-static void add_pollfd(AioHandler *node)
+static void add_pollfd(AioHandler* node)
 {
     if (npfd == nalloc) {
         if (nalloc == 0) {
             pollfds_cleanup_notifier.notify = pollfds_cleanup;
             qemu_thread_atexit_add(&pollfds_cleanup_notifier);
             nalloc = 8;
-        } else {
+        }
+        else {
             assert(nalloc <= INT_MAX);
             nalloc *= 2;
         }
         pollfds = g_renew(GPollFD, pollfds, nalloc);
-        nodes = g_renew(AioHandler *, nodes, nalloc);
+        nodes   = g_renew(AioHandler*, nodes, nalloc);
     }
-    nodes[npfd] = node;
-    pollfds[npfd] = (GPollFD) {
-        .fd = node->pfd.fd,
+    nodes[npfd]   = node;
+    pollfds[npfd] = (GPollFD){
+        .fd     = node->pfd.fd,
         .events = node->pfd.events,
     };
     npfd++;
 }
 
-static int fdmon_poll_wait(AioContext *ctx, AioHandlerList *ready_list,
-                            int64_t timeout)
+static int fdmon_poll_wait(AioContext* ctx, AioHandlerList* ready_list, int64_t timeout)
 {
-    AioHandler *node;
-    int ret;
+    AioHandler* node;
+    int         ret;
 
     assert(npfd == 0);
 
-    QLIST_FOREACH_RCU(node, &ctx->aio_handlers, node) {
-        if (!QLIST_IS_INSERTED(node, node_deleted) && node->pfd.events) {
-            add_pollfd(node);
-        }
+    QLIST_FOREACH_RCU (node, &ctx->aio_handlers, node) {
+        if (!QLIST_IS_INSERTED(node, node_deleted) && node->pfd.events) { add_pollfd(node); }
     }
 
     /* epoll(7) is faster above a certain number of fds */
@@ -83,9 +81,7 @@ static int fdmon_poll_wait(AioContext *ctx, AioHandlerList *ready_list,
         for (i = 0; i < npfd; i++) {
             int revents = pollfds[i].revents;
 
-            if (revents) {
-                aio_add_ready_handler(ready_list, nodes[i], revents);
-            }
+            if (revents) { aio_add_ready_handler(ready_list, nodes[i], revents); }
         }
     }
 
@@ -93,15 +89,11 @@ static int fdmon_poll_wait(AioContext *ctx, AioHandlerList *ready_list,
     return ret;
 }
 
-static void fdmon_poll_update(AioContext *ctx,
-                              AioHandler *old_node,
-                              AioHandler *new_node)
-{
-    /* Do nothing, AioHandler already contains the state we'll need */
-}
+static void fdmon_poll_update(AioContext* ctx, AioHandler* old_node, AioHandler* new_node)
+{ /* Do nothing, AioHandler already contains the state we'll need */ }
 
 const FDMonOps fdmon_poll_ops = {
-    .update = fdmon_poll_update,
-    .wait = fdmon_poll_wait,
+    .update    = fdmon_poll_update,
+    .wait      = fdmon_poll_wait,
     .need_wait = aio_poll_disabled,
 };

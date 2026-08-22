@@ -7,4 +7,4 @@
 
 #pragma once
 
-#define TCG_TARGET_DEFAULT_MO  0
+#define TCG_TARGET_DEFAULT_MO 0

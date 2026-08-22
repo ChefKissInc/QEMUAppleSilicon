@@ -29,40 +29,36 @@
    the system declaration of getauxval pulls in the system <elf.h>, which
    conflicts with qemu's version.  */
 
-#include <sys/auxv.h>
+    #include <sys/auxv.h>
 
-unsigned long qemu_getauxval(unsigned long key)
-{
-    return getauxval(key);
-}
+unsigned long qemu_getauxval(unsigned long key) { return getauxval(key); }
 #elif defined(__linux__)
-#include "elf.h"
+    #include "elf.h"
 
 /* Our elf.h doesn't contain Elf32_auxv_t and Elf64_auxv_t, which is ok because
    that just makes it easier to define it properly for the host here.  */
-typedef struct {
+typedef struct
+{
     unsigned long a_type;
     unsigned long a_val;
 } ElfW_auxv_t;
 
-static const ElfW_auxv_t *auxv;
+static const ElfW_auxv_t* auxv;
 
-static const ElfW_auxv_t *qemu_init_auxval(void)
+static const ElfW_auxv_t* qemu_init_auxval(void)
 {
-    ElfW_auxv_t *a;
-    ssize_t size = 512, r, ofs;
-    int fd;
+    ElfW_auxv_t* a;
+    ssize_t      size = 512, r, ofs;
+    int          fd;
 
     /* Allocate some initial storage.  Make sure the first entry is set
        to end-of-list, so that we've got a valid list in case of error.  */
-    auxv = a = g_malloc(size);
+    auxv = a    = g_malloc(size);
     a[0].a_type = 0;
-    a[0].a_val = 0;
+    a[0].a_val  = 0;
 
     fd = open("/proc/self/auxv", O_RDONLY);
-    if (fd < 0) {
-        return a;
-    }
+    if (fd < 0) { return a; }
 
     /* Read the first SIZE bytes.  Hopefully, this covers everything.  */
     r = read(fd, a, size);
@@ -70,11 +66,12 @@ static const ElfW_auxv_t *qemu_init_auxval(void)
     if (r == size) {
         /* Continue to expand until we do get a partial read.  */
         do {
-            ofs = size;
+            ofs   = size;
             size *= 2;
             auxv = a = g_realloc(a, size);
-            r = read(fd, (char *)a + ofs, ofs);
-        } while (r == ofs);
+            r        = read(fd, (char*)a + ofs, ofs);
+        }
+        while (r == ofs);
     }
 
     close(fd);
@@ -83,16 +80,12 @@ static const ElfW_auxv_t *qemu_init_auxval(void)
 
 unsigned long qemu_getauxval(unsigned long type)
 {
-    const ElfW_auxv_t *a = auxv;
+    const ElfW_auxv_t* a = auxv;
 
-    if (unlikely(a == NULL)) {
-        a = qemu_init_auxval();
-    }
+    if (unlikely(a == NULL)) { a = qemu_init_auxval(); }
 
     for (; a->a_type != 0; a++) {
-        if (a->a_type == type) {
-            return a->a_val;
-        }
+        if (a->a_type == type) { return a->a_val; }
     }
 
     errno = ENOENT;
@@ -100,15 +93,13 @@ unsigned long qemu_getauxval(unsigned long type)
 }
 
 #elif defined(CONFIG_ELF_AUX_INFO)
-#include <sys/auxv.h>
+    #include <sys/auxv.h>
 
 unsigned long qemu_getauxval(unsigned long type)
 {
     unsigned long aux = 0;
-    int ret = elf_aux_info(type, &aux, sizeof(aux));
-    if (ret != 0) {
-        errno = ret;
-    }
+    int           ret = elf_aux_info(type, &aux, sizeof(aux));
+    if (ret != 0) { errno = ret; }
     return aux;
 }
 

@@ -9,67 +9,69 @@
 #pragma once
 
 /* For gdb file i/o remote protocol open flags. */
-#define GDB_O_RDONLY  0
-#define GDB_O_WRONLY  1
-#define GDB_O_RDWR    2
-#define GDB_O_APPEND  8
-#define GDB_O_CREAT   0x200
-#define GDB_O_TRUNC   0x400
-#define GDB_O_EXCL    0x800
+#define GDB_O_RDONLY 0
+#define GDB_O_WRONLY 1
+#define GDB_O_RDWR   2
+#define GDB_O_APPEND 8
+#define GDB_O_CREAT  0x200
+#define GDB_O_TRUNC  0x400
+#define GDB_O_EXCL   0x800
 
 /* For gdb file i/o remote protocol errno values */
-#define GDB_EPERM           1
-#define GDB_ENOENT          2
-#define GDB_EINTR           4
-#define GDB_EBADF           9
-#define GDB_EACCES         13
-#define GDB_EFAULT         14
-#define GDB_EBUSY          16
-#define GDB_EEXIST         17
-#define GDB_ENODEV         19
-#define GDB_ENOTDIR        20
-#define GDB_EISDIR         21
-#define GDB_EINVAL         22
-#define GDB_ENFILE         23
-#define GDB_EMFILE         24
-#define GDB_EFBIG          27
-#define GDB_ENOSPC         28
-#define GDB_ESPIPE         29
-#define GDB_EROFS          30
-#define GDB_ENAMETOOLONG   91
-#define GDB_EUNKNOWN       9999
+#define GDB_EPERM        1
+#define GDB_ENOENT       2
+#define GDB_EINTR        4
+#define GDB_EBADF        9
+#define GDB_EACCES       13
+#define GDB_EFAULT       14
+#define GDB_EBUSY        16
+#define GDB_EEXIST       17
+#define GDB_ENODEV       19
+#define GDB_ENOTDIR      20
+#define GDB_EISDIR       21
+#define GDB_EINVAL       22
+#define GDB_ENFILE       23
+#define GDB_EMFILE       24
+#define GDB_EFBIG        27
+#define GDB_ENOSPC       28
+#define GDB_ESPIPE       29
+#define GDB_EROFS        30
+#define GDB_ENAMETOOLONG 91
+#define GDB_EUNKNOWN     9999
 
 /* For gdb file i/o remote protocol lseek whence. */
-#define GDB_SEEK_SET  0
-#define GDB_SEEK_CUR  1
-#define GDB_SEEK_END  2
+#define GDB_SEEK_SET 0
+#define GDB_SEEK_CUR 1
+#define GDB_SEEK_END 2
 
 /* For gdb file i/o stat/fstat. */
 typedef uint32_t gdb_mode_t;
 typedef uint32_t gdb_time_t;
 
-struct gdb_stat {
-  uint32_t    gdb_st_dev;     /* device */
-  uint32_t    gdb_st_ino;     /* inode */
-  gdb_mode_t  gdb_st_mode;    /* protection */
-  uint32_t    gdb_st_nlink;   /* number of hard links */
-  uint32_t    gdb_st_uid;     /* user ID of owner */
-  uint32_t    gdb_st_gid;     /* group ID of owner */
-  uint32_t    gdb_st_rdev;    /* device type (if inode device) */
-  uint64_t    gdb_st_size;    /* total size, in bytes */
-  uint64_t    gdb_st_blksize; /* blocksize for filesystem I/O */
-  uint64_t    gdb_st_blocks;  /* number of blocks allocated */
-  gdb_time_t  gdb_st_atime;   /* time of last access */
-  gdb_time_t  gdb_st_mtime;   /* time of last modification */
-  gdb_time_t  gdb_st_ctime;   /* time of last change */
+struct gdb_stat
+{
+    uint32_t   gdb_st_dev;     /* device */
+    uint32_t   gdb_st_ino;     /* inode */
+    gdb_mode_t gdb_st_mode;    /* protection */
+    uint32_t   gdb_st_nlink;   /* number of hard links */
+    uint32_t   gdb_st_uid;     /* user ID of owner */
+    uint32_t   gdb_st_gid;     /* group ID of owner */
+    uint32_t   gdb_st_rdev;    /* device type (if inode device) */
+    uint64_t   gdb_st_size;    /* total size, in bytes */
+    uint64_t   gdb_st_blksize; /* blocksize for filesystem I/O */
+    uint64_t   gdb_st_blocks;  /* number of blocks allocated */
+    gdb_time_t gdb_st_atime;   /* time of last access */
+    gdb_time_t gdb_st_mtime;   /* time of last modification */
+    gdb_time_t gdb_st_ctime;   /* time of last change */
 } QEMU_PACKED;
 
-struct gdb_timeval {
-  gdb_time_t tv_sec;  /* second */
-  uint64_t tv_usec;   /* microsecond */
+struct gdb_timeval
+{
+    gdb_time_t tv_sec;  /* second */
+    uint64_t   tv_usec; /* microsecond */
 } QEMU_PACKED;
 
-typedef void (*gdb_syscall_complete_cb)(CPUState *cpu, uint64_t ret, int err);
+typedef void (*gdb_syscall_complete_cb)(CPUState* cpu, uint64_t ret, int err);
 
 /**
  * gdb_do_syscall:
@@ -88,7 +90,7 @@ typedef void (*gdb_syscall_complete_cb)(CPUState *cpu, uint64_t ret, int err);
  *   %lx - 64-bit argument printed in hex
  *   %s  - string pointer (target_ulong) and length (int) pair
  */
-void gdb_do_syscall(gdb_syscall_complete_cb cb, const char *fmt, ...);
+void gdb_do_syscall(gdb_syscall_complete_cb cb, const char* fmt, ...);
 
 /**
  * gdb_exit: exit gdb session, reporting inferior status

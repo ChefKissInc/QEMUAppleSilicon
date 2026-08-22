@@ -31,118 +31,97 @@
 #define AUDIO_CAP "noaudio"
 #include "audio_int.h"
 
-typedef struct NoVoiceOut {
+typedef struct NoVoiceOut
+{
     HWVoiceOut hw;
-    RateCtl rate;
+    RateCtl    rate;
 } NoVoiceOut;
 
-typedef struct NoVoiceIn {
+typedef struct NoVoiceIn
+{
     HWVoiceIn hw;
-    RateCtl rate;
+    RateCtl   rate;
 } NoVoiceIn;
 
-static size_t no_write(HWVoiceOut *hw, void *buf, size_t len)
+static size_t no_write(HWVoiceOut* hw, void* buf, size_t len)
 {
-    NoVoiceOut *no = (NoVoiceOut *) hw;
+    NoVoiceOut* no = (NoVoiceOut*)hw;
     return audio_rate_get_bytes(&no->rate, &hw->info, len);
 }
 
-static int no_init_out(HWVoiceOut *hw, struct audsettings *as, void *drv_opaque)
+static int no_init_out(HWVoiceOut* hw, struct audsettings* as, void* drv_opaque)
 {
-    NoVoiceOut *no = (NoVoiceOut *) hw;
+    NoVoiceOut* no = (NoVoiceOut*)hw;
 
-    audio_pcm_init_info (&hw->info, as);
+    audio_pcm_init_info(&hw->info, as);
     hw->samples = 1024;
     audio_rate_start(&no->rate);
     return 0;
 }
 
-static void no_fini_out (HWVoiceOut *hw)
+static void no_fini_out(HWVoiceOut* hw) { (void)hw; }
+
+static void no_enable_out(HWVoiceOut* hw, bool enable)
 {
-    (void) hw;
+    NoVoiceOut* no = (NoVoiceOut*)hw;
+
+    if (enable) { audio_rate_start(&no->rate); }
 }
 
-static void no_enable_out(HWVoiceOut *hw, bool enable)
+static int no_init_in(HWVoiceIn* hw, struct audsettings* as, void* drv_opaque)
 {
-    NoVoiceOut *no = (NoVoiceOut *) hw;
+    NoVoiceIn* no = (NoVoiceIn*)hw;
 
-    if (enable) {
-        audio_rate_start(&no->rate);
-    }
-}
-
-static int no_init_in(HWVoiceIn *hw, struct audsettings *as, void *drv_opaque)
-{
-    NoVoiceIn *no = (NoVoiceIn *) hw;
-
-    audio_pcm_init_info (&hw->info, as);
+    audio_pcm_init_info(&hw->info, as);
     hw->samples = 1024;
     audio_rate_start(&no->rate);
     return 0;
 }
 
-static void no_fini_in (HWVoiceIn *hw)
-{
-    (void) hw;
-}
+static void no_fini_in(HWVoiceIn* hw) { (void)hw; }
 
-static size_t no_read(HWVoiceIn *hw, void *buf, size_t size)
+static size_t no_read(HWVoiceIn* hw, void* buf, size_t size)
 {
-    NoVoiceIn *no = (NoVoiceIn *) hw;
-    int64_t bytes = audio_rate_get_bytes(&no->rate, &hw->info, size);
+    NoVoiceIn* no    = (NoVoiceIn*)hw;
+    int64_t    bytes = audio_rate_get_bytes(&no->rate, &hw->info, size);
 
     audio_pcm_info_clear_buf(&hw->info, buf, bytes / hw->info.bytes_per_frame);
     return bytes;
 }
 
-static void no_enable_in(HWVoiceIn *hw, bool enable)
+static void no_enable_in(HWVoiceIn* hw, bool enable)
 {
-    NoVoiceIn *no = (NoVoiceIn *) hw;
+    NoVoiceIn* no = (NoVoiceIn*)hw;
 
-    if (enable) {
-        audio_rate_start(&no->rate);
-    }
+    if (enable) { audio_rate_start(&no->rate); }
 }
 
-static void *no_audio_init(Audiodev *dev, Error **errp)
-{
-    return &no_audio_init;
-}
+static void* no_audio_init(Audiodev* dev, Error** errp) { return &no_audio_init; }
 
-static void no_audio_fini (void *opaque)
-{
-    (void) opaque;
-}
+static void no_audio_fini(void* opaque) { (void)opaque; }
 
-static struct audio_pcm_ops no_pcm_ops = {
-    .init_out = no_init_out,
-    .fini_out = no_fini_out,
-    .write    = no_write,
-    .buffer_get_free = audio_generic_buffer_get_free,
-    .run_buffer_out = audio_generic_run_buffer_out,
-    .enable_out = no_enable_out,
+static struct audio_pcm_ops no_pcm_ops = {.init_out        = no_init_out,
+                                          .fini_out        = no_fini_out,
+                                          .write           = no_write,
+                                          .buffer_get_free = audio_generic_buffer_get_free,
+                                          .run_buffer_out  = audio_generic_run_buffer_out,
+                                          .enable_out      = no_enable_out,
 
-    .init_in  = no_init_in,
-    .fini_in  = no_fini_in,
-    .read     = no_read,
-    .run_buffer_in = audio_generic_run_buffer_in,
-    .enable_in = no_enable_in
-};
+                                          .init_in       = no_init_in,
+                                          .fini_in       = no_fini_in,
+                                          .read          = no_read,
+                                          .run_buffer_in = audio_generic_run_buffer_in,
+                                          .enable_in     = no_enable_in};
 
-static struct audio_driver no_audio_driver = {
-    .name           = "none",
-    .descr          = "Timer based audio emulation",
-    .init           = no_audio_init,
-    .fini           = no_audio_fini,
-    .pcm_ops        = &no_pcm_ops,
-    .max_voices_out = INT_MAX,
-    .max_voices_in  = INT_MAX,
-    .voice_size_out = sizeof (NoVoiceOut),
-    .voice_size_in  = sizeof (NoVoiceIn)
-};
+static struct audio_driver no_audio_driver = {.name           = "none",
+                                              .descr          = "Timer based audio emulation",
+                                              .init           = no_audio_init,
+                                              .fini           = no_audio_fini,
+                                              .pcm_ops        = &no_pcm_ops,
+                                              .max_voices_out = INT_MAX,
+                                              .max_voices_in  = INT_MAX,
+                                              .voice_size_out = sizeof(NoVoiceOut),
+                                              .voice_size_in  = sizeof(NoVoiceIn)};
 
-static void register_audio_none(void)
-{
-    audio_driver_register(&no_audio_driver);
-}
+static void register_audio_none(void) { audio_driver_register(&no_audio_driver); }
 type_init(register_audio_none);

@@ -12,12 +12,10 @@
 #include "qapi/qapi-commands-trace.h"
 #include "control.h"
 
-
-static bool check_events(bool ignore_unavailable, bool is_pattern,
-                         const char *name, Error **errp)
+static bool check_events(bool ignore_unavailable, bool is_pattern, const char* name, Error** errp)
 {
     if (!is_pattern) {
-        TraceEvent *ev = trace_event_name(name);
+        TraceEvent* ev = trace_event_name(name);
 
         /* error for non-existing event */
         if (ev == NULL) {
@@ -32,10 +30,11 @@ static bool check_events(bool ignore_unavailable, bool is_pattern,
         }
 
         return true;
-    } else {
+    }
+    else {
         /* error for unavailable events */
         TraceEventIter iter;
-        TraceEvent *ev;
+        TraceEvent*    ev;
         trace_event_iter_init_pattern(&iter, name);
         while ((ev = trace_event_iter_next(&iter)) != NULL) {
             if (!ignore_unavailable && !trace_event_get_state_static(ev)) {
@@ -47,33 +46,28 @@ static bool check_events(bool ignore_unavailable, bool is_pattern,
     }
 }
 
-TraceEventInfoList *qmp_trace_event_get_state(const char *name,
-                                              Error **errp)
+TraceEventInfoList* qmp_trace_event_get_state(const char* name, Error** errp)
 {
-    TraceEventInfoList *events = NULL;
-    TraceEventIter iter;
-    TraceEvent *ev;
-    bool is_pattern = trace_event_is_pattern(name);
+    TraceEventInfoList* events = NULL;
+    TraceEventIter      iter;
+    TraceEvent*         ev;
+    bool                is_pattern = trace_event_is_pattern(name);
 
     /* Check events */
-    if (!check_events(true, is_pattern, name, errp)) {
-        return NULL;
-    }
+    if (!check_events(true, is_pattern, name, errp)) { return NULL; }
 
     /* Get states (all errors checked above) */
     trace_event_iter_init_pattern(&iter, name);
     while ((ev = trace_event_iter_next(&iter)) != NULL) {
-        TraceEventInfo *value;
+        TraceEventInfo* value;
 
-        value = g_new(TraceEventInfo, 1);
+        value       = g_new(TraceEventInfo, 1);
         value->name = g_strdup(trace_event_get_name(ev));
 
-        if (!trace_event_get_state_static(ev)) {
-            value->state = TRACE_EVENT_STATE_UNAVAILABLE;
-        } else {
-            if (trace_event_get_state_dynamic(ev)) {
-                value->state = TRACE_EVENT_STATE_ENABLED;
-            } else {
+        if (!trace_event_get_state_static(ev)) { value->state = TRACE_EVENT_STATE_UNAVAILABLE; }
+        else {
+            if (trace_event_get_state_dynamic(ev)) { value->state = TRACE_EVENT_STATE_ENABLED; }
+            else {
                 value->state = TRACE_EVENT_STATE_DISABLED;
             }
         }
@@ -83,26 +77,20 @@ TraceEventInfoList *qmp_trace_event_get_state(const char *name,
     return events;
 }
 
-void qmp_trace_event_set_state(const char *name, bool enable,
-                               bool has_ignore_unavailable, bool ignore_unavailable,
-                               Error **errp)
+void qmp_trace_event_set_state(const char* name, bool enable, bool has_ignore_unavailable, bool ignore_unavailable,
+                               Error** errp)
 {
     TraceEventIter iter;
-    TraceEvent *ev;
-    bool is_pattern = trace_event_is_pattern(name);
+    TraceEvent*    ev;
+    bool           is_pattern = trace_event_is_pattern(name);
 
     /* Check events */
-    if (!check_events(has_ignore_unavailable && ignore_unavailable,
-                      is_pattern, name, errp)) {
-        return;
-    }
+    if (!check_events(has_ignore_unavailable && ignore_unavailable, is_pattern, name, errp)) { return; }
 
     /* Apply changes (all errors checked above) */
     trace_event_iter_init_pattern(&iter, name);
     while ((ev = trace_event_iter_next(&iter)) != NULL) {
-        if (!trace_event_get_state_static(ev)) {
-            continue;
-        }
+        if (!trace_event_get_state_static(ev)) { continue; }
         trace_event_set_state_dynamic(ev, enable);
     }
 }

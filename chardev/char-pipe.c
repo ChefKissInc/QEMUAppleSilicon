@@ -30,23 +30,22 @@
 #include "chardev/char.h"
 
 #ifdef _WIN32
-#include "chardev/char-win.h"
+    #include "chardev/char-win.h"
 #else
-#include "chardev/char-fd.h"
+    #include "chardev/char-fd.h"
 #endif
 
 #ifdef _WIN32
-#define MAXCONNECT 1
-#define NTIMEOUT 5000
+    #define MAXCONNECT 1
+    #define NTIMEOUT   5000
 
-static int win_chr_pipe_init(Chardev *chr, const char *filename,
-                             Error **errp)
+static int win_chr_pipe_init(Chardev* chr, const char* filename, Error** errp)
 {
-    WinChardev *s = WIN_CHARDEV(chr);
-    OVERLAPPED ov;
-    int ret;
-    DWORD size;
-    char *openname;
+    WinChardev* s = WIN_CHARDEV(chr);
+    OVERLAPPED  ov;
+    int         ret;
+    DWORD       size;
+    char*       openname;
 
     s->fpipe = TRUE;
 
@@ -62,11 +61,9 @@ static int win_chr_pipe_init(Chardev *chr, const char *filename,
     }
 
     openname = g_strdup_printf("\\\\.\\pipe\\%s", filename);
-    s->file = CreateNamedPipe(openname,
-                              PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
-                              PIPE_TYPE_BYTE | PIPE_READMODE_BYTE |
-                              PIPE_WAIT,
-                              MAXCONNECT, NSENDBUF, NRECVBUF, NTIMEOUT, NULL);
+    s->file = CreateNamedPipe(openname, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+                              PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, MAXCONNECT, NSENDBUF, NRECVBUF, NTIMEOUT,
+                              NULL);
     g_free(openname);
     if (s->file == INVALID_HANDLE_VALUE) {
         error_setg_win32(errp, GetLastError(), "Failed CreateNamedPipe");
@@ -76,7 +73,7 @@ static int win_chr_pipe_init(Chardev *chr, const char *filename,
 
     ZeroMemory(&ov, sizeof(ov));
     ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    ret = ConnectNamedPipe(s->file, &ov);
+    ret       = ConnectNamedPipe(s->file, &ov);
     if (ret) {
         error_setg(errp, "Failed ConnectNamedPipe");
         goto fail;
@@ -99,18 +96,16 @@ static int win_chr_pipe_init(Chardev *chr, const char *filename,
     qemu_add_polling_cb(win_chr_pipe_poll, chr);
     return 0;
 
- fail:
+fail:
     return -1;
 }
 
-static bool pipe_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
+static bool pipe_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevHostdev *opts = backend->u.pipe.data;
-    const char *filename = opts->device;
+    ChardevHostdev* opts     = backend->u.pipe.data;
+    const char*     filename = opts->device;
 
-    if (win_chr_pipe_init(chr, filename, errp) < 0) {
-        return false;
-    }
+    if (win_chr_pipe_init(chr, filename, errp) < 0) { return false; }
 
     qemu_chr_be_event(chr, CHR_EVENT_OPENED);
     return true;
@@ -118,30 +113,24 @@ static bool pipe_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
 
 #else
 
-static bool pipe_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
+static bool pipe_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevHostdev *opts = backend->u.pipe.data;
-    int fd_in, fd_out;
-    char *filename_in;
-    char *filename_out;
-    const char *filename = opts->device;
+    ChardevHostdev* opts = backend->u.pipe.data;
+    int             fd_in, fd_out;
+    char*           filename_in;
+    char*           filename_out;
+    const char*     filename = opts->device;
 
-    filename_in = g_strdup_printf("%s.in", filename);
+    filename_in  = g_strdup_printf("%s.in", filename);
     filename_out = g_strdup_printf("%s.out", filename);
-    fd_in = RETRY_ON_EINTR(qemu_open_old(filename_in, O_RDWR | O_BINARY));
-    fd_out = RETRY_ON_EINTR(qemu_open_old(filename_out, O_RDWR | O_BINARY));
+    fd_in        = RETRY_ON_EINTR(qemu_open_old(filename_in, O_RDWR | O_BINARY));
+    fd_out       = RETRY_ON_EINTR(qemu_open_old(filename_out, O_RDWR | O_BINARY));
     g_free(filename_in);
     g_free(filename_out);
     if (fd_in < 0 || fd_out < 0) {
-        if (fd_in >= 0) {
-            close(fd_in);
-        }
-        if (fd_out >= 0) {
-            close(fd_out);
-        }
-        fd_in = fd_out = RETRY_ON_EINTR(
-            qemu_open_old(filename, O_RDWR | O_BINARY)
-        );
+        if (fd_in >= 0) { close(fd_in); }
+        if (fd_out >= 0) { close(fd_out); }
+        fd_in = fd_out = RETRY_ON_EINTR(qemu_open_old(filename, O_RDWR | O_BINARY));
         if (fd_in < 0) {
             error_setg_file_open(errp, errno, filename);
             return false;
@@ -150,9 +139,7 @@ static bool pipe_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
 
     if (!qemu_chr_open_fd(chr, fd_in, fd_out, errp)) {
         close(fd_in);
-        if (fd_out != fd_in) {
-            close(fd_out);
-        }
+        if (fd_out != fd_in) { close(fd_out); }
         return false;
     }
 
@@ -162,11 +149,10 @@ static bool pipe_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
 
 #endif /* !_WIN32 */
 
-static void pipe_chr_parse(QemuOpts *opts, ChardevBackend *backend,
-                           Error **errp)
+static void pipe_chr_parse(QemuOpts* opts, ChardevBackend* backend, Error** errp)
 {
-    const char *device = qemu_opt_get(opts, "path");
-    ChardevHostdev *dev;
+    const char*     device = qemu_opt_get(opts, "path");
+    ChardevHostdev* dev;
 
     if (device == NULL) {
         error_setg(errp, "chardev: pipe: no device path given");
@@ -178,12 +164,12 @@ static void pipe_chr_parse(QemuOpts *opts, ChardevBackend *backend,
     dev->device = g_strdup(device);
 }
 
-static void char_pipe_class_init(ObjectClass *oc, const void *data)
+static void char_pipe_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
     cc->chr_parse = pipe_chr_parse;
-    cc->chr_open = pipe_chr_open;
+    cc->chr_open  = pipe_chr_open;
 }
 
 static const TypeInfo char_pipe_type_info = {
@@ -196,9 +182,6 @@ static const TypeInfo char_pipe_type_info = {
     .class_init = char_pipe_class_init,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_pipe_type_info);
-}
+static void register_types(void) { type_register_static(&char_pipe_type_info); }
 
 type_init(register_types);

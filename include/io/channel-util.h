@@ -27,7 +27,6 @@
  * with QIOChannel objects
  */
 
-
 /**
  * qio_channel_new_fd:
  * @fd: the file descriptor
@@ -45,8 +44,7 @@
  *
  * Returns: the channel object, or NULL on error
  */
-QIOChannel *qio_channel_new_fd(int fd,
-                               Error **errp);
+QIOChannel* qio_channel_new_fd(int fd, Error** errp);
 
 /**
  * qio_channel_util_set_aio_fd_handler:
@@ -63,10 +61,5 @@ QIOChannel *qio_channel_new_fd(int fd,
  * AioContext. To clear a handler, pass a non-NULL AioContext and a NULL
  * handler.
  */
-void qio_channel_util_set_aio_fd_handler(int read_fd,
-                                         AioContext *read_ctx,
-                                         IOHandler *io_read,
-                                         int write_fd,
-                                         AioContext *write_ctx,
-                                         IOHandler *io_write,
-                                         void *opaque);
+void qio_channel_util_set_aio_fd_handler(int read_fd, AioContext* read_ctx, IOHandler* io_read, int write_fd,
+                                         AioContext* write_ctx, IOHandler* io_write, void* opaque);

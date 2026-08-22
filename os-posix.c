@@ -36,23 +36,19 @@
 #include "qemu/cutils.h"
 
 #ifdef CONFIG_LINUX
-#include <sys/prctl.h>
+    #include <sys/prctl.h>
 #endif
-
 
 void os_setup_early_signal_handling(void)
 {
     struct sigaction act;
     sigfillset(&act.sa_mask);
-    act.sa_flags = 0;
+    act.sa_flags   = 0;
     act.sa_handler = SIG_IGN;
     sigaction(SIGPIPE, &act, NULL);
 }
 
-static void termsig_handler(int signal, siginfo_t *info, void *c)
-{
-    qemu_system_killed(info->si_signo, info->si_pid);
-}
+static void termsig_handler(int signal, siginfo_t* info, void* c) { qemu_system_killed(info->si_signo, info->si_pid); }
 
 void os_setup_signal_handling(void)
 {
@@ -60,18 +56,17 @@ void os_setup_signal_handling(void)
 
     memset(&act, 0, sizeof(act));
     act.sa_sigaction = termsig_handler;
-    act.sa_flags = SA_SIGINFO;
-    sigaction(SIGINT,  &act, NULL);
-    sigaction(SIGHUP,  &act, NULL);
+    act.sa_flags     = SA_SIGINFO;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGHUP, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
 }
 
-void os_set_proc_name(const char *s)
+void os_set_proc_name(const char* s)
 {
 #if defined(PR_SET_NAME)
     char name[16];
-    if (!s)
-        return;
+    if (!s) { return; }
     pstrcpy(name, sizeof(name), s);
     /* Could rewrite argv[0] too, but that's a bit more complicated.
        This simple way is enough for `top'. */
@@ -85,14 +80,13 @@ void os_set_proc_name(const char *s)
 #endif
 }
 
-
 /*
  * Must set all three of these at once.
  * Legal combinations are              unset   by name   by uid
  */
-static struct passwd *user_pwd;    /*   NULL   non-NULL   NULL   */
-static uid_t user_uid = (uid_t)-1; /*   -1      -1        >=0    */
-static gid_t user_gid = (gid_t)-1; /*   -1      -1        >=0    */
+static struct passwd* user_pwd;             /*   NULL   non-NULL   NULL   */
+static uid_t          user_uid = (uid_t)-1; /*   -1      -1        >=0    */
+static gid_t          user_gid = (gid_t)-1; /*   -1      -1        >=0    */
 
 /*
  * Prepare to change user ID. user_id can be one of 3 forms:
@@ -101,13 +95,13 @@ static gid_t user_gid = (gid_t)-1; /*   -1      -1        >=0    */
  *   - a numeric uid, in which case only the uid will be set;
  *   - a pair of numeric uid:gid.
  */
-bool os_set_runas(const char *user_id)
+bool os_set_runas(const char* user_id)
 {
     unsigned long lv;
-    const char *ep;
-    uid_t got_uid;
-    gid_t got_gid;
-    int rc;
+    const char*   ep;
+    uid_t         got_uid;
+    gid_t         got_gid;
+    int           rc;
 
     user_pwd = getpwnam(user_id);
     if (user_pwd) {
@@ -116,17 +110,13 @@ bool os_set_runas(const char *user_id)
         return true;
     }
 
-    rc = qemu_strtoul(user_id, &ep, 0, &lv);
+    rc      = qemu_strtoul(user_id, &ep, 0, &lv);
     got_uid = lv; /* overflow here is ID in C99 */
-    if (rc || *ep != ':' || got_uid != lv || got_uid == (uid_t)-1) {
-        return false;
-    }
+    if (rc || *ep != ':' || got_uid != lv || got_uid == (uid_t)-1) { return false; }
 
-    rc = qemu_strtoul(ep + 1, 0, 0, &lv);
+    rc      = qemu_strtoul(ep + 1, 0, 0, &lv);
     got_gid = lv; /* overflow here is ID in C99 */
-    if (rc || got_gid != lv || got_gid == (gid_t)-1) {
-        return false;
-    }
+    if (rc || got_gid != lv || got_gid == (gid_t)-1) { return false; }
 
     user_pwd = NULL;
     user_uid = got_uid;
@@ -137,8 +127,7 @@ bool os_set_runas(const char *user_id)
 static void change_process_uid(void)
 {
     assert((user_uid == (uid_t)-1) || user_pwd == NULL);
-    assert((user_uid == (uid_t)-1) ==
-           (user_gid == (gid_t)-1));
+    assert((user_uid == (uid_t)-1) == (user_gid == (gid_t)-1));
 
     if (user_pwd || user_uid != (uid_t)-1) {
         gid_t intended_gid = user_pwd ? user_pwd->pw_gid : user_gid;
@@ -149,14 +138,13 @@ static void change_process_uid(void)
         }
         if (user_pwd) {
             if (initgroups(user_pwd->pw_name, user_pwd->pw_gid) < 0) {
-                error_report("Failed to initgroups(\"%s\", %d)",
-                        user_pwd->pw_name, user_pwd->pw_gid);
+                error_report("Failed to initgroups(\"%s\", %d)", user_pwd->pw_name, user_pwd->pw_gid);
                 exit(1);
             }
-        } else {
+        }
+        else {
             if (setgroups(1, &user_gid) < 0) {
-                error_report("Failed to setgroups(1, [%d])",
-                        user_gid);
+                error_report("Failed to setgroups(1, [%d])", user_gid);
                 exit(1);
             }
         }
@@ -171,13 +159,9 @@ static void change_process_uid(void)
     }
 }
 
+static const char* chroot_dir;
 
-static const char *chroot_dir;
-
-void os_set_chroot(const char *path)
-{
-    chroot_dir = path;
-}
+void os_set_chroot(const char* path) { chroot_dir = path; }
 
 static void change_root(void)
 {
@@ -191,17 +175,12 @@ static void change_root(void)
             exit(1);
         }
     }
-
 }
-
 
 static int daemonize;
 static int daemon_pipe;
 
-bool is_daemonized(void)
-{
-    return daemonize;
-}
+bool is_daemonized(void) { return daemonize; }
 
 int os_set_daemonize(bool d)
 {
@@ -213,11 +192,9 @@ void os_daemonize(void)
 {
     if (daemonize) {
         pid_t pid;
-        int fds[2];
+        int   fds[2];
 
-        if (!g_unix_open_pipe(fds, FD_CLOEXEC, NULL)) {
-            exit(1);
-        }
+        if (!g_unix_open_pipe(fds, FD_CLOEXEC, NULL)) { exit(1); }
 
         pid = fork();
         if (pid > 0) {
@@ -228,13 +205,14 @@ void os_daemonize(void)
 
             do {
                 len = read(fds[0], &status, 1);
-            } while (len < 0 && errno == EINTR);
+            }
+            while (len < 0 && errno == EINTR);
 
             /* only exit successfully if our child actually wrote
              * a one-byte zero to our pipe, upon successful init */
             exit(len == 1 && status == 0 ? 0 : 1);
-
-        } else if (pid < 0) {
+        }
+        else if (pid < 0) {
             exit(1);
         }
 
@@ -244,9 +222,8 @@ void os_daemonize(void)
         setsid();
 
         pid = fork();
-        if (pid > 0) {
-            exit(0);
-        } else if (pid < 0) {
+        if (pid > 0) { exit(0); }
+        else if (pid < 0) {
             exit(1);
         }
         umask(027);
@@ -266,9 +243,7 @@ void os_setup_limits(void)
         return;
     }
 
-    if (nofile.rlim_cur == nofile.rlim_max) {
-        return;
-    }
+    if (nofile.rlim_cur == nofile.rlim_max) { return; }
 
 #ifdef CONFIG_DARWIN
     nofile.rlim_cur = OPEN_MAX < nofile.rlim_max ? OPEN_MAX : nofile.rlim_max;
@@ -292,9 +267,7 @@ void os_setup_post(void)
             exit(1);
         }
         fd = RETRY_ON_EINTR(qemu_open_old("/dev/null", O_RDWR));
-        if (fd == -1) {
-            exit(1);
-        }
+        if (fd == -1) { exit(1); }
     }
 
     change_root();
@@ -307,45 +280,37 @@ void os_setup_post(void)
         dup2(fd, 0);
         dup2(fd, 1);
         /* In case -D is given do not redirect stderr to /dev/null */
-        if (!qemu_log_enabled()) {
-            dup2(fd, 2);
-        }
+        if (!qemu_log_enabled()) { dup2(fd, 2); }
 
         close(fd);
 
-        do {        
+        do {
             len = write(daemon_pipe, &status, 1);
-        } while (len < 0 && errno == EINTR);
-        if (len != 1) {
-            exit(1);
         }
+        while (len < 0 && errno == EINTR);
+        if (len != 1) { exit(1); }
     }
 }
 
-void os_set_line_buffering(void)
-{
-    setvbuf(stdout, NULL, _IOLBF, 0);
-}
+void os_set_line_buffering(void) { setvbuf(stdout, NULL, _IOLBF, 0); }
 
 int os_mlock(bool on_fault)
 {
 #ifdef HAVE_MLOCKALL
-    int ret = 0;
+    int ret   = 0;
     int flags = MCL_CURRENT | MCL_FUTURE;
 
     if (on_fault) {
-#ifdef HAVE_MLOCK_ONFAULT
+    #ifdef HAVE_MLOCK_ONFAULT
         flags |= MCL_ONFAULT;
-#else
+    #else
         error_report("mlockall: on_fault not supported");
         return -EINVAL;
-#endif
+    #endif
     }
 
     ret = mlockall(flags);
-    if (ret < 0) {
-        error_report("mlockall: %s", strerror(errno));
-    }
+    if (ret < 0) { error_report("mlockall: %s", strerror(errno)); }
 
     return ret;
 #else

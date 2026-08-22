@@ -24,33 +24,28 @@
 #include "qemu/thread.h"
 
 #ifdef CONFIG_GNUTLS
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
+    #include <gnutls/gnutls.h>
+    #include <gnutls/crypto.h>
 #endif
 
 #include "crypto/random.h"
-
 
 /*
  * To debug GNUTLS see env vars listed in
  * https://gnutls.org/manual/html_node/Debugging-and-auditing.html
  */
-int qcrypto_init(Error **errp)
+int qcrypto_init(Error** errp)
 {
 #ifdef CONFIG_GNUTLS
     int ret;
     ret = gnutls_global_init();
     if (ret < 0) {
-        error_setg(errp,
-                   "Unable to initialize GNUTLS library: %s",
-                   gnutls_strerror(ret));
+        error_setg(errp, "Unable to initialize GNUTLS library: %s", gnutls_strerror(ret));
         return -1;
     }
 #endif
 
-    if (qcrypto_random_init(errp) < 0) {
-        return -1;
-    }
+    if (qcrypto_random_init(errp) < 0) { return -1; }
 
     return 0;
 }

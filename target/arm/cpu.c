@@ -28,8 +28,8 @@
 #include "qapi/error.h"
 #include "cpu.h"
 #ifdef CONFIG_TCG
-#include "exec/translation-block.h"
-#include "accel/tcg/cpu-ops.h"
+    #include "exec/translation-block.h"
+    #include "accel/tcg/cpu-ops.h"
 #endif /* CONFIG_TCG */
 #include "internals.h"
 #include "cpu-features.h"
@@ -46,80 +46,72 @@
 #include "target/arm/cpu-qom.h"
 #include "target/arm/gtimer.h"
 
-static void arm_cpu_set_pc(CPUState *cs, vaddr value)
+static void arm_cpu_set_pc(CPUState* cs, vaddr value)
 {
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
+    ARMCPU*      cpu = container_of(cs, ARMCPU, parent_obj);
+    CPUARMState* env = &cpu->env;
 
     if (is_a64(env)) {
-        env->pc = value;
+        env->pc    = value;
         env->thumb = false;
-    } else {
+    }
+    else {
         env->regs[15] = value & ~1;
-        env->thumb = value & 1;
+        env->thumb    = value & 1;
     }
 }
 
-static vaddr arm_cpu_get_pc(CPUState *cs)
+static vaddr arm_cpu_get_pc(CPUState* cs)
 {
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
+    ARMCPU*      cpu = container_of(cs, ARMCPU, parent_obj);
+    CPUARMState* env = &cpu->env;
 
-    if (is_a64(env)) {
-        return env->pc;
-    } else {
+    if (is_a64(env)) { return env->pc; }
+    else {
         return env->regs[15];
     }
 }
 
 #ifdef CONFIG_TCG
-void arm_cpu_synchronize_from_tb(CPUState *cs,
-                                 const TranslationBlock *tb)
+void arm_cpu_synchronize_from_tb(CPUState* cs, const TranslationBlock* tb)
 {
     /* The program counter is always up to date with CF_PCREL. */
     if (!(tb_cflags(tb) & CF_PCREL)) {
-        CPUARMState *env = cpu_env(cs);
+        CPUARMState* env = cpu_env(cs);
         /*
          * It's OK to look at env for the current mode here, because it's
          * never possible for an AArch64 TB to chain to an AArch32 TB.
          */
-        if (is_a64(env)) {
-            env->pc = tb->pc;
-        } else {
+        if (is_a64(env)) { env->pc = tb->pc; }
+        else {
             env->regs[15] = tb->pc;
         }
     }
 }
 
-void arm_restore_state_to_opc(CPUState *cs,
-                              const TranslationBlock *tb,
-                              const uint64_t *data)
+void arm_restore_state_to_opc(CPUState* cs, const TranslationBlock* tb, const uint64_t* data)
 {
-    CPUARMState *env = cpu_env(cs);
+    CPUARMState* env = cpu_env(cs);
 
     if (is_a64(env)) {
-        if (tb_cflags(tb) & CF_PCREL) {
-            env->pc = (env->pc & TARGET_PAGE_MASK) | data[0];
-        } else {
+        if (tb_cflags(tb) & CF_PCREL) { env->pc = (env->pc & TARGET_PAGE_MASK) | data[0]; }
+        else {
             env->pc = data[0];
         }
-        env->condexec_bits = 0;
+        env->condexec_bits      = 0;
         env->exception.syndrome = data[2] << ARM_INSN_START_WORD2_SHIFT;
-    } else {
-        if (tb_cflags(tb) & CF_PCREL) {
-            env->regs[15] = (env->regs[15] & TARGET_PAGE_MASK) | data[0];
-        } else {
+    }
+    else {
+        if (tb_cflags(tb) & CF_PCREL) { env->regs[15] = (env->regs[15] & TARGET_PAGE_MASK) | data[0]; }
+        else {
             env->regs[15] = data[0];
         }
-        env->condexec_bits = data[1];
+        env->condexec_bits      = data[1];
         env->exception.syndrome = data[2] << ARM_INSN_START_WORD2_SHIFT;
     }
 }
 
-int arm_cpu_mmu_index(CPUState *cs, bool ifetch)
-{
-    return arm_env_mmu_index(cpu_env(cs));
-}
+int arm_cpu_mmu_index(CPUState* cs, bool ifetch) { return arm_env_mmu_index(cpu_env(cs)); }
 
 #endif /* CONFIG_TCG */
 
@@ -130,46 +122,40 @@ int arm_cpu_mmu_index(CPUState *cs, bool ifetch)
  * CPU_INTERRUPT_*NMI anyway. So we might as well accept NMI here
  * unconditionally.
  */
-static bool arm_cpu_has_work(CPUState *cs)
+static bool arm_cpu_has_work(CPUState* cs)
 {
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
+    ARMCPU* cpu = container_of(cs, ARMCPU, parent_obj);
 
     return (cpu->power_state != PSCI_OFF)
-        && cpu_test_interrupt(cs,
-               CPU_INTERRUPT_FIQ | CPU_INTERRUPT_HARD
-               | CPU_INTERRUPT_NMI | CPU_INTERRUPT_VINMI | CPU_INTERRUPT_VFNMI
-               | CPU_INTERRUPT_VFIQ | CPU_INTERRUPT_VIRQ | CPU_INTERRUPT_VSERR
-               | CPU_INTERRUPT_EXITTB);
+           && cpu_test_interrupt(cs, CPU_INTERRUPT_FIQ | CPU_INTERRUPT_HARD | CPU_INTERRUPT_NMI | CPU_INTERRUPT_VINMI
+                                         | CPU_INTERRUPT_VFNMI | CPU_INTERRUPT_VFIQ | CPU_INTERRUPT_VIRQ
+                                         | CPU_INTERRUPT_VSERR | CPU_INTERRUPT_EXITTB);
 }
 
-void arm_register_pre_el_change_hook(ARMCPU *cpu, ARMELChangeHookFn *hook,
-                                 void *opaque)
+void arm_register_pre_el_change_hook(ARMCPU* cpu, ARMELChangeHookFn* hook, void* opaque)
 {
-    ARMELChangeHook *entry = g_new0(ARMELChangeHook, 1);
+    ARMELChangeHook* entry = g_new0(ARMELChangeHook, 1);
 
-    entry->hook = hook;
+    entry->hook   = hook;
     entry->opaque = opaque;
 
     QLIST_INSERT_HEAD(&cpu->pre_el_change_hooks, entry, node);
 }
 
-void arm_register_el_change_hook(ARMCPU *cpu, ARMELChangeHookFn *hook,
-                                 void *opaque)
+void arm_register_el_change_hook(ARMCPU* cpu, ARMELChangeHookFn* hook, void* opaque)
 {
-    ARMELChangeHook *entry = g_new0(ARMELChangeHook, 1);
+    ARMELChangeHook* entry = g_new0(ARMELChangeHook, 1);
 
-    entry->hook = hook;
+    entry->hook   = hook;
     entry->opaque = opaque;
 
     QLIST_INSERT_HEAD(&cpu->el_change_hooks, entry, node);
 }
 
-static void cp_reg_reset(ARMCPRegInfo *ri, ARMCPU *cpu)
+static void cp_reg_reset(ARMCPRegInfo* ri, ARMCPU* cpu)
 {
     /* Reset a single ARMCPRegInfo register */
-    if (ri->type & (ARM_CP_SPECIAL_MASK | ARM_CP_ALIAS)) {
-        return;
-    }
+    if (ri->type & (ARM_CP_SPECIAL_MASK | ARM_CP_ALIAS)) { return; }
 
     if (ri->resetfn) {
         ri->resetfn(&cpu->env, ri);
@@ -181,18 +167,15 @@ static void cp_reg_reset(ARMCPRegInfo *ri, ARMCPU *cpu)
      * This is basically only used for fields in non-core coprocessors
      * (like the pxa2xx ones).
      */
-    if (!ri->fieldoffset) {
-        return;
-    }
+    if (!ri->fieldoffset) { return; }
 
-    if (cpreg_field_is_64bit(ri)) {
-        CPREG_FIELD64(&cpu->env, ri) = ri->resetvalue;
-    } else {
+    if (cpreg_field_is_64bit(ri)) { CPREG_FIELD64(&cpu->env, ri) = ri->resetvalue; }
+    else {
         CPREG_FIELD32(&cpu->env, ri) = ri->resetvalue;
     }
 }
 
-static void cp_reg_check_reset(ARMCPRegInfo *ri, ARMCPU *cpu)
+static void cp_reg_check_reset(ARMCPRegInfo* ri, ARMCPU* cpu)
 {
     /* Purely an assertion check: we've already done reset once,
      * so now check that running the reset for the cpreg doesn't
@@ -201,9 +184,7 @@ static void cp_reg_check_reset(ARMCPRegInfo *ri, ARMCPU *cpu)
      */
     uint64_t oldvalue, newvalue;
 
-    if (ri->type & (ARM_CP_SPECIAL_MASK | ARM_CP_ALIAS | ARM_CP_NO_RAW)) {
-        return;
-    }
+    if (ri->type & (ARM_CP_SPECIAL_MASK | ARM_CP_ALIAS | ARM_CP_NO_RAW)) { return; }
 
     oldvalue = read_raw_cp_reg(&cpu->env, ri);
     cp_reg_reset(ri, cpu);
@@ -211,18 +192,16 @@ static void cp_reg_check_reset(ARMCPRegInfo *ri, ARMCPU *cpu)
     assert(oldvalue == newvalue);
 }
 
-static void arm_cpu_reset_hold(Object *obj, ResetType type)
+static void arm_cpu_reset_hold(Object* obj, ResetType type)
 {
-    CPUState *cs = CPU(obj);
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    ARMCPUClass *acc = ARM_CPU_GET_CLASS(obj);
-    CPUARMState *env = &cpu->env;
-    ARMCPRegTable_it_t it;
-    ARMCPRegTable_pair_ct *ref;
+    CPUState*              cs  = CPU(obj);
+    ARMCPU*                cpu = container_of(cs, ARMCPU, parent_obj);
+    ARMCPUClass*           acc = ARM_CPU_GET_CLASS(obj);
+    CPUARMState*           env = &cpu->env;
+    ARMCPRegTable_it_t     it;
+    ARMCPRegTable_pair_ct* ref;
 
-    if (acc->parent_phases.hold) {
-        acc->parent_phases.hold(obj, type);
-    }
+    if (acc->parent_phases.hold) { acc->parent_phases.hold(obj, type); }
 
     memset(env, 0, offsetof(CPUARMState, end_reset_fields));
 
@@ -243,34 +222,33 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
 
     cpu->power_state = cs->start_powered_off ? PSCI_OFF : PSCI_ON;
 
-    if (arm_feature(env, ARM_FEATURE_IWMMXT)) {
-        env->iwmmxt.cregs[ARM_IWMMXT_wCID] = 0x69051000 | 'Q';
-    }
+    if (arm_feature(env, ARM_FEATURE_IWMMXT)) { env->iwmmxt.cregs[ARM_IWMMXT_wCID] = 0x69051000 | 'Q'; }
 
     if (arm_feature(env, ARM_FEATURE_AARCH64)) {
         /* 64 bit CPUs always start in 64 bit mode */
         env->aarch64 = true;
 
         /* Reset into the highest available EL */
-        if (arm_feature(env, ARM_FEATURE_EL3)) {
-            env->pstate = PSTATE_MODE_EL3h;
-        } else if (arm_feature(env, ARM_FEATURE_EL2)) {
+        if (arm_feature(env, ARM_FEATURE_EL3)) { env->pstate = PSTATE_MODE_EL3h; }
+        else if (arm_feature(env, ARM_FEATURE_EL2)) {
             env->pstate = PSTATE_MODE_EL2h;
-        } else {
+        }
+        else {
             env->pstate = PSTATE_MODE_EL1h;
         }
 
         /* Sample rvbar at reset.  */
         env->cp15.rvbar = cpu->rvbar_prop;
-        env->pc = env->cp15.rvbar;
+        env->pc         = env->cp15.rvbar;
 
         if (env->aarch64 && cpu_isar_feature(aa64_pauth, cpu)) {
             env->keys.m.lo = cpu->m_key_lo;
             env->keys.m.hi = cpu->m_key_hi;
         }
-    } else if (arm_feature(env, ARM_FEATURE_V8)) {
+    }
+    else if (arm_feature(env, ARM_FEATURE_V8)) {
         env->cp15.rvbar = cpu->rvbar_prop;
-        env->regs[15] = cpu->rvbar_prop;
+        env->regs[15]   = cpu->rvbar_prop;
     }
 
     /*
@@ -278,10 +256,10 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
      * mode; otherwise it starts in SVC. Note that if we start in
      * AArch64 then these values in the uncached_cpsr will be ignored.
      */
-    if (arm_feature(env, ARM_FEATURE_EL2) &&
-        !arm_feature(env, ARM_FEATURE_EL3)) {
+    if (arm_feature(env, ARM_FEATURE_EL2) && !arm_feature(env, ARM_FEATURE_EL3)) {
         env->uncached_cpsr = ARM_CPU_MODE_HYP;
-    } else {
+    }
+    else {
         env->uncached_cpsr = ARM_CPU_MODE_SVC;
     }
     env->daif = PSTATE_D | PSTATE_A | PSTATE_I | PSTATE_F;
@@ -290,9 +268,7 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
      * executing as AArch32 then check if highvecs are enabled and
      * adjust the PC accordingly.
      */
-    if (A32_BANKED_CURRENT_REG_GET(env, sctlr) & SCTLR_V) {
-        env->regs[15] = 0xFFFF0000;
-    }
+    if (A32_BANKED_CURRENT_REG_GET(env, sctlr) & SCTLR_V) { env->regs[15] = 0xFFFF0000; }
 
     env->vfp.xregs[ARM_VFP_FPEXC] = 0;
 
@@ -321,9 +297,7 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
     set_flush_inputs_to_zero(1, &env->vfp.fp_status[FPST_AH]);
     arm_set_ah_fp_behaviours(&env->vfp.fp_status[FPST_AH_F16]);
 
-    if (kvm_enabled()) {
-        kvm_arm_reset_vcpu(cpu);
-    }
+    if (kvm_enabled()) { kvm_arm_reset_vcpu(cpu); }
 
     if (tcg_enabled()) {
         hw_breakpoint_update_all(cpu);
@@ -333,12 +307,12 @@ static void arm_cpu_reset_hold(Object *obj, ResetType type)
     }
 }
 
-void arm_emulate_firmware_reset(CPUState *cpustate, int target_el)
+void arm_emulate_firmware_reset(CPUState* cpustate, int target_el)
 {
-    ARMCPU *cpu = container_of(cpustate, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
-    bool have_el3 = arm_feature(env, ARM_FEATURE_EL3);
-    bool have_el2 = arm_feature(env, ARM_FEATURE_EL2);
+    ARMCPU*      cpu      = container_of(cpustate, ARMCPU, parent_obj);
+    CPUARMState* env      = &cpu->env;
+    bool         have_el3 = arm_feature(env, ARM_FEATURE_EL3);
+    bool         have_el2 = arm_feature(env, ARM_FEATURE_EL2);
 
     /*
      * Check we have the EL we're aiming for. If that is the
@@ -346,22 +320,15 @@ void arm_emulate_firmware_reset(CPUState *cpustate, int target_el)
      * all the work.
      */
     switch (target_el) {
-    case 3:
-        assert(have_el3);
-        return;
-    case 2:
-        assert(have_el2);
-        if (!have_el3) {
-            return;
-        }
-        break;
-    case 1:
-        if (!have_el3 && !have_el2) {
-            return;
-        }
-        break;
-    default:
-        assert_not_reached();
+        case 3: assert(have_el3); return;
+        case 2:
+            assert(have_el2);
+            if (!have_el3) { return; }
+            break;
+        case 1:
+            if (!have_el3 && !have_el2) { return; }
+            break;
+        default: assert_not_reached();
     }
 
     if (have_el3) {
@@ -371,30 +338,20 @@ void arm_emulate_firmware_reset(CPUState *cpustate, int target_el)
          */
         if (env->aarch64) {
             env->cp15.scr_el3 |= SCR_RW;
-            if (cpu_isar_feature(aa64_pauth, cpu)) {
-                env->cp15.scr_el3 |= SCR_API | SCR_APK;
-            }
-            if (cpu_isar_feature(aa64_mte, cpu)) {
-                env->cp15.scr_el3 |= SCR_ATA;
-            }
+            if (cpu_isar_feature(aa64_pauth, cpu)) { env->cp15.scr_el3 |= SCR_API | SCR_APK; }
+            if (cpu_isar_feature(aa64_mte, cpu)) { env->cp15.scr_el3 |= SCR_ATA; }
             if (cpu_isar_feature(aa64_sve, cpu)) {
                 env->cp15.cptr_el[3] |= R_CPTR_EL3_EZ_MASK;
-                env->vfp.zcr_el[3] = 0xf;
+                env->vfp.zcr_el[3]    = 0xf;
             }
             if (cpu_isar_feature(aa64_sme, cpu)) {
                 env->cp15.cptr_el[3] |= R_CPTR_EL3_ESM_MASK;
-                env->cp15.scr_el3 |= SCR_ENTP2;
-                env->vfp.smcr_el[3] = 0xf;
-                if (cpu_isar_feature(aa64_sme2, cpu)) {
-                    env->vfp.smcr_el[3] |= R_SMCR_EZT0_MASK;
-                }
+                env->cp15.scr_el3    |= SCR_ENTP2;
+                env->vfp.smcr_el[3]   = 0xf;
+                if (cpu_isar_feature(aa64_sme2, cpu)) { env->vfp.smcr_el[3] |= R_SMCR_EZT0_MASK; }
             }
-            if (cpu_isar_feature(aa64_hcx, cpu)) {
-                env->cp15.scr_el3 |= SCR_HXEN;
-            }
-            if (cpu_isar_feature(aa64_fgt, cpu)) {
-                env->cp15.scr_el3 |= SCR_FGTEN;
-            }
+            if (cpu_isar_feature(aa64_hcx, cpu)) { env->cp15.scr_el3 |= SCR_HXEN; }
+            if (cpu_isar_feature(aa64_fgt, cpu)) { env->cp15.scr_el3 |= SCR_FGTEN; }
         }
 
         if (target_el == 2) {
@@ -410,15 +367,12 @@ void arm_emulate_firmware_reset(CPUState *cpustate, int target_el)
 
     if (have_el2 && target_el < 2) {
         /* Set EL2 state so code can run at EL1. */
-        if (env->aarch64) {
-            env->cp15.hcr_el2 |= HCR_RW;
-        }
+        if (env->aarch64) { env->cp15.hcr_el2 |= HCR_RW; }
     }
 
     /* Set the CPU to the desired state */
-    if (env->aarch64) {
-        env->pstate = aarch64_pstate_mode(target_el, true);
-    } else {
+    if (env->aarch64) { env->pstate = aarch64_pstate_mode(target_el, true); }
+    else {
         static const uint32_t mode_for_el[] = {
             0,
             ARM_CPU_MODE_SVC,
@@ -430,22 +384,17 @@ void arm_emulate_firmware_reset(CPUState *cpustate, int target_el)
     }
 }
 
-static void arm_cpu_set_irq(void *opaque, int irq, int level)
+static void arm_cpu_set_irq(void* opaque, int irq, int level)
 {
-    ARMCPU *cpu = opaque;
-    CPUARMState *env = &cpu->env;
-    CPUState *cs = CPU(cpu);
+    ARMCPU*          cpu    = opaque;
+    CPUARMState*     env    = &cpu->env;
+    CPUState*        cs     = CPU(cpu);
     static const int mask[] = {
-        [ARM_CPU_IRQ] = CPU_INTERRUPT_HARD,
-        [ARM_CPU_FIQ] = CPU_INTERRUPT_FIQ,
-        [ARM_CPU_VIRQ] = CPU_INTERRUPT_VIRQ,
-        [ARM_CPU_VFIQ] = CPU_INTERRUPT_VFIQ,
-        [ARM_CPU_NMI] = CPU_INTERRUPT_NMI,
-        [ARM_CPU_VINMI] = CPU_INTERRUPT_VINMI,
+        [ARM_CPU_IRQ] = CPU_INTERRUPT_HARD,  [ARM_CPU_FIQ] = CPU_INTERRUPT_FIQ, [ARM_CPU_VIRQ] = CPU_INTERRUPT_VIRQ,
+        [ARM_CPU_VFIQ] = CPU_INTERRUPT_VFIQ, [ARM_CPU_NMI] = CPU_INTERRUPT_NMI, [ARM_CPU_VINMI] = CPU_INTERRUPT_VINMI,
     };
 
-    if (!arm_feature(env, ARM_FEATURE_EL2) &&
-        (irq == ARM_CPU_VIRQ || irq == ARM_CPU_VFIQ)) {
+    if (!arm_feature(env, ARM_FEATURE_EL2) && (irq == ARM_CPU_VIRQ || irq == ARM_CPU_VFIQ)) {
         /*
          * The GIC might tell us about VIRQ and VFIQ state, but if we don't
          * have EL2 support we don't care. (Unless the guest is doing something
@@ -454,56 +403,45 @@ static void arm_cpu_set_irq(void *opaque, int irq, int level)
         return;
     }
 
-    if (level) {
-        env->irq_line_state |= mask[irq];
-    } else {
+    if (level) { env->irq_line_state |= mask[irq]; }
+    else {
         env->irq_line_state &= ~mask[irq];
     }
 
     switch (irq) {
-    case ARM_CPU_VIRQ:
-        arm_cpu_update_virq(cpu);
-        break;
-    case ARM_CPU_VFIQ:
-        arm_cpu_update_vfiq(cpu);
-        break;
-    case ARM_CPU_VINMI:
-        arm_cpu_update_vinmi(cpu);
-        break;
-    case ARM_CPU_IRQ:
-    case ARM_CPU_FIQ:
-    case ARM_CPU_NMI:
-        if (level) {
-            cpu_interrupt(cs, mask[irq]);
-        } else {
-            cpu_reset_interrupt(cs, mask[irq]);
-        }
-        break;
-    default:
-        assert_not_reached();
+        case ARM_CPU_VIRQ : arm_cpu_update_virq(cpu); break;
+        case ARM_CPU_VFIQ : arm_cpu_update_vfiq(cpu); break;
+        case ARM_CPU_VINMI: arm_cpu_update_vinmi(cpu); break;
+        case ARM_CPU_IRQ:
+        case ARM_CPU_FIQ:
+        case ARM_CPU_NMI:
+            if (level) { cpu_interrupt(cs, mask[irq]); }
+            else {
+                cpu_reset_interrupt(cs, mask[irq]);
+            }
+            break;
+        default: assert_not_reached();
     }
 }
 
 #ifdef CONFIG_TCG
-bool arm_cpu_exec_halt(CPUState *cs)
+bool arm_cpu_exec_halt(CPUState* cs)
 {
     bool leave_halt = cpu_has_work(cs);
 
     if (leave_halt) {
         /* We're about to come out of WFI/WFE: disable the WFxT timer */
-        ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-        if (cpu->wfxt_timer) {
-            timer_del(cpu->wfxt_timer);
-        }
+        ARMCPU* cpu = container_of(cs, ARMCPU, parent_obj);
+        if (cpu->wfxt_timer) { timer_del(cpu->wfxt_timer); }
     }
     return leave_halt;
 }
 #endif
 
-static void arm_wfxt_timer_cb(void *opaque)
+static void arm_wfxt_timer_cb(void* opaque)
 {
-    ARMCPU *cpu = opaque;
-    CPUState *cs = CPU(cpu);
+    ARMCPU*   cpu = opaque;
+    CPUState* cs  = CPU(cpu);
 
     /*
      * We expect the CPU to be halted; this will cause arm_cpu_is_work()
@@ -514,55 +452,39 @@ static void arm_wfxt_timer_cb(void *opaque)
     cpu_interrupt(cs, CPU_INTERRUPT_EXITTB);
 }
 
-static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
+static void aarch64_cpu_dump_state(CPUState* cs, FILE* f, int flags)
 {
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
-    uint32_t psr = pstate_read(env);
-    int i, j;
-    int el = arm_current_el(env);
-    uint64_t hcr = arm_hcr_el2_eff(env);
-    const char *ns_status;
-    bool sve;
+    ARMCPU*      cpu = container_of(cs, ARMCPU, parent_obj);
+    CPUARMState* env = &cpu->env;
+    uint32_t     psr = pstate_read(env);
+    int          i, j;
+    int          el  = arm_current_el(env);
+    uint64_t     hcr = arm_hcr_el2_eff(env);
+    const char*  ns_status;
+    bool         sve;
 
     qemu_fprintf(f, " PC=%016" PRIx64 " ", env->pc);
     for (i = 0; i < 32; i++) {
-        if (i == 31) {
-            qemu_fprintf(f, " SP=%016" PRIx64 "\n", env->xregs[i]);
-        } else {
-            qemu_fprintf(f, "X%02d=%016" PRIx64 "%s", i, env->xregs[i],
-                         (i + 2) % 3 ? " " : "\n");
+        if (i == 31) { qemu_fprintf(f, " SP=%016" PRIx64 "\n", env->xregs[i]); }
+        else {
+            qemu_fprintf(f, "X%02d=%016" PRIx64 "%s", i, env->xregs[i], (i + 2) % 3 ? " " : "\n");
         }
     }
 
-    if (arm_feature(env, ARM_FEATURE_EL3) && el != 3) {
-        ns_status = env->cp15.scr_el3 & SCR_NS ? "NS " : "S ";
-    } else {
+    if (arm_feature(env, ARM_FEATURE_EL3) && el != 3) { ns_status = env->cp15.scr_el3 & SCR_NS ? "NS " : "S "; }
+    else {
         ns_status = "";
     }
-    qemu_fprintf(f, "PSTATE=%08x %c%c%c%c %s%cL%d%c",
-                 psr,
-                 psr & PSTATE_N ? 'N' : '-',
-                 psr & PSTATE_Z ? 'Z' : '-',
-                 psr & PSTATE_C ? 'C' : '-',
-                 psr & PSTATE_V ? 'V' : '-',
-                 ns_status,
-                 arm_is_guarded(env) ? 'G' : 'E',
-                 el,
+    qemu_fprintf(f, "PSTATE=%08x %c%c%c%c %s%cL%d%c", psr, psr & PSTATE_N ? 'N' : '-', psr & PSTATE_Z ? 'Z' : '-',
+                 psr & PSTATE_C ? 'C' : '-', psr & PSTATE_V ? 'V' : '-', ns_status, arm_is_guarded(env) ? 'G' : 'E', el,
                  psr & PSTATE_SP ? 'h' : 't');
 
     if (cpu_isar_feature(aa64_sme, cpu)) {
-        qemu_fprintf(f, "  SVCR=%08" PRIx64 " %c%c",
-                     env->svcr,
-                     (REG_FIELD_EX64(env->svcr, SVCR, ZA) ? 'Z' : '-'),
+        qemu_fprintf(f, "  SVCR=%08" PRIx64 " %c%c", env->svcr, (REG_FIELD_EX64(env->svcr, SVCR, ZA) ? 'Z' : '-'),
                      (REG_FIELD_EX64(env->svcr, SVCR, SM) ? 'S' : '-'));
     }
-    if (cpu_isar_feature(aa64_bti, cpu)) {
-        qemu_fprintf(f, "  BTYPE=%d", (psr & PSTATE_BTYPE) >> 10);
-    }
-    qemu_fprintf(f, "%s%s%s",
-                 (hcr & HCR_NV) ? " NV" : "",
-                 (hcr & HCR_NV1) ? " NV1" : "",
+    if (cpu_isar_feature(aa64_bti, cpu)) { qemu_fprintf(f, "  BTYPE=%d", (psr & PSTATE_BTYPE) >> 10); }
+    qemu_fprintf(f, "%s%s%s", (hcr & HCR_NV) ? " NV" : "", (hcr & HCR_NV1) ? " NV1" : "",
                  (hcr & HCR_NV2) ? " NV2" : "");
     if (!(flags & CPU_DUMP_FPU)) {
         qemu_fprintf(f, "\n");
@@ -572,14 +494,15 @@ static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
         qemu_fprintf(f, "    FPU disabled\n");
         return;
     }
-    qemu_fprintf(f, "     FPCR=%08x FPSR=%08x\n",
-                 vfp_get_fpcr(env), vfp_get_fpsr(env));
+    qemu_fprintf(f, "     FPCR=%08x FPSR=%08x\n", vfp_get_fpcr(env), vfp_get_fpsr(env));
 
     if (cpu_isar_feature(aa64_sme, cpu) && REG_FIELD_EX64(env->svcr, SVCR, SM)) {
         sve = sme_exception_el(env, el) == 0;
-    } else if (cpu_isar_feature(aa64_sve, cpu)) {
+    }
+    else if (cpu_isar_feature(aa64_sve, cpu)) {
         sve = sve_exception_el(env, el) == 0;
-    } else {
+    }
+    else {
         sve = false;
     }
 
@@ -592,35 +515,27 @@ static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
                 qemu_fprintf(f, "FFR=");
                 /* It's last, so end the line.  */
                 eol = true;
-            } else {
+            }
+            else {
                 qemu_fprintf(f, "P%02d=", i);
                 switch (zcr_len) {
-                case 0:
-                    eol = i % 8 == 7;
-                    break;
-                case 1:
-                    eol = i % 6 == 5;
-                    break;
-                case 2:
-                case 3:
-                    eol = i % 3 == 2;
-                    break;
-                default:
-                    /* More than one quadword per predicate.  */
-                    eol = true;
-                    break;
+                    case 0: eol = i % 8 == 7; break;
+                    case 1: eol = i % 6 == 5; break;
+                    case 2:
+                    case 3: eol = i % 3 == 2; break;
+                    default:
+                        /* More than one quadword per predicate.  */
+                        eol = true;
+                        break;
                 }
             }
             for (j = zcr_len / 4; j >= 0; j--) {
                 int digits;
-                if (j * 4 + 4 <= zcr_len + 1) {
-                    digits = 16;
-                } else {
+                if (j * 4 + 4 <= zcr_len + 1) { digits = 16; }
+                else {
                     digits = (zcr_len % 4 + 1) * 4;
                 }
-                qemu_fprintf(f, "%0*" PRIx64 "%s", digits,
-                             env->vfp.pregs[i].p[j],
-                             j ? ":" : eol ? "\n" : " ");
+                qemu_fprintf(f, "%0*" PRIx64 "%s", digits, env->vfp.pregs[i].p[j], j ? ":" : eol ? "\n" : " ");
             }
         }
 
@@ -630,53 +545,47 @@ static void aarch64_cpu_dump_state(CPUState *cs, FILE *f, int flags)
              * so output two registers per line.
              */
             for (i = 0; i < 32; i++) {
-                qemu_fprintf(f, "Z%02d=%016" PRIx64 ":%016" PRIx64 "%s",
-                             i, env->vfp.zregs[i].d[1],
+                qemu_fprintf(f, "Z%02d=%016" PRIx64 ":%016" PRIx64 "%s", i, env->vfp.zregs[i].d[1],
                              env->vfp.zregs[i].d[0], i & 1 ? "\n" : " ");
             }
-        } else {
+        }
+        else {
             for (i = 0; i < 32; i++) {
                 qemu_fprintf(f, "Z%02d=", i);
                 for (j = zcr_len; j >= 0; j--) {
-                    qemu_fprintf(f, "%016" PRIx64 ":%016" PRIx64 "%s",
-                                 env->vfp.zregs[i].d[j * 2 + 1],
-                                 env->vfp.zregs[i].d[j * 2 + 0],
-                                 j ? ":" : "\n");
+                    qemu_fprintf(f, "%016" PRIx64 ":%016" PRIx64 "%s", env->vfp.zregs[i].d[j * 2 + 1],
+                                 env->vfp.zregs[i].d[j * 2 + 0], j ? ":" : "\n");
                 }
             }
         }
-    } else {
+    }
+    else {
         for (i = 0; i < 32; i++) {
-            uint64_t *q = aa64_vfp_qreg(env, i);
-            qemu_fprintf(f, "Q%02d=%016" PRIx64 ":%016" PRIx64 "%s",
-                         i, q[1], q[0], (i & 1 ? "\n" : " "));
+            uint64_t* q = aa64_vfp_qreg(env, i);
+            qemu_fprintf(f, "Q%02d=%016" PRIx64 ":%016" PRIx64 "%s", i, q[1], q[0], (i & 1 ? "\n" : " "));
         }
     }
 
-    if (cpu_isar_feature(aa64_sme, cpu) &&
-        REG_FIELD_EX64(env->svcr, SVCR, ZA) &&
-        sme_exception_el(env, el) == 0) {
-        int zcr_len = sve_vqm1_for_el_sm(env, el, true);
-        int svl = (zcr_len + 1) * 16;
+    if (cpu_isar_feature(aa64_sme, cpu) && REG_FIELD_EX64(env->svcr, SVCR, ZA) && sme_exception_el(env, el) == 0) {
+        int zcr_len  = sve_vqm1_for_el_sm(env, el, true);
+        int svl      = (zcr_len + 1) * 16;
         int svl_lg10 = svl < 100 ? 2 : 3;
 
         for (i = 0; i < svl; i++) {
             qemu_fprintf(f, "ZA[%0*d]=", svl_lg10, i);
             for (j = zcr_len; j >= 0; --j) {
-                qemu_fprintf(f, "%016" PRIx64 ":%016" PRIx64 "%c",
-                             env->za_state.za[i].d[2 * j + 1],
-                             env->za_state.za[i].d[2 * j],
-                             j ? ':' : '\n');
+                qemu_fprintf(f, "%016" PRIx64 ":%016" PRIx64 "%c", env->za_state.za[i].d[2 * j + 1],
+                             env->za_state.za[i].d[2 * j], j ? ':' : '\n');
             }
         }
     }
 }
 
-static void arm_cpu_dump_state(CPUState *cs, FILE *f, int flags)
+static void arm_cpu_dump_state(CPUState* cs, FILE* f, int flags)
 {
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
-    int i;
+    ARMCPU*      cpu = container_of(cs, ARMCPU, parent_obj);
+    CPUARMState* env = &cpu->env;
+    int          i;
 
     if (is_a64(env)) {
         aarch64_cpu_dump_state(cs, f, flags);
@@ -685,44 +594,33 @@ static void arm_cpu_dump_state(CPUState *cs, FILE *f, int flags)
 
     for (i = 0; i < 16; i++) {
         qemu_fprintf(f, "R%02d=%08x", i, env->regs[i]);
-        if ((i % 4) == 3) {
-            qemu_fprintf(f, "\n");
-        } else {
+        if ((i % 4) == 3) { qemu_fprintf(f, "\n"); }
+        else {
             qemu_fprintf(f, " ");
         }
     }
 
-    uint32_t psr = cpsr_read(env);
-    const char *ns_status = "";
+    uint32_t    psr       = cpsr_read(env);
+    const char* ns_status = "";
 
-    if (arm_feature(env, ARM_FEATURE_EL3) &&
-        (psr & CPSR_M) != ARM_CPU_MODE_MON) {
+    if (arm_feature(env, ARM_FEATURE_EL3) && (psr & CPSR_M) != ARM_CPU_MODE_MON) {
         ns_status = env->cp15.scr_el3 & SCR_NS ? "NS " : "S ";
     }
 
-    qemu_fprintf(f, "PSR=%08x %c%c%c%c %c %s%s%d\n",
-                 psr,
-                 psr & CPSR_N ? 'N' : '-',
-                 psr & CPSR_Z ? 'Z' : '-',
-                 psr & CPSR_C ? 'C' : '-',
-                 psr & CPSR_V ? 'V' : '-',
-                 psr & CPSR_T ? 'T' : 'A',
-                 ns_status,
+    qemu_fprintf(f, "PSR=%08x %c%c%c%c %c %s%s%d\n", psr, psr & CPSR_N ? 'N' : '-', psr & CPSR_Z ? 'Z' : '-',
+                 psr & CPSR_C ? 'C' : '-', psr & CPSR_V ? 'V' : '-', psr & CPSR_T ? 'T' : 'A', ns_status,
                  aarch32_mode_name(psr), (psr & 0x10) ? 32 : 26);
 
     if (flags & CPU_DUMP_FPU) {
         int numvfpregs = 0;
-        if (cpu_isar_feature(aa32_simd_r32, cpu)) {
-            numvfpregs = 32;
-        } else if (cpu_isar_feature(aa32_vfp_simd, cpu)) {
+        if (cpu_isar_feature(aa32_simd_r32, cpu)) { numvfpregs = 32; }
+        else if (cpu_isar_feature(aa32_vfp_simd, cpu)) {
             numvfpregs = 16;
         }
         for (i = 0; i < numvfpregs; i++) {
             uint64_t v = *aa32_vfp_dreg(env, i);
-            qemu_fprintf(f, "s%02d=%08x s%02d=%08x d%02d=%016" PRIx64 "\n",
-                         i * 2, (uint32_t)v,
-                         i * 2 + 1, (uint32_t)(v >> 32),
-                         i, v);
+            qemu_fprintf(f, "s%02d=%08x s%02d=%08x d%02d=%016" PRIx64 "\n", i * 2, (uint32_t)v, i * 2 + 1,
+                         (uint32_t)(v >> 32), i, v);
         }
         qemu_fprintf(f, "FPSCR: %08x\n", vfp_get_fpscr(env));
     }
@@ -735,14 +633,11 @@ uint64_t arm_build_mp_affinity(int idx, uint8_t clustersz)
     return (Aff1 << ARM_AFF1_SHIFT) | Aff0;
 }
 
-uint64_t arm_cpu_mp_affinity(ARMCPU *cpu)
-{
-    return cpu->mp_affinity;
-}
+uint64_t arm_cpu_mp_affinity(ARMCPU* cpu) { return cpu->mp_affinity; }
 
-static void arm_cpu_initfn(Object *obj)
+static void arm_cpu_initfn(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     ARMCPRegTable_init(cpu->cp_regs);
 
@@ -756,25 +651,23 @@ static void arm_cpu_initfn(Object *obj)
          * them to maintain the same interface as non-KVM CPUs.
          */
         qdev_init_gpio_in(DEVICE(cpu), arm_cpu_kvm_set_irq, 6);
-    } else {
+    }
+    else {
         qdev_init_gpio_in(DEVICE(cpu), arm_cpu_set_irq, 6);
     }
 
-    qdev_init_gpio_out(DEVICE(cpu), cpu->gt_timer_outputs,
-                       ARRAY_SIZE(cpu->gt_timer_outputs));
+    qdev_init_gpio_out(DEVICE(cpu), cpu->gt_timer_outputs, ARRAY_SIZE(cpu->gt_timer_outputs));
 
-    qdev_init_gpio_out_named(DEVICE(cpu), &cpu->gicv3_maintenance_interrupt,
-                             "gicv3-maintenance-interrupt", 1);
-    qdev_init_gpio_out_named(DEVICE(cpu), &cpu->pmu_interrupt,
-                             "pmu-interrupt", 1);
+    qdev_init_gpio_out_named(DEVICE(cpu), &cpu->gicv3_maintenance_interrupt, "gicv3-maintenance-interrupt", 1);
+    qdev_init_gpio_out_named(DEVICE(cpu), &cpu->pmu_interrupt, "pmu-interrupt", 1);
 
     /* DTB consumers generally don't in fact care what the 'compatible'
      * string is, so always provide some string and trust that a hypothetical
      * picky DTB consumer will also provide a helpful error message.
      */
     cpu->dtb_compatible = "qemu,unknown";
-    cpu->psci_version = QEMU_PSCI_VERSION_0_1; /* By default assume PSCI v0.1 */
-    cpu->kvm_target = QEMU_KVM_ARM_TARGET_NONE;
+    cpu->psci_version   = QEMU_PSCI_VERSION_0_1; /* By default assume PSCI v0.1 */
+    cpu->kvm_target     = QEMU_KVM_ARM_TARGET_NONE;
 
     if (tcg_enabled() || hvf_enabled()) {
         /* TCG and HVF implement PSCI 1.1 */
@@ -786,43 +679,34 @@ static void arm_cpu_initfn(Object *obj)
  * 0 means "unset, use the default value". That default might vary depending
  * on the CPU type, and is set in the realize fn.
  */
-static const Property arm_cpu_gt_cntfrq_property =
-            DEFINE_PROP_UINT64("cntfrq", ARMCPU, gt_cntfrq_hz, 0);
+static const Property arm_cpu_gt_cntfrq_property = DEFINE_PROP_UINT64("cntfrq", ARMCPU, gt_cntfrq_hz, 0);
 
-static const Property arm_cpu_reset_cbar_property =
-            DEFINE_PROP_UINT64("reset-cbar", ARMCPU, reset_cbar, 0);
+static const Property arm_cpu_reset_cbar_property = DEFINE_PROP_UINT64("reset-cbar", ARMCPU, reset_cbar, 0);
 
-static const Property arm_cpu_reset_hivecs_property =
-            DEFINE_PROP_BOOL("reset-hivecs", ARMCPU, reset_hivecs, false);
+static const Property arm_cpu_reset_hivecs_property = DEFINE_PROP_BOOL("reset-hivecs", ARMCPU, reset_hivecs, false);
 
-static const Property arm_cpu_has_el2_property =
-            DEFINE_PROP_BOOL("has_el2", ARMCPU, has_el2, true);
+static const Property arm_cpu_has_el2_property = DEFINE_PROP_BOOL("has_el2", ARMCPU, has_el2, true);
 
-static const Property arm_cpu_has_el3_property =
-            DEFINE_PROP_BOOL("has_el3", ARMCPU, has_el3, true);
+static const Property arm_cpu_has_el3_property = DEFINE_PROP_BOOL("has_el3", ARMCPU, has_el3, true);
 
-static const Property arm_cpu_cfgend_property =
-            DEFINE_PROP_BOOL("cfgend", ARMCPU, cfgend, false);
+static const Property arm_cpu_cfgend_property = DEFINE_PROP_BOOL("cfgend", ARMCPU, cfgend, false);
 
-static const Property arm_cpu_has_vfp_property =
-            DEFINE_PROP_BOOL("vfp", ARMCPU, has_vfp, true);
+static const Property arm_cpu_has_vfp_property = DEFINE_PROP_BOOL("vfp", ARMCPU, has_vfp, true);
 
-static const Property arm_cpu_has_vfp_d32_property =
-            DEFINE_PROP_BOOL("vfp-d32", ARMCPU, has_vfp_d32, true);
+static const Property arm_cpu_has_vfp_d32_property = DEFINE_PROP_BOOL("vfp-d32", ARMCPU, has_vfp_d32, true);
 
-static const Property arm_cpu_has_neon_property =
-            DEFINE_PROP_BOOL("neon", ARMCPU, has_neon, true);
+static const Property arm_cpu_has_neon_property = DEFINE_PROP_BOOL("neon", ARMCPU, has_neon, true);
 
-static bool arm_get_pmu(Object *obj, Error **errp)
+static bool arm_get_pmu(Object* obj, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     return cpu->has_pmu;
 }
 
-static void arm_set_pmu(Object *obj, bool value, Error **errp)
+static void arm_set_pmu(Object* obj, bool value, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     if (value) {
         if (kvm_enabled() && !kvm_arm_pmu_supported()) {
@@ -830,22 +714,23 @@ static void arm_set_pmu(Object *obj, bool value, Error **errp)
             return;
         }
         set_feature(&cpu->env, ARM_FEATURE_PMU);
-    } else {
+    }
+    else {
         unset_feature(&cpu->env, ARM_FEATURE_PMU);
     }
     cpu->has_pmu = value;
 }
 
-static bool aarch64_cpu_get_aarch64(Object *obj, Error **errp)
+static bool aarch64_cpu_get_aarch64(Object* obj, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     return arm_feature(&cpu->env, ARM_FEATURE_AARCH64);
 }
 
-static void aarch64_cpu_set_aarch64(Object *obj, bool value, Error **errp)
+static void aarch64_cpu_set_aarch64(Object* obj, bool value, Error** errp)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     /*
      * At this time, this property is only allowed if KVM is enabled.  This
@@ -860,35 +745,32 @@ static void aarch64_cpu_set_aarch64(Object *obj, bool value, Error **errp)
             return;
         }
         unset_feature(&cpu->env, ARM_FEATURE_AARCH64);
-    } else {
+    }
+    else {
         set_feature(&cpu->env, ARM_FEATURE_AARCH64);
     }
 }
 
-int64_t gt_ticks_to_ns_ceil(ARMCPU *cpu, uint64_t ticks)
+int64_t gt_ticks_to_ns_ceil(ARMCPU* cpu, uint64_t ticks)
 {
     uint64_t freq = cpu->gt_cntfrq_hz;
-    uint64_t ns = muldiv64(ticks, NANOSECONDS_PER_SECOND, freq);
+    uint64_t ns   = muldiv64(ticks, NANOSECONDS_PER_SECOND, freq);
 
-    if (muldiv64(ns, freq, NANOSECONDS_PER_SECOND) < ticks) {
-        ns++;
-    }
+    if (muldiv64(ns, freq, NANOSECONDS_PER_SECOND) < ticks) { ns++; }
     return ns > INT64_MAX ? INT64_MAX : ns;
 }
 
-static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
+static void arm_cpu_propagate_feature_implications(ARMCPU* cpu)
 {
-    CPUARMState *env = &cpu->env;
-    bool no_aa32 = false;
+    CPUARMState* env     = &cpu->env;
+    bool         no_aa32 = false;
 
     /*
      * Some features automatically imply others: set the feature
      * bits explicitly for these cases.
      */
 
-    if (arm_feature(env, ARM_FEATURE_V8)) {
-        set_feature(env, ARM_FEATURE_V7VE);
-    }
+    if (arm_feature(env, ARM_FEATURE_V8)) { set_feature(env, ARM_FEATURE_V7VE); }
 
     /*
      * There exist AArch64 cpus without AArch32 support.  When KVM
@@ -898,9 +780,7 @@ static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
      * consistency checks anywhere unless using TCG, because only
      * for TCG would a consistency-check failure be a QEMU bug.
      */
-    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
-        no_aa32 = !cpu_isar_feature(aa64_aa32, cpu);
-    }
+    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) { no_aa32 = !cpu_isar_feature(aa64_aa32, cpu); }
 
     if (arm_feature(env, ARM_FEATURE_V7VE)) {
         /*
@@ -912,8 +792,7 @@ static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
          * Presence of EL2 itself is ARM_FEATURE_EL2, and of the
          * Security Extensions is ARM_FEATURE_EL3.
          */
-        assert(!tcg_enabled() || no_aa32 ||
-               cpu_isar_feature(aa32_arm_div, cpu));
+        assert(!tcg_enabled() || no_aa32 || cpu_isar_feature(aa32_arm_div, cpu));
         set_feature(env, ARM_FEATURE_LPAE);
         set_feature(env, ARM_FEATURE_V7);
     }
@@ -935,27 +814,18 @@ static void arm_cpu_propagate_feature_implications(ARMCPU *cpu)
     }
     if (arm_feature(env, ARM_FEATURE_V6)) {
         set_feature(env, ARM_FEATURE_V5);
-        assert(!tcg_enabled() || no_aa32 ||
-               cpu_isar_feature(aa32_jazelle, cpu));
+        assert(!tcg_enabled() || no_aa32 || cpu_isar_feature(aa32_jazelle, cpu));
         set_feature(env, ARM_FEATURE_AUXCR);
     }
-    if (arm_feature(env, ARM_FEATURE_V5)) {
-        set_feature(env, ARM_FEATURE_V4T);
-    }
-    if (arm_feature(env, ARM_FEATURE_LPAE)) {
-        set_feature(env, ARM_FEATURE_V7MP);
-    }
-    if (arm_feature(env, ARM_FEATURE_CBAR_RO)) {
-        set_feature(env, ARM_FEATURE_CBAR);
-    }
-    if (arm_feature(env, ARM_FEATURE_THUMB2)) {
-        set_feature(env, ARM_FEATURE_THUMB_DSP);
-    }
+    if (arm_feature(env, ARM_FEATURE_V5)) { set_feature(env, ARM_FEATURE_V4T); }
+    if (arm_feature(env, ARM_FEATURE_LPAE)) { set_feature(env, ARM_FEATURE_V7MP); }
+    if (arm_feature(env, ARM_FEATURE_CBAR_RO)) { set_feature(env, ARM_FEATURE_CBAR); }
+    if (arm_feature(env, ARM_FEATURE_THUMB2)) { set_feature(env, ARM_FEATURE_THUMB_DSP); }
 }
 
-static void arm_cpu_post_init(Object *obj)
+static void arm_cpu_post_init(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU* cpu = ARM_CPU(obj);
 
     /*
      * Some features imply others. Figure this out now, because we
@@ -965,24 +835,20 @@ static void arm_cpu_post_init(Object *obj)
     arm_cpu_propagate_feature_implications(cpu);
 
     if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
-        object_property_add_bool(obj, "aarch64", aarch64_cpu_get_aarch64,
-                                       aarch64_cpu_set_aarch64);
+        object_property_add_bool(obj, "aarch64", aarch64_cpu_get_aarch64, aarch64_cpu_set_aarch64);
         object_property_set_description(obj, "aarch64",
                                         "Set on/off to enable/disable aarch64 "
                                         "execution state ");
     }
 
-    if (arm_feature(&cpu->env, ARM_FEATURE_CBAR) ||
-        arm_feature(&cpu->env, ARM_FEATURE_CBAR_RO)) {
+    if (arm_feature(&cpu->env, ARM_FEATURE_CBAR) || arm_feature(&cpu->env, ARM_FEATURE_CBAR_RO)) {
         qdev_property_add_static(DEVICE(obj), &arm_cpu_reset_cbar_property);
     }
 
     qdev_property_add_static(DEVICE(obj), &arm_cpu_reset_hivecs_property);
 
     if (arm_feature(&cpu->env, ARM_FEATURE_V8)) {
-        object_property_add_uint64_ptr(obj, "rvbar",
-                                       &cpu->rvbar_prop,
-                                       OBJ_PROP_FLAG_READWRITE);
+        object_property_add_uint64_ptr(obj, "rvbar", &cpu->rvbar_prop, OBJ_PROP_FLAG_READWRITE);
     }
 
     if (arm_feature(&cpu->env, ARM_FEATURE_EL3)) {
@@ -991,16 +857,11 @@ static void arm_cpu_post_init(Object *obj)
          */
         qdev_property_add_static(DEVICE(obj), &arm_cpu_has_el3_property);
 
-        object_property_add_link(obj, "secure-memory",
-                                 TYPE_MEMORY_REGION,
-                                 (Object **)&cpu->secure_memory,
-                                 qdev_prop_allow_set_link_before_realize,
-                                 OBJ_PROP_LINK_STRONG);
+        object_property_add_link(obj, "secure-memory", TYPE_MEMORY_REGION, (Object**)&cpu->secure_memory,
+                                 qdev_prop_allow_set_link_before_realize, OBJ_PROP_LINK_STRONG);
     }
 
-    if (arm_feature(&cpu->env, ARM_FEATURE_EL2)) {
-        qdev_property_add_static(DEVICE(obj), &arm_cpu_has_el2_property);
-    }
+    if (arm_feature(&cpu->env, ARM_FEATURE_EL2)) { qdev_property_add_static(DEVICE(obj), &arm_cpu_has_el2_property); }
 
     if (arm_feature(&cpu->env, ARM_FEATURE_PMU)) {
         cpu->has_pmu = true;
@@ -1014,19 +875,14 @@ static void arm_cpu_post_init(Object *obj)
      */
     if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
         if (cpu_isar_feature(aa64_fp_simd, cpu)) {
-            cpu->has_vfp = true;
+            cpu->has_vfp     = true;
             cpu->has_vfp_d32 = true;
-            if (tcg_enabled()) {
-                qdev_property_add_static(DEVICE(obj),
-                                         &arm_cpu_has_vfp_property);
-            }
+            if (tcg_enabled()) { qdev_property_add_static(DEVICE(obj), &arm_cpu_has_vfp_property); }
         }
-    } else if (cpu_isar_feature(aa32_vfp, cpu)) {
+    }
+    else if (cpu_isar_feature(aa32_vfp, cpu)) {
         cpu->has_vfp = true;
-        if (tcg_enabled()) {
-            qdev_property_add_static(DEVICE(obj),
-                                     &arm_cpu_has_vfp_property);
-        }
+        if (tcg_enabled()) { qdev_property_add_static(DEVICE(obj), &arm_cpu_has_vfp_property); }
         if (cpu_isar_feature(aa32_simd_r32, cpu)) {
             cpu->has_vfp_d32 = true;
             /*
@@ -1034,81 +890,62 @@ static void arm_cpu_post_init(Object *obj)
              * Armv8-A are either 0b0000 and 0b0010. On such CPUs,
              * make sure that has_vfp_d32 can not be set to false.
              */
-            if ((tcg_enabled())
-                && !(arm_feature(&cpu->env, ARM_FEATURE_V8))) {
-                qdev_property_add_static(DEVICE(obj),
-                                         &arm_cpu_has_vfp_d32_property);
+            if ((tcg_enabled()) && !(arm_feature(&cpu->env, ARM_FEATURE_V8))) {
+                qdev_property_add_static(DEVICE(obj), &arm_cpu_has_vfp_d32_property);
             }
         }
     }
 
     if (arm_feature(&cpu->env, ARM_FEATURE_NEON)) {
         cpu->has_neon = true;
-        if (tcg_enabled()) {
-            qdev_property_add_static(DEVICE(obj), &arm_cpu_has_neon_property);
-        }
+        if (tcg_enabled()) { qdev_property_add_static(DEVICE(obj), &arm_cpu_has_neon_property); }
     }
 
     /* Not DEFINE_PROP_UINT32: we want this to be settable after realize */
-    object_property_add_uint32_ptr(obj, "psci-conduit",
-                                   &cpu->psci_conduit,
-                                   OBJ_PROP_FLAG_READWRITE);
+    object_property_add_uint32_ptr(obj, "psci-conduit", &cpu->psci_conduit, OBJ_PROP_FLAG_READWRITE);
 
     if (arm_feature(&cpu->env, ARM_FEATURE_GENERIC_TIMER)) {
         qdev_property_add_static(DEVICE(cpu), &arm_cpu_gt_cntfrq_property);
     }
 
-    if (kvm_enabled()) {
-        kvm_arm_add_vcpu_properties(cpu);
-    }
+    if (kvm_enabled()) { kvm_arm_add_vcpu_properties(cpu); }
 
-    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64) &&
-        cpu_isar_feature(aa64_mte, cpu)) {
-        object_property_add_link(obj, "tag-memory",
-                                 TYPE_MEMORY_REGION,
-                                 (Object **)&cpu->tag_memory,
-                                 qdev_prop_allow_set_link_before_realize,
-                                 OBJ_PROP_LINK_STRONG);
+    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64) && cpu_isar_feature(aa64_mte, cpu)) {
+        object_property_add_link(obj, "tag-memory", TYPE_MEMORY_REGION, (Object**)&cpu->tag_memory,
+                                 qdev_prop_allow_set_link_before_realize, OBJ_PROP_LINK_STRONG);
 
         if (arm_feature(&cpu->env, ARM_FEATURE_EL3)) {
-            object_property_add_link(obj, "secure-tag-memory",
-                                     TYPE_MEMORY_REGION,
-                                     (Object **)&cpu->secure_tag_memory,
-                                     qdev_prop_allow_set_link_before_realize,
-                                     OBJ_PROP_LINK_STRONG);
+            object_property_add_link(obj, "secure-tag-memory", TYPE_MEMORY_REGION, (Object**)&cpu->secure_tag_memory,
+                                     qdev_prop_allow_set_link_before_realize, OBJ_PROP_LINK_STRONG);
         }
     }
 
     qdev_property_add_static(DEVICE(obj), &arm_cpu_cfgend_property);
 }
 
-static void arm_cpu_finalizefn(Object *obj)
+static void arm_cpu_finalizefn(Object* obj)
 {
-    ARMCPU *cpu = ARM_CPU(obj);
+    ARMCPU*          cpu = ARM_CPU(obj);
     ARMELChangeHook *hook, *next;
 
     ARMCPRegTable_clear(cpu->cp_regs);
 
-    QLIST_FOREACH_SAFE(hook, &cpu->pre_el_change_hooks, node, next) {
+    QLIST_FOREACH_SAFE (hook, &cpu->pre_el_change_hooks, node, next) {
         QLIST_REMOVE(hook, node);
         g_free(hook);
     }
-    QLIST_FOREACH_SAFE(hook, &cpu->el_change_hooks, node, next) {
+    QLIST_FOREACH_SAFE (hook, &cpu->el_change_hooks, node, next) {
         QLIST_REMOVE(hook, node);
         g_free(hook);
     }
 
-    if (cpu->pmu_timer) {
-        timer_free(cpu->pmu_timer);
-    }
-    if (cpu->wfxt_timer) {
-        timer_free(cpu->wfxt_timer);
-    }
+    if (cpu->pmu_timer) { timer_free(cpu->pmu_timer); }
+    if (cpu->wfxt_timer) { timer_free(cpu->wfxt_timer); }
 }
 
-void arm_cpu_finalize_features(ARMCPU *cpu, Error **errp)
+void arm_cpu_finalize_features(ARMCPU* cpu, Error** errp)
 {
-    Error *local_err = NULL;
+    Error* local_err = NULL;
 
     if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
         arm_cpu_sve_finalize(cpu, &local_err);
@@ -1155,14 +992,14 @@ void arm_cpu_finalize_features(ARMCPU *cpu, Error **errp)
     }
 }
 
-static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
+static void arm_cpu_realizefn(DeviceState* dev, Error** errp)
 {
-    CPUState *cs = CPU(dev);
-    ARMCPU *cpu = ARM_CPU(dev);
-    ARMISARegisters *isar = &cpu->isar;
-    ARMCPUClass *acc = ARM_CPU_GET_CLASS(dev);
-    CPUARMState *env = &cpu->env;
-    Error *local_err = NULL;
+    CPUState*        cs        = CPU(dev);
+    ARMCPU*          cpu       = ARM_CPU(dev);
+    ARMISARegisters* isar      = &cpu->isar;
+    ARMCPUClass*     acc       = ARM_CPU_GET_CLASS(dev);
+    CPUARMState*     env       = &cpu->env;
+    Error*           local_err = NULL;
 
 #ifdef CONFIG_TCG
     /* Use pc-relative instructions in system-mode */
@@ -1176,7 +1013,8 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
     if (cpu->host_cpu_probe_failed) {
         if (!kvm_enabled() && !hvf_enabled()) {
             error_setg(errp, "The 'host' CPU type can only be used with KVM or HVF");
-        } else {
+        }
+        else {
             error_setg(errp, "Failed to retrieve host CPU features");
         }
         return;
@@ -1192,15 +1030,11 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
          * cpu_address_space_init()).
          */
         if (cpu->has_el3) {
-            error_setg(errp,
-                       "Cannot enable %s when guest CPU has EL3 enabled",
-                       current_accel_name());
+            error_setg(errp, "Cannot enable %s when guest CPU has EL3 enabled", current_accel_name());
             return;
         }
         if (cpu->tag_memory) {
-            error_setg(errp,
-                       "Cannot enable %s when guest CPUs has MTE enabled",
-                       current_accel_name());
+            error_setg(errp, "Cannot enable %s when guest CPUs has MTE enabled", current_accel_name());
             return;
         }
     }
@@ -1223,30 +1057,21 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
     }
 
     {
-        cpu->gt_timer[GTIMER_PHYS] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                               arm_gt_ptimer_cb, cpu);
-        cpu->gt_timer[GTIMER_VIRT] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                               arm_gt_vtimer_cb, cpu);
-        cpu->gt_timer[GTIMER_HYP] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                              arm_gt_htimer_cb, cpu);
-        cpu->gt_timer[GTIMER_SEC] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                              arm_gt_stimer_cb, cpu);
-        cpu->gt_timer[GTIMER_HYPVIRT] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                                  arm_gt_hvtimer_cb, cpu);
-        cpu->gt_timer[GTIMER_S_EL2_PHYS] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                                     arm_gt_sel2timer_cb, cpu);
-        cpu->gt_timer[GTIMER_S_EL2_VIRT] = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                                     arm_gt_sel2vtimer_cb, cpu);
+        cpu->gt_timer[GTIMER_PHYS]       = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_ptimer_cb, cpu);
+        cpu->gt_timer[GTIMER_VIRT]       = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_vtimer_cb, cpu);
+        cpu->gt_timer[GTIMER_HYP]        = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_htimer_cb, cpu);
+        cpu->gt_timer[GTIMER_SEC]        = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_stimer_cb, cpu);
+        cpu->gt_timer[GTIMER_HYPVIRT]    = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_hvtimer_cb, cpu);
+        cpu->gt_timer[GTIMER_S_EL2_PHYS] = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_sel2timer_cb, cpu);
+        cpu->gt_timer[GTIMER_S_EL2_VIRT] = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_sel2vtimer_cb, cpu);
     }
 
-    if (arm_feature(env, ARM_FEATURE_AARCH64) &&
-        cpu->has_vfp != cpu->has_neon) {
+    if (arm_feature(env, ARM_FEATURE_AARCH64) && cpu->has_vfp != cpu->has_neon) {
         /*
          * This is an architectural requirement for AArch64; AArch32 is
          * more flexible and permits VFP-no-Neon and Neon-no-VFP.
          */
-        error_setg(errp,
-                   "AArch64 CPUs must have both VFP and Neon or neither");
+        error_setg(errp, "AArch64 CPUs must have both VFP and Neon or neither");
         return;
     }
 
@@ -1255,11 +1080,11 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         return;
     }
 
-   if (!cpu->has_vfp_d32) {
+    if (!cpu->has_vfp_d32) {
         uint32_t u;
 
-        u = cpu->isar.mvfr0;
-        u = REG_FIELD_DP32(u, MVFR0, SIMDREG, 1); /* 16 registers */
+        u               = cpu->isar.mvfr0;
+        u               = REG_FIELD_DP32(u, MVFR0, SIMDREG, 1); /* 16 registers */
         cpu->isar.mvfr0 = u;
     }
 
@@ -1275,24 +1100,24 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         u = REG_FIELD_DP32(u, ID_ISAR6, BF16, 0);
         SET_IDREG(isar, ID_ISAR6, u);
 
-        u = cpu->isar.mvfr0;
-        u = REG_FIELD_DP32(u, MVFR0, FPSP, 0);
-        u = REG_FIELD_DP32(u, MVFR0, FPDP, 0);
-        u = REG_FIELD_DP32(u, MVFR0, FPDIVIDE, 0);
-        u = REG_FIELD_DP32(u, MVFR0, FPSQRT, 0);
-        u = REG_FIELD_DP32(u, MVFR0, FPROUND, 0);
-        u = REG_FIELD_DP32(u, MVFR0, FPTRAP, 0);
-        u = REG_FIELD_DP32(u, MVFR0, FPSHVEC, 0);
+        u               = cpu->isar.mvfr0;
+        u               = REG_FIELD_DP32(u, MVFR0, FPSP, 0);
+        u               = REG_FIELD_DP32(u, MVFR0, FPDP, 0);
+        u               = REG_FIELD_DP32(u, MVFR0, FPDIVIDE, 0);
+        u               = REG_FIELD_DP32(u, MVFR0, FPSQRT, 0);
+        u               = REG_FIELD_DP32(u, MVFR0, FPROUND, 0);
+        u               = REG_FIELD_DP32(u, MVFR0, FPTRAP, 0);
+        u               = REG_FIELD_DP32(u, MVFR0, FPSHVEC, 0);
         cpu->isar.mvfr0 = u;
 
-        u = cpu->isar.mvfr1;
-        u = REG_FIELD_DP32(u, MVFR1, FPFTZ, 0);
-        u = REG_FIELD_DP32(u, MVFR1, FPDNAN, 0);
-        u = REG_FIELD_DP32(u, MVFR1, FPHP, 0);
+        u               = cpu->isar.mvfr1;
+        u               = REG_FIELD_DP32(u, MVFR1, FPFTZ, 0);
+        u               = REG_FIELD_DP32(u, MVFR1, FPDNAN, 0);
+        u               = REG_FIELD_DP32(u, MVFR1, FPHP, 0);
         cpu->isar.mvfr1 = u;
 
-        u = cpu->isar.mvfr2;
-        u = REG_FIELD_DP32(u, MVFR2, FPMISC, 0);
+        u               = cpu->isar.mvfr2;
+        u               = REG_FIELD_DP32(u, MVFR2, FPMISC, 0);
         cpu->isar.mvfr2 = u;
     }
 
@@ -1335,15 +1160,15 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         u = REG_FIELD_DP32(u, ID_ISAR6, I8MM, 0);
         SET_IDREG(isar, ID_ISAR6, u);
 
-        u = cpu->isar.mvfr1;
-        u = REG_FIELD_DP32(u, MVFR1, SIMDLS, 0);
-        u = REG_FIELD_DP32(u, MVFR1, SIMDINT, 0);
-        u = REG_FIELD_DP32(u, MVFR1, SIMDSP, 0);
-        u = REG_FIELD_DP32(u, MVFR1, SIMDHP, 0);
+        u               = cpu->isar.mvfr1;
+        u               = REG_FIELD_DP32(u, MVFR1, SIMDLS, 0);
+        u               = REG_FIELD_DP32(u, MVFR1, SIMDINT, 0);
+        u               = REG_FIELD_DP32(u, MVFR1, SIMDSP, 0);
+        u               = REG_FIELD_DP32(u, MVFR1, SIMDHP, 0);
         cpu->isar.mvfr1 = u;
 
-        u = cpu->isar.mvfr2;
-        u = REG_FIELD_DP32(u, MVFR2, SIMDMISC, 0);
+        u               = cpu->isar.mvfr2;
+        u               = REG_FIELD_DP32(u, MVFR2, SIMDMISC, 0);
         cpu->isar.mvfr2 = u;
     }
 
@@ -1354,21 +1179,20 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
 
         FIELD_DP64_IDREG(isar, ID_AA64ISAR1, FRINTTS, 0);
 
-        u = cpu->isar.mvfr0;
-        u = REG_FIELD_DP32(u, MVFR0, SIMDREG, 0);
+        u               = cpu->isar.mvfr0;
+        u               = REG_FIELD_DP32(u, MVFR0, SIMDREG, 0);
         cpu->isar.mvfr0 = u;
 
         /* Despite the name, this field covers both VFP and Neon */
-        u = cpu->isar.mvfr1;
-        u = REG_FIELD_DP32(u, MVFR1, SIMDFMAC, 0);
+        u               = cpu->isar.mvfr1;
+        u               = REG_FIELD_DP32(u, MVFR1, SIMDFMAC, 0);
         cpu->isar.mvfr1 = u;
     }
 
     if (!TARGET_PAGE_BITS) {
         int pagebits;
-        if (arm_feature(env, ARM_FEATURE_V7)) {
-            pagebits = 12;
-        } else {
+        if (arm_feature(env, ARM_FEATURE_V7)) { pagebits = 12; }
+        else {
             /*
              * For CPUs which might have tiny 1K pages, or which have an
              * MPU and might have small region sizes, stick with 1K pages.
@@ -1382,7 +1206,7 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
              * promised via minimum_page_size that it will not.
              */
             error_setg(errp, "This CPU requires a smaller page size "
-                       "than the system is using");
+                             "than the system is using");
             return;
         }
     }
@@ -1393,18 +1217,14 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
      * so these bits always RAZ.
      */
     if (cpu->mp_affinity == ARM64_AFFINITY_INVALID) {
-        cpu->mp_affinity = arm_build_mp_affinity(cs->cpu_index,
-                                                 ARM_DEFAULT_CPUS_PER_CLUSTER);
+        cpu->mp_affinity = arm_build_mp_affinity(cs->cpu_index, ARM_DEFAULT_CPUS_PER_CLUSTER);
     }
 
-    if (cpu->reset_hivecs) {
-            cpu->reset_sctlr |= (1 << 13);
-    }
+    if (cpu->reset_hivecs) { cpu->reset_sctlr |= (1 << 13); }
 
     if (cpu->cfgend) {
-        if (arm_feature(env, ARM_FEATURE_V7)) {
-            cpu->reset_sctlr |= SCTLR_EE;
-        } else {
+        if (arm_feature(env, ARM_FEATURE_V7)) { cpu->reset_sctlr |= SCTLR_EE; }
+        else {
             cpu->reset_sctlr |= SCTLR_B;
         }
     }
@@ -1427,13 +1247,9 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         FIELD_DP64_IDREG(isar, ID_AA64PFR0, RME, 0);
     }
 
-    if (!cpu->has_el2) {
-        unset_feature(env, ARM_FEATURE_EL2);
-    }
+    if (!cpu->has_el2) { unset_feature(env, ARM_FEATURE_EL2); }
 
-    if (!cpu->has_pmu) {
-        unset_feature(env, ARM_FEATURE_PMU);
-    }
+    if (!cpu->has_pmu) { unset_feature(env, ARM_FEATURE_PMU); }
     if (arm_feature(env, ARM_FEATURE_PMU)) {
         pmu_init(cpu);
 
@@ -1442,9 +1258,9 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
             arm_register_el_change_hook(cpu, &pmu_post_el_change, 0);
         }
 
-        cpu->pmu_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_pmu_timer_cb,
-                cpu);
-    } else {
+        cpu->pmu_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_pmu_timer_cb, cpu);
+    }
+    else {
         FIELD_DP64_IDREG(isar, ID_AA64DFR0, PMUVER, 0);
         FIELD_DP32_IDREG(isar, ID_DFR0, PERFMON, 0);
         cpu->pmceid0 = 0;
@@ -1465,31 +1281,24 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
          * The architectural range of GM blocksize is 2-6, however qemu
          * doesn't support blocksize of 2 (see HELPER(ldgm)).
          */
-        if (tcg_enabled()) {
-            assert(cpu->gm_blocksize >= 3 && cpu->gm_blocksize <= 6);
-        }
+        if (tcg_enabled()) { assert(cpu->gm_blocksize >= 3 && cpu->gm_blocksize <= 6); }
 
         /*
          * If we run with TCG and do not have tag-memory provided by
          * the machine, then reduce MTE support to instructions enabled at EL0.
          * This matches Cortex-A710 BROADCASTMTE input being LOW.
          */
-        if (tcg_enabled() && cpu->tag_memory == NULL) {
-            FIELD_DP64_IDREG(isar, ID_AA64PFR1, MTE, 1);
-        }
+        if (tcg_enabled() && cpu->tag_memory == NULL) { FIELD_DP64_IDREG(isar, ID_AA64PFR1, MTE, 1); }
 
         /*
          * If MTE is supported by the host, however it should not be
          * enabled on the guest (i.e mte=off), clear guest's MTE bits."
          */
-        if (kvm_enabled() && !cpu->kvm_mte) {
-                FIELD_DP64_IDREG(isar, ID_AA64PFR1, MTE, 0);
-        }
+        if (kvm_enabled() && !cpu->kvm_mte) { FIELD_DP64_IDREG(isar, ID_AA64PFR1, MTE, 0); }
     }
 
     if (tcg_enabled() && cpu_isar_feature(aa64_wfxt, cpu)) {
-        cpu->wfxt_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL,
-                                       arm_wfxt_timer_cb, cpu);
+        cpu->wfxt_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_wfxt_timer_cb, cpu);
     }
 
     if (tcg_enabled()) {
@@ -1518,9 +1327,7 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
         FIELD_DP64_IDREG(isar, ID_AA64PFR0, MPAM, 0);
     }
 
-    if (arm_feature(env, ARM_FEATURE_EL3)) {
-        set_feature(env, ARM_FEATURE_VBAR);
-    }
+    if (arm_feature(env, ARM_FEATURE_EL3)) { set_feature(env, ARM_FEATURE_VBAR); }
 
     if (tcg_enabled() && cpu_isar_feature(aa64_rme, cpu)) {
         arm_register_el_change_hook(cpu, &gt_rme_post_el_change, 0);
@@ -1532,43 +1339,33 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
 
     init_cpreg_list(cpu);
 
-    MachineState *ms = MACHINE(qdev_get_machine());
-    unsigned int smp_cpus = ms->smp.cpus;
-    bool has_secure = cpu->has_el3;
+    MachineState* ms         = MACHINE(qdev_get_machine());
+    unsigned int  smp_cpus   = ms->smp.cpus;
+    bool          has_secure = cpu->has_el3;
 
     /*
      * We must set cs->num_ases to the final value before
      * the first call to cpu_address_space_init.
      */
-    if (cpu->tag_memory != NULL) {
-        cs->num_ases = 3 + has_secure;
-    } else {
+    if (cpu->tag_memory != NULL) { cs->num_ases = 3 + has_secure; }
+    else {
         cs->num_ases = 1 + has_secure;
     }
 
     if (has_secure) {
-        if (!cpu->secure_memory) {
-            cpu->secure_memory = cs->memory;
-        }
-        cpu_address_space_init(cs, ARMASIdx_S, "cpu-secure-memory",
-                               cpu->secure_memory);
+        if (!cpu->secure_memory) { cpu->secure_memory = cs->memory; }
+        cpu_address_space_init(cs, ARMASIdx_S, "cpu-secure-memory", cpu->secure_memory);
     }
 
     if (cpu->tag_memory != NULL) {
-        cpu_address_space_init(cs, ARMASIdx_TagNS, "cpu-tag-memory",
-                               cpu->tag_memory);
-        if (has_secure) {
-            cpu_address_space_init(cs, ARMASIdx_TagS, "cpu-tag-memory",
-                                   cpu->secure_tag_memory);
-        }
+        cpu_address_space_init(cs, ARMASIdx_TagNS, "cpu-tag-memory", cpu->tag_memory);
+        if (has_secure) { cpu_address_space_init(cs, ARMASIdx_TagS, "cpu-tag-memory", cpu->secure_tag_memory); }
     }
 
     cpu_address_space_init(cs, ARMASIdx_NS, "cpu-memory", cs->memory);
 
     /* No core_count specified, default to smp_cpus. */
-    if (cpu->core_count == -1) {
-        cpu->core_count = smp_cpus;
-    }
+    if (cpu->core_count == -1) { cpu->core_count = smp_cpus; }
 
     if (tcg_enabled()) {
         int dcz_blocklen = 4 << cpu->dcz_blocksize;
@@ -1589,9 +1386,7 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
          * both nibbles of each byte storing tag data may be written at once.
          * Since TAG_GRANULE is 16, this means that blocklen must be >= 32.
          */
-        if (cpu_isar_feature(aa64_mte, cpu)) {
-            assert(dcz_blocklen >= 2 * TAG_GRANULE);
-        }
+        if (cpu_isar_feature(aa64_mte, cpu)) { assert(dcz_blocklen >= 2 * TAG_GRANULE); }
     }
 
     qemu_init_vcpu(cs);
@@ -1600,17 +1395,17 @@ static void arm_cpu_realizefn(DeviceState *dev, Error **errp)
     acc->parent_realize(dev, errp);
 }
 
-static ObjectClass *arm_cpu_class_by_name(const char *cpu_model)
+static ObjectClass* arm_cpu_class_by_name(const char* cpu_model)
 {
-    ObjectClass *oc;
-    char *typename;
-    char **cpuname;
-    const char *cpunamestr;
+    ObjectClass* oc;
+    char*        typename;
+    char**       cpuname;
+    const char*  cpunamestr;
 
-    cpuname = g_strsplit(cpu_model, ",", 1);
+    cpuname    = g_strsplit(cpu_model, ",", 1);
     cpunamestr = cpuname[0];
-    typename = g_strdup_printf(ARM_CPU_TYPE_NAME("%s"), cpunamestr);
-    oc = object_class_by_name(typename);
+    typename   = g_strdup_printf(ARM_CPU_TYPE_NAME("%s"), cpunamestr);
+    oc         = object_class_by_name(typename);
     g_strfreev(cpuname);
     g_free(typename);
 
@@ -1619,50 +1414,41 @@ static ObjectClass *arm_cpu_class_by_name(const char *cpu_model)
 
 static const Property arm_cpu_properties[] = {
     DEFINE_PROP_UINT64("midr", ARMCPU, midr, 0),
-    DEFINE_PROP_UINT64("mp-affinity", ARMCPU,
-                        mp_affinity, ARM64_AFFINITY_INVALID),
+    DEFINE_PROP_UINT64("mp-affinity", ARMCPU, mp_affinity, ARM64_AFFINITY_INVALID),
     DEFINE_PROP_INT32("core-count", ARMCPU, core_count, -1),
     /* True to default to the backward-compat old CNTFRQ rather than 1Ghz */
     DEFINE_PROP_BOOL("backcompat-cntfrq", ARMCPU, backcompat_cntfrq, false),
-    DEFINE_PROP_BOOL("backcompat-pauth-default-use-qarma5", ARMCPU,
-                      backcompat_pauth_default_use_qarma5, false),
+    DEFINE_PROP_BOOL("backcompat-pauth-default-use-qarma5", ARMCPU, backcompat_pauth_default_use_qarma5, false),
 };
 
-static const gchar *arm_gdb_arch_name(CPUState *cs)
+static const gchar* arm_gdb_arch_name(CPUState* cs)
 {
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
-    CPUARMState *env = &cpu->env;
+    ARMCPU*      cpu = container_of(cs, ARMCPU, parent_obj);
+    CPUARMState* env = &cpu->env;
 
-    if (arm_gdbstub_is_aarch64(cpu)) {
-        return "aarch64";
-    }
-    if (arm_feature(env, ARM_FEATURE_IWMMXT)) {
-        return "iwmmxt";
-    }
+    if (arm_gdbstub_is_aarch64(cpu)) { return "aarch64"; }
+    if (arm_feature(env, ARM_FEATURE_IWMMXT)) { return "iwmmxt"; }
     return "arm";
 }
 
-static const char *arm_gdb_get_core_xml_file(CPUState *cs)
+static const char* arm_gdb_get_core_xml_file(CPUState* cs)
 {
-    ARMCPU *cpu = container_of(cs, ARMCPU, parent_obj);
+    ARMCPU* cpu = container_of(cs, ARMCPU, parent_obj);
 
-    if (arm_gdbstub_is_aarch64(cpu)) {
-        return "aarch64-core.xml";
-    }
+    if (arm_gdbstub_is_aarch64(cpu)) { return "aarch64-core.xml"; }
     return "arm-core.xml";
 }
 
 #include "hw/core/sysemu-cpu-ops.h"
 
 static const struct SysemuCPUOps arm_sysemu_ops = {
-    .has_work = arm_cpu_has_work,
+    .has_work                  = arm_cpu_has_work,
     .get_phys_page_attrs_debug = arm_cpu_get_phys_page_attrs_debug,
-    .asidx_from_attrs = arm_asidx_from_attrs,
+    .asidx_from_attrs          = arm_asidx_from_attrs,
 };
 
 #ifdef CONFIG_TCG
-static vaddr aprofile_pointer_wrap(CPUState *cs, int mmu_idx,
-                                   vaddr result, vaddr base)
+static vaddr aprofile_pointer_wrap(CPUState* cs, int mmu_idx, vaddr result, vaddr base)
 {
     /*
      * The Stage2 and Phys indexes are only used for ptw on arm32,
@@ -1671,9 +1457,7 @@ static vaddr aprofile_pointer_wrap(CPUState *cs, int mmu_idx,
      */
     assert(((unsigned)mmu_idx & ~ARM_MMU_IDX_A_GXF) < (ARMMMUIdx_Stage2_S & ARM_MMU_IDX_COREIDX_MASK));
 
-    if (!is_a64(cpu_env(cs))) {
-        return (uint32_t)result;
-    }
+    if (!is_a64(cpu_env(cs))) { return (uint32_t)result; }
 
     /*
      * TODO: For FEAT_CPA2, decide how to we want to resolve
@@ -1687,51 +1471,49 @@ static const TCGCPUOps arm_tcg_ops = {
     /* ARM processors have a weak memory model */
     .guest_default_memory_order = 0,
 
-    .initialize = arm_translate_init,
-    .translate_code = arm_translate_code,
-    .get_tb_cpu_state = arm_get_tb_cpu_state,
-    .synchronize_from_tb = arm_cpu_synchronize_from_tb,
-    .debug_excp_handler = arm_debug_excp_handler,
-    .restore_state_to_opc = arm_restore_state_to_opc,
-    .mmu_index = arm_cpu_mmu_index,
-    .tlb_fill_align = arm_cpu_tlb_fill_align,
-    .pointer_wrap = aprofile_pointer_wrap,
-    .cpu_exec_interrupt = arm_cpu_exec_interrupt,
-    .cpu_exec_halt = arm_cpu_exec_halt,
-    .cpu_exec_reset = cpu_reset,
-    .do_interrupt = arm_cpu_do_interrupt,
-    .do_transaction_failed = arm_cpu_do_transaction_failed,
-    .do_unaligned_access = arm_cpu_do_unaligned_access,
+    .initialize                = arm_translate_init,
+    .translate_code            = arm_translate_code,
+    .get_tb_cpu_state          = arm_get_tb_cpu_state,
+    .synchronize_from_tb       = arm_cpu_synchronize_from_tb,
+    .debug_excp_handler        = arm_debug_excp_handler,
+    .restore_state_to_opc      = arm_restore_state_to_opc,
+    .mmu_index                 = arm_cpu_mmu_index,
+    .tlb_fill_align            = arm_cpu_tlb_fill_align,
+    .pointer_wrap              = aprofile_pointer_wrap,
+    .cpu_exec_interrupt        = arm_cpu_exec_interrupt,
+    .cpu_exec_halt             = arm_cpu_exec_halt,
+    .cpu_exec_reset            = cpu_reset,
+    .do_interrupt              = arm_cpu_do_interrupt,
+    .do_transaction_failed     = arm_cpu_do_transaction_failed,
+    .do_unaligned_access       = arm_cpu_do_unaligned_access,
     .adjust_watchpoint_address = arm_adjust_watchpoint_address,
-    .debug_check_watchpoint = arm_debug_check_watchpoint,
-    .debug_check_breakpoint = arm_debug_check_breakpoint,
+    .debug_check_watchpoint    = arm_debug_check_watchpoint,
+    .debug_check_breakpoint    = arm_debug_check_breakpoint,
 };
 #endif /* CONFIG_TCG */
 
-static void arm_cpu_class_init(ObjectClass *oc, const void *data)
+static void arm_cpu_class_init(ObjectClass* oc, const void* data)
 {
-    ARMCPUClass *acc = ARM_CPU_CLASS(oc);
-    CPUClass *cc = CPU_CLASS(acc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
-    ResettableClass *rc = RESETTABLE_CLASS(oc);
+    ARMCPUClass*     acc = ARM_CPU_CLASS(oc);
+    CPUClass*        cc  = CPU_CLASS(acc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
+    ResettableClass* rc  = RESETTABLE_CLASS(oc);
 
-    device_class_set_parent_realize(dc, arm_cpu_realizefn,
-                                    &acc->parent_realize);
+    device_class_set_parent_realize(dc, arm_cpu_realizefn, &acc->parent_realize);
 
     device_class_set_props(dc, arm_cpu_properties);
 
-    resettable_class_set_parent_phases(rc, NULL, arm_cpu_reset_hold, NULL,
-                                       &acc->parent_phases);
+    resettable_class_set_parent_phases(rc, NULL, arm_cpu_reset_hold, NULL, &acc->parent_phases);
 
-    cc->class_by_name = arm_cpu_class_by_name;
-    cc->dump_state = arm_cpu_dump_state;
-    cc->set_pc = arm_cpu_set_pc;
-    cc->get_pc = arm_cpu_get_pc;
-    cc->gdb_read_register = arm_cpu_gdb_read_register;
-    cc->gdb_write_register = arm_cpu_gdb_write_register;
-    cc->sysemu_ops = &arm_sysemu_ops;
-    cc->gdb_arch_name = arm_gdb_arch_name;
-    cc->gdb_get_core_xml_file = arm_gdb_get_core_xml_file;
+    cc->class_by_name              = arm_cpu_class_by_name;
+    cc->dump_state                 = arm_cpu_dump_state;
+    cc->set_pc                     = arm_cpu_set_pc;
+    cc->get_pc                     = arm_cpu_get_pc;
+    cc->gdb_read_register          = arm_cpu_gdb_read_register;
+    cc->gdb_write_register         = arm_cpu_gdb_write_register;
+    cc->sysemu_ops                 = &arm_sysemu_ops;
+    cc->gdb_arch_name              = arm_gdb_arch_name;
+    cc->gdb_get_core_xml_file      = arm_gdb_get_core_xml_file;
     cc->gdb_stop_before_watchpoint = true;
 
 #ifdef CONFIG_TCG
@@ -1739,54 +1521,49 @@ static void arm_cpu_class_init(ObjectClass *oc, const void *data)
 #endif /* CONFIG_TCG */
 }
 
-static void arm_cpu_instance_init(Object *obj)
+static void arm_cpu_instance_init(Object* obj)
 {
-    ARMCPUClass *acc = ARM_CPU_GET_CLASS(obj);
+    ARMCPUClass* acc = ARM_CPU_GET_CLASS(obj);
 
     acc->info->initfn(obj);
     arm_cpu_post_init(obj);
 }
 
-static void cpu_register_class_init(ObjectClass *oc, const void *data)
+static void cpu_register_class_init(ObjectClass* oc, const void* data)
 {
-    ARMCPUClass *acc = ARM_CPU_CLASS(oc);
-    CPUClass *cc = CPU_CLASS(acc);
+    ARMCPUClass* acc = ARM_CPU_CLASS(oc);
+    CPUClass*    cc  = CPU_CLASS(acc);
 
     acc->info = data;
-    if (acc->info->deprecation_note) {
-        cc->deprecation_note = acc->info->deprecation_note;
-    }
+    if (acc->info->deprecation_note) { cc->deprecation_note = acc->info->deprecation_note; }
 }
 
-void arm_cpu_register(const ARMCPUInfo *info)
+void arm_cpu_register(const ARMCPUInfo* info)
 {
     TypeInfo type_info = {
-        .parent = TYPE_ARM_CPU,
+        .parent        = TYPE_ARM_CPU,
         .instance_init = arm_cpu_instance_init,
-        .class_init = info->class_init ?: cpu_register_class_init,
-        .class_data = info,
+        .class_init    = info->class_init ?: cpu_register_class_init,
+        .class_data    = info,
     };
 
     type_info.name = g_strdup_printf("%s-" TYPE_ARM_CPU, info->name);
     type_register_static(&type_info);
-    g_free((void *)type_info.name);
+    g_free((void*)type_info.name);
 }
 
 static const TypeInfo arm_cpu_type_info = {
-    .name = TYPE_ARM_CPU,
-    .parent = TYPE_CPU,
-    .instance_size = sizeof(ARMCPU),
-    .instance_align = __alignof__(ARMCPU),
-    .instance_init = arm_cpu_initfn,
+    .name              = TYPE_ARM_CPU,
+    .parent            = TYPE_CPU,
+    .instance_size     = sizeof(ARMCPU),
+    .instance_align    = __alignof__(ARMCPU),
+    .instance_init     = arm_cpu_initfn,
     .instance_finalize = arm_cpu_finalizefn,
-    .abstract = true,
-    .class_size = sizeof(ARMCPUClass),
-    .class_init = arm_cpu_class_init,
+    .abstract          = true,
+    .class_size        = sizeof(ARMCPUClass),
+    .class_init        = arm_cpu_class_init,
 };
 
-static void arm_cpu_register_types(void)
-{
-    type_register_static(&arm_cpu_type_info);
-}
+static void arm_cpu_register_types(void) { type_register_static(&arm_cpu_type_info); }
 
 type_init(arm_cpu_register_types)

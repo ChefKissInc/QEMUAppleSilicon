@@ -122,7 +122,7 @@ class FuncDecl:
 
 
 # Match wrappers declared with a co_wrapper mark
-func_decl_re = re.compile(r'^(?P<return_type>[a-zA-Z][a-zA-Z0-9_]* [\*]?)'
+func_decl_re = re.compile(r'^(?P<return_type>[a-zA-Z][a-zA-Z0-9_]*\s*[\*]?\s*)'
                           r'(\s*coroutine_fn)?'
                           r'\s*(?P<wrapper_type>(no_)?co)_wrapper'
                           r'(?P<variant>(_[a-z][a-z0-9_]*)?)\s*'

@@ -155,26 +155,26 @@
  *
  */
 
-#define VNC_TIGHT_EXPLICIT_FILTER       0x04
-#define VNC_TIGHT_FILL                  0x08
-#define VNC_TIGHT_JPEG                  0x09
-#define VNC_TIGHT_PNG                   0x0A
-#define VNC_TIGHT_MAX_SUBENCODING       0x0A
+#define VNC_TIGHT_EXPLICIT_FILTER 0x04
+#define VNC_TIGHT_FILL            0x08
+#define VNC_TIGHT_JPEG            0x09
+#define VNC_TIGHT_PNG             0x0A
+#define VNC_TIGHT_MAX_SUBENCODING 0x0A
 
 /* Filters to improve compression efficiency */
-#define VNC_TIGHT_FILTER_COPY             0x00
-#define VNC_TIGHT_FILTER_PALETTE          0x01
-#define VNC_TIGHT_FILTER_GRADIENT         0x02
+#define VNC_TIGHT_FILTER_COPY     0x00
+#define VNC_TIGHT_FILTER_PALETTE  0x01
+#define VNC_TIGHT_FILTER_GRADIENT 0x02
 
 /* Note: The following constant should not be changed. */
 #define VNC_TIGHT_MIN_TO_COMPRESS 12
 
 /* The parameters below may be adjusted. */
-#define VNC_TIGHT_MIN_SPLIT_RECT_SIZE     4096
-#define VNC_TIGHT_MIN_SOLID_SUBRECT_SIZE  2048
-#define VNC_TIGHT_MAX_SPLIT_TILE_SIZE       16
+#define VNC_TIGHT_MIN_SPLIT_RECT_SIZE    4096
+#define VNC_TIGHT_MIN_SOLID_SUBRECT_SIZE 2048
+#define VNC_TIGHT_MAX_SPLIT_TILE_SIZE    16
 
-#define VNC_TIGHT_JPEG_MIN_RECT_SIZE      4096
-#define VNC_TIGHT_DETECT_SUBROW_WIDTH        7
-#define VNC_TIGHT_DETECT_MIN_WIDTH           8
-#define VNC_TIGHT_DETECT_MIN_HEIGHT          8
+#define VNC_TIGHT_JPEG_MIN_RECT_SIZE  4096
+#define VNC_TIGHT_DETECT_SUBROW_WIDTH 7
+#define VNC_TIGHT_DETECT_MIN_WIDTH    8
+#define VNC_TIGHT_DETECT_MIN_HEIGHT   8

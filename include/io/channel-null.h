@@ -26,7 +26,6 @@
 #define TYPE_QIO_CHANNEL_NULL "qio-channel-null"
 OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelNull, QIO_CHANNEL_NULL)
 
-
 /**
  * QIOChannelNull:
  *
@@ -34,11 +33,11 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelNull, QIO_CHANNEL_NULL)
  * that discards all writes and returns EOF for all reads.
  */
 
-struct QIOChannelNull {
+struct QIOChannelNull
+{
     QIOChannel parent;
-    bool closed;
+    bool       closed;
 };
-
 
 /**
  * qio_channel_null_new:
@@ -48,7 +47,6 @@ struct QIOChannelNull {
  *
  * Returns: the new channel object
  */
-QIOChannelNull *
-qio_channel_null_new(void);
+QIOChannelNull* qio_channel_null_new(void);
 
 /* QIO_CHANNEL_NULL_H */

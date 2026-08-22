@@ -6,4 +6,4 @@
 
 #pragma once
 
-#define TCG_TARGET_REG_BITS  64
+#define TCG_TARGET_REG_BITS 64

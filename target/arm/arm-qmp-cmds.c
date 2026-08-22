@@ -33,43 +33,37 @@
 #include "qom/qom-qobject.h"
 #include "cpu.h"
 
-static GICCapability *gic_cap_new(int version)
+static GICCapability* gic_cap_new(int version)
 {
-    GICCapability *cap = g_new0(GICCapability, 1);
-    cap->version = version;
+    GICCapability* cap = g_new0(GICCapability, 1);
+    cap->version       = version;
     /* by default, support none */
     cap->emulated = false;
-    cap->kernel = false;
+    cap->kernel   = false;
     return cap;
 }
 
-static inline void gic_cap_kvm_probe(GICCapability *v2, GICCapability *v3)
+static inline void gic_cap_kvm_probe(GICCapability* v2, GICCapability* v3)
 {
 #ifdef CONFIG_KVM
     int fdarray[3];
 
-    if (!kvm_arm_create_scratch_host_vcpu(fdarray, NULL)) {
-        return;
-    }
+    if (!kvm_arm_create_scratch_host_vcpu(fdarray, NULL)) { return; }
 
     /* Test KVM GICv2 */
-    if (kvm_device_supported(fdarray[1], KVM_DEV_TYPE_ARM_VGIC_V2)) {
-        v2->kernel = true;
-    }
+    if (kvm_device_supported(fdarray[1], KVM_DEV_TYPE_ARM_VGIC_V2)) { v2->kernel = true; }
 
     /* Test KVM GICv3 */
-    if (kvm_device_supported(fdarray[1], KVM_DEV_TYPE_ARM_VGIC_V3)) {
-        v3->kernel = true;
-    }
+    if (kvm_device_supported(fdarray[1], KVM_DEV_TYPE_ARM_VGIC_V3)) { v3->kernel = true; }
 
     kvm_arm_destroy_scratch_host_vcpu(fdarray);
 #endif
 }
 
-GICCapabilityList *qmp_query_gic_capabilities(Error **errp)
+GICCapabilityList* qmp_query_gic_capabilities(Error** errp)
 {
-    GICCapabilityList *head = NULL;
-    GICCapability *v2 = gic_cap_new(2), *v3 = gic_cap_new(3);
+    GICCapabilityList* head = NULL;
+    GICCapability *    v2 = gic_cap_new(2), *v3 = gic_cap_new(3);
 
     v2->emulated = true;
     v3->emulated = true;
@@ -90,27 +84,21 @@ QEMU_BUILD_BUG_ON(ARM_MAX_VQ > 16);
  * will attempt to set them. If there are dependencies between features,
  * then the order that considers those dependencies must be used.
  */
-static const char *cpu_model_advertised_features[] = {
-    "aarch64", "pmu", "sve",
-    "sve128", "sve256", "sve384", "sve512",
-    "sve640", "sve768", "sve896", "sve1024", "sve1152", "sve1280",
-    "sve1408", "sve1536", "sve1664", "sve1792", "sve1920", "sve2048",
-    "kvm-no-adjvtime", "kvm-steal-time",
-    "pauth", "pauth-impdef", "pauth-qarma3", "pauth-qarma5",
-    NULL
-};
+static const char* cpu_model_advertised_features[] = {
+    "aarch64", "pmu",          "sve",          "sve128",       "sve256",  "sve384",          "sve512",
+    "sve640",  "sve768",       "sve896",       "sve1024",      "sve1152", "sve1280",         "sve1408",
+    "sve1536", "sve1664",      "sve1792",      "sve1920",      "sve2048", "kvm-no-adjvtime", "kvm-steal-time",
+    "pauth",   "pauth-impdef", "pauth-qarma3", "pauth-qarma5", NULL};
 
-CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
-                                                     CpuModelInfo *model,
-                                                     Error **errp)
+CpuModelExpansionInfo* qmp_query_cpu_model_expansion(CpuModelExpansionType type, CpuModelInfo* model, Error** errp)
 {
-    CpuModelExpansionInfo *expansion_info;
-    const QDict *qdict_in;
-    QDict *qdict_out;
-    ObjectClass *oc;
-    Object *obj;
-    const char *name;
-    int i;
+    CpuModelExpansionInfo* expansion_info;
+    const QDict*           qdict_in;
+    QDict*                 qdict_out;
+    ObjectClass*           oc;
+    Object*                obj;
+    const char*            name;
+    int                    i;
 
     if (type != CPU_MODEL_EXPANSION_TYPE_FULL) {
         error_setg(errp, "The requested expansion type is not supported");
@@ -124,8 +112,7 @@ CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
 
     oc = cpu_class_by_name(TYPE_ARM_CPU, model->name);
     if (!oc) {
-        error_setg(errp, "The CPU type '%s' is not a recognized ARM CPU type",
-                   model->name);
+        error_setg(errp, "The CPU type '%s' is not a recognized ARM CPU type", model->name);
         return NULL;
     }
 
@@ -135,19 +122,21 @@ CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
         if (!strcmp(model->name, "host") || !strcmp(model->name, "max")) {
             /* These are kvmarm's recommended cpu types */
             supported = true;
-        } else if (current_machine->cpu_type) {
-            const char *cpu_type = current_machine->cpu_type;
-            int len = strlen(cpu_type) - strlen(ARM_CPU_TYPE_SUFFIX);
+        }
+        else if (current_machine->cpu_type) {
+            const char* cpu_type = current_machine->cpu_type;
+            int         len      = strlen(cpu_type) - strlen(ARM_CPU_TYPE_SUFFIX);
 
-            if (strlen(model->name) == len &&
-                !strncmp(model->name, cpu_type, len)) {
+            if (strlen(model->name) == len && !strncmp(model->name, cpu_type, len)) {
                 /* KVM is enabled and we're using this type, so it works. */
                 supported = true;
             }
         }
         if (!supported) {
-            error_setg(errp, "We cannot guarantee the CPU type '%s' works "
-                             "with KVM on this host", model->name);
+            error_setg(errp,
+                       "We cannot guarantee the CPU type '%s' works "
+                       "with KVM on this host",
+                       model->name);
             return NULL;
         }
     }
@@ -155,8 +144,8 @@ CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
     obj = object_new(object_class_get_name(oc));
 
     if (model->props) {
-        Visitor *visitor;
-        Error *err = NULL;
+        Visitor* visitor;
+        Error*   err = NULL;
 
         visitor = qobject_input_visitor_new(model->props);
         if (!visit_start_struct(visitor, "model.props", NULL, 0, errp)) {
@@ -166,21 +155,15 @@ CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
         }
 
         qdict_in = qobject_to(QDict, model->props);
-        i = 0;
+        i        = 0;
         while ((name = cpu_model_advertised_features[i++]) != NULL) {
             if (qdict_get(qdict_in, name)) {
-                if (!object_property_set(obj, name, visitor, &err)) {
-                    break;
-                }
+                if (!object_property_set(obj, name, visitor, &err)) { break; }
             }
         }
 
-        if (!err) {
-            visit_check_struct(visitor, &err);
-        }
-        if (!err) {
-            arm_cpu_finalize_features(ARM_CPU(obj), &err);
-        }
+        if (!err) { visit_check_struct(visitor, &err); }
+        if (!err) { arm_cpu_finalize_features(ARM_CPU(obj), &err); }
         visit_end_struct(visitor, NULL);
         visit_free(visitor);
         if (err) {
@@ -188,21 +171,22 @@ CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
             error_propagate(errp, err);
             return NULL;
         }
-    } else {
+    }
+    else {
         arm_cpu_finalize_features(ARM_CPU(obj), &error_abort);
     }
 
-    expansion_info = g_new0(CpuModelExpansionInfo, 1);
-    expansion_info->model = g_malloc0(sizeof(*expansion_info->model));
+    expansion_info              = g_new0(CpuModelExpansionInfo, 1);
+    expansion_info->model       = g_malloc0(sizeof(*expansion_info->model));
     expansion_info->model->name = g_strdup(model->name);
 
     qdict_out = qdict_new();
 
     i = 0;
     while ((name = cpu_model_advertised_features[i++]) != NULL) {
-        ObjectProperty *prop = object_property_find(obj, name);
+        ObjectProperty* prop = object_property_find(obj, name);
         if (prop) {
-            QObject *value;
+            QObject* value;
 
             assert(prop->get);
             value = object_property_get_qobject(obj, name, &error_abort);
@@ -211,9 +195,8 @@ CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
         }
     }
 
-    if (!qdict_size(qdict_out)) {
-        qobject_unref(qdict_out);
-    } else {
+    if (!qdict_size(qdict_out)) { qobject_unref(qdict_out); }
+    else {
         expansion_info->model->props = QOBJECT(qdict_out);
     }
 
@@ -224,23 +207,23 @@ CpuModelExpansionInfo *qmp_query_cpu_model_expansion(CpuModelExpansionType type,
 
 static void arm_cpu_add_definition(gpointer data, gpointer user_data)
 {
-    ObjectClass *oc = data;
-    CpuDefinitionInfoList **cpu_list = user_data;
-    CpuDefinitionInfo *info;
-    const char *typename;
+    ObjectClass*            oc       = data;
+    CpuDefinitionInfoList** cpu_list = user_data;
+    CpuDefinitionInfo*      info;
+    const char*             typename;
 
-    typename = object_class_get_name(oc);
-    info = g_malloc0(sizeof(*info));
-    info->name = cpu_model_from_type(typename);
+    typename         = object_class_get_name(oc);
+    info             = g_malloc0(sizeof(*info));
+    info->name       = cpu_model_from_type(typename);
     info->q_typename = g_strdup(typename);
 
     QAPI_LIST_PREPEND(*cpu_list, info);
 }
 
-CpuDefinitionInfoList *qmp_query_cpu_definitions(Error **errp)
+CpuDefinitionInfoList* qmp_query_cpu_definitions(Error** errp)
 {
-    CpuDefinitionInfoList *cpu_list = NULL;
-    GSList *list;
+    CpuDefinitionInfoList* cpu_list = NULL;
+    GSList*                list;
 
     list = object_class_get_list(target_cpu_type(), false);
     g_slist_foreach(list, arm_cpu_add_definition, &cpu_list);

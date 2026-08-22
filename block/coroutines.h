@@ -36,23 +36,14 @@
  * the I/O API.
  */
 
-int coroutine_fn GRAPH_RDLOCK
-bdrv_co_check(BlockDriverState *bs, BdrvCheckResult *res, BdrvCheckMode fix);
+int coroutine_fn GRAPH_RDLOCK bdrv_co_check(BlockDriverState* bs, BdrvCheckResult* res, BdrvCheckMode fix);
 
-int coroutine_fn GRAPH_RDLOCK
-bdrv_co_invalidate_cache(BlockDriverState *bs, Error **errp);
+int coroutine_fn GRAPH_RDLOCK bdrv_co_invalidate_cache(BlockDriverState* bs, Error** errp);
 
-int coroutine_fn GRAPH_RDLOCK
-bdrv_co_common_block_status_above(BlockDriverState *bs,
-                                  BlockDriverState *base,
-                                  bool include_base,
-                                  unsigned int mode,
-                                  int64_t offset,
-                                  int64_t bytes,
-                                  int64_t *pnum,
-                                  int64_t *map,
-                                  BlockDriverState **file,
-                                  int *depth);
+int coroutine_fn GRAPH_RDLOCK bdrv_co_common_block_status_above(BlockDriverState* bs, BlockDriverState* base,
+                                                                bool include_base, unsigned int mode, int64_t offset,
+                                                                int64_t bytes, int64_t* pnum, int64_t* map,
+                                                                BlockDriverState** file, int* depth);
 
 /*
  * "I/O or GS" API functions. These functions can run without
@@ -62,14 +53,7 @@ bdrv_co_common_block_status_above(BlockDriverState *bs,
  * the "I/O or GS" API.
  */
 
-int co_wrapper_mixed_bdrv_rdlock
-bdrv_common_block_status_above(BlockDriverState *bs,
-                               BlockDriverState *base,
-                               bool include_base,
-                               unsigned int mode,
-                               int64_t offset,
-                               int64_t bytes,
-                               int64_t *pnum,
-                               int64_t *map,
-                               BlockDriverState **file,
-                               int *depth);
+int co_wrapper_mixed_bdrv_rdlock bdrv_common_block_status_above(BlockDriverState* bs, BlockDriverState* base,
+                                                                bool include_base, unsigned int mode, int64_t offset,
+                                                                int64_t bytes, int64_t* pnum, int64_t* map,
+                                                                BlockDriverState** file, int* depth);

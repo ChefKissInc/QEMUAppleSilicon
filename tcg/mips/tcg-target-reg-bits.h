@@ -7,9 +7,9 @@
 #pragma once
 
 #if _MIPS_SIM == _ABIO32
-# define TCG_TARGET_REG_BITS 32
+    #define TCG_TARGET_REG_BITS 32
 #elif _MIPS_SIM == _ABIN32 || _MIPS_SIM == _ABI64
-# define TCG_TARGET_REG_BITS 64
+    #define TCG_TARGET_REG_BITS 64
 #else
-# error "Unknown ABI"
+    #error "Unknown ABI"
 #endif

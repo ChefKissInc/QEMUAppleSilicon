@@ -17,13 +17,15 @@
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef EXEC_TLB_COMMON_H
-#define EXEC_TLB_COMMON_H 1
+    #define EXEC_TLB_COMMON_H 1
 
-#define CPU_TLB_ENTRY_BITS (HOST_LONG_BITS == 32 ? 4 : 5)
+    #define CPU_TLB_ENTRY_BITS (HOST_LONG_BITS == 32 ? 4 : 5)
 
 /* Minimalized TLB entry for use by TCG fast path. */
-typedef union CPUTLBEntry {
-    struct {
+typedef union CPUTLBEntry
+{
+    struct
+    {
         uintptr_t addr_read;
         uintptr_t addr_write;
         uintptr_t addr_code;
@@ -46,11 +48,12 @@ QEMU_BUILD_BUG_ON(sizeof(CPUTLBEntry) != (1 << CPU_TLB_ENTRY_BITS));
  * Data elements that are per MMU mode, accessed by the fast path.
  * The structure is aligned to aid loading the pair with one insn.
  */
-typedef struct CPUTLBDescFast {
+typedef struct CPUTLBDescFast
+{
     /* Contains (n_entries - 1) << CPU_TLB_ENTRY_BITS */
     uintptr_t mask;
     /* The array of tlb entries itself. */
-    CPUTLBEntry *table;
-} CPUTLBDescFast QEMU_ALIGNED(2 * sizeof(void *));
+    CPUTLBEntry* table;
+} CPUTLBDescFast QEMU_ALIGNED(2 * sizeof(void*));
 
 #endif /* EXEC_TLB_COMMON_H */

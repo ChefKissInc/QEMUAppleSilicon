@@ -26,25 +26,17 @@
 #include "trace.h"
 #include "crypto/secret_keyring.h"
 
+static inline long keyctl_read(int32_t key, uint8_t* buffer, size_t buflen)
+{ return syscall(__NR_keyctl, KEYCTL_READ, key, buffer, buflen, 0); }
 
-static inline
-long keyctl_read(int32_t key, uint8_t *buffer, size_t buflen)
+static void qcrypto_secret_keyring_load_data(QCryptoSecretCommon* sec_common, uint8_t** output, size_t* outputlen,
+                                             Error** errp)
 {
-    return syscall(__NR_keyctl, KEYCTL_READ, key, buffer, buflen, 0);
-}
+    QCryptoSecretKeyring* secret = QCRYPTO_SECRET_KEYRING(sec_common);
+    uint8_t*              buffer = NULL;
+    long                  retcode;
 
-
-static void
-qcrypto_secret_keyring_load_data(QCryptoSecretCommon *sec_common,
-                                 uint8_t **output,
-                                 size_t *outputlen,
-                                 Error **errp)
-{
-    QCryptoSecretKeyring *secret = QCRYPTO_SECRET_KEYRING(sec_common);
-    uint8_t *buffer = NULL;
-    long retcode;
-
-    *output = NULL;
+    *output    = NULL;
     *outputlen = 0;
 
     if (!secret->serial) {
@@ -53,9 +45,7 @@ qcrypto_secret_keyring_load_data(QCryptoSecretCommon *sec_common,
     }
 
     retcode = keyctl_read(secret->serial, NULL, 0);
-    if (retcode <= 0) {
-        goto keyctl_error;
-    }
+    if (retcode <= 0) { goto keyctl_error; }
 
     buffer = g_new0(uint8_t, retcode);
 
@@ -66,68 +56,45 @@ qcrypto_secret_keyring_load_data(QCryptoSecretCommon *sec_common,
     }
 
     *outputlen = retcode;
-    *output = buffer;
+    *output    = buffer;
     return;
 
 keyctl_error:
-    error_setg_errno(errp, errno,
-                     "Unable to read serial key %08x",
-                     secret->serial);
+    error_setg_errno(errp, errno, "Unable to read serial key %08x", secret->serial);
 }
 
-
-static void
-qcrypto_secret_prop_set_key(Object *obj, Visitor *v,
-                            const char *name, void *opaque,
-                            Error **errp)
+static void qcrypto_secret_prop_set_key(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
 {
-    QCryptoSecretKeyring *secret = QCRYPTO_SECRET_KEYRING(obj);
-    int32_t value;
+    QCryptoSecretKeyring* secret = QCRYPTO_SECRET_KEYRING(obj);
+    int32_t               value;
     visit_type_int32(v, name, &value, errp);
-    if (!value) {
-        error_setg(errp, "'serial' should not be equal to 0");
-    }
+    if (!value) { error_setg(errp, "'serial' should not be equal to 0"); }
     secret->serial = value;
 }
 
-
-static void
-qcrypto_secret_prop_get_key(Object *obj, Visitor *v,
-                            const char *name, void *opaque,
-                            Error **errp)
+static void qcrypto_secret_prop_get_key(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
 {
-    QCryptoSecretKeyring *secret = QCRYPTO_SECRET_KEYRING(obj);
-    int32_t value = secret->serial;
+    QCryptoSecretKeyring* secret = QCRYPTO_SECRET_KEYRING(obj);
+    int32_t               value  = secret->serial;
     visit_type_int32(v, name, &value, errp);
 }
 
-
-static void
-qcrypto_secret_keyring_class_init(ObjectClass *oc, const void *data)
+static void qcrypto_secret_keyring_class_init(ObjectClass* oc, const void* data)
 {
-    QCryptoSecretCommonClass *sic = QCRYPTO_SECRET_COMMON_CLASS(oc);
-    sic->load_data = qcrypto_secret_keyring_load_data;
+    QCryptoSecretCommonClass* sic = QCRYPTO_SECRET_COMMON_CLASS(oc);
+    sic->load_data                = qcrypto_secret_keyring_load_data;
 
-    object_class_property_add(oc, "serial", "int32_t",
-                                  qcrypto_secret_prop_get_key,
-                                  qcrypto_secret_prop_set_key,
-                                  NULL, NULL);
+    object_class_property_add(oc, "serial", "int32_t", qcrypto_secret_prop_get_key, qcrypto_secret_prop_set_key, NULL,
+                              NULL);
 }
-
 
 static const TypeInfo qcrypto_secret_info = {
-    .parent = TYPE_QCRYPTO_SECRET_COMMON,
-    .name = TYPE_QCRYPTO_SECRET_KEYRING,
+    .parent        = TYPE_QCRYPTO_SECRET_COMMON,
+    .name          = TYPE_QCRYPTO_SECRET_KEYRING,
     .instance_size = sizeof(QCryptoSecretKeyring),
-    .class_init = qcrypto_secret_keyring_class_init,
+    .class_init    = qcrypto_secret_keyring_class_init,
 };
 
-
-static void
-qcrypto_secret_register_types(void)
-{
-    type_register_static(&qcrypto_secret_info);
-}
-
+static void qcrypto_secret_register_types(void) { type_register_static(&qcrypto_secret_info); }
 
 type_init(qcrypto_secret_register_types);

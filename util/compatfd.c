@@ -17,17 +17,18 @@
 #include "qemu/thread.h"
 
 #if defined(CONFIG_SIGNALFD)
-#include <sys/signalfd.h>
+    #include <sys/signalfd.h>
 #endif
 
-struct sigfd_compat_info {
+struct sigfd_compat_info
+{
     sigset_t mask;
-    int fd;
+    int      fd;
 };
 
-static void *sigwait_compat(void *opaque)
+static void* sigwait_compat(void* opaque)
 {
-    struct sigfd_compat_info *info = opaque;
+    struct sigfd_compat_info* info = opaque;
 
     while (1) {
         int sig;
@@ -35,28 +36,26 @@ static void *sigwait_compat(void *opaque)
 
         err = sigwait(&info->mask, &sig);
         if (err != 0) {
-            if (errno == EINTR) {
-                continue;
-            } else {
+            if (errno == EINTR) { continue; }
+            else {
                 return NULL;
             }
-        } else {
+        }
+        else {
             struct qemu_signalfd_siginfo buffer;
             memset(&buffer, 0, sizeof(buffer));
             buffer.ssi_signo = sig;
 
-            if (qemu_write_full(info->fd, &buffer, sizeof(buffer)) != sizeof(buffer)) {
-                return NULL;
-            }
+            if (qemu_write_full(info->fd, &buffer, sizeof(buffer)) != sizeof(buffer)) { return NULL; }
         }
     }
 }
 
-static int qemu_signalfd_compat(const sigset_t *mask)
+static int qemu_signalfd_compat(const sigset_t* mask)
 {
-    struct sigfd_compat_info *info;
-    QemuThread thread;
-    int fds[2];
+    struct sigfd_compat_info* info;
+    QemuThread                thread;
+    int                       fds[2];
 
     info = g_malloc(sizeof(*info));
 
@@ -68,21 +67,18 @@ static int qemu_signalfd_compat(const sigset_t *mask)
     memcpy(&info->mask, mask, sizeof(*mask));
     info->fd = fds[1];
 
-    qemu_thread_create(&thread, "signalfd_compat", sigwait_compat, info,
-                       QEMU_THREAD_DETACHED);
+    qemu_thread_create(&thread, "signalfd_compat", sigwait_compat, info, QEMU_THREAD_DETACHED);
 
     return fds[0];
 }
 
-int qemu_signalfd(const sigset_t *mask)
+int qemu_signalfd(const sigset_t* mask)
 {
 #if defined(CONFIG_SIGNALFD)
     int ret;
 
     ret = signalfd(-1, mask, SFD_CLOEXEC);
-    if (ret != -1) {
-        return ret;
-    }
+    if (ret != -1) { return ret; }
 #endif
 
     return qemu_signalfd_compat(mask);

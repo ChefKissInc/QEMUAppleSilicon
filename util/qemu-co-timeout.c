@@ -27,50 +27,45 @@
 #include "qemu/coroutine.h"
 #include "block/aio.h"
 
-typedef struct QemuCoTimeoutState {
-    CoroutineEntry *entry;
-    void *opaque;
-    QemuCoSleep sleep_state;
-    bool marker;
-    CleanupFunc *clean;
+typedef struct QemuCoTimeoutState
+{
+    CoroutineEntry* entry;
+    void*           opaque;
+    QemuCoSleep     sleep_state;
+    bool            marker;
+    CleanupFunc*    clean;
 } QemuCoTimeoutState;
 
-static void coroutine_fn qemu_co_timeout_entry(void *opaque)
+static void coroutine_fn qemu_co_timeout_entry(void* opaque)
 {
-    QemuCoTimeoutState *s = opaque;
+    QemuCoTimeoutState* s = opaque;
 
     s->entry(s->opaque);
 
     if (s->marker) {
         assert(!s->sleep_state.to_wake);
         /* .marker set by qemu_co_timeout, it have been failed */
-        if (s->clean) {
-            s->clean(s->opaque);
-        }
+        if (s->clean) { s->clean(s->opaque); }
         g_free(s);
-    } else {
+    }
+    else {
         s->marker = true;
         qemu_co_sleep_wake(&s->sleep_state);
     }
 }
 
-int coroutine_fn qemu_co_timeout(CoroutineEntry *entry, void *opaque,
-                                 uint64_t timeout_ns, CleanupFunc clean)
+int coroutine_fn qemu_co_timeout(CoroutineEntry* entry, void* opaque, uint64_t timeout_ns, CleanupFunc clean)
 {
-    QemuCoTimeoutState *s;
-    Coroutine *co;
+    QemuCoTimeoutState* s;
+    Coroutine*          co;
 
     if (timeout_ns == 0) {
         entry(opaque);
         return 0;
     }
 
-    s = g_new(QemuCoTimeoutState, 1);
-    *s = (QemuCoTimeoutState) {
-        .entry = entry,
-        .opaque = opaque,
-        .clean = clean
-    };
+    s  = g_new(QemuCoTimeoutState, 1);
+    *s = (QemuCoTimeoutState){.entry = entry, .opaque = opaque, .clean = clean};
 
     co = qemu_coroutine_create(qemu_co_timeout_entry, s);
 

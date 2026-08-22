@@ -24,37 +24,35 @@
 #include "hw/display/i2c-ddc.h"
 
 #ifndef DEBUG_I2CDDC
-#define DEBUG_I2CDDC 0
+    #define DEBUG_I2CDDC 0
 #endif
 
-#define DPRINTF(fmt, ...) do {                                                 \
-    if (DEBUG_I2CDDC) {                                                        \
-        qemu_log("i2c-ddc: " fmt , ## __VA_ARGS__);                            \
-    }                                                                          \
-} while (0)
+#define DPRINTF(fmt, ...)                                               \
+    do {                                                                \
+        if (DEBUG_I2CDDC) { qemu_log("i2c-ddc: " fmt, ##__VA_ARGS__); } \
+    }                                                                   \
+    while (0)
 
-static void i2c_ddc_reset(DeviceState *ds)
+static void i2c_ddc_reset(DeviceState* ds)
 {
-    I2CDDCState *s = I2CDDC(ds);
+    I2CDDCState* s = I2CDDC(ds);
 
     s->firstbyte = false;
-    s->reg = 0;
+    s->reg       = 0;
 }
 
-static int i2c_ddc_event(I2CSlave *i2c, enum i2c_event event)
+static int i2c_ddc_event(I2CSlave* i2c, enum i2c_event event)
 {
-    I2CDDCState *s = I2CDDC(i2c);
+    I2CDDCState* s = I2CDDC(i2c);
 
-    if (event == I2C_START_SEND) {
-        s->firstbyte = true;
-    }
+    if (event == I2C_START_SEND) { s->firstbyte = true; }
 
     return 0;
 }
 
-static uint8_t i2c_ddc_rx(I2CSlave *i2c)
+static uint8_t i2c_ddc_rx(I2CSlave* i2c)
 {
-    I2CDDCState *s = I2CDDC(i2c);
+    I2CDDCState* s = I2CDDC(i2c);
 
     int value;
     value = s->edid_blob[s->reg % sizeof(s->edid_blob)];
@@ -62,11 +60,11 @@ static uint8_t i2c_ddc_rx(I2CSlave *i2c)
     return value;
 }
 
-static int i2c_ddc_tx(I2CSlave *i2c, uint8_t data)
+static int i2c_ddc_tx(I2CSlave* i2c, uint8_t data)
 {
-    I2CDDCState *s = I2CDDC(i2c);
+    I2CDDCState* s = I2CDDC(i2c);
     if (s->firstbyte) {
-        s->reg = data;
+        s->reg       = data;
         s->firstbyte = false;
         DPRINTF("[EDID] Written new pointer: %u\n", data);
         return 0;
@@ -77,9 +75,9 @@ static int i2c_ddc_tx(I2CSlave *i2c, uint8_t data)
     return 0;
 }
 
-static void i2c_ddc_init(Object *obj)
+static void i2c_ddc_init(Object* obj)
 {
-    I2CDDCState *s = I2CDDC(obj);
+    I2CDDCState* s = I2CDDC(obj);
 
     qemu_edid_generate(s->edid_blob, sizeof(s->edid_blob), &s->edid_info);
 }
@@ -88,29 +86,24 @@ static const Property i2c_ddc_properties[] = {
     DEFINE_EDID_PROPERTIES(I2CDDCState, edid_info),
 };
 
-static void i2c_ddc_class_init(ObjectClass *oc, const void *data)
+static void i2c_ddc_class_init(ObjectClass* oc, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(oc);
-    I2CSlaveClass *isc = I2C_SLAVE_CLASS(oc);
+    DeviceClass*   dc  = DEVICE_CLASS(oc);
+    I2CSlaveClass* isc = I2C_SLAVE_CLASS(oc);
 
     device_class_set_legacy_reset(dc, i2c_ddc_reset);
     device_class_set_props(dc, i2c_ddc_properties);
     isc->event = i2c_ddc_event;
-    isc->recv = i2c_ddc_rx;
-    isc->send = i2c_ddc_tx;
+    isc->recv  = i2c_ddc_rx;
+    isc->send  = i2c_ddc_tx;
 }
 
-static const TypeInfo i2c_ddc_info = {
-    .name = TYPE_I2CDDC,
-    .parent = TYPE_I2C_SLAVE,
-    .instance_size = sizeof(I2CDDCState),
-    .instance_init = i2c_ddc_init,
-    .class_init = i2c_ddc_class_init
-};
+static const TypeInfo i2c_ddc_info = {.name          = TYPE_I2CDDC,
+                                      .parent        = TYPE_I2C_SLAVE,
+                                      .instance_size = sizeof(I2CDDCState),
+                                      .instance_init = i2c_ddc_init,
+                                      .class_init    = i2c_ddc_class_init};
 
-static void ddc_register_devices(void)
-{
-    type_register_static(&i2c_ddc_info);
-}
+static void ddc_register_devices(void) { type_register_static(&i2c_ddc_info); }
 
 type_init(ddc_register_devices);

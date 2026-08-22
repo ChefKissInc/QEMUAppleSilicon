@@ -15,81 +15,59 @@
 #include "qemu/osdep.h"
 #include "qapi/qmp-registry.h"
 
-void qmp_register_command(QmpCommandList *cmds, const char *name,
-                          QmpCommandFunc *fn, QmpCommandOptions options,
+void qmp_register_command(QmpCommandList* cmds, const char* name, QmpCommandFunc* fn, QmpCommandOptions options,
                           uint64_t features)
 {
-    QmpCommand *cmd = g_malloc0(sizeof(*cmd));
+    QmpCommand* cmd = g_malloc0(sizeof(*cmd));
 
     /* QCO_COROUTINE and QCO_ALLOW_OOB are incompatible for now */
     assert(!((options & QCO_COROUTINE) && (options & QCO_ALLOW_OOB)));
 
-    cmd->name = name;
-    cmd->fn = fn;
-    cmd->enabled = true;
-    cmd->options = options;
+    cmd->name     = name;
+    cmd->fn       = fn;
+    cmd->enabled  = true;
+    cmd->options  = options;
     cmd->features = features;
     QTAILQ_INSERT_TAIL(cmds, cmd, node);
 }
 
-const QmpCommand *qmp_find_command(const QmpCommandList *cmds, const char *name)
+const QmpCommand* qmp_find_command(const QmpCommandList* cmds, const char* name)
 {
-    QmpCommand *cmd;
+    QmpCommand* cmd;
 
-    QTAILQ_FOREACH(cmd, cmds, node) {
-        if (strcmp(cmd->name, name) == 0) {
-            return cmd;
-        }
+    QTAILQ_FOREACH (cmd, cmds, node) {
+        if (strcmp(cmd->name, name) == 0) { return cmd; }
     }
     return NULL;
 }
 
-static void qmp_toggle_command(QmpCommandList *cmds, const char *name,
-                               bool enabled, const char *disable_reason)
+static void qmp_toggle_command(QmpCommandList* cmds, const char* name, bool enabled, const char* disable_reason)
 {
-    QmpCommand *cmd;
+    QmpCommand* cmd;
 
-    QTAILQ_FOREACH(cmd, cmds, node) {
+    QTAILQ_FOREACH (cmd, cmds, node) {
         if (strcmp(cmd->name, name) == 0) {
-            cmd->enabled = enabled;
+            cmd->enabled        = enabled;
             cmd->disable_reason = disable_reason;
             return;
         }
     }
 }
 
-void qmp_disable_command(QmpCommandList *cmds, const char *name,
-                         const char *disable_reason)
-{
-    qmp_toggle_command(cmds, name, false, disable_reason);
-}
+void qmp_disable_command(QmpCommandList* cmds, const char* name, const char* disable_reason)
+{ qmp_toggle_command(cmds, name, false, disable_reason); }
 
-void qmp_enable_command(QmpCommandList *cmds, const char *name)
-{
-    qmp_toggle_command(cmds, name, true, NULL);
-}
+void qmp_enable_command(QmpCommandList* cmds, const char* name) { qmp_toggle_command(cmds, name, true, NULL); }
 
-bool qmp_command_is_enabled(const QmpCommand *cmd)
-{
-    return cmd->enabled;
-}
+bool qmp_command_is_enabled(const QmpCommand* cmd) { return cmd->enabled; }
 
-const char *qmp_command_name(const QmpCommand *cmd)
-{
-    return cmd->name;
-}
+const char* qmp_command_name(const QmpCommand* cmd) { return cmd->name; }
 
-bool qmp_has_success_response(const QmpCommand *cmd)
-{
-    return !(cmd->options & QCO_NO_SUCCESS_RESP);
-}
+bool qmp_has_success_response(const QmpCommand* cmd) { return !(cmd->options & QCO_NO_SUCCESS_RESP); }
 
-void qmp_for_each_command(const QmpCommandList *cmds, qmp_cmd_callback_fn fn,
-                          void *opaque)
+void qmp_for_each_command(const QmpCommandList* cmds, qmp_cmd_callback_fn fn, void* opaque)
 {
-    const QmpCommand *cmd;
+    const QmpCommand* cmd;
 
-    QTAILQ_FOREACH(cmd, cmds, node) {
-        fn(cmd, opaque);
-    }
+    QTAILQ_FOREACH (cmd, cmds, node) { fn(cmd, opaque); }
 }

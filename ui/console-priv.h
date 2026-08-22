@@ -11,26 +11,27 @@
 #include "vgafont.h"
 
 #define FONT_HEIGHT 16
-#define FONT_WIDTH 8
+#define FONT_WIDTH  8
 
-struct QemuConsole {
+struct QemuConsole
+{
     Object parent;
 
-    int index;
-    DisplayState *ds;
-    DisplaySurface *surface;
-    int dcls;
-    int window_id;
-    QemuUIInfo ui_info;
-    QEMUTimer *ui_timer;
-    const GraphicHwOps *hw_ops;
-    void *hw;
-    CoQueue dump_queue;
+    int                 index;
+    DisplayState*       ds;
+    DisplaySurface*     surface;
+    int                 dcls;
+    int                 window_id;
+    QemuUIInfo          ui_info;
+    QEMUTimer*          ui_timer;
+    const GraphicHwOps* hw_ops;
+    void*               hw;
+    CoQueue             dump_queue;
 
     QTAILQ_ENTRY(QemuConsole) next;
 };
 
-void qemu_text_console_update_size(QemuTextConsole *c);
-const char * qemu_text_console_get_label(QemuTextConsole *c);
-void qemu_text_console_update_cursor(void);
-void qemu_text_console_handle_keysym(QemuTextConsole *s, int keysym);
+void        qemu_text_console_update_size(QemuTextConsole* c);
+const char* qemu_text_console_get_label(QemuTextConsole* c);
+void        qemu_text_console_update_cursor(void);
+void        qemu_text_console_handle_keysym(QemuTextConsole* s, int keysym);

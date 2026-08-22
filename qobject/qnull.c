@@ -15,22 +15,17 @@
 #include "qobject-internal.h"
 
 QNull qnull_ = {
-    .base = {
-        .type = QTYPE_QNULL,
-        .refcnt = 1,
-    },
+    .base =
+        {
+            .type   = QTYPE_QNULL,
+            .refcnt = 1,
+        },
 };
 
 /**
  * qnull_is_equal(): Always return true because any two QNull objects
  * are equal.
  */
-bool qnull_is_equal(const QObject *x, const QObject *y)
-{
-    return true;
-}
+bool qnull_is_equal(const QObject* x, const QObject* y) { return true; }
 
-void qnull_unref(QNull *q)
-{
-    qobject_unref(q);
-}
+void qnull_unref(QNull* q) { qobject_unref(q); }

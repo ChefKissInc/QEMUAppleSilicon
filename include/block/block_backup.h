@@ -19,4 +19,4 @@
 
 #include "block/blockjob.h"
 
-void backup_do_checkpoint(BlockJob *job, Error **errp);
+void backup_do_checkpoint(BlockJob* job, Error** errp);

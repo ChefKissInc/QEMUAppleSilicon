@@ -26,20 +26,18 @@
 #include "qemu/module.h"
 #include "qom/object.h"
 
-static void apple_typec_realize(DeviceState *dev, Error **errp)
+static void apple_typec_realize(DeviceState* dev, Error** errp)
 {
-    AppleTypeCState *s = APPLE_TYPEC(dev);
-    Object *obj;
-    BusState *bus = NULL;
+    AppleTypeCState* s = APPLE_TYPEC(dev);
+    Object*          obj;
+    BusState*        bus = NULL;
 
-    memory_region_init(&s->dma_container_mr, OBJECT(dev),
-                       TYPE_APPLE_TYPEC ".dma-container-mr", UINT32_MAX);
-    obj = object_property_get_link(OBJECT(dev), "dma-drd", errp);
+    memory_region_init(&s->dma_container_mr, OBJECT(dev), TYPE_APPLE_TYPEC ".dma-container-mr", UINT32_MAX);
+    obj       = object_property_get_link(OBJECT(dev), "dma-drd", errp);
     s->dma_mr = MEMORY_REGION(obj);
     memory_region_add_subregion(&s->dma_container_mr, 0, s->dma_mr);
 
-    object_property_add_const_link(OBJECT(&s->dwc3), "dma-mr",
-                                          OBJECT(&s->dma_container_mr));
+    object_property_add_const_link(OBJECT(&s->dwc3), "dma-mr", OBJECT(&s->dma_container_mr));
 
     obj = object_property_get_link(OBJECT(dev), "dma-xhci", errp);
     assert_nonnull(obj);
@@ -61,27 +59,23 @@ static void apple_typec_realize(DeviceState *dev, Error **errp)
     qdev_realize(DEVICE(&s->dwc3.device), bus, errp);
 }
 
-static void apple_typec_reset(DeviceState *dev)
-{
-    AppleTypeCState *s = APPLE_TYPEC(dev);
-}
+static void apple_typec_reset(DeviceState* dev) { AppleTypeCState* s = APPLE_TYPEC(dev); }
 
-static void phy_reg_write(void *opaque, hwaddr addr, uint64_t data,
-                          unsigned size)
+static void phy_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     // qemu_log_mask(LOG_UNIMP, "ATC: phy reg WRITE @ 0x" HWADDR_FMT_plx "
     // value: 0x" HWADDR_FMT_plx "\n", addr, data);
 
-    AppleTypeCState *s = opaque;
+    AppleTypeCState* s = opaque;
     memcpy(s->phy_reg + addr, &data, size);
 }
 
-static uint64_t phy_reg_read(void *opaque, hwaddr addr, unsigned size)
+static uint64_t phy_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
     // qemu_log_mask(LOG_UNIMP, "ATC: phy reg READ @ 0x" HWADDR_FMT_plx "\n",
     // addr);
-    AppleTypeCState *s = opaque;
-    uint64_t val = 0;
+    AppleTypeCState* s   = opaque;
+    uint64_t         val = 0;
 
     memcpy(&val, s->phy_reg + addr, size);
     return val;
@@ -89,25 +83,24 @@ static uint64_t phy_reg_read(void *opaque, hwaddr addr, unsigned size)
 
 static const MemoryRegionOps phy_reg_ops = {
     .write = phy_reg_write,
-    .read = phy_reg_read,
+    .read  = phy_reg_read,
 };
 
-static void config_reg_write(void *opaque, hwaddr addr, uint64_t data,
-                             unsigned size)
+static void config_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     // qemu_log_mask(LOG_UNIMP, "ATC: config reg WRITE @ 0x" HWADDR_FMT_plx "
     // value: 0x" HWADDR_FMT_plx "\n", addr, data); arm_cpu_backtrace();
 
-    AppleTypeCState *s = opaque;
+    AppleTypeCState* s = opaque;
     memcpy(s->config_reg + addr, &data, size);
 }
 
-static uint64_t config_reg_read(void *opaque, hwaddr addr, unsigned size)
+static uint64_t config_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
     // qemu_log_mask(LOG_UNIMP, "ATC: config reg READ @ 0x" HWADDR_FMT_plx "\n",
     // addr); arm_cpu_backtrace();
-    AppleTypeCState *s = opaque;
-    uint64_t val = 0;
+    AppleTypeCState* s   = opaque;
+    uint64_t         val = 0;
 
     memcpy(&val, s->config_reg + addr, size);
     return val;
@@ -115,71 +108,59 @@ static uint64_t config_reg_read(void *opaque, hwaddr addr, unsigned size)
 
 static const MemoryRegionOps config_reg_ops = {
     .write = config_reg_write,
-    .read = config_reg_read,
+    .read  = config_reg_read,
 };
 
-static void apple_typec_init(Object *obj)
+static void apple_typec_init(Object* obj)
 {
-    DeviceState *dev;
-    SysBusDevice *sbd;
-    AppleTypeCState *s;
+    DeviceState*     dev;
+    SysBusDevice*    sbd;
+    AppleTypeCState* s;
 
     dev = DEVICE(obj);
     sbd = SYS_BUS_DEVICE(dev);
-    s = APPLE_TYPEC(dev);
+    s   = APPLE_TYPEC(dev);
 
-    memory_region_init(&s->container, OBJECT(dev),
-                       TYPE_APPLE_TYPEC ".container", ATC_USB_MMIO_SIZE);
-    memory_region_init_io(&s->phy, OBJECT(dev), &phy_reg_ops, s,
-                          TYPE_APPLE_TYPEC ".phy", sizeof(s->phy_reg));
+    memory_region_init(&s->container, OBJECT(dev), TYPE_APPLE_TYPEC ".container", ATC_USB_MMIO_SIZE);
+    memory_region_init_io(&s->phy, OBJECT(dev), &phy_reg_ops, s, TYPE_APPLE_TYPEC ".phy", sizeof(s->phy_reg));
     memory_region_add_subregion(&s->container, 0x0000, &s->phy);
 
-    memory_region_init_io(&s->config, OBJECT(dev), &config_reg_ops, s,
-                          TYPE_APPLE_TYPEC ".config", sizeof(s->config_reg));
+    memory_region_init_io(&s->config, OBJECT(dev), &config_reg_ops, s, TYPE_APPLE_TYPEC ".config",
+                          sizeof(s->config_reg));
     memory_region_add_subregion(&s->container, 0x20000, &s->config);
-    *(uint32_t *)(s->config_reg + 0x20) |= 0x40000000; // pipe ready
-    *(uint32_t *)(s->phy_reg + 0x64) |= (1 << 16); // OTG cable connected
+    *(uint32_t*)(s->config_reg + 0x20) |= 0x40000000;    // pipe ready
+    *(uint32_t*)(s->phy_reg + 0x64)    |= (1 << 16);     // OTG cable connected
 
     object_initialize_child(OBJECT(dev), "dwc2", &s->dwc2, TYPE_DWC2_USB);
     object_initialize_child(OBJECT(dev), "dwc3", &s->dwc3, TYPE_DWC3_USB);
     object_property_set_uint(OBJECT(&s->dwc3), "intrs", 4, &error_fatal);
     object_property_set_uint(OBJECT(&s->dwc3), "slots", 1, &error_fatal);
-    memory_region_add_subregion(
-        &s->container, 0x10000,
-        sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->dwc3), 0));
-    memory_region_add_subregion(
-        &s->container, 0x100000,
-        sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->dwc2), 0));
+    memory_region_add_subregion(&s->container, 0x10000, sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->dwc3), 0));
+    memory_region_add_subregion(&s->container, 0x100000, sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->dwc2), 0));
     sysbus_init_mmio(sbd, &s->container);
 
     s->host = SYS_BUS_DEVICE(qdev_new(TYPE_USB_TCP_HOST));
-    object_property_add_alias(OBJECT(s), "conn-type", OBJECT(s->host),
-                              "conn-type");
-    object_property_add_alias(OBJECT(s), "conn-addr", OBJECT(s->host),
-                              "conn-addr");
-    object_property_add_alias(OBJECT(s), "conn-port", OBJECT(s->host),
-                              "conn-port");
+    object_property_add_alias(OBJECT(s), "conn-type", OBJECT(s->host), "conn-type");
+    object_property_add_alias(OBJECT(s), "conn-addr", OBJECT(s->host), "conn-addr");
+    object_property_add_alias(OBJECT(s), "conn-port", OBJECT(s->host), "conn-port");
 }
 
-static void apple_typec_class_init(ObjectClass *klass, const void *data)
+static void apple_typec_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
-    dc->realize = apple_typec_realize;
+    DeviceClass* dc = DEVICE_CLASS(klass);
+    dc->realize     = apple_typec_realize;
     device_class_set_legacy_reset(dc, apple_typec_reset);
     dc->desc = "Apple Type C USB PHY";
 }
 
 static const TypeInfo apple_typec_info = {
-    .name = TYPE_APPLE_TYPEC,
-    .parent = TYPE_SYS_BUS_DEVICE,
+    .name          = TYPE_APPLE_TYPEC,
+    .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(AppleTypeCState),
     .instance_init = apple_typec_init,
-    .class_init = apple_typec_class_init,
+    .class_init    = apple_typec_class_init,
 };
 
-static void apple_typec_register_types(void)
-{
-    type_register_static(&apple_typec_info);
-}
+static void apple_typec_register_types(void) { type_register_static(&apple_typec_info); }
 
 type_init(apple_typec_register_types);

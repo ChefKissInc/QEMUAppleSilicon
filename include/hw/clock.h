@@ -27,12 +27,13 @@ OBJECT_DECLARE_SIMPLE_TYPE(Clock, CLOCK)
  * is used to specify which events are interesting when the callback
  * is registered, so these values must all be different bit values.
  */
-typedef enum ClockEvent {
-    ClockUpdate = 1, /* Clock period has just updated */
+typedef enum ClockEvent
+{
+    ClockUpdate    = 1, /* Clock period has just updated */
     ClockPreUpdate = 2, /* Clock period is about to update */
 } ClockEvent;
 
-typedef void ClockCallback(void *opaque, ClockEvent event);
+typedef void ClockCallback(void* opaque, ClockEvent event);
 
 /*
  * clock store a value representing the clock's period in 2^-32ns unit.
@@ -51,7 +52,7 @@ typedef void ClockCallback(void *opaque, ClockEvent event);
  */
 #define CLOCK_PERIOD_FROM_NS(ns) ((ns) * (CLOCK_PERIOD_1SEC / 1000000000llu))
 #define CLOCK_PERIOD_FROM_HZ(hz) (((hz) != 0) ? CLOCK_PERIOD_1SEC / (hz) : 0u)
-#define CLOCK_PERIOD_TO_HZ(per) (((per) != 0) ? CLOCK_PERIOD_1SEC / (per) : 0u)
+#define CLOCK_PERIOD_TO_HZ(per)  (((per) != 0) ? CLOCK_PERIOD_1SEC / (per) : 0u)
 
 /**
  * Clock:
@@ -66,26 +67,26 @@ typedef void ClockCallback(void *opaque, ClockEvent event);
  * @sibling: structure used to form a clock list
  */
 
-
-struct Clock {
+struct Clock
+{
     /*< private >*/
     Object parent_obj;
 
     /* all fields are private and should not be modified directly */
 
     /* fields */
-    uint64_t period;
-    char *canonical_path;
-    ClockCallback *callback;
-    void *callback_opaque;
-    unsigned int callback_events;
+    uint64_t       period;
+    char*          canonical_path;
+    ClockCallback* callback;
+    void*          callback_opaque;
+    unsigned int   callback_events;
 
     /* Ratio of the parent clock to run the child clocks at */
     uint32_t multiplier;
     uint32_t divider;
 
     /* Clocks are organized in a clock tree */
-    Clock *source;
+    Clock* source;
     QLIST_HEAD(, Clock) children;
     QLIST_ENTRY(Clock) sibling;
 };
@@ -96,7 +97,7 @@ struct Clock {
  *
  * compute the canonical path of the clock (used by log messages)
  */
-void clock_setup_canonical_path(Clock *clk);
+void clock_setup_canonical_path(Clock* clk);
 
 /**
  * clock_new:
@@ -109,7 +110,7 @@ void clock_setup_canonical_path(Clock *clk);
  *
  * @return the newly created clock
  */
-Clock *clock_new(Object *parent, const char *name);
+Clock* clock_new(Object* parent, const char* name);
 
 /**
  * clock_set_callback:
@@ -123,8 +124,7 @@ Clock *clock_new(Object *parent, const char *name);
  * Note that a clock has only one callback: you cannot register
  * different callback functions for different events.
  */
-void clock_set_callback(Clock *clk, ClockCallback *cb,
-                        void *opaque, unsigned int events);
+void clock_set_callback(Clock* clk, ClockCallback* cb, void* opaque, unsigned int events);
 
 /**
  * clock_set_source:
@@ -136,7 +136,7 @@ void clock_set_callback(Clock *clk, ClockCallback *cb,
  * called.
  * Further @src update will be propagated to @clk and its subtree.
  */
-void clock_set_source(Clock *clk, Clock *src);
+void clock_set_source(Clock* clk, Clock* src);
 
 /**
  * clock_has_source:
@@ -148,10 +148,7 @@ void clock_set_source(Clock *clk, Clock *src);
  * device code can use this to check in its realize method that
  * the clock has been connected.
  */
-static inline bool clock_has_source(const Clock *clk)
-{
-    return clk->source != NULL;
-}
+static inline bool clock_has_source(const Clock* clk) { return clk->source != NULL; }
 
 /**
  * clock_set:
@@ -162,17 +159,11 @@ static inline bool clock_has_source(const Clock *clk)
  *
  * @return: true if the clock is changed.
  */
-bool clock_set(Clock *clk, uint64_t value);
+bool clock_set(Clock* clk, uint64_t value);
 
-static inline bool clock_set_hz(Clock *clk, unsigned hz)
-{
-    return clock_set(clk, CLOCK_PERIOD_FROM_HZ(hz));
-}
+static inline bool clock_set_hz(Clock* clk, unsigned hz) { return clock_set(clk, CLOCK_PERIOD_FROM_HZ(hz)); }
 
-static inline bool clock_set_ns(Clock *clk, unsigned ns)
-{
-    return clock_set(clk, CLOCK_PERIOD_FROM_NS(ns));
-}
+static inline bool clock_set_ns(Clock* clk, unsigned ns) { return clock_set(clk, CLOCK_PERIOD_FROM_NS(ns)); }
 
 /**
  * clock_propagate:
@@ -184,7 +175,7 @@ static inline bool clock_set_ns(Clock *clk, unsigned ns)
  * Note: this function must not be called during device initialization
  * or migration.
  */
-void clock_propagate(Clock *clk);
+void clock_propagate(Clock* clk);
 
 /**
  * clock_update:
@@ -195,22 +186,14 @@ void clock_propagate(Clock *clk);
  * of this update. This is equivalent to call @clock_set() then
  * @clock_propagate().
  */
-static inline void clock_update(Clock *clk, uint64_t value)
+static inline void clock_update(Clock* clk, uint64_t value)
 {
-    if (clock_set(clk, value)) {
-        clock_propagate(clk);
-    }
+    if (clock_set(clk, value)) { clock_propagate(clk); }
 }
 
-static inline void clock_update_hz(Clock *clk, unsigned hz)
-{
-    clock_update(clk, CLOCK_PERIOD_FROM_HZ(hz));
-}
+static inline void clock_update_hz(Clock* clk, unsigned hz) { clock_update(clk, CLOCK_PERIOD_FROM_HZ(hz)); }
 
-static inline void clock_update_ns(Clock *clk, unsigned ns)
-{
-    clock_update(clk, CLOCK_PERIOD_FROM_NS(ns));
-}
+static inline void clock_update_ns(Clock* clk, unsigned ns) { clock_update(clk, CLOCK_PERIOD_FROM_NS(ns)); }
 
 /**
  * clock_get:
@@ -218,15 +201,9 @@ static inline void clock_update_ns(Clock *clk, unsigned ns)
  *
  * @return: the current period.
  */
-static inline uint64_t clock_get(const Clock *clk)
-{
-    return clk->period;
-}
+static inline uint64_t clock_get(const Clock* clk) { return clk->period; }
 
-static inline unsigned clock_get_hz(Clock *clk)
-{
-    return CLOCK_PERIOD_TO_HZ(clock_get(clk));
-}
+static inline unsigned clock_get_hz(Clock* clk) { return CLOCK_PERIOD_TO_HZ(clock_get(clk)); }
 
 /**
  * clock_ticks_to_ns:
@@ -249,7 +226,7 @@ static inline unsigned clock_get_hz(Clock *clk)
  * an expiry later than that is in the "will never happen" category
  * and callers can reasonably not special-case the saturated result.
  */
-static inline uint64_t clock_ticks_to_ns(const Clock *clk, uint64_t ticks)
+static inline uint64_t clock_ticks_to_ns(const Clock* clk, uint64_t ticks)
 {
     uint64_t ns_low, ns_high;
 
@@ -261,9 +238,7 @@ static inline uint64_t clock_ticks_to_ns(const Clock *clk, uint64_t ticks)
      * result right by 32.
      */
     mulu64(&ns_low, &ns_high, clk->period, ticks);
-    if (ns_high & MAKE_64BIT_MASK(31, 33)) {
-        return INT64_MAX;
-    }
+    if (ns_high & MAKE_64BIT_MASK(31, 33)) { return INT64_MAX; }
     return ns_low >> 32 | ns_high << 32;
 }
 
@@ -287,7 +262,7 @@ static inline uint64_t clock_ticks_to_ns(const Clock *clk, uint64_t ticks)
  * a 32-bit or 64-bit guest register value, so wrapping either cannot
  * happen or is the desired behaviour.
  */
-static inline uint64_t clock_ns_to_ticks(const Clock *clk, uint64_t ns)
+static inline uint64_t clock_ns_to_ticks(const Clock* clk, uint64_t ns)
 {
     /*
      * ticks = duration_in_ns / period_in_ns
@@ -297,9 +272,7 @@ static inline uint64_t clock_ns_to_ticks(const Clock *clk, uint64_t ns)
      */
     uint64_t lo = ns << 32;
     uint64_t hi = ns >> 32;
-    if (clk->period == 0) {
-        return 0;
-    }
+    if (clk->period == 0) { return 0; }
 
     divu128(&lo, &hi, clk->period);
     return lo;
@@ -311,10 +284,7 @@ static inline uint64_t clock_ns_to_ticks(const Clock *clk, uint64_t ns)
  *
  * @return: true if the clock is running.
  */
-static inline bool clock_is_enabled(const Clock *clk)
-{
-    return clock_get(clk) != 0;
-}
+static inline bool clock_is_enabled(const Clock* clk) { return clock_get(clk) != 0; }
 
 /**
  * clock_display_freq: return human-readable representation of clock frequency
@@ -326,7 +296,7 @@ static inline bool clock_is_enabled(const Clock *clk)
  *
  * The caller is responsible for freeing the string with g_free().
  */
-char *clock_display_freq(Clock *clk);
+char* clock_display_freq(Clock* clk);
 
 /**
  * clock_set_mul_div: set multiplier/divider for child clocks
@@ -353,4 +323,4 @@ char *clock_display_freq(Clock *clk);
  * Note that this function does not call clock_propagate(); the
  * caller should do that if necessary.
  */
-bool clock_set_mul_div(Clock *clk, uint32_t multiplier, uint32_t divider);
+bool clock_set_mul_div(Clock* clk, uint32_t multiplier, uint32_t divider);

@@ -32,47 +32,48 @@
 
 #define TYPE_APPLE_S8000 MACHINE_TYPE_NAME("s8000")
 
-#define APPLE_S8000(obj) \
-    OBJECT_CHECK(AppleS8000MachineState, (obj), TYPE_APPLE_S8000)
+#define APPLE_S8000(obj) OBJECT_CHECK(AppleS8000MachineState, (obj), TYPE_APPLE_S8000)
 
-typedef struct {
+typedef struct
+{
     MachineClass parent;
 } AppleS8000MachineClass;
 
-typedef struct {
+typedef struct
+{
     MachineState parent;
-    hwaddr armio_base;
-    hwaddr armio_size;
+    hwaddr       armio_base;
+    hwaddr       armio_size;
 
-    unsigned long dram_size;
-    AppleA9State *cpus[A9_MAX_CPU];
-    CPUClusterState cluster;
-    SysBusDevice *aic;
-    SysBusDevice *sep;
-    MemoryRegion *sys_mem;
-    MachoHeader64 *kernel;
-    MachoHeader64 *secure_monitor;
-    uint8_t *trustcache;
-    char *securerom;
-    gsize securerom_size;
-    AppleDTNode *device_tree;
-    AppleBootInfo boot_info;
-    AppleVideoArgs video_args;
-    char *trustcache_filename;
-    char *ticket_filename;
-    char *sep_rom_filename;
-    char *sep_fw_filename;
-    char *securerom_filename;
-    uint32_t build_version;
-    uint64_t ecid;
-    Notifier init_done_notifier;
-    hwaddr panic_base;
-    hwaddr panic_size;
-    char pmgr_reg[0x100000];
-    bool kaslr_off;
-    bool force_dfu;
-    uint32_t board_id;
+    unsigned long        dram_size;
+    AppleA9State*        cpus[A9_MAX_CPU];
+    CPUClusterState      cluster;
+    SysBusDevice*        aic;
+    SysBusDevice*        sep;
+    MemoryRegion*        sys_mem;
+    MachoHeader64*       kernel;
+    MachoHeader64*       secure_monitor;
+    uint8_t*             trustcache;
+    char*                securerom;
+    gsize                securerom_size;
+    AppleDTNode*         device_tree;
+    AppleBootInfo        boot_info;
+    AppleVideoArgs       video_args;
+    char*                trustcache_filename;
+    char*                ticket_filename;
+    char*                sep_rom_filename;
+    char*                sep_fw_filename;
+    char*                securerom_filename;
+    uint32_t             build_version;
+    uint64_t             ecid;
+    Notifier             init_done_notifier;
+    hwaddr               panic_base;
+    hwaddr               panic_size;
+    char                 pmgr_reg[0x100000];
+    bool                 kaslr_off;
+    bool                 force_dfu;
+    uint32_t             board_id;
     USBTCPRemoteConnType usb_conn_type;
-    char *usb_conn_addr;
-    uint16_t usb_conn_port;
+    char*                usb_conn_addr;
+    uint16_t             usb_conn_port;
 } AppleS8000MachineState;

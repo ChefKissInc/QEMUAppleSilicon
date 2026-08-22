@@ -17,29 +17,24 @@
 #include "qapi/qobject-input-visitor.h"
 #include "qapi/qobject-output-visitor.h"
 
-bool object_property_set_qobject(Object *obj,
-                                 const char *name, QObject *value,
-                                 Error **errp)
+bool object_property_set_qobject(Object* obj, const char* name, QObject* value, Error** errp)
 {
-    Visitor *v;
-    bool ok;
+    Visitor* v;
+    bool     ok;
 
-    v = qobject_input_visitor_new(value);
+    v  = qobject_input_visitor_new(value);
     ok = object_property_set(obj, name, v, errp);
     visit_free(v);
     return ok;
 }
 
-QObject *object_property_get_qobject(Object *obj, const char *name,
-                                     Error **errp)
+QObject* object_property_get_qobject(Object* obj, const char* name, Error** errp)
 {
-    QObject *ret = NULL;
-    Visitor *v;
+    QObject* ret = NULL;
+    Visitor* v;
 
     v = qobject_output_visitor_new(&ret);
-    if (object_property_get(obj, name, v, errp)) {
-        visit_complete(v, &ret);
-    }
+    if (object_property_get(obj, name, v, errp)) { visit_complete(v, &ret); }
     visit_free(v);
     return ret;
 }

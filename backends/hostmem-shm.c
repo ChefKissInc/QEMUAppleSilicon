@@ -18,16 +18,16 @@
 
 OBJECT_DECLARE_SIMPLE_TYPE(HostMemoryBackendShm, MEMORY_BACKEND_SHM)
 
-struct HostMemoryBackendShm {
+struct HostMemoryBackendShm
+{
     HostMemoryBackend parent_obj;
 };
 
-static bool
-shm_backend_memory_alloc(HostMemoryBackend *backend, Error **errp)
+static bool shm_backend_memory_alloc(HostMemoryBackend* backend, Error** errp)
 {
-    g_autofree char *backend_name = host_memory_backend_get_name(backend);
-    uint32_t ram_flags;
-    int fd;
+    g_autofree char* backend_name = host_memory_backend_get_name(backend);
+    uint32_t         ram_flags;
+    int              fd;
 
     if (!backend->size) {
         error_setg(errp, "can't create shm backend with size 0");
@@ -40,46 +40,38 @@ shm_backend_memory_alloc(HostMemoryBackend *backend, Error **errp)
     }
 
     fd = qemu_shm_alloc(backend->size, errp);
-    if (fd < 0) {
-        return false;
-    }
+    if (fd < 0) { return false; }
 
     /* Let's do the same as memory-backend-ram,share=on would do. */
-    ram_flags = RAM_SHARED;
+    ram_flags  = RAM_SHARED;
     ram_flags |= backend->reserve ? 0 : RAM_NORESERVE;
 
-    return memory_region_init_ram_from_fd(&backend->mr, OBJECT(backend),
-                                              backend_name, backend->size,
-                                              ram_flags, fd, 0, errp);
+    return memory_region_init_ram_from_fd(&backend->mr, OBJECT(backend), backend_name, backend->size, ram_flags, fd, 0,
+                                          errp);
 }
 
-static void
-shm_backend_instance_init(Object *obj)
+static void shm_backend_instance_init(Object* obj)
 {
-    HostMemoryBackendShm *m = MEMORY_BACKEND_SHM(obj);
+    HostMemoryBackendShm* m = MEMORY_BACKEND_SHM(obj);
 
     MEMORY_BACKEND(m)->share = true;
 }
 
-static void
-shm_backend_class_init(ObjectClass *oc, const void *data)
+static void shm_backend_class_init(ObjectClass* oc, const void* data)
 {
-    HostMemoryBackendClass *bc = MEMORY_BACKEND_CLASS(oc);
+    HostMemoryBackendClass* bc = MEMORY_BACKEND_CLASS(oc);
 
     bc->alloc = shm_backend_memory_alloc;
 }
 
 static const TypeInfo shm_backend_info = {
-    .name = TYPE_MEMORY_BACKEND_SHM,
-    .parent = TYPE_MEMORY_BACKEND,
+    .name          = TYPE_MEMORY_BACKEND_SHM,
+    .parent        = TYPE_MEMORY_BACKEND,
     .instance_init = shm_backend_instance_init,
-    .class_init = shm_backend_class_init,
+    .class_init    = shm_backend_class_init,
     .instance_size = sizeof(HostMemoryBackendShm),
 };
 
-static void register_types(void)
-{
-    type_register_static(&shm_backend_info);
-}
+static void register_types(void) { type_register_static(&shm_backend_info); }
 
 type_init(register_types);

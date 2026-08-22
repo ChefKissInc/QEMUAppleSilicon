@@ -25,23 +25,24 @@
 #pragma once
 
 typedef struct AioTaskPool AioTaskPool;
-typedef struct AioTask AioTask;
-typedef int coroutine_fn (*AioTaskFunc)(AioTask *task);
-struct AioTask {
-    AioTaskPool *pool;
-    AioTaskFunc func;
-    int ret;
+typedef struct AioTask     AioTask;
+typedef int coroutine_fn (*AioTaskFunc)(AioTask* task);
+struct AioTask
+{
+    AioTaskPool* pool;
+    AioTaskFunc  func;
+    int          ret;
 };
 
-AioTaskPool *coroutine_fn aio_task_pool_new(int max_busy_tasks);
-void aio_task_pool_free(AioTaskPool *);
+AioTaskPool* coroutine_fn aio_task_pool_new(int max_busy_tasks);
+void                      aio_task_pool_free(AioTaskPool*);
 
 /* error code of failed task or 0 if all is OK */
-int aio_task_pool_status(AioTaskPool *pool);
+int aio_task_pool_status(AioTaskPool* pool);
 
 /* User provides filled @task, however task->pool will be set automatically */
-void coroutine_fn aio_task_pool_start_task(AioTaskPool *pool, AioTask *task);
+void coroutine_fn aio_task_pool_start_task(AioTaskPool* pool, AioTask* task);
 
-void coroutine_fn aio_task_pool_wait_slot(AioTaskPool *pool);
-void coroutine_fn aio_task_pool_wait_one(AioTaskPool *pool);
-void coroutine_fn aio_task_pool_wait_all(AioTaskPool *pool);
+void coroutine_fn aio_task_pool_wait_slot(AioTaskPool* pool);
+void coroutine_fn aio_task_pool_wait_one(AioTaskPool* pool);
+void coroutine_fn aio_task_pool_wait_all(AioTaskPool* pool);

@@ -29,57 +29,48 @@
 #include "hw/core/sysemu-cpu-ops.h"
 #include "system/tcg.h"
 
-bool cpu_has_work(CPUState *cpu)
-{
-    return cpu->cc->sysemu_ops->has_work(cpu);
-}
+bool cpu_has_work(CPUState* cpu) { return cpu->cc->sysemu_ops->has_work(cpu); }
 
-bool cpu_paging_enabled(const CPUState *cpu)
+bool cpu_paging_enabled(const CPUState* cpu)
 {
-    if (cpu->cc->sysemu_ops->get_paging_enabled) {
-        return cpu->cc->sysemu_ops->get_paging_enabled(cpu);
-    }
+    if (cpu->cc->sysemu_ops->get_paging_enabled) { return cpu->cc->sysemu_ops->get_paging_enabled(cpu); }
 
     return false;
 }
 
-bool cpu_get_memory_mapping(CPUState *cpu, MemoryMappingList *list,
-                            Error **errp)
+bool cpu_get_memory_mapping(CPUState* cpu, MemoryMappingList* list, Error** errp)
 {
-    if (cpu->cc->sysemu_ops->get_memory_mapping) {
-        return cpu->cc->sysemu_ops->get_memory_mapping(cpu, list, errp);
-    }
+    if (cpu->cc->sysemu_ops->get_memory_mapping) { return cpu->cc->sysemu_ops->get_memory_mapping(cpu, list, errp); }
 
     error_setg(errp, "Obtaining memory mappings is unsupported on this CPU.");
     return false;
 }
 
-hwaddr cpu_get_phys_page_attrs_debug(CPUState *cpu, vaddr addr,
-                                     MemTxAttrs *attrs)
+hwaddr cpu_get_phys_page_attrs_debug(CPUState* cpu, vaddr addr, MemTxAttrs* attrs)
 {
     hwaddr paddr;
 
     if (cpu->cc->sysemu_ops->get_phys_page_attrs_debug) {
-        paddr = cpu->cc->sysemu_ops->get_phys_page_attrs_debug(cpu, addr,
-                                                               attrs);
-    } else {
+        paddr = cpu->cc->sysemu_ops->get_phys_page_attrs_debug(cpu, addr, attrs);
+    }
+    else {
         /* Fallback for CPUs which don't implement the _attrs_ hook */
         *attrs = MEMTXATTRS_UNSPECIFIED;
-        paddr = cpu->cc->sysemu_ops->get_phys_page_debug(cpu, addr);
+        paddr  = cpu->cc->sysemu_ops->get_phys_page_debug(cpu, addr);
     }
     /* Indicate that this is a debug access. */
     attrs->debug = 1;
     return paddr;
 }
 
-hwaddr cpu_get_phys_page_debug(CPUState *cpu, vaddr addr)
+hwaddr cpu_get_phys_page_debug(CPUState* cpu, vaddr addr)
 {
     MemTxAttrs attrs = {};
 
     return cpu_get_phys_page_attrs_debug(cpu, addr, &attrs);
 }
 
-int cpu_asidx_from_attrs(CPUState *cpu, MemTxAttrs attrs)
+int cpu_asidx_from_attrs(CPUState* cpu, MemTxAttrs attrs)
 {
     int ret = 0;
 
@@ -90,13 +81,11 @@ int cpu_asidx_from_attrs(CPUState *cpu, MemTxAttrs attrs)
     return ret;
 }
 
-GuestPanicInformation *cpu_get_crash_info(CPUState *cpu)
+GuestPanicInformation* cpu_get_crash_info(CPUState* cpu)
 {
-    GuestPanicInformation *res = NULL;
+    GuestPanicInformation* res = NULL;
 
-    if (cpu->cc->sysemu_ops->get_crash_info) {
-        res = cpu->cc->sysemu_ops->get_crash_info(cpu);
-    }
+    if (cpu->cc->sysemu_ops->get_crash_info) { res = cpu->cc->sysemu_ops->get_crash_info(cpu); }
     return res;
 }
 
@@ -106,44 +95,41 @@ static const Property cpu_system_props[] = {
      * wire up its memory.  The default if no link is set up is to use
      * the system address space.
      */
-    DEFINE_PROP_LINK("memory", CPUState, memory, TYPE_MEMORY_REGION,
-                     MemoryRegion *),
+    DEFINE_PROP_LINK("memory", CPUState, memory, TYPE_MEMORY_REGION, MemoryRegion*),
 };
 
-static bool cpu_get_start_powered_off(Object *obj, Error **errp)
+static bool cpu_get_start_powered_off(Object* obj, Error** errp)
 {
-    CPUState *cpu = CPU(obj);
+    CPUState* cpu = CPU(obj);
     return cpu->start_powered_off;
 }
 
-static void cpu_set_start_powered_off(Object *obj, bool value, Error **errp)
+static void cpu_set_start_powered_off(Object* obj, bool value, Error** errp)
 {
-    CPUState *cpu = CPU(obj);
+    CPUState* cpu          = CPU(obj);
     cpu->start_powered_off = value;
 }
 
-void cpu_class_init_props(DeviceClass *dc)
+void cpu_class_init_props(DeviceClass* dc)
 {
-    ObjectClass *oc = OBJECT_CLASS(dc);
+    ObjectClass* oc = OBJECT_CLASS(dc);
 
     /*
      * We can't use DEFINE_PROP_BOOL in the Property array for this
      * property, because we want this to be settable after realize.
      */
-    object_class_property_add_bool(oc, "start-powered-off",
-                                   cpu_get_start_powered_off,
-                                   cpu_set_start_powered_off);
+    object_class_property_add_bool(oc, "start-powered-off", cpu_get_start_powered_off, cpu_set_start_powered_off);
 
     device_class_set_props(dc, cpu_system_props);
 }
 
-void cpu_exec_class_post_init(CPUClass *cc)
+void cpu_exec_class_post_init(CPUClass* cc)
 {
     /* Check mandatory SysemuCPUOps handlers */
     assert(cc->sysemu_ops->has_work);
 }
 
-void cpu_exec_initfn(CPUState *cpu)
+void cpu_exec_initfn(CPUState* cpu)
 {
     cpu->memory = get_system_memory();
     object_ref(OBJECT(cpu->memory));

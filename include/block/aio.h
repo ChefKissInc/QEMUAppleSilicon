@@ -14,7 +14,7 @@
 #pragma once
 
 #ifdef CONFIG_LINUX_IO_URING
-#include <liburing.h>
+    #include <liburing.h>
 #endif
 #include "qemu/coroutine-core.h"
 #include "qemu/queue.h"
@@ -25,43 +25,44 @@
 #include "block/graph-lock.h"
 #include "hw/qdev-core.h"
 
-
 typedef struct BlockAIOCB BlockAIOCB;
-typedef void BlockCompletionFunc(void *opaque, int ret);
+typedef void              BlockCompletionFunc(void* opaque, int ret);
 
-typedef struct AIOCBInfo {
-    void (*cancel_async)(BlockAIOCB *acb);
+typedef struct AIOCBInfo
+{
+    void   (*cancel_async)(BlockAIOCB* acb);
     size_t aiocb_size;
 } AIOCBInfo;
 
-struct BlockAIOCB {
-    const AIOCBInfo *aiocb_info;
-    BlockDriverState *bs;
-    BlockCompletionFunc *cb;
-    void *opaque;
-    int refcnt;
+struct BlockAIOCB
+{
+    const AIOCBInfo*     aiocb_info;
+    BlockDriverState*    bs;
+    BlockCompletionFunc* cb;
+    void*                opaque;
+    int                  refcnt;
 };
 
-void *qemu_aio_get(const AIOCBInfo *aiocb_info, BlockDriverState *bs,
-                   BlockCompletionFunc *cb, void *opaque);
-void qemu_aio_unref(void *p);
-void qemu_aio_ref(void *p);
+void* qemu_aio_get(const AIOCBInfo* aiocb_info, BlockDriverState* bs, BlockCompletionFunc* cb, void* opaque);
+void  qemu_aio_unref(void* p);
+void  qemu_aio_ref(void* p);
 
 typedef struct AioHandler AioHandler;
 typedef QLIST_HEAD(, AioHandler) AioHandlerList;
-typedef void QEMUBHFunc(void *opaque);
-typedef bool AioPollFn(void *opaque);
-typedef void IOHandler(void *opaque);
+typedef void QEMUBHFunc(void* opaque);
+typedef bool AioPollFn(void* opaque);
+typedef void IOHandler(void* opaque);
 
 struct ThreadPoolAio;
 struct LinuxAioState;
 typedef struct LuringState LuringState;
 
 /* Is polling disabled? */
-bool aio_poll_disabled(AioContext *ctx);
+bool aio_poll_disabled(AioContext* ctx);
 
 /* Callbacks for file descriptor monitoring implementations */
-typedef struct {
+typedef struct
+{
     /*
      * update:
      * @ctx: the AioContext
@@ -74,7 +75,7 @@ typedef struct {
      *
      * Called with ctx->list_lock acquired.
      */
-    void (*update)(AioContext *ctx, AioHandler *old_node, AioHandler *new_node);
+    void (*update)(AioContext* ctx, AioHandler* old_node, AioHandler* new_node);
 
     /*
      * wait:
@@ -88,7 +89,7 @@ typedef struct {
      *
      * Returns: number of ready file descriptors.
      */
-    int (*wait)(AioContext *ctx, AioHandlerList *ready_list, int64_t timeout);
+    int (*wait)(AioContext* ctx, AioHandlerList* ready_list, int64_t timeout);
 
     /*
      * need_wait:
@@ -104,7 +105,7 @@ typedef struct {
      *
      * Returns: true if ->wait() should be called, false otherwise.
      */
-    bool (*need_wait)(AioContext *ctx);
+    bool (*need_wait)(AioContext* ctx);
 } FDMonOps;
 
 /*
@@ -115,18 +116,21 @@ typedef struct {
  */
 typedef QSLIST_HEAD(, QEMUBH) BHList;
 typedef struct BHListSlice BHListSlice;
-struct BHListSlice {
+struct BHListSlice
+{
     BHList bh_list;
     QSIMPLEQ_ENTRY(BHListSlice) next;
 };
 
 typedef QSLIST_HEAD(, AioHandler) AioHandlerSList;
 
-typedef struct AioPolledEvent {
-    int64_t ns;        /* current polling time in nanoseconds */
+typedef struct AioPolledEvent
+{
+    int64_t ns; /* current polling time in nanoseconds */
 } AioPolledEvent;
 
-struct AioContext {
+struct AioContext
+{
     GSource source;
 
     /* Used by AioContext users to protect from multi-threaded access.  */
@@ -138,7 +142,7 @@ struct AioContext {
      * of nodes and edges from block graph while some
      * other thread is traversing it.
      */
-    BdrvGraphRWlock *bdrv_graph;
+    BdrvGraphRWlock* bdrv_graph;
 
     /* The list of registered AIO handlers.  Protected by ctx->list_lock. */
     AioHandlerList aio_handlers;
@@ -199,24 +203,24 @@ struct AioContext {
      * more information on the problem that would result, see "#ifdef BUG2"
      * in the docs/aio_notify_accept.promela formal model.
      */
-    bool notified;
+    bool          notified;
     EventNotifier notifier;
 
     QSLIST_HEAD(, Coroutine) scheduled_coroutines;
-    QEMUBH *co_schedule_bh;
+    QEMUBH* co_schedule_bh;
 
     int thread_pool_min;
     int thread_pool_max;
     /* Thread pool for performing work and receiving completion callbacks.
      * Has its own locking.
      */
-    struct ThreadPoolAio *thread_pool;
+    struct ThreadPoolAio* thread_pool;
 
 #ifdef CONFIG_LINUX_AIO
-    struct LinuxAioState *linux_aio;
+    struct LinuxAioState* linux_aio;
 #endif
 #ifdef CONFIG_LINUX_IO_URING
-    LuringState *linux_io_uring;
+    LuringState* linux_io_uring;
 
     /* State for file descriptor monitoring using Linux io_uring */
     struct io_uring fdmon_io_uring;
@@ -232,12 +236,12 @@ struct AioContext {
     int poll_disable_cnt;
 
     /* Polling mode parameters */
-    int64_t poll_max_ns;    /* maximum polling time in nanoseconds */
-    int64_t poll_grow;      /* polling time growth factor */
-    int64_t poll_shrink;    /* polling time shrink factor */
+    int64_t poll_max_ns; /* maximum polling time in nanoseconds */
+    int64_t poll_grow;   /* polling time growth factor */
+    int64_t poll_shrink; /* polling time shrink factor */
 
     /* AIO engine parameters */
-    int64_t aio_max_batch;  /* maximum number of requests in a batch */
+    int64_t aio_max_batch; /* maximum number of requests in a batch */
 
     /*
      * List of handlers participating in userspace polling.  Protected by
@@ -253,7 +257,7 @@ struct AioContext {
     /* epoll(7) state used when built with CONFIG_EPOLL */
     int epollfd;
 
-    const FDMonOps *fdmon_ops;
+    const FDMonOps* fdmon_ops;
 };
 
 /**
@@ -263,7 +267,7 @@ struct AioContext {
  * They also provide bottom halves, a service to execute a piece of code
  * as soon as possible.
  */
-AioContext *aio_context_new(Error **errp);
+AioContext* aio_context_new(Error** errp);
 
 /**
  * aio_context_ref:
@@ -271,7 +275,7 @@ AioContext *aio_context_new(Error **errp);
  *
  * Add a reference to an AioContext.
  */
-void aio_context_ref(AioContext *ctx);
+void aio_context_ref(AioContext* ctx);
 
 /**
  * aio_context_unref:
@@ -279,7 +283,7 @@ void aio_context_ref(AioContext *ctx);
  *
  * Drop a reference to an AioContext.
  */
-void aio_context_unref(AioContext *ctx);
+void aio_context_unref(AioContext* ctx);
 
 /**
  * aio_bh_schedule_oneshot_full: Allocate a new bottom half structure that will
@@ -287,8 +291,7 @@ void aio_context_unref(AioContext *ctx);
  *
  * @name: A human-readable identifier for debugging purposes.
  */
-void aio_bh_schedule_oneshot_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
-                                  const char *name);
+void aio_bh_schedule_oneshot_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const char* name);
 
 /**
  * aio_bh_schedule_oneshot: Allocate a new bottom half structure that will run
@@ -297,8 +300,7 @@ void aio_bh_schedule_oneshot_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
  * A convenience wrapper for aio_bh_schedule_oneshot_full() that uses cb as the
  * name string.
  */
-#define aio_bh_schedule_oneshot(ctx, cb, opaque) \
-    aio_bh_schedule_oneshot_full((ctx), (cb), (opaque), (stringify(cb)))
+#define aio_bh_schedule_oneshot(ctx, cb, opaque) aio_bh_schedule_oneshot_full((ctx), (cb), (opaque), (stringify(cb)))
 
 /**
  * aio_bh_new_full: Allocate a new bottom half structure.
@@ -311,8 +313,8 @@ void aio_bh_schedule_oneshot_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
  * @reentrancy_guard: A guard set when entering a cb to prevent
  * device-reentrancy issues
  */
-QEMUBH *aio_bh_new_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
-                        const char *name, MemReentrancyGuard *reentrancy_guard);
+QEMUBH* aio_bh_new_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const char* name,
+                        MemReentrancyGuard* reentrancy_guard);
 
 /**
  * aio_bh_new: Allocate a new bottom half structure
@@ -320,8 +322,7 @@ QEMUBH *aio_bh_new_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
  * A convenience wrapper for aio_bh_new_full() that uses the cb as the name
  * string.
  */
-#define aio_bh_new(ctx, cb, opaque) \
-    aio_bh_new_full((ctx), (cb), (opaque), (stringify(cb)), NULL)
+#define aio_bh_new(ctx, cb, opaque) aio_bh_new_full((ctx), (cb), (opaque), (stringify(cb)), NULL)
 
 /**
  * aio_bh_new_guarded: Allocate a new bottom half structure with a
@@ -330,8 +331,7 @@ QEMUBH *aio_bh_new_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
  * A convenience wrapper for aio_bh_new_full() that uses the cb as the name
  * string.
  */
-#define aio_bh_new_guarded(ctx, cb, opaque, guard) \
-    aio_bh_new_full((ctx), (cb), (opaque), (stringify(cb)), guard)
+#define aio_bh_new_guarded(ctx, cb, opaque, guard) aio_bh_new_full((ctx), (cb), (opaque), (stringify(cb)), guard)
 
 /**
  * aio_notify: Force processing of pending events.
@@ -346,7 +346,7 @@ QEMUBH *aio_bh_new_full(AioContext *ctx, QEMUBHFunc *cb, void *opaque,
  * Calling aio_notify is rarely necessary, because for example scheduling
  * a bottom half calls it already.
  */
-void aio_notify(AioContext *ctx);
+void aio_notify(AioContext* ctx);
 
 /**
  * aio_notify_accept: Acknowledge receiving an aio_notify.
@@ -364,12 +364,12 @@ void aio_notify(AioContext *ctx);
  * that is specific to an AioContext's notifier; it is used internally
  * to clear the EventNotifier only if aio_notify() had been called.
  */
-void aio_notify_accept(AioContext *ctx);
+void aio_notify_accept(AioContext* ctx);
 
 /**
  * aio_bh_call: Executes callback function of the specified BH.
  */
-void aio_bh_call(QEMUBH *bh);
+void aio_bh_call(QEMUBH* bh);
 
 /**
  * aio_bh_poll: Poll bottom halves for an AioContext.
@@ -378,7 +378,7 @@ void aio_bh_call(QEMUBH *bh);
  * And notice that multiple occurrences of aio_bh_poll cannot
  * be called concurrently
  */
-int aio_bh_poll(AioContext *ctx);
+int aio_bh_poll(AioContext* ctx);
 
 /**
  * qemu_bh_schedule: Schedule a bottom half.
@@ -392,7 +392,7 @@ int aio_bh_poll(AioContext *ctx);
  *
  * @bh: The bottom half to be scheduled.
  */
-void qemu_bh_schedule(QEMUBH *bh);
+void qemu_bh_schedule(QEMUBH* bh);
 
 /**
  * qemu_bh_cancel: Cancel execution of a bottom half.
@@ -405,7 +405,7 @@ void qemu_bh_schedule(QEMUBH *bh);
  *
  * @bh: The bottom half to be canceled.
  */
-void qemu_bh_cancel(QEMUBH *bh);
+void qemu_bh_cancel(QEMUBH* bh);
 
 /**
  *qemu_bh_delete: Cancel execution of a bottom half and free its resources.
@@ -418,27 +418,27 @@ void qemu_bh_cancel(QEMUBH *bh);
  *
  * @bh: The bottom half to be deleted.
  */
-void qemu_bh_delete(QEMUBH *bh);
+void qemu_bh_delete(QEMUBH* bh);
 
 /* Return whether there are any pending callbacks from the GSource
  * attached to the AioContext, before g_poll is invoked.
  *
  * This is used internally in the implementation of the GSource.
  */
-bool aio_prepare(AioContext *ctx);
+bool aio_prepare(AioContext* ctx);
 
 /* Return whether there are any pending callbacks from the GSource
  * attached to the AioContext, after g_poll is invoked.
  *
  * This is used internally in the implementation of the GSource.
  */
-bool aio_pending(AioContext *ctx);
+bool aio_pending(AioContext* ctx);
 
 /* Dispatch any pending callbacks from the GSource attached to the AioContext.
  *
  * This is used internally in the implementation of the GSource.
  */
-void aio_dispatch(AioContext *ctx);
+void aio_dispatch(AioContext* ctx);
 
 /* Progress in completing AIO work to occur.  This can issue new pending
  * aio as a result of executing I/O completion or bh callbacks.
@@ -453,7 +453,7 @@ void aio_dispatch(AioContext *ctx);
  * or more AIO events have completed, to ensure something has moved
  * before returning.
  */
-bool no_coroutine_fn aio_poll(AioContext *ctx, bool blocking);
+bool no_coroutine_fn aio_poll(AioContext* ctx, bool blocking);
 
 /* Register a file descriptor and associated callbacks.  Behaves very similarly
  * to qemu_set_fd_handler.  Unlike qemu_set_fd_handler, these callbacks will
@@ -462,13 +462,8 @@ bool no_coroutine_fn aio_poll(AioContext *ctx, bool blocking);
  * Code that invokes AIO completion functions should rely on this function
  * instead of qemu_set_fd_handler[2].
  */
-void aio_set_fd_handler(AioContext *ctx,
-                        int fd,
-                        IOHandler *io_read,
-                        IOHandler *io_write,
-                        AioPollFn *io_poll,
-                        IOHandler *io_poll_ready,
-                        void *opaque);
+void aio_set_fd_handler(AioContext* ctx, int fd, IOHandler* io_read, IOHandler* io_write, AioPollFn* io_poll,
+                        IOHandler* io_poll_ready, void* opaque);
 
 /* Register an event notifier and associated callbacks.  Behaves very similarly
  * to event_notifier_set_handler.  Unlike event_notifier_set_handler, these callbacks
@@ -477,11 +472,8 @@ void aio_set_fd_handler(AioContext *ctx,
  * Code that invokes AIO completion functions should rely on this function
  * instead of event_notifier_set_handler.
  */
-void aio_set_event_notifier(AioContext *ctx,
-                            EventNotifier *notifier,
-                            EventNotifierHandler *io_read,
-                            AioPollFn *io_poll,
-                            EventNotifierHandler *io_poll_ready);
+void aio_set_event_notifier(AioContext* ctx, EventNotifier* notifier, EventNotifierHandler* io_read, AioPollFn* io_poll,
+                            EventNotifierHandler* io_poll_ready);
 
 /*
  * Set polling begin/end callbacks for an event notifier that has already been
@@ -492,30 +484,28 @@ void aio_set_event_notifier(AioContext *ctx,
  * during polling, it will not be called, so an io_poll_begin() is not
  * necessarily always followed by an io_poll_end().
  */
-void aio_set_event_notifier_poll(AioContext *ctx,
-                                 EventNotifier *notifier,
-                                 EventNotifierHandler *io_poll_begin,
-                                 EventNotifierHandler *io_poll_end);
+void aio_set_event_notifier_poll(AioContext* ctx, EventNotifier* notifier, EventNotifierHandler* io_poll_begin,
+                                 EventNotifierHandler* io_poll_end);
 
 /* Return a GSource that lets the main loop poll the file descriptors attached
  * to this AioContext.
  */
-GSource *aio_get_g_source(AioContext *ctx);
+GSource* aio_get_g_source(AioContext* ctx);
 
 /* Return the ThreadPoolAio bound to this AioContext */
-struct ThreadPoolAio *aio_get_thread_pool(AioContext *ctx);
+struct ThreadPoolAio* aio_get_thread_pool(AioContext* ctx);
 
 /* Setup the LinuxAioState bound to this AioContext */
-struct LinuxAioState *aio_setup_linux_aio(AioContext *ctx, Error **errp);
+struct LinuxAioState* aio_setup_linux_aio(AioContext* ctx, Error** errp);
 
 /* Return the LinuxAioState bound to this AioContext */
-struct LinuxAioState *aio_get_linux_aio(AioContext *ctx);
+struct LinuxAioState* aio_get_linux_aio(AioContext* ctx);
 
 /* Setup the LuringState bound to this AioContext */
-LuringState *aio_setup_linux_io_uring(AioContext *ctx, Error **errp);
+LuringState* aio_setup_linux_io_uring(AioContext* ctx, Error** errp);
 
 /* Return the LuringState bound to this AioContext */
-LuringState *aio_get_linux_io_uring(AioContext *ctx);
+LuringState* aio_get_linux_io_uring(AioContext* ctx);
 /**
  * aio_timer_new_with_attrs:
  * @ctx: the aio context
@@ -534,13 +524,9 @@ LuringState *aio_get_linux_io_uring(AioContext *ctx);
  *
  * Returns: a pointer to the new timer
  */
-static inline QEMUTimer *aio_timer_new_with_attrs(AioContext *ctx,
-                                                  QEMUClockType type,
-                                                  int scale, int attributes,
-                                                  QEMUTimerCB *cb, void *opaque)
-{
-    return timer_new_full(&ctx->tlg, type, scale, attributes, cb, opaque);
-}
+static inline QEMUTimer* aio_timer_new_with_attrs(AioContext* ctx, QEMUClockType type, int scale, int attributes,
+                                                  QEMUTimerCB* cb, void* opaque)
+{ return timer_new_full(&ctx->tlg, type, scale, attributes, cb, opaque); }
 
 /**
  * aio_timer_new:
@@ -555,12 +541,8 @@ static inline QEMUTimer *aio_timer_new_with_attrs(AioContext *ctx,
  *
  * Returns: a pointer to the new timer
  */
-static inline QEMUTimer *aio_timer_new(AioContext *ctx, QEMUClockType type,
-                                       int scale,
-                                       QEMUTimerCB *cb, void *opaque)
-{
-    return timer_new_full(&ctx->tlg, type, scale, 0, cb, opaque);
-}
+static inline QEMUTimer* aio_timer_new(AioContext* ctx, QEMUClockType type, int scale, QEMUTimerCB* cb, void* opaque)
+{ return timer_new_full(&ctx->tlg, type, scale, 0, cb, opaque); }
 
 /**
  * aio_timer_init_with_attrs:
@@ -576,13 +558,9 @@ static inline QEMUTimer *aio_timer_new(AioContext *ctx, QEMUClockType type,
  * Initialise a new timer (with attributes) attached to the context @ctx.
  * The caller is responsible for memory allocation.
  */
-static inline void aio_timer_init_with_attrs(AioContext *ctx,
-                                             QEMUTimer *ts, QEMUClockType type,
-                                             int scale, int attributes,
-                                             QEMUTimerCB *cb, void *opaque)
-{
-    timer_init_full(ts, &ctx->tlg, type, scale, attributes, cb, opaque);
-}
+static inline void aio_timer_init_with_attrs(AioContext* ctx, QEMUTimer* ts, QEMUClockType type, int scale,
+                                             int attributes, QEMUTimerCB* cb, void* opaque)
+{ timer_init_full(ts, &ctx->tlg, type, scale, attributes, cb, opaque); }
 
 /**
  * aio_timer_init:
@@ -596,13 +574,9 @@ static inline void aio_timer_init_with_attrs(AioContext *ctx,
  * Initialise a new timer attached to the context @ctx.
  * See aio_timer_init_with_attrs for details.
  */
-static inline void aio_timer_init(AioContext *ctx,
-                                  QEMUTimer *ts, QEMUClockType type,
-                                  int scale,
-                                  QEMUTimerCB *cb, void *opaque)
-{
-    timer_init_full(ts, &ctx->tlg, type, scale, 0, cb, opaque);
-}
+static inline void aio_timer_init(AioContext* ctx, QEMUTimer* ts, QEMUClockType type, int scale, QEMUTimerCB* cb,
+                                  void* opaque)
+{ timer_init_full(ts, &ctx->tlg, type, scale, 0, cb, opaque); }
 
 /**
  * aio_compute_timeout:
@@ -610,7 +584,7 @@ static inline void aio_timer_init(AioContext *ctx,
  *
  * Compute the timeout that a blocking aio_poll should use.
  */
-int64_t aio_compute_timeout(AioContext *ctx);
+int64_t aio_compute_timeout(AioContext* ctx);
 
 /**
  * aio_co_schedule:
@@ -624,7 +598,7 @@ int64_t aio_compute_timeout(AioContext *ctx);
  * is the context in which the coroutine is running (i.e. the value of
  * qemu_get_current_aio_context() from the coroutine itself).
  */
-void aio_co_schedule(AioContext *ctx, Coroutine *co);
+void aio_co_schedule(AioContext* ctx, Coroutine* co);
 
 /**
  * aio_co_reschedule_self:
@@ -636,7 +610,7 @@ void aio_co_schedule(AioContext *ctx, Coroutine *co);
  * Note that this function cannot reschedule from iohandler_ctx to
  * qemu_aio_context.
  */
-void coroutine_fn aio_co_reschedule_self(AioContext *new_ctx);
+void coroutine_fn aio_co_reschedule_self(AioContext* new_ctx);
 
 /**
  * aio_co_wake:
@@ -650,7 +624,7 @@ void coroutine_fn aio_co_reschedule_self(AioContext *new_ctx);
  * context.  The coroutine must not be entered by anyone else while
  * aio_co_wake() is active.
  */
-void aio_co_wake(Coroutine *co);
+void aio_co_wake(Coroutine* co);
 
 /**
  * aio_co_enter:
@@ -659,7 +633,7 @@ void aio_co_wake(Coroutine *co);
  *
  * Enter a coroutine in the specified AioContext.
  */
-void aio_co_enter(AioContext *ctx, Coroutine *co);
+void aio_co_enter(AioContext* ctx, Coroutine* co);
 
 /**
  * Return the AioContext whose event loop runs in the current thread.
@@ -671,9 +645,9 @@ void aio_co_enter(AioContext *ctx, Coroutine *co);
  * Note that the return value is never the main loop's iohandler_ctx and the
  * return value is the main loop AioContext instead.
  */
-AioContext *qemu_get_current_aio_context(void);
+AioContext* qemu_get_current_aio_context(void);
 
-void qemu_set_current_aio_context(AioContext *ctx);
+void qemu_set_current_aio_context(AioContext* ctx);
 
 /**
  * aio_context_setup:
@@ -681,7 +655,7 @@ void qemu_set_current_aio_context(AioContext *ctx);
  *
  * Initialize the aio context.
  */
-void aio_context_setup(AioContext *ctx);
+void aio_context_setup(AioContext* ctx);
 
 /**
  * aio_context_destroy:
@@ -689,10 +663,10 @@ void aio_context_setup(AioContext *ctx);
  *
  * Destroy the aio context.
  */
-void aio_context_destroy(AioContext *ctx);
+void aio_context_destroy(AioContext* ctx);
 
 /* Used internally, do not call outside AioContext code */
-void aio_context_use_g_source(AioContext *ctx);
+void aio_context_use_g_source(AioContext* ctx);
 
 /**
  * aio_context_set_poll_params:
@@ -703,9 +677,7 @@ void aio_context_use_g_source(AioContext *ctx);
  *
  * Poll mode can be disabled by setting poll_max_ns to 0.
  */
-void aio_context_set_poll_params(AioContext *ctx, int64_t max_ns,
-                                 int64_t grow, int64_t shrink,
-                                 Error **errp);
+void aio_context_set_poll_params(AioContext* ctx, int64_t max_ns, int64_t grow, int64_t shrink, Error** errp);
 
 /**
  * aio_context_set_aio_params:
@@ -713,7 +685,7 @@ void aio_context_set_poll_params(AioContext *ctx, int64_t max_ns,
  * @max_batch: maximum number of requests in a batch, 0 means that the
  *             engine will use its default
  */
-void aio_context_set_aio_params(AioContext *ctx, int64_t max_batch);
+void aio_context_set_aio_params(AioContext* ctx, int64_t max_batch);
 
 /**
  * aio_context_set_thread_pool_params:
@@ -721,5 +693,4 @@ void aio_context_set_aio_params(AioContext *ctx, int64_t max_batch);
  * @min: min number of threads to have readily available in the thread pool
  * @min: max number of threads the thread pool can contain
  */
-void aio_context_set_thread_pool_params(AioContext *ctx, int64_t min,
-                                        int64_t max, Error **errp);
+void aio_context_set_thread_pool_params(AioContext* ctx, int64_t min, int64_t max, Error** errp);

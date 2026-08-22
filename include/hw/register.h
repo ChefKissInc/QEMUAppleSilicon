@@ -15,9 +15,9 @@
 #include "hw/registerfields.h"
 #include "qom/object.h"
 
-typedef struct RegisterInfo RegisterInfo;
+typedef struct RegisterInfo       RegisterInfo;
 typedef struct RegisterAccessInfo RegisterAccessInfo;
-typedef struct RegisterInfoArray RegisterInfoArray;
+typedef struct RegisterInfoArray  RegisterInfoArray;
 
 /**
  * Access description for a register that is part of guest accessible device
@@ -41,19 +41,20 @@ typedef struct RegisterInfoArray RegisterInfoArray;
  * allowing this function to modify the value before return to the client.
  */
 
-struct RegisterAccessInfo {
-    const char *name;
-    uint64_t ro;
-    uint64_t w1c;
-    uint64_t reset;
-    uint64_t cor;
-    uint64_t rsvd;
-    uint64_t unimp;
+struct RegisterAccessInfo
+{
+    const char* name;
+    uint64_t    ro;
+    uint64_t    w1c;
+    uint64_t    reset;
+    uint64_t    cor;
+    uint64_t    rsvd;
+    uint64_t    unimp;
 
-    uint64_t (*pre_write)(RegisterInfo *reg, uint64_t val);
-    void (*post_write)(RegisterInfo *reg, uint64_t val);
+    uint64_t (*pre_write)(RegisterInfo* reg, uint64_t val);
+    void     (*post_write)(RegisterInfo* reg, uint64_t val);
 
-    uint64_t (*post_read)(RegisterInfo *reg, uint64_t val);
+    uint64_t (*post_read)(RegisterInfo* reg, uint64_t val);
 
     hwaddr addr;
 };
@@ -73,22 +74,22 @@ struct RegisterAccessInfo {
  * @opaque: Opaque data for the register
  */
 
-struct RegisterInfo {
+struct RegisterInfo
+{
     /* <private> */
     DeviceState parent_obj;
 
     /* <public> */
-    void *data;
-    int data_size;
+    void* data;
+    int   data_size;
 
-    const RegisterAccessInfo *access;
+    const RegisterAccessInfo* access;
 
-    void *opaque;
+    void* opaque;
 };
 
 #define TYPE_REGISTER "qemu-register"
-DECLARE_INSTANCE_CHECKER(RegisterInfo, REGISTER,
-                         TYPE_REGISTER)
+DECLARE_INSTANCE_CHECKER(RegisterInfo, REGISTER, TYPE_REGISTER)
 
 /**
  * This structure is used to group all of the individual registers which are
@@ -101,14 +102,15 @@ DECLARE_INSTANCE_CHECKER(RegisterInfo, REGISTER,
  * @mem: optional Memory region for the register
  */
 
-struct RegisterInfoArray {
+struct RegisterInfoArray
+{
     MemoryRegion mem;
 
-    int num_elements;
-    RegisterInfo **r;
+    int            num_elements;
+    RegisterInfo** r;
 
-    bool debug;
-    const char *prefix;
+    bool        debug;
+    const char* prefix;
 };
 
 /**
@@ -120,8 +122,7 @@ struct RegisterInfoArray {
  * @debug: Should the write operation debug information be printed?
  */
 
-void register_write(RegisterInfo *reg, uint64_t val, uint64_t we,
-                    const char *prefix, bool debug);
+void register_write(RegisterInfo* reg, uint64_t val, uint64_t we, const char* prefix, bool debug);
 
 /**
  * read a value from a register, subject to its restrictions
@@ -132,22 +133,21 @@ void register_write(RegisterInfo *reg, uint64_t val, uint64_t we,
  * returns: value read
  */
 
-uint64_t register_read(RegisterInfo *reg, uint64_t re, const char* prefix,
-                       bool debug);
+uint64_t register_read(RegisterInfo* reg, uint64_t re, const char* prefix, bool debug);
 
 /**
  * Resets a register. This will also call the post_write hook if it exists.
  * @reg: The register to reset.
  */
 
-void register_reset(RegisterInfo *reg);
+void register_reset(RegisterInfo* reg);
 
 /**
  * Initialize a register.
  * @reg: Register to initialize
  */
 
-void register_init(RegisterInfo *reg);
+void register_init(RegisterInfo* reg);
 
 /**
  * Memory API MMIO write handler that will write to a Register API register.
@@ -157,8 +157,7 @@ void register_init(RegisterInfo *reg);
  * @size: Number of bytes to write
  */
 
-void register_write_memory(void *opaque, hwaddr addr, uint64_t value,
-                           unsigned size);
+void register_write_memory(void* opaque, hwaddr addr, uint64_t value, unsigned size);
 
 /**
  * Memory API MMIO read handler that will read from a Register API register.
@@ -168,7 +167,7 @@ void register_write_memory(void *opaque, hwaddr addr, uint64_t value,
  * returns: Value read from register
  */
 
-uint64_t register_read_memory(void *opaque, hwaddr addr, unsigned size);
+uint64_t register_read_memory(void* opaque, hwaddr addr, unsigned size);
 
 /**
  * Init a block of registers into a container MemoryRegion. A
@@ -187,28 +186,16 @@ uint64_t register_read_memory(void *opaque, hwaddr addr, unsigned size);
  *          memory region (r_array->mem) the caller should add to a container.
  */
 
-RegisterInfoArray *register_init_block8(DeviceState *owner,
-                                        const RegisterAccessInfo *rae,
-                                        int num, RegisterInfo *ri,
-                                        uint8_t *data,
-                                        const MemoryRegionOps *ops,
-                                        bool debug_enabled,
+RegisterInfoArray* register_init_block8(DeviceState* owner, const RegisterAccessInfo* rae, int num, RegisterInfo* ri,
+                                        uint8_t* data, const MemoryRegionOps* ops, bool debug_enabled,
                                         uint64_t memory_size);
 
-RegisterInfoArray *register_init_block32(DeviceState *owner,
-                                         const RegisterAccessInfo *rae,
-                                         int num, RegisterInfo *ri,
-                                         uint32_t *data,
-                                         const MemoryRegionOps *ops,
-                                         bool debug_enabled,
+RegisterInfoArray* register_init_block32(DeviceState* owner, const RegisterAccessInfo* rae, int num, RegisterInfo* ri,
+                                         uint32_t* data, const MemoryRegionOps* ops, bool debug_enabled,
                                          uint64_t memory_size);
 
-RegisterInfoArray *register_init_block64(DeviceState *owner,
-                                         const RegisterAccessInfo *rae,
-                                         int num, RegisterInfo *ri,
-                                         uint64_t *data,
-                                         const MemoryRegionOps *ops,
-                                         bool debug_enabled,
+RegisterInfoArray* register_init_block64(DeviceState* owner, const RegisterAccessInfo* rae, int num, RegisterInfo* ri,
+                                         uint64_t* data, const MemoryRegionOps* ops, bool debug_enabled,
                                          uint64_t memory_size);
 
 /**
@@ -223,4 +210,4 @@ RegisterInfoArray *register_init_block64(DeviceState *owner,
  *           register_init_block32()
  */
 
-void register_finalize_block(RegisterInfoArray *r_array);
+void register_finalize_block(RegisterInfoArray* r_array);

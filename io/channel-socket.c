@@ -27,44 +27,31 @@
 #include "trace.h"
 #include "qapi/clone-visitor.h"
 #ifdef CONFIG_LINUX
-#include <linux/errqueue.h>
-#include <sys/socket.h>
+    #include <linux/errqueue.h>
+    #include <sys/socket.h>
 
-#if (defined(MSG_ZEROCOPY) && defined(SO_ZEROCOPY))
-#define QEMU_MSG_ZEROCOPY
-#endif
+    #if (defined(MSG_ZEROCOPY) && defined(SO_ZEROCOPY))
+        #define QEMU_MSG_ZEROCOPY
+    #endif
 #endif
 
 #define SOCKET_MAX_FDS 16
 
-SocketAddress *
-qio_channel_socket_get_local_address(QIOChannelSocket *ioc,
-                                     Error **errp)
-{
-    return socket_sockaddr_to_address(&ioc->localAddr,
-                                      ioc->localAddrLen,
-                                      errp);
-}
+SocketAddress* qio_channel_socket_get_local_address(QIOChannelSocket* ioc, Error** errp)
+{ return socket_sockaddr_to_address(&ioc->localAddr, ioc->localAddrLen, errp); }
 
-SocketAddress *
-qio_channel_socket_get_remote_address(QIOChannelSocket *ioc,
-                                      Error **errp)
-{
-    return socket_sockaddr_to_address(&ioc->remoteAddr,
-                                      ioc->remoteAddrLen,
-                                      errp);
-}
+SocketAddress* qio_channel_socket_get_remote_address(QIOChannelSocket* ioc, Error** errp)
+{ return socket_sockaddr_to_address(&ioc->remoteAddr, ioc->remoteAddrLen, errp); }
 
-QIOChannelSocket *
-qio_channel_socket_new(void)
+QIOChannelSocket* qio_channel_socket_new(void)
 {
-    QIOChannelSocket *sioc;
-    QIOChannel *ioc;
+    QIOChannelSocket* sioc;
+    QIOChannel*       ioc;
 
-    sioc = QIO_CHANNEL_SOCKET(object_new(TYPE_QIO_CHANNEL_SOCKET));
-    sioc->fd = -1;
+    sioc                   = QIO_CHANNEL_SOCKET(object_new(TYPE_QIO_CHANNEL_SOCKET));
+    sioc->fd               = -1;
     sioc->zero_copy_queued = 0;
-    sioc->zero_copy_sent = 0;
+    sioc->zero_copy_sent   = 0;
 
     ioc = QIO_CHANNEL(sioc);
     qio_channel_set_feature(ioc, QIO_CHANNEL_FEATURE_SHUTDOWN);
@@ -78,9 +65,7 @@ qio_channel_socket_new(void)
     return sioc;
 }
 
-int qio_channel_socket_set_send_buffer(QIOChannelSocket *ioc,
-                                       size_t size,
-                                       Error **errp)
+int qio_channel_socket_set_send_buffer(QIOChannelSocket* ioc, size_t size, Error** errp)
 {
     if (setsockopt(ioc->fd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size)) < 0) {
         error_setg_errno(errp, errno, "Unable to set socket send buffer size");
@@ -90,59 +75,50 @@ int qio_channel_socket_set_send_buffer(QIOChannelSocket *ioc,
     return 0;
 }
 
-static int
-qio_channel_socket_set_fd(QIOChannelSocket *sioc,
-                          int fd,
-                          Error **errp)
+static int qio_channel_socket_set_fd(QIOChannelSocket* sioc, int fd, Error** errp)
 {
     if (sioc->fd != -1) {
         error_setg(errp, "Socket is already open");
         return -1;
     }
 
-    sioc->fd = fd;
+    sioc->fd            = fd;
     sioc->remoteAddrLen = sizeof(sioc->remoteAddr);
-    sioc->localAddrLen = sizeof(sioc->localAddr);
+    sioc->localAddrLen  = sizeof(sioc->localAddr);
 
-
-    if (getpeername(fd, (struct sockaddr *)&sioc->remoteAddr,
-                    &sioc->remoteAddrLen) < 0) {
+    if (getpeername(fd, (struct sockaddr*)&sioc->remoteAddr, &sioc->remoteAddrLen) < 0) {
         if (errno == ENOTCONN) {
             memset(&sioc->remoteAddr, 0, sizeof(sioc->remoteAddr));
             sioc->remoteAddrLen = sizeof(sioc->remoteAddr);
-        } else {
-            error_setg_errno(errp, errno,
-                             "Unable to query remote socket address");
+        }
+        else {
+            error_setg_errno(errp, errno, "Unable to query remote socket address");
             goto error;
         }
     }
 
-    if (getsockname(fd, (struct sockaddr *)&sioc->localAddr,
-                    &sioc->localAddrLen) < 0) {
-        error_setg_errno(errp, errno,
-                         "Unable to query local socket address");
+    if (getsockname(fd, (struct sockaddr*)&sioc->localAddr, &sioc->localAddrLen) < 0) {
+        error_setg_errno(errp, errno, "Unable to query local socket address");
         goto error;
     }
 
 #ifndef WIN32
     if (sioc->localAddr.ss_family == AF_UNIX) {
-        QIOChannel *ioc = &sioc->parent;
+        QIOChannel* ioc = &sioc->parent;
         qio_channel_set_feature(ioc, QIO_CHANNEL_FEATURE_FD_PASS);
     }
 #endif /* WIN32 */
 
     return 0;
 
- error:
+error:
     sioc->fd = -1; /* Let the caller close FD on failure */
     return -1;
 }
 
-QIOChannelSocket *
-qio_channel_socket_new_fd(int fd,
-                          Error **errp)
+QIOChannelSocket* qio_channel_socket_new_fd(int fd, Error** errp)
 {
-    QIOChannelSocket *ioc;
+    QIOChannelSocket* ioc;
 
     ioc = qio_channel_socket_new();
     if (qio_channel_socket_set_fd(ioc, fd, errp) < 0) {
@@ -155,10 +131,7 @@ qio_channel_socket_new_fd(int fd,
     return ioc;
 }
 
-
-int qio_channel_socket_connect_sync(QIOChannelSocket *ioc,
-                                    SocketAddress *addr,
-                                    Error **errp)
+int qio_channel_socket_connect_sync(QIOChannelSocket* ioc, SocketAddress* addr, Error** errp)
 {
     int fd;
 
@@ -180,59 +153,42 @@ int qio_channel_socket_connect_sync(QIOChannelSocket *ioc,
     ret = setsockopt(fd, SOL_SOCKET, SO_ZEROCOPY, &v, sizeof(v));
     if (ret == 0) {
         /* Zero copy available on host */
-        qio_channel_set_feature(&ioc->parent,
-                                QIO_CHANNEL_FEATURE_WRITE_ZERO_COPY);
+        qio_channel_set_feature(&ioc->parent, QIO_CHANNEL_FEATURE_WRITE_ZERO_COPY);
     }
 #endif
 
-    qio_channel_set_feature(&ioc->parent,
-                            QIO_CHANNEL_FEATURE_READ_MSG_PEEK);
+    qio_channel_set_feature(&ioc->parent, QIO_CHANNEL_FEATURE_READ_MSG_PEEK);
 
     return 0;
 }
 
-
-static void qio_channel_socket_connect_worker(QIOTask *task,
-                                              gpointer opaque)
+static void qio_channel_socket_connect_worker(QIOTask* task, gpointer opaque)
 {
-    QIOChannelSocket *ioc = (QIOChannelSocket*)qio_task_get_source(task);
-    SocketAddress *addr = opaque;
-    Error *err = NULL;
+    QIOChannelSocket* ioc  = (QIOChannelSocket*)qio_task_get_source(task);
+    SocketAddress*    addr = opaque;
+    Error*            err  = NULL;
 
     qio_channel_socket_connect_sync(ioc, addr, &err);
 
     qio_task_set_error(task, err);
 }
 
-
-void qio_channel_socket_connect_async(QIOChannelSocket *ioc,
-                                      SocketAddress *addr,
-                                      QIOTaskFunc callback,
-                                      gpointer opaque,
-                                      GDestroyNotify destroy,
-                                      GMainContext *context)
+void qio_channel_socket_connect_async(QIOChannelSocket* ioc, SocketAddress* addr, QIOTaskFunc callback, gpointer opaque,
+                                      GDestroyNotify destroy, GMainContext* context)
 {
-    QIOTask *task = qio_task_new(
-        OBJECT(ioc), callback, opaque, destroy);
-    SocketAddress *addrCopy;
+    QIOTask*       task = qio_task_new(OBJECT(ioc), callback, opaque, destroy);
+    SocketAddress* addrCopy;
 
     addrCopy = QAPI_CLONE(SocketAddress, addr);
 
     /* socket_connect() does a non-blocking connect(), but it
      * still blocks in DNS lookups, so we must use a thread */
     trace_qio_channel_socket_connect_async(ioc, addr);
-    qio_task_run_in_thread(task,
-                           qio_channel_socket_connect_worker,
-                           addrCopy,
-                           (GDestroyNotify)qapi_free_SocketAddress,
+    qio_task_run_in_thread(task, qio_channel_socket_connect_worker, addrCopy, (GDestroyNotify)qapi_free_SocketAddress,
                            context);
 }
 
-
-int qio_channel_socket_listen_sync(QIOChannelSocket *ioc,
-                                   SocketAddress *addr,
-                                   int num,
-                                   Error **errp)
+int qio_channel_socket_listen_sync(QIOChannelSocket* ioc, SocketAddress* addr, int num, Error** errp)
 {
     int fd;
 
@@ -253,63 +209,48 @@ int qio_channel_socket_listen_sync(QIOChannelSocket *ioc,
     return 0;
 }
 
-
-struct QIOChannelListenWorkerData {
-    SocketAddress *addr;
-    int num; /* amount of expected connections */
+struct QIOChannelListenWorkerData
+{
+    SocketAddress* addr;
+    int            num; /* amount of expected connections */
 };
 
 static void qio_channel_listen_worker_free(gpointer opaque)
 {
-    struct QIOChannelListenWorkerData *data = opaque;
+    struct QIOChannelListenWorkerData* data = opaque;
 
     qapi_free_SocketAddress(data->addr);
     g_free(data);
 }
 
-static void qio_channel_socket_listen_worker(QIOTask *task,
-                                             gpointer opaque)
+static void qio_channel_socket_listen_worker(QIOTask* task, gpointer opaque)
 {
-    QIOChannelSocket *ioc = QIO_CHANNEL_SOCKET(qio_task_get_source(task));
-    struct QIOChannelListenWorkerData *data = opaque;
-    Error *err = NULL;
+    QIOChannelSocket*                  ioc  = QIO_CHANNEL_SOCKET(qio_task_get_source(task));
+    struct QIOChannelListenWorkerData* data = opaque;
+    Error*                             err  = NULL;
 
     qio_channel_socket_listen_sync(ioc, data->addr, data->num, &err);
 
     qio_task_set_error(task, err);
 }
 
-
-void qio_channel_socket_listen_async(QIOChannelSocket *ioc,
-                                     SocketAddress *addr,
-                                     int num,
-                                     QIOTaskFunc callback,
-                                     gpointer opaque,
-                                     GDestroyNotify destroy,
-                                     GMainContext *context)
+void qio_channel_socket_listen_async(QIOChannelSocket* ioc, SocketAddress* addr, int num, QIOTaskFunc callback,
+                                     gpointer opaque, GDestroyNotify destroy, GMainContext* context)
 {
-    QIOTask *task = qio_task_new(
-        OBJECT(ioc), callback, opaque, destroy);
-    struct QIOChannelListenWorkerData *data;
+    QIOTask*                           task = qio_task_new(OBJECT(ioc), callback, opaque, destroy);
+    struct QIOChannelListenWorkerData* data;
 
-    data = g_new0(struct QIOChannelListenWorkerData, 1);
+    data       = g_new0(struct QIOChannelListenWorkerData, 1);
     data->addr = QAPI_CLONE(SocketAddress, addr);
-    data->num = num;
+    data->num  = num;
 
     /* socket_listen() blocks in DNS lookups, so we must use a thread */
     trace_qio_channel_socket_listen_async(ioc, addr, num);
-    qio_task_run_in_thread(task,
-                           qio_channel_socket_listen_worker,
-                           data,
-                           qio_channel_listen_worker_free,
-                           context);
+    qio_task_run_in_thread(task, qio_channel_socket_listen_worker, data, qio_channel_listen_worker_free, context);
 }
 
-
-int qio_channel_socket_dgram_sync(QIOChannelSocket *ioc,
-                                  SocketAddress *localAddr,
-                                  SocketAddress *remoteAddr,
-                                  Error **errp)
+int qio_channel_socket_dgram_sync(QIOChannelSocket* ioc, SocketAddress* localAddr, SocketAddress* remoteAddr,
+                                  Error** errp)
 {
     int fd;
 
@@ -329,123 +270,100 @@ int qio_channel_socket_dgram_sync(QIOChannelSocket *ioc,
     return 0;
 }
 
-
-struct QIOChannelSocketDGramWorkerData {
-    SocketAddress *localAddr;
-    SocketAddress *remoteAddr;
+struct QIOChannelSocketDGramWorkerData
+{
+    SocketAddress* localAddr;
+    SocketAddress* remoteAddr;
 };
-
 
 static void qio_channel_socket_dgram_worker_free(gpointer opaque)
 {
-    struct QIOChannelSocketDGramWorkerData *data = opaque;
+    struct QIOChannelSocketDGramWorkerData* data = opaque;
     qapi_free_SocketAddress(data->localAddr);
     qapi_free_SocketAddress(data->remoteAddr);
     g_free(data);
 }
 
-static void qio_channel_socket_dgram_worker(QIOTask *task,
-                                            gpointer opaque)
+static void qio_channel_socket_dgram_worker(QIOTask* task, gpointer opaque)
 {
-    QIOChannelSocket *ioc = QIO_CHANNEL_SOCKET(qio_task_get_source(task));
-    struct QIOChannelSocketDGramWorkerData *data = opaque;
-    Error *err = NULL;
+    QIOChannelSocket*                       ioc  = QIO_CHANNEL_SOCKET(qio_task_get_source(task));
+    struct QIOChannelSocketDGramWorkerData* data = opaque;
+    Error*                                  err  = NULL;
 
     /* socket_dgram() blocks in DNS lookups, so we must use a thread */
-    qio_channel_socket_dgram_sync(ioc, data->localAddr,
-                                  data->remoteAddr, &err);
+    qio_channel_socket_dgram_sync(ioc, data->localAddr, data->remoteAddr, &err);
 
     qio_task_set_error(task, err);
 }
 
-
-void qio_channel_socket_dgram_async(QIOChannelSocket *ioc,
-                                    SocketAddress *localAddr,
-                                    SocketAddress *remoteAddr,
-                                    QIOTaskFunc callback,
-                                    gpointer opaque,
-                                    GDestroyNotify destroy,
-                                    GMainContext *context)
+void qio_channel_socket_dgram_async(QIOChannelSocket* ioc, SocketAddress* localAddr, SocketAddress* remoteAddr,
+                                    QIOTaskFunc callback, gpointer opaque, GDestroyNotify destroy,
+                                    GMainContext* context)
 {
-    QIOTask *task = qio_task_new(
-        OBJECT(ioc), callback, opaque, destroy);
-    struct QIOChannelSocketDGramWorkerData *data = g_new0(
-        struct QIOChannelSocketDGramWorkerData, 1);
+    QIOTask*                                task = qio_task_new(OBJECT(ioc), callback, opaque, destroy);
+    struct QIOChannelSocketDGramWorkerData* data = g_new0(struct QIOChannelSocketDGramWorkerData, 1);
 
-    data->localAddr = QAPI_CLONE(SocketAddress, localAddr);
+    data->localAddr  = QAPI_CLONE(SocketAddress, localAddr);
     data->remoteAddr = QAPI_CLONE(SocketAddress, remoteAddr);
 
     trace_qio_channel_socket_dgram_async(ioc, localAddr, remoteAddr);
-    qio_task_run_in_thread(task,
-                           qio_channel_socket_dgram_worker,
-                           data,
-                           qio_channel_socket_dgram_worker_free,
-                           context);
+    qio_task_run_in_thread(task, qio_channel_socket_dgram_worker, data, qio_channel_socket_dgram_worker_free, context);
 }
 
-
-QIOChannelSocket *
-qio_channel_socket_accept(QIOChannelSocket *ioc,
-                          Error **errp)
+QIOChannelSocket* qio_channel_socket_accept(QIOChannelSocket* ioc, Error** errp)
 {
-    QIOChannelSocket *cioc;
+    QIOChannelSocket* cioc;
 
-    cioc = qio_channel_socket_new();
+    cioc                = qio_channel_socket_new();
     cioc->remoteAddrLen = sizeof(ioc->remoteAddr);
-    cioc->localAddrLen = sizeof(ioc->localAddr);
+    cioc->localAddrLen  = sizeof(ioc->localAddr);
 
- retry:
+retry:
     trace_qio_channel_socket_accept(ioc);
-    cioc->fd = qemu_accept(ioc->fd, (struct sockaddr *)&cioc->remoteAddr,
-                           &cioc->remoteAddrLen);
+    cioc->fd = qemu_accept(ioc->fd, (struct sockaddr*)&cioc->remoteAddr, &cioc->remoteAddrLen);
     if (cioc->fd < 0) {
-        if (errno == EINTR) {
-            goto retry;
-        }
+        if (errno == EINTR) { goto retry; }
         error_setg_errno(errp, errno, "Unable to accept connection");
         trace_qio_channel_socket_accept_fail(ioc);
         goto error;
     }
 
-    if (getsockname(cioc->fd, (struct sockaddr *)&cioc->localAddr,
-                    &cioc->localAddrLen) < 0) {
-        error_setg_errno(errp, errno,
-                         "Unable to query local socket address");
+    if (getsockname(cioc->fd, (struct sockaddr*)&cioc->localAddr, &cioc->localAddrLen) < 0) {
+        error_setg_errno(errp, errno, "Unable to query local socket address");
         goto error;
     }
 
 #ifndef WIN32
     if (cioc->localAddr.ss_family == AF_UNIX) {
-        QIOChannel *ioc_local = QIO_CHANNEL(cioc);
+        QIOChannel* ioc_local = QIO_CHANNEL(cioc);
         qio_channel_set_feature(ioc_local, QIO_CHANNEL_FEATURE_FD_PASS);
     }
 #endif /* WIN32 */
 
-    qio_channel_set_feature(QIO_CHANNEL(cioc),
-                            QIO_CHANNEL_FEATURE_READ_MSG_PEEK);
+    qio_channel_set_feature(QIO_CHANNEL(cioc), QIO_CHANNEL_FEATURE_READ_MSG_PEEK);
 
     trace_qio_channel_socket_accept_complete(ioc, cioc, cioc->fd);
     return cioc;
 
- error:
+error:
     object_unref(OBJECT(cioc));
     return NULL;
 }
 
-static void qio_channel_socket_init(Object *obj)
+static void qio_channel_socket_init(Object* obj)
 {
-    QIOChannelSocket *ioc = QIO_CHANNEL_SOCKET(obj);
-    ioc->fd = -1;
+    QIOChannelSocket* ioc = QIO_CHANNEL_SOCKET(obj);
+    ioc->fd               = -1;
 }
 
-static void qio_channel_socket_finalize(Object *obj)
+static void qio_channel_socket_finalize(Object* obj)
 {
-    QIOChannelSocket *ioc = QIO_CHANNEL_SOCKET(obj);
+    QIOChannelSocket* ioc = QIO_CHANNEL_SOCKET(obj);
 
     if (ioc->fd != -1) {
-        QIOChannel *ioc_local = &ioc->parent;
+        QIOChannel* ioc_local = &ioc->parent;
         if (qio_channel_has_feature(ioc_local, QIO_CHANNEL_FEATURE_LISTEN)) {
-            Error *err = NULL;
+            Error* err = NULL;
 
             socket_listen_cleanup(ioc->fd, &err);
             if (err) {
@@ -461,77 +379,64 @@ static void qio_channel_socket_finalize(Object *obj)
     }
 }
 
-
 #ifndef WIN32
-static void qio_channel_socket_copy_fds(struct msghdr *msg,
-                                        int **fds, size_t *nfds)
+static void qio_channel_socket_copy_fds(struct msghdr* msg, int** fds, size_t* nfds)
 {
-    struct cmsghdr *cmsg;
+    struct cmsghdr* cmsg;
 
     *nfds = 0;
-    *fds = NULL;
+    *fds  = NULL;
 
     for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
         int fd_size;
         int gotfds;
 
-        if (cmsg->cmsg_len < CMSG_LEN(sizeof(int)) ||
-            cmsg->cmsg_level != SOL_SOCKET ||
-            cmsg->cmsg_type != SCM_RIGHTS) {
+        if (cmsg->cmsg_len < CMSG_LEN(sizeof(int)) || cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS) {
             continue;
         }
 
         fd_size = cmsg->cmsg_len - CMSG_LEN(0);
 
-        if (!fd_size) {
-            continue;
-        }
+        if (!fd_size) { continue; }
 
         gotfds = fd_size / sizeof(int);
-        *fds = g_renew(int, *fds, *nfds + gotfds);
+        *fds   = g_renew(int, *fds, *nfds + gotfds);
         memcpy(*fds + *nfds, CMSG_DATA(cmsg), fd_size);
         *nfds += gotfds;
     }
 }
 
-static bool qio_channel_handle_fds(int *fds, size_t nfds,
-                                   bool preserve_blocking, Error **errp)
+static bool qio_channel_handle_fds(int* fds, size_t nfds, bool preserve_blocking, Error** errp)
 {
     int *end = fds + nfds, *fd;
 
-#ifdef MSG_CMSG_CLOEXEC
+    #ifdef MSG_CMSG_CLOEXEC
     if (preserve_blocking) {
         /* Nothing to do */
         return true;
     }
-#endif
+    #endif
 
     for (fd = fds; fd != end; fd++) {
-        if (*fd < 0) {
-            continue;
-        }
+        if (*fd < 0) { continue; }
 
         if (!preserve_blocking) {
             /* O_NONBLOCK is preserved across SCM_RIGHTS so reset it */
-            if (!qemu_set_blocking(*fd, true, errp)) {
-                return false;
-            }
+            if (!qemu_set_blocking(*fd, true, errp)) { return false; }
         }
 
-#ifndef MSG_CMSG_CLOEXEC
+    #ifndef MSG_CMSG_CLOEXEC
         qemu_set_cloexec(*fd);
-#endif
+    #endif
     }
 
     return true;
 }
 
-static void qio_channel_cleanup_fds(int **fds, size_t *nfds)
+static void qio_channel_cleanup_fds(int** fds, size_t* nfds)
 {
     for (size_t i = 0; i < *nfds; i++) {
-        if ((*fds)[i] < 0) {
-            continue;
-        }
+        if ((*fds)[i] < 0) { continue; }
         close((*fds)[i]);
     }
 
@@ -539,61 +444,47 @@ static void qio_channel_cleanup_fds(int **fds, size_t *nfds)
     *nfds = 0;
 }
 
-
-static ssize_t qio_channel_socket_readv(QIOChannel *ioc,
-                                        const struct iovec *iov,
-                                        size_t niov,
-                                        int **fds,
-                                        size_t *nfds,
-                                        int flags,
-                                        Error **errp)
+static ssize_t qio_channel_socket_readv(QIOChannel* ioc, const struct iovec* iov, size_t niov, int** fds, size_t* nfds,
+                                        int flags, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    ssize_t ret;
-    struct msghdr msg = { NULL, };
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    ssize_t           ret;
+    struct msghdr     msg = {
+        NULL,
+    };
     char control[CMSG_SPACE(sizeof(int) * SOCKET_MAX_FDS)];
-    int sflags = 0;
+    int  sflags = 0;
 
     memset(control, 0, CMSG_SPACE(sizeof(int) * SOCKET_MAX_FDS));
 
-    msg.msg_iov = (struct iovec *)iov;
+    msg.msg_iov    = (struct iovec*)iov;
     msg.msg_iovlen = niov;
     if (fds && nfds) {
-        msg.msg_control = control;
+        msg.msg_control    = control;
         msg.msg_controllen = sizeof(control);
-#ifdef MSG_CMSG_CLOEXEC
+    #ifdef MSG_CMSG_CLOEXEC
         sflags |= MSG_CMSG_CLOEXEC;
-#endif
-
+    #endif
     }
 
-    if (flags & QIO_CHANNEL_READ_FLAG_MSG_PEEK) {
-        sflags |= MSG_PEEK;
-    }
+    if (flags & QIO_CHANNEL_READ_FLAG_MSG_PEEK) { sflags |= MSG_PEEK; }
 
- retry:
+retry:
     ret = recvmsg(sioc->fd, &msg, sflags);
     if (ret < 0) {
-        if (errno == EAGAIN) {
-            return QIO_CHANNEL_ERR_BLOCK;
-        }
-        if (errno == EINTR) {
-            goto retry;
-        }
+        if (errno == EAGAIN) { return QIO_CHANNEL_ERR_BLOCK; }
+        if (errno == EINTR) { goto retry; }
 
-        error_setg_errno(errp, errno,
-                         "Unable to read from socket");
+        error_setg_errno(errp, errno, "Unable to read from socket");
         return -1;
     }
 
     if (fds && nfds) {
-        bool preserve_blocking =
-            flags & QIO_CHANNEL_READ_FLAG_FD_PRESERVE_BLOCKING;
+        bool preserve_blocking = flags & QIO_CHANNEL_READ_FLAG_FD_PRESERVE_BLOCKING;
 
         qio_channel_socket_copy_fds(&msg, fds, nfds);
 
-        if (!qio_channel_handle_fds(*fds, *nfds,
-                                    preserve_blocking, errp)) {
+        if (!qio_channel_handle_fds(*fds, *nfds, preserve_blocking, errp)) {
             qio_channel_cleanup_fds(fds, nfds);
             return -1;
         }
@@ -602,196 +493,159 @@ static ssize_t qio_channel_socket_readv(QIOChannel *ioc,
     return ret;
 }
 
-static ssize_t qio_channel_socket_writev(QIOChannel *ioc,
-                                         const struct iovec *iov,
-                                         size_t niov,
-                                         int *fds,
-                                         size_t nfds,
-                                         int flags,
-                                         Error **errp)
+static ssize_t qio_channel_socket_writev(QIOChannel* ioc, const struct iovec* iov, size_t niov, int* fds, size_t nfds,
+                                         int flags, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    ssize_t ret;
-    struct msghdr msg = { NULL, };
-    char control[CMSG_SPACE(sizeof(int) * SOCKET_MAX_FDS)];
-    size_t fdsize = sizeof(int) * nfds;
-    struct cmsghdr *cmsg;
-    int sflags = 0;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    ssize_t           ret;
+    struct msghdr     msg = {
+        NULL,
+    };
+    char            control[CMSG_SPACE(sizeof(int) * SOCKET_MAX_FDS)];
+    size_t          fdsize = sizeof(int) * nfds;
+    struct cmsghdr* cmsg;
+    int             sflags = 0;
 
     memset(control, 0, CMSG_SPACE(sizeof(int) * SOCKET_MAX_FDS));
 
-    msg.msg_iov = (struct iovec *)iov;
+    msg.msg_iov    = (struct iovec*)iov;
     msg.msg_iovlen = niov;
 
     if (nfds) {
         if (nfds > SOCKET_MAX_FDS) {
-            error_setg_errno(errp, EINVAL,
-                             "Only %d FDs can be sent, got %zu",
-                             SOCKET_MAX_FDS, nfds);
+            error_setg_errno(errp, EINVAL, "Only %d FDs can be sent, got %zu", SOCKET_MAX_FDS, nfds);
             return -1;
         }
 
-        msg.msg_control = control;
+        msg.msg_control    = control;
         msg.msg_controllen = CMSG_SPACE(sizeof(int) * nfds);
 
-        cmsg = CMSG_FIRSTHDR(&msg);
-        cmsg->cmsg_len = CMSG_LEN(fdsize);
+        cmsg             = CMSG_FIRSTHDR(&msg);
+        cmsg->cmsg_len   = CMSG_LEN(fdsize);
         cmsg->cmsg_level = SOL_SOCKET;
-        cmsg->cmsg_type = SCM_RIGHTS;
+        cmsg->cmsg_type  = SCM_RIGHTS;
         memcpy(CMSG_DATA(cmsg), fds, fdsize);
     }
 
     if (flags & QIO_CHANNEL_WRITE_FLAG_ZERO_COPY) {
-#ifdef QEMU_MSG_ZEROCOPY
+    #ifdef QEMU_MSG_ZEROCOPY
         sflags = MSG_ZEROCOPY;
-#else
+    #else
         /*
          * We expect QIOChannel class entry point to have
          * blocked this code path already
          */
         assert_not_reached();
-#endif
+    #endif
     }
 
- retry:
+retry:
     ret = sendmsg(sioc->fd, &msg, sflags);
     if (ret <= 0) {
         switch (errno) {
-        case EAGAIN:
-            return QIO_CHANNEL_ERR_BLOCK;
-        case EINTR:
-            goto retry;
-        case ENOBUFS:
-            if (flags & QIO_CHANNEL_WRITE_FLAG_ZERO_COPY) {
-                error_setg_errno(errp, errno,
-                                 "Process can't lock enough memory for using MSG_ZEROCOPY");
-                return -1;
-            }
-            break;
+            case EAGAIN: return QIO_CHANNEL_ERR_BLOCK;
+            case EINTR : goto retry;
+            case ENOBUFS:
+                if (flags & QIO_CHANNEL_WRITE_FLAG_ZERO_COPY) {
+                    error_setg_errno(errp, errno, "Process can't lock enough memory for using MSG_ZEROCOPY");
+                    return -1;
+                }
+                break;
         }
 
-        error_setg_errno(errp, errno,
-                         "Unable to write to socket");
+        error_setg_errno(errp, errno, "Unable to write to socket");
         return -1;
     }
 
-    if (flags & QIO_CHANNEL_WRITE_FLAG_ZERO_COPY) {
-        sioc->zero_copy_queued++;
-    }
+    if (flags & QIO_CHANNEL_WRITE_FLAG_ZERO_COPY) { sioc->zero_copy_queued++; }
 
     return ret;
 }
-#else /* WIN32 */
-static ssize_t qio_channel_socket_readv(QIOChannel *ioc,
-                                        const struct iovec *iov,
-                                        size_t niov,
-                                        int **fds,
-                                        size_t *nfds,
-                                        int flags,
-                                        Error **errp)
+#else  /* WIN32 */
+static ssize_t qio_channel_socket_readv(QIOChannel* ioc, const struct iovec* iov, size_t niov, int** fds, size_t* nfds,
+                                        int flags, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    ssize_t done = 0;
-    ssize_t i;
-    int sflags = 0;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    ssize_t           done = 0;
+    ssize_t           i;
+    int               sflags = 0;
 
-    if (flags & QIO_CHANNEL_READ_FLAG_MSG_PEEK) {
-        sflags |= MSG_PEEK;
-    }
+    if (flags & QIO_CHANNEL_READ_FLAG_MSG_PEEK) { sflags |= MSG_PEEK; }
 
     for (i = 0; i < niov; i++) {
         ssize_t ret;
     retry:
-        ret = recv(sioc->fd,
-                   iov[i].iov_base,
-                   iov[i].iov_len,
-                   sflags);
+        ret = recv(sioc->fd, iov[i].iov_base, iov[i].iov_len, sflags);
         if (ret < 0) {
             if (errno == EAGAIN) {
-                if (done) {
-                    return done;
-                } else {
+                if (done) { return done; }
+                else {
                     return QIO_CHANNEL_ERR_BLOCK;
                 }
-            } else if (errno == EINTR) {
+            }
+            else if (errno == EINTR) {
                 goto retry;
-            } else {
-                error_setg_errno(errp, errno,
-                                 "Unable to read from socket");
+            }
+            else {
+                error_setg_errno(errp, errno, "Unable to read from socket");
                 return -1;
             }
         }
         done += ret;
-        if (ret < iov[i].iov_len) {
-            return done;
-        }
+        if (ret < iov[i].iov_len) { return done; }
     }
 
     return done;
 }
 
-static ssize_t qio_channel_socket_writev(QIOChannel *ioc,
-                                         const struct iovec *iov,
-                                         size_t niov,
-                                         int *fds,
-                                         size_t nfds,
-                                         int flags,
-                                         Error **errp)
+static ssize_t qio_channel_socket_writev(QIOChannel* ioc, const struct iovec* iov, size_t niov, int* fds, size_t nfds,
+                                         int flags, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    ssize_t done = 0;
-    ssize_t i;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    ssize_t           done = 0;
+    ssize_t           i;
 
     for (i = 0; i < niov; i++) {
         ssize_t ret;
     retry:
-        ret = send(sioc->fd,
-                   iov[i].iov_base,
-                   iov[i].iov_len,
-                   0);
+        ret = send(sioc->fd, iov[i].iov_base, iov[i].iov_len, 0);
         if (ret < 0) {
             if (errno == EAGAIN) {
-                if (done) {
-                    return done;
-                } else {
+                if (done) { return done; }
+                else {
                     return QIO_CHANNEL_ERR_BLOCK;
                 }
-            } else if (errno == EINTR) {
+            }
+            else if (errno == EINTR) {
                 goto retry;
-            } else {
-                error_setg_errno(errp, errno,
-                                 "Unable to write to socket");
+            }
+            else {
+                error_setg_errno(errp, errno, "Unable to write to socket");
                 return -1;
             }
         }
         done += ret;
-        if (ret < iov[i].iov_len) {
-            return done;
-        }
+        if (ret < iov[i].iov_len) { return done; }
     }
 
     return done;
 }
 #endif /* WIN32 */
 
-
 #ifdef QEMU_MSG_ZEROCOPY
-static int qio_channel_socket_flush(QIOChannel *ioc,
-                                    Error **errp)
+static int qio_channel_socket_flush(QIOChannel* ioc, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    struct msghdr msg = {};
-    struct sock_extended_err *serr;
-    struct cmsghdr *cm;
-    char control[CMSG_SPACE(sizeof(*serr))];
-    int received;
-    int ret;
+    QIOChannelSocket*         sioc = QIO_CHANNEL_SOCKET(ioc);
+    struct msghdr             msg  = {};
+    struct sock_extended_err* serr;
+    struct cmsghdr*           cm;
+    char                      control[CMSG_SPACE(sizeof(*serr))];
+    int                       received;
+    int                       ret;
 
-    if (sioc->zero_copy_queued == sioc->zero_copy_sent) {
-        return 0;
-    }
+    if (sioc->zero_copy_queued == sioc->zero_copy_sent) { return 0; }
 
-    msg.msg_control = control;
+    msg.msg_control    = control;
     msg.msg_controllen = sizeof(control);
     memset(control, 0, sizeof(control));
 
@@ -801,41 +655,34 @@ static int qio_channel_socket_flush(QIOChannel *ioc,
         received = recvmsg(sioc->fd, &msg, MSG_ERRQUEUE);
         if (received < 0) {
             switch (errno) {
-            case EAGAIN:
-                /* Nothing on errqueue, wait until something is available */
-                qio_channel_wait(ioc, G_IO_ERR);
-                continue;
-            case EINTR:
-                continue;
-            default:
-                error_setg_errno(errp, errno,
-                                 "Unable to read errqueue");
-                return -1;
+                case EAGAIN:
+                    /* Nothing on errqueue, wait until something is available */
+                    qio_channel_wait(ioc, G_IO_ERR);
+                    continue;
+                case EINTR: continue;
+                default   : error_setg_errno(errp, errno, "Unable to read errqueue"); return -1;
             }
         }
 
         cm = CMSG_FIRSTHDR(&msg);
-        if (cm->cmsg_level != SOL_IP   && cm->cmsg_type != IP_RECVERR &&
-            cm->cmsg_level != SOL_IPV6 && cm->cmsg_type != IPV6_RECVERR) {
-            error_setg_errno(errp, EPROTOTYPE,
-                             "Wrong cmsg in errqueue");
+        if (cm->cmsg_level != SOL_IP && cm->cmsg_type != IP_RECVERR && cm->cmsg_level != SOL_IPV6
+            && cm->cmsg_type != IPV6_RECVERR)
+        {
+            error_setg_errno(errp, EPROTOTYPE, "Wrong cmsg in errqueue");
             return -1;
         }
 
-        serr = (void *) CMSG_DATA(cm);
+        serr = (void*)CMSG_DATA(cm);
         if (serr->ee_errno != SO_EE_ORIGIN_NONE) {
-            error_setg_errno(errp, serr->ee_errno,
-                             "Error on socket");
+            error_setg_errno(errp, serr->ee_errno, "Error on socket");
             return -1;
         }
         if (serr->ee_origin != SO_EE_ORIGIN_ZEROCOPY) {
-            error_setg_errno(errp, serr->ee_origin,
-                             "Error not from zero copy");
+            error_setg_errno(errp, serr->ee_origin, "Error not from zero copy");
             return -1;
         }
         if (serr->ee_data < serr->ee_info) {
-            error_setg_errno(errp, serr->ee_origin,
-                             "Wrong notification bounds");
+            error_setg_errno(errp, serr->ee_origin, "Wrong notification bounds");
             return -1;
         }
 
@@ -843,9 +690,7 @@ static int qio_channel_socket_flush(QIOChannel *ioc,
         sioc->zero_copy_sent += serr->ee_data - serr->ee_info + 1;
 
         /* If any sendmsg() succeeded using zero copy, return 0 at the end */
-        if (serr->ee_code != SO_EE_CODE_ZEROCOPY_COPIED) {
-            ret = 0;
-        }
+        if (serr->ee_code != SO_EE_CODE_ZEROCOPY_COPIED) { ret = 0; }
     }
 
     return ret;
@@ -853,58 +698,40 @@ static int qio_channel_socket_flush(QIOChannel *ioc,
 
 #endif /* QEMU_MSG_ZEROCOPY */
 
-static int
-qio_channel_socket_set_blocking(QIOChannel *ioc,
-                                bool enabled,
-                                Error **errp)
+static int qio_channel_socket_set_blocking(QIOChannel* ioc, bool enabled, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
 
-    if (!qemu_set_blocking(sioc->fd, enabled, errp)) {
-        return -1;
-    }
+    if (!qemu_set_blocking(sioc->fd, enabled, errp)) { return -1; }
 
     return 0;
 }
 
-
-static void
-qio_channel_socket_set_delay(QIOChannel *ioc,
-                             bool enabled)
+static void qio_channel_socket_set_delay(QIOChannel* ioc, bool enabled)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    int v = enabled ? 0 : 1;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    int               v    = enabled ? 0 : 1;
 
-    setsockopt(sioc->fd,
-               IPPROTO_TCP, TCP_NODELAY,
-               &v, sizeof(v));
+    setsockopt(sioc->fd, IPPROTO_TCP, TCP_NODELAY, &v, sizeof(v));
 }
 
-
-static void
-qio_channel_socket_set_cork(QIOChannel *ioc,
-                            bool enabled)
+static void qio_channel_socket_set_cork(QIOChannel* ioc, bool enabled)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    int v = enabled ? 1 : 0;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    int               v    = enabled ? 1 : 0;
 
     socket_set_cork(sioc->fd, v);
 }
 
-static int
-qio_channel_socket_get_peerpid(QIOChannel *ioc,
-                               unsigned int *pid,
-                               Error **errp)
+static int qio_channel_socket_get_peerpid(QIOChannel* ioc, unsigned int* pid, Error** errp)
 {
 #ifdef CONFIG_LINUX
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    Error *err = NULL;
-    socklen_t len = sizeof(struct ucred);
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    Error*            err  = NULL;
+    socklen_t         len  = sizeof(struct ucred);
 
     struct ucred cred;
-    if (getsockopt(sioc->fd,
-               SOL_SOCKET, SO_PEERCRED,
-               &cred, &len) == -1) {
+    if (getsockopt(sioc->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == -1) {
         error_setg_errno(&err, errno, "Unable to get peer credentials");
         error_propagate(errp, err);
         *pid = -1;
@@ -919,21 +746,17 @@ qio_channel_socket_get_peerpid(QIOChannel *ioc,
 #endif
 }
 
-static int
-qio_channel_socket_close(QIOChannel *ioc,
-                         Error **errp)
+static int qio_channel_socket_close(QIOChannel* ioc, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    int rc = 0;
-    Error *err = NULL;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    int               rc   = 0;
+    Error*            err  = NULL;
 
     if (sioc->fd != -1) {
 #ifdef WIN32
         qemu_socket_unselect(sioc->fd, NULL);
 #endif
-        if (qio_channel_has_feature(ioc, QIO_CHANNEL_FEATURE_LISTEN)) {
-            socket_listen_cleanup(sioc->fd, errp);
-        }
+        if (qio_channel_has_feature(ioc, QIO_CHANNEL_FEATURE_LISTEN)) { socket_listen_cleanup(sioc->fd, errp); }
 
         if (close(sioc->fd) < 0) {
             sioc->fd = -1;
@@ -946,71 +769,51 @@ qio_channel_socket_close(QIOChannel *ioc,
     return rc;
 }
 
-static int
-qio_channel_socket_shutdown(QIOChannel *ioc,
-                            QIOChannelShutdown how,
-                            Error **errp)
+static int qio_channel_socket_shutdown(QIOChannel* ioc, QIOChannelShutdown how, Error** errp)
 {
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(ioc);
-    int sockhow;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(ioc);
+    int               sockhow;
 
     switch (how) {
-    case QIO_CHANNEL_SHUTDOWN_READ:
-        sockhow = SHUT_RD;
-        break;
-    case QIO_CHANNEL_SHUTDOWN_WRITE:
-        sockhow = SHUT_WR;
-        break;
-    case QIO_CHANNEL_SHUTDOWN_BOTH:
-    default:
-        sockhow = SHUT_RDWR;
-        break;
+        case QIO_CHANNEL_SHUTDOWN_READ : sockhow = SHUT_RD; break;
+        case QIO_CHANNEL_SHUTDOWN_WRITE: sockhow = SHUT_WR; break;
+        case QIO_CHANNEL_SHUTDOWN_BOTH :
+        default                        : sockhow = SHUT_RDWR; break;
     }
 
     if (shutdown(sioc->fd, sockhow) < 0) {
-        error_setg_errno(errp, errno,
-                         "Unable to shutdown socket");
+        error_setg_errno(errp, errno, "Unable to shutdown socket");
         return -1;
     }
     return 0;
 }
 
-static void qio_channel_socket_set_aio_fd_handler(QIOChannel *ioc,
-                                                  AioContext *read_ctx,
-                                                  IOHandler *io_read,
-                                                  AioContext *write_ctx,
-                                                  IOHandler *io_write,
-                                                  void *opaque)
+static void qio_channel_socket_set_aio_fd_handler(QIOChannel* ioc, AioContext* read_ctx, IOHandler* io_read,
+                                                  AioContext* write_ctx, IOHandler* io_write, void* opaque)
 {
-    QIOChannelSocket *sioc = container_of(ioc, QIOChannelSocket, parent);
+    QIOChannelSocket* sioc = container_of(ioc, QIOChannelSocket, parent);
 
-    qio_channel_util_set_aio_fd_handler(sioc->fd, read_ctx, io_read,
-                                        sioc->fd, write_ctx, io_write,
-                                        opaque);
+    qio_channel_util_set_aio_fd_handler(sioc->fd, read_ctx, io_read, sioc->fd, write_ctx, io_write, opaque);
 }
 
-static GSource *qio_channel_socket_create_watch(QIOChannel *ioc,
-                                                GIOCondition condition)
+static GSource* qio_channel_socket_create_watch(QIOChannel* ioc, GIOCondition condition)
 {
-    QIOChannelSocket *sioc = container_of(ioc, QIOChannelSocket, parent);
-    return qio_channel_create_socket_watch(ioc,
-                                           sioc->fd,
-                                           condition);
+    QIOChannelSocket* sioc = container_of(ioc, QIOChannelSocket, parent);
+    return qio_channel_create_socket_watch(ioc, sioc->fd, condition);
 }
 
-static void qio_channel_socket_class_init(ObjectClass *klass,
-                                          const void *class_data G_GNUC_UNUSED)
+static void qio_channel_socket_class_init(ObjectClass* klass, const void* class_data G_GNUC_UNUSED)
 {
-    QIOChannelClass *ioc_klass = QIO_CHANNEL_CLASS(klass);
+    QIOChannelClass* ioc_klass = QIO_CHANNEL_CLASS(klass);
 
-    ioc_klass->io_writev = qio_channel_socket_writev;
-    ioc_klass->io_readv = qio_channel_socket_readv;
-    ioc_klass->io_set_blocking = qio_channel_socket_set_blocking;
-    ioc_klass->io_close = qio_channel_socket_close;
-    ioc_klass->io_shutdown = qio_channel_socket_shutdown;
-    ioc_klass->io_set_cork = qio_channel_socket_set_cork;
-    ioc_klass->io_set_delay = qio_channel_socket_set_delay;
-    ioc_klass->io_create_watch = qio_channel_socket_create_watch;
+    ioc_klass->io_writev             = qio_channel_socket_writev;
+    ioc_klass->io_readv              = qio_channel_socket_readv;
+    ioc_klass->io_set_blocking       = qio_channel_socket_set_blocking;
+    ioc_klass->io_close              = qio_channel_socket_close;
+    ioc_klass->io_shutdown           = qio_channel_socket_shutdown;
+    ioc_klass->io_set_cork           = qio_channel_socket_set_cork;
+    ioc_klass->io_set_delay          = qio_channel_socket_set_delay;
+    ioc_klass->io_create_watch       = qio_channel_socket_create_watch;
     ioc_klass->io_set_aio_fd_handler = qio_channel_socket_set_aio_fd_handler;
 #ifdef QEMU_MSG_ZEROCOPY
     ioc_klass->io_flush = qio_channel_socket_flush;
@@ -1019,17 +822,14 @@ static void qio_channel_socket_class_init(ObjectClass *klass,
 }
 
 static const TypeInfo qio_channel_socket_info = {
-    .parent = TYPE_QIO_CHANNEL,
-    .name = TYPE_QIO_CHANNEL_SOCKET,
-    .instance_size = sizeof(QIOChannelSocket),
-    .instance_init = qio_channel_socket_init,
+    .parent            = TYPE_QIO_CHANNEL,
+    .name              = TYPE_QIO_CHANNEL_SOCKET,
+    .instance_size     = sizeof(QIOChannelSocket),
+    .instance_init     = qio_channel_socket_init,
     .instance_finalize = qio_channel_socket_finalize,
-    .class_init = qio_channel_socket_class_init,
+    .class_init        = qio_channel_socket_class_init,
 };
 
-static void qio_channel_socket_register_types(void)
-{
-    type_register_static(&qio_channel_socket_info);
-}
+static void qio_channel_socket_register_types(void) { type_register_static(&qio_channel_socket_info); }
 
 type_init(qio_channel_socket_register_types);

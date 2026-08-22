@@ -15,10 +15,10 @@
  */
 void smp_mb_global_init(void);
 void smp_mb_global(void);
-#define smp_mb_placeholder()       barrier()
+    #define smp_mb_placeholder() barrier()
 #else
 /* Keep it simple, execute a real memory barrier on both sides.  */
-static inline void smp_mb_global_init(void) {}
-#define smp_mb_global()            smp_mb()
-#define smp_mb_placeholder()       smp_mb()
+static inline void smp_mb_global_init(void) { }
+    #define smp_mb_global()      smp_mb()
+    #define smp_mb_placeholder() smp_mb()
 #endif

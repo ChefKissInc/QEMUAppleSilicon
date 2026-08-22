@@ -32,9 +32,10 @@
 #include "internals.h"
 
 /* System emulation specific state */
-typedef struct {
+typedef struct
+{
     CharBackend chr;
-    Chardev *mon_chr;
+    Chardev*    mon_chr;
 } GDBSystemState;
 
 GDBSystemState gdbserver_system_state;
@@ -42,8 +43,8 @@ GDBSystemState gdbserver_system_state;
 static void reset_gdbserver_state(void)
 {
     g_free(gdbserver_state.processes);
-    gdbserver_state.processes = NULL;
-    gdbserver_state.process_num = 0;
+    gdbserver_state.processes        = NULL;
+    gdbserver_state.process_num      = 0;
     gdbserver_state.allow_stop_reply = false;
 }
 
@@ -53,18 +54,12 @@ static void reset_gdbserver_state(void)
  * In system mode GDB numbers CPUs from 1 as 0 is reserved as an "any
  * cpu" index.
  */
-int gdb_get_cpu_index(CPUState *cpu)
-{
-    return cpu->cpu_index + 1;
-}
+int gdb_get_cpu_index(CPUState* cpu) { return cpu->cpu_index + 1; }
 
 /*
  * We check the status of the last message in the chardev receive code
  */
-bool gdb_got_immediate_ack(void)
-{
-    return true;
-}
+bool gdb_got_immediate_ack(void) { return true; }
 
 /*
  * GDB Connection management. For system emulation we do all of this
@@ -72,7 +67,7 @@ bool gdb_got_immediate_ack(void)
  * network and unix sockets.
  */
 
-void gdb_put_buffer(const uint8_t *buf, int len)
+void gdb_put_buffer(const uint8_t* buf, int len)
 {
     /*
      * XXX this blocks entire thread. Rewrite to use
@@ -81,25 +76,22 @@ void gdb_put_buffer(const uint8_t *buf, int len)
     qemu_chr_fe_write_all(&gdbserver_system_state.chr, buf, len);
 }
 
-static void gdb_chr_event(void *opaque, QEMUChrEvent event)
+static void gdb_chr_event(void* opaque, QEMUChrEvent event)
 {
-    int i;
-    GDBState *s = (GDBState *) opaque;
+    int       i;
+    GDBState* s = (GDBState*)opaque;
 
     switch (event) {
-    case CHR_EVENT_OPENED:
-        /* Start with first process attached, others detached */
-        for (i = 0; i < s->process_num; i++) {
-            s->processes[i].attached = !i;
-        }
+        case CHR_EVENT_OPENED:
+            /* Start with first process attached, others detached */
+            for (i = 0; i < s->process_num; i++) { s->processes[i].attached = !i; }
 
-        s->c_cpu = gdb_first_attached_cpu();
-        s->g_cpu = s->c_cpu;
+            s->c_cpu = gdb_first_attached_cpu();
+            s->g_cpu = s->c_cpu;
 
-        vm_stop(RUN_STATE_PAUSED);
-        break;
-    default:
-        break;
+            vm_stop(RUN_STATE_PAUSED);
+            break;
+        default: break;
     }
 }
 
@@ -111,91 +103,77 @@ static void gdb_chr_event(void *opaque, QEMUChrEvent event)
  * state, which can cause packets to be dropped and state transition
  * 'T' packets to be sent while the syscall is still being processed.
  */
-void gdb_syscall_handling(const char *syscall_packet)
+void gdb_syscall_handling(const char* syscall_packet)
 {
     vm_stop(RUN_STATE_DEBUG);
     qemu_cpu_kick(gdbserver_state.c_cpu);
 }
 
-static void gdb_vm_state_change(void *opaque, bool running, RunState state)
+static void gdb_vm_state_change(void* opaque, bool running, RunState state)
 {
-    CPUState *cpu = gdbserver_state.c_cpu;
+    CPUState* cpu          = gdbserver_state.c_cpu;
     g_autoptr(GString) buf = g_string_new(NULL);
     g_autoptr(GString) tid = g_string_new(NULL);
-    const char *type;
-    int ret;
+    const char* type;
+    int         ret;
 
-    if (running || gdbserver_state.state == RS_INACTIVE) {
-        return;
-    }
+    if (running || gdbserver_state.state == RS_INACTIVE) { return; }
 
     /* Is there a GDB syscall waiting to be sent?  */
-    if (gdb_handled_syscall()) {
-        return;
-    }
+    if (gdb_handled_syscall()) { return; }
 
     if (cpu == NULL) {
         /* No process attached */
         return;
     }
 
-    if (!gdbserver_state.allow_stop_reply) {
-        return;
-    }
+    if (!gdbserver_state.allow_stop_reply) { return; }
 
     gdb_append_thread_id(cpu, tid);
 
     switch (state) {
-    case RUN_STATE_DEBUG:
-        if (cpu->watchpoint_hit) {
-            switch (cpu->watchpoint_hit->flags & BP_MEM_ACCESS) {
-            case BP_MEM_READ:
-                type = "r";
-                break;
-            case BP_MEM_ACCESS:
-                type = "a";
-                break;
-            default:
-                type = "";
-                break;
+        case RUN_STATE_DEBUG:
+            if (cpu->watchpoint_hit) {
+                switch (cpu->watchpoint_hit->flags & BP_MEM_ACCESS) {
+                    case BP_MEM_READ  : type = "r"; break;
+                    case BP_MEM_ACCESS: type = "a"; break;
+                    default           : type = ""; break;
+                }
+                trace_gdbstub_hit_watchpoint(type, gdb_get_cpu_index(cpu), cpu->watchpoint_hit->vaddr);
+                g_string_printf(buf, "T%02xthread:%s;%swatch:%" VADDR_PRIx ";", GDB_SIGNAL_TRAP, tid->str, type,
+                                cpu->watchpoint_hit->vaddr);
+                cpu->watchpoint_hit = NULL;
+                goto send_packet;
             }
-            trace_gdbstub_hit_watchpoint(type,
-                                         gdb_get_cpu_index(cpu),
-                                         cpu->watchpoint_hit->vaddr);
-            g_string_printf(buf, "T%02xthread:%s;%swatch:%" VADDR_PRIx ";",
-                            GDB_SIGNAL_TRAP, tid->str, type,
-                            cpu->watchpoint_hit->vaddr);
-            cpu->watchpoint_hit = NULL;
-            goto send_packet;
-        } else {
-            trace_gdbstub_hit_break();
-        }
-        ret = GDB_SIGNAL_TRAP;
-        break;
-    case RUN_STATE_PAUSED:
-        trace_gdbstub_hit_paused();
-        ret = GDB_SIGNAL_INT;
-        break;
-    case RUN_STATE_SHUTDOWN:
-        trace_gdbstub_hit_shutdown();
-        ret = GDB_SIGNAL_QUIT;
-        break;
-    case RUN_STATE_IO_ERROR:
-        trace_gdbstub_hit_io_error();
-        ret = GDB_SIGNAL_STOP;
-        break;
-    case RUN_STATE_WATCHDOG:
-        trace_gdbstub_hit_watchdog();
-        ret = GDB_SIGNAL_ALRM;
-        break;
-    case RUN_STATE_INTERNAL_ERROR:
-        trace_gdbstub_hit_internal_error();
-        ret = GDB_SIGNAL_ABRT;
-        break;
-    default:
-        trace_gdbstub_hit_unknown(state);
-        ret = GDB_SIGNAL_UNKNOWN;
-        break;
+            else {
+                trace_gdbstub_hit_break();
+            }
+            ret = GDB_SIGNAL_TRAP;
+            break;
+        case RUN_STATE_PAUSED:
+            trace_gdbstub_hit_paused();
+            ret = GDB_SIGNAL_INT;
+            break;
+        case RUN_STATE_SHUTDOWN:
+            trace_gdbstub_hit_shutdown();
+            ret = GDB_SIGNAL_QUIT;
+            break;
+        case RUN_STATE_IO_ERROR:
+            trace_gdbstub_hit_io_error();
+            ret = GDB_SIGNAL_STOP;
+            break;
+        case RUN_STATE_WATCHDOG:
+            trace_gdbstub_hit_watchdog();
+            ret = GDB_SIGNAL_ALRM;
+            break;
+        case RUN_STATE_INTERNAL_ERROR:
+            trace_gdbstub_hit_internal_error();
+            ret = GDB_SIGNAL_ABRT;
+            break;
+        default:
+            trace_gdbstub_hit_unknown(state);
+            ret = GDB_SIGNAL_UNKNOWN;
+            break;
     }
     gdb_set_stop_cpu(cpu);
     g_string_printf(buf, "T%02xthread:%s;", ret, tid->str);
@@ -211,13 +189,11 @@ send_packet:
 #ifndef _WIN32
 static void gdb_sigterm_handler(int signal)
 {
-    if (runstate_is_running()) {
-        vm_stop(RUN_STATE_PAUSED);
-    }
+    if (runstate_is_running()) { vm_stop(RUN_STATE_PAUSED); }
 }
 #endif
 
-static int gdb_chr_write(Chardev *chr, const uint8_t *buf, int len)
+static int gdb_chr_write(Chardev* chr, const uint8_t* buf, int len)
 {
     g_autoptr(GString) hex_buf = g_string_new("O");
     gdb_memtohex(hex_buf, buf, len);
@@ -225,53 +201,51 @@ static int gdb_chr_write(Chardev *chr, const uint8_t *buf, int len)
     return len;
 }
 
-static bool gdb_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
+static bool gdb_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
     /* Never send CHR_EVENT_OPENED */
     return true;
 }
 
-static void char_gdb_class_init(ObjectClass *oc, const void *data)
+static void char_gdb_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
-    cc->internal = true;
-    cc->chr_open = gdb_chr_open;
+    cc->internal  = true;
+    cc->chr_open  = gdb_chr_open;
     cc->chr_write = gdb_chr_write;
 }
 
 #define TYPE_CHARDEV_GDB "chardev-gdb"
 
 static const TypeInfo char_gdb_type_info = {
-    .name = TYPE_CHARDEV_GDB,
-    .parent = TYPE_CHARDEV,
+    .name       = TYPE_CHARDEV_GDB,
+    .parent     = TYPE_CHARDEV,
     .class_init = char_gdb_class_init,
 };
 
-static int gdb_chr_can_receive(void *opaque)
+static int gdb_chr_can_receive(void* opaque)
 {
-  /*
-   * We can handle an arbitrarily large amount of data.
-   * Pick the maximum packet size, which is as good as anything.
-   */
-  return MAX_PACKET_LENGTH;
+    /*
+     * We can handle an arbitrarily large amount of data.
+     * Pick the maximum packet size, which is as good as anything.
+     */
+    return MAX_PACKET_LENGTH;
 }
 
-static void gdb_chr_receive(void *opaque, const uint8_t *buf, int size)
+static void gdb_chr_receive(void* opaque, const uint8_t* buf, int size)
 {
     int i;
 
-    for (i = 0; i < size; i++) {
-        gdb_read_byte(buf[i]);
-    }
+    for (i = 0; i < size; i++) { gdb_read_byte(buf[i]); }
 }
 
-static int find_cpu_clusters(Object *child, void *opaque)
+static int find_cpu_clusters(Object* child, void* opaque)
 {
     if (object_dynamic_cast(child, TYPE_CPU_CLUSTER)) {
-        GDBState *s = (GDBState *) opaque;
-        CPUClusterState *cluster = CPU_CLUSTER(child);
-        GDBProcess *process;
+        GDBState*        s       = (GDBState*)opaque;
+        CPUClusterState* cluster = CPU_CLUSTER(child);
+        GDBProcess*      process;
 
         s->processes = g_renew(GDBProcess, s->processes, ++s->process_num);
 
@@ -283,8 +257,8 @@ static int find_cpu_clusters(Object *child, void *opaque)
          * that would lead to PID 0.
          */
         assert(cluster->cluster_id != UINT32_MAX);
-        process->pid = cluster->cluster_id + 1;
-        process->attached = false;
+        process->pid        = cluster->cluster_id + 1;
+        process->attached   = false;
         process->target_xml = NULL;
 
         return 0;
@@ -293,50 +267,47 @@ static int find_cpu_clusters(Object *child, void *opaque)
     return object_child_foreach(child, find_cpu_clusters, opaque);
 }
 
-static int pid_order(const void *a, const void *b)
+static int pid_order(const void* a, const void* b)
 {
-    GDBProcess *pa = (GDBProcess *) a;
-    GDBProcess *pb = (GDBProcess *) b;
+    GDBProcess* pa = (GDBProcess*)a;
+    GDBProcess* pb = (GDBProcess*)b;
 
-    if (pa->pid < pb->pid) {
-        return -1;
-    } else if (pa->pid > pb->pid) {
+    if (pa->pid < pb->pid) { return -1; }
+    else if (pa->pid > pb->pid) {
         return 1;
-    } else {
+    }
+    else {
         return 0;
     }
 }
 
-static void create_processes(GDBState *s)
+static void create_processes(GDBState* s)
 {
     object_child_foreach(object_get_root(), find_cpu_clusters, s);
 
     if (gdbserver_state.processes) {
         /* Sort by PID */
-        qsort(gdbserver_state.processes,
-              gdbserver_state.process_num,
-              sizeof(gdbserver_state.processes[0]),
-              pid_order);
+        qsort(gdbserver_state.processes, gdbserver_state.process_num, sizeof(gdbserver_state.processes[0]), pid_order);
     }
 
     gdb_create_default_process(s);
 }
 
-bool gdbserver_start(const char *device, Error **errp)
+bool gdbserver_start(const char* device, Error** errp)
 {
-    Chardev *chr = NULL;
-    Chardev *mon_chr;
+    Chardev* chr = NULL;
+    Chardev* mon_chr;
     g_autoptr(GString) cs = g_string_new(device);
 
     if (!first_cpu) {
         error_setg(errp, "gdbstub: meaningless to attach gdb to a "
-                   "machine without any CPU.");
+                         "machine without any CPU.");
         return false;
     }
 
     if (!gdb_supports_guest_debug()) {
         error_setg(errp, "gdbstub: current accelerator doesn't "
-                   "support guest debugging");
+                         "support guest debugging");
         return false;
     }
 
@@ -378,10 +349,10 @@ bool gdbserver_start(const char *device, Error **errp)
         qemu_add_vm_change_state_handler(gdb_vm_state_change, NULL);
 
         /* Initialize a monitor terminal for gdb */
-        mon_chr = qemu_chardev_new(NULL, TYPE_CHARDEV_GDB,
-                                   NULL, NULL, &error_abort);
+        mon_chr = qemu_chardev_new(NULL, TYPE_CHARDEV_GDB, NULL, NULL, &error_abort);
         monitor_init_hmp(mon_chr, false, &error_abort);
-    } else {
+    }
+    else {
         qemu_chr_fe_deinit(&gdbserver_system_state.chr, true);
         mon_chr = gdbserver_system_state.mon_chr;
         reset_gdbserver_state();
@@ -391,22 +362,17 @@ bool gdbserver_start(const char *device, Error **errp)
 
     if (chr) {
         qemu_chr_fe_init(&gdbserver_system_state.chr, chr, &error_abort);
-        qemu_chr_fe_set_handlers(&gdbserver_system_state.chr,
-                                 gdb_chr_can_receive,
-                                 gdb_chr_receive, gdb_chr_event,
-                                 NULL, &gdbserver_state, NULL, true);
+        qemu_chr_fe_set_handlers(&gdbserver_system_state.chr, gdb_chr_can_receive, gdb_chr_receive, gdb_chr_event, NULL,
+                                 &gdbserver_state, NULL, true);
     }
-    gdbserver_state.state = chr ? RS_IDLE : RS_INACTIVE;
+    gdbserver_state.state          = chr ? RS_IDLE : RS_INACTIVE;
     gdbserver_system_state.mon_chr = mon_chr;
     gdb_syscall_reset();
 
     return true;
 }
 
-static void register_types(void)
-{
-    type_register_static(&char_gdb_type_info);
-}
+static void register_types(void) { type_register_static(&char_gdb_type_info); }
 
 type_init(register_types);
 
@@ -415,9 +381,7 @@ void gdb_exit(int code)
 {
     char buf[4];
 
-    if (!gdbserver_state.init) {
-        return;
-    }
+    if (!gdbserver_state.init) { return; }
 
     trace_gdbstub_op_exiting((uint8_t)code);
 
@@ -430,32 +394,24 @@ void gdb_exit(int code)
     qemu_chr_fe_deinit(&gdbserver_system_state.chr, true);
 }
 
-void gdb_qemu_exit(int code)
-{
-    qemu_system_shutdown_request_with_code(SHUTDOWN_CAUSE_GUEST_SHUTDOWN,
-                                           code);
-}
+void gdb_qemu_exit(int code) { qemu_system_shutdown_request_with_code(SHUTDOWN_CAUSE_GUEST_SHUTDOWN, code); }
 
 /*
  * Memory access
  */
 static int phy_memory_mode;
 
-int gdb_target_memory_rw_debug(CPUState *cpu, hwaddr addr,
-                               uint8_t *buf, int len, bool is_write)
+int gdb_target_memory_rw_debug(CPUState* cpu, hwaddr addr, uint8_t* buf, int len, bool is_write)
 {
     if (phy_memory_mode) {
-        if (is_write) {
-            cpu_physical_memory_write(addr, buf, len);
-        } else {
+        if (is_write) { cpu_physical_memory_write(addr, buf, len); }
+        else {
             cpu_physical_memory_read(addr, buf, len);
         }
         return 0;
     }
 
-    if (cpu->cc->memory_rw_debug) {
-        return cpu->cc->memory_rw_debug(cpu, addr, buf, len, is_write);
-    }
+    if (cpu->cc->memory_rw_debug) { return cpu->cc->memory_rw_debug(cpu, addr, buf, len, is_write); }
 
     return cpu_memory_rw_debug(cpu, addr, buf, len, is_write);
 }
@@ -466,7 +422,7 @@ int gdb_target_memory_rw_debug(CPUState *cpu, hwaddr addr,
 
 unsigned int gdb_get_max_cpus(void)
 {
-    MachineState *ms = MACHINE(qdev_get_machine());
+    MachineState* ms = MACHINE(qdev_get_machine());
     return ms->smp.max_cpus;
 }
 
@@ -474,32 +430,30 @@ unsigned int gdb_get_max_cpus(void)
  * Softmmu specific command helpers
  */
 
-void gdb_handle_query_qemu_phy_mem_mode(GArray *params,
-                                        void *ctx)
+void gdb_handle_query_qemu_phy_mem_mode(GArray* params, void* ctx)
 {
     g_string_printf(gdbserver_state.str_buf, "%d", phy_memory_mode);
     gdb_put_strbuf();
 }
 
-void gdb_handle_set_qemu_phy_mem_mode(GArray *params, void *ctx)
+void gdb_handle_set_qemu_phy_mem_mode(GArray* params, void* ctx)
 {
     if (!params->len) {
         gdb_put_packet("E22");
         return;
     }
 
-    if (!gdb_get_cmd_param(params, 0)->val_ul) {
-        phy_memory_mode = 0;
-    } else {
+    if (!gdb_get_cmd_param(params, 0)->val_ul) { phy_memory_mode = 0; }
+    else {
         phy_memory_mode = 1;
     }
     gdb_put_packet("OK");
 }
 
-void gdb_handle_query_rcmd(GArray *params, void *ctx)
+void gdb_handle_query_rcmd(GArray* params, void* ctx)
 {
     const guint8 zero = 0;
-    int len;
+    int          len;
 
     if (!params->len) {
         gdb_put_packet("E22");
@@ -516,9 +470,7 @@ void gdb_handle_query_rcmd(GArray *params, void *ctx)
     len = len / 2;
     gdb_hextomem(gdbserver_state.mem_buf, gdb_get_cmd_param(params, 0)->data, len);
     g_byte_array_append(gdbserver_state.mem_buf, &zero, 1);
-    qemu_chr_be_write(gdbserver_system_state.mon_chr,
-                      gdbserver_state.mem_buf->data,
-                      gdbserver_state.mem_buf->len);
+    qemu_chr_be_write(gdbserver_system_state.mon_chr, gdbserver_state.mem_buf->data, gdbserver_state.mem_buf->len);
     gdb_put_packet("OK");
 }
 
@@ -526,10 +478,7 @@ void gdb_handle_query_rcmd(GArray *params, void *ctx)
  * Execution state helpers
  */
 
-void gdb_handle_query_attached(GArray *params, void *ctx)
-{
-    gdb_put_packet("1");
-}
+void gdb_handle_query_attached(GArray* params, void* ctx) { gdb_put_packet("1"); }
 
 void gdb_continue(void)
 {
@@ -542,50 +491,43 @@ void gdb_continue(void)
 /*
  * Resume execution, per CPU actions.
  */
-int gdb_continue_partial(char *newstates)
+int gdb_continue_partial(char* newstates)
 {
-    CPUState *cpu;
-    int res = 0;
-    int flag = 0;
+    CPUState* cpu;
+    int       res  = 0;
+    int       flag = 0;
 
     if (!runstate_needs_reset()) {
         bool step_requested = false;
-        CPU_FOREACH(cpu) {
+        CPU_FOREACH (cpu) {
             if (newstates[cpu->cpu_index] == 's') {
                 step_requested = true;
                 break;
             }
         }
 
-        if (vm_prepare_start(step_requested)) {
-            return 0;
-        }
+        if (vm_prepare_start(step_requested)) { return 0; }
 
-        CPU_FOREACH(cpu) {
+        CPU_FOREACH (cpu) {
             switch (newstates[cpu->cpu_index]) {
-            case 0:
-            case 1:
-                break; /* nothing to do here */
-            case 's':
-                trace_gdbstub_op_stepping(cpu->cpu_index);
-                cpu_single_step(cpu, gdbserver_state.sstep_flags);
-                cpu_resume(cpu);
-                flag = 1;
-                break;
-            case 'c':
-                trace_gdbstub_op_continue_cpu(cpu->cpu_index);
-                cpu_resume(cpu);
-                flag = 1;
-                break;
-            default:
-                res = -1;
-                break;
+                case 0:
+                case 1: break; /* nothing to do here */
+                case 's':
+                    trace_gdbstub_op_stepping(cpu->cpu_index);
+                    cpu_single_step(cpu, gdbserver_state.sstep_flags);
+                    cpu_resume(cpu);
+                    flag = 1;
+                    break;
+                case 'c':
+                    trace_gdbstub_op_continue_cpu(cpu->cpu_index);
+                    cpu_resume(cpu);
+                    flag = 1;
+                    break;
+                default: res = -1; break;
             }
         }
     }
-    if (flag) {
-        qemu_clock_enable(QEMU_CLOCK_VIRTUAL, true);
-    }
+    if (flag) { qemu_clock_enable(QEMU_CLOCK_VIRTUAL, true); }
     return res;
 }
 
@@ -594,20 +536,18 @@ int gdb_continue_partial(char *newstates)
  * signals are not yet supported.
  */
 
-enum {
-    TARGET_SIGINT = 2,
+enum
+{
+    TARGET_SIGINT  = 2,
     TARGET_SIGTRAP = 5
 };
 
 int gdb_signal_to_target(int sig)
 {
     switch (sig) {
-    case 2:
-        return TARGET_SIGINT;
-    case 5:
-        return TARGET_SIGTRAP;
-    default:
-        return -1;
+        case 2 : return TARGET_SIGINT;
+        case 5 : return TARGET_SIGTRAP;
+        default: return -1;
     }
 }
 
@@ -617,35 +557,27 @@ int gdb_signal_to_target(int sig)
 
 bool gdb_supports_guest_debug(void)
 {
-    const AccelOpsClass *ops = cpus_get_accel();
-    if (ops->supports_guest_debug) {
-        return ops->supports_guest_debug();
-    }
+    const AccelOpsClass* ops = cpus_get_accel();
+    if (ops->supports_guest_debug) { return ops->supports_guest_debug(); }
     return false;
 }
 
-int gdb_breakpoint_insert(CPUState *cs, int type, vaddr addr, vaddr len)
+int gdb_breakpoint_insert(CPUState* cs, int type, vaddr addr, vaddr len)
 {
-    const AccelOpsClass *ops = cpus_get_accel();
-    if (ops->insert_breakpoint) {
-        return ops->insert_breakpoint(cs, type, addr, len);
-    }
+    const AccelOpsClass* ops = cpus_get_accel();
+    if (ops->insert_breakpoint) { return ops->insert_breakpoint(cs, type, addr, len); }
     return -ENOSYS;
 }
 
-int gdb_breakpoint_remove(CPUState *cs, int type, vaddr addr, vaddr len)
+int gdb_breakpoint_remove(CPUState* cs, int type, vaddr addr, vaddr len)
 {
-    const AccelOpsClass *ops = cpus_get_accel();
-    if (ops->remove_breakpoint) {
-        return ops->remove_breakpoint(cs, type, addr, len);
-    }
+    const AccelOpsClass* ops = cpus_get_accel();
+    if (ops->remove_breakpoint) { return ops->remove_breakpoint(cs, type, addr, len); }
     return -ENOSYS;
 }
 
-void gdb_breakpoint_remove_all(CPUState *cs)
+void gdb_breakpoint_remove_all(CPUState* cs)
 {
-    const AccelOpsClass *ops = cpus_get_accel();
-    if (ops->remove_all_breakpoints) {
-        ops->remove_all_breakpoints(cs);
-    }
+    const AccelOpsClass* ops = cpus_get_accel();
+    if (ops->remove_all_breakpoints) { ops->remove_all_breakpoints(cs); }
 }

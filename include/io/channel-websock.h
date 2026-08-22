@@ -30,8 +30,9 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelWebsock, QIO_CHANNEL_WEBSOCK)
 
 typedef union QIOChannelWebsockMask QIOChannelWebsockMask;
 
-union QIOChannelWebsockMask {
-    char c[4];
+union QIOChannelWebsockMask
+{
+    char     c[4];
     uint32_t u;
 };
 
@@ -51,20 +52,21 @@ union QIOChannelWebsockMask {
  * client for encapsulating VNC for noVNC in-browser client.
  */
 
-struct QIOChannelWebsock {
-    QIOChannel parent;
-    QIOChannel *master;
-    Buffer encinput;
-    Buffer encoutput;
-    Buffer rawinput;
-    size_t payload_remain;
-    size_t pong_remain;
+struct QIOChannelWebsock
+{
+    QIOChannel            parent;
+    QIOChannel*           master;
+    Buffer                encinput;
+    Buffer                encoutput;
+    Buffer                rawinput;
+    size_t                payload_remain;
+    size_t                pong_remain;
     QIOChannelWebsockMask mask;
-    guint hs_io_tag; /* tracking handshake task */
-    guint io_tag; /* tracking watch task */
-    Error *io_err;
-    gboolean io_eof;
-    uint8_t opcode;
+    guint                 hs_io_tag; /* tracking handshake task */
+    guint                 io_tag;    /* tracking watch task */
+    Error*                io_err;
+    gboolean              io_eof;
+    uint8_t               opcode;
 };
 
 /**
@@ -84,8 +86,7 @@ struct QIOChannelWebsock {
  *
  * Returns: the new websockets channel object
  */
-QIOChannelWebsock *
-qio_channel_websock_new_server(QIOChannel *master);
+QIOChannelWebsock* qio_channel_websock_new_server(QIOChannel* master);
 
 /**
  * qio_channel_websock_handshake:
@@ -100,7 +101,4 @@ qio_channel_websock_new_server(QIOChannel *master);
  * loop is running. When the handshake is complete,
  * or fails, the @func callback will be invoked.
  */
-void qio_channel_websock_handshake(QIOChannelWebsock *ioc,
-                                   QIOTaskFunc func,
-                                   gpointer opaque,
-                                   GDestroyNotify destroy);
+void qio_channel_websock_handshake(QIOChannelWebsock* ioc, QIOTaskFunc func, gpointer opaque, GDestroyNotify destroy);

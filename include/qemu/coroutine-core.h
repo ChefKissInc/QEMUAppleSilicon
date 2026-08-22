@@ -54,7 +54,7 @@
  */
 
 typedef struct Coroutine Coroutine;
-typedef struct CoMutex CoMutex;
+typedef struct CoMutex   CoMutex;
 
 /**
  * Coroutine entry point
@@ -65,7 +65,7 @@ typedef struct CoMutex CoMutex;
  * When this function returns, the coroutine is destroyed automatically and
  * execution continues in the caller who last entered the coroutine.
  */
-typedef void coroutine_fn CoroutineEntry(void *opaque);
+typedef void coroutine_fn CoroutineEntry(void* opaque);
 
 /**
  * Create a new coroutine
@@ -73,23 +73,23 @@ typedef void coroutine_fn CoroutineEntry(void *opaque);
  * Use qemu_coroutine_enter() to actually transfer control to the coroutine.
  * The opaque argument is passed as the argument to the entry point.
  */
-Coroutine *qemu_coroutine_create(CoroutineEntry *entry, void *opaque);
+Coroutine* qemu_coroutine_create(CoroutineEntry* entry, void* opaque);
 
 /**
  * Transfer control to a coroutine
  */
-void qemu_coroutine_enter(Coroutine *coroutine);
+void qemu_coroutine_enter(Coroutine* coroutine);
 
 /**
  * Transfer control to a coroutine if it's not active (i.e. part of the call
  * stack of the running coroutine). Otherwise, do nothing.
  */
-void qemu_coroutine_enter_if_inactive(Coroutine *co);
+void qemu_coroutine_enter_if_inactive(Coroutine* co);
 
 /**
  * Transfer control to a coroutine and associate it with ctx
  */
-void qemu_aio_coroutine_enter(AioContext *ctx, Coroutine *co);
+void qemu_aio_coroutine_enter(AioContext* ctx, Coroutine* co);
 
 /**
  * Transfer control back to a coroutine's caller
@@ -102,12 +102,12 @@ void coroutine_fn qemu_coroutine_yield(void);
 /**
  * Get the AioContext of the given coroutine
  */
-AioContext *qemu_coroutine_get_aio_context(Coroutine *co);
+AioContext* qemu_coroutine_get_aio_context(Coroutine* co);
 
 /**
  * Get the currently executing coroutine
  */
-Coroutine *qemu_coroutine_self(void);
+Coroutine* qemu_coroutine_self(void);
 
 /**
  * Return whether or not currently inside a coroutine
@@ -130,22 +130,22 @@ bool qemu_in_coroutine(void);
  * ones have already been entered.  In such situations this function can be
  * used to avoid recursively entering coroutines.
  */
-bool qemu_coroutine_entered(Coroutine *co);
+bool qemu_coroutine_entered(Coroutine* co);
 
 /**
  * Initialises a CoMutex. This must be called before any other operation is used
  * on the CoMutex.
  */
-void qemu_co_mutex_init(CoMutex *mutex);
+void qemu_co_mutex_init(CoMutex* mutex);
 
 /**
  * Locks the mutex. If the lock cannot be taken immediately, control is
  * transferred to the caller of the current coroutine.
  */
-void coroutine_fn qemu_co_mutex_lock(CoMutex *mutex);
+void coroutine_fn qemu_co_mutex_lock(CoMutex* mutex);
 
 /**
  * Unlocks the mutex and schedules the next coroutine that was waiting for this
  * lock to be run.
  */
-void coroutine_fn qemu_co_mutex_unlock(CoMutex *mutex);
+void coroutine_fn qemu_co_mutex_unlock(CoMutex* mutex);

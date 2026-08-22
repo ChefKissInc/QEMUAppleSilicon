@@ -10,7 +10,7 @@ typedef struct RAMBlockNotifier RAMBlockNotifier;
 #define DIRTY_MEMORY_VGA       0
 #define DIRTY_MEMORY_CODE      1
 #define DIRTY_MEMORY_MIGRATION 2
-#define DIRTY_MEMORY_NUM       3        /* num of dirty bits */
+#define DIRTY_MEMORY_NUM       3 /* num of dirty bits */
 
 /* The dirty memory bitmap is split into fixed-size blocks to allow growth
  * under RCU.  The bitmap for a block can be accessed as follows:
@@ -38,30 +38,31 @@ typedef struct RAMBlockNotifier RAMBlockNotifier;
  * pointed to from the new DirtyMemoryBlocks).
  */
 #define DIRTY_MEMORY_BLOCK_SIZE ((ram_addr_t)256 * 1024 * 8)
-typedef struct {
+typedef struct
+{
     struct rcu_head rcu;
-    unsigned long *blocks[];
+    unsigned long*  blocks[];
 } DirtyMemoryBlocks;
 
-typedef struct RAMList {
+typedef struct RAMList
+{
     QemuMutex mutex;
-    RAMBlock *mru_block;
+    RAMBlock* mru_block;
     /* RCU-enabled, writes protected by the ramlist lock. */
     QLIST_HEAD(, RAMBlock) blocks;
-    DirtyMemoryBlocks *dirty_memory[DIRTY_MEMORY_NUM];
-    unsigned int num_dirty_blocks;
-    uint32_t version;
+    DirtyMemoryBlocks* dirty_memory[DIRTY_MEMORY_NUM];
+    unsigned int       num_dirty_blocks;
+    uint32_t           version;
     QLIST_HEAD(, RAMBlockNotifier) ramblock_notifiers;
 } RAMList;
 extern RAMList ram_list;
 
 /* Should be holding either ram_list.mutex, or the RCU lock. */
-#define  INTERNAL_RAMBLOCK_FOREACH(block)  \
-    QLIST_FOREACH_RCU(block, &ram_list.blocks, next)
+#define INTERNAL_RAMBLOCK_FOREACH(block) QLIST_FOREACH_RCU (block, &ram_list.blocks, next)
 /* Never use the INTERNAL_ version except for defining other macros */
 #define RAMBLOCK_FOREACH(block) INTERNAL_RAMBLOCK_FOREACH(block)
 
 void qemu_mutex_lock_ramlist(void);
 void qemu_mutex_unlock_ramlist(void);
 
-GString *ram_block_format(void);
+GString* ram_block_format(void);

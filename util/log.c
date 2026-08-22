@@ -28,39 +28,35 @@
 #include "qemu/lockable.h"
 #include "qemu/rcu.h"
 #ifdef CONFIG_LINUX
-#include <sys/syscall.h>
+    #include <sys/syscall.h>
 #endif
 
-
-typedef struct RCUCloseFILE {
+typedef struct RCUCloseFILE
+{
     struct rcu_head rcu;
-    FILE *fd;
+    FILE*           fd;
 } RCUCloseFILE;
 
 /* Mutex covering the other global_* variables. */
-static QemuMutex global_mutex;
-static char *global_filename;
-static FILE *global_file;
-static __thread FILE *thread_file;
+static QemuMutex         global_mutex;
+static char*             global_filename;
+static FILE*             global_file;
+static __thread FILE*    thread_file;
 static __thread Notifier qemu_log_thread_cleanup_notifier;
 
-int qemu_loglevel;
-static bool log_per_thread;
-static GArray *debug_regions;
+int            qemu_loglevel;
+static bool    log_per_thread;
+static GArray* debug_regions;
 
 /* Returns true if qemu_log() will really write somewhere. */
-bool qemu_log_enabled(void)
-{
-    return log_per_thread || qatomic_read(&global_file) != NULL;
-}
+bool qemu_log_enabled(void) { return log_per_thread || qatomic_read(&global_file) != NULL; }
 
 /* Returns true if qemu_log() will write somewhere other than stderr. */
 bool qemu_log_separate(void)
 {
-    if (log_per_thread) {
-        return true;
-    } else {
-        FILE *logfile = qatomic_read(&global_file);
+    if (log_per_thread) { return true; }
+    else {
+        FILE* logfile = qatomic_read(&global_file);
         return logfile && logfile != stderr;
     }
 }
@@ -77,7 +73,7 @@ static int log_thread_id(void)
 #endif
 }
 
-static void qemu_log_thread_cleanup(Notifier *n, void *unused)
+static void qemu_log_thread_cleanup(Notifier* n, void* unused)
 {
     if (thread_file != stderr) {
         fclose(thread_file);
@@ -87,26 +83,24 @@ static void qemu_log_thread_cleanup(Notifier *n, void *unused)
 
 /* Lock/unlock output. */
 
-static FILE *qemu_log_trylock_with_err(Error **errp)
+static FILE* qemu_log_trylock_with_err(Error** errp)
 {
-    FILE *logfile;
+    FILE* logfile;
 
     logfile = thread_file;
     if (!logfile) {
         if (log_per_thread) {
-            g_autofree char *filename
-                = g_strdup_printf(global_filename, log_thread_id());
-            logfile = fopen(filename, "w");
+            g_autofree char* filename = g_strdup_printf(global_filename, log_thread_id());
+            logfile                   = fopen(filename, "w");
             if (!logfile) {
-                error_setg_errno(errp, errno,
-                                 "Error opening logfile %s for thread %d",
-                                 filename, log_thread_id());
+                error_setg_errno(errp, errno, "Error opening logfile %s for thread %d", filename, log_thread_id());
                 return NULL;
             }
-            thread_file = logfile;
+            thread_file                             = logfile;
             qemu_log_thread_cleanup_notifier.notify = qemu_log_thread_cleanup;
             qemu_thread_atexit_add(&qemu_log_thread_cleanup_notifier);
-        } else {
+        }
+        else {
             rcu_read_lock();
             /*
              * FIXME: typeof_strip_qual, as used by qatomic_rcu_read,
@@ -115,7 +109,7 @@ static FILE *qemu_log_trylock_with_err(Error **errp)
              * Since all we want is a read of a pointer, cast to void**,
              * which does work with typeof_strip_qual.
              */
-            logfile = qatomic_rcu_read((void **)&global_file);
+            logfile = qatomic_rcu_read((void**)&global_file);
             if (!logfile) {
                 rcu_read_unlock();
                 return NULL;
@@ -127,26 +121,21 @@ static FILE *qemu_log_trylock_with_err(Error **errp)
     return logfile;
 }
 
-FILE *qemu_log_trylock(void)
-{
-    return qemu_log_trylock_with_err(NULL);
-}
+FILE* qemu_log_trylock(void) { return qemu_log_trylock_with_err(NULL); }
 
-void qemu_log_unlock(FILE *logfile)
+void qemu_log_unlock(FILE* logfile)
 {
     if (logfile) {
         fflush(logfile);
         qemu_funlockfile(logfile);
-        if (!log_per_thread) {
-            rcu_read_unlock();
-        }
+        if (!log_per_thread) { rcu_read_unlock(); }
     }
 }
 
-void qemu_log(const char *fmt, ...)
+void qemu_log(const char* fmt, ...)
 {
-    FILE *f;
-    g_autofree const char *timestr = NULL;
+    FILE*                  f;
+    const g_autofree char* timestr = NULL;
 
     /*
      * Prepare the timestamp *outside* the logging
@@ -156,16 +145,14 @@ void qemu_log(const char *fmt, ...)
      */
     if (message_with_timestamp) {
         g_autoptr(GDateTime) dt = g_date_time_new_now_utc();
-        timestr = g_date_time_format_iso8601(dt);
+        timestr                 = g_date_time_format_iso8601(dt);
     }
 
     f = qemu_log_trylock();
     if (f) {
         va_list ap;
 
-        if (timestr) {
-            fprintf(f, "%s ", timestr);
-        }
+        if (timestr) { fprintf(f, "%s ", timestr); }
 
         va_start(ap, fmt);
         vfprintf(f, fmt, ap);
@@ -174,12 +161,9 @@ void qemu_log(const char *fmt, ...)
     }
 }
 
-static void __attribute__((__constructor__)) startup(void)
-{
-    qemu_mutex_init(&global_mutex);
-}
+static void __attribute__((__constructor__)) startup(void) { qemu_mutex_init(&global_mutex); }
 
-static void rcu_close_file(RCUCloseFILE *r)
+static void rcu_close_file(RCUCloseFILE* r)
 {
     fclose(r->fd);
     g_free(r);
@@ -192,18 +176,18 @@ static void rcu_close_file(RCUCloseFILE *r)
  * otherwise; require no other % within the template.
  */
 
-typedef enum {
+typedef enum
+{
     vft_error,
     vft_stderr,
     vft_strdup,
     vft_pid_printf,
 } ValidFilenameTemplateResult;
 
-static ValidFilenameTemplateResult
-valid_filename_template(const char *filename, bool per_thread, Error **errp)
+static ValidFilenameTemplateResult valid_filename_template(const char* filename, bool per_thread, Error** errp)
 {
     if (filename) {
-        const char *pidstr = strstr(filename, "%");
+        const char* pidstr = strstr(filename, "%");
 
         if (pidstr) {
             /* We only accept one %d, no other format strings */
@@ -222,30 +206,26 @@ valid_filename_template(const char *filename, bool per_thread, Error **errp)
 }
 
 /* enable or disable low levels log */
-static bool qemu_set_log_internal(const char *filename, bool changed_name,
-                                  int log_flags, Error **errp)
+static bool qemu_set_log_internal(const char* filename, bool changed_name, int log_flags, Error** errp)
 {
-    bool need_to_open_file;
-    bool daemonized;
-    bool per_thread;
-    FILE *logfile;
+    bool  need_to_open_file;
+    bool  daemonized;
+    bool  per_thread;
+    FILE* logfile;
 
     QEMU_LOCK_GUARD(&global_mutex);
     logfile = global_file;
 
     /* The per-thread flag is immutable. */
-    if (log_per_thread) {
-        log_flags |= LOG_PER_THREAD;
-    } else {
-        if (global_filename) {
-            log_flags &= ~LOG_PER_THREAD;
-        }
+    if (log_per_thread) { log_flags |= LOG_PER_THREAD; }
+    else {
+        if (global_filename) { log_flags &= ~LOG_PER_THREAD; }
     }
 
     per_thread = log_flags & LOG_PER_THREAD;
 
     if (changed_name) {
-        char *newname = NULL;
+        char* newname = NULL;
 
         /*
          * Once threads start opening their own log files, we have no
@@ -259,33 +239,23 @@ static bool qemu_set_log_internal(const char *filename, bool changed_name,
         }
 
         switch (valid_filename_template(filename, per_thread, errp)) {
-        case vft_error:
-            return false;
-        case vft_stderr:
-            break;
-        case vft_strdup:
-            newname = g_strdup(filename);
-            break;
-        case vft_pid_printf:
-            newname = g_strdup_printf(filename, getpid());
-            break;
+            case vft_error     : return false;
+            case vft_stderr    : break;
+            case vft_strdup    : newname = g_strdup(filename); break;
+            case vft_pid_printf: newname = g_strdup_printf(filename, getpid()); break;
         }
 
         g_free(global_filename);
         global_filename = newname;
-        filename = newname;
-    } else {
+        filename        = newname;
+    }
+    else {
         filename = global_filename;
-        if (per_thread &&
-            valid_filename_template(filename, true, errp) == vft_error) {
-            return false;
-        }
+        if (per_thread && valid_filename_template(filename, true, errp) == vft_error) { return false; }
     }
 
     /* Once the per-thread flag is set, it cannot be unset. */
-    if (per_thread) {
-        log_per_thread = true;
-    }
+    if (per_thread) { log_per_thread = true; }
     /* The flag itself is not relevant for need_to_open_file. */
     log_flags &= ~LOG_PER_THREAD;
 #ifdef CONFIG_TRACE_LOG
@@ -293,7 +263,7 @@ static bool qemu_set_log_internal(const char *filename, bool changed_name,
 #endif
     qemu_loglevel = log_flags;
 
-    daemonized = is_daemonized();
+    daemonized        = is_daemonized();
     need_to_open_file = false;
     if (!daemonized) {
         /*
@@ -302,7 +272,8 @@ static bool qemu_set_log_internal(const char *filename, bool changed_name,
          * If per-thread, open the file for each thread in qemu_log_trylock().
          */
         need_to_open_file = qemu_loglevel && !log_per_thread;
-    } else {
+    }
+    else {
         /*
          * If we are daemonized, we will only log if there is a filename.
          */
@@ -312,33 +283,27 @@ static bool qemu_set_log_internal(const char *filename, bool changed_name,
     if (logfile) {
         fflush(logfile);
         if (changed_name && logfile != stderr) {
-            RCUCloseFILE *r = g_new0(RCUCloseFILE, 1);
-            r->fd = logfile;
+            RCUCloseFILE* r = g_new0(RCUCloseFILE, 1);
+            r->fd           = logfile;
             qatomic_rcu_set(&global_file, NULL);
             call_rcu(r, rcu_close_file, rcu);
         }
-        if (changed_name) {
-            logfile = NULL;
-        }
+        if (changed_name) { logfile = NULL; }
     }
 
-    if (log_per_thread && daemonized) {
-        logfile = thread_file;
-    }
+    if (log_per_thread && daemonized) { logfile = thread_file; }
 
     if (!logfile && need_to_open_file) {
         if (filename) {
             if (log_per_thread) {
                 logfile = qemu_log_trylock_with_err(errp);
-                if (!logfile) {
-                    return false;
-                }
+                if (!logfile) { return false; }
                 qemu_log_unlock(logfile);
-            } else {
+            }
+            else {
                 logfile = fopen(filename, "w");
                 if (!logfile) {
-                    error_setg_errno(errp, errno, "Error opening logfile %s",
-                                     filename);
+                    error_setg_errno(errp, errno, "Error opening logfile %s", filename);
                     return false;
                 }
             }
@@ -352,35 +317,28 @@ static bool qemu_set_log_internal(const char *filename, bool changed_name,
                  */
                 logfile = stderr;
             }
-        } else {
+        }
+        else {
             /* Default to stderr if no log file specified */
             assert(!daemonized);
             logfile = stderr;
         }
 
-        if (log_per_thread && daemonized) {
-            thread_file = logfile;
-        } else {
+        if (log_per_thread && daemonized) { thread_file = logfile; }
+        else {
             qatomic_rcu_set(&global_file, logfile);
         }
     }
     return true;
 }
 
-bool qemu_set_log(int log_flags, Error **errp)
-{
-    return qemu_set_log_internal(NULL, false, log_flags, errp);
-}
+bool qemu_set_log(int log_flags, Error** errp) { return qemu_set_log_internal(NULL, false, log_flags, errp); }
 
-bool qemu_set_log_filename(const char *filename, Error **errp)
-{
-    return qemu_set_log_internal(filename, true, qemu_loglevel, errp);
-}
+bool qemu_set_log_filename(const char* filename, Error** errp)
+{ return qemu_set_log_internal(filename, true, qemu_loglevel, errp); }
 
-bool qemu_set_log_filename_flags(const char *name, int flags, Error **errp)
-{
-    return qemu_set_log_internal(name, true, flags, errp);
-}
+bool qemu_set_log_filename_flags(const char* name, int flags, Error** errp)
+{ return qemu_set_log_internal(name, true, flags, errp); }
 
 /* Returns true if addr is in our debug filter or no filter defined
  */
@@ -389,78 +347,71 @@ bool qemu_log_in_addr_range(uint64_t addr)
     if (debug_regions) {
         int i = 0;
         for (i = 0; i < debug_regions->len; i++) {
-            Range *range = &g_array_index(debug_regions, Range, i);
-            if (range_contains(range, addr)) {
-                return true;
-            }
+            Range* range = &g_array_index(debug_regions, Range, i);
+            if (range_contains(range, addr)) { return true; }
         }
         return false;
-    } else {
+    }
+    else {
         return true;
     }
 }
 
-
-void qemu_set_dfilter_ranges(const char *filter_spec, Error **errp)
+void qemu_set_dfilter_ranges(const char* filter_spec, Error** errp)
 {
-    gchar **ranges = g_strsplit(filter_spec, ",", 0);
-    int i;
+    gchar** ranges = g_strsplit(filter_spec, ",", 0);
+    int     i;
 
     if (debug_regions) {
         g_array_unref(debug_regions);
         debug_regions = NULL;
     }
 
-    debug_regions = g_array_sized_new(FALSE, FALSE,
-                                      sizeof(Range), g_strv_length(ranges));
+    debug_regions = g_array_sized_new(FALSE, FALSE, sizeof(Range), g_strv_length(ranges));
     for (i = 0; ranges[i]; i++) {
-        const char *r = ranges[i];
-        const char *range_op, *r2, *e;
-        uint64_t r1val, r2val, lob, upb;
+        const char*  r = ranges[i];
+        const char * range_op, *r2, *e;
+        uint64_t     r1val, r2val, lob, upb;
         struct Range range;
 
         range_op = strstr(r, "-");
-        r2 = range_op ? range_op + 1 : NULL;
+        r2       = range_op ? range_op + 1 : NULL;
         if (!range_op) {
             range_op = strstr(r, "+");
-            r2 = range_op ? range_op + 1 : NULL;
+            r2       = range_op ? range_op + 1 : NULL;
         }
         if (!range_op) {
             range_op = strstr(r, "..");
-            r2 = range_op ? range_op + 2 : NULL;
+            r2       = range_op ? range_op + 2 : NULL;
         }
         if (!range_op) {
             error_setg(errp, "Bad range specifier");
             goto out;
         }
 
-        if (qemu_strtou64(r, &e, 0, &r1val)
-            || e != range_op) {
-            error_setg(errp, "Invalid number to the left of %.*s",
-                       (int)(r2 - range_op), range_op);
+        if (qemu_strtou64(r, &e, 0, &r1val) || e != range_op) {
+            error_setg(errp, "Invalid number to the left of %.*s", (int)(r2 - range_op), range_op);
             goto out;
         }
         if (qemu_strtou64(r2, NULL, 0, &r2val)) {
-            error_setg(errp, "Invalid number to the right of %.*s",
-                       (int)(r2 - range_op), range_op);
+            error_setg(errp, "Invalid number to the right of %.*s", (int)(r2 - range_op), range_op);
             goto out;
         }
 
         switch (*range_op) {
-        case '+':
-            lob = r1val;
-            upb = r1val + r2val - 1;
-            break;
-        case '-':
-            upb = r1val;
-            lob = r1val - (r2val - 1);
-            break;
-        case '.':
-            lob = r1val;
-            upb = r2val;
-            break;
-        default:
-            assert_not_reached();
+            case '+':
+                lob = r1val;
+                upb = r1val + r2val - 1;
+                break;
+            case '-':
+                upb = r1val;
+                lob = r1val - (r2val - 1);
+                break;
+            case '.':
+                lob = r1val;
+                upb = r2val;
+                break;
+            default: assert_not_reached();
         }
         if (lob > upb) {
             error_setg(errp, "Invalid range");
@@ -474,74 +425,54 @@ out:
 }
 
 const QEMULogItem qemu_log_items[] = {
-    { CPU_LOG_TB_OUT_ASM, "out_asm",
-      "show generated host assembly code for each compiled TB" },
-    { CPU_LOG_TB_IN_ASM, "in_asm",
-      "show target assembly code for each compiled TB" },
-    { CPU_LOG_TB_OP, "op",
-      "show micro ops for each compiled TB" },
-    { CPU_LOG_TB_OP_OPT, "op_opt",
-      "show micro ops after optimization" },
-    { CPU_LOG_TB_OP_IND, "op_ind",
-      "show micro ops before indirect lowering" },
-    { CPU_LOG_INT, "int",
-      "show interrupts/exceptions in short format" },
-    { CPU_LOG_EXEC, "exec",
-      "show trace before each executed TB (lots of logs)" },
-    { CPU_LOG_TB_CPU, "cpu",
-      "show CPU registers before entering a TB (lots of logs)" },
-    { CPU_LOG_TB_FPU, "fpu",
-      "include FPU registers in the 'cpu' logging" },
-    { CPU_LOG_MMU, "mmu",
-      "log MMU-related activities" },
-    { CPU_LOG_PCALL, "pcall",
-      "x86 only: show protected mode far calls/returns/exceptions" },
-    { CPU_LOG_RESET, "cpu_reset",
-      "show CPU state before CPU resets" },
-    { LOG_UNIMP, "unimp",
-      "log unimplemented functionality" },
-    { LOG_GUEST_ERROR, "guest_errors",
-      "log when the guest OS does something invalid (eg accessing a\n"
-      "non-existent register)" },
-    { CPU_LOG_PAGE, "page",
-      "dump pages at beginning of user mode emulation" },
-    { CPU_LOG_TB_NOCHAIN, "nochain",
-      "do not chain compiled TBs so that \"exec\" and \"cpu\" show\n"
-      "complete traces" },
-    { LOG_STRACE, "strace",
-      "log every user-mode syscall, its input, and its result" },
-    { LOG_PER_THREAD, "tid",
-      "open a separate log file per thread; filename must contain '%d'" },
-    { CPU_LOG_TB_VPU, "vpu",
-      "include VPU registers in the 'cpu' logging" },
-    { LOG_INVALID_MEM, "invalid_mem",
-      "log invalid memory accesses" },
-    { 0, NULL, NULL },
+    {CPU_LOG_TB_OUT_ASM, "out_asm", "show generated host assembly code for each compiled TB"},
+    {CPU_LOG_TB_IN_ASM, "in_asm", "show target assembly code for each compiled TB"},
+    {CPU_LOG_TB_OP, "op", "show micro ops for each compiled TB"},
+    {CPU_LOG_TB_OP_OPT, "op_opt", "show micro ops after optimization"},
+    {CPU_LOG_TB_OP_IND, "op_ind", "show micro ops before indirect lowering"},
+    {CPU_LOG_INT, "int", "show interrupts/exceptions in short format"},
+    {CPU_LOG_EXEC, "exec", "show trace before each executed TB (lots of logs)"},
+    {CPU_LOG_TB_CPU, "cpu", "show CPU registers before entering a TB (lots of logs)"},
+    {CPU_LOG_TB_FPU, "fpu", "include FPU registers in the 'cpu' logging"},
+    {CPU_LOG_MMU, "mmu", "log MMU-related activities"},
+    {CPU_LOG_PCALL, "pcall", "x86 only: show protected mode far calls/returns/exceptions"},
+    {CPU_LOG_RESET, "cpu_reset", "show CPU state before CPU resets"},
+    {LOG_UNIMP, "unimp", "log unimplemented functionality"},
+    {LOG_GUEST_ERROR, "guest_errors",
+     "log when the guest OS does something invalid (eg accessing a\n"
+     "non-existent register)"},
+    {CPU_LOG_PAGE, "page", "dump pages at beginning of user mode emulation"},
+    {CPU_LOG_TB_NOCHAIN, "nochain",
+     "do not chain compiled TBs so that \"exec\" and \"cpu\" show\n"
+     "complete traces"},
+    {LOG_STRACE, "strace", "log every user-mode syscall, its input, and its result"},
+    {LOG_PER_THREAD, "tid", "open a separate log file per thread; filename must contain '%d'"},
+    {CPU_LOG_TB_VPU, "vpu", "include VPU registers in the 'cpu' logging"},
+    {LOG_INVALID_MEM, "invalid_mem", "log invalid memory accesses"},
+    {0, NULL, NULL},
 };
 
 /* takes a comma separated list of log masks. Return 0 if error. */
-int qemu_str_to_log_mask(const char *str)
+int qemu_str_to_log_mask(const char* str)
 {
-    const QEMULogItem *item;
-    int mask = 0;
-    char **parts = g_strsplit(str, ",", 0);
-    char **tmp;
+    const QEMULogItem* item;
+    int                mask  = 0;
+    char**             parts = g_strsplit(str, ",", 0);
+    char**             tmp;
 
     for (tmp = parts; tmp && *tmp; tmp++) {
         if (g_str_equal(*tmp, "all")) {
-            for (item = qemu_log_items; item->mask != 0; item++) {
-                mask |= item->mask;
-            }
+            for (item = qemu_log_items; item->mask != 0; item++) { mask |= item->mask; }
 #ifdef CONFIG_TRACE_LOG
-        } else if (g_str_has_prefix(*tmp, "trace:") && (*tmp)[6] != '\0') {
+        }
+        else if (g_str_has_prefix(*tmp, "trace:") && (*tmp)[6] != '\0') {
             trace_enable_events((*tmp) + 6);
             mask |= LOG_TRACE;
 #endif
-        } else {
+        }
+        else {
             for (item = qemu_log_items; item->mask != 0; item++) {
-                if (g_str_equal(*tmp, item->name)) {
-                    goto found;
-                }
+                if (g_str_equal(*tmp, item->name)) { goto found; }
             }
             goto error;
         found:
@@ -552,18 +483,16 @@ int qemu_str_to_log_mask(const char *str)
     g_strfreev(parts);
     return mask;
 
- error:
+error:
     g_strfreev(parts);
     return 0;
 }
 
-void qemu_print_log_usage(FILE *f)
+void qemu_print_log_usage(FILE* f)
 {
-    const QEMULogItem *item;
+    const QEMULogItem* item;
     fprintf(f, "Log items (comma separated):\n");
-    for (item = qemu_log_items; item->mask != 0; item++) {
-        fprintf(f, "%-15s %s\n", item->name, item->help);
-    }
+    for (item = qemu_log_items; item->mask != 0; item++) { fprintf(f, "%-15s %s\n", item->name, item->help); }
 #ifdef CONFIG_TRACE_LOG
     fprintf(f, "trace:PATTERN   enable trace events\n");
     fprintf(f, "\nUse \"-d trace:help\" to get a list of trace events.\n\n");

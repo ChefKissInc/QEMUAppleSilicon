@@ -26,4 +26,4 @@
 #define TYPE_APPLE_TEMP_SENSOR "apple-temp-sensor"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleTempSensorState, APPLE_TEMP_SENSOR);
 
-SysBusDevice *apple_temp_sensor_create(AppleDTNode *node);
+SysBusDevice* apple_temp_sensor_create(AppleDTNode* node);

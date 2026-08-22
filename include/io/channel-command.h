@@ -26,8 +26,6 @@
 #define TYPE_QIO_CHANNEL_COMMAND "qio-channel-command"
 OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelCommand, QIO_CHANNEL_COMMAND)
 
-
-
 /**
  * QIOChannelCommand:
  *
@@ -36,16 +34,16 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelCommand, QIO_CHANNEL_COMMAND)
  * via its stdio streams.
  */
 
-struct QIOChannelCommand {
+struct QIOChannelCommand
+{
     QIOChannel parent;
-    int writefd;
-    int readfd;
-    GPid pid;
+    int        writefd;
+    int        readfd;
+    GPid       pid;
 #ifdef WIN32
     bool blocking;
 #endif
 };
-
 
 /**
  * qio_channel_command_new_spawn:
@@ -58,7 +56,4 @@ struct QIOChannelCommand {
  *
  * Returns: the command channel object, or NULL on error
  */
-QIOChannelCommand *
-qio_channel_command_new_spawn(const char *const argv[],
-                              int flags,
-                              Error **errp);
+QIOChannelCommand* qio_channel_command_new_spawn(const char* const argv[], int flags, Error** errp);

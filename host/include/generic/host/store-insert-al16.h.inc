@@ -15,26 +15,25 @@
  *
  * Atomically store @val to @p masked by @msk.
  */
-static inline void ATTRIBUTE_ATOMIC128_OPT
-store_atom_insert_al16(Int128 *ps, Int128 val, Int128 msk)
+static inline void ATTRIBUTE_ATOMIC128_OPT store_atom_insert_al16(Int128* ps, Int128 val, Int128 msk)
 {
 #if defined(CONFIG_ATOMIC128)
-    __uint128_t *pu;
-    Int128Alias old, new;
+    __uint128_t* pu;
+    Int128Alias  old, new;
 
     /* With CONFIG_ATOMIC128, we can avoid the memory barriers. */
-    pu = __builtin_assume_aligned(ps, 16);
+    pu    = __builtin_assume_aligned(ps, 16);
     old.u = *pu;
-    msk = int128_not(msk);
+    msk   = int128_not(msk);
     do {
         new.s = int128_and(old.s, msk);
         new.s = int128_or(new.s, val);
-    } while (!__atomic_compare_exchange_n(pu, &old.u, new.u, true,
-                                          __ATOMIC_RELAXED, __ATOMIC_RELAXED));
+    }
+    while (!__atomic_compare_exchange_n(pu, &old.u, new.u, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
 #else
     Int128 old, new, cmp;
 
-    ps = __builtin_assume_aligned(ps, 16);
+    ps  = __builtin_assume_aligned(ps, 16);
     old = *ps;
     msk = int128_not(msk);
     do {
@@ -42,6 +41,7 @@ store_atom_insert_al16(Int128 *ps, Int128 val, Int128 msk)
         new = int128_and(old, msk);
         new = int128_or(new, val);
         old = atomic16_cmpxchg(ps, cmp, new);
-    } while (int128_ne(cmp, old));
+    }
+    while (int128_ne(cmp, old));
 #endif
 }

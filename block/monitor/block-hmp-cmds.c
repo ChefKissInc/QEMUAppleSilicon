@@ -56,16 +56,14 @@
 #include "block/block_int.h"
 #include "block/block-hmp-cmds.h"
 
-static void hmp_drive_add_node(Monitor *mon, const char *optstr)
+static void hmp_drive_add_node(Monitor* mon, const char* optstr)
 {
-    QemuOpts *opts;
-    QDict *qdict;
-    Error *local_err = NULL;
+    QemuOpts* opts;
+    QDict*    qdict;
+    Error*    local_err = NULL;
 
     opts = qemu_opts_parse_noisily(&qemu_drive_opts, optstr, false);
-    if (!opts) {
-        return;
-    }
+    if (!opts) { return; }
 
     qdict = qemu_opts_to_qdict(opts, NULL);
 
@@ -75,7 +73,7 @@ static void hmp_drive_add_node(Monitor *mon, const char *optstr)
         goto out;
     }
 
-    BlockDriverState *bs = bds_tree_init(qdict, &local_err);
+    BlockDriverState* bs = bds_tree_init(qdict, &local_err);
     if (!bs) {
         error_report_err(local_err);
         goto out;
@@ -86,14 +84,14 @@ out:
     qemu_opts_del(opts);
 }
 
-void hmp_drive_add(Monitor *mon, const QDict *qdict)
+void hmp_drive_add(Monitor* mon, const QDict* qdict)
 {
-    Error *err = NULL;
-    DriveInfo *dinfo;
-    QemuOpts *opts;
-    MachineClass *mc;
-    const char *optstr = qdict_get_str(qdict, "opts");
-    bool node = qdict_get_try_bool(qdict, "node", false);
+    Error*        err = NULL;
+    DriveInfo*    dinfo;
+    QemuOpts*     opts;
+    MachineClass* mc;
+    const char*   optstr = qdict_get_str(qdict, "opts");
+    bool          node   = qdict_get_try_bool(qdict, "node", false);
 
     if (node) {
         hmp_drive_add_node(mon, optstr);
@@ -101,10 +99,9 @@ void hmp_drive_add(Monitor *mon, const QDict *qdict)
     }
 
     opts = qemu_opts_parse_noisily(qemu_find_opts("drive"), optstr, false);
-    if (!opts)
-        return;
+    if (!opts) { return; }
 
-    mc = MACHINE_GET_CLASS(current_machine);
+    mc    = MACHINE_GET_CLASS(current_machine);
     dinfo = drive_new(opts, mc->block_default_type, &err);
     if (err) {
         error_report_err(err);
@@ -112,34 +109,28 @@ void hmp_drive_add(Monitor *mon, const QDict *qdict)
         goto err;
     }
 
-    if (!dinfo) {
-        return;
-    }
+    if (!dinfo) { return; }
 
     switch (dinfo->type) {
-    case IF_NONE:
-        monitor_printf(mon, "OK\n");
-        break;
-    default:
-        monitor_printf(mon, "Can't hot-add drive to type %d\n", dinfo->type);
-        goto err;
+        case IF_NONE: monitor_printf(mon, "OK\n"); break;
+        default     : monitor_printf(mon, "Can't hot-add drive to type %d\n", dinfo->type); goto err;
     }
     return;
 
 err:
     if (dinfo) {
-        BlockBackend *blk = blk_by_legacy_dinfo(dinfo);
+        BlockBackend* blk = blk_by_legacy_dinfo(dinfo);
         monitor_remove_blk(blk);
         blk_unref(blk);
     }
 }
 
-void hmp_drive_del(Monitor *mon, const QDict *qdict)
+void hmp_drive_del(Monitor* mon, const QDict* qdict)
 {
-    const char *id = qdict_get_str(qdict, "id");
-    BlockBackend *blk;
-    BlockDriverState *bs;
-    Error *local_err = NULL;
+    const char*       id = qdict_get_str(qdict, "id");
+    BlockBackend*     blk;
+    BlockDriverState* bs;
+    Error*            local_err = NULL;
 
     GLOBAL_STATE_CODE();
     bdrv_graph_rdlock_main_loop();
@@ -147,9 +138,7 @@ void hmp_drive_del(Monitor *mon, const QDict *qdict)
     bs = bdrv_find_node(id);
     if (bs) {
         qmp_blockdev_del(id, &local_err);
-        if (local_err) {
-            error_report_err(local_err);
-        }
+        if (local_err) { error_report_err(local_err); }
         goto unlock;
     }
 
@@ -186,9 +175,9 @@ void hmp_drive_del(Monitor *mon, const QDict *qdict)
      */
     if (blk_get_attached_dev(blk)) {
         /* Further I/O must not pause the guest */
-        blk_set_on_error(blk, BLOCKDEV_ON_ERROR_REPORT,
-                         BLOCKDEV_ON_ERROR_REPORT);
-    } else {
+        blk_set_on_error(blk, BLOCKDEV_ON_ERROR_REPORT, BLOCKDEV_ON_ERROR_REPORT);
+    }
+    else {
         blk_unref(blk);
     }
 
@@ -196,19 +185,18 @@ unlock:
     bdrv_graph_rdunlock_main_loop();
 }
 
-void hmp_commit(Monitor *mon, const QDict *qdict)
+void hmp_commit(Monitor* mon, const QDict* qdict)
 {
-    const char *device = qdict_get_str(qdict, "device");
-    BlockBackend *blk;
-    int ret;
+    const char*   device = qdict_get_str(qdict, "device");
+    BlockBackend* blk;
+    int           ret;
 
     GLOBAL_STATE_CODE();
     GRAPH_RDLOCK_GUARD_MAINLOOP();
 
-    if (!strcmp(device, "all")) {
-        ret = blk_commit_all();
-    } else {
-        BlockDriverState *bs;
+    if (!strcmp(device, "all")) { ret = blk_commit_all(); }
+    else {
+        BlockDriverState* bs;
 
         blk = blk_by_name(device);
         if (!blk) {
@@ -225,26 +213,24 @@ void hmp_commit(Monitor *mon, const QDict *qdict)
 
         ret = bdrv_commit(bs);
     }
-    if (ret < 0) {
-        error_report("'commit' error for '%s': %s", device, strerror(-ret));
-    }
+    if (ret < 0) { error_report("'commit' error for '%s': %s", device, strerror(-ret)); }
 }
 
-void hmp_drive_mirror(Monitor *mon, const QDict *qdict)
+void hmp_drive_mirror(Monitor* mon, const QDict* qdict)
 {
-    const char *filename = qdict_get_str(qdict, "target");
-    const char *format = qdict_get_try_str(qdict, "format");
-    bool reuse = qdict_get_try_bool(qdict, "reuse", false);
-    bool full = qdict_get_try_bool(qdict, "full", false);
-    Error *err = NULL;
-    DriveMirror mirror = {
-        .device = (char *)qdict_get_str(qdict, "device"),
-        .target = (char *)filename,
-        .format = (char *)format,
-        .sync = full ? MIRROR_SYNC_MODE_FULL : MIRROR_SYNC_MODE_TOP,
+    const char* filename = qdict_get_str(qdict, "target");
+    const char* format   = qdict_get_try_str(qdict, "format");
+    bool        reuse    = qdict_get_try_bool(qdict, "reuse", false);
+    bool        full     = qdict_get_try_bool(qdict, "full", false);
+    Error*      err      = NULL;
+    DriveMirror mirror   = {
+        .device   = (char*)qdict_get_str(qdict, "device"),
+        .target   = (char*)filename,
+        .format   = (char*)format,
+        .sync     = full ? MIRROR_SYNC_MODE_FULL : MIRROR_SYNC_MODE_TOP,
         .has_mode = true,
-        .mode = reuse ? NEW_IMAGE_MODE_EXISTING : NEW_IMAGE_MODE_ABSOLUTE_PATHS,
-        .unmap = true,
+        .mode     = reuse ? NEW_IMAGE_MODE_EXISTING : NEW_IMAGE_MODE_ABSOLUTE_PATHS,
+        .unmap    = true,
     };
 
     if (!filename) {
@@ -256,24 +242,24 @@ end:
     hmp_handle_error(mon, err);
 }
 
-void hmp_drive_backup(Monitor *mon, const QDict *qdict)
+void hmp_drive_backup(Monitor* mon, const QDict* qdict)
 {
-    const char *device = qdict_get_str(qdict, "device");
-    const char *filename = qdict_get_str(qdict, "target");
-    const char *format = qdict_get_try_str(qdict, "format");
-    bool reuse = qdict_get_try_bool(qdict, "reuse", false);
-    bool full = qdict_get_try_bool(qdict, "full", false);
-    bool compress = qdict_get_try_bool(qdict, "compress", false);
-    Error *err = NULL;
-    DriveBackup backup = {
-        .device = (char *)device,
-        .target = (char *)filename,
-        .format = (char *)format,
-        .sync = full ? MIRROR_SYNC_MODE_FULL : MIRROR_SYNC_MODE_TOP,
-        .has_mode = true,
-        .mode = reuse ? NEW_IMAGE_MODE_EXISTING : NEW_IMAGE_MODE_ABSOLUTE_PATHS,
+    const char* device   = qdict_get_str(qdict, "device");
+    const char* filename = qdict_get_str(qdict, "target");
+    const char* format   = qdict_get_try_str(qdict, "format");
+    bool        reuse    = qdict_get_try_bool(qdict, "reuse", false);
+    bool        full     = qdict_get_try_bool(qdict, "full", false);
+    bool        compress = qdict_get_try_bool(qdict, "compress", false);
+    Error*      err      = NULL;
+    DriveBackup backup   = {
+        .device       = (char*)device,
+        .target       = (char*)filename,
+        .format       = (char*)format,
+        .sync         = full ? MIRROR_SYNC_MODE_FULL : MIRROR_SYNC_MODE_TOP,
+        .has_mode     = true,
+        .mode         = reuse ? NEW_IMAGE_MODE_EXISTING : NEW_IMAGE_MODE_ABSOLUTE_PATHS,
         .has_compress = !!compress,
-        .compress = compress,
+        .compress     = compress,
     };
 
     if (!filename) {
@@ -286,55 +272,55 @@ end:
     hmp_handle_error(mon, err);
 }
 
-void hmp_block_job_cancel(Monitor *mon, const QDict *qdict)
+void hmp_block_job_cancel(Monitor* mon, const QDict* qdict)
 {
-    Error *error = NULL;
-    const char *device = qdict_get_str(qdict, "device");
-    bool force = qdict_get_try_bool(qdict, "force", false);
+    Error*      error  = NULL;
+    const char* device = qdict_get_str(qdict, "device");
+    bool        force  = qdict_get_try_bool(qdict, "force", false);
 
     qmp_block_job_cancel(device, true, force, &error);
 
     hmp_handle_error(mon, error);
 }
 
-void hmp_block_job_pause(Monitor *mon, const QDict *qdict)
+void hmp_block_job_pause(Monitor* mon, const QDict* qdict)
 {
-    Error *error = NULL;
-    const char *device = qdict_get_str(qdict, "device");
+    Error*      error  = NULL;
+    const char* device = qdict_get_str(qdict, "device");
 
     qmp_block_job_pause(device, &error);
 
     hmp_handle_error(mon, error);
 }
 
-void hmp_block_job_resume(Monitor *mon, const QDict *qdict)
+void hmp_block_job_resume(Monitor* mon, const QDict* qdict)
 {
-    Error *error = NULL;
-    const char *device = qdict_get_str(qdict, "device");
+    Error*      error  = NULL;
+    const char* device = qdict_get_str(qdict, "device");
 
     qmp_block_job_resume(device, &error);
 
     hmp_handle_error(mon, error);
 }
 
-void hmp_block_job_complete(Monitor *mon, const QDict *qdict)
+void hmp_block_job_complete(Monitor* mon, const QDict* qdict)
 {
-    Error *error = NULL;
-    const char *device = qdict_get_str(qdict, "device");
+    Error*      error  = NULL;
+    const char* device = qdict_get_str(qdict, "device");
 
     qmp_block_job_complete(device, &error);
 
     hmp_handle_error(mon, error);
 }
 
-void hmp_snapshot_blkdev(Monitor *mon, const QDict *qdict)
+void hmp_snapshot_blkdev(Monitor* mon, const QDict* qdict)
 {
-    const char *device = qdict_get_str(qdict, "device");
-    const char *filename = qdict_get_try_str(qdict, "snapshot-file");
-    const char *format = qdict_get_try_str(qdict, "format");
-    bool reuse = qdict_get_try_bool(qdict, "reuse", false);
+    const char*       device   = qdict_get_str(qdict, "device");
+    const char*       filename = qdict_get_try_str(qdict, "snapshot-file");
+    const char*       format   = qdict_get_try_str(qdict, "format");
+    bool              reuse    = qdict_get_try_bool(qdict, "reuse", false);
     enum NewImageMode mode;
-    Error *err = NULL;
+    Error*            err = NULL;
 
     if (!filename) {
         /*
@@ -346,164 +332,128 @@ void hmp_snapshot_blkdev(Monitor *mon, const QDict *qdict)
     }
 
     mode = reuse ? NEW_IMAGE_MODE_EXISTING : NEW_IMAGE_MODE_ABSOLUTE_PATHS;
-    qmp_blockdev_snapshot_sync(device, NULL, filename, NULL, format,
-                               true, mode, &err);
+    qmp_blockdev_snapshot_sync(device, NULL, filename, NULL, format, true, mode, &err);
 end:
     hmp_handle_error(mon, err);
 }
 
-void hmp_snapshot_blkdev_internal(Monitor *mon, const QDict *qdict)
+void hmp_snapshot_blkdev_internal(Monitor* mon, const QDict* qdict)
 {
-    const char *device = qdict_get_str(qdict, "device");
-    const char *name = qdict_get_str(qdict, "name");
-    Error *err = NULL;
+    const char* device = qdict_get_str(qdict, "device");
+    const char* name   = qdict_get_str(qdict, "name");
+    Error*      err    = NULL;
 
     qmp_blockdev_snapshot_internal_sync(device, name, &err);
     hmp_handle_error(mon, err);
 }
 
-void hmp_snapshot_delete_blkdev_internal(Monitor *mon, const QDict *qdict)
+void hmp_snapshot_delete_blkdev_internal(Monitor* mon, const QDict* qdict)
 {
-    const char *device = qdict_get_str(qdict, "device");
-    const char *name = qdict_get_str(qdict, "name");
-    const char *id = qdict_get_try_str(qdict, "id");
-    Error *err = NULL;
+    const char* device = qdict_get_str(qdict, "device");
+    const char* name   = qdict_get_str(qdict, "name");
+    const char* id     = qdict_get_try_str(qdict, "id");
+    Error*      err    = NULL;
 
     qmp_blockdev_snapshot_delete_internal_sync(device, id, name, &err);
     hmp_handle_error(mon, err);
 }
 
-void coroutine_fn hmp_block_resize(Monitor *mon, const QDict *qdict)
+void coroutine_fn hmp_block_resize(Monitor* mon, const QDict* qdict)
 {
-    const char *device = qdict_get_str(qdict, "device");
-    int64_t size = qdict_get_int(qdict, "size");
-    Error *err = NULL;
+    const char* device = qdict_get_str(qdict, "device");
+    int64_t     size   = qdict_get_int(qdict, "size");
+    Error*      err    = NULL;
 
     qmp_block_resize(device, NULL, size, &err);
     hmp_handle_error(mon, err);
 }
 
-void hmp_block_stream(Monitor *mon, const QDict *qdict)
+void hmp_block_stream(Monitor* mon, const QDict* qdict)
 {
-    Error *error = NULL;
-    const char *device = qdict_get_str(qdict, "device");
-    const char *base = qdict_get_try_str(qdict, "base");
+    Error*      error  = NULL;
+    const char* device = qdict_get_str(qdict, "device");
+    const char* base   = qdict_get_try_str(qdict, "base");
 
-    qmp_block_stream(device, device, base, NULL, NULL, false, false, NULL,
-                     true, BLOCKDEV_ON_ERROR_REPORT, NULL,
-                     false, false, false, false, &error);
+    qmp_block_stream(device, device, base, NULL, NULL, false, false, NULL, true, BLOCKDEV_ON_ERROR_REPORT, NULL, false,
+                     false, false, false, &error);
 
     hmp_handle_error(mon, error);
 }
 
-void hmp_eject(Monitor *mon, const QDict *qdict)
+void hmp_eject(Monitor* mon, const QDict* qdict)
 {
-    bool force = qdict_get_try_bool(qdict, "force", false);
-    const char *device = qdict_get_str(qdict, "device");
-    Error *err = NULL;
+    bool        force  = qdict_get_try_bool(qdict, "force", false);
+    const char* device = qdict_get_str(qdict, "device");
+    Error*      err    = NULL;
 
     qmp_eject(device, NULL, true, force, &err);
     hmp_handle_error(mon, err);
 }
 
-static void print_block_info(Monitor *mon, BlockInfo *info,
-                             BlockDeviceInfo *inserted, bool verbose)
+static void print_block_info(Monitor* mon, BlockInfo* info, BlockDeviceInfo* inserted, bool verbose)
 {
-    ImageInfo *image_info;
+    ImageInfo* image_info;
 
     assert(!info || !info->inserted || info->inserted == inserted);
 
     if (info && *info->device) {
         monitor_puts(mon, info->device);
-        if (inserted && inserted->node_name) {
-            monitor_printf(mon, " (%s)", inserted->node_name);
-        }
-    } else {
+        if (inserted && inserted->node_name) { monitor_printf(mon, " (%s)", inserted->node_name); }
+    }
+    else {
         assert(info || inserted);
-        monitor_puts(mon,
-                     inserted && inserted->node_name ? inserted->node_name
-                     : info && info->qdev ? info->qdev
-                     : "<anonymous>");
+        monitor_puts(mon, inserted && inserted->node_name ? inserted->node_name :
+                          info && info->qdev              ? info->qdev :
+                                                            "<anonymous>");
     }
 
     if (inserted) {
-        monitor_printf(mon, ": %s (%s%s%s%s)\n",
-                       inserted->file,
-                       inserted->drv,
-                       inserted->ro ? ", read-only" : "",
-                       inserted->encrypted ? ", encrypted" : "",
-                       inserted->active ? "" : ", inactive");
-    } else {
+        monitor_printf(mon, ": %s (%s%s%s%s)\n", inserted->file, inserted->drv, inserted->ro ? ", read-only" : "",
+                       inserted->encrypted ? ", encrypted" : "", inserted->active ? "" : ", inactive");
+    }
+    else {
         monitor_printf(mon, ": [not inserted]\n");
     }
 
     if (info) {
-        if (info->qdev) {
-            monitor_printf(mon, "    Attached to:      %s\n", info->qdev);
-        }
+        if (info->qdev) { monitor_printf(mon, "    Attached to:      %s\n", info->qdev); }
         if (info->has_io_status && info->io_status != BLOCK_DEVICE_IO_STATUS_OK) {
-            monitor_printf(mon, "    I/O status:       %s\n",
-                           BlockDeviceIoStatus_str(info->io_status));
+            monitor_printf(mon, "    I/O status:       %s\n", BlockDeviceIoStatus_str(info->io_status));
         }
 
         if (info->removable) {
-            monitor_printf(mon, "    Removable device: %slocked, tray %s\n",
-                           info->locked ? "" : "not ",
+            monitor_printf(mon, "    Removable device: %slocked, tray %s\n", info->locked ? "" : "not ",
                            info->tray_open ? "open" : "closed");
         }
     }
 
+    if (!inserted) { return; }
 
-    if (!inserted) {
-        return;
-    }
-
-    monitor_printf(mon, "    Cache mode:       %s%s%s\n",
-                   inserted->cache->writeback ? "writeback" : "writethrough",
-                   inserted->cache->direct ? ", direct" : "",
-                   inserted->cache->no_flush ? ", ignore flushes" : "");
+    monitor_printf(mon, "    Cache mode:       %s%s%s\n", inserted->cache->writeback ? "writeback" : "writethrough",
+                   inserted->cache->direct ? ", direct" : "", inserted->cache->no_flush ? ", ignore flushes" : "");
 
     if (inserted->backing_file) {
         monitor_printf(mon,
                        "    Backing file:     %s "
                        "(chain depth: %" PRId64 ")\n",
-                       inserted->backing_file,
-                       inserted->backing_file_depth);
+                       inserted->backing_file, inserted->backing_file_depth);
     }
 
     if (inserted->detect_zeroes != BLOCKDEV_DETECT_ZEROES_OPTIONS_OFF) {
-        monitor_printf(mon, "    Detect zeroes:    %s\n",
-                BlockdevDetectZeroesOptions_str(inserted->detect_zeroes));
+        monitor_printf(mon, "    Detect zeroes:    %s\n", BlockdevDetectZeroesOptions_str(inserted->detect_zeroes));
     }
 
-    if (inserted->bps  || inserted->bps_rd  || inserted->bps_wr  ||
-        inserted->iops || inserted->iops_rd || inserted->iops_wr)
+    if (inserted->bps || inserted->bps_rd || inserted->bps_wr || inserted->iops || inserted->iops_rd
+        || inserted->iops_wr)
     {
-        monitor_printf(mon, "    I/O throttling:   bps=%" PRId64
-                        " bps_rd=%" PRId64  " bps_wr=%" PRId64
-                        " bps_max=%" PRId64
-                        " bps_rd_max=%" PRId64
-                        " bps_wr_max=%" PRId64
-                        " iops=%" PRId64 " iops_rd=%" PRId64
-                        " iops_wr=%" PRId64
-                        " iops_max=%" PRId64
-                        " iops_rd_max=%" PRId64
-                        " iops_wr_max=%" PRId64
-                        " iops_size=%" PRId64
-                        "\n",
-                        inserted->bps,
-                        inserted->bps_rd,
-                        inserted->bps_wr,
-                        inserted->bps_max,
-                        inserted->bps_rd_max,
-                        inserted->bps_wr_max,
-                        inserted->iops,
-                        inserted->iops_rd,
-                        inserted->iops_wr,
-                        inserted->iops_max,
-                        inserted->iops_rd_max,
-                        inserted->iops_wr_max,
-                        inserted->iops_size);
+        monitor_printf(mon,
+                       "    I/O throttling:   bps=%" PRId64 " bps_rd=%" PRId64 " bps_wr=%" PRId64 " bps_max=%" PRId64
+                       " bps_rd_max=%" PRId64 " bps_wr_max=%" PRId64 " iops=%" PRId64 " iops_rd=%" PRId64
+                       " iops_wr=%" PRId64 " iops_max=%" PRId64 " iops_rd_max=%" PRId64 " iops_wr_max=%" PRId64
+                       " iops_size=%" PRId64 "\n",
+                       inserted->bps, inserted->bps_rd, inserted->bps_wr, inserted->bps_max, inserted->bps_rd_max,
+                       inserted->bps_wr_max, inserted->iops, inserted->iops_rd, inserted->iops_wr, inserted->iops_max,
+                       inserted->iops_rd_max, inserted->iops_wr_max, inserted->iops_size);
     }
 
     if (verbose) {
@@ -511,111 +461,83 @@ static void print_block_info(Monitor *mon, BlockInfo *info,
         image_info = inserted->image;
         while (1) {
             bdrv_node_info_dump(qapi_ImageInfo_base(image_info), 0, false);
-            if (image_info->backing_image) {
-                image_info = image_info->backing_image;
-            } else {
+            if (image_info->backing_image) { image_info = image_info->backing_image; }
+            else {
                 break;
             }
         }
     }
 }
 
-void hmp_info_block(Monitor *mon, const QDict *qdict)
+void hmp_info_block(Monitor* mon, const QDict* qdict)
 {
-    BlockInfoList *block_list, *info;
+    BlockInfoList *      block_list, *info;
     BlockDeviceInfoList *blockdev_list, *blockdev;
-    const char *device = qdict_get_try_str(qdict, "device");
-    bool verbose = qdict_get_try_bool(qdict, "verbose", false);
-    bool nodes = qdict_get_try_bool(qdict, "nodes", false);
-    bool printed = false;
+    const char*          device  = qdict_get_try_str(qdict, "device");
+    bool                 verbose = qdict_get_try_bool(qdict, "verbose", false);
+    bool                 nodes   = qdict_get_try_bool(qdict, "nodes", false);
+    bool                 printed = false;
 
     /* Print BlockBackend information */
-    if (!nodes) {
-        block_list = qmp_query_block(NULL);
-    } else {
+    if (!nodes) { block_list = qmp_query_block(NULL); }
+    else {
         block_list = NULL;
     }
 
     for (info = block_list; info; info = info->next) {
-        if (device && strcmp(device, info->value->device)) {
-            continue;
-        }
+        if (device && strcmp(device, info->value->device)) { continue; }
 
-        if (info != block_list) {
-            monitor_printf(mon, "\n");
-        }
+        if (info != block_list) { monitor_printf(mon, "\n"); }
 
-        print_block_info(mon, info->value, info->value->inserted,
-                         verbose);
+        print_block_info(mon, info->value, info->value->inserted, verbose);
         printed = true;
     }
 
     qapi_free_BlockInfoList(block_list);
 
-    if ((!device && !nodes) || printed) {
-        return;
-    }
+    if ((!device && !nodes) || printed) { return; }
 
     /* Print node information */
     blockdev_list = qmp_query_named_block_nodes(false, false, NULL);
     for (blockdev = blockdev_list; blockdev; blockdev = blockdev->next) {
         assert(blockdev->value->node_name);
-        if (device && strcmp(device, blockdev->value->node_name)) {
-            continue;
-        }
+        if (device && strcmp(device, blockdev->value->node_name)) { continue; }
 
-        if (blockdev != blockdev_list) {
-            monitor_printf(mon, "\n");
-        }
+        if (blockdev != blockdev_list) { monitor_printf(mon, "\n"); }
 
         print_block_info(mon, NULL, blockdev->value, verbose);
     }
     qapi_free_BlockDeviceInfoList(blockdev_list);
 }
 
-void hmp_info_blockstats(Monitor *mon, const QDict *qdict)
+void hmp_info_blockstats(Monitor* mon, const QDict* qdict)
 {
     BlockStatsList *stats_list, *stats;
 
     stats_list = qmp_query_blockstats(false, false, NULL);
 
     for (stats = stats_list; stats; stats = stats->next) {
-        if (!stats->value->device) {
-            continue;
-        }
+        if (!stats->value->device) { continue; }
 
         monitor_printf(mon, "%s:", stats->value->device);
-        monitor_printf(mon, " rd_bytes=%" PRId64
-                       " wr_bytes=%" PRId64
-                       " rd_operations=%" PRId64
-                       " wr_operations=%" PRId64
-                       " flush_operations=%" PRId64
-                       " wr_total_time_ns=%" PRId64
-                       " rd_total_time_ns=%" PRId64
-                       " flush_total_time_ns=%" PRId64
-                       " rd_merged=%" PRId64
-                       " wr_merged=%" PRId64
-                       " idle_time_ns=%" PRId64
-                       "\n",
-                       stats->value->stats->rd_bytes,
-                       stats->value->stats->wr_bytes,
-                       stats->value->stats->rd_operations,
-                       stats->value->stats->wr_operations,
-                       stats->value->stats->flush_operations,
-                       stats->value->stats->wr_total_time_ns,
-                       stats->value->stats->rd_total_time_ns,
-                       stats->value->stats->flush_total_time_ns,
-                       stats->value->stats->rd_merged,
-                       stats->value->stats->wr_merged,
-                       stats->value->stats->idle_time_ns);
+        monitor_printf(mon,
+                       " rd_bytes=%" PRId64 " wr_bytes=%" PRId64 " rd_operations=%" PRId64 " wr_operations=%" PRId64
+                       " flush_operations=%" PRId64 " wr_total_time_ns=%" PRId64 " rd_total_time_ns=%" PRId64
+                       " flush_total_time_ns=%" PRId64 " rd_merged=%" PRId64 " wr_merged=%" PRId64
+                       " idle_time_ns=%" PRId64 "\n",
+                       stats->value->stats->rd_bytes, stats->value->stats->wr_bytes, stats->value->stats->rd_operations,
+                       stats->value->stats->wr_operations, stats->value->stats->flush_operations,
+                       stats->value->stats->wr_total_time_ns, stats->value->stats->rd_total_time_ns,
+                       stats->value->stats->flush_total_time_ns, stats->value->stats->rd_merged,
+                       stats->value->stats->wr_merged, stats->value->stats->idle_time_ns);
     }
 
     qapi_free_BlockStatsList(stats_list);
 }
 
-void hmp_info_block_jobs(Monitor *mon, const QDict *qdict)
+void hmp_info_block_jobs(Monitor* mon, const QDict* qdict)
 {
-    BlockJobInfoList *list;
+    BlockJobInfoList* list;
 
     list = qmp_query_block_jobs(&error_abort);
 
@@ -626,18 +548,12 @@ void hmp_info_block_jobs(Monitor *mon, const QDict *qdict)
 
     while (list) {
         if (list->value->type == JOB_TYPE_STREAM) {
-            monitor_printf(mon, "Streaming device %s: Completed %" PRId64
-                           " of %" PRId64 " bytes\n",
-                           list->value->device,
-                           list->value->offset,
-                           list->value->len);
-        } else {
-            monitor_printf(mon, "Type %s, device %s: Completed %" PRId64
-                           " of %" PRId64 " bytes\n",
-                           JobType_str(list->value->type),
-                           list->value->device,
-                           list->value->offset,
-                           list->value->len);
+            monitor_printf(mon, "Streaming device %s: Completed %" PRId64 " of %" PRId64 " bytes\n",
+                           list->value->device, list->value->offset, list->value->len);
+        }
+        else {
+            monitor_printf(mon, "Type %s, device %s: Completed %" PRId64 " of %" PRId64 " bytes\n",
+                           JobType_str(list->value->type), list->value->device, list->value->offset, list->value->len);
         }
         list = list->next;
     }
@@ -645,33 +561,34 @@ void hmp_info_block_jobs(Monitor *mon, const QDict *qdict)
     qapi_free_BlockJobInfoList(list);
 }
 
-void hmp_info_snapshots(Monitor *mon, const QDict *qdict)
+void hmp_info_snapshots(Monitor* mon, const QDict* qdict)
 {
     BlockDriverState *bs, *bs1;
-    BdrvNextIterator it1;
+    BdrvNextIterator  it1;
     QEMUSnapshotInfo *sn_tab, *sn;
-    bool no_snapshot = true;
-    int nb_sns, i;
-    int total;
-    int *global_snapshots;
+    bool              no_snapshot = true;
+    int               nb_sns, i;
+    int               total;
+    int*              global_snapshots;
 
-    typedef struct SnapshotEntry {
+    typedef struct SnapshotEntry
+    {
         QEMUSnapshotInfo sn;
         QTAILQ_ENTRY(SnapshotEntry) next;
     } SnapshotEntry;
 
-    typedef struct ImageEntry {
-        const char *imagename;
+    typedef struct ImageEntry
+    {
+        const char* imagename;
         QTAILQ_ENTRY(ImageEntry) next;
         QTAILQ_HEAD(, SnapshotEntry) snapshots;
     } ImageEntry;
 
-    QTAILQ_HEAD(, ImageEntry) image_list =
-        QTAILQ_HEAD_INITIALIZER(image_list);
+    QTAILQ_HEAD(, ImageEntry) image_list = QTAILQ_HEAD_INITIALIZER(image_list);
 
-    ImageEntry *image_entry, *next_ie;
-    SnapshotEntry *snapshot_entry;
-    Error *err = NULL;
+    ImageEntry *   image_entry, *next_ie;
+    SnapshotEntry* snapshot_entry;
+    Error*         err = NULL;
 
     GRAPH_RDLOCK_GUARD_MAINLOOP();
 
@@ -689,21 +606,21 @@ void hmp_info_snapshots(Monitor *mon, const QDict *qdict)
     }
 
     for (bs1 = bdrv_first(&it1); bs1; bs1 = bdrv_next(&it1)) {
-        int bs1_nb_sns = 0;
-        ImageEntry *ie;
-        SnapshotEntry *se;
+        int            bs1_nb_sns = 0;
+        ImageEntry*    ie;
+        SnapshotEntry* se;
 
         if (bdrv_can_snapshot(bs1)) {
-            sn = NULL;
+            sn         = NULL;
             bs1_nb_sns = bdrv_snapshot_list(bs1, &sn);
             if (bs1_nb_sns > 0) {
-                no_snapshot = false;
-                ie = g_new0(ImageEntry, 1);
+                no_snapshot   = false;
+                ie            = g_new0(ImageEntry, 1);
                 ie->imagename = bdrv_get_device_name(bs1);
                 QTAILQ_INIT(&ie->snapshots);
                 QTAILQ_INSERT_TAIL(&image_list, ie, next);
                 for (i = 0; i < bs1_nb_sns; i++) {
-                    se = g_new0(SnapshotEntry, 1);
+                    se     = g_new0(SnapshotEntry, 1);
                     se->sn = sn[i];
                     QTAILQ_INSERT_TAIL(&ie->snapshots, se, next);
                 }
@@ -718,18 +635,16 @@ void hmp_info_snapshots(Monitor *mon, const QDict *qdict)
     }
 
     global_snapshots = g_new0(int, nb_sns);
-    total = 0;
+    total            = 0;
     for (i = 0; i < nb_sns; i++) {
-        SnapshotEntry *next_sn;
+        SnapshotEntry* next_sn;
         if (bdrv_all_has_snapshot(sn_tab[i].name, false, NULL, NULL) == 1) {
             global_snapshots[total] = i;
             total++;
-            QTAILQ_FOREACH(image_entry, &image_list, next) {
-                QTAILQ_FOREACH_SAFE(snapshot_entry, &image_entry->snapshots,
-                                    next, next_sn) {
+            QTAILQ_FOREACH (image_entry, &image_list, next) {
+                QTAILQ_FOREACH_SAFE (snapshot_entry, &image_entry->snapshots, next, next_sn) {
                     if (!strcmp(sn_tab[i].name, snapshot_entry->sn.name)) {
-                        QTAILQ_REMOVE(&image_entry->snapshots, snapshot_entry,
-                                      next);
+                        QTAILQ_REMOVE(&image_entry->snapshots, snapshot_entry, next);
                         g_free(snapshot_entry);
                     }
                 }
@@ -751,54 +666,42 @@ void hmp_info_snapshots(Monitor *mon, const QDict *qdict)
             bdrv_snapshot_dump(sn);
             monitor_printf(mon, "\n");
         }
-    } else {
+    }
+    else {
         monitor_printf(mon, "None\n");
     }
 
-    QTAILQ_FOREACH(image_entry, &image_list, next) {
-        if (QTAILQ_EMPTY(&image_entry->snapshots)) {
-            continue;
-        }
-        monitor_printf(mon,
-                       "\nList of partial (non-loadable) snapshots on '%s':\n",
-                       image_entry->imagename);
+    QTAILQ_FOREACH (image_entry, &image_list, next) {
+        if (QTAILQ_EMPTY(&image_entry->snapshots)) { continue; }
+        monitor_printf(mon, "\nList of partial (non-loadable) snapshots on '%s':\n", image_entry->imagename);
         bdrv_snapshot_dump(NULL);
         monitor_printf(mon, "\n");
-        QTAILQ_FOREACH(snapshot_entry, &image_entry->snapshots, next) {
+        QTAILQ_FOREACH (snapshot_entry, &image_entry->snapshots, next) {
             bdrv_snapshot_dump(&snapshot_entry->sn);
             monitor_printf(mon, "\n");
         }
     }
 
-    QTAILQ_FOREACH_SAFE(image_entry, &image_list, next, next_ie) {
-        SnapshotEntry *next_sn;
-        QTAILQ_FOREACH_SAFE(snapshot_entry, &image_entry->snapshots, next,
-                            next_sn) {
-            g_free(snapshot_entry);
-        }
+    QTAILQ_FOREACH_SAFE (image_entry, &image_list, next, next_ie) {
+        SnapshotEntry* next_sn;
+        QTAILQ_FOREACH_SAFE (snapshot_entry, &image_entry->snapshots, next, next_sn) { g_free(snapshot_entry); }
         g_free(image_entry);
     }
     g_free(sn_tab);
     g_free(global_snapshots);
 }
 
-void hmp_change_medium(Monitor *mon, const char *device, const char *target,
-                       const char *arg, const char *read_only, bool force,
-                       Error **errp)
+void hmp_change_medium(Monitor* mon, const char* device, const char* target, const char* arg, const char* read_only,
+                       bool force, Error** errp)
 {
     ERRP_GUARD();
     BlockdevChangeReadOnlyMode read_only_mode = 0;
 
     if (read_only) {
         read_only_mode =
-            qapi_enum_parse(&BlockdevChangeReadOnlyMode_lookup,
-                            read_only,
-                            BLOCKDEV_CHANGE_READ_ONLY_MODE_RETAIN, errp);
-        if (*errp) {
-            return;
-        }
+            qapi_enum_parse(&BlockdevChangeReadOnlyMode_lookup, read_only, BLOCKDEV_CHANGE_READ_ONLY_MODE_RETAIN, errp);
+        if (*errp) { return; }
     }
 
-    qmp_blockdev_change_medium(device, NULL, target, arg, true, force,
-                               !!read_only, read_only_mode, errp);
+    qmp_blockdev_change_medium(device, NULL, target, arg, true, force, !!read_only, read_only_mode, errp);
 }

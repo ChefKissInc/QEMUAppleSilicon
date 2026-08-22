@@ -11,23 +11,23 @@
 
 #include "qobject/qdict.h"
 
-QObject *qdict_crumple(const QDict *src, Error **errp);
-void qdict_flatten(QDict *qdict);
+QObject* qdict_crumple(const QDict* src, Error** errp);
+void     qdict_flatten(QDict* qdict);
 
-void qdict_copy_default(QDict *dst, QDict *src, const char *key);
-void qdict_set_default_str(QDict *dst, const char *key, const char *val);
+void qdict_copy_default(QDict* dst, QDict* src, const char* key);
+void qdict_set_default_str(QDict* dst, const char* key, const char* val);
 
-void qdict_join(QDict *dest, QDict *src, bool overwrite);
+void qdict_join(QDict* dest, QDict* src, bool overwrite);
 
-void qdict_extract_subqdict(QDict *src, QDict **dst, const char *start);
-void qdict_array_split(QDict *src, QList **dst);
-int qdict_array_entries(QDict *src, const char *subqdict);
+void qdict_extract_subqdict(QDict* src, QDict** dst, const char* start);
+void qdict_array_split(QDict* src, QList** dst);
+int  qdict_array_entries(QDict* src, const char* subqdict);
 
-typedef struct QDictRenames {
-    const char *from;
-    const char *to;
+typedef struct QDictRenames
+{
+    const char* from;
+    const char* to;
 } QDictRenames;
-bool qdict_rename_keys(QDict *qdict, const QDictRenames *renames, Error **errp);
+bool qdict_rename_keys(QDict* qdict, const QDictRenames* renames, Error** errp);
 
-Visitor *qobject_input_visitor_new_flat_confused(QDict *qdict,
-                                                 Error **errp);
+Visitor* qobject_input_visitor_new_flat_confused(QDict* qdict, Error** errp);

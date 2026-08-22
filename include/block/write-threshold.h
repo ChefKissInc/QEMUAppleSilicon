@@ -22,7 +22,7 @@
  *
  * Use threshold_bytes == 0 to disable.
  */
-void bdrv_write_threshold_set(BlockDriverState *bs, uint64_t threshold_bytes);
+void bdrv_write_threshold_set(BlockDriverState* bs, uint64_t threshold_bytes);
 
 /*
  * bdrv_write_threshold_get
@@ -30,7 +30,7 @@ void bdrv_write_threshold_set(BlockDriverState *bs, uint64_t threshold_bytes);
  * Get the configured write threshold, in bytes.
  * Zero means no threshold configured.
  */
-uint64_t bdrv_write_threshold_get(const BlockDriverState *bs);
+uint64_t bdrv_write_threshold_get(const BlockDriverState* bs);
 
 /*
  * bdrv_write_threshold_check_write
@@ -38,5 +38,4 @@ uint64_t bdrv_write_threshold_get(const BlockDriverState *bs);
  * Check whether the specified request exceeds the write threshold.
  * If so, send a corresponding event and disable write threshold checking.
  */
-void bdrv_write_threshold_check_write(BlockDriverState *bs, int64_t offset,
-                                      int64_t bytes);
+void bdrv_write_threshold_check_write(BlockDriverState* bs, int64_t offset, int64_t bytes);

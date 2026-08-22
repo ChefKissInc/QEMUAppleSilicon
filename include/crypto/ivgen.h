@@ -98,7 +98,6 @@ typedef struct QCryptoIVGen QCryptoIVGen;
 
 /* See also QCryptoIVGenAlgo enum in qapi/crypto.json */
 
-
 /**
  * qcrypto_ivgen_new:
  * @alg: the initialization vector generation algorithm
@@ -132,11 +131,8 @@ typedef struct QCryptoIVGen QCryptoIVGen;
  *
  * Returns: a new IV generator, or NULL on error
  */
-QCryptoIVGen *qcrypto_ivgen_new(QCryptoIVGenAlgo alg,
-                                QCryptoCipherAlgo cipheralg,
-                                QCryptoHashAlgo hash,
-                                const uint8_t *key, size_t nkey,
-                                Error **errp);
+QCryptoIVGen* qcrypto_ivgen_new(QCryptoIVGenAlgo alg, QCryptoCipherAlgo cipheralg, QCryptoHashAlgo hash,
+                                const uint8_t* key, size_t nkey, Error** errp);
 
 /**
  * qcrypto_ivgen_calculate:
@@ -152,11 +148,7 @@ QCryptoIVGen *qcrypto_ivgen_new(QCryptoIVGenAlgo alg,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_ivgen_calculate(QCryptoIVGen *ivgen,
-                            uint64_t sector,
-                            uint8_t *iv, size_t niv,
-                            Error **errp);
-
+int qcrypto_ivgen_calculate(QCryptoIVGen* ivgen, uint64_t sector, uint8_t* iv, size_t niv, Error** errp);
 
 /**
  * qcrypto_ivgen_get_algorithm:
@@ -166,8 +158,7 @@ int qcrypto_ivgen_calculate(QCryptoIVGen *ivgen,
  *
  * Returns: the IV generator algorithm
  */
-QCryptoIVGenAlgo qcrypto_ivgen_get_algorithm(QCryptoIVGen *ivgen);
-
+QCryptoIVGenAlgo qcrypto_ivgen_get_algorithm(QCryptoIVGen* ivgen);
 
 /**
  * qcrypto_ivgen_get_cipher:
@@ -178,8 +169,7 @@ QCryptoIVGenAlgo qcrypto_ivgen_get_algorithm(QCryptoIVGen *ivgen);
  *
  * Returns: the cipher algorithm
  */
-QCryptoCipherAlgo qcrypto_ivgen_get_cipher(QCryptoIVGen *ivgen);
-
+QCryptoCipherAlgo qcrypto_ivgen_get_cipher(QCryptoIVGen* ivgen);
 
 /**
  * qcrypto_ivgen_get_hash:
@@ -190,8 +180,7 @@ QCryptoCipherAlgo qcrypto_ivgen_get_cipher(QCryptoIVGen *ivgen);
  *
  * Returns: the hash algorithm
  */
-QCryptoHashAlgo qcrypto_ivgen_get_hash(QCryptoIVGen *ivgen);
-
+QCryptoHashAlgo qcrypto_ivgen_get_hash(QCryptoIVGen* ivgen);
 
 /**
  * qcrypto_ivgen_free:
@@ -200,6 +189,6 @@ QCryptoHashAlgo qcrypto_ivgen_get_hash(QCryptoIVGen *ivgen);
  * Release all resources associated with @ivgen, or a no-op
  * if @ivgen is NULL
  */
-void qcrypto_ivgen_free(QCryptoIVGen *ivgen);
+void qcrypto_ivgen_free(QCryptoIVGen* ivgen);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoIVGen, qcrypto_ivgen_free)

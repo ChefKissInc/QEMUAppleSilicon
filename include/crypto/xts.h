@@ -27,10 +27,7 @@
 
 #define XTS_BLOCK_SIZE 16
 
-typedef void xts_cipher_func(const void *ctx,
-                             size_t length,
-                             uint8_t *dst,
-                             const uint8_t *src);
+typedef void xts_cipher_func(const void* ctx, size_t length, uint8_t* dst, const uint8_t* src);
 
 /**
  * xts_decrypt:
@@ -45,14 +42,8 @@ typedef void xts_cipher_func(const void *ctx,
  *
  * Decrypts @src into @dst
  */
-void xts_decrypt(const void *datactx,
-                 const void *tweakctx,
-                 xts_cipher_func *encfunc,
-                 xts_cipher_func *decfunc,
-                 uint8_t *iv,
-                 size_t length,
-                 uint8_t *dst,
-                 const uint8_t *src);
+void xts_decrypt(const void* datactx, const void* tweakctx, xts_cipher_func* encfunc, xts_cipher_func* decfunc,
+                 uint8_t* iv, size_t length, uint8_t* dst, const uint8_t* src);
 
 /**
  * xts_decrypt:
@@ -67,11 +58,5 @@ void xts_decrypt(const void *datactx,
  *
  * Decrypts @src into @dst
  */
-void xts_encrypt(const void *datactx,
-                 const void *tweakctx,
-                 xts_cipher_func *encfunc,
-                 xts_cipher_func *decfunc,
-                 uint8_t *iv,
-                 size_t length,
-                 uint8_t *dst,
-                 const uint8_t *src);
+void xts_encrypt(const void* datactx, const void* tweakctx, xts_cipher_func* encfunc, xts_cipher_func* decfunc,
+                 uint8_t* iv, size_t length, uint8_t* dst, const uint8_t* src);

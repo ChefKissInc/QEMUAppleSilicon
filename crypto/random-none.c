@@ -24,14 +24,9 @@
 #include "crypto/random.h"
 #include "qapi/error.h"
 
-int qcrypto_random_init(Error **errp)
-{
-    return 0;
-}
+int qcrypto_random_init(Error** errp) { return 0; }
 
-int qcrypto_random_bytes(void *buf,
-                         size_t buflen,
-                         Error **errp)
+int qcrypto_random_bytes(void* buf, size_t buflen, Error** errp)
 {
     error_setg(errp, "Random bytes not available with \"none\" rng");
     return -1;

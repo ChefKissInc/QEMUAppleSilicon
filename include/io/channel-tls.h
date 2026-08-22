@@ -28,7 +28,6 @@
 #define TYPE_QIO_CHANNEL_TLS "qio-channel-tls"
 OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelTLS, QIO_CHANNEL_TLS)
 
-
 /**
  * QIOChannelTLS
  *
@@ -42,13 +41,14 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelTLS, QIO_CHANNEL_TLS)
  * TLS server or TLS client.
  */
 
-struct QIOChannelTLS {
-    QIOChannel parent;
-    QIOChannel *master;
-    QCryptoTLSSession *session;
+struct QIOChannelTLS
+{
+    QIOChannel         parent;
+    QIOChannel*        master;
+    QCryptoTLSSession* session;
     QIOChannelShutdown shutdown;
-    guint hs_ioc_tag;
-    guint bye_ioc_tag;
+    guint              hs_ioc_tag;
+    guint              bye_ioc_tag;
 };
 
 /**
@@ -60,7 +60,7 @@ struct QIOChannelTLS {
  * immediately and the termination will continue in the background,
  * provided the main loop is running.
  */
-void qio_channel_tls_bye(QIOChannelTLS *ioc, Error **errp);
+void qio_channel_tls_bye(QIOChannelTLS* ioc, Error** errp);
 
 /**
  * qio_channel_tls_new_server:
@@ -86,11 +86,8 @@ void qio_channel_tls_bye(QIOChannelTLS *ioc, Error **errp);
  *
  * Returns: the new TLS channel object, or NULL
  */
-QIOChannelTLS *
-qio_channel_tls_new_server(QIOChannel *master,
-                           QCryptoTLSCreds *creds,
-                           const char *aclname,
-                           Error **errp);
+QIOChannelTLS* qio_channel_tls_new_server(QIOChannel* master, QCryptoTLSCreds* creds, const char* aclname,
+                                          Error** errp);
 
 /**
  * qio_channel_tls_new_client:
@@ -116,11 +113,8 @@ qio_channel_tls_new_server(QIOChannel *master,
  *
  * Returns: the new TLS channel object, or NULL
  */
-QIOChannelTLS *
-qio_channel_tls_new_client(QIOChannel *master,
-                           QCryptoTLSCreds *creds,
-                           const char *hostname,
-                           Error **errp);
+QIOChannelTLS* qio_channel_tls_new_client(QIOChannel* master, QCryptoTLSCreds* creds, const char* hostname,
+                                          Error** errp);
 
 /**
  * qio_channel_tls_handshake:
@@ -137,11 +131,8 @@ qio_channel_tls_new_client(QIOChannel *master,
  * loop is running. When the handshake is complete,
  * or fails, the @func callback will be invoked.
  */
-void qio_channel_tls_handshake(QIOChannelTLS *ioc,
-                               QIOTaskFunc func,
-                               gpointer opaque,
-                               GDestroyNotify destroy,
-                               GMainContext *context);
+void qio_channel_tls_handshake(QIOChannelTLS* ioc, QIOTaskFunc func, gpointer opaque, GDestroyNotify destroy,
+                               GMainContext* context);
 
 /**
  * qio_channel_tls_get_session:
@@ -151,5 +142,4 @@ void qio_channel_tls_handshake(QIOChannelTLS *ioc,
  *
  * Returns: the TLS session
  */
-QCryptoTLSSession *
-qio_channel_tls_get_session(QIOChannelTLS *ioc);
+QCryptoTLSSession* qio_channel_tls_get_session(QIOChannelTLS* ioc);

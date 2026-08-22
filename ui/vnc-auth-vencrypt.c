@@ -30,63 +30,53 @@
 #include "qemu/main-loop.h"
 #include "trace.h"
 
-static void start_auth_vencrypt_subauth(VncState *vs)
+static void start_auth_vencrypt_subauth(VncState* vs)
 {
     switch (vs->subauth) {
-    case VNC_AUTH_VENCRYPT_TLSNONE:
-    case VNC_AUTH_VENCRYPT_X509NONE:
-       vnc_write_u32(vs, 0); /* Accept auth completion */
-       start_client_init(vs);
-       break;
+        case VNC_AUTH_VENCRYPT_TLSNONE:
+        case VNC_AUTH_VENCRYPT_X509NONE:
+            vnc_write_u32(vs, 0); /* Accept auth completion */
+            start_client_init(vs);
+            break;
 
-    case VNC_AUTH_VENCRYPT_TLSVNC:
-    case VNC_AUTH_VENCRYPT_X509VNC:
-       start_auth_vnc(vs);
-       break;
+        case VNC_AUTH_VENCRYPT_TLSVNC:
+        case VNC_AUTH_VENCRYPT_X509VNC: start_auth_vnc(vs); break;
 
 #ifdef CONFIG_VNC_SASL
-    case VNC_AUTH_VENCRYPT_TLSSASL:
-    case VNC_AUTH_VENCRYPT_X509SASL:
-      start_auth_sasl(vs);
-      break;
+        case VNC_AUTH_VENCRYPT_TLSSASL:
+        case VNC_AUTH_VENCRYPT_X509SASL: start_auth_sasl(vs); break;
 #endif /* CONFIG_VNC_SASL */
 
-    default: /* Should not be possible, but just in case */
-       trace_vnc_auth_fail(vs, vs->auth, "Unhandled VeNCrypt subauth", "");
-       vnc_write_u8(vs, 1);
-       if (vs->minor >= 8) {
-           static const char err[] = "Unsupported authentication type";
-           vnc_write_u32(vs, sizeof(err));
-           vnc_write(vs, err, sizeof(err));
-       }
-       vnc_client_error(vs);
+        default: /* Should not be possible, but just in case */
+            trace_vnc_auth_fail(vs, vs->auth, "Unhandled VeNCrypt subauth", "");
+            vnc_write_u8(vs, 1);
+            if (vs->minor >= 8) {
+                static const char err[] = "Unsupported authentication type";
+                vnc_write_u32(vs, sizeof(err));
+                vnc_write(vs, err, sizeof(err));
+            }
+            vnc_client_error(vs);
     }
 }
 
-static void vnc_tls_handshake_done(QIOTask *task,
-                                   gpointer user_data)
+static void vnc_tls_handshake_done(QIOTask* task, gpointer user_data)
 {
-    VncState *vs = user_data;
-    Error *err = NULL;
+    VncState* vs  = user_data;
+    Error*    err = NULL;
 
     if (qio_task_propagate_error(task, &err)) {
-        trace_vnc_auth_fail(vs, vs->auth, "TLS handshake failed",
-                            error_get_pretty(err));
+        trace_vnc_auth_fail(vs, vs->auth, "TLS handshake failed", error_get_pretty(err));
         vnc_client_error(vs);
         error_free(err);
-    } else {
-        if (vs->ioc_tag) {
-            g_source_remove(vs->ioc_tag);
-        }
-        vs->ioc_tag = qio_channel_add_watch(
-            vs->ioc, G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_OUT,
-            vnc_client_io, vs, NULL);
+    }
+    else {
+        if (vs->ioc_tag) { g_source_remove(vs->ioc_tag); }
+        vs->ioc_tag = qio_channel_add_watch(vs->ioc, G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_OUT, vnc_client_io, vs, NULL);
         start_auth_vencrypt_subauth(vs);
     }
 }
 
-
-static int protocol_client_vencrypt_auth(VncState *vs, uint8_t *data, size_t len)
+static int protocol_client_vencrypt_auth(VncState* vs, uint8_t* data, size_t len)
 {
     int auth = read_u32(data, 0);
 
@@ -96,9 +86,10 @@ static int protocol_client_vencrypt_auth(VncState *vs, uint8_t *data, size_t len
         vnc_write_u8(vs, 0); /* Reject auth */
         vnc_flush(vs);
         vnc_client_error(vs);
-    } else {
-        Error *err = NULL;
-        QIOChannelTLS *tls;
+    }
+    else {
+        Error*         err = NULL;
+        QIOChannelTLS* tls;
         vnc_write_u8(vs, 1); /* Accept auth */
         vnc_flush(vs);
 
@@ -107,14 +98,9 @@ static int protocol_client_vencrypt_auth(VncState *vs, uint8_t *data, size_t len
             vs->ioc_tag = 0;
         }
 
-        tls = qio_channel_tls_new_server(
-            vs->ioc,
-            vs->vd->tlscreds,
-            vs->vd->tlsauthzid,
-            &err);
+        tls = qio_channel_tls_new_server(vs->ioc, vs->vd->tlscreds, vs->vd->tlsauthzid, &err);
         if (!tls) {
-            trace_vnc_auth_fail(vs, vs->auth, "TLS setup failed",
-                                error_get_pretty(err));
+            trace_vnc_auth_fail(vs, vs->auth, "TLS setup failed", error_get_pretty(err));
             error_free(err);
             vnc_client_error(vs);
             return 0;
@@ -126,27 +112,23 @@ static int protocol_client_vencrypt_auth(VncState *vs, uint8_t *data, size_t len
         trace_vnc_client_io_wrap(vs, vs->ioc, "tls");
         vs->tls = qio_channel_tls_get_session(tls);
 
-        qio_channel_tls_handshake(tls,
-                                  vnc_tls_handshake_done,
-                                  vs,
-                                  NULL,
-                                  NULL);
+        qio_channel_tls_handshake(tls, vnc_tls_handshake_done, vs, NULL, NULL);
     }
     return 0;
 }
 
-static int protocol_client_vencrypt_init(VncState *vs, uint8_t *data, size_t len)
+static int protocol_client_vencrypt_init(VncState* vs, uint8_t* data, size_t len)
 {
     trace_vnc_auth_vencrypt_version(vs, (int)data[0], (int)data[1]);
-    if (data[0] != 0 ||
-        data[1] != 2) {
+    if (data[0] != 0 || data[1] != 2) {
         trace_vnc_auth_fail(vs, vs->auth, "Unsupported version", "");
         vnc_write_u8(vs, 1); /* Reject version */
         vnc_flush(vs);
         vnc_client_error(vs);
-    } else {
-        vnc_write_u8(vs, 0); /* Accept version */
-        vnc_write_u8(vs, 1); /* Number of sub-auths */
+    }
+    else {
+        vnc_write_u8(vs, 0);            /* Accept version */
+        vnc_write_u8(vs, 1);            /* Number of sub-auths */
         vnc_write_u32(vs, vs->subauth); /* The supported auth */
         vnc_flush(vs);
         vnc_read_when(vs, protocol_client_vencrypt_auth, 4);
@@ -154,8 +136,7 @@ static int protocol_client_vencrypt_init(VncState *vs, uint8_t *data, size_t len
     return 0;
 }
 
-
-void start_auth_vencrypt(VncState *vs)
+void start_auth_vencrypt(VncState* vs)
 {
     /* Send VeNCrypt version 0.2 */
     vnc_write_u8(vs, 0);
@@ -163,4 +144,3 @@ void start_auth_vencrypt(VncState *vs)
 
     vnc_read_when(vs, protocol_client_vencrypt_init, 2);
 }
-

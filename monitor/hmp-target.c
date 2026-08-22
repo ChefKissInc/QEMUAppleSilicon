@@ -43,21 +43,17 @@ static HMPCommand hmp_info_cmds[];
 /**
  * Is @name in the '|' separated list of names @list?
  */
-int hmp_compare_cmd(const char *name, const char *list)
+int hmp_compare_cmd(const char* name, const char* list)
 {
     const char *p, *pstart;
-    int len;
+    int         len;
     len = strlen(name);
-    p = list;
+    p   = list;
     for (;;) {
         pstart = p;
-        p = qemu_strchrnul(p, '|');
-        if ((p - pstart) == len && !memcmp(pstart, name, len)) {
-            return 1;
-        }
-        if (*p == '\0') {
-            break;
-        }
+        p      = qemu_strchrnul(p, '|');
+        if ((p - pstart) == len && !memcmp(pstart, name, len)) { return 1; }
+        if (*p == '\0') { break; }
         p++;
     }
     return 0;
@@ -66,48 +62,45 @@ int hmp_compare_cmd(const char *name, const char *list)
 /* Please update hmp-commands.hx when adding or changing commands */
 static HMPCommand hmp_info_cmds[] = {
 #include "hmp-commands-info.h"
-    { NULL, NULL, },
+    {
+        NULL,
+        NULL,
+    },
 };
 
 /* hmp_cmds and hmp_info_cmds would be sorted at runtime */
 HMPCommand hmp_cmds[] = {
 #include "hmp-commands.h"
-    { NULL, NULL, },
+    {
+        NULL,
+        NULL,
+    },
 };
 
 /*
  * Set @pval to the value in the register identified by @name.
  * return 0 if OK, -1 if not found
  */
-int get_monitor_def(Monitor *mon, int64_t *pval, const char *name)
+int get_monitor_def(Monitor* mon, int64_t* pval, const char* name)
 {
-    const MonitorDef *md = target_monitor_defs();
-    CPUState *cs = mon_get_cpu(mon);
-    void *ptr;
-    uint64_t tmp = 0;
-    int ret;
+    const MonitorDef* md = target_monitor_defs();
+    CPUState*         cs = mon_get_cpu(mon);
+    void*             ptr;
+    uint64_t          tmp = 0;
+    int               ret;
 
-    if (cs == NULL || md == NULL) {
-        return -1;
-    }
+    if (cs == NULL || md == NULL) { return -1; }
 
-    for(; md->name != NULL; md++) {
+    for (; md->name != NULL; md++) {
         if (hmp_compare_cmd(name, md->name)) {
-            if (md->get_value) {
-                *pval = md->get_value(mon, md, md->offset);
-            } else {
-                CPUArchState *env = mon_get_cpu_env(mon);
-                ptr = (uint8_t *)env + md->offset;
-                switch(md->type) {
-                case MD_I32:
-                    *pval = *(int32_t *)ptr;
-                    break;
-                case MD_TLONG:
-                    *pval = *(target_long *)ptr;
-                    break;
-                default:
-                    *pval = 0;
-                    break;
+            if (md->get_value) { *pval = md->get_value(mon, md, md->offset); }
+            else {
+                CPUArchState* env = mon_get_cpu_env(mon);
+                ptr               = (uint8_t*)env + md->offset;
+                switch (md->type) {
+                    case MD_I32  : *pval = *(int32_t*)ptr; break;
+                    case MD_TLONG: *pval = *(target_long*)ptr; break;
+                    default      : *pval = 0; break;
                 }
             }
             return 0;
@@ -115,34 +108,23 @@ int get_monitor_def(Monitor *mon, int64_t *pval, const char *name)
     }
 
     ret = target_get_monitor_def(cs, name, &tmp);
-    if (!ret) {
-        *pval = (target_long) tmp;
-    }
+    if (!ret) { *pval = (target_long)tmp; }
 
     return ret;
 }
 
-static int
-compare_mon_cmd(const void *a, const void *b)
-{
-    return strcmp(((const HMPCommand *)a)->name,
-            ((const HMPCommand *)b)->name);
-}
+static int compare_mon_cmd(const void* a, const void* b)
+{ return strcmp(((const HMPCommand*)a)->name, ((const HMPCommand*)b)->name); }
 
 static void __attribute__((__constructor__)) sortcmdlist(void)
 {
-    qsort(hmp_cmds, ARRAY_SIZE(hmp_cmds) - 1,
-          sizeof(*hmp_cmds),
-          compare_mon_cmd);
-    qsort(hmp_info_cmds, ARRAY_SIZE(hmp_info_cmds) - 1,
-          sizeof(*hmp_info_cmds),
-          compare_mon_cmd);
+    qsort(hmp_cmds, ARRAY_SIZE(hmp_cmds) - 1, sizeof(*hmp_cmds), compare_mon_cmd);
+    qsort(hmp_info_cmds, ARRAY_SIZE(hmp_info_cmds) - 1, sizeof(*hmp_info_cmds), compare_mon_cmd);
 }
 
-void monitor_register_hmp(const char *name, bool info,
-                          void (*cmd)(Monitor *mon, const QDict *qdict))
+void monitor_register_hmp(const char* name, bool info, void (*cmd)(Monitor* mon, const QDict* qdict))
 {
-    HMPCommand *table = info ? hmp_info_cmds : hmp_cmds;
+    HMPCommand* table = info ? hmp_info_cmds : hmp_cmds;
 
     while (table->name != NULL) {
         if (strcmp(table->name, name) == 0) {
@@ -155,10 +137,9 @@ void monitor_register_hmp(const char *name, bool info,
     assert_not_reached();
 }
 
-void monitor_register_hmp_info_hrt(const char *name,
-                                   HumanReadableText *(*handler)(Error **errp))
+void monitor_register_hmp_info_hrt(const char* name, HumanReadableText* (*handler)(Error** errp))
 {
-    HMPCommand *table = hmp_info_cmds;
+    HMPCommand* table = hmp_info_cmds;
 
     while (table->name != NULL) {
         if (strcmp(table->name, name) == 0) {

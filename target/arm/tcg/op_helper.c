@@ -27,10 +27,10 @@
 #include "accel/tcg/probe.h"
 #include "cpregs.h"
 
-#define SIGNBIT (uint32_t)0x80000000
+#define SIGNBIT   (uint32_t)0x80000000
 #define SIGNBIT64 ((uint64_t)1 << 63)
 
-int exception_target_el(CPUARMState *env)
+int exception_target_el(CPUARMState* env)
 {
     int target_el = MAX(1, arm_current_el(env));
 
@@ -38,17 +38,14 @@ int exception_target_el(CPUARMState *env)
      * No such thing as secure EL1 if EL3 is aarch32,
      * so update the target EL to EL3 in this case.
      */
-    if (arm_is_secure(env) && !arm_el_is_aa64(env, 3) && target_el == 1) {
-        target_el = 3;
-    }
+    if (arm_is_secure(env) && !arm_el_is_aa64(env, 3) && target_el == 1) { target_el = 3; }
 
     return target_el;
 }
 
-void raise_exception(CPUARMState *env, uint32_t excp,
-                     uint32_t syndrome, uint32_t target_el)
+void raise_exception(CPUARMState* env, uint32_t excp, uint32_t syndrome, uint32_t target_el)
 {
-    CPUState *cs = env_cpu(env);
+    CPUState* cs = env_cpu(env);
 
     if (target_el == 1 && (arm_hcr_el2_eff(env) & HCR_TGE)) {
         /*
@@ -58,24 +55,21 @@ void raise_exception(CPUARMState *env, uint32_t excp,
          * (see DDI0478C.a D1.10.4)
          */
         target_el = 2;
-        if (syn_get_ec(syndrome) == EC_ADVSIMDFPACCESSTRAP) {
-            syndrome = syn_uncategorized();
-        }
+        if (syn_get_ec(syndrome) == EC_ADVSIMDFPACCESSTRAP) { syndrome = syn_uncategorized(); }
     }
 
 #ifdef CONFIG_DEBUG_TCG
     assert_false(excp_is_internal(excp));
 #endif
-    cs->exception_index = excp;
-    env->exception.syndrome = syndrome;
+    cs->exception_index      = excp;
+    env->exception.syndrome  = syndrome;
     env->exception.target_el = target_el;
     cpu_loop_exit(cs);
 }
 
-void raise_exception_ra(CPUARMState *env, uint32_t excp, uint32_t syndrome,
-                        uint32_t target_el, uintptr_t ra)
+void raise_exception_ra(CPUARMState* env, uint32_t excp, uint32_t syndrome, uint32_t target_el, uintptr_t ra)
 {
-    CPUState *cs = env_cpu(env);
+    CPUState* cs = env_cpu(env);
 
     /*
      * restore_state_to_opc() will set env->exception.syndrome, so
@@ -86,8 +80,7 @@ void raise_exception_ra(CPUARMState *env, uint32_t excp, uint32_t syndrome,
     raise_exception(env, excp, syndrome, target_el);
 }
 
-uint64_t HELPER(neon_tbl)(CPUARMState *env, uint32_t desc,
-                          uint64_t ireg, uint64_t def)
+uint64_t HELPER(neon_tbl)(CPUARMState* env, uint32_t desc, uint64_t ireg, uint64_t def)
 {
     uint64_t tmp, val = 0;
     uint32_t maxindex = ((desc & 3) + 1) * 8;
@@ -100,7 +93,8 @@ uint64_t HELPER(neon_tbl)(CPUARMState *env, uint32_t desc,
             reg = base_reg + (index >> 3);
             tmp = *aa32_vfp_dreg(env, reg);
             tmp = ((tmp >> ((index & 7) << 3)) & 0xff) << shift;
-        } else {
+        }
+        else {
             tmp = def & (0xffull << shift);
         }
         val |= tmp;
@@ -112,7 +106,7 @@ uint64_t HELPER(neon_tbl)(CPUARMState *env, uint32_t desc,
 uint32_t HELPER(sxtb16)(uint32_t x)
 {
     uint32_t res;
-    res = (uint16_t)(int8_t)x;
+    res  = (uint16_t)(int8_t)x;
     res |= (uint32_t)(int8_t)(x >> 16) << 16;
     return res;
 }
@@ -120,95 +114,86 @@ uint32_t HELPER(sxtb16)(uint32_t x)
 uint32_t HELPER(uxtb16)(uint32_t x)
 {
     uint32_t res;
-    res = (uint16_t)(uint8_t)x;
+    res  = (uint16_t)(uint8_t)x;
     res |= (uint32_t)(uint8_t)(x >> 16) << 16;
     return res;
 }
 
-int32_t HELPER(sdiv)(CPUARMState *env, int32_t num, int32_t den)
+int32_t HELPER(sdiv)(CPUARMState* env, int32_t num, int32_t den)
 {
-    if (den == 0) {
-        return 0;
-    }
-    if (num == INT_MIN && den == -1) {
-        return INT_MIN;
-    }
+    if (den == 0) { return 0; }
+    if (num == INT_MIN && den == -1) { return INT_MIN; }
     return num / den;
 }
 
-uint32_t HELPER(udiv)(CPUARMState *env, uint32_t num, uint32_t den)
+uint32_t HELPER(udiv)(CPUARMState* env, uint32_t num, uint32_t den)
 {
-    if (den == 0) {
-        return 0;
-    }
+    if (den == 0) { return 0; }
     return num / den;
 }
 
-uint32_t HELPER(rbit)(uint32_t x)
-{
-    return revbit32(x);
-}
+uint32_t HELPER(rbit)(uint32_t x) { return revbit32(x); }
 
-uint32_t HELPER(add_setq)(CPUARMState *env, uint32_t a, uint32_t b)
+uint32_t HELPER(add_setq)(CPUARMState* env, uint32_t a, uint32_t b)
 {
     uint32_t res = a + b;
-    if (((res ^ a) & SIGNBIT) && !((a ^ b) & SIGNBIT))
-        env->QF = 1;
+    if (((res ^ a) & SIGNBIT) && !((a ^ b) & SIGNBIT)) { env->QF = 1; }
     return res;
 }
 
-uint32_t HELPER(add_saturate)(CPUARMState *env, uint32_t a, uint32_t b)
+uint32_t HELPER(add_saturate)(CPUARMState* env, uint32_t a, uint32_t b)
 {
     uint32_t res = a + b;
     if (((res ^ a) & SIGNBIT) && !((a ^ b) & SIGNBIT)) {
         env->QF = 1;
-        res = ~(((int32_t)a >> 31) ^ SIGNBIT);
+        res     = ~(((int32_t)a >> 31) ^ SIGNBIT);
     }
     return res;
 }
 
-uint32_t HELPER(sub_saturate)(CPUARMState *env, uint32_t a, uint32_t b)
+uint32_t HELPER(sub_saturate)(CPUARMState* env, uint32_t a, uint32_t b)
 {
     uint32_t res = a - b;
     if (((res ^ a) & SIGNBIT) && ((a ^ b) & SIGNBIT)) {
         env->QF = 1;
-        res = ~(((int32_t)a >> 31) ^ SIGNBIT);
+        res     = ~(((int32_t)a >> 31) ^ SIGNBIT);
     }
     return res;
 }
 
-uint32_t HELPER(add_usaturate)(CPUARMState *env, uint32_t a, uint32_t b)
+uint32_t HELPER(add_usaturate)(CPUARMState* env, uint32_t a, uint32_t b)
 {
     uint32_t res = a + b;
     if (res < a) {
         env->QF = 1;
-        res = ~0;
+        res     = ~0;
     }
     return res;
 }
 
-uint32_t HELPER(sub_usaturate)(CPUARMState *env, uint32_t a, uint32_t b)
+uint32_t HELPER(sub_usaturate)(CPUARMState* env, uint32_t a, uint32_t b)
 {
     uint32_t res = a - b;
     if (res > a) {
         env->QF = 1;
-        res = 0;
+        res     = 0;
     }
     return res;
 }
 
 /* Signed saturation.  */
-static inline uint32_t do_ssat(CPUARMState *env, int32_t val, int shift)
+static inline uint32_t do_ssat(CPUARMState* env, int32_t val, int shift)
 {
-    int32_t top;
+    int32_t  top;
     uint32_t mask;
 
-    top = val >> shift;
+    top  = val >> shift;
     mask = (1u << shift) - 1;
     if (top > 0) {
         env->QF = 1;
         return mask;
-    } else if (top < -1) {
+    }
+    else if (top < -1) {
         env->QF = 1;
         return ~mask;
     }
@@ -216,7 +201,7 @@ static inline uint32_t do_ssat(CPUARMState *env, int32_t val, int shift)
 }
 
 /* Unsigned saturation.  */
-static inline uint32_t do_usat(CPUARMState *env, int32_t val, int shift)
+static inline uint32_t do_usat(CPUARMState* env, int32_t val, int shift)
 {
     uint32_t max;
 
@@ -224,7 +209,8 @@ static inline uint32_t do_usat(CPUARMState *env, int32_t val, int shift)
     if (val < 0) {
         env->QF = 1;
         return 0;
-    } else if (val > max) {
+    }
+    else if (val > max) {
         env->QF = 1;
         return max;
     }
@@ -232,44 +218,38 @@ static inline uint32_t do_usat(CPUARMState *env, int32_t val, int shift)
 }
 
 /* Signed saturate.  */
-uint32_t HELPER(ssat)(CPUARMState *env, uint32_t x, uint32_t shift)
-{
-    return do_ssat(env, x, shift);
-}
+uint32_t HELPER(ssat)(CPUARMState* env, uint32_t x, uint32_t shift) { return do_ssat(env, x, shift); }
 
 /* Dual halfword signed saturate.  */
-uint32_t HELPER(ssat16)(CPUARMState *env, uint32_t x, uint32_t shift)
+uint32_t HELPER(ssat16)(CPUARMState* env, uint32_t x, uint32_t shift)
 {
     uint32_t res;
 
-    res = (uint16_t)do_ssat(env, (int16_t)x, shift);
+    res  = (uint16_t)do_ssat(env, (int16_t)x, shift);
     res |= do_ssat(env, ((int32_t)x) >> 16, shift) << 16;
     return res;
 }
 
 /* Unsigned saturate.  */
-uint32_t HELPER(usat)(CPUARMState *env, uint32_t x, uint32_t shift)
-{
-    return do_usat(env, x, shift);
-}
+uint32_t HELPER(usat)(CPUARMState* env, uint32_t x, uint32_t shift) { return do_usat(env, x, shift); }
 
 /* Dual halfword unsigned saturate.  */
-uint32_t HELPER(usat16)(CPUARMState *env, uint32_t x, uint32_t shift)
+uint32_t HELPER(usat16)(CPUARMState* env, uint32_t x, uint32_t shift)
 {
     uint32_t res;
 
-    res = (uint16_t)do_usat(env, (int16_t)x, shift);
+    res  = (uint16_t)do_usat(env, (int16_t)x, shift);
     res |= do_usat(env, ((int32_t)x) >> 16, shift) << 16;
     return res;
 }
 
-void HELPER(setend)(CPUARMState *env)
+void HELPER(setend)(CPUARMState* env)
 {
     env->uncached_cpsr ^= CPSR_E;
     arm_rebuild_hflags(env);
 }
 
-void HELPER(check_bxj_trap)(CPUARMState *env, uint32_t rm)
+void HELPER(check_bxj_trap)(CPUARMState* env, uint32_t rm)
 {
     /*
      * Only called if in NS EL0 or EL1 for a BXJ for a v7A CPU;
@@ -291,9 +271,9 @@ void HELPER(check_bxj_trap)(CPUARMState *env, uint32_t rm)
  * otherwise it returns 0 indicating it is not trapped.
  * For a trap, *excp is updated with the EXCP_* trap type to use.
  */
-static inline int check_wfx_trap(CPUARMState *env, bool is_wfe, uint32_t *excp)
+static inline int check_wfx_trap(CPUARMState* env, bool is_wfe, uint32_t* excp)
 {
-    int cur_el = arm_current_el(env);
+    int      cur_el = arm_current_el(env);
     uint64_t mask;
 
     *excp = EXCP_UDEF;
@@ -303,9 +283,7 @@ static inline int check_wfx_trap(CPUARMState *env, bool is_wfe, uint32_t *excp)
      */
     if (cur_el < 1 && arm_feature(env, ARM_FEATURE_V8)) {
         mask = is_wfe ? SCTLR_nTWE : SCTLR_nTWI;
-        if (!(arm_sctlr(env, cur_el) & mask)) {
-            return exception_target_el(env);
-        }
+        if (!(arm_sctlr(env, cur_el) & mask)) { return exception_target_el(env); }
     }
 
     /* We are not trapping to EL1; trap to EL2 if HCR_EL2 requires it
@@ -314,18 +292,14 @@ static inline int check_wfx_trap(CPUARMState *env, bool is_wfe, uint32_t *excp)
      */
     if (cur_el < 2) {
         mask = is_wfe ? HCR_TWE : HCR_TWI;
-        if (arm_hcr_el2_eff(env) & mask) {
-            return 2;
-        }
+        if (arm_hcr_el2_eff(env) & mask) { return 2; }
     }
 
     /* We are not trapping to EL1 or EL2; trap to EL3 if SCR_EL3 requires it */
     if (arm_feature(env, ARM_FEATURE_V8) && !arm_is_el3_or_mon(env)) {
         mask = (is_wfe) ? SCR_TWE : SCR_TWI;
         if (env->cp15.scr_el3 & mask) {
-            if (!arm_el_is_aa64(env, 3)) {
-                *excp = EXCP_MON_TRAP;
-            }
+            if (!arm_el_is_aa64(env, 3)) { *excp = EXCP_MON_TRAP; }
             return 3;
         }
     }
@@ -333,11 +307,11 @@ static inline int check_wfx_trap(CPUARMState *env, bool is_wfe, uint32_t *excp)
     return 0;
 }
 
-void HELPER(wfi)(CPUARMState *env, uint32_t insn_len)
+void HELPER(wfi)(CPUARMState* env, uint32_t insn_len)
 {
-    CPUState *cs = env_cpu(env);
-    uint32_t excp;
-    int target_el = check_wfx_trap(env, false, &excp);
+    CPUState* cs = env_cpu(env);
+    uint32_t  excp;
+    int       target_el = check_wfx_trap(env, false, &excp);
 
     if (cpu_has_work(cs)) {
         /* Don't bother to go into our "low power state" if
@@ -347,27 +321,25 @@ void HELPER(wfi)(CPUARMState *env, uint32_t insn_len)
     }
 
     if (target_el) {
-        if (env->aarch64) {
-            env->pc -= insn_len;
-        } else {
+        if (env->aarch64) { env->pc -= insn_len; }
+        else {
             env->regs[15] -= insn_len;
         }
 
-        raise_exception(env, excp, syn_wfx(1, 0xe, 0, insn_len == 2),
-                        target_el);
+        raise_exception(env, excp, syn_wfx(1, 0xe, 0, insn_len == 2), target_el);
     }
 
     cs->exception_index = EXCP_HLT;
-    cs->halted = 1;
+    cs->halted          = 1;
     cpu_loop_exit(cs);
 }
 
-void HELPER(wfit)(CPUARMState *env, uint64_t timeout)
+void HELPER(wfit)(CPUARMState* env, uint64_t timeout)
 {
-    ARMCPU *cpu = env_archcpu(env);
-    CPUState *cs = env_cpu(env);
-    uint32_t excp;
-    int target_el = check_wfx_trap(env, false, &excp);
+    ARMCPU*   cpu = env_archcpu(env);
+    CPUState* cs  = env_cpu(env);
+    uint32_t  excp;
+    int       target_el = check_wfx_trap(env, false, &excp);
 
     /* The WFIT should time out when CNTVCT_EL0 >= the specified value. */
     uint64_t cntval = gt_get_countervalue(env);
@@ -394,24 +366,23 @@ void HELPER(wfit)(CPUARMState *env, uint64_t timeout)
     }
 
     uint64_t remaining_ticks = timeout - cntvct;
-    uint64_t delta_ns = gt_ticks_to_ns_ceil(cpu, remaining_ticks);
-    int64_t now_ns = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
-    int64_t deadline_ns;
+    uint64_t delta_ns        = gt_ticks_to_ns_ceil(cpu, remaining_ticks);
+    int64_t  now_ns          = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+    int64_t  deadline_ns;
 
-    if (delta_ns > INT64_MAX - now_ns) {
-        deadline_ns = INT64_MAX;
-    } else {
+    if (delta_ns > INT64_MAX - now_ns) { deadline_ns = INT64_MAX; }
+    else {
         deadline_ns = now_ns + delta_ns;
     }
 
     timer_mod_ns(cpu->wfxt_timer, deadline_ns);
 
     cs->exception_index = EXCP_HLT;
-    cs->halted = 1;
+    cs->halted          = 1;
     cpu_loop_exit(cs);
 }
 
-void HELPER(wfe)(CPUARMState *env)
+void HELPER(wfe)(CPUARMState* env)
 {
     /* This is a hint instruction that is semantically different
      * from YIELD even though we currently implement it identically.
@@ -423,9 +394,9 @@ void HELPER(wfe)(CPUARMState *env)
     HELPER(yield)(env);
 }
 
-void HELPER(yield)(CPUARMState *env)
+void HELPER(yield)(CPUARMState* env)
 {
-    CPUState *cs = env_cpu(env);
+    CPUState* cs = env_cpu(env);
 
     /* This is a non-trappable hint instruction that generally indicates
      * that the guest is currently busy-looping. Yield control back to the
@@ -441,9 +412,9 @@ void HELPER(yield)(CPUARMState *env)
  * the guest (those must all have syndrome information and thus should
  * use exception_with_syndrome*).
  */
-void HELPER(exception_internal)(CPUARMState *env, uint32_t excp)
+void HELPER(exception_internal)(CPUARMState* env, uint32_t excp)
 {
-    CPUState *cs = env_cpu(env);
+    CPUState* cs = env_cpu(env);
 
 #ifdef CONFIG_DEBUG_TCG
     assert_true(excp_is_internal(excp));
@@ -453,28 +424,19 @@ void HELPER(exception_internal)(CPUARMState *env, uint32_t excp)
 }
 
 /* Raise an exception with the specified syndrome register value */
-void HELPER(exception_with_syndrome_el)(CPUARMState *env, uint32_t excp,
-                                        uint32_t syndrome, uint32_t target_el)
-{
-    raise_exception(env, excp, syndrome, target_el);
-}
+void HELPER(exception_with_syndrome_el)(CPUARMState* env, uint32_t excp, uint32_t syndrome, uint32_t target_el)
+{ raise_exception(env, excp, syndrome, target_el); }
 
 /*
  * Raise an exception with the specified syndrome register value
  * to the default target el.
  */
-void HELPER(exception_with_syndrome)(CPUARMState *env, uint32_t excp,
-                                     uint32_t syndrome)
-{
-    raise_exception(env, excp, syndrome, exception_target_el(env));
-}
+void HELPER(exception_with_syndrome)(CPUARMState* env, uint32_t excp, uint32_t syndrome)
+{ raise_exception(env, excp, syndrome, exception_target_el(env)); }
 
-uint32_t HELPER(cpsr_read)(CPUARMState *env)
-{
-    return cpsr_read(env) & ~CPSR_EXEC;
-}
+uint32_t HELPER(cpsr_read)(CPUARMState* env) { return cpsr_read(env) & ~CPSR_EXEC; }
 
-void HELPER(cpsr_write)(CPUARMState *env, uint32_t val, uint32_t mask)
+void HELPER(cpsr_write)(CPUARMState* env, uint32_t val, uint32_t mask)
 {
     cpsr_write(env, val, mask, CPSRWriteByInstr);
     /* TODO: Not all cpsr bits are relevant to hflags.  */
@@ -482,7 +444,7 @@ void HELPER(cpsr_write)(CPUARMState *env, uint32_t val, uint32_t mask)
 }
 
 /* Write the CPSR for a 32-bit exception return */
-void HELPER(cpsr_write_eret)(CPUARMState *env, uint32_t val)
+void HELPER(cpsr_write_eret)(CPUARMState* env, uint32_t val)
 {
     uint32_t mask;
 
@@ -507,65 +469,61 @@ void HELPER(cpsr_write_eret)(CPUARMState *env, uint32_t val)
 }
 
 /* Access to user mode registers from privileged modes.  */
-uint32_t HELPER(get_user_reg)(CPUARMState *env, uint32_t regno)
+uint32_t HELPER(get_user_reg)(CPUARMState* env, uint32_t regno)
 {
     uint32_t val;
 
-    if (regno == 13) {
-        val = env->banked_r13[BANK_USRSYS];
-    } else if (regno == 14) {
+    if (regno == 13) { val = env->banked_r13[BANK_USRSYS]; }
+    else if (regno == 14) {
         val = env->banked_r14[BANK_USRSYS];
-    } else if (regno >= 8
-               && (env->uncached_cpsr & 0x1f) == ARM_CPU_MODE_FIQ) {
+    }
+    else if (regno >= 8 && (env->uncached_cpsr & 0x1f) == ARM_CPU_MODE_FIQ) {
         val = env->usr_regs[regno - 8];
-    } else {
+    }
+    else {
         val = env->regs[regno];
     }
     return val;
 }
 
-void HELPER(set_user_reg)(CPUARMState *env, uint32_t regno, uint32_t val)
+void HELPER(set_user_reg)(CPUARMState* env, uint32_t regno, uint32_t val)
 {
-    if (regno == 13) {
-        env->banked_r13[BANK_USRSYS] = val;
-    } else if (regno == 14) {
+    if (regno == 13) { env->banked_r13[BANK_USRSYS] = val; }
+    else if (regno == 14) {
         env->banked_r14[BANK_USRSYS] = val;
-    } else if (regno >= 8
-               && (env->uncached_cpsr & 0x1f) == ARM_CPU_MODE_FIQ) {
+    }
+    else if (regno >= 8 && (env->uncached_cpsr & 0x1f) == ARM_CPU_MODE_FIQ) {
         env->usr_regs[regno - 8] = val;
-    } else {
+    }
+    else {
         env->regs[regno] = val;
     }
 }
 
-void HELPER(set_r13_banked)(CPUARMState *env, uint32_t mode, uint32_t val)
+void HELPER(set_r13_banked)(CPUARMState* env, uint32_t mode, uint32_t val)
 {
-    if ((env->uncached_cpsr & CPSR_M) == mode) {
-        env->regs[13] = val;
-    } else {
+    if ((env->uncached_cpsr & CPSR_M) == mode) { env->regs[13] = val; }
+    else {
         env->banked_r13[bank_number(mode)] = val;
     }
 }
 
-uint32_t HELPER(get_r13_banked)(CPUARMState *env, uint32_t mode)
+uint32_t HELPER(get_r13_banked)(CPUARMState* env, uint32_t mode)
 {
     if ((env->uncached_cpsr & CPSR_M) == ARM_CPU_MODE_SYS) {
         /* SRS instruction is UNPREDICTABLE from System mode; we UNDEF.
          * Other UNPREDICTABLE and UNDEF cases were caught at translate time.
          */
-        raise_exception(env, EXCP_UDEF, syn_uncategorized(),
-                        exception_target_el(env));
+        raise_exception(env, EXCP_UDEF, syn_uncategorized(), exception_target_el(env));
     }
 
-    if ((env->uncached_cpsr & CPSR_M) == mode) {
-        return env->regs[13];
-    } else {
+    if ((env->uncached_cpsr & CPSR_M) == mode) { return env->regs[13]; }
+    else {
         return env->banked_r13[bank_number(mode)];
     }
 }
 
-static void msr_mrs_banked_exc_checks(CPUARMState *env, uint32_t tgtmode,
-                                      uint32_t regno)
+static void msr_mrs_banked_exc_checks(CPUARMState* env, uint32_t tgtmode, uint32_t regno)
 {
     /* Raise an exception if the requested access is one of the UNPREDICTABLE
      * cases; otherwise return. This broadly corresponds to the pseudocode
@@ -580,142 +538,106 @@ static void msr_mrs_banked_exc_checks(CPUARMState *env, uint32_t tgtmode,
          * which don't want the usual "not accessible from tgtmode" check.
          */
         switch (regno) {
-        case 16 ... 17: /* ELR_Hyp, SPSR_Hyp */
-            if (curmode != ARM_CPU_MODE_HYP && curmode != ARM_CPU_MODE_MON) {
-                goto undef;
-            }
-            break;
-        case 13:
-            if (curmode != ARM_CPU_MODE_MON) {
-                goto undef;
-            }
-            break;
-        default:
-            tcg_debug_assert_not_reached();
+            case 16 ... 17: /* ELR_Hyp, SPSR_Hyp */
+                if (curmode != ARM_CPU_MODE_HYP && curmode != ARM_CPU_MODE_MON) { goto undef; }
+                break;
+            case 13:
+                if (curmode != ARM_CPU_MODE_MON) { goto undef; }
+                break;
+            default: tcg_debug_assert_not_reached();
         }
         return;
     }
 
-    if (curmode == tgtmode) {
-        goto undef;
-    }
+    if (curmode == tgtmode) { goto undef; }
 
     if (tgtmode == ARM_CPU_MODE_USR) {
         switch (regno) {
-        case 8 ... 12:
-            if (curmode != ARM_CPU_MODE_FIQ) {
-                goto undef;
-            }
-            break;
-        case 13:
-            if (curmode == ARM_CPU_MODE_SYS) {
-                goto undef;
-            }
-            break;
-        case 14:
-            if (curmode == ARM_CPU_MODE_HYP || curmode == ARM_CPU_MODE_SYS) {
-                goto undef;
-            }
-            break;
-        default:
-            break;
+            case 8 ... 12:
+                if (curmode != ARM_CPU_MODE_FIQ) { goto undef; }
+                break;
+            case 13:
+                if (curmode == ARM_CPU_MODE_SYS) { goto undef; }
+                break;
+            case 14:
+                if (curmode == ARM_CPU_MODE_HYP || curmode == ARM_CPU_MODE_SYS) { goto undef; }
+                break;
+            default: break;
         }
     }
 
     return;
 
 undef:
-    raise_exception(env, EXCP_UDEF, syn_uncategorized(),
-                    exception_target_el(env));
+    raise_exception(env, EXCP_UDEF, syn_uncategorized(), exception_target_el(env));
 }
 
-void HELPER(msr_banked)(CPUARMState *env, uint32_t value, uint32_t tgtmode,
-                        uint32_t regno)
+void HELPER(msr_banked)(CPUARMState* env, uint32_t value, uint32_t tgtmode, uint32_t regno)
 {
     msr_mrs_banked_exc_checks(env, tgtmode, regno);
 
     switch (regno) {
-    case 16: /* SPSRs */
-        if (tgtmode == (env->uncached_cpsr & CPSR_M)) {
-            /* Only happens for SPSR_Hyp access in Hyp mode */
-            env->spsr = value;
-        } else {
-            env->banked_spsr[bank_number(tgtmode)] = value;
-        }
-        break;
-    case 17: /* ELR_Hyp */
-        env->elr_el[2] = value;
-        break;
-    case 13:
-        env->banked_r13[bank_number(tgtmode)] = value;
-        break;
-    case 14:
-        env->banked_r14[r14_bank_number(tgtmode)] = value;
-        break;
-    case 8 ... 12:
-        switch (tgtmode) {
-        case ARM_CPU_MODE_USR:
-            env->usr_regs[regno - 8] = value;
+        case 16: /* SPSRs */
+            if (tgtmode == (env->uncached_cpsr & CPSR_M)) {
+                /* Only happens for SPSR_Hyp access in Hyp mode */
+                env->spsr = value;
+            }
+            else {
+                env->banked_spsr[bank_number(tgtmode)] = value;
+            }
             break;
-        case ARM_CPU_MODE_FIQ:
-            env->fiq_regs[regno - 8] = value;
+        case 17: /* ELR_Hyp */ env->elr_el[2] = value; break;
+        case 13: env->banked_r13[bank_number(tgtmode)] = value; break;
+        case 14: env->banked_r14[r14_bank_number(tgtmode)] = value; break;
+        case 8 ... 12:
+            switch (tgtmode) {
+                case ARM_CPU_MODE_USR: env->usr_regs[regno - 8] = value; break;
+                case ARM_CPU_MODE_FIQ: env->fiq_regs[regno - 8] = value; break;
+                default              : tcg_debug_assert_not_reached();
+            }
             break;
-        default:
-            tcg_debug_assert_not_reached();
-        }
-        break;
-    default:
-        tcg_debug_assert_not_reached();
+        default: tcg_debug_assert_not_reached();
     }
 }
 
-uint32_t HELPER(mrs_banked)(CPUARMState *env, uint32_t tgtmode, uint32_t regno)
+uint32_t HELPER(mrs_banked)(CPUARMState* env, uint32_t tgtmode, uint32_t regno)
 {
     msr_mrs_banked_exc_checks(env, tgtmode, regno);
 
     switch (regno) {
-    case 16: /* SPSRs */
-        if (tgtmode == (env->uncached_cpsr & CPSR_M)) {
-            /* Only happens for SPSR_Hyp access in Hyp mode */
-            return env->spsr;
-        } else {
-            return env->banked_spsr[bank_number(tgtmode)];
-        }
-    case 17: /* ELR_Hyp */
-        return env->elr_el[2];
-    case 13:
-        return env->banked_r13[bank_number(tgtmode)];
-    case 14:
-        return env->banked_r14[r14_bank_number(tgtmode)];
-    case 8 ... 12:
-        switch (tgtmode) {
-        case ARM_CPU_MODE_USR:
-            return env->usr_regs[regno - 8];
-        case ARM_CPU_MODE_FIQ:
-            return env->fiq_regs[regno - 8];
-        default:
-            tcg_debug_assert_not_reached();
-        }
-    default:
-        tcg_debug_assert_not_reached();
+        case 16: /* SPSRs */
+            if (tgtmode == (env->uncached_cpsr & CPSR_M)) {
+                /* Only happens for SPSR_Hyp access in Hyp mode */
+                return env->spsr;
+            }
+            else {
+                return env->banked_spsr[bank_number(tgtmode)];
+            }
+        case 17: /* ELR_Hyp */ return env->elr_el[2];
+        case 13: return env->banked_r13[bank_number(tgtmode)];
+        case 14: return env->banked_r14[r14_bank_number(tgtmode)];
+        case 8 ... 12:
+            switch (tgtmode) {
+                case ARM_CPU_MODE_USR: return env->usr_regs[regno - 8];
+                case ARM_CPU_MODE_FIQ: return env->fiq_regs[regno - 8];
+                default              : tcg_debug_assert_not_reached();
+            }
+        default: tcg_debug_assert_not_reached();
     }
 }
 
-const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
-                                        uint32_t syndrome, uint32_t isread,
+const void* HELPER(access_check_cp_reg)(CPUARMState* env, uint32_t key, uint32_t syndrome, uint32_t isread,
                                         uint32_t fgt_active)
 {
-    ARMCPU *cpu = env_archcpu(env);
-    const ARMCPRegInfo *ri = ARMCPRegTable_cget(cpu->cp_regs, key);
-    CPAccessResult res = CP_ACCESS_OK;
-    int target_el;
-    uint32_t excp;
+    ARMCPU*             cpu = env_archcpu(env);
+    const ARMCPRegInfo* ri  = ARMCPRegTable_cget(cpu->cp_regs, key);
+    CPAccessResult      res = CP_ACCESS_OK;
+    int                 target_el;
+    uint32_t            excp;
 
     tcg_debug_assert(ri != NULL);
 
-    if (ri->accessfn) {
-        res = ri->accessfn(env, ri, isread);
-    }
+    if (ri->accessfn) { res = ri->accessfn(env, ri, isread); }
 
     /*
      * If the access function indicates a trap from EL0 to EL1 then
@@ -726,22 +648,18 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
      * the other trap takes priority. So we take the "check HSTR_EL2" path
      * for all of those cases.)
      */
-    if (res != CP_ACCESS_OK && ((res & CP_ACCESS_EL_MASK) < 2) &&
-        arm_current_el(env) == 0) {
-        goto fail;
-    }
+    if (res != CP_ACCESS_OK && ((res & CP_ACCESS_EL_MASK) < 2) && arm_current_el(env) == 0) { goto fail; }
 
     /*
      * HSTR_EL2 traps from EL1 are checked earlier, in generated code;
      * we only need to check here for traps from EL0.
      */
-    if (unlikely(arm_is_el2_enabled(env)) && !is_a64(env) && arm_current_el(env) == 0 &&
-        ri->cp == 15 && (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE)) {
+    if (unlikely(arm_is_el2_enabled(env)) && !is_a64(env) && arm_current_el(env) == 0 && ri->cp == 15
+        && (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE))
+    {
         uint32_t mask = 1 << ri->crn;
 
-        if (ri->type & ARM_CP_64BIT) {
-            mask = 1 << ri->crm;
-        }
+        if (ri->type & ARM_CP_64BIT) { mask = 1 << ri->crm; }
 
         /* T4 and T14 are RES0 */
         mask &= ~((1 << 4) | (1 << 14));
@@ -758,20 +676,22 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
      * order with other EL2 traps because the syndrome value is the same.
      */
     if (unlikely(fgt_active)) {
-        uint64_t trapword = 0;
-        unsigned int idx = REG_FIELD_EX32(ri->fgt, FGT, IDX);
-        unsigned int bitpos = REG_FIELD_EX32(ri->fgt, FGT, BITPOS);
-        bool rev = REG_FIELD_EX32(ri->fgt, FGT, REV);
-        bool nxs = REG_FIELD_EX32(ri->fgt, FGT, NXS);
-        bool trapbit;
+        uint64_t     trapword = 0;
+        unsigned int idx      = REG_FIELD_EX32(ri->fgt, FGT, IDX);
+        unsigned int bitpos   = REG_FIELD_EX32(ri->fgt, FGT, BITPOS);
+        bool         rev      = REG_FIELD_EX32(ri->fgt, FGT, REV);
+        bool         nxs      = REG_FIELD_EX32(ri->fgt, FGT, NXS);
+        bool         trapbit;
 
         if (ri->fgt & FGT_EXEC) {
             assert(idx < ARRAY_SIZE(env->cp15.fgt_exec));
             trapword = env->cp15.fgt_exec[idx];
-        } else if (isread && (ri->fgt & FGT_R)) {
+        }
+        else if (isread && (ri->fgt & FGT_R)) {
             assert(idx < ARRAY_SIZE(env->cp15.fgt_read));
             trapword = env->cp15.fgt_read[idx];
-        } else if (!isread && (ri->fgt & FGT_W)) {
+        }
+        else if (!isread && (ri->fgt & FGT_W)) {
             assert(idx < ARRAY_SIZE(env->cp15.fgt_write));
             trapword = env->cp15.fgt_write[idx];
         }
@@ -782,7 +702,8 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
              * TLBI maintenance insns does *not* apply to the nXS variant.
              */
             trapbit = 0;
-        } else {
+        }
+        else {
             trapbit = extract64(trapword, bitpos, 1);
         }
         if (trapbit != rev) {
@@ -791,70 +712,56 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
         }
     }
 
-    if (likely(res == CP_ACCESS_OK)) {
-        return ri;
-    }
+    if (likely(res == CP_ACCESS_OK)) { return ri; }
 
- fail:
+fail:
     excp = EXCP_UDEF;
     switch (res) {
-        /* CP_ACCESS_TRAP* traps are always direct to a specified EL */
-    case CP_ACCESS_TRAP_EL3:
-        /*
-         * If EL3 is AArch32 then there's no syndrome register; the cases
-         * where we would raise a SystemAccessTrap to AArch64 EL3 all become
-         * raising a Monitor trap exception. (Because there's no visible
-         * syndrome it doesn't matter what we pass to raise_exception().)
-         */
-        if (!arm_el_is_aa64(env, 3)) {
-            excp = EXCP_MON_TRAP;
-        }
-        break;
-    case CP_ACCESS_TRAP_EL2:
-    case CP_ACCESS_TRAP_EL1:
-        break;
-    case CP_ACCESS_UNDEFINED:
-        /* CP_ACCESS_UNDEFINED is never direct to a specified EL */
-        if (cpu_isar_feature(aa64_ids, cpu) && isread &&
-            arm_cpreg_in_idspace(ri)) {
+            /* CP_ACCESS_TRAP* traps are always direct to a specified EL */
+        case CP_ACCESS_TRAP_EL3:
             /*
-             * FEAT_IDST says this should be reported as EC_SYSTEMREGISTERTRAP,
-             * not EC_UNCATEGORIZED
+             * If EL3 is AArch32 then there's no syndrome register; the cases
+             * where we would raise a SystemAccessTrap to AArch64 EL3 all become
+             * raising a Monitor trap exception. (Because there's no visible
+             * syndrome it doesn't matter what we pass to raise_exception().)
              */
+            if (!arm_el_is_aa64(env, 3)) { excp = EXCP_MON_TRAP; }
             break;
-        }
-        syndrome = syn_uncategorized();
-        break;
-    default:
-        tcg_debug_assert_not_reached();
+        case CP_ACCESS_TRAP_EL2:
+        case CP_ACCESS_TRAP_EL1: break;
+        case CP_ACCESS_UNDEFINED:
+            /* CP_ACCESS_UNDEFINED is never direct to a specified EL */
+            if (cpu_isar_feature(aa64_ids, cpu) && isread && arm_cpreg_in_idspace(ri)) {
+                /*
+                 * FEAT_IDST says this should be reported as EC_SYSTEMREGISTERTRAP,
+                 * not EC_UNCATEGORIZED
+                 */
+                break;
+            }
+            syndrome = syn_uncategorized();
+            break;
+        default: tcg_debug_assert_not_reached();
     }
 
     target_el = res & CP_ACCESS_EL_MASK;
     switch (target_el) {
-    case 0:
-        target_el = exception_target_el(env);
-        break;
-    case 1:
-        tcg_debug_assert(arm_current_el(env) < 2);
-        break;
-    case 2:
-        tcg_debug_assert(arm_current_el(env) != 3);
-        tcg_debug_assert(arm_is_el2_enabled(env));
-        break;
-    case 3:
-        tcg_debug_assert(arm_feature(env, ARM_FEATURE_EL3));
-        break;
-    default:
-        tcg_debug_assert_not_reached();
+        case 0: target_el = exception_target_el(env); break;
+        case 1: tcg_debug_assert(arm_current_el(env) < 2); break;
+        case 2:
+            tcg_debug_assert(arm_current_el(env) != 3);
+            tcg_debug_assert(arm_is_el2_enabled(env));
+            break;
+        case 3 : tcg_debug_assert(arm_feature(env, ARM_FEATURE_EL3)); break;
+        default: tcg_debug_assert_not_reached();
     }
 
     raise_exception(env, excp, syndrome, target_el);
 }
 
-const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
+const void* HELPER(lookup_cp_reg)(CPUARMState* env, uint32_t key)
 {
-    ARMCPU *cpu = env_archcpu(env);
-    const ARMCPRegInfo *ri = ARMCPRegTable_cget(cpu->cp_regs, key);
+    ARMCPU*             cpu = env_archcpu(env);
+    const ARMCPRegInfo* ri  = ARMCPRegTable_cget(cpu->cp_regs, key);
 
     tcg_debug_assert(ri != NULL);
     return ri;
@@ -866,107 +773,102 @@ const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
  * most of them are no-op, do not waste HFLAGS space for this and
  * always use a helper.
  */
-void HELPER(tidcp_el1)(CPUARMState *env, uint32_t syndrome)
+void HELPER(tidcp_el1)(CPUARMState* env, uint32_t syndrome)
 {
-    if (arm_hcr_el2_eff(env) & HCR_TIDCP) {
-        raise_exception_ra(env, EXCP_UDEF, syndrome, 2, GETPC());
-    }
+    if (arm_hcr_el2_eff(env) & HCR_TIDCP) { raise_exception_ra(env, EXCP_UDEF, syndrome, 2, GETPC()); }
 }
 
 /*
  * Similarly, for FEAT_TIDCP1 at EL0.
  * We have already checked for the presence of the feature.
  */
-void HELPER(tidcp_el0)(CPUARMState *env, uint32_t syndrome)
+void HELPER(tidcp_el0)(CPUARMState* env, uint32_t syndrome)
 {
     /* See arm_sctlr(), but we also need the sctlr el. */
     ARMMMUIdx mmu_idx = arm_mmu_idx_el(env, 0);
-    int target_el;
+    int       target_el;
 
     switch (mmu_idx) {
-    case ARMMMUIdx_E20_0:
-        target_el = 2;
-        break;
-    case ARMMMUIdx_E30_0:
-        target_el = 3;
-        break;
-    default:
-        target_el = 1;
-        break;
+        case ARMMMUIdx_E20_0: target_el = 2; break;
+        case ARMMMUIdx_E30_0: target_el = 3; break;
+        default             : target_el = 1; break;
     }
 
     /*
      * The bit is not valid unless the target el is aa64, but since the
      * bit test is simpler perform that first and check validity after.
      */
-    if ((env->cp15.sctlr_el[target_el] & SCTLR_TIDCP)
-        && arm_el_is_aa64(env, target_el)) {
+    if ((env->cp15.sctlr_el[target_el] & SCTLR_TIDCP) && arm_el_is_aa64(env, target_el)) {
         raise_exception_ra(env, EXCP_UDEF, syndrome, target_el, GETPC());
     }
 }
 
-void HELPER(set_cp_reg)(CPUARMState *env, const void *rip, uint32_t value)
+void HELPER(set_cp_reg)(CPUARMState* env, const void* rip, uint32_t value)
 {
-    const ARMCPRegInfo *ri = rip;
+    const ARMCPRegInfo* ri = rip;
 
     if (ri->type & ARM_CP_IO) {
         bql_lock();
         ri->writefn(env, ri, value);
         bql_unlock();
-    } else {
+    }
+    else {
         ri->writefn(env, ri, value);
     }
 }
 
-uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
+uint32_t HELPER(get_cp_reg)(CPUARMState* env, const void* rip)
 {
-    const ARMCPRegInfo *ri = rip;
-    uint32_t res;
+    const ARMCPRegInfo* ri = rip;
+    uint32_t            res;
 
     if (ri->type & ARM_CP_IO) {
         bql_lock();
         res = ri->readfn(env, ri);
         bql_unlock();
-    } else {
-        res = ri->readfn(env, ri);
     }
-
-    return res;
-}
-
-void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
-{
-    const ARMCPRegInfo *ri = rip;
-
-    if (ri->type & ARM_CP_IO) {
-        bql_lock();
-        ri->writefn(env, ri, value);
-        bql_unlock();
-    } else {
-        ri->writefn(env, ri, value);
-    }
-}
-
-uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
-{
-    const ARMCPRegInfo *ri = rip;
-    uint64_t res;
-
-    if (ri->type & ARM_CP_IO) {
-        bql_lock();
-        res = ri->readfn(env, ri);
-        bql_unlock();
-    } else {
+    else {
         res = ri->readfn(env, ri);
     }
 
     return res;
 }
 
-void HELPER(pre_hvc)(CPUARMState *env)
+void HELPER(set_cp_reg64)(CPUARMState* env, const void* rip, uint64_t value)
 {
-    ARMCPU *cpu = env_archcpu(env);
-    int cur_el = arm_current_el(env);
+    const ARMCPRegInfo* ri = rip;
+
+    if (ri->type & ARM_CP_IO) {
+        bql_lock();
+        ri->writefn(env, ri, value);
+        bql_unlock();
+    }
+    else {
+        ri->writefn(env, ri, value);
+    }
+}
+
+uint64_t HELPER(get_cp_reg64)(CPUARMState* env, const void* rip)
+{
+    const ARMCPRegInfo* ri = rip;
+    uint64_t            res;
+
+    if (ri->type & ARM_CP_IO) {
+        bql_lock();
+        res = ri->readfn(env, ri);
+        bql_unlock();
+    }
+    else {
+        res = ri->readfn(env, ri);
+    }
+
+    return res;
+}
+
+void HELPER(pre_hvc)(CPUARMState* env)
+{
+    ARMCPU* cpu    = env_archcpu(env);
+    int     cur_el = arm_current_el(env);
     /* FIXME: Use actual secure state.  */
     bool secure = false;
     bool undef;
@@ -981,10 +883,12 @@ void HELPER(pre_hvc)(CPUARMState *env)
     if (!arm_feature(env, ARM_FEATURE_EL2)) {
         /* If EL2 doesn't exist, HVC always UNDEFs */
         undef = true;
-    } else if (arm_feature(env, ARM_FEATURE_EL3)) {
+    }
+    else if (arm_feature(env, ARM_FEATURE_EL3)) {
         /* EL3.HCE has priority over EL2.HCD. */
         undef = !(env->cp15.scr_el3 & SCR_HCE);
-    } else {
+    }
+    else {
         undef = env->cp15.hcr_el2 & HCR_HCD;
     }
 
@@ -993,22 +897,17 @@ void HELPER(pre_hvc)(CPUARMState *env)
      * Note that we've already trapped HVC from EL0 at translation
      * time.
      */
-    if (secure && (!is_a64(env) || cur_el == 1)) {
-        undef = true;
-    }
+    if (secure && (!is_a64(env) || cur_el == 1)) { undef = true; }
 
-    if (undef) {
-        raise_exception(env, EXCP_UDEF, syn_uncategorized(),
-                        exception_target_el(env));
-    }
+    if (undef) { raise_exception(env, EXCP_UDEF, syn_uncategorized(), exception_target_el(env)); }
 }
 
-void HELPER(pre_smc)(CPUARMState *env, uint32_t syndrome)
+void HELPER(pre_smc)(CPUARMState* env, uint32_t syndrome)
 {
-    ARMCPU *cpu = env_archcpu(env);
-    int cur_el = arm_current_el(env);
-    bool secure = arm_is_secure(env);
-    bool smd_flag = env->cp15.scr_el3 & SCR_SMD;
+    ARMCPU* cpu      = env_archcpu(env);
+    int     cur_el   = arm_current_el(env);
+    bool    secure   = arm_is_secure(env);
+    bool    smd_flag = env->cp15.scr_el3 & SCR_SMD;
 
     /*
      * SMC behaviour is summarized in the following table.
@@ -1054,12 +953,11 @@ void HELPER(pre_smc)(CPUARMState *env, uint32_t syndrome)
      * doesn't exist, but we forbid the guest to set it to 1 in scr_write(),
      * so we need not special case this here.
      */
-    bool smd = arm_feature(env, ARM_FEATURE_AARCH64) ? smd_flag
-                                                     : smd_flag && !secure;
+    bool smd = arm_feature(env, ARM_FEATURE_AARCH64) ? smd_flag : smd_flag && !secure;
 
-    if (!arm_feature(env, ARM_FEATURE_EL3) &&
-        !(arm_hcr_el2_eff(env) & HCR_NV) &&
-        cpu->psci_conduit != QEMU_PSCI_CONDUIT_SMC) {
+    if (!arm_feature(env, ARM_FEATURE_EL3) && !(arm_hcr_el2_eff(env) & HCR_NV)
+        && cpu->psci_conduit != QEMU_PSCI_CONDUIT_SMC)
+    {
         /*
          * If we have no EL3 then traditionally SMC always UNDEFs and can't be
          * trapped to EL2. For nested virtualization, SMC can be trapped to
@@ -1070,8 +968,7 @@ void HELPER(pre_smc)(CPUARMState *env, uint32_t syndrome)
          * PSCI-via-SMC as implying an EL3.
          * This handles the very last line of the previous table.
          */
-        raise_exception(env, EXCP_UDEF, syn_uncategorized(),
-                        exception_target_el(env));
+        raise_exception(env, EXCP_UDEF, syn_uncategorized(), exception_target_el(env));
     }
 
     if (cur_el == 1 && (arm_hcr_el2_eff(env) & HCR_TSC)) {
@@ -1087,10 +984,8 @@ void HELPER(pre_smc)(CPUARMState *env, uint32_t syndrome)
      *    - PSCI conduit is SMC but we don't have a valid PCSI call,
      *    - We don't have EL3 or SMD is set.
      */
-    if (!arm_is_psci_call(cpu, EXCP_SMC) &&
-        (smd || !arm_feature(env, ARM_FEATURE_EL3))) {
-        raise_exception(env, EXCP_UDEF, syn_uncategorized(),
-                        exception_target_el(env));
+    if (!arm_is_psci_call(cpu, EXCP_SMC) && (smd || !arm_feature(env, ARM_FEATURE_EL3))) {
+        raise_exception(env, EXCP_UDEF, syn_uncategorized(), exception_target_el(env));
     }
 }
 
@@ -1100,79 +995,78 @@ void HELPER(pre_smc)(CPUARMState *env, uint32_t syndrome)
 
 /* Similarly for variable shift instructions.  */
 
-uint32_t HELPER(shl_cc)(CPUARMState *env, uint32_t x, uint32_t i)
+uint32_t HELPER(shl_cc)(CPUARMState* env, uint32_t x, uint32_t i)
 {
     int shift = i & 0xff;
     if (shift >= 32) {
-        if (shift == 32)
-            env->CF = x & 1;
-        else
+        if (shift == 32) { env->CF = x & 1; }
+        else {
             env->CF = 0;
+        }
         return 0;
-    } else if (shift != 0) {
+    }
+    else if (shift != 0) {
         env->CF = (x >> (32 - shift)) & 1;
         return x << shift;
     }
     return x;
 }
 
-uint32_t HELPER(shr_cc)(CPUARMState *env, uint32_t x, uint32_t i)
+uint32_t HELPER(shr_cc)(CPUARMState* env, uint32_t x, uint32_t i)
 {
     int shift = i & 0xff;
     if (shift >= 32) {
-        if (shift == 32)
-            env->CF = (x >> 31) & 1;
-        else
+        if (shift == 32) { env->CF = (x >> 31) & 1; }
+        else {
             env->CF = 0;
+        }
         return 0;
-    } else if (shift != 0) {
+    }
+    else if (shift != 0) {
         env->CF = (x >> (shift - 1)) & 1;
         return x >> shift;
     }
     return x;
 }
 
-uint32_t HELPER(sar_cc)(CPUARMState *env, uint32_t x, uint32_t i)
+uint32_t HELPER(sar_cc)(CPUARMState* env, uint32_t x, uint32_t i)
 {
     int shift = i & 0xff;
     if (shift >= 32) {
         env->CF = (x >> 31) & 1;
         return (int32_t)x >> 31;
-    } else if (shift != 0) {
+    }
+    else if (shift != 0) {
         env->CF = (x >> (shift - 1)) & 1;
         return (int32_t)x >> shift;
     }
     return x;
 }
 
-uint32_t HELPER(ror_cc)(CPUARMState *env, uint32_t x, uint32_t i)
+uint32_t HELPER(ror_cc)(CPUARMState* env, uint32_t x, uint32_t i)
 {
     int shift1, shift;
     shift1 = i & 0xff;
-    shift = shift1 & 0x1f;
+    shift  = shift1 & 0x1f;
     if (shift == 0) {
-        if (shift1 != 0)
-            env->CF = (x >> 31) & 1;
+        if (shift1 != 0) { env->CF = (x >> 31) & 1; }
         return x;
-    } else {
+    }
+    else {
         env->CF = (x >> (shift - 1)) & 1;
         return ((uint32_t)x >> shift) | (x << (32 - shift));
     }
 }
 
-void HELPER(probe_access)(CPUARMState *env, vaddr ptr,
-                          uint32_t access_type, uint32_t mmu_idx,
-                          uint32_t size)
+void HELPER(probe_access)(CPUARMState* env, vaddr ptr, uint32_t access_type, uint32_t mmu_idx, uint32_t size)
 {
-    uint32_t in_page = -((uint32_t)ptr | TARGET_PAGE_SIZE);
-    uintptr_t ra = GETPC();
+    uint32_t  in_page = -((uint32_t)ptr | TARGET_PAGE_SIZE);
+    uintptr_t ra      = GETPC();
 
-    if (likely(size <= in_page)) {
-        probe_access(env, ptr, size, access_type, mmu_idx, ra);
-    } else {
+    if (likely(size <= in_page)) { probe_access(env, ptr, size, access_type, mmu_idx, ra); }
+    else {
         probe_access(env, ptr, in_page, access_type, mmu_idx, ra);
-        probe_access(env, ptr + in_page, size - in_page,
-                     access_type, mmu_idx, ra);
+        probe_access(env, ptr + in_page, size - in_page, access_type, mmu_idx, ra);
     }
 }
 
@@ -1180,16 +1074,16 @@ void HELPER(probe_access)(CPUARMState *env, vaddr ptr,
  * This function corresponds to AArch64.vESBOperation().
  * Note that the AArch32 version is not functionally different.
  */
-void HELPER(vesb)(CPUARMState *env)
+void HELPER(vesb)(CPUARMState* env)
 {
     /*
      * The EL2Enabled() check is done inside arm_hcr_el2_eff,
      * and will return HCR_EL2.VSE == 0, so nothing happens.
      */
-    uint64_t hcr = arm_hcr_el2_eff(env);
-    bool enabled = !(hcr & HCR_TGE) && (hcr & HCR_AMO);
-    bool pending = enabled && (hcr & HCR_VSE);
-    bool masked  = (env->daif & PSTATE_A);
+    uint64_t hcr     = arm_hcr_el2_eff(env);
+    bool     enabled = !(hcr & HCR_TGE) && (hcr & HCR_AMO);
+    bool     pending = enabled && (hcr & HCR_VSE);
+    bool     masked  = (env->daif & PSTATE_A);
 
     /* If VSE pending and masked, defer the exception.  */
     if (pending && masked) {
@@ -1198,12 +1092,12 @@ void HELPER(vesb)(CPUARMState *env)
         if (arm_el_is_aa64(env, 1)) {
             /* Copy across IDS and ISS from VSESR. */
             syndrome = env->cp15.vsesr_el2 & 0x1ffffff;
-        } else {
-            ARMMMUFaultInfo fi = { .type = ARMFault_AsyncExternal };
+        }
+        else {
+            ARMMMUFaultInfo fi = {.type = ARMFault_AsyncExternal};
 
-            if (extended_addresses_enabled(env)) {
-                syndrome = arm_fi_to_lfsc(&fi);
-            } else {
+            if (extended_addresses_enabled(env)) { syndrome = arm_fi_to_lfsc(&fi); }
+            else {
                 syndrome = arm_fi_to_sfsc(&fi);
             }
             /* Copy across AET and ExT from VSESR. */

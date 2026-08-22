@@ -14,8 +14,7 @@
 
 #pragma once
 
-NetClientState *net_hub_add_port(int hub_id, const char *name,
-                                 NetClientState *hubpeer);
-void net_hub_info(Monitor *mon);
-void net_hub_check_clients(void);
-bool net_hub_flush(NetClientState *nc);
+NetClientState* net_hub_add_port(int hub_id, const char* name, NetClientState* hubpeer);
+void            net_hub_info(Monitor* mon);
+void            net_hub_check_clients(void);
+bool            net_hub_flush(NetClientState* nc);

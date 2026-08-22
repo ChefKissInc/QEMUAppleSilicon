@@ -30,12 +30,12 @@ typedef struct
 {
     Coroutine base;
 
-    LPVOID fiber;
+    LPVOID          fiber;
     CoroutineAction action;
 } CoroutineWin32;
 
 QEMU_DEFINE_STATIC_CO_TLS(CoroutineWin32, leader);
-QEMU_DEFINE_STATIC_CO_TLS(Coroutine *, current);
+QEMU_DEFINE_STATIC_CO_TLS(Coroutine*, current);
 
 /* This function is marked noinline to prevent GCC from inlining it
  * into coroutine_trampoline(). If we allow it to do that then it
@@ -45,12 +45,11 @@ QEMU_DEFINE_STATIC_CO_TLS(Coroutine *, current);
  * return in thread B, and so we might be in a different thread
  * context each time round the loop.
  */
-CoroutineAction __attribute__((noinline))
-qemu_coroutine_switch(Coroutine *from_, Coroutine *to_,
-                      CoroutineAction action)
+CoroutineAction __attribute__((noinline)) qemu_coroutine_switch(Coroutine* from_, Coroutine* to_,
+                                                                CoroutineAction action)
 {
-    CoroutineWin32 *from = DO_UPCAST(CoroutineWin32, base, from_);
-    CoroutineWin32 *to = DO_UPCAST(CoroutineWin32, base, to_);
+    CoroutineWin32* from = DO_UPCAST(CoroutineWin32, base, from_);
+    CoroutineWin32* to   = DO_UPCAST(CoroutineWin32, base, to_);
 
     set_current(to_);
 
@@ -59,9 +58,9 @@ qemu_coroutine_switch(Coroutine *from_, Coroutine *to_,
     return from->action;
 }
 
-static void CALLBACK coroutine_trampoline(void *co_)
+static void CALLBACK coroutine_trampoline(void* co_)
 {
-    Coroutine *co = co_;
+    Coroutine* co = co_;
 
     while (true) {
         co->entry(co->entry_arg);
@@ -69,30 +68,30 @@ static void CALLBACK coroutine_trampoline(void *co_)
     }
 }
 
-Coroutine *qemu_coroutine_new(void)
+Coroutine* qemu_coroutine_new(void)
 {
-    const size_t stack_size = COROUTINE_STACK_SIZE;
-    CoroutineWin32 *co;
+    const size_t    stack_size = COROUTINE_STACK_SIZE;
+    CoroutineWin32* co;
 
-    co = g_malloc0(sizeof(*co));
+    co        = g_malloc0(sizeof(*co));
     co->fiber = CreateFiber(stack_size, coroutine_trampoline, &co->base);
     return &co->base;
 }
 
-void qemu_coroutine_delete(Coroutine *co_)
+void qemu_coroutine_delete(Coroutine* co_)
 {
-    CoroutineWin32 *co = DO_UPCAST(CoroutineWin32, base, co_);
+    CoroutineWin32* co = DO_UPCAST(CoroutineWin32, base, co_);
 
     DeleteFiber(co->fiber);
     g_free(co);
 }
 
-Coroutine *qemu_coroutine_self(void)
+Coroutine* qemu_coroutine_self(void)
 {
-    Coroutine *current = get_current();
+    Coroutine* current = get_current();
 
     if (!current) {
-        CoroutineWin32 *leader = get_ptr_leader();
+        CoroutineWin32* leader = get_ptr_leader();
 
         current = &leader->base;
         set_current(current);
@@ -103,7 +102,7 @@ Coroutine *qemu_coroutine_self(void)
 
 bool qemu_in_coroutine(void)
 {
-    Coroutine *current = get_current();
+    Coroutine* current = get_current();
 
     return current && current->caller;
 }

@@ -13,104 +13,47 @@
 #include "cpu.h"
 #include "kvm_arm.h"
 
-bool write_kvmstate_to_list(ARMCPU *cpu)
-{
-    assert_not_reached();
-}
+bool write_kvmstate_to_list(ARMCPU* cpu) { assert_not_reached(); }
 
-bool write_list_to_kvmstate(ARMCPU *cpu, int level)
-{
-    assert_not_reached();
-}
+bool write_list_to_kvmstate(ARMCPU* cpu, int level) { assert_not_reached(); }
 
 /*
  * It's safe to call these functions without KVM support.
  * They should either do nothing or return "not supported".
  */
-bool kvm_arm_aarch32_supported(void)
-{
-    return false;
-}
+bool kvm_arm_aarch32_supported(void) { return false; }
 
-bool kvm_arm_pmu_supported(void)
-{
-    return false;
-}
+bool kvm_arm_pmu_supported(void) { return false; }
 
-bool kvm_arm_sve_supported(void)
-{
-    return false;
-}
+bool kvm_arm_sve_supported(void) { return false; }
 
-bool kvm_arm_mte_supported(void)
-{
-    return false;
-}
+bool kvm_arm_mte_supported(void) { return false; }
 
-bool kvm_arm_el2_supported(void)
-{
-    return false;
-}
+bool kvm_arm_el2_supported(void) { return false; }
 
 /*
  * These functions should never actually be called without KVM support.
  */
-void kvm_arm_set_cpu_features_from_host(ARMCPU *cpu)
-{
-    assert_not_reached();
-}
+void kvm_arm_set_cpu_features_from_host(ARMCPU* cpu) { assert_not_reached(); }
 
-void kvm_arm_add_vcpu_properties(ARMCPU *cpu)
-{
-    assert_not_reached();
-}
+void kvm_arm_add_vcpu_properties(ARMCPU* cpu) { assert_not_reached(); }
 
-int kvm_arm_get_max_vm_ipa_size(MachineState *ms, bool *fixed_ipa)
-{
-    assert_not_reached();
-}
+int kvm_arm_get_max_vm_ipa_size(MachineState* ms, bool* fixed_ipa) { assert_not_reached(); }
 
-int kvm_arm_vgic_probe(void)
-{
-    assert_not_reached();
-}
+int kvm_arm_vgic_probe(void) { assert_not_reached(); }
 
-void kvm_arm_pmu_set_irq(ARMCPU *cpu, int irq)
-{
-    assert_not_reached();
-}
+void kvm_arm_pmu_set_irq(ARMCPU* cpu, int irq) { assert_not_reached(); }
 
-void kvm_arm_pmu_init(ARMCPU *cpu)
-{
-    assert_not_reached();
-}
+void kvm_arm_pmu_init(ARMCPU* cpu) { assert_not_reached(); }
 
-void kvm_arm_pvtime_init(ARMCPU *cpu, uint64_t ipa)
-{
-    assert_not_reached();
-}
+void kvm_arm_pvtime_init(ARMCPU* cpu, uint64_t ipa) { assert_not_reached(); }
 
-void kvm_arm_steal_time_finalize(ARMCPU *cpu, Error **errp)
-{
-    assert_not_reached();
-}
+void kvm_arm_steal_time_finalize(ARMCPU* cpu, Error** errp) { assert_not_reached(); }
 
-uint32_t kvm_arm_sve_get_vls(ARMCPU *cpu)
-{
-    assert_not_reached();
-}
+uint32_t kvm_arm_sve_get_vls(ARMCPU* cpu) { assert_not_reached(); }
 
-void kvm_arm_enable_mte(Object *cpuobj, Error **errp)
-{
-    assert_not_reached();
-}
+void kvm_arm_enable_mte(Object* cpuobj, Error** errp) { assert_not_reached(); }
 
-void kvm_arm_reset_vcpu(ARMCPU *cpu)
-{
-    assert_not_reached();
-}
+void kvm_arm_reset_vcpu(ARMCPU* cpu) { assert_not_reached(); }
 
-void arm_cpu_kvm_set_irq(void *arm_cpu, int irq, int level)
-{
-    assert_not_reached();
-}
+void arm_cpu_kvm_set_irq(void* arm_cpu, int irq, int level) { assert_not_reached(); }

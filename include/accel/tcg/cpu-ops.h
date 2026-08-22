@@ -18,7 +18,8 @@
 #include "accel/tcg/tb-cpu-state.h"
 #include "tcg/tcg-mo.h"
 
-struct TCGCPUOps {
+struct TCGCPUOps
+{
     /**
      * mttcg_supported: multi-threaded TCG is supported
      *
@@ -58,14 +59,13 @@ struct TCGCPUOps {
      * This function must be provided by the target, which should create
      * the target-specific DisasContext, and then invoke translator_loop.
      */
-    void (*translate_code)(CPUState *cpu, TranslationBlock *tb,
-                           int *max_insns, vaddr pc, void *host_pc);
+    void (*translate_code)(CPUState* cpu, TranslationBlock* tb, int* max_insns, vaddr pc, void* host_pc);
     /**
      * @get_tb_cpu_state: Extract CPU state for a TCG #TranslationBlock
      *
      * Fill in all data required to select or compile a TranslationBlock.
      */
-    TCGTBCPUState (*get_tb_cpu_state)(CPUState *cs);
+    TCGTBCPUState (*get_tb_cpu_state)(CPUState* cs);
     /**
      * @synchronize_from_tb: Synchronize state from a TCG #TranslationBlock
      *
@@ -77,7 +77,7 @@ struct TCGCPUOps {
      * If more state needs to be restored, the target must implement a
      * function to restore all the state, and register it here.
      */
-    void (*synchronize_from_tb)(CPUState *cpu, const TranslationBlock *tb);
+    void (*synchronize_from_tb)(CPUState* cpu, const TranslationBlock* tb);
     /**
      * @restore_state_to_opc: Synchronize state from INDEX_op_start_insn
      *
@@ -86,25 +86,24 @@ struct TCGCPUOps {
      * state which are tracked insn-by-insn in the target-specific
      * arguments to start_insn, passed as @data.
      */
-    void (*restore_state_to_opc)(CPUState *cpu, const TranslationBlock *tb,
-                                 const uint64_t *data);
+    void (*restore_state_to_opc)(CPUState* cpu, const TranslationBlock* tb, const uint64_t* data);
 
     /** @cpu_exec_enter: Callback for cpu_exec preparation */
-    void (*cpu_exec_enter)(CPUState *cpu);
+    void (*cpu_exec_enter)(CPUState* cpu);
     /** @cpu_exec_exit: Callback for cpu_exec cleanup */
-    void (*cpu_exec_exit)(CPUState *cpu);
+    void (*cpu_exec_exit)(CPUState* cpu);
     /** @debug_excp_handler: Callback for handling debug exceptions */
-    void (*debug_excp_handler)(CPUState *cpu);
+    void (*debug_excp_handler)(CPUState* cpu);
 
     /** @mmu_index: Callback for choosing softmmu mmu index */
-    int (*mmu_index)(CPUState *cpu, bool ifetch);
+    int (*mmu_index)(CPUState* cpu, bool ifetch);
 
     /** @do_interrupt: Callback for interrupt handling.  */
-    void (*do_interrupt)(CPUState *cpu);
+    void (*do_interrupt)(CPUState* cpu);
     /** @cpu_exec_interrupt: Callback for processing interrupts in cpu_exec */
-    bool (*cpu_exec_interrupt)(CPUState *cpu, int interrupt_request);
+    bool (*cpu_exec_interrupt)(CPUState* cpu, int interrupt_request);
     /** @cpu_exec_reset: Callback for reset in cpu_exec.  */
-    void (*cpu_exec_reset)(CPUState *cpu);
+    void (*cpu_exec_reset)(CPUState* cpu);
     /**
      * @cpu_exec_halt: Callback for handling halt in cpu_exec.
      *
@@ -120,7 +119,7 @@ struct TCGCPUOps {
      * SysemuCPUOps::has_work method can be used here, as they have the
      * same function signature.
      */
-    bool (*cpu_exec_halt)(CPUState *cpu);
+    bool (*cpu_exec_halt)(CPUState* cpu);
     /**
      * @tlb_fill_align: Handle a softmmu tlb miss
      * @cpu: cpu context
@@ -143,8 +142,7 @@ struct TCGCPUOps {
      * Zero may be passed for @memop to skip any alignment check
      * for non-memory-access operations such as probing.
      */
-    bool (*tlb_fill_align)(CPUState *cpu, CPUTLBEntryFull *out, vaddr addr,
-                           MMUAccessType access_type, int mmu_idx,
+    bool (*tlb_fill_align)(CPUState* cpu, CPUTLBEntryFull* out, vaddr addr, MMUAccessType access_type, int mmu_idx,
                            MemOp memop, int size, bool probe, uintptr_t ra);
     /**
      * @tlb_fill: Handle a softmmu tlb miss
@@ -153,49 +151,45 @@ struct TCGCPUOps {
      * if the access is invalid and probe is true, return false;
      * otherwise raise an exception and do not return.
      */
-    bool (*tlb_fill)(CPUState *cpu, vaddr address, int size,
-                     MMUAccessType access_type, int mmu_idx,
-                     bool probe, uintptr_t retaddr);
+    bool (*tlb_fill)(CPUState* cpu, vaddr address, int size, MMUAccessType access_type, int mmu_idx, bool probe,
+                     uintptr_t retaddr);
     /**
      * @pointer_wrap:
      *
      * We have incremented @base to @result, resulting in a page change.
      * For the current cpu state, adjust @result for possible overflow.
      */
-    vaddr (*pointer_wrap)(CPUState *cpu, int mmu_idx, vaddr result, vaddr base);
+    vaddr (*pointer_wrap)(CPUState* cpu, int mmu_idx, vaddr result, vaddr base);
     /**
      * @do_transaction_failed: Callback for handling failed memory transactions
      * (ie bus faults or external aborts; not MMU faults)
      */
-    void (*do_transaction_failed)(CPUState *cpu, hwaddr physaddr, vaddr addr,
-                                  unsigned size, MMUAccessType access_type,
-                                  int mmu_idx, MemTxAttrs attrs,
-                                  MemTxResult response, uintptr_t retaddr);
+    void (*do_transaction_failed)(CPUState* cpu, hwaddr physaddr, vaddr addr, unsigned size, MMUAccessType access_type,
+                                  int mmu_idx, MemTxAttrs attrs, MemTxResult response, uintptr_t retaddr);
     /**
      * @do_unaligned_access: Callback for unaligned access handling
      * The callback must exit via raising an exception.
      */
-    G_NORETURN void (*do_unaligned_access)(CPUState *cpu, vaddr addr,
-                                           MMUAccessType access_type,
-                                           int mmu_idx, uintptr_t retaddr);
+    G_NORETURN void (*do_unaligned_access)(CPUState* cpu, vaddr addr, MMUAccessType access_type, int mmu_idx,
+                                           uintptr_t retaddr);
 
     /**
      * @adjust_watchpoint_address: hack for cpu_check_watchpoint used by ARM
      */
-    vaddr (*adjust_watchpoint_address)(CPUState *cpu, vaddr addr, int len);
+    vaddr (*adjust_watchpoint_address)(CPUState* cpu, vaddr addr, int len);
 
     /**
      * @debug_check_watchpoint: return true if the architectural
      * watchpoint whose address has matched should really fire, used by ARM
      * and RISC-V
      */
-    bool (*debug_check_watchpoint)(CPUState *cpu, CPUWatchpoint *wp);
+    bool (*debug_check_watchpoint)(CPUState* cpu, CPUWatchpoint* wp);
 
     /**
      * @debug_check_breakpoint: return true if the architectural
      * breakpoint whose PC has matched should really fire.
      */
-    bool (*debug_check_breakpoint)(CPUState *cpu);
+    bool (*debug_check_breakpoint)(CPUState* cpu);
 };
 
 /**
@@ -210,8 +204,7 @@ struct TCGCPUOps {
  * Check for a watchpoint hit in [addr, addr+len) of the type
  * specified by @flags.  Exit via exception with a hit.
  */
-void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
-                          MemTxAttrs attrs, int flags, uintptr_t ra);
+void cpu_check_watchpoint(CPUState* cpu, vaddr addr, vaddr len, MemTxAttrs attrs, int flags, uintptr_t ra);
 
 /**
  * cpu_watchpoint_address_matches:
@@ -222,10 +215,10 @@ void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
  * Return the watchpoint flags that apply to [addr, addr+len).
  * If no watchpoint is registered for the range, the result is 0.
  */
-int cpu_watchpoint_address_matches(CPUState *cpu, vaddr addr, vaddr len);
+int cpu_watchpoint_address_matches(CPUState* cpu, vaddr addr, vaddr len);
 
 /*
  * Common pointer_wrap implementations.
  */
-vaddr cpu_pointer_wrap_notreached(CPUState *, int, vaddr, vaddr);
-vaddr cpu_pointer_wrap_uint32(CPUState *, int, vaddr, vaddr);
+vaddr cpu_pointer_wrap_notreached(CPUState*, int, vaddr, vaddr);
+vaddr cpu_pointer_wrap_uint32(CPUState*, int, vaddr, vaddr);

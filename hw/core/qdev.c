@@ -39,20 +39,20 @@
 #include "hw/qdev-clock.h"
 #include "trace.h"
 
-static bool qdev_hot_added = false;
-bool qdev_hot_removed = false;
+static bool qdev_hot_added   = false;
+bool        qdev_hot_removed = false;
 
-static void bus_free_bus_child(BusChild *kid)
+static void bus_free_bus_child(BusChild* kid)
 {
     object_unref(OBJECT(kid->child));
     g_free(kid);
 }
 
-static void bus_remove_child(BusState *bus, DeviceState *child)
+static void bus_remove_child(BusState* bus, DeviceState* child)
 {
-    BusChild *kid;
+    BusChild* kid;
 
-    QTAILQ_FOREACH(kid, &bus->children, sibling) {
+    QTAILQ_FOREACH (kid, &bus->children, sibling) {
         if (kid->child == child) {
             char name[32];
 
@@ -71,10 +71,10 @@ static void bus_remove_child(BusState *bus, DeviceState *child)
     }
 }
 
-static void bus_add_child(BusState *bus, DeviceState *child)
+static void bus_add_child(BusState* bus, DeviceState* child)
 {
-    char name[32];
-    BusChild *kid = g_malloc0(sizeof(*kid));
+    char      name[32];
+    BusChild* kid = g_malloc0(sizeof(*kid));
 
     bus->num_children++;
     kid->index = bus->max_index++;
@@ -85,34 +85,30 @@ static void bus_add_child(BusState *bus, DeviceState *child)
 
     /* This transfers ownership of kid->child to the property.  */
     snprintf(name, sizeof(name), "child[%d]", kid->index);
-    object_property_add_link(OBJECT(bus), name,
-                             object_get_typename(OBJECT(child)),
-                             (Object **)&kid->child,
+    object_property_add_link(OBJECT(bus), name, object_get_typename(OBJECT(child)), (Object**)&kid->child,
                              NULL, /* read-only property */
                              0);
 }
 
-static bool bus_check_address(BusState *bus, DeviceState *child, Error **errp)
+static bool bus_check_address(BusState* bus, DeviceState* child, Error** errp)
 {
-    BusClass *bc = BUS_GET_CLASS(bus);
+    BusClass* bc = BUS_GET_CLASS(bus);
     return !bc->check_address || bc->check_address(bus, child, errp);
 }
 
-bool qdev_set_parent_bus(DeviceState *dev, BusState *bus, Error **errp)
+bool qdev_set_parent_bus(DeviceState* dev, BusState* bus, Error** errp)
 {
-    BusState *old_parent_bus = dev->parent_bus;
-    DeviceClass *dc = DEVICE_GET_CLASS(dev);
+    BusState*    old_parent_bus = dev->parent_bus;
+    DeviceClass* dc             = DEVICE_GET_CLASS(dev);
 
     assert(dc->bus_type && object_dynamic_cast(OBJECT(bus), dc->bus_type));
 
-    if (!bus_check_address(bus, dev, errp)) {
-        return false;
-    }
+    if (!bus_check_address(bus, dev, errp)) { return false; }
 
     if (old_parent_bus) {
-        trace_qdev_update_parent_bus(dev, object_get_typename(OBJECT(dev)),
-            old_parent_bus, object_get_typename(OBJECT(old_parent_bus)),
-            OBJECT(bus), object_get_typename(OBJECT(bus)));
+        trace_qdev_update_parent_bus(dev, object_get_typename(OBJECT(dev)), old_parent_bus,
+                                     object_get_typename(OBJECT(old_parent_bus)), OBJECT(bus),
+                                     object_get_typename(OBJECT(bus)));
         /*
          * Keep a reference to the device while it's not plugged into
          * any bus, to avoid it potentially evaporating when it is
@@ -126,10 +122,7 @@ bool qdev_set_parent_bus(DeviceState *dev, BusState *bus, Error **errp)
     dev->parent_bus = bus;
     object_ref(OBJECT(bus));
     bus_add_child(bus, dev);
-    if (dev->realized) {
-        resettable_change_parent(OBJECT(dev), OBJECT(bus),
-                                 OBJECT(old_parent_bus));
-    }
+    if (dev->realized) { resettable_change_parent(OBJECT(dev), OBJECT(bus), OBJECT(old_parent_bus)); }
     if (old_parent_bus) {
         object_unref(OBJECT(old_parent_bus));
         object_unref(OBJECT(dev));
@@ -137,80 +130,68 @@ bool qdev_set_parent_bus(DeviceState *dev, BusState *bus, Error **errp)
     return true;
 }
 
-DeviceState *qdev_new(const char *name)
-{
-    return DEVICE(object_new(name));
-}
+DeviceState* qdev_new(const char* name) { return DEVICE(object_new(name)); }
 
-DeviceState *qdev_try_new(const char *name)
+DeviceState* qdev_try_new(const char* name)
 {
-    ObjectClass *oc = module_object_class_by_name(name);
-    if (!oc) {
-        return NULL;
-    }
+    ObjectClass* oc = module_object_class_by_name(name);
+    if (!oc) { return NULL; }
     return DEVICE(object_new_with_class(oc));
 }
 
-static QTAILQ_HEAD(, DeviceListener) device_listeners
-    = QTAILQ_HEAD_INITIALIZER(device_listeners);
+static QTAILQ_HEAD(, DeviceListener) device_listeners = QTAILQ_HEAD_INITIALIZER(device_listeners);
 
-enum ListenerDirection { Forward, Reverse };
+enum ListenerDirection
+{
+    Forward,
+    Reverse
+};
 
-#define DEVICE_LISTENER_CALL(_callback, _direction, _args...)     \
-    do {                                                          \
-        DeviceListener *_listener;                                \
-                                                                  \
-        switch (_direction) {                                     \
-        case Forward:                                             \
-            QTAILQ_FOREACH(_listener, &device_listeners, link) {  \
-                if (_listener->_callback) {                       \
-                    _listener->_callback(_listener, ##_args);     \
-                }                                                 \
-            }                                                     \
-            break;                                                \
-        case Reverse:                                             \
-            QTAILQ_FOREACH_REVERSE(_listener, &device_listeners,  \
-                                   link) {                        \
-                if (_listener->_callback) {                       \
-                    _listener->_callback(_listener, ##_args);     \
-                }                                                 \
-            }                                                     \
-            break;                                                \
-        default:                                                  \
-            abort();                                              \
-        }                                                         \
-    } while (0)
+#define DEVICE_LISTENER_CALL(_callback, _direction, _args...)                               \
+    do {                                                                                    \
+        DeviceListener* _listener;                                                          \
+                                                                                            \
+        switch (_direction) {                                                               \
+            case Forward:                                                                   \
+                QTAILQ_FOREACH (_listener, &device_listeners, link) {                       \
+                    if (_listener->_callback) { _listener->_callback(_listener, ##_args); } \
+                }                                                                           \
+                break;                                                                      \
+            case Reverse:                                                                   \
+                QTAILQ_FOREACH_REVERSE (_listener, &device_listeners, link) {               \
+                    if (_listener->_callback) { _listener->_callback(_listener, ##_args); } \
+                }                                                                           \
+                break;                                                                      \
+            default: abort();                                                               \
+        }                                                                                   \
+    }                                                                                       \
+    while (0)
 
-static int device_listener_add(DeviceState *dev, void *opaque)
+static int device_listener_add(DeviceState* dev, void* opaque)
 {
     DEVICE_LISTENER_CALL(realize, Forward, dev);
 
     return 0;
 }
 
-void device_listener_register(DeviceListener *listener)
+void device_listener_register(DeviceListener* listener)
 {
     QTAILQ_INSERT_TAIL(&device_listeners, listener, link);
 
-    qbus_walk_children(sysbus_get_default(), NULL, NULL, device_listener_add,
-                       NULL, NULL);
+    qbus_walk_children(sysbus_get_default(), NULL, NULL, device_listener_add, NULL, NULL);
 }
 
-void device_listener_unregister(DeviceListener *listener)
-{
-    QTAILQ_REMOVE(&device_listeners, listener, link);
-}
+void device_listener_unregister(DeviceListener* listener) { QTAILQ_REMOVE(&device_listeners, listener, link); }
 
-bool qdev_should_hide_device(const QDict *opts, bool from_json, Error **errp)
+bool qdev_should_hide_device(const QDict* opts, bool from_json, Error** errp)
 {
     ERRP_GUARD();
-    DeviceListener *listener;
+    DeviceListener* listener;
 
-    QTAILQ_FOREACH(listener, &device_listeners, link) {
+    QTAILQ_FOREACH (listener, &device_listeners, link) {
         if (listener->hide_device) {
-            if (listener->hide_device(listener, opts, from_json, errp)) {
-                return true;
-            } else if (*errp) {
+            if (listener->hide_device(listener, opts, from_json, errp)) { return true; }
+            else if (*errp) {
                 return false;
             }
         }
@@ -219,57 +200,46 @@ bool qdev_should_hide_device(const QDict *opts, bool from_json, Error **errp)
     return false;
 }
 
-void qdev_set_legacy_instance_id(DeviceState *dev, int alias_id,
-                                 int required_for_version)
+void qdev_set_legacy_instance_id(DeviceState* dev, int alias_id, int required_for_version)
 {
     assert(!dev->realized);
-    dev->instance_id_alias = alias_id;
+    dev->instance_id_alias          = alias_id;
     dev->alias_required_for_version = required_for_version;
 }
 
-void device_cold_reset(DeviceState *dev)
-{
-    resettable_reset(OBJECT(dev), RESET_TYPE_COLD);
-}
+void device_cold_reset(DeviceState* dev) { resettable_reset(OBJECT(dev), RESET_TYPE_COLD); }
 
-bool device_is_in_reset(DeviceState *dev)
-{
-    return resettable_is_in_reset(OBJECT(dev));
-}
+bool device_is_in_reset(DeviceState* dev) { return resettable_is_in_reset(OBJECT(dev)); }
 
-static ResettableState *device_get_reset_state(Object *obj)
+static ResettableState* device_get_reset_state(Object* obj)
 {
-    DeviceState *dev = DEVICE(obj);
+    DeviceState* dev = DEVICE(obj);
     return &dev->reset;
 }
 
-static void device_reset_child_foreach(Object *obj, ResettableChildCallback cb,
-                                       void *opaque, ResetType type)
+static void device_reset_child_foreach(Object* obj, ResettableChildCallback cb, void* opaque, ResetType type)
 {
-    DeviceState *dev = DEVICE(obj);
-    BusState *bus;
+    DeviceState* dev = DEVICE(obj);
+    BusState*    bus;
 
-    QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-        cb(OBJECT(bus), opaque, type);
-    }
+    QLIST_FOREACH (bus, &dev->child_bus, sibling) { cb(OBJECT(bus), opaque, type); }
 }
 
-bool qdev_realize(DeviceState *dev, BusState *bus, Error **errp)
+bool qdev_realize(DeviceState* dev, BusState* bus, Error** errp)
 {
     assert(!dev->realized && !dev->parent_bus);
 
     if (bus) {
-        if (!qdev_set_parent_bus(dev, bus, errp)) {
-            return false;
-        }
-    } else {
+        if (!qdev_set_parent_bus(dev, bus, errp)) { return false; }
+    }
+    else {
         assert(!DEVICE_GET_CLASS(dev)->bus_type);
     }
 
     return object_property_set_bool(OBJECT(dev), "realized", true, errp);
 }
 
-bool qdev_realize_and_unref(DeviceState *dev, BusState *bus, Error **errp)
+bool qdev_realize_and_unref(DeviceState* dev, BusState* bus, Error** errp)
 {
     bool ret;
 
@@ -278,15 +248,12 @@ bool qdev_realize_and_unref(DeviceState *dev, BusState *bus, Error **errp)
     return ret;
 }
 
-void qdev_unrealize(DeviceState *dev)
-{
-    object_property_set_bool(OBJECT(dev), "realized", false, &error_abort);
-}
+void qdev_unrealize(DeviceState* dev) { object_property_set_bool(OBJECT(dev), "realized", false, &error_abort); }
 
-static int qdev_assert_realized_properly_cb(Object *obj, void *opaque)
+static int qdev_assert_realized_properly_cb(Object* obj, void* opaque)
 {
-    DeviceState *dev = DEVICE(object_dynamic_cast(obj, TYPE_DEVICE));
-    DeviceClass *dc;
+    DeviceState* dev = DEVICE(object_dynamic_cast(obj, TYPE_DEVICE));
+    DeviceClass* dc;
 
     if (dev) {
         dc = DEVICE_GET_CLASS(dev);
@@ -297,124 +264,92 @@ static int qdev_assert_realized_properly_cb(Object *obj, void *opaque)
 }
 
 void qdev_assert_realized_properly(void)
+{ object_child_foreach_recursive(object_get_root(), qdev_assert_realized_properly_cb, NULL); }
+
+bool qdev_machine_modified(void) { return qdev_hot_added || qdev_hot_removed; }
+
+BusState* qdev_get_parent_bus(const DeviceState* dev) { return dev->parent_bus; }
+
+BusState* qdev_get_child_bus(DeviceState* dev, const char* name)
 {
-    object_child_foreach_recursive(object_get_root(),
-                                   qdev_assert_realized_properly_cb, NULL);
-}
+    BusState* bus;
+    Object*   child = object_resolve_path_component(OBJECT(dev), name);
 
-bool qdev_machine_modified(void)
-{
-    return qdev_hot_added || qdev_hot_removed;
-}
+    bus = (BusState*)object_dynamic_cast(child, TYPE_BUS);
+    if (bus) { return bus; }
 
-BusState *qdev_get_parent_bus(const DeviceState *dev)
-{
-    return dev->parent_bus;
-}
-
-BusState *qdev_get_child_bus(DeviceState *dev, const char *name)
-{
-    BusState *bus;
-    Object *child = object_resolve_path_component(OBJECT(dev), name);
-
-    bus = (BusState *)object_dynamic_cast(child, TYPE_BUS);
-    if (bus) {
-        return bus;
-    }
-
-    QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-        if (strcmp(name, bus->name) == 0) {
-            return bus;
-        }
+    QLIST_FOREACH (bus, &dev->child_bus, sibling) {
+        if (strcmp(name, bus->name) == 0) { return bus; }
     }
     return NULL;
 }
 
-int qdev_walk_children(DeviceState *dev,
-                       qdev_walkerfn *pre_devfn, qbus_walkerfn *pre_busfn,
-                       qdev_walkerfn *post_devfn, qbus_walkerfn *post_busfn,
-                       void *opaque)
+int qdev_walk_children(DeviceState* dev, qdev_walkerfn* pre_devfn, qbus_walkerfn* pre_busfn, qdev_walkerfn* post_devfn,
+                       qbus_walkerfn* post_busfn, void* opaque)
 {
-    BusState *bus;
-    int err;
+    BusState* bus;
+    int       err;
 
     if (pre_devfn) {
         err = pre_devfn(dev, opaque);
-        if (err) {
-            return err;
-        }
+        if (err) { return err; }
     }
 
-    QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-        err = qbus_walk_children(bus, pre_devfn, pre_busfn,
-                                 post_devfn, post_busfn, opaque);
-        if (err < 0) {
-            return err;
-        }
+    QLIST_FOREACH (bus, &dev->child_bus, sibling) {
+        err = qbus_walk_children(bus, pre_devfn, pre_busfn, post_devfn, post_busfn, opaque);
+        if (err < 0) { return err; }
     }
 
     if (post_devfn) {
         err = post_devfn(dev, opaque);
-        if (err) {
-            return err;
-        }
+        if (err) { return err; }
     }
 
     return 0;
 }
 
-DeviceState *qdev_find_recursive(BusState *bus, const char *id)
+DeviceState* qdev_find_recursive(BusState* bus, const char* id)
 {
-    BusChild *kid;
-    DeviceState *ret;
-    BusState *child;
+    BusChild*    kid;
+    DeviceState* ret;
+    BusState*    child;
 
-    WITH_RCU_READ_LOCK_GUARD() {
-        QTAILQ_FOREACH_RCU(kid, &bus->children, sibling) {
-            DeviceState *dev = kid->child;
+    WITH_RCU_READ_LOCK_GUARD()
+    {
+        QTAILQ_FOREACH_RCU(kid, &bus->children, sibling)
+        {
+            DeviceState* dev = kid->child;
 
-            if (dev->id && strcmp(dev->id, id) == 0) {
-                return dev;
-            }
+            if (dev->id && strcmp(dev->id, id) == 0) { return dev; }
 
-            QLIST_FOREACH(child, &dev->child_bus, sibling) {
+            QLIST_FOREACH (child, &dev->child_bus, sibling) {
                 ret = qdev_find_recursive(child, id);
-                if (ret) {
-                    return ret;
-                }
+                if (ret) { return ret; }
             }
         }
     }
     return NULL;
 }
 
-char *qdev_get_dev_path(DeviceState *dev)
+char* qdev_get_dev_path(DeviceState* dev)
 {
-    BusClass *bc;
+    BusClass* bc;
 
-    if (!dev || !dev->parent_bus) {
-        return NULL;
-    }
+    if (!dev || !dev->parent_bus) { return NULL; }
 
     bc = BUS_GET_CLASS(dev->parent_bus);
-    if (bc->get_dev_path) {
-        return bc->get_dev_path(dev);
-    }
+    if (bc->get_dev_path) { return bc->get_dev_path(dev); }
 
     return NULL;
 }
 
-void qdev_add_unplug_blocker(DeviceState *dev, Error *reason)
-{
-    dev->unplug_blockers = g_slist_prepend(dev->unplug_blockers, reason);
-}
+void qdev_add_unplug_blocker(DeviceState* dev, Error* reason)
+{ dev->unplug_blockers = g_slist_prepend(dev->unplug_blockers, reason); }
 
-void qdev_del_unplug_blocker(DeviceState *dev, Error *reason)
-{
-    dev->unplug_blockers = g_slist_remove(dev->unplug_blockers, reason);
-}
+void qdev_del_unplug_blocker(DeviceState* dev, Error* reason)
+{ dev->unplug_blockers = g_slist_remove(dev->unplug_blockers, reason); }
 
-bool qdev_unplug_blocked(DeviceState *dev, Error **errp)
+bool qdev_unplug_blocked(DeviceState* dev, Error** errp)
 {
     if (dev->unplug_blockers) {
         error_propagate(errp, error_copy(dev->unplug_blockers->data));
@@ -424,35 +359,33 @@ bool qdev_unplug_blocked(DeviceState *dev, Error **errp)
     return false;
 }
 
-static bool device_get_realized(Object *obj, Error **errp)
+static bool device_get_realized(Object* obj, Error** errp)
 {
-    DeviceState *dev = DEVICE(obj);
+    DeviceState* dev = DEVICE(obj);
     return dev->realized;
 }
 
-static void device_set_realized(Object *obj, bool value, Error **errp)
+static void device_set_realized(Object* obj, bool value, Error** errp)
 {
-    DeviceState *dev = DEVICE(obj);
-    DeviceClass *dc = DEVICE_GET_CLASS(dev);
-    HotplugHandler *hotplug_ctrl;
-    BusState *bus;
-    NamedClockList *ncl;
-    Error *local_err = NULL;
-    bool unattached_parent = false;
-    static int unattached_count;
+    DeviceState*    dev = DEVICE(obj);
+    DeviceClass*    dc  = DEVICE_GET_CLASS(dev);
+    HotplugHandler* hotplug_ctrl;
+    BusState*       bus;
+    NamedClockList* ncl;
+    Error*          local_err         = NULL;
+    bool            unattached_parent = false;
+    static int      unattached_count;
 
     if (dev->hotplugged && !dc->hotpluggable) {
-        error_setg(errp, "Device '%s' does not support hotplugging",
-                   object_get_typename(obj));
+        error_setg(errp, "Device '%s' does not support hotplugging", object_get_typename(obj));
         return;
     }
 
     if (value && !dev->realized) {
         if (!obj->parent) {
-            gchar *name = g_strdup_printf("device[%d]", unattached_count++);
+            gchar* name = g_strdup_printf("device[%d]", unattached_count++);
 
-            object_property_add_child(machine_get_container("unattached"),
-                                      name, obj);
+            object_property_add_child(machine_get_container("unattached"), name, obj);
             unattached_parent = true;
             g_free(name);
         }
@@ -460,16 +393,12 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
         hotplug_ctrl = qdev_get_hotplug_handler(dev);
         if (hotplug_ctrl) {
             hotplug_handler_pre_plug(hotplug_ctrl, dev, &local_err);
-            if (local_err != NULL) {
-                goto fail;
-            }
+            if (local_err != NULL) { goto fail; }
         }
 
         if (dc->realize) {
             dc->realize(dev, &local_err);
-            if (local_err != NULL) {
-                goto fail;
-            }
+            if (local_err != NULL) { goto fail; }
         }
 
         DEVICE_LISTENER_CALL(realize, Forward, dev);
@@ -480,10 +409,9 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
          */
         g_free(dev->canonical_path);
         dev->canonical_path = object_get_canonical_path(OBJECT(dev));
-        QLIST_FOREACH(ncl, &dev->clocks, node) {
-            if (ncl->alias) {
-                continue;
-            } else {
+        QLIST_FOREACH (ncl, &dev->clocks, node) {
+            if (ncl->alias) { continue; }
+            else {
                 clock_setup_canonical_path(ncl->clock);
             }
         }
@@ -494,10 +422,8 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
          */
         resettable_state_clear(&dev->reset);
 
-        QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-            if (!qbus_realize(bus, errp)) {
-                goto child_realize_fail;
-            }
+        QLIST_FOREACH (bus, &dev->child_bus, sibling) {
+            if (!qbus_realize(bus, errp)) { goto child_realize_fail; }
         }
         if (dev->hotplugged) {
             /*
@@ -505,22 +431,19 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
              * should be realized too.
              */
             resettable_assert_reset(OBJECT(dev), RESET_TYPE_COLD);
-            resettable_change_parent(OBJECT(dev), OBJECT(dev->parent_bus),
-                                     NULL);
+            resettable_change_parent(OBJECT(dev), OBJECT(dev->parent_bus), NULL);
             resettable_release_reset(OBJECT(dev), RESET_TYPE_COLD);
         }
         dev->pending_deleted_event = false;
 
         if (hotplug_ctrl) {
             hotplug_handler_plug(hotplug_ctrl, dev, &local_err);
-            if (local_err != NULL) {
-                goto child_realize_fail;
-            }
-       }
+            if (local_err != NULL) { goto child_realize_fail; }
+        }
 
-       qatomic_store_release(&dev->realized, value);
-
-    } else if (!value && dev->realized) {
+        qatomic_store_release(&dev->realized, value);
+    }
+    else if (!value && dev->realized) {
 
         /*
          * Change the value so that any concurrent users are aware
@@ -537,12 +460,8 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
          */
         smp_wmb();
 
-        QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-            qbus_unrealize(bus);
-        }
-        if (dc->unrealize) {
-            dc->unrealize(dev);
-        }
+        QLIST_FOREACH (bus, &dev->child_bus, sibling) { qbus_unrealize(bus); }
+        if (dc->unrealize) { dc->unrealize(dev); }
         dev->pending_deleted_event = true;
         DEVICE_LISTENER_CALL(unrealize, Reverse, dev);
     }
@@ -551,15 +470,11 @@ static void device_set_realized(Object *obj, bool value, Error **errp)
     return;
 
 child_realize_fail:
-    QLIST_FOREACH(bus, &dev->child_bus, sibling) {
-        qbus_unrealize(bus);
-    }
+    QLIST_FOREACH (bus, &dev->child_bus, sibling) { qbus_unrealize(bus); }
 
     g_free(dev->canonical_path);
     dev->canonical_path = NULL;
-    if (dc->unrealize) {
-        dc->unrealize(dev);
-    }
+    if (dc->unrealize) { dc->unrealize(dev); }
 
 fail:
     error_propagate(errp, local_err);
@@ -573,40 +488,39 @@ fail:
     }
 }
 
-static bool device_get_hotpluggable(Object *obj, Error **errp)
+static bool device_get_hotpluggable(Object* obj, Error** errp)
 {
-    DeviceClass *dc = DEVICE_GET_CLASS(obj);
-    DeviceState *dev = DEVICE(obj);
+    DeviceClass* dc  = DEVICE_GET_CLASS(obj);
+    DeviceState* dev = DEVICE(obj);
 
-    return dc->hotpluggable && (dev->parent_bus == NULL ||
-                                qbus_is_hotpluggable(dev->parent_bus));
+    return dc->hotpluggable && (dev->parent_bus == NULL || qbus_is_hotpluggable(dev->parent_bus));
 }
 
-static bool device_get_hotplugged(Object *obj, Error **errp)
+static bool device_get_hotplugged(Object* obj, Error** errp)
 {
-    DeviceState *dev = DEVICE(obj);
+    DeviceState* dev = DEVICE(obj);
 
     return dev->hotplugged;
 }
 
-static void device_initfn(Object *obj)
+static void device_initfn(Object* obj)
 {
-    DeviceState *dev = DEVICE(obj);
+    DeviceState* dev = DEVICE(obj);
 
     if (phase_check(PHASE_MACHINE_READY)) {
         dev->hotplugged = 1;
-        qdev_hot_added = true;
+        qdev_hot_added  = true;
     }
 
-    dev->instance_id_alias = -1;
-    dev->realized = false;
+    dev->instance_id_alias             = -1;
+    dev->realized                      = false;
     dev->allow_unplug_during_migration = false;
 
     QLIST_INIT(&dev->gpios);
     QLIST_INIT(&dev->clocks);
 }
 
-static void device_post_init(Object *obj)
+static void device_post_init(Object* obj)
 {
     /*
      * Note: ordered so that the user's global properties take
@@ -617,15 +531,15 @@ static void device_post_init(Object *obj)
 }
 
 /* Unlink device from bus and free the structure.  */
-static void device_finalize(Object *obj)
+static void device_finalize(Object* obj)
 {
     NamedGPIOList *ngl, *next;
 
-    DeviceState *dev = DEVICE(obj);
+    DeviceState* dev = DEVICE(obj);
 
     assert(!dev->unplug_blockers);
 
-    QLIST_FOREACH_SAFE(ngl, &dev->gpios, node, next) {
+    QLIST_FOREACH_SAFE (ngl, &dev->gpios, node, next) {
         QLIST_REMOVE(ngl, node);
         qemu_free_irqs(ngl->in, ngl->num_in);
         g_free(ngl->name);
@@ -649,25 +563,23 @@ static void device_finalize(Object *obj)
     g_free(dev->id);
 }
 
-static void device_class_base_init(ObjectClass *class, const void *data)
+static void device_class_base_init(ObjectClass* class, const void* data)
 {
-    DeviceClass *klass = DEVICE_CLASS(class);
+    DeviceClass* klass = DEVICE_CLASS(class);
 
     /* We explicitly look up properties in the superclasses,
      * so do not propagate them to the subclasses.
      */
-    klass->props_ = NULL;
+    klass->props_       = NULL;
     klass->props_count_ = 0;
 }
 
-static void device_unparent(Object *obj)
+static void device_unparent(Object* obj)
 {
-    DeviceState *dev = DEVICE(obj);
-    BusState *bus;
+    DeviceState* dev = DEVICE(obj);
+    BusState*    bus;
 
-    if (dev->realized) {
-        qdev_unrealize(dev);
-    }
+    if (dev->realized) { qdev_unrealize(dev); }
     while (dev->num_child_bus) {
         bus = QLIST_FIRST(&dev->child_bus);
         object_unparent(OBJECT(bus));
@@ -679,10 +591,10 @@ static void device_unparent(Object *obj)
     }
 }
 
-static void device_class_init(ObjectClass *class, const void *data)
+static void device_class_init(ObjectClass* class, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(class);
-    ResettableClass *rc = RESETTABLE_CLASS(class);
+    DeviceClass*     dc = DEVICE_CLASS(class);
+    ResettableClass* rc = RESETTABLE_CLASS(class);
 
     class->unparent = device_unparent;
 
@@ -692,10 +604,10 @@ static void device_class_init(ObjectClass *class, const void *data)
      * hotpluggable. Devices that shouldn't be hotpluggable,
      * should override it in their class_init()
      */
-    dc->hotpluggable = true;
+    dc->hotpluggable   = true;
     dc->user_creatable = true;
-    rc->get_state = device_get_reset_state;
-    rc->child_foreach = device_reset_child_foreach;
+    rc->get_state      = device_get_reset_state;
+    rc->child_foreach  = device_reset_child_foreach;
 
     /*
      * A NULL legacy_reset implies a three-phase reset device. Devices can
@@ -705,24 +617,20 @@ static void device_class_init(ObjectClass *class, const void *data)
      */
     dc->legacy_reset = NULL;
 
-    object_class_property_add_bool(class, "realized",
-                                   device_get_realized, device_set_realized);
-    object_class_property_add_bool(class, "hotpluggable",
-                                   device_get_hotpluggable, NULL);
-    object_class_property_add_bool(class, "hotplugged",
-                                   device_get_hotplugged, NULL);
-    object_class_property_add_link(class, "parent_bus", TYPE_BUS,
-                                   offsetof(DeviceState, parent_bus), NULL, 0);
+    object_class_property_add_bool(class, "realized", device_get_realized, device_set_realized);
+    object_class_property_add_bool(class, "hotpluggable", device_get_hotpluggable, NULL);
+    object_class_property_add_bool(class, "hotplugged", device_get_hotplugged, NULL);
+    object_class_property_add_link(class, "parent_bus", TYPE_BUS, offsetof(DeviceState, parent_bus), NULL, 0);
 }
 
-static void do_legacy_reset(Object *obj, ResetType type)
+static void do_legacy_reset(Object* obj, ResetType type)
 {
-    DeviceClass *dc = DEVICE_GET_CLASS(obj);
+    DeviceClass* dc = DEVICE_GET_CLASS(obj);
 
     dc->legacy_reset(DEVICE(obj));
 }
 
-void device_class_set_legacy_reset(DeviceClass *dc, DeviceReset dev_reset)
+void device_class_set_legacy_reset(DeviceClass* dc, DeviceReset dev_reset)
 {
     /*
      * A legacy DeviceClass::reset has identical semantics to the
@@ -733,17 +641,17 @@ void device_class_set_legacy_reset(DeviceClass *dc, DeviceReset dev_reset)
      * use the three-phase APIs, so the only place which calls
      * the legacy_reset hook is do_legacy_reset().
      */
-    ResettableClass *rc = RESETTABLE_CLASS(dc);
+    ResettableClass* rc = RESETTABLE_CLASS(dc);
 
     rc->phases.enter = NULL;
-    rc->phases.hold = do_legacy_reset;
-    rc->phases.exit = NULL;
+    rc->phases.hold  = do_legacy_reset;
+    rc->phases.exit  = NULL;
     dc->legacy_reset = dev_reset;
 }
 
-Object *qdev_get_machine(void)
+Object* qdev_get_machine(void)
 {
-    static Object *dev;
+    static Object* dev;
 
     if (dev == NULL) {
         dev = object_resolve_path_component(object_get_root(), "machine");
@@ -757,31 +665,27 @@ Object *qdev_get_machine(void)
     return dev;
 }
 
-Object *machine_get_container(const char *name)
+Object* machine_get_container(const char* name)
 {
     Object *container, *machine;
 
-    machine = qdev_get_machine();
+    machine   = qdev_get_machine();
     container = object_resolve_path_component(machine, name);
     assert(object_dynamic_cast(container, TYPE_CONTAINER));
 
     return container;
 }
 
-char *qdev_get_human_name(DeviceState *dev)
+char* qdev_get_human_name(DeviceState* dev)
 {
     assert(dev != NULL);
 
-    return dev->id ?
-           g_strdup(dev->id) : object_get_canonical_path(OBJECT(dev));
+    return dev->id ? g_strdup(dev->id) : object_get_canonical_path(OBJECT(dev));
 }
 
 static MachineInitPhase machine_phase;
 
-bool phase_check(MachineInitPhase phase)
-{
-    return machine_phase >= phase;
-}
+bool phase_check(MachineInitPhase phase) { return machine_phase >= phase; }
 
 void phase_advance(MachineInitPhase phase)
 {
@@ -789,26 +693,18 @@ void phase_advance(MachineInitPhase phase)
     machine_phase = phase;
 }
 
-static const TypeInfo device_type_info = {
-    .name = TYPE_DEVICE,
-    .parent = TYPE_OBJECT,
-    .instance_size = sizeof(DeviceState),
-    .instance_init = device_initfn,
-    .instance_post_init = device_post_init,
-    .instance_finalize = device_finalize,
-    .class_base_init = device_class_base_init,
-    .class_init = device_class_init,
-    .abstract = true,
-    .class_size = sizeof(DeviceClass),
-    .interfaces = (const InterfaceInfo[]) {
-        { TYPE_RESETTABLE_INTERFACE },
-        { }
-    }
-};
+static const TypeInfo device_type_info = {.name               = TYPE_DEVICE,
+                                          .parent             = TYPE_OBJECT,
+                                          .instance_size      = sizeof(DeviceState),
+                                          .instance_init      = device_initfn,
+                                          .instance_post_init = device_post_init,
+                                          .instance_finalize  = device_finalize,
+                                          .class_base_init    = device_class_base_init,
+                                          .class_init         = device_class_init,
+                                          .abstract           = true,
+                                          .class_size         = sizeof(DeviceClass),
+                                          .interfaces = (const InterfaceInfo[]){{TYPE_RESETTABLE_INTERFACE}, {}}};
 
-static void qdev_register_types(void)
-{
-    type_register_static(&device_type_info);
-}
+static void qdev_register_types(void) { type_register_static(&device_type_info); }
 
 type_init(qdev_register_types)

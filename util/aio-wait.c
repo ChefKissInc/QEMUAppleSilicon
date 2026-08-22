@@ -28,10 +28,7 @@
 
 AioWait global_aio_wait;
 
-static void dummy_bh_cb(void *opaque)
-{
-    /* The point is to make AIO_WAIT_WHILE()'s aio_poll() return */
-}
+static void dummy_bh_cb(void* opaque) { /* The point is to make AIO_WAIT_WHILE()'s aio_poll() return */ }
 
 void aio_wait_kick(void)
 {
@@ -55,16 +52,17 @@ void aio_wait_kick(void)
     }
 }
 
-typedef struct {
-    bool done;
-    QEMUBHFunc *cb;
-    void *opaque;
+typedef struct
+{
+    bool        done;
+    QEMUBHFunc* cb;
+    void*       opaque;
 } AioWaitBHData;
 
 /* Context: BH in IOThread */
-static void aio_wait_bh(void *opaque)
+static void aio_wait_bh(void* opaque)
 {
-    AioWaitBHData *data = opaque;
+    AioWaitBHData* data = opaque;
 
     data->cb(data->opaque);
 
@@ -72,10 +70,10 @@ static void aio_wait_bh(void *opaque)
     aio_wait_kick();
 }
 
-void aio_wait_bh_oneshot(AioContext *ctx, QEMUBHFunc *cb, void *opaque)
+void aio_wait_bh_oneshot(AioContext* ctx, QEMUBHFunc* cb, void* opaque)
 {
     AioWaitBHData data = {
-        .cb = cb,
+        .cb     = cb,
         .opaque = opaque,
     };
 

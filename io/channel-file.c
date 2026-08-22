@@ -27,10 +27,9 @@
 #include "qemu/sockets.h"
 #include "trace.h"
 
-QIOChannelFile *
-qio_channel_file_new_fd(int fd)
+QIOChannelFile* qio_channel_file_new_fd(int fd)
 {
-    QIOChannelFile *ioc;
+    QIOChannelFile* ioc;
 
     ioc = QIO_CHANNEL_FILE(object_new(TYPE_QIO_CHANNEL_FILE));
 
@@ -45,8 +44,7 @@ qio_channel_file_new_fd(int fd)
     return ioc;
 }
 
-QIOChannelFile *
-qio_channel_file_new_dupfd(int fd, Error **errp)
+QIOChannelFile* qio_channel_file_new_dupfd(int fd, Error** errp)
 {
     int newfd = dup(fd);
 
@@ -58,19 +56,14 @@ qio_channel_file_new_dupfd(int fd, Error **errp)
     return qio_channel_file_new_fd(newfd);
 }
 
-QIOChannelFile *
-qio_channel_file_new_path(const char *path,
-                          int flags,
-                          mode_t mode,
-                          Error **errp)
+QIOChannelFile* qio_channel_file_new_path(const char* path, int flags, mode_t mode, Error** errp)
 {
-    QIOChannelFile *ioc;
+    QIOChannelFile* ioc;
 
     ioc = QIO_CHANNEL_FILE(object_new(TYPE_QIO_CHANNEL_FILE));
 
-    if (flags & O_CREAT) {
-        ioc->fd = qemu_create(path, flags & ~O_CREAT, mode, errp);
-    } else {
+    if (flags & O_CREAT) { ioc->fd = qemu_create(path, flags & ~O_CREAT, mode, errp); }
+    else {
         ioc->fd = qemu_open(path, flags, errp);
     }
     if (ioc->fd < 0) {
@@ -87,98 +80,32 @@ qio_channel_file_new_path(const char *path,
     return ioc;
 }
 
-
-static void qio_channel_file_init(Object *obj)
+static void qio_channel_file_init(Object* obj)
 {
-    QIOChannelFile *ioc = QIO_CHANNEL_FILE(obj);
-    ioc->fd = -1;
+    QIOChannelFile* ioc = QIO_CHANNEL_FILE(obj);
+    ioc->fd             = -1;
 }
 
-static void qio_channel_file_finalize(Object *obj)
+static void qio_channel_file_finalize(Object* obj)
 {
-    QIOChannelFile *ioc = QIO_CHANNEL_FILE(obj);
+    QIOChannelFile* ioc = QIO_CHANNEL_FILE(obj);
     if (ioc->fd != -1) {
         qemu_close(ioc->fd);
         ioc->fd = -1;
     }
 }
 
-
-static ssize_t qio_channel_file_readv(QIOChannel *ioc,
-                                      const struct iovec *iov,
-                                      size_t niov,
-                                      int **fds,
-                                      size_t *nfds,
-                                      int flags,
-                                      Error **errp)
+static ssize_t qio_channel_file_readv(QIOChannel* ioc, const struct iovec* iov, size_t niov, int** fds, size_t* nfds,
+                                      int flags, Error** errp)
 {
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
-    ssize_t ret;
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
+    ssize_t         ret;
 
- retry:
+retry:
     ret = readv(fioc->fd, iov, niov);
     if (ret < 0) {
-        if (errno == EAGAIN) {
-            return QIO_CHANNEL_ERR_BLOCK;
-        }
-        if (errno == EINTR) {
-            goto retry;
-        }
-
-        error_setg_errno(errp, errno,
-                         "Unable to read from file");
-        return -1;
-    }
-
-    return ret;
-}
-
-static ssize_t qio_channel_file_writev(QIOChannel *ioc,
-                                       const struct iovec *iov,
-                                       size_t niov,
-                                       int *fds,
-                                       size_t nfds,
-                                       int flags,
-                                       Error **errp)
-{
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
-    ssize_t ret;
-
- retry:
-    ret = writev(fioc->fd, iov, niov);
-    if (ret <= 0) {
-        if (errno == EAGAIN) {
-            return QIO_CHANNEL_ERR_BLOCK;
-        }
-        if (errno == EINTR) {
-            goto retry;
-        }
-        error_setg_errno(errp, errno,
-                         "Unable to write to file");
-        return -1;
-    }
-    return ret;
-}
-
-#ifdef CONFIG_PREADV
-static ssize_t qio_channel_file_preadv(QIOChannel *ioc,
-                                       const struct iovec *iov,
-                                       size_t niov,
-                                       off_t offset,
-                                       Error **errp)
-{
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
-    ssize_t ret;
-
- retry:
-    ret = preadv(fioc->fd, iov, niov, offset);
-    if (ret < 0) {
-        if (errno == EAGAIN) {
-            return QIO_CHANNEL_ERR_BLOCK;
-        }
-        if (errno == EINTR) {
-            goto retry;
-        }
+        if (errno == EAGAIN) { return QIO_CHANNEL_ERR_BLOCK; }
+        if (errno == EINTR) { goto retry; }
 
         error_setg_errno(errp, errno, "Unable to read from file");
         return -1;
@@ -187,24 +114,54 @@ static ssize_t qio_channel_file_preadv(QIOChannel *ioc,
     return ret;
 }
 
-static ssize_t qio_channel_file_pwritev(QIOChannel *ioc,
-                                        const struct iovec *iov,
-                                        size_t niov,
-                                        off_t offset,
-                                        Error **errp)
+static ssize_t qio_channel_file_writev(QIOChannel* ioc, const struct iovec* iov, size_t niov, int* fds, size_t nfds,
+                                       int flags, Error** errp)
 {
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
-    ssize_t ret;
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
+    ssize_t         ret;
 
- retry:
+retry:
+    ret = writev(fioc->fd, iov, niov);
+    if (ret <= 0) {
+        if (errno == EAGAIN) { return QIO_CHANNEL_ERR_BLOCK; }
+        if (errno == EINTR) { goto retry; }
+        error_setg_errno(errp, errno, "Unable to write to file");
+        return -1;
+    }
+    return ret;
+}
+
+#ifdef CONFIG_PREADV
+static ssize_t qio_channel_file_preadv(QIOChannel* ioc, const struct iovec* iov, size_t niov, off_t offset,
+                                       Error** errp)
+{
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
+    ssize_t         ret;
+
+retry:
+    ret = preadv(fioc->fd, iov, niov, offset);
+    if (ret < 0) {
+        if (errno == EAGAIN) { return QIO_CHANNEL_ERR_BLOCK; }
+        if (errno == EINTR) { goto retry; }
+
+        error_setg_errno(errp, errno, "Unable to read from file");
+        return -1;
+    }
+
+    return ret;
+}
+
+static ssize_t qio_channel_file_pwritev(QIOChannel* ioc, const struct iovec* iov, size_t niov, off_t offset,
+                                        Error** errp)
+{
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
+    ssize_t         ret;
+
+retry:
     ret = pwritev(fioc->fd, iov, niov, offset);
     if (ret <= 0) {
-        if (errno == EAGAIN) {
-            return QIO_CHANNEL_ERR_BLOCK;
-        }
-        if (errno == EINTR) {
-            goto retry;
-        }
+        if (errno == EAGAIN) { return QIO_CHANNEL_ERR_BLOCK; }
+        if (errno == EINTR) { goto retry; }
         error_setg_errno(errp, errno, "Unable to write to file");
         return -1;
     }
@@ -212,112 +169,85 @@ static ssize_t qio_channel_file_pwritev(QIOChannel *ioc,
 }
 #endif /* CONFIG_PREADV */
 
-static int qio_channel_file_set_blocking(QIOChannel *ioc,
-                                         bool enabled,
-                                         Error **errp)
+static int qio_channel_file_set_blocking(QIOChannel* ioc, bool enabled, Error** errp)
 {
 #ifdef WIN32
     /* not implemented */
     error_setg_errno(errp, errno, "Failed to set FD nonblocking");
     return -1;
 #else
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
 
-    if (!qemu_set_blocking(fioc->fd, enabled, errp)) {
-        return -1;
-    }
+    if (!qemu_set_blocking(fioc->fd, enabled, errp)) { return -1; }
     return 0;
 #endif
 }
 
-
-static off_t qio_channel_file_seek(QIOChannel *ioc,
-                                   off_t offset,
-                                   int whence,
-                                   Error **errp)
+static off_t qio_channel_file_seek(QIOChannel* ioc, off_t offset, int whence, Error** errp)
 {
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
-    off_t ret;
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
+    off_t           ret;
 
     ret = lseek(fioc->fd, offset, whence);
     if (ret == (off_t)-1) {
-        error_setg_errno(errp, errno,
-                         "Unable to seek to offset %lld whence %d in file",
-                         (long long int)offset, whence);
+        error_setg_errno(errp, errno, "Unable to seek to offset %lld whence %d in file", (long long int)offset, whence);
         return -1;
     }
     return ret;
 }
 
-
-static int qio_channel_file_close(QIOChannel *ioc,
-                                  Error **errp)
+static int qio_channel_file_close(QIOChannel* ioc, Error** errp)
 {
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
 
     if (qemu_close(fioc->fd) < 0) {
-        error_setg_errno(errp, errno,
-                         "Unable to close file");
+        error_setg_errno(errp, errno, "Unable to close file");
         return -1;
     }
     fioc->fd = -1;
     return 0;
 }
 
-
-static void qio_channel_file_set_aio_fd_handler(QIOChannel *ioc,
-                                                AioContext *read_ctx,
-                                                IOHandler *io_read,
-                                                AioContext *write_ctx,
-                                                IOHandler *io_write,
-                                                void *opaque)
+static void qio_channel_file_set_aio_fd_handler(QIOChannel* ioc, AioContext* read_ctx, IOHandler* io_read,
+                                                AioContext* write_ctx, IOHandler* io_write, void* opaque)
 {
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
 
-    qio_channel_util_set_aio_fd_handler(fioc->fd, read_ctx, io_read,
-                                        fioc->fd, write_ctx, io_write,
-                                        opaque);
+    qio_channel_util_set_aio_fd_handler(fioc->fd, read_ctx, io_read, fioc->fd, write_ctx, io_write, opaque);
 }
 
-static GSource *qio_channel_file_create_watch(QIOChannel *ioc,
-                                              GIOCondition condition)
+static GSource* qio_channel_file_create_watch(QIOChannel* ioc, GIOCondition condition)
 {
-    QIOChannelFile *fioc = container_of(ioc, QIOChannelFile, parent);
-    return qio_channel_create_fd_watch(ioc,
-                                       fioc->fd,
-                                       condition);
+    QIOChannelFile* fioc = container_of(ioc, QIOChannelFile, parent);
+    return qio_channel_create_fd_watch(ioc, fioc->fd, condition);
 }
 
-static void qio_channel_file_class_init(ObjectClass *klass,
-                                        const void *class_data G_GNUC_UNUSED)
+static void qio_channel_file_class_init(ObjectClass* klass, const void* class_data G_GNUC_UNUSED)
 {
-    QIOChannelClass *ioc_klass = QIO_CHANNEL_CLASS(klass);
+    QIOChannelClass* ioc_klass = QIO_CHANNEL_CLASS(klass);
 
-    ioc_klass->io_writev = qio_channel_file_writev;
-    ioc_klass->io_readv = qio_channel_file_readv;
+    ioc_klass->io_writev       = qio_channel_file_writev;
+    ioc_klass->io_readv        = qio_channel_file_readv;
     ioc_klass->io_set_blocking = qio_channel_file_set_blocking;
 #ifdef CONFIG_PREADV
     ioc_klass->io_pwritev = qio_channel_file_pwritev;
-    ioc_klass->io_preadv = qio_channel_file_preadv;
+    ioc_klass->io_preadv  = qio_channel_file_preadv;
 #endif
-    ioc_klass->io_seek = qio_channel_file_seek;
-    ioc_klass->io_close = qio_channel_file_close;
-    ioc_klass->io_create_watch = qio_channel_file_create_watch;
+    ioc_klass->io_seek               = qio_channel_file_seek;
+    ioc_klass->io_close              = qio_channel_file_close;
+    ioc_klass->io_create_watch       = qio_channel_file_create_watch;
     ioc_klass->io_set_aio_fd_handler = qio_channel_file_set_aio_fd_handler;
 }
 
 static const TypeInfo qio_channel_file_info = {
-    .parent = TYPE_QIO_CHANNEL,
-    .name = TYPE_QIO_CHANNEL_FILE,
-    .instance_size = sizeof(QIOChannelFile),
-    .instance_init = qio_channel_file_init,
+    .parent            = TYPE_QIO_CHANNEL,
+    .name              = TYPE_QIO_CHANNEL_FILE,
+    .instance_size     = sizeof(QIOChannelFile),
+    .instance_init     = qio_channel_file_init,
     .instance_finalize = qio_channel_file_finalize,
-    .class_init = qio_channel_file_class_init,
+    .class_init        = qio_channel_file_class_init,
 };
 
-static void qio_channel_file_register_types(void)
-{
-    type_register_static(&qio_channel_file_info);
-}
+static void qio_channel_file_register_types(void) { type_register_static(&qio_channel_file_info); }
 
 type_init(qio_channel_file_register_types);

@@ -22,7 +22,8 @@
 
 typedef struct QFileMonitor QFileMonitor;
 
-typedef enum {
+typedef enum
+{
     /* File has been created in a dir */
     QFILE_MONITOR_EVENT_CREATED,
     /* File has been modified in a dir */
@@ -34,7 +35,6 @@ typedef enum {
     /* Dir is no longer being monitored (due to deletion) */
     QFILE_MONITOR_EVENT_IGNORED,
 } QFileMonitorEvent;
-
 
 /**
  * QFileMonitorHandler:
@@ -48,10 +48,7 @@ typedef enum {
  * empty.
  *
  */
-typedef void (*QFileMonitorHandler)(int64_t id,
-                                    QFileMonitorEvent event,
-                                    const char *filename,
-                                    void *opaque);
+typedef void (*QFileMonitorHandler)(int64_t id, QFileMonitorEvent event, const char* filename, void* opaque);
 
 /**
  * qemu_file_monitor_new:
@@ -71,7 +68,7 @@ typedef void (*QFileMonitorHandler)(int64_t id,
  *
  * Returns: the new monitoring object, or NULL on error
  */
-QFileMonitor *qemu_file_monitor_new(Error **errp);
+QFileMonitor* qemu_file_monitor_new(Error** errp);
 
 /**
  * qemu_file_monitor_free:
@@ -80,7 +77,7 @@ QFileMonitor *qemu_file_monitor_new(Error **errp);
  * Free resources associated with the file monitor,
  * including any currently registered watches.
  */
-void qemu_file_monitor_free(QFileMonitor *mon);
+void qemu_file_monitor_free(QFileMonitor* mon);
 
 /**
  * qemu_file_monitor_add_watch:
@@ -99,12 +96,8 @@ void qemu_file_monitor_free(QFileMonitor *mon);
  *
  * Returns: a positive integer watch ID, or -1 on error
  */
-int64_t qemu_file_monitor_add_watch(QFileMonitor *mon,
-                                    const char *dirpath,
-                                    const char *filename,
-                                    QFileMonitorHandler cb,
-                                    void *opaque,
-                                    Error **errp);
+int64_t qemu_file_monitor_add_watch(QFileMonitor* mon, const char* dirpath, const char* filename,
+                                    QFileMonitorHandler cb, void* opaque, Error** errp);
 
 /**
  * qemu_file_monitor_remove_watch:
@@ -117,6 +110,4 @@ int64_t qemu_file_monitor_add_watch(QFileMonitor *mon,
  * called from a QFileMonitorHandler callback, or a
  * deadlock will result.
  */
-void qemu_file_monitor_remove_watch(QFileMonitor *mon,
-                                    const char *dirpath,
-                                    int64_t id);
+void qemu_file_monitor_remove_watch(QFileMonitor* mon, const char* dirpath, int64_t id);

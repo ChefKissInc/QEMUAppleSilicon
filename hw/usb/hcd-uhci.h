@@ -36,30 +36,32 @@ typedef struct UHCIQueue UHCIQueue;
 
 #define UHCI_PORTS 2
 
-typedef struct UHCIPort {
-    USBPort port;
+typedef struct UHCIPort
+{
+    USBPort  port;
     uint16_t ctrl;
 } UHCIPort;
 
-typedef struct UHCIState {
-    PCIDevice dev;
+typedef struct UHCIState
+{
+    PCIDevice    dev;
     MemoryRegion io_bar;
-    USBBus bus; /* Note unused when we're a companion controller */
-    uint16_t cmd; /* cmd register */
-    uint16_t status;
-    uint16_t intr; /* interrupt enable register */
-    uint16_t frnum; /* frame number */
-    uint32_t fl_base_addr; /* frame list base address */
-    uint8_t sof_timing;
-    uint8_t status2; /* bit 0 and 1 are used to generate UHCI_STS_USBINT */
-    int64_t expire_time;
-    QEMUTimer *frame_timer;
-    QEMUBH *bh;
-    uint32_t frame_bytes;
-    uint32_t frame_bandwidth;
-    bool completions_only;
-    UHCIPort ports[UHCI_PORTS];
-    qemu_irq irq;
+    USBBus       bus; /* Note unused when we're a companion controller */
+    uint16_t     cmd; /* cmd register */
+    uint16_t     status;
+    uint16_t     intr;         /* interrupt enable register */
+    uint16_t     frnum;        /* frame number */
+    uint32_t     fl_base_addr; /* frame list base address */
+    uint8_t      sof_timing;
+    uint8_t      status2; /* bit 0 and 1 are used to generate UHCI_STS_USBINT */
+    int64_t      expire_time;
+    QEMUTimer*   frame_timer;
+    QEMUBH*      bh;
+    uint32_t     frame_bytes;
+    uint32_t     frame_bandwidth;
+    bool         completions_only;
+    UHCIPort     ports[UHCI_PORTS];
+    qemu_irq     irq;
     /* Interrupts that should be raised at the end of the current frame.  */
     uint32_t pending_int_mask;
 
@@ -68,7 +70,7 @@ typedef struct UHCIState {
     uint8_t num_ports_vmstate;
 
     /* Properties */
-    char *masterbus;
+    char*    masterbus;
     uint32_t firstport;
     uint32_t maxframes;
 } UHCIState;
@@ -76,20 +78,21 @@ typedef struct UHCIState {
 #define TYPE_UHCI "pci-uhci-usb"
 OBJECT_DECLARE_TYPE(UHCIState, UHCIPCIDeviceClass, UHCI)
 
-typedef struct UHCIInfo {
-    const char *name;
-    uint16_t   vendor_id;
-    uint16_t   device_id;
-    uint8_t    revision;
-    uint8_t    irq_pin;
-    void       (*realize)(PCIDevice *dev, Error **errp);
-    bool       unplug;
-    bool       notuser; /* disallow user_creatable */
+typedef struct UHCIInfo
+{
+    const char* name;
+    uint16_t    vendor_id;
+    uint16_t    device_id;
+    uint8_t     revision;
+    uint8_t     irq_pin;
+    void        (*realize)(PCIDevice* dev, Error** errp);
+    bool        unplug;
+    bool        notuser; /* disallow user_creatable */
 } UHCIInfo;
 
-void uhci_data_class_init(ObjectClass *klass, const void *data);
-void usb_uhci_common_realize(PCIDevice *dev, Error **errp);
+void uhci_data_class_init(ObjectClass* klass, const void* data);
+void usb_uhci_common_realize(PCIDevice* dev, Error** errp);
 
-#define TYPE_PIIX3_USB_UHCI "piix3-usb-uhci"
-#define TYPE_PIIX4_USB_UHCI "piix4-usb-uhci"
+#define TYPE_PIIX3_USB_UHCI    "piix3-usb-uhci"
+#define TYPE_PIIX4_USB_UHCI    "piix4-usb-uhci"
 #define TYPE_ICH9_USB_UHCI(fn) "ich9-usb-uhci" #fn

@@ -12,12 +12,14 @@
 #include "qemu/osdep.h"
 #include "qemu/iova-tree.h"
 
-struct IOVATree {
-    GTree *tree;
+struct IOVATree
+{
+    GTree* tree;
 };
 
 /* Args to pass to iova_tree_alloc foreach function. */
-struct IOVATreeAllocArgs {
+struct IOVATreeAllocArgs
+{
     /* Size of the desired allocation */
     size_t new_size;
 
@@ -25,10 +27,10 @@ struct IOVATreeAllocArgs {
     hwaddr iova_begin;
 
     /* Map at the left of the hole, can be NULL if "this" is first one */
-    const DMAMap *prev;
+    const DMAMap* prev;
 
     /* Map at the right of the hole, can be NULL if "prev" is the last one */
-    const DMAMap *this;
+    const DMAMap* this;
 
     /* If found, we fill in the IOVA here */
     hwaddr iova_result;
@@ -37,9 +39,10 @@ struct IOVATreeAllocArgs {
     bool iova_found;
 };
 
-typedef struct IOVATreeFindIOVAArgs {
-    const DMAMap *needle;
-    const DMAMap *result;
+typedef struct IOVATreeFindIOVAArgs
+{
+    const DMAMap* needle;
+    const DMAMap* result;
 } IOVATreeFindIOVAArgs;
 
 /**
@@ -48,8 +51,7 @@ typedef struct IOVATreeFindIOVAArgs {
  * @args: The alloc arguments
  * @next: The next mapping in the tree. Can be NULL to signal the last one
  */
-static void iova_tree_alloc_args_iterate(struct IOVATreeAllocArgs *args,
-                                         const DMAMap *next)
+static void iova_tree_alloc_args_iterate(struct IOVATreeAllocArgs* args, const DMAMap* next)
 {
     args->prev = args->this;
     args->this = next;
@@ -59,21 +61,17 @@ static int iova_tree_compare(gconstpointer a, gconstpointer b, gpointer data)
 {
     const DMAMap *m1 = a, *m2 = b;
 
-    if (m1->iova > m2->iova + m2->size) {
-        return 1;
-    }
+    if (m1->iova > m2->iova + m2->size) { return 1; }
 
-    if (m1->iova + m1->size < m2->iova) {
-        return -1;
-    }
+    if (m1->iova + m1->size < m2->iova) { return -1; }
 
     /* Overlapped */
     return 0;
 }
 
-IOVATree *iova_tree_new(void)
+IOVATree* iova_tree_new(void)
 {
-    IOVATree *iova_tree = g_new0(IOVATree, 1);
+    IOVATree* iova_tree = g_new0(IOVATree, 1);
 
     /* We don't have values actually, no need to free */
     iova_tree->tree = g_tree_new_full(iova_tree_compare, NULL, g_free, NULL);
@@ -81,23 +79,20 @@ IOVATree *iova_tree_new(void)
     return iova_tree;
 }
 
-const DMAMap *iova_tree_find(const IOVATree *tree, const DMAMap *map)
-{
-    return g_tree_lookup(tree->tree, map);
-}
+const DMAMap* iova_tree_find(const IOVATree* tree, const DMAMap* map) { return g_tree_lookup(tree->tree, map); }
 
-static gboolean iova_tree_find_address_iterator(gpointer key, gpointer value,
-                                                gpointer data)
+static gboolean iova_tree_find_address_iterator(gpointer key, gpointer value, gpointer data)
 {
-    const DMAMap *map = key;
-    IOVATreeFindIOVAArgs *args = data;
-    const DMAMap *needle;
+    const DMAMap*         map  = key;
+    IOVATreeFindIOVAArgs* args = data;
+    const DMAMap*         needle;
 
     assert(key == value);
 
     needle = args->needle;
-    if (map->translated_addr + map->size < needle->translated_addr ||
-        needle->translated_addr + needle->size < map->translated_addr) {
+    if (map->translated_addr + map->size < needle->translated_addr
+        || needle->translated_addr + needle->size < map->translated_addr)
+    {
         return false;
     }
 
@@ -105,7 +100,7 @@ static gboolean iova_tree_find_address_iterator(gpointer key, gpointer value,
     return true;
 }
 
-const DMAMap *iova_tree_find_iova(const IOVATree *tree, const DMAMap *map)
+const DMAMap* iova_tree_find_iova(const IOVATree* tree, const DMAMap* map)
 {
     IOVATreeFindIOVAArgs args = {
         .needle = map,
@@ -115,24 +110,20 @@ const DMAMap *iova_tree_find_iova(const IOVATree *tree, const DMAMap *map)
     return args.result;
 }
 
-static inline void iova_tree_insert_internal(GTree *gtree, DMAMap *range)
+static inline void iova_tree_insert_internal(GTree* gtree, DMAMap* range)
 {
     /* Key and value are sharing the same range data */
     g_tree_insert(gtree, range, range);
 }
 
-int iova_tree_insert(IOVATree *tree, const DMAMap *map)
+int iova_tree_insert(IOVATree* tree, const DMAMap* map)
 {
-    DMAMap *new;
+    DMAMap* new;
 
-    if (map->iova + map->size < map->iova || map->perm == IOMMU_NONE) {
-        return IOVA_ERR_INVALID;
-    }
+    if (map->iova + map->size < map->iova || map->perm == IOMMU_NONE) { return IOVA_ERR_INVALID; }
 
     /* We don't allow to insert range that overlaps with existings */
-    if (iova_tree_find(tree, map)) {
-        return IOVA_ERR_OVERLAP;
-    }
+    if (iova_tree_find(tree, map)) { return IOVA_ERR_OVERLAP; }
 
     new = g_new0(DMAMap, 1);
     memcpy(new, map, sizeof(*new));
@@ -141,13 +132,11 @@ int iova_tree_insert(IOVATree *tree, const DMAMap *map)
     return IOVA_OK;
 }
 
-void iova_tree_remove(IOVATree *tree, DMAMap map)
+void iova_tree_remove(IOVATree* tree, DMAMap map)
 {
-    const DMAMap *overlap;
+    const DMAMap* overlap;
 
-    while ((overlap = iova_tree_find(tree, &map))) {
-        g_tree_remove(tree->tree, overlap);
-    }
+    while ((overlap = iova_tree_find(tree, &map))) { g_tree_remove(tree->tree, overlap); }
 }
 
 /**
@@ -169,21 +158,19 @@ void iova_tree_remove(IOVATree *tree, DMAMap map)
  * Note that this function assumes the last valid iova is HWADDR_MAX, but it
  * searches linearly so it's easy to discard the result if it's not the case.
  */
-static void iova_tree_alloc_map_in_hole(struct IOVATreeAllocArgs *args)
+static void iova_tree_alloc_map_in_hole(struct IOVATreeAllocArgs* args)
 {
     const DMAMap *prev = args->prev, *this = args->this;
-    uint64_t hole_start, hole_last;
+    uint64_t      hole_start, hole_last;
 
-    if (this && this->iova + this->size < args->iova_begin) {
-        return;
-    }
+    if (this && this->iova + this->size < args->iova_begin) { return; }
 
     hole_start = MAX(prev ? prev->iova + prev->size + 1 : 0, args->iova_begin);
-    hole_last = this ? this->iova : HWADDR_MAX;
+    hole_last  = this ? this->iova : HWADDR_MAX;
 
     if (hole_last - hole_start > args->new_size) {
         args->iova_result = hole_start;
-        args->iova_found = true;
+        args->iova_found  = true;
     }
 }
 
@@ -197,11 +184,10 @@ static void iova_tree_alloc_map_in_hole(struct IOVATreeAllocArgs *args)
  *
  * Return: false to keep iterating, true if needs break.
  */
-static gboolean iova_tree_alloc_traverse(gpointer key, gpointer value,
-                                         gpointer pargs)
+static gboolean iova_tree_alloc_traverse(gpointer key, gpointer value, gpointer pargs)
 {
-    struct IOVATreeAllocArgs *args = pargs;
-    DMAMap *node = value;
+    struct IOVATreeAllocArgs* args = pargs;
+    DMAMap*                   node = value;
 
     assert(key == value);
 
@@ -210,17 +196,14 @@ static gboolean iova_tree_alloc_traverse(gpointer key, gpointer value,
     return args->iova_found;
 }
 
-int iova_tree_alloc_map(IOVATree *tree, DMAMap *map, hwaddr iova_begin,
-                        hwaddr iova_last)
+int iova_tree_alloc_map(IOVATree* tree, DMAMap* map, hwaddr iova_begin, hwaddr iova_last)
 {
     struct IOVATreeAllocArgs args = {
-        .new_size = map->size,
+        .new_size   = map->size,
         .iova_begin = iova_begin,
     };
 
-    if (unlikely(iova_last < iova_begin)) {
-        return IOVA_ERR_INVALID;
-    }
+    if (unlikely(iova_last < iova_begin)) { return IOVA_ERR_INVALID; }
 
     /*
      * Find a valid hole for the mapping
@@ -244,15 +227,13 @@ int iova_tree_alloc_map(IOVATree *tree, DMAMap *map, hwaddr iova_begin,
         iova_tree_alloc_map_in_hole(&args);
     }
 
-    if (!args.iova_found || args.iova_result + map->size > iova_last) {
-        return IOVA_ERR_NOMEM;
-    }
+    if (!args.iova_found || args.iova_result + map->size > iova_last) { return IOVA_ERR_NOMEM; }
 
     map->iova = args.iova_result;
     return iova_tree_insert(tree, map);
 }
 
-void iova_tree_destroy(IOVATree *tree)
+void iova_tree_destroy(IOVATree* tree)
 {
     g_tree_destroy(tree->tree);
     g_free(tree);
@@ -262,40 +243,31 @@ static int gpa_tree_compare(gconstpointer a, gconstpointer b, gpointer data)
 {
     const DMAMap *m1 = a, *m2 = b;
 
-    if (m1->translated_addr > m2->translated_addr + m2->size) {
-        return 1;
-    }
+    if (m1->translated_addr > m2->translated_addr + m2->size) { return 1; }
 
-    if (m1->translated_addr + m1->size < m2->translated_addr) {
-        return -1;
-    }
+    if (m1->translated_addr + m1->size < m2->translated_addr) { return -1; }
 
     /* Overlapped */
     return 0;
 }
 
-IOVATree *gpa_tree_new(void)
+IOVATree* gpa_tree_new(void)
 {
-    IOVATree *gpa_tree = g_new0(IOVATree, 1);
+    IOVATree* gpa_tree = g_new0(IOVATree, 1);
 
     gpa_tree->tree = g_tree_new_full(gpa_tree_compare, NULL, g_free, NULL);
 
     return gpa_tree;
 }
 
-int gpa_tree_insert(IOVATree *tree, const DMAMap *map)
+int gpa_tree_insert(IOVATree* tree, const DMAMap* map)
 {
-    DMAMap *new;
+    DMAMap* new;
 
-    if (map->translated_addr + map->size < map->translated_addr ||
-        map->perm == IOMMU_NONE) {
-        return IOVA_ERR_INVALID;
-    }
+    if (map->translated_addr + map->size < map->translated_addr || map->perm == IOMMU_NONE) { return IOVA_ERR_INVALID; }
 
     /* We don't allow inserting ranges that overlap with existing ones */
-    if (iova_tree_find(tree, map)) {
-        return IOVA_ERR_OVERLAP;
-    }
+    if (iova_tree_find(tree, map)) { return IOVA_ERR_OVERLAP; }
 
     new = g_new0(DMAMap, 1);
     memcpy(new, map, sizeof(*new));

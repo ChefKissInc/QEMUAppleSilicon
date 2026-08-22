@@ -24,9 +24,9 @@
 #include "qapi/error.h"
 #include "system/memory.h"
 
-vaddr g_virt_base;
+vaddr  g_virt_base;
 hwaddr g_phys_base;
-vaddr g_virt_slide;
+vaddr  g_virt_slide;
 hwaddr g_phys_slide;
 
 hwaddr vtop_bases(vaddr va, hwaddr phys_base, vaddr virt_base)
@@ -45,59 +45,48 @@ vaddr ptov_bases(hwaddr pa, hwaddr phys_base, vaddr virt_base)
     return pa - phys_base + virt_base;
 }
 
-hwaddr vtop_static(vaddr va)
-{
-    return vtop_bases(va, g_phys_base, g_virt_base);
-}
+hwaddr vtop_static(vaddr va) { return vtop_bases(va, g_phys_base, g_virt_base); }
 
-vaddr ptov_static(hwaddr pa)
-{
-    return ptov_bases(pa, g_phys_base, g_virt_base);
-}
+vaddr ptov_static(hwaddr pa) { return ptov_bases(pa, g_phys_base, g_virt_base); }
 
-hwaddr vtop_slid(vaddr va)
-{
-    return vtop_static(va + g_virt_slide);
-}
+hwaddr vtop_slid(vaddr va) { return vtop_static(va + g_virt_slide); }
 
-void allocate_ram(MemoryRegion *top, const char *name, hwaddr addr, hwaddr size,
-                  int priority)
+void allocate_ram(MemoryRegion* top, const char* name, hwaddr addr, hwaddr size, int priority)
 {
-    MemoryRegion *sec = g_new(MemoryRegion, 1);
+    MemoryRegion* sec = g_new(MemoryRegion, 1);
     memory_region_init_ram(sec, NULL, name, size, &error_fatal);
     memory_region_add_subregion_overlap(top, addr, sec, priority);
 }
 
-struct CarveoutAllocator {
-    hwaddr dram_base;
-    hwaddr end;
-    hwaddr alignment;
-    AppleDTNode *node;
-    uint32_t cur_id;
+struct CarveoutAllocator
+{
+    hwaddr       dram_base;
+    hwaddr       end;
+    hwaddr       alignment;
+    AppleDTNode* node;
+    uint32_t     cur_id;
 };
 
-CarveoutAllocator *carveout_alloc_new(AppleDTNode *carveout_mmap,
-                                      hwaddr dram_base, hwaddr dram_size,
-                                      hwaddr alignment)
+CarveoutAllocator* carveout_alloc_new(AppleDTNode* carveout_mmap, hwaddr dram_base, hwaddr dram_size, hwaddr alignment)
 {
-    CarveoutAllocator *ca;
+    CarveoutAllocator* ca;
 
     assert_cmphex(dram_size, !=, 0);
     assert_cmphex(alignment, !=, 0);
 
-    ca = g_new0(CarveoutAllocator, 1);
+    ca            = g_new0(CarveoutAllocator, 1);
     ca->dram_base = dram_base;
-    ca->end = dram_base + dram_size;
+    ca->end       = dram_base + dram_size;
     ca->alignment = alignment;
-    ca->node = carveout_mmap;
+    ca->node      = carveout_mmap;
 
     return ca;
 }
 
-hwaddr carveout_alloc_mem(CarveoutAllocator *ca, hwaddr size)
+hwaddr carveout_alloc_mem(CarveoutAllocator* ca, hwaddr size)
 {
-    hwaddr data[2] = { 0 };
-    char region_name[32] = { 0 };
+    hwaddr data[2]         = {0};
+    char   region_name[32] = {0};
 
     assert_cmphex(size, !=, 0);
 
@@ -111,7 +100,7 @@ hwaddr carveout_alloc_mem(CarveoutAllocator *ca, hwaddr size)
         apple_dt_set_prop(ca->node, region_name, sizeof(data), data);
 
         ca->cur_id += 1;
-        if (ca->cur_id == 55) { // This is an iBoot profiler region. SKIP!
+        if (ca->cur_id == 55) {    // This is an iBoot profiler region. SKIP!
             ca->cur_id += 1;
         }
     }
@@ -119,7 +108,7 @@ hwaddr carveout_alloc_mem(CarveoutAllocator *ca, hwaddr size)
     return ca->end;
 }
 
-hwaddr carveout_alloc_finalise(CarveoutAllocator *ca)
+hwaddr carveout_alloc_finalise(CarveoutAllocator* ca)
 {
     hwaddr ret;
 

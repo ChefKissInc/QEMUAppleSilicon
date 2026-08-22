@@ -12,11 +12,11 @@
 
 #include "kvm-consts.h"
 
-#define QEMU_ARM_POWERCTL_RET_SUCCESS QEMU_PSCI_RET_SUCCESS
+#define QEMU_ARM_POWERCTL_RET_SUCCESS   QEMU_PSCI_RET_SUCCESS
 #define QEMU_ARM_POWERCTL_INVALID_PARAM QEMU_PSCI_RET_INVALID_PARAMS
-#define QEMU_ARM_POWERCTL_ALREADY_ON QEMU_PSCI_RET_ALREADY_ON
-#define QEMU_ARM_POWERCTL_IS_OFF QEMU_PSCI_RET_DENIED
-#define QEMU_ARM_POWERCTL_ON_PENDING QEMU_PSCI_RET_ON_PENDING
+#define QEMU_ARM_POWERCTL_ALREADY_ON    QEMU_PSCI_RET_ALREADY_ON
+#define QEMU_ARM_POWERCTL_IS_OFF        QEMU_PSCI_RET_DENIED
+#define QEMU_ARM_POWERCTL_ON_PENDING    QEMU_PSCI_RET_ON_PENDING
 
 /*
  * arm_get_cpu_by_id:
@@ -26,7 +26,7 @@
  *
  * Returns: a pointer to the CPUState structure of the requested CPU.
  */
-CPUState *arm_get_cpu_by_id(uint64_t cpuid);
+CPUState* arm_get_cpu_by_id(uint64_t cpuid);
 
 /*
  * arm_set_cpu_on:
@@ -45,8 +45,7 @@ CPUState *arm_get_cpu_by_id(uint64_t cpuid);
  * QEMU_ARM_POWERCTL_ALREADY_ON if the CPU was already started.
  * QEMU_ARM_POWERCTL_ON_PENDING if the CPU is still powering up
  */
-int arm_set_cpu_on(uint64_t cpuid, uint64_t entry, uint64_t context_id,
-                   uint32_t target_el, bool target_aa64);
+int arm_set_cpu_on(uint64_t cpuid, uint64_t entry, uint64_t context_id, uint32_t target_el, bool target_aa64);
 
 /*
  * arm_set_cpu_off:

@@ -9,9 +9,9 @@
 
 #include "qapi/qapi-types-stats.h"
 
-typedef void StatRetrieveFunc(StatsResultList **result, StatsTarget target,
-                              strList *names, strList *targets, Error **errp);
-typedef void SchemaRetrieveFunc(StatsSchemaList **result, Error **errp);
+typedef void StatRetrieveFunc(StatsResultList** result, StatsTarget target, strList* names, strList* targets,
+                              Error** errp);
+typedef void SchemaRetrieveFunc(StatsSchemaList** result, Error** errp);
 
 /*
  * Register callbacks for the QMP query-stats command.
@@ -20,17 +20,13 @@ typedef void SchemaRetrieveFunc(StatsSchemaList **result, Error **errp);
  * @stats_fn: routine to query stats:
  * @schema_fn: routine to query stat schemas:
  */
-void add_stats_callbacks(StatsProvider provider,
-                         StatRetrieveFunc *stats_fn,
-                         SchemaRetrieveFunc *schemas_fn);
+void add_stats_callbacks(StatsProvider provider, StatRetrieveFunc* stats_fn, SchemaRetrieveFunc* schemas_fn);
 
 /*
  * Helper routines for adding stats entries to the results lists.
  */
-void add_stats_entry(StatsResultList **, StatsProvider, const char *id,
-                     StatsList *stats_list);
-void add_stats_schema(StatsSchemaList **, StatsProvider, StatsTarget,
-                      StatsSchemaValueList *);
+void add_stats_entry(StatsResultList**, StatsProvider, const char* id, StatsList* stats_list);
+void add_stats_schema(StatsSchemaList**, StatsProvider, StatsTarget, StatsSchemaValueList*);
 
 /*
  * True if a string matches the filter passed to the stats_fn callback,
@@ -39,4 +35,4 @@ void add_stats_schema(StatsSchemaList **, StatsProvider, StatsTarget,
  * Note that an empty list means no filtering, i.e. all strings will
  * return true.
  */
-bool apply_str_list_filter(const char *string, strList *list);
+bool apply_str_list_filter(const char* string, strList* list);

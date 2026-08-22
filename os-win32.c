@@ -42,10 +42,7 @@ static BOOL WINAPI qemu_ctrl_handler(DWORD type)
 
 static TIMECAPS mm_tc;
 
-static void os_undo_timer_resolution(void)
-{
-    timeEndPeriod(mm_tc.wPeriodMin);
-}
+static void os_undo_timer_resolution(void) { timeEndPeriod(mm_tc.wPeriodMin); }
 
 void os_setup_early_signal_handling(void)
 {

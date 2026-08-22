@@ -11,6 +11,6 @@
 
 #include "qemu/accel.h"
 
-void accel_init_ops_interfaces(AccelClass *ac);
+void accel_init_ops_interfaces(AccelClass* ac);
 
 /* ACCEL_SYSTEM_H */

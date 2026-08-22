@@ -33,18 +33,17 @@
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-mttcg.h"
 
-typedef struct MttcgForceRcuNotifier {
-    Notifier notifier;
-    CPUState *cpu;
+typedef struct MttcgForceRcuNotifier
+{
+    Notifier  notifier;
+    CPUState* cpu;
 } MttcgForceRcuNotifier;
 
-static void do_nothing(CPUState *cpu, run_on_cpu_data d)
-{
-}
+static void do_nothing(CPUState* cpu, run_on_cpu_data d) { }
 
-static void mttcg_force_rcu(Notifier *notify, void *data)
+static void mttcg_force_rcu(Notifier* notify, void* data)
 {
-    CPUState *cpu = container_of(notify, MttcgForceRcuNotifier, notifier)->cpu;
+    CPUState* cpu = container_of(notify, MttcgForceRcuNotifier, notifier)->cpu;
 
     /*
      * Called with rcu_registry_lock held, using async_run_on_cpu() ensures
@@ -59,25 +58,25 @@ static void mttcg_force_rcu(Notifier *notify, void *data)
  * current CPUState for a given thread.
  */
 
-static void *mttcg_cpu_thread_fn(void *arg)
+static void* mttcg_cpu_thread_fn(void* arg)
 {
     MttcgForceRcuNotifier force_rcu;
-    CPUState *cpu = arg;
+    CPUState*             cpu = arg;
 
     assert(tcg_enabled());
 
     rcu_register_thread();
     force_rcu.notifier.notify = mttcg_force_rcu;
-    force_rcu.cpu = cpu;
+    force_rcu.cpu             = cpu;
     rcu_add_force_rcu_notifier(&force_rcu.notifier);
     tcg_register_thread();
 
     bql_lock();
     qemu_thread_get_self(cpu->thread);
 
-    cpu->thread_id = qemu_get_thread_id();
+    cpu->thread_id     = qemu_get_thread_id();
     cpu->neg.can_do_io = true;
-    current_cpu = cpu;
+    current_cpu        = cpu;
     cpu_thread_signal_created(cpu);
     qemu_guest_random_seed_thread_part2(cpu->random_seed);
 
@@ -90,25 +89,24 @@ static void *mttcg_cpu_thread_fn(void *arg)
             r = tcg_cpu_exec(cpu);
             bql_lock();
             switch (r) {
-            case EXCP_DEBUG:
-                cpu_handle_guest_debug(cpu);
-                break;
-            case EXCP_HALTED:
-                /*
-                 * Usually cpu->halted is set, but may have already been
-                 * reset by another thread by the time we arrive here.
-                 */
-                break;
-            case EXCP_ATOMIC:
-                bql_unlock();
-                cpu_exec_step_atomic(cpu);
-                bql_lock();
-            default:
-                /* Ignore everything else? */
-                break;
+                case EXCP_DEBUG: cpu_handle_guest_debug(cpu); break;
+                case EXCP_HALTED:
+                    /*
+                     * Usually cpu->halted is set, but may have already been
+                     * reset by another thread by the time we arrive here.
+                     */
+                    break;
+                case EXCP_ATOMIC:
+                    bql_unlock();
+                    cpu_exec_step_atomic(cpu);
+                    bql_lock();
+                default:
+                    /* Ignore everything else? */
+                    break;
             }
         }
-    } while (!cpu->unplug || cpu_can_run(cpu));
+    }
+    while (!cpu->unplug || cpu_can_run(cpu));
 
     tcg_cpu_destroy(cpu);
     bql_unlock();
@@ -117,7 +115,7 @@ static void *mttcg_cpu_thread_fn(void *arg)
     return NULL;
 }
 
-void mttcg_start_vcpu_thread(CPUState *cpu)
+void mttcg_start_vcpu_thread(CPUState* cpu)
 {
     char thread_name[VCPU_THREAD_NAME_SIZE];
 
@@ -125,9 +123,7 @@ void mttcg_start_vcpu_thread(CPUState *cpu)
     tcg_cpu_init_cflags(cpu, current_machine->smp.max_cpus > 1);
 
     /* create a thread per vCPU with TCG (MTTCG) */
-    snprintf(thread_name, VCPU_THREAD_NAME_SIZE, "CPU %d/TCG",
-             cpu->cpu_index);
+    snprintf(thread_name, VCPU_THREAD_NAME_SIZE, "CPU %d/TCG", cpu->cpu_index);
 
-    qemu_thread_create(cpu->thread, thread_name, mttcg_cpu_thread_fn,
-                       cpu, QEMU_THREAD_JOINABLE);
+    qemu_thread_create(cpu->thread, thread_name, mttcg_cpu_thread_fn, cpu, QEMU_THREAD_JOINABLE);
 }

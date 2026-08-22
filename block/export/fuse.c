@@ -34,77 +34,72 @@
 #include <fuse_lowlevel.h>
 
 #if defined(CONFIG_FALLOCATE_ZERO_RANGE)
-#include <linux/falloc.h>
+    #include <linux/falloc.h>
 #endif
 
 #ifdef __linux__
-#include <linux/fs.h>
+    #include <linux/fs.h>
 #endif
 
 /* Prevent overly long bounce buffer allocations */
 #define FUSE_MAX_BOUNCE_BYTES (MIN(BDRV_REQUEST_MAX_BYTES, 64 * 1024 * 1024))
 
-
-typedef struct FuseExport {
+typedef struct FuseExport
+{
     BlockExport common;
 
-    struct fuse_session *fuse_session;
-    struct fuse_buf fuse_buf;
-    unsigned int in_flight; /* atomic */
-    bool mounted, fd_handler_set_up;
+    struct fuse_session* fuse_session;
+    struct fuse_buf      fuse_buf;
+    unsigned int         in_flight; /* atomic */
+    bool                 mounted, fd_handler_set_up;
 
-    char *mountpoint;
-    bool writable;
-    bool growable;
+    char* mountpoint;
+    bool  writable;
+    bool  growable;
     /* Whether allow_other was used as a mount option or not */
     bool allow_other;
 
     mode_t st_mode;
-    uid_t st_uid;
-    gid_t st_gid;
+    uid_t  st_uid;
+    gid_t  st_gid;
 } FuseExport;
 
-static GHashTable *exports;
+static GHashTable*                    exports;
 static const struct fuse_lowlevel_ops fuse_ops;
 
-static void fuse_export_shutdown(BlockExport *exp);
-static void fuse_export_delete(BlockExport *exp);
+static void fuse_export_shutdown(BlockExport* exp);
+static void fuse_export_delete(BlockExport* exp);
 
 static void init_exports_table(void);
 
-static int setup_fuse_export(FuseExport *exp, const char *mountpoint,
-                             bool allow_other, Error **errp);
-static void read_from_fuse_export(void *opaque);
+static int  setup_fuse_export(FuseExport* exp, const char* mountpoint, bool allow_other, Error** errp);
+static void read_from_fuse_export(void* opaque);
 
-static bool is_regular_file(const char *path, Error **errp);
+static bool is_regular_file(const char* path, Error** errp);
 
-
-static void fuse_export_drained_begin(void *opaque)
+static void fuse_export_drained_begin(void* opaque)
 {
-    FuseExport *exp = opaque;
+    FuseExport* exp = opaque;
 
-    aio_set_fd_handler(exp->common.ctx,
-                       fuse_session_fd(exp->fuse_session),
-                       NULL, NULL, NULL, NULL, NULL);
+    aio_set_fd_handler(exp->common.ctx, fuse_session_fd(exp->fuse_session), NULL, NULL, NULL, NULL, NULL);
     exp->fd_handler_set_up = false;
 }
 
-static void fuse_export_drained_end(void *opaque)
+static void fuse_export_drained_end(void* opaque)
 {
-    FuseExport *exp = opaque;
+    FuseExport* exp = opaque;
 
     /* Refresh AioContext in case it changed */
     exp->common.ctx = blk_get_aio_context(exp->common.blk);
 
-    aio_set_fd_handler(exp->common.ctx,
-                       fuse_session_fd(exp->fuse_session),
-                       read_from_fuse_export, NULL, NULL, NULL, exp);
+    aio_set_fd_handler(exp->common.ctx, fuse_session_fd(exp->fuse_session), read_from_fuse_export, NULL, NULL, NULL,
+                       exp);
     exp->fd_handler_set_up = true;
 }
 
-static bool fuse_export_drained_poll(void *opaque)
+static bool fuse_export_drained_poll(void* opaque)
 {
-    FuseExport *exp = opaque;
+    FuseExport* exp = opaque;
 
     return qatomic_read(&exp->in_flight) > 0;
 }
@@ -115,13 +110,11 @@ static const BlockDevOps fuse_export_blk_dev_ops = {
     .drained_poll  = fuse_export_drained_poll,
 };
 
-static int fuse_export_create(BlockExport *blk_exp,
-                              BlockExportOptions *blk_exp_args,
-                              Error **errp)
+static int fuse_export_create(BlockExport* blk_exp, BlockExportOptions* blk_exp_args, Error** errp)
 {
-    FuseExport *exp = container_of(blk_exp, FuseExport, common);
-    BlockExportOptionsFuse *args = &blk_exp_args->u.fuse;
-    int ret;
+    FuseExport*             exp  = container_of(blk_exp, FuseExport, common);
+    BlockExportOptionsFuse* args = &blk_exp_args->u.fuse;
+    int                     ret;
 
     assert(blk_exp_args->type == BLOCK_EXPORT_TYPE_FUSE);
 
@@ -131,11 +124,8 @@ static int fuse_export_create(BlockExport *blk_exp,
 
         blk_get_perm(exp->common.blk, &blk_perm, &blk_shared_perm);
 
-        ret = blk_set_perm(exp->common.blk, blk_perm | BLK_PERM_RESIZE,
-                           blk_shared_perm, errp);
-        if (ret < 0) {
-            return ret;
-        }
+        ret = blk_set_perm(exp->common.blk, blk_perm | BLK_PERM_RESIZE, blk_shared_perm, errp);
+        if (ret < 0) { return ret; }
     }
 
     blk_set_dev_ops(exp->common.blk, &fuse_export_blk_dev_ops, exp);
@@ -164,8 +154,7 @@ static int fuse_export_create(BlockExport *blk_exp,
      * string twice.
      */
     if (g_hash_table_contains(exports, args->mountpoint)) {
-        error_setg(errp, "There already is a FUSE export on '%s'",
-                   args->mountpoint);
+        error_setg(errp, "There already is a FUSE export on '%s'", args->mountpoint);
         ret = -EEXIST;
         goto fail;
     }
@@ -176,35 +165,28 @@ static int fuse_export_create(BlockExport *blk_exp,
     }
 
     exp->mountpoint = g_strdup(args->mountpoint);
-    exp->writable = blk_exp_args->writable;
-    exp->growable = args->growable;
+    exp->writable   = blk_exp_args->writable;
+    exp->growable   = args->growable;
 
     /* set default */
-    if (!args->has_allow_other) {
-        args->allow_other = FUSE_EXPORT_ALLOW_OTHER_AUTO;
-    }
+    if (!args->has_allow_other) { args->allow_other = FUSE_EXPORT_ALLOW_OTHER_AUTO; }
 
     exp->st_mode = S_IFREG | S_IRUSR;
-    if (exp->writable) {
-        exp->st_mode |= S_IWUSR;
-    }
+    if (exp->writable) { exp->st_mode |= S_IWUSR; }
     exp->st_uid = getuid();
     exp->st_gid = getgid();
 
     if (args->allow_other == FUSE_EXPORT_ALLOW_OTHER_AUTO) {
         /* Ignore errors on our first attempt */
-        ret = setup_fuse_export(exp, args->mountpoint, true, NULL);
+        ret              = setup_fuse_export(exp, args->mountpoint, true, NULL);
         exp->allow_other = ret == 0;
-        if (ret < 0) {
-            ret = setup_fuse_export(exp, args->mountpoint, false, errp);
-        }
-    } else {
+        if (ret < 0) { ret = setup_fuse_export(exp, args->mountpoint, false, errp); }
+    }
+    else {
         exp->allow_other = args->allow_other == FUSE_EXPORT_ALLOW_OTHER_ON;
-        ret = setup_fuse_export(exp, args->mountpoint, exp->allow_other, errp);
+        ret              = setup_fuse_export(exp, args->mountpoint, exp->allow_other, errp);
     }
-    if (ret < 0) {
-        goto fail;
-    }
+    if (ret < 0) { goto fail; }
 
     return 0;
 
@@ -218,9 +200,7 @@ fail:
  */
 static void init_exports_table(void)
 {
-    if (exports) {
-        return;
-    }
+    if (exports) { return; }
 
     exports = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 }
@@ -228,30 +208,27 @@ static void init_exports_table(void)
 /**
  * Create exp->fuse_session and mount it.
  */
-static int setup_fuse_export(FuseExport *exp, const char *mountpoint,
-                             bool allow_other, Error **errp)
+static int setup_fuse_export(FuseExport* exp, const char* mountpoint, bool allow_other, Error** errp)
 {
-    const char *fuse_argv[4];
-    char *mount_opts;
+    const char*      fuse_argv[4];
+    char*            mount_opts;
     struct fuse_args fuse_args;
-    int ret;
+    int              ret;
 
     /*
      * max_read needs to match what fuse_init() sets.
      * max_write need not be supplied.
      */
-    mount_opts = g_strdup_printf("max_read=%zu,default_permissions%s",
-                                 FUSE_MAX_BOUNCE_BYTES,
-                                 allow_other ? ",allow_other" : "");
+    mount_opts =
+        g_strdup_printf("max_read=%zu,default_permissions%s", FUSE_MAX_BOUNCE_BYTES, allow_other ? ",allow_other" : "");
 
     fuse_argv[0] = ""; /* Dummy program name */
     fuse_argv[1] = "-o";
     fuse_argv[2] = mount_opts;
     fuse_argv[3] = NULL;
-    fuse_args = (struct fuse_args)FUSE_ARGS_INIT(3, (char **)fuse_argv);
+    fuse_args    = (struct fuse_args)FUSE_ARGS_INIT(3, (char**)fuse_argv);
 
-    exp->fuse_session = fuse_session_new(&fuse_args, &fuse_ops,
-                                         sizeof(fuse_ops), exp);
+    exp->fuse_session = fuse_session_new(&fuse_args, &fuse_ops, sizeof(fuse_ops), exp);
     g_free(mount_opts);
     if (!exp->fuse_session) {
         error_setg(errp, "Failed to set up FUSE session");
@@ -269,9 +246,8 @@ static int setup_fuse_export(FuseExport *exp, const char *mountpoint,
 
     g_hash_table_insert(exports, g_strdup(mountpoint), NULL);
 
-    aio_set_fd_handler(exp->common.ctx,
-                       fuse_session_fd(exp->fuse_session),
-                       read_from_fuse_export, NULL, NULL, NULL, exp);
+    aio_set_fd_handler(exp->common.ctx, fuse_session_fd(exp->fuse_session), read_from_fuse_export, NULL, NULL, NULL,
+                       exp);
     exp->fd_handler_set_up = true;
 
     return 0;
@@ -285,10 +261,10 @@ fail:
  * Callback to be invoked when the FUSE session FD can be read from.
  * (This is basically the FUSE event loop.)
  */
-static void read_from_fuse_export(void *opaque)
+static void read_from_fuse_export(void* opaque)
 {
-    FuseExport *exp = opaque;
-    int ret;
+    FuseExport* exp = opaque;
+    int         ret;
 
     blk_exp_ref(&exp->common);
 
@@ -296,32 +272,27 @@ static void read_from_fuse_export(void *opaque)
 
     do {
         ret = fuse_session_receive_buf(exp->fuse_session, &exp->fuse_buf);
-    } while (ret == -EINTR);
-    if (ret < 0) {
-        goto out;
     }
+    while (ret == -EINTR);
+    if (ret < 0) { goto out; }
 
     fuse_session_process_buf(exp->fuse_session, &exp->fuse_buf);
 
 out:
-    if (qatomic_fetch_dec(&exp->in_flight) == 1) {
-        aio_wait_kick(); /* wake AIO_WAIT_WHILE() */
-    }
+    if (qatomic_fetch_dec(&exp->in_flight) == 1) { aio_wait_kick(); /* wake AIO_WAIT_WHILE() */ }
 
     blk_exp_unref(&exp->common);
 }
 
-static void fuse_export_shutdown(BlockExport *blk_exp)
+static void fuse_export_shutdown(BlockExport* blk_exp)
 {
-    FuseExport *exp = container_of(blk_exp, FuseExport, common);
+    FuseExport* exp = container_of(blk_exp, FuseExport, common);
 
     if (exp->fuse_session) {
         fuse_session_exit(exp->fuse_session);
 
         if (exp->fd_handler_set_up) {
-            aio_set_fd_handler(exp->common.ctx,
-                               fuse_session_fd(exp->fuse_session),
-                               NULL, NULL, NULL, NULL, NULL);
+            aio_set_fd_handler(exp->common.ctx, fuse_session_fd(exp->fuse_session), NULL, NULL, NULL, NULL, NULL);
             exp->fd_handler_set_up = false;
         }
     }
@@ -335,14 +306,12 @@ static void fuse_export_shutdown(BlockExport *blk_exp)
     }
 }
 
-static void fuse_export_delete(BlockExport *blk_exp)
+static void fuse_export_delete(BlockExport* blk_exp)
 {
-    FuseExport *exp = container_of(blk_exp, FuseExport, common);
+    FuseExport* exp = container_of(blk_exp, FuseExport, common);
 
     if (exp->fuse_session) {
-        if (exp->mounted) {
-            fuse_session_unmount(exp->fuse_session);
-        }
+        if (exp->mounted) { fuse_session_unmount(exp->fuse_session); }
 
         fuse_session_destroy(exp->fuse_session);
     }
@@ -355,10 +324,10 @@ static void fuse_export_delete(BlockExport *blk_exp)
  * Check whether @path points to a regular file.  If not, put an
  * appropriate message into *errp.
  */
-static bool is_regular_file(const char *path, Error **errp)
+static bool is_regular_file(const char* path, Error** errp)
 {
     struct stat statbuf;
-    int ret;
+    int         ret;
 
     ret = stat(path, &statbuf);
     if (ret < 0) {
@@ -377,7 +346,7 @@ static bool is_regular_file(const char *path, Error **errp)
 /**
  * A chance to set change some parameters supplied to FUSE_INIT.
  */
-static void fuse_init(void *userdata, struct fuse_conn_info *conn)
+static void fuse_init(void* userdata, struct fuse_conn_info* conn)
 {
     /*
      * MIN_NON_ZERO() would not be wrong here, but what we set here
@@ -395,21 +364,17 @@ static void fuse_init(void *userdata, struct fuse_conn_info *conn)
  * Let clients look up files.  Always return ENOENT because we only
  * care about the mountpoint itself.
  */
-static void fuse_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
-{
-    fuse_reply_err(req, ENOENT);
-}
+static void fuse_lookup(fuse_req_t req, fuse_ino_t parent, const char* name) { fuse_reply_err(req, ENOENT); }
 
 /**
  * Let clients get file attributes (i.e., stat() the file).
  */
-static void fuse_getattr(fuse_req_t req, fuse_ino_t inode,
-                         struct fuse_file_info *fi)
+static void fuse_getattr(fuse_req_t req, fuse_ino_t inode, struct fuse_file_info* fi)
 {
     struct stat statbuf;
-    int64_t length, allocated_blocks;
-    time_t now = time(NULL);
-    FuseExport *exp = fuse_req_userdata(req);
+    int64_t     length, allocated_blocks;
+    time_t      now = time(NULL);
+    FuseExport* exp = fuse_req_userdata(req);
 
     length = blk_getlength(exp->common.blk);
     if (length < 0) {
@@ -418,13 +383,12 @@ static void fuse_getattr(fuse_req_t req, fuse_ino_t inode,
     }
 
     allocated_blocks = bdrv_get_allocated_file_size(blk_bs(exp->common.blk));
-    if (allocated_blocks <= 0) {
-        allocated_blocks = DIV_ROUND_UP(length, 512);
-    } else {
+    if (allocated_blocks <= 0) { allocated_blocks = DIV_ROUND_UP(length, 512); }
+    else {
         allocated_blocks = DIV_ROUND_UP(allocated_blocks, 512);
     }
 
-    statbuf = (struct stat) {
+    statbuf = (struct stat){
         .st_ino     = inode,
         .st_mode    = exp->st_mode,
         .st_nlink   = 1,
@@ -441,20 +405,17 @@ static void fuse_getattr(fuse_req_t req, fuse_ino_t inode,
     fuse_reply_attr(req, &statbuf, 1.);
 }
 
-static int fuse_do_truncate(const FuseExport *exp, int64_t size,
-                            bool req_zero_write, PreallocMode prealloc)
+static int fuse_do_truncate(const FuseExport* exp, int64_t size, bool req_zero_write, PreallocMode prealloc)
 {
-    uint64_t blk_perm, blk_shared_perm;
+    uint64_t         blk_perm, blk_shared_perm;
     BdrvRequestFlags truncate_flags = 0;
-    bool add_resize_perm;
-    int ret, ret_check;
+    bool             add_resize_perm;
+    int              ret, ret_check;
 
     /* Growable and writable exports have a permanent RESIZE permission */
     add_resize_perm = !exp->growable && !exp->writable;
 
-    if (req_zero_write) {
-        truncate_flags |= BDRV_REQ_ZERO_WRITE;
-    }
+    if (req_zero_write) { truncate_flags |= BDRV_REQ_ZERO_WRITE; }
 
     if (add_resize_perm) {
 
@@ -465,20 +426,15 @@ static int fuse_do_truncate(const FuseExport *exp, int64_t size,
 
         blk_get_perm(exp->common.blk, &blk_perm, &blk_shared_perm);
 
-        ret = blk_set_perm(exp->common.blk, blk_perm | BLK_PERM_RESIZE,
-                           blk_shared_perm, NULL);
-        if (ret < 0) {
-            return ret;
-        }
+        ret = blk_set_perm(exp->common.blk, blk_perm | BLK_PERM_RESIZE, blk_shared_perm, NULL);
+        if (ret < 0) { return ret; }
     }
 
-    ret = blk_truncate(exp->common.blk, size, true, prealloc,
-                       truncate_flags, NULL);
+    ret = blk_truncate(exp->common.blk, size, true, prealloc, truncate_flags, NULL);
 
     if (add_resize_perm) {
         /* Must succeed, because we are only giving up the RESIZE permission */
-        ret_check = blk_set_perm(exp->common.blk, blk_perm,
-                                 blk_shared_perm, &error_abort);
+        ret_check = blk_set_perm(exp->common.blk, blk_perm, blk_shared_perm, &error_abort);
         assert(ret_check == 0);
     }
 
@@ -493,17 +449,14 @@ static int fuse_do_truncate(const FuseExport *exp, int64_t size,
  * without allow_other cannot be given a different UID or GID, and
  * they cannot be given non-owner access.
  */
-static void fuse_setattr(fuse_req_t req, fuse_ino_t inode, struct stat *statbuf,
-                         int to_set, struct fuse_file_info *fi)
+static void fuse_setattr(fuse_req_t req, fuse_ino_t inode, struct stat* statbuf, int to_set, struct fuse_file_info* fi)
 {
-    FuseExport *exp = fuse_req_userdata(req);
-    int supported_attrs;
-    int ret;
+    FuseExport* exp = fuse_req_userdata(req);
+    int         supported_attrs;
+    int         ret;
 
     supported_attrs = FUSE_SET_ATTR_SIZE | FUSE_SET_ATTR_MODE;
-    if (exp->allow_other) {
-        supported_attrs |= FUSE_SET_ATTR_UID | FUSE_SET_ATTR_GID;
-    }
+    if (exp->allow_other) { supported_attrs |= FUSE_SET_ATTR_UID | FUSE_SET_ATTR_GID; }
 
     if (to_set & ~supported_attrs) {
         fuse_reply_err(req, ENOTSUP);
@@ -516,17 +469,13 @@ static void fuse_setattr(fuse_req_t req, fuse_ino_t inode, struct stat *statbuf,
          * Without allow_other, non-owners can never access the export, so do
          * not allow setting permissions for them
          */
-        if (!exp->allow_other &&
-            (statbuf->st_mode & (S_IRWXG | S_IRWXO)) != 0)
-        {
+        if (!exp->allow_other && (statbuf->st_mode & (S_IRWXG | S_IRWXO)) != 0) {
             fuse_reply_err(req, EPERM);
             return;
         }
 
         /* +w for read-only exports makes no sense, disallow it */
-        if (!exp->writable &&
-            (statbuf->st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) != 0)
-        {
+        if (!exp->writable && (statbuf->st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) != 0) {
             fuse_reply_err(req, EROFS);
             return;
         }
@@ -550,13 +499,9 @@ static void fuse_setattr(fuse_req_t req, fuse_ino_t inode, struct stat *statbuf,
         exp->st_mode = (statbuf->st_mode & 07777) | S_IFREG;
     }
 
-    if (to_set & FUSE_SET_ATTR_UID) {
-        exp->st_uid = statbuf->st_uid;
-    }
+    if (to_set & FUSE_SET_ATTR_UID) { exp->st_uid = statbuf->st_uid; }
 
-    if (to_set & FUSE_SET_ATTR_GID) {
-        exp->st_gid = statbuf->st_gid;
-    }
+    if (to_set & FUSE_SET_ATTR_GID) { exp->st_gid = statbuf->st_gid; }
 
     fuse_getattr(req, inode, fi);
 }
@@ -564,22 +509,17 @@ static void fuse_setattr(fuse_req_t req, fuse_ino_t inode, struct stat *statbuf,
 /**
  * Let clients open a file (i.e., the exported image).
  */
-static void fuse_open(fuse_req_t req, fuse_ino_t inode,
-                      struct fuse_file_info *fi)
-{
-    fuse_reply_open(req, fi);
-}
+static void fuse_open(fuse_req_t req, fuse_ino_t inode, struct fuse_file_info* fi) { fuse_reply_open(req, fi); }
 
 /**
  * Handle client reads from the exported image.
  */
-static void fuse_read(fuse_req_t req, fuse_ino_t inode,
-                      size_t size, off_t offset, struct fuse_file_info *fi)
+static void fuse_read(fuse_req_t req, fuse_ino_t inode, size_t size, off_t offset, struct fuse_file_info* fi)
 {
-    FuseExport *exp = fuse_req_userdata(req);
-    int64_t length;
-    void *buf;
-    int ret;
+    FuseExport* exp = fuse_req_userdata(req);
+    int64_t     length;
+    void*       buf;
+    int         ret;
 
     /* Limited by max_read, should not happen */
     if (size > FUSE_MAX_BOUNCE_BYTES) {
@@ -597,9 +537,7 @@ static void fuse_read(fuse_req_t req, fuse_ino_t inode,
         return;
     }
 
-    if (offset + size > length) {
-        size = length - offset;
-    }
+    if (offset + size > length) { size = length - offset; }
 
     buf = qemu_try_blockalign(blk_bs(exp->common.blk), size);
     if (!buf) {
@@ -608,9 +546,8 @@ static void fuse_read(fuse_req_t req, fuse_ino_t inode,
     }
 
     ret = blk_pread(exp->common.blk, offset, size, buf, 0);
-    if (ret >= 0) {
-        fuse_reply_buf(req, buf, size);
-    } else {
+    if (ret >= 0) { fuse_reply_buf(req, buf, size); }
+    else {
         fuse_reply_err(req, -ret);
     }
 
@@ -620,12 +557,12 @@ static void fuse_read(fuse_req_t req, fuse_ino_t inode,
 /**
  * Handle client writes to the exported image.
  */
-static void fuse_write(fuse_req_t req, fuse_ino_t inode, const char *buf,
-                       size_t size, off_t offset, struct fuse_file_info *fi)
+static void fuse_write(fuse_req_t req, fuse_ino_t inode, const char* buf, size_t size, off_t offset,
+                       struct fuse_file_info* fi)
 {
-    FuseExport *exp = fuse_req_userdata(req);
-    int64_t length;
-    int ret;
+    FuseExport* exp = fuse_req_userdata(req);
+    int64_t     length;
+    int         ret;
 
     /* Limited by max_write, should not happen */
     if (size > BDRV_REQUEST_MAX_BYTES) {
@@ -655,15 +592,15 @@ static void fuse_write(fuse_req_t req, fuse_ino_t inode, const char *buf,
                 fuse_reply_err(req, -ret);
                 return;
             }
-        } else {
+        }
+        else {
             size = length - offset;
         }
     }
 
     ret = blk_pwrite(exp->common.blk, offset, size, buf, 0);
-    if (ret >= 0) {
-        fuse_reply_write(req, size);
-    } else {
+    if (ret >= 0) { fuse_reply_write(req, size); }
+    else {
         fuse_reply_err(req, -ret);
     }
 }
@@ -671,13 +608,12 @@ static void fuse_write(fuse_req_t req, fuse_ino_t inode, const char *buf,
 /**
  * Let clients perform various fallocate() operations.
  */
-static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode,
-                           off_t offset, off_t length,
-                           struct fuse_file_info *fi)
+static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode, off_t offset, off_t length,
+                           struct fuse_file_info* fi)
 {
-    FuseExport *exp = fuse_req_userdata(req);
-    int64_t blk_len;
-    int ret;
+    FuseExport* exp = fuse_req_userdata(req);
+    int64_t     blk_len;
+    int         ret;
 
     if (!exp->writable) {
         fuse_reply_err(req, EACCES);
@@ -691,9 +627,7 @@ static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode,
     }
 
 #ifdef CONFIG_FALLOCATE_PUNCH_HOLE
-    if (mode & FALLOC_FL_KEEP_SIZE) {
-        length = MIN(length, blk_len - offset);
-    }
+    if (mode & FALLOC_FL_KEEP_SIZE) { length = MIN(length, blk_len - offset); }
 #endif /* CONFIG_FALLOCATE_PUNCH_HOLE */
 
     if (!mode) {
@@ -712,8 +646,7 @@ static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode,
             }
         }
 
-        ret = fuse_do_truncate(exp, offset + length, true,
-                               PREALLOC_MODE_FALLOC);
+        ret = fuse_do_truncate(exp, offset + length, true, PREALLOC_MODE_FALLOC);
     }
 #ifdef CONFIG_FALLOCATE_PUNCH_HOLE
     else if (mode & FALLOC_FL_PUNCH_HOLE) {
@@ -725,8 +658,7 @@ static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode,
         do {
             int size = MIN(length, BDRV_REQUEST_MAX_BYTES);
 
-            ret = blk_pwrite_zeroes(exp->common.blk, offset, size,
-                                    BDRV_REQ_MAY_UNMAP | BDRV_REQ_NO_FALLBACK);
+            ret = blk_pwrite_zeroes(exp->common.blk, offset, size, BDRV_REQ_MAY_UNMAP | BDRV_REQ_NO_FALLBACK);
             if (ret == -ENOTSUP) {
                 /*
                  * fallocate() specifies to return EOPNOTSUPP for unsupported
@@ -737,15 +669,15 @@ static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode,
 
             offset += size;
             length -= size;
-        } while (ret == 0 && length > 0);
+        }
+        while (ret == 0 && length > 0);
     }
 #endif /* CONFIG_FALLOCATE_PUNCH_HOLE */
 #ifdef CONFIG_FALLOCATE_ZERO_RANGE
     else if (mode & FALLOC_FL_ZERO_RANGE) {
         if (!(mode & FALLOC_FL_KEEP_SIZE) && offset + length > blk_len) {
             /* No need for zeroes, we are going to write them ourselves */
-            ret = fuse_do_truncate(exp, offset + length, false,
-                                   PREALLOC_MODE_OFF);
+            ret = fuse_do_truncate(exp, offset + length, false, PREALLOC_MODE_OFF);
             if (ret < 0) {
                 fuse_reply_err(req, -ret);
                 return;
@@ -755,11 +687,11 @@ static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode,
         do {
             int size = MIN(length, BDRV_REQUEST_MAX_BYTES);
 
-            ret = blk_pwrite_zeroes(exp->common.blk,
-                                    offset, size, 0);
+            ret     = blk_pwrite_zeroes(exp->common.blk, offset, size, 0);
             offset += size;
             length -= size;
-        } while (ret == 0 && length > 0);
+        }
+        while (ret == 0 && length > 0);
     }
 #endif /* CONFIG_FALLOCATE_ZERO_RANGE */
     else {
@@ -772,11 +704,10 @@ static void fuse_fallocate(fuse_req_t req, fuse_ino_t inode, int mode,
 /**
  * Let clients fsync the exported image.
  */
-static void fuse_fsync(fuse_req_t req, fuse_ino_t inode, int datasync,
-                       struct fuse_file_info *fi)
+static void fuse_fsync(fuse_req_t req, fuse_ino_t inode, int datasync, struct fuse_file_info* fi)
 {
-    FuseExport *exp = fuse_req_userdata(req);
-    int ret;
+    FuseExport* exp = fuse_req_userdata(req);
+    int         ret;
 
     ret = blk_flush(exp->common.blk);
     fuse_reply_err(req, ret < 0 ? -ret : 0);
@@ -786,20 +717,15 @@ static void fuse_fsync(fuse_req_t req, fuse_ino_t inode, int datasync,
  * Called before an FD to the exported image is closed.  (libfuse
  * notes this to be a way to return last-minute errors.)
  */
-static void fuse_flush(fuse_req_t req, fuse_ino_t inode,
-                        struct fuse_file_info *fi)
-{
-    fuse_fsync(req, inode, 1, fi);
-}
+static void fuse_flush(fuse_req_t req, fuse_ino_t inode, struct fuse_file_info* fi) { fuse_fsync(req, inode, 1, fi); }
 
 #ifdef CONFIG_FUSE_LSEEK
 /**
  * Let clients inquire allocation status.
  */
-static void fuse_lseek(fuse_req_t req, fuse_ino_t inode, off_t offset,
-                       int whence, struct fuse_file_info *fi)
+static void fuse_lseek(fuse_req_t req, fuse_ino_t inode, off_t offset, int whence, struct fuse_file_info* fi)
 {
-    FuseExport *exp = fuse_req_userdata(req);
+    FuseExport* exp = fuse_req_userdata(req);
 
     if (whence != SEEK_HOLE && whence != SEEK_DATA) {
         fuse_reply_err(req, EINVAL);
@@ -808,10 +734,9 @@ static void fuse_lseek(fuse_req_t req, fuse_ino_t inode, off_t offset,
 
     while (true) {
         int64_t pnum;
-        int ret;
+        int     ret;
 
-        ret = bdrv_block_status_above(blk_bs(exp->common.blk), NULL,
-                                      offset, INT64_MAX, &pnum, NULL, NULL);
+        ret = bdrv_block_status_above(blk_bs(exp->common.blk), NULL, offset, INT64_MAX, &pnum, NULL, NULL);
         if (ret < 0) {
             fuse_reply_err(req, -ret);
             return;
@@ -835,9 +760,8 @@ static void fuse_lseek(fuse_req_t req, fuse_ino_t inode, off_t offset,
                 return;
             }
 
-            if (offset > blk_len || whence == SEEK_DATA) {
-                fuse_reply_err(req, ENXIO);
-            } else {
+            if (offset > blk_len || whence == SEEK_DATA) { fuse_reply_err(req, ENXIO); }
+            else {
                 fuse_reply_lseek(req, offset);
             }
             return;
@@ -848,7 +772,8 @@ static void fuse_lseek(fuse_req_t req, fuse_ino_t inode, off_t offset,
                 fuse_reply_lseek(req, offset);
                 return;
             }
-        } else {
+        }
+        else {
             if (whence == SEEK_HOLE) {
                 fuse_reply_lseek(req, offset);
                 return;
@@ -867,25 +792,25 @@ static void fuse_lseek(fuse_req_t req, fuse_ino_t inode, off_t offset,
 #endif
 
 static const struct fuse_lowlevel_ops fuse_ops = {
-    .init       = fuse_init,
-    .lookup     = fuse_lookup,
-    .getattr    = fuse_getattr,
-    .setattr    = fuse_setattr,
-    .open       = fuse_open,
-    .read       = fuse_read,
-    .write      = fuse_write,
-    .fallocate  = fuse_fallocate,
-    .flush      = fuse_flush,
-    .fsync      = fuse_fsync,
+    .init      = fuse_init,
+    .lookup    = fuse_lookup,
+    .getattr   = fuse_getattr,
+    .setattr   = fuse_setattr,
+    .open      = fuse_open,
+    .read      = fuse_read,
+    .write     = fuse_write,
+    .fallocate = fuse_fallocate,
+    .flush     = fuse_flush,
+    .fsync     = fuse_fsync,
 #ifdef CONFIG_FUSE_LSEEK
-    .lseek      = fuse_lseek,
+    .lseek = fuse_lseek,
 #endif
 };
 
 const BlockExportDriver blk_exp_fuse = {
-    .type               = BLOCK_EXPORT_TYPE_FUSE,
-    .instance_size      = sizeof(FuseExport),
-    .create             = fuse_export_create,
-    .delete             = fuse_export_delete,
-    .request_shutdown   = fuse_export_shutdown,
+    .type             = BLOCK_EXPORT_TYPE_FUSE,
+    .instance_size    = sizeof(FuseExport),
+    .create           = fuse_export_create,
+    .delete           = fuse_export_delete,
+    .request_shutdown = fuse_export_shutdown,
 };

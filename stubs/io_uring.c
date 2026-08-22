@@ -11,22 +11,10 @@
 #include "block/aio.h"
 #include "block/raw-aio.h"
 
-void luring_detach_aio_context(LuringState *s, AioContext *old_context)
-{
-    abort();
-}
+void luring_detach_aio_context(LuringState* s, AioContext* old_context) { abort(); }
 
-void luring_attach_aio_context(LuringState *s, AioContext *new_context)
-{
-    abort();
-}
+void luring_attach_aio_context(LuringState* s, AioContext* new_context) { abort(); }
 
-LuringState *luring_init(Error **errp)
-{
-    abort();
-}
+LuringState* luring_init(Error** errp) { abort(); }
 
-void luring_cleanup(LuringState *s)
-{
-    abort();
-}
+void luring_cleanup(LuringState* s) { abort(); }

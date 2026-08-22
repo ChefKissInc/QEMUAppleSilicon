@@ -27,13 +27,12 @@
  * Processed signed long samples from ibuf to obuf.
  * Return number of samples processed.
  */
-void NAME (void *opaque, struct st_sample *ibuf, struct st_sample *obuf,
-           size_t *isamp, size_t *osamp)
+void NAME(void* opaque, struct st_sample* ibuf, struct st_sample* obuf, size_t* isamp, size_t* osamp)
 {
-    struct rate *rate = opaque;
+    struct rate*      rate = opaque;
     struct st_sample *istart, *iend;
     struct st_sample *ostart, *oend;
-    struct st_sample ilast, icur, out;
+    struct st_sample  ilast, icur, out;
 #ifdef FLOAT_MIXENG
     mixeng_real t;
 #else
@@ -41,16 +40,16 @@ void NAME (void *opaque, struct st_sample *ibuf, struct st_sample *obuf,
 #endif
 
     istart = ibuf;
-    iend = ibuf + *isamp;
+    iend   = ibuf + *isamp;
 
     ostart = obuf;
-    oend = obuf + *osamp;
+    oend   = obuf + *osamp;
 
     if (rate->opos_inc == (1ULL + UINT_MAX)) {
         int i, n = *isamp > *osamp ? *osamp : *isamp;
         for (i = 0; i < n; i++) {
-            OP (obuf[i].l, ibuf[i].l);
-            OP (obuf[i].r, ibuf[i].r);
+            OP(obuf[i].l, ibuf[i].l);
+            OP(obuf[i].r, ibuf[i].r);
         }
         *isamp = n;
         *osamp = n;
@@ -73,49 +72,45 @@ void NAME (void *opaque, struct st_sample *ibuf, struct st_sample *obuf,
             rate->ipos++;
 
             /* See if we finished the input buffer yet */
-            if (ibuf >= iend) {
-                goto the_end;
-            }
+            if (ibuf >= iend) { goto the_end; }
         }
 
         /* make sure that the next output sample can be written */
-        if (obuf >= oend) {
-            break;
-        }
+        if (obuf >= oend) { break; }
 
         icur = *ibuf;
 
         /* wrap ipos and opos around long before they overflow */
         if (rate->ipos >= 0x10001) {
-            rate->ipos = 1;
+            rate->ipos  = 1;
             rate->opos &= 0xffffffff;
         }
 
         /* interpolate */
 #ifdef FLOAT_MIXENG
-#ifdef RECIPROCAL
+    #ifdef RECIPROCAL
         t = (rate->opos & UINT_MAX) * (1.f / UINT_MAX);
-#else
-        t = (rate->opos & UINT_MAX) / (mixeng_real) UINT_MAX;
-#endif
+    #else
+        t = (rate->opos & UINT_MAX) / (mixeng_real)UINT_MAX;
+    #endif
         out.l = (ilast.l * (1.0 - t)) + icur.l * t;
         out.r = (ilast.r * (1.0 - t)) + icur.r * t;
 #else
-        t = rate->opos & 0xffffffff;
-        out.l = (ilast.l * ((int64_t) UINT_MAX - t) + icur.l * t) >> 32;
-        out.r = (ilast.r * ((int64_t) UINT_MAX - t) + icur.r * t) >> 32;
+        t     = rate->opos & 0xffffffff;
+        out.l = (ilast.l * ((int64_t)UINT_MAX - t) + icur.l * t) >> 32;
+        out.r = (ilast.r * ((int64_t)UINT_MAX - t) + icur.r * t) >> 32;
 #endif
 
         /* output sample & increment position */
-        OP (obuf->l, out.l);
-        OP (obuf->r, out.r);
-        obuf += 1;
+        OP(obuf->l, out.l);
+        OP(obuf->r, out.r);
+        obuf       += 1;
         rate->opos += rate->opos_inc;
     }
 
 the_end:
-    *isamp = ibuf - istart;
-    *osamp = obuf - ostart;
+    *isamp      = ibuf - istart;
+    *osamp      = obuf - ostart;
     rate->ilast = ilast;
 }
 

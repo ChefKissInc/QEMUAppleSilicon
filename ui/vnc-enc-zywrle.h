@@ -46,165 +46,89 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Tables for Coefficients filtering. */
 #ifndef ZYWRLE_QUANTIZE
 /* Type A:lower bit omitting of EZW style. */
-static const unsigned int zywrle_param[3][3]={
-        {0x0000F000, 0x00000000, 0x00000000},
-        {0x0000C000, 0x00F0F0F0, 0x00000000},
-        {0x0000C000, 0x00C0C0C0, 0x00F0F0F0},
-/*      {0x0000FF00, 0x00000000, 0x00000000},
-        {0x0000FF00, 0x00FFFFFF, 0x00000000},
-        {0x0000FF00, 0x00FFFFFF, 0x00FFFFFF}, */
+static const unsigned int zywrle_param[3][3] = {
+    {0x0000F000, 0x00000000, 0x00000000},
+    {0x0000C000, 0x00F0F0F0, 0x00000000},
+    {0x0000C000, 0x00C0C0C0, 0x00F0F0F0},
+    /*      {0x0000FF00, 0x00000000, 0x00000000},
+            {0x0000FF00, 0x00FFFFFF, 0x00000000},
+            {0x0000FF00, 0x00FFFFFF, 0x00FFFFFF}, */
 };
 #else
 /* Type B:Non liner quantization filter. */
-static const int8_t zywrle_conv[4][256]={
-{       /* bi=5, bo=5 r=0.0:PSNR=24.849 */
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-},
-{       /* bi=5, bo=5 r=2.0:PSNR=74.031 */
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 32,
-        32, 32, 32, 32, 32, 32, 32, 32,
-        32, 32, 32, 32, 32, 32, 32, 32,
-        48, 48, 48, 48, 48, 48, 48, 48,
-        48, 48, 48, 56, 56, 56, 56, 56,
-        56, 56, 56, 56, 64, 64, 64, 64,
-        64, 64, 64, 64, 72, 72, 72, 72,
-        72, 72, 72, 72, 80, 80, 80, 80,
-        80, 80, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 96, 96,
-        96, 96, 96, 104, 104, 104, 104, 104,
-        104, 104, 104, 104, 104, 112, 112, 112,
-        112, 112, 112, 112, 112, 112, 120, 120,
-        120, 120, 120, 120, 120, 120, 120, 120,
-        0, -120, -120, -120, -120, -120, -120, -120,
-        -120, -120, -120, -112, -112, -112, -112, -112,
-        -112, -112, -112, -112, -104, -104, -104, -104,
-        -104, -104, -104, -104, -104, -104, -96, -96,
-        -96, -96, -96, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -80,
-        -80, -80, -80, -80, -80, -72, -72, -72,
-        -72, -72, -72, -72, -72, -64, -64, -64,
-        -64, -64, -64, -64, -64, -56, -56, -56,
-        -56, -56, -56, -56, -56, -56, -48, -48,
-        -48, -48, -48, -48, -48, -48, -48, -48,
-        -48, -32, -32, -32, -32, -32, -32, -32,
-        -32, -32, -32, -32, -32, -32, -32, -32,
-        -32, -32, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-},
-{       /* bi=5, bo=4 r=2.0:PSNR=64.441 */
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        48, 48, 48, 48, 48, 48, 48, 48,
-        48, 48, 48, 48, 48, 48, 48, 48,
-        48, 48, 48, 48, 48, 48, 48, 48,
-        64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64,
-        80, 80, 80, 80, 80, 80, 80, 80,
-        80, 80, 80, 80, 80, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        104, 104, 104, 104, 104, 104, 104, 104,
-        104, 104, 104, 112, 112, 112, 112, 112,
-        112, 112, 112, 112, 120, 120, 120, 120,
-        120, 120, 120, 120, 120, 120, 120, 120,
-        0, -120, -120, -120, -120, -120, -120, -120,
-        -120, -120, -120, -120, -120, -112, -112, -112,
-        -112, -112, -112, -112, -112, -112, -104, -104,
-        -104, -104, -104, -104, -104, -104, -104, -104,
-        -104, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -80, -80, -80, -80,
-        -80, -80, -80, -80, -80, -80, -80, -80,
-        -80, -64, -64, -64, -64, -64, -64, -64,
-        -64, -64, -64, -64, -64, -64, -64, -64,
-        -64, -48, -48, -48, -48, -48, -48, -48,
-        -48, -48, -48, -48, -48, -48, -48, -48,
-        -48, -48, -48, -48, -48, -48, -48, -48,
-        -48, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-},
-{       /* bi=5, bo=2 r=2.0:PSNR=43.175 */
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        88, 88, 88, 88, 88, 88, 88, 88,
-        0, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -88,
-        -88, -88, -88, -88, -88, -88, -88, -88,
-        -88, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-}
-};
+static const int8_t zywrle_conv[4][256] = {
+    {
+        /* bi=5, bo=5 r=0.0:PSNR=24.849 */
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    },
+    {
+        /* bi=5, bo=5 r=2.0:PSNR=74.031 */
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+        0,    0,    0,    0,    0,    32,   32,   32,   32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+        32,   32,   32,   32,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   56,   56,   56,
+        56,   56,   56,   56,   56,   56,   64,   64,   64,   64,   64,   64,   64,   64,   72,   72,   72,   72,
+        72,   72,   72,   72,   80,   80,   80,   80,   80,   80,   88,   88,   88,   88,   88,   88,   88,   88,
+        88,   88,   88,   88,   96,   96,   96,   96,   96,   104,  104,  104,  104,  104,  104,  104,  104,  104,
+        104,  112,  112,  112,  112,  112,  112,  112,  112,  112,  120,  120,  120,  120,  120,  120,  120,  120,
+        120,  120,  0,    -120, -120, -120, -120, -120, -120, -120, -120, -120, -120, -112, -112, -112, -112, -112,
+        -112, -112, -112, -112, -104, -104, -104, -104, -104, -104, -104, -104, -104, -104, -96,  -96,  -96,  -96,
+        -96,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -80,  -80,  -80,  -80,  -80,
+        -80,  -72,  -72,  -72,  -72,  -72,  -72,  -72,  -72,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -56,
+        -56,  -56,  -56,  -56,  -56,  -56,  -56,  -56,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,
+        -48,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,  -32,
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+        0,    0,    0,    0,
+    },
+    {
+        /* bi=5, bo=4 r=2.0:PSNR=64.441 */
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    48,   48,   48,   48,
+        48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,   48,
+        48,   48,   64,   64,   64,   64,   64,   64,   64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
+        80,   80,   80,   80,   80,   80,   80,   80,   80,   80,   80,   80,   80,   88,   88,   88,   88,   88,
+        88,   88,   88,   88,   88,   88,   104,  104,  104,  104,  104,  104,  104,  104,  104,  104,  104,  112,
+        112,  112,  112,  112,  112,  112,  112,  112,  120,  120,  120,  120,  120,  120,  120,  120,  120,  120,
+        120,  120,  0,    -120, -120, -120, -120, -120, -120, -120, -120, -120, -120, -120, -120, -112, -112, -112,
+        -112, -112, -112, -112, -112, -112, -104, -104, -104, -104, -104, -104, -104, -104, -104, -104, -104, -88,
+        -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -88,  -80,  -80,  -80,  -80,  -80,  -80,  -80,  -80,
+        -80,  -80,  -80,  -80,  -80,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -64,  -64,
+        -64,  -64,  -64,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,
+        -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  -48,  0,    0,    0,    0,    0,    0,    0,    0,    0,
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+        0,    0,    0,    0,
+    },
+    {
+        /* bi=5, bo=2 r=2.0:PSNR=43.175 */
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   88,  88,
+        88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,
+        88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,
+        88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  0,   -88, -88, -88,
+        -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88,
+        -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88,
+        -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, -88, 0,   0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    }};
 
-static const int8_t *zywrle_param[3][3][3]={
-        {{zywrle_conv[0], zywrle_conv[2], zywrle_conv[0]},
-         {zywrle_conv[0], zywrle_conv[0], zywrle_conv[0]},
-         {zywrle_conv[0], zywrle_conv[0], zywrle_conv[0]}},
-        {{zywrle_conv[0], zywrle_conv[3], zywrle_conv[0]},
-         {zywrle_conv[1], zywrle_conv[1], zywrle_conv[1]},
-         {zywrle_conv[0], zywrle_conv[0], zywrle_conv[0]}},
-        {{zywrle_conv[0], zywrle_conv[3], zywrle_conv[0]},
-         {zywrle_conv[2], zywrle_conv[2], zywrle_conv[2]},
-         {zywrle_conv[1], zywrle_conv[1], zywrle_conv[1]}},
+static const int8_t* zywrle_param[3][3][3] = {
+    {{zywrle_conv[0], zywrle_conv[2], zywrle_conv[0]},
+     {zywrle_conv[0], zywrle_conv[0], zywrle_conv[0]},
+     {zywrle_conv[0], zywrle_conv[0], zywrle_conv[0]}},
+    {{zywrle_conv[0], zywrle_conv[3], zywrle_conv[0]},
+     {zywrle_conv[1], zywrle_conv[1], zywrle_conv[1]},
+     {zywrle_conv[0], zywrle_conv[0], zywrle_conv[0]}},
+    {{zywrle_conv[0], zywrle_conv[3], zywrle_conv[0]},
+     {zywrle_conv[2], zywrle_conv[2], zywrle_conv[2]},
+     {zywrle_conv[1], zywrle_conv[1], zywrle_conv[1]}},
 };
 #endif
 
@@ -213,56 +137,62 @@ static const int8_t *zywrle_param[3][3][3]={
 #define ZYWRLE_UVMASK15 0xFFFFFFF8
 #define ZYWRLE_LOAD_PIXEL15(src, r, g, b)                               \
     do {                                                                \
-        r = (((uint8_t*)src)[S_1]<< 1)& 0xF8;                           \
-        g = (((uint8_t*)src)[S_1]<< 6) | (((uint8_t*)src)[S_0]>> 2);    \
+        r  = (((uint8_t*)src)[S_1] << 1) & 0xF8;                        \
+        g  = (((uint8_t*)src)[S_1] << 6) | (((uint8_t*)src)[S_0] >> 2); \
         g &= 0xF8;                                                      \
-        b =  (((uint8_t*)src)[S_0]<< 3)& 0xF8;                          \
-    } while (0)
+        b  = (((uint8_t*)src)[S_0] << 3) & 0xF8;                        \
+    }                                                                   \
+    while (0)
 
-#define ZYWRLE_SAVE_PIXEL15(dst, r, g, b)                               \
-    do {                                                                \
-        r &= 0xF8;                                                      \
-        g &= 0xF8;                                                      \
-        b &= 0xF8;                                                      \
-        ((uint8_t*)dst)[S_1] = (uint8_t)((r >> 1)|(g >> 6));            \
-        ((uint8_t*)dst)[S_0] = (uint8_t)(((b >> 3)|(g << 2))& 0xFF);    \
-    } while (0)
+#define ZYWRLE_SAVE_PIXEL15(dst, r, g, b)                                \
+    do {                                                                 \
+        r                    &= 0xF8;                                    \
+        g                    &= 0xF8;                                    \
+        b                    &= 0xF8;                                    \
+        ((uint8_t*)dst)[S_1]  = (uint8_t)((r >> 1) | (g >> 6));          \
+        ((uint8_t*)dst)[S_0]  = (uint8_t)(((b >> 3) | (g << 2)) & 0xFF); \
+    }                                                                    \
+    while (0)
 
 #define ZYWRLE_YMASK16  0xFFFFFFFC
 #define ZYWRLE_UVMASK16 0xFFFFFFF8
 #define ZYWRLE_LOAD_PIXEL16(src, r, g, b)                               \
     do {                                                                \
-        r = ((uint8_t*)src)[S_1] & 0xF8;                                \
-        g = (((uint8_t*)src)[S_1]<< 5) | (((uint8_t*)src)[S_0] >> 3);   \
+        r  = ((uint8_t*)src)[S_1] & 0xF8;                               \
+        g  = (((uint8_t*)src)[S_1] << 5) | (((uint8_t*)src)[S_0] >> 3); \
         g &= 0xFC;                                                      \
-        b = (((uint8_t*)src)[S_0]<< 3) & 0xF8;                          \
-    } while (0)
+        b  = (((uint8_t*)src)[S_0] << 3) & 0xF8;                        \
+    }                                                                   \
+    while (0)
 
-#define ZYWRLE_SAVE_PIXEL16(dst, r, g,b)                                \
-    do {                                                                \
-        r &= 0xF8;                                                      \
-        g &= 0xFC;                                                      \
-        b &= 0xF8;                                                      \
-        ((uint8_t*)dst)[S_1] = (uint8_t)(r | (g >> 5));                 \
-        ((uint8_t*)dst)[S_0] = (uint8_t)(((b >> 3)|(g << 3)) & 0xFF);   \
-    } while (0)
+#define ZYWRLE_SAVE_PIXEL16(dst, r, g, b)                                \
+    do {                                                                 \
+        r                    &= 0xF8;                                    \
+        g                    &= 0xFC;                                    \
+        b                    &= 0xF8;                                    \
+        ((uint8_t*)dst)[S_1]  = (uint8_t)(r | (g >> 5));                 \
+        ((uint8_t*)dst)[S_0]  = (uint8_t)(((b >> 3) | (g << 3)) & 0xFF); \
+    }                                                                    \
+    while (0)
 
 #define ZYWRLE_YMASK32  0xFFFFFFFF
 #define ZYWRLE_UVMASK32 0xFFFFFFFF
-#define ZYWRLE_LOAD_PIXEL32(src, r, g, b)     \
-    do {                                      \
-        r = ((uint8_t*)src)[L_2];             \
-        g = ((uint8_t*)src)[L_1];             \
-        b = ((uint8_t*)src)[L_0];             \
-    } while (0)
-#define ZYWRLE_SAVE_PIXEL32(dst, r, g, b)             \
-    do {                                              \
-        ((uint8_t*)dst)[L_2] = (uint8_t)r;            \
-        ((uint8_t*)dst)[L_1] = (uint8_t)g;            \
-        ((uint8_t*)dst)[L_0] = (uint8_t)b;            \
-    } while (0)
+#define ZYWRLE_LOAD_PIXEL32(src, r, g, b) \
+    do {                                  \
+        r = ((uint8_t*)src)[L_2];         \
+        g = ((uint8_t*)src)[L_1];         \
+        b = ((uint8_t*)src)[L_0];         \
+    }                                     \
+    while (0)
+#define ZYWRLE_SAVE_PIXEL32(dst, r, g, b)  \
+    do {                                   \
+        ((uint8_t*)dst)[L_2] = (uint8_t)r; \
+        ((uint8_t*)dst)[L_1] = (uint8_t)g; \
+        ((uint8_t*)dst)[L_0] = (uint8_t)b; \
+    }                                      \
+    while (0)
 
-static inline void harr(int8_t *px0, int8_t *px1)
+static inline void harr(int8_t* px0, int8_t* px1)
 {
     /* Piecewise-Linear Harr(PLHarr) */
     int x0 = (int)*px0, x1 = (int)*px1;
@@ -273,14 +203,15 @@ static inline void harr(int8_t *px0, int8_t *px1)
         x1 += x0;
         if (((x1 ^ orgx1) & 0x80) == 0) {
             /* |x1| > |x0| */
-            x0 -= x1;   /* H = -B */
+            x0 -= x1; /* H = -B */
         }
-    } else {
+    }
+    else {
         /* same sign */
         x0 -= x1;
         if (((x0 ^ orgx0) & 0x80) == 0) {
             /* |x0| > |x1| */
-            x1 += x0;   /* L = A */
+            x1 += x0; /* L = A */
         }
     }
     *px0 = (int8_t)x1;
@@ -308,17 +239,17 @@ static inline void harr(int8_t *px0, int8_t *px1)
  Of cause, the result of both method is quite same
  because it's only difference that coefficient position.
 */
-static inline void wavelet_level(int *data, int size, int l, int skip_pixel)
+static inline void wavelet_level(int* data, int size, int l, int skip_pixel)
 {
-    int s, ofs;
-    int8_t *px0;
-    int8_t *end;
+    int     s, ofs;
+    int8_t* px0;
+    int8_t* end;
 
-    px0 = (int8_t*)data;
-    s = (8 << l) * skip_pixel;
-    end = px0 + (size >> (l + 1)) * s;
-    s -= 2;
-    ofs = (4 << l) * skip_pixel;
+    px0  = (int8_t*)data;
+    s    = (8 << l) * skip_pixel;
+    end  = px0 + (size >> (l + 1)) * s;
+    s   -= 2;
+    ofs  = (4 << l) * skip_pixel;
 
     while (px0 < end) {
         harr(px0, px0 + ofs);
@@ -332,25 +263,20 @@ static inline void wavelet_level(int *data, int size, int l, int skip_pixel)
 
 #ifndef ZYWRLE_QUANTIZE
 /* Type A:lower bit omitting of EZW style. */
-static inline void filter_wavelet_square(int *buf, int width, int height,
-                                         int level, int l)
+static inline void filter_wavelet_square(int* buf, int width, int height, int level, int l)
 {
-    int r, s;
-    int x, y;
-    int *h;
-    const unsigned int *m;
+    int                 r, s;
+    int                 x, y;
+    int*                h;
+    const unsigned int* m;
 
     m = &(zywrle_param[level - 1][l]);
     s = 2 << l;
 
     for (r = 1; r < 4; r++) {
         h = buf;
-        if (r & 0x01) {
-            h += s >> 1;
-        }
-        if (r & 0x02) {
-            h += (s >> 1) * width;
-        }
+        if (r & 0x01) { h += s >> 1; }
+        if (r & 0x02) { h += (s >> 1) * width; }
         for (y = 0; y < height / s; y++) {
             for (x = 0; x < width / s; x++) {
                 /*
@@ -360,19 +286,13 @@ static inline void filter_wavelet_square(int *buf, int width, int height,
                   '&' operator isn't 'round' but is 'floor'.
                   So, we must offset when h[x] is negative.
                 */
-                if (((int8_t*)h)[0] & 0x80) {
-                    ((int8_t*)h)[0] += ~((int8_t*)m)[0];
-                }
-                if (((int8_t*)h)[1] & 0x80) {
-                    ((int8_t*)h)[1] += ~((int8_t*)m)[1];
-                }
-                if (((int8_t*)h)[2] & 0x80) {
-                    ((int8_t*)h)[2] += ~((int8_t*)m)[2];
-                }
+                if (((int8_t*)h)[0] & 0x80) { ((int8_t*)h)[0] += ~((int8_t*)m)[0]; }
+                if (((int8_t*)h)[1] & 0x80) { ((int8_t*)h)[1] += ~((int8_t*)m)[1]; }
+                if (((int8_t*)h)[2] & 0x80) { ((int8_t*)h)[2] += ~((int8_t*)m)[2]; }
                 *h &= *m;
-                h += s;
+                h  += s;
             }
-            h += (s-1)*width;
+            h += (s - 1) * width;
         }
     }
 }
@@ -408,31 +328,26 @@ static inline void filter_wavelet_square(int *buf, int width, int height,
  the filtering procedure in future.
  Client only decodes coefficients given by encoder.
 */
-static inline void filter_wavelet_square(int *buf, int width, int height,
-                                         int level, int l)
+static inline void filter_wavelet_square(int* buf, int width, int height, int level, int l)
 {
-    int r, s;
-    int x, y;
-    int *h;
-    const int8_t **m;
+    int            r, s;
+    int            x, y;
+    int*           h;
+    const int8_t** m;
 
     m = zywrle_param[level - 1][l];
     s = 2 << l;
 
     for (r = 1; r < 4; r++) {
         h = buf;
-        if (r & 0x01) {
-            h += s >> 1;
-        }
-        if (r & 0x02) {
-            h += (s >> 1) * width;
-        }
+        if (r & 0x01) { h += s >> 1; }
+        if (r & 0x02) { h += (s >> 1) * width; }
         for (y = 0; y < height / s; y++) {
             for (x = 0; x < width / s; x++) {
-                ((int8_t*)h)[0] = m[0][((uint8_t*)h)[0]];
-                ((int8_t*)h)[1] = m[1][((uint8_t*)h)[1]];
-                ((int8_t*)h)[2] = m[2][((uint8_t*)h)[2]];
-                h += s;
+                ((int8_t*)h)[0]  = m[0][((uint8_t*)h)[0]];
+                ((int8_t*)h)[1]  = m[1][((uint8_t*)h)[1]];
+                ((int8_t*)h)[2]  = m[2][((uint8_t*)h)[2]];
+                h               += s;
             }
             h += (s - 1) * width;
         }
@@ -440,47 +355,48 @@ static inline void filter_wavelet_square(int *buf, int width, int height,
 }
 #endif
 
-static inline void wavelet(int *buf, int width, int height, int level)
+static inline void wavelet(int* buf, int width, int height, int level)
 {
-        int l, s;
-        int *top;
-        int *end;
+    int  l, s;
+    int* top;
+    int* end;
 
-        for (l = 0; l < level; l++) {
-                top = buf;
-                end = buf + height * width;
-                s = width << l;
-                while (top < end) {
-                        wavelet_level(top, width, l, 1);
-                        top += s;
-                }
-                top = buf;
-                end = buf + width;
-                s = 1<<l;
-                while (top < end) {
-                        wavelet_level(top, height, l, width);
-                        top += s;
-                }
-                filter_wavelet_square(buf, width, height, level, l);
+    for (l = 0; l < level; l++) {
+        top = buf;
+        end = buf + height * width;
+        s   = width << l;
+        while (top < end) {
+            wavelet_level(top, width, l, 1);
+            top += s;
         }
+        top = buf;
+        end = buf + width;
+        s   = 1 << l;
+        while (top < end) {
+            wavelet_level(top, height, l, width);
+            top += s;
+        }
+        filter_wavelet_square(buf, width, height, level, l);
+    }
 }
-
 
 /* Load/Save coefficients stuffs.
  Coefficients manages as 24 bits little-endian pixel. */
-#define ZYWRLE_LOAD_COEFF(src, r, g, b)         \
-    do {                                        \
-        r = ((int8_t*)src)[2];                  \
-        g = ((int8_t*)src)[1];                  \
-        b = ((int8_t*)src)[0];                  \
-    } while (0)
+#define ZYWRLE_LOAD_COEFF(src, r, g, b) \
+    do {                                \
+        r = ((int8_t*)src)[2];          \
+        g = ((int8_t*)src)[1];          \
+        b = ((int8_t*)src)[0];          \
+    }                                   \
+    while (0)
 
-#define ZYWRLE_SAVE_COEFF(dst, r, g, b)       \
-    do {                                      \
-        ((int8_t*)dst)[2] = (int8_t)r;        \
-        ((int8_t*)dst)[1] = (int8_t)g;        \
-        ((int8_t*)dst)[0] = (int8_t)b;        \
-    } while (0)
+#define ZYWRLE_SAVE_COEFF(dst, r, g, b) \
+    do {                                \
+        ((int8_t*)dst)[2] = (int8_t)r;  \
+        ((int8_t*)dst)[1] = (int8_t)g;  \
+        ((int8_t*)dst)[0] = (int8_t)b;  \
+    }                                   \
+    while (0)
 
 /*
   RGB <=> YUV conversion stuffs.
@@ -499,28 +415,22 @@ static inline void wavelet(int *buf, int width, int height, int level)
 /* RCT is N-bit RGB to N-bit Y and N+1-bit UV.
    For make Same N-bit, UV is lossy.
    More exact PLHarr, we reduce to odd range(-127<=x<=127). */
-#define ZYWRLE_RGBYUV_(r, g, b, y, u, v, ymask, uvmask)          \
-    do {                                                         \
-        y = (r + (g << 1) + b) >> 2;                             \
-        u =  b - g;                                              \
-        v =  r - g;                                              \
-        y -= 128;                                                \
-        u >>= 1;                                                 \
-        v >>= 1;                                                 \
-        y &= ymask;                                              \
-        u &= uvmask;                                             \
-        v &= uvmask;                                             \
-        if (y == -128) {                                         \
-            y += (0xFFFFFFFF - ymask + 1);                       \
-        }                                                        \
-        if (u == -128) {                                         \
-            u += (0xFFFFFFFF - uvmask + 1);                      \
-        }                                                        \
-        if (v == -128) {                                         \
-            v += (0xFFFFFFFF - uvmask + 1);                      \
-        }                                                        \
-    } while (0)
-
+#define ZYWRLE_RGBYUV_(r, g, b, y, u, v, ymask, uvmask)    \
+    do {                                                   \
+        y   = (r + (g << 1) + b) >> 2;                     \
+        u   = b - g;                                       \
+        v   = r - g;                                       \
+        y  -= 128;                                         \
+        u >>= 1;                                           \
+        v >>= 1;                                           \
+        y  &= ymask;                                       \
+        u  &= uvmask;                                      \
+        v  &= uvmask;                                      \
+        if (y == -128) { y += (0xFFFFFFFF - ymask + 1); }  \
+        if (u == -128) { u += (0xFFFFFFFF - uvmask + 1); } \
+        if (v == -128) { v += (0xFFFFFFFF - uvmask + 1); } \
+    }                                                      \
+    while (0)
 
 /*
  coefficient packing/unpacking stuffs.
@@ -553,103 +463,101 @@ static inline void wavelet(int *buf, int width, int height, int level)
    |      Hxy    |
    +------+------+
 */
-#define ZYWRLE_INC_PTR(data)                         \
-    do {                                             \
-        data++;                                      \
-        if( data - p >= (w + uw) ) {                 \
-            data += scanline-(w + uw);               \
-            p = data;                                \
-        }                                            \
-    } while (0)
+#define ZYWRLE_INC_PTR(data)             \
+    do {                                 \
+        data++;                          \
+        if (data - p >= (w + uw)) {      \
+            data += scanline - (w + uw); \
+            p     = data;                \
+        }                                \
+    }                                    \
+    while (0)
 
 #define ZYWRLE_TRANSFER_COEFF(buf, data, t, w, h, scanline, level, TRANS) \
-    do {                                                                \
-        ph = buf;                                                       \
-        s = 2 << level;                                                 \
-        if (t & 0x01) {                                                 \
-            ph += s >> 1;                                               \
-        }                                                               \
-        if (t & 0x02) {                                                 \
-            ph += (s >> 1) * w;                                         \
-        }                                                               \
-        end = ph + h * w;                                               \
-        while (ph < end) {                                              \
-            line = ph + w;                                              \
-            while (ph < line) {                                         \
-                TRANS                                                   \
-                    ZYWRLE_INC_PTR(data);                               \
-                ph += s;                                                \
-            }                                                           \
-            ph += (s - 1) * w;                                          \
-        }                                                               \
-    } while (0)
+    do {                                                                  \
+        ph = buf;                                                         \
+        s  = 2 << level;                                                  \
+        if (t & 0x01) { ph += s >> 1; }                                   \
+        if (t & 0x02) { ph += (s >> 1) * w; }                             \
+        end = ph + h * w;                                                 \
+        while (ph < end) {                                                \
+            line = ph + w;                                                \
+            while (ph < line) {                                           \
+                TRANS                                                     \
+                ZYWRLE_INC_PTR(data);                                     \
+                ph += s;                                                  \
+            }                                                             \
+            ph += (s - 1) * w;                                            \
+        }                                                                 \
+    }                                                                     \
+    while (0)
 
-#define ZYWRLE_PACK_COEFF(buf, data, t, width, height, scanline, level) \
-    ZYWRLE_TRANSFER_COEFF(buf, data, t, width, height, scanline, level, \
-                          ZYWRLE_LOAD_COEFF(ph, r, g, b);               \
+#define ZYWRLE_PACK_COEFF(buf, data, t, width, height, scanline, level)                                 \
+    ZYWRLE_TRANSFER_COEFF(buf, data, t, width, height, scanline, level, ZYWRLE_LOAD_COEFF(ph, r, g, b); \
                           ZYWRLE_SAVE_PIXEL(data, r, g, b);)
 
-#define ZYWRLE_UNPACK_COEFF(buf, data, t, width, height, scanline, level) \
-    ZYWRLE_TRANSFER_COEFF(buf, data, t, width, height, scanline, level, \
-                          ZYWRLE_LOAD_PIXEL(data, r, g, b);             \
+#define ZYWRLE_UNPACK_COEFF(buf, data, t, width, height, scanline, level)                                 \
+    ZYWRLE_TRANSFER_COEFF(buf, data, t, width, height, scanline, level, ZYWRLE_LOAD_PIXEL(data, r, g, b); \
                           ZYWRLE_SAVE_COEFF(ph, r, g, b);)
 
-#define ZYWRLE_SAVE_UNALIGN(data, TRANS)                     \
-    do {                                                     \
-        top = buf + w * h;                                   \
-        end = buf + (w + uw) * (h + uh);                     \
-        while (top < end) {                                  \
-            TRANS                                            \
-                ZYWRLE_INC_PTR(data);                        \
-                top++;                                       \
-        }                                                    \
-    } while (0)
+#define ZYWRLE_SAVE_UNALIGN(data, TRANS) \
+    do {                                 \
+        top = buf + w * h;               \
+        end = buf + (w + uw) * (h + uh); \
+        while (top < end) {              \
+            TRANS                        \
+            ZYWRLE_INC_PTR(data);        \
+            top++;                       \
+        }                                \
+    }                                    \
+    while (0)
 
-#define ZYWRLE_LOAD_UNALIGN(data,TRANS)                                 \
-    do {                                                                \
-        top = buf + w * h;                                              \
-        if (uw) {                                                       \
-            p = data + w;                                               \
-            end = (int*)(p + h * scanline);                             \
-            while (p < (ZRLE_PIXEL*)end) {                              \
-                line = (int*)(p + uw);                                  \
-                while (p < (ZRLE_PIXEL*)line) {                         \
-                    TRANS                                               \
-                        p++;                                            \
-                    top++;                                              \
-                }                                                       \
-                p += scanline - uw;                                     \
-            }                                                           \
-        }                                                               \
-        if (uh) {                                                       \
-            p = data + h * scanline;                                    \
-            end = (int*)(p + uh * scanline);                            \
-            while (p < (ZRLE_PIXEL*)end) {                              \
-                line = (int*)(p + w);                                   \
-                while (p < (ZRLE_PIXEL*)line) {                         \
-                    TRANS                                               \
-                        p++;                                            \
-                    top++;                                              \
-                }                                                       \
-                p += scanline - w;                                      \
-            }                                                           \
-        }                                                               \
-        if (uw && uh) {                                                 \
-            p= data + w + h * scanline;                                 \
-            end = (int*)(p + uh * scanline);                            \
-            while (p < (ZRLE_PIXEL*)end) {                              \
-                line = (int*)(p + uw);                                  \
-                while (p < (ZRLE_PIXEL*)line) {                         \
-                    TRANS                                               \
-                        p++;                                            \
-                    top++;                                              \
-                }                                                       \
-                p += scanline-uw;                                       \
-            }                                                           \
-        }                                                               \
-    } while (0)
+#define ZYWRLE_LOAD_UNALIGN(data, TRANS)        \
+    do {                                        \
+        top = buf + w * h;                      \
+        if (uw) {                               \
+            p   = data + w;                     \
+            end = (int*)(p + h * scanline);     \
+            while (p < (ZRLE_PIXEL*)end) {      \
+                line = (int*)(p + uw);          \
+                while (p < (ZRLE_PIXEL*)line) { \
+                    TRANS                       \
+                    p++;                        \
+                    top++;                      \
+                }                               \
+                p += scanline - uw;             \
+            }                                   \
+        }                                       \
+        if (uh) {                               \
+            p   = data + h * scanline;          \
+            end = (int*)(p + uh * scanline);    \
+            while (p < (ZRLE_PIXEL*)end) {      \
+                line = (int*)(p + w);           \
+                while (p < (ZRLE_PIXEL*)line) { \
+                    TRANS                       \
+                    p++;                        \
+                    top++;                      \
+                }                               \
+                p += scanline - w;              \
+            }                                   \
+        }                                       \
+        if (uw && uh) {                         \
+            p   = data + w + h * scanline;      \
+            end = (int*)(p + uh * scanline);    \
+            while (p < (ZRLE_PIXEL*)end) {      \
+                line = (int*)(p + uw);          \
+                while (p < (ZRLE_PIXEL*)line) { \
+                    TRANS                       \
+                    p++;                        \
+                    top++;                      \
+                }                               \
+                p += scanline - uw;             \
+            }                                   \
+        }                                       \
+    }                                           \
+    while (0)
 
-static inline void zywrle_calc_size(int *w, int *h, int level)
+static inline void zywrle_calc_size(int* w, int* h, int level)
 {
     *w &= ~((1 << level) - 1);
     *h &= ~((1 << level) - 1);

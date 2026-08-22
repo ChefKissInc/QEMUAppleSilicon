@@ -24,7 +24,8 @@
 #include "block/block.h"
 
 /* Callbacks for block device models */
-typedef struct BlockDevOps {
+typedef struct BlockDevOps
+{
 
     /*
      * Global state (GS) API. These functions run under the BQL.
@@ -40,7 +41,7 @@ typedef struct BlockDevOps {
      * changes.  Sure would be useful if it did.
      * Device models with removable media must implement this callback.
      */
-    void (*change_media_cb)(void *opaque, bool load, Error **errp);
+    void (*change_media_cb)(void* opaque, bool load, Error** errp);
     /*
      * Runs when an eject request is issued from the monitor, the tray
      * is closed, and the medium is locked.
@@ -49,26 +50,26 @@ typedef struct BlockDevOps {
      * want to implement the callback and unlock the tray when "force" is
      * true, even if they do not support eject requests.
      */
-    void (*eject_request_cb)(void *opaque, bool force);
+    void (*eject_request_cb)(void* opaque, bool force);
 
     /*
      * Is the virtual medium locked into the device?
      * Device models implement this only when device has such a lock.
      */
-    bool (*is_medium_locked)(void *opaque);
+    bool (*is_medium_locked)(void* opaque);
 
     /*
      * Runs when the backend receives a drain request.
      */
-    void (*drained_begin)(void *opaque);
+    void (*drained_begin)(void* opaque);
     /*
      * Runs when the backend's last drain request ends.
      */
-    void (*drained_end)(void *opaque);
+    void (*drained_end)(void* opaque);
     /*
      * Is the device still busy?
      */
-    bool (*drained_poll)(void *opaque);
+    bool (*drained_poll)(void* opaque);
 
     /*
      * I/O API functions. These functions are thread-safe.
@@ -81,10 +82,10 @@ typedef struct BlockDevOps {
      * Is the virtual tray open?
      * Device models implement this only when the device has a tray.
      */
-    bool (*is_tray_open)(void *opaque);
+    bool (*is_tray_open)(void* opaque);
 
     /*
      * Runs when the size changed (e.g. monitor command block_resize)
      */
-    void (*resize_cb)(void *opaque);
+    void (*resize_cb)(void* opaque);
 } BlockDevOps;

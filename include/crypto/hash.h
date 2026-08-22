@@ -35,10 +35,11 @@
 /* See also "QCryptoHashAlgo" defined in qapi/crypto.json */
 
 typedef struct QCryptoHash QCryptoHash;
-struct QCryptoHash {
+struct QCryptoHash
+{
     QCryptoHashAlgo alg;
-    void *opaque;
-    void *driver;
+    void*           opaque;
+    void*           driver;
 };
 
 /**
@@ -51,7 +52,6 @@ struct QCryptoHash {
  * Returns: true if the algorithm is supported, false otherwise
  */
 gboolean qcrypto_hash_supports(QCryptoHashAlgo alg);
-
 
 /**
  * qcrypto_hash_digest_len:
@@ -88,12 +88,8 @@ size_t qcrypto_hash_digest_len(QCryptoHashAlgo alg);
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_bytesv(QCryptoHashAlgo alg,
-                        const struct iovec *iov,
-                        size_t niov,
-                        uint8_t **result,
-                        size_t *resultlen,
-                        Error **errp);
+int qcrypto_hash_bytesv(QCryptoHashAlgo alg, const struct iovec* iov, size_t niov, uint8_t** result, size_t* resultlen,
+                        Error** errp);
 
 /**
  * qcrypto_hash_bytes:
@@ -120,12 +116,8 @@ int qcrypto_hash_bytesv(QCryptoHashAlgo alg,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_bytes(QCryptoHashAlgo alg,
-                       const char *buf,
-                       size_t len,
-                       uint8_t **result,
-                       size_t *resultlen,
-                       Error **errp);
+int qcrypto_hash_bytes(QCryptoHashAlgo alg, const char* buf, size_t len, uint8_t** result, size_t* resultlen,
+                       Error** errp);
 
 /**
  * qcrypto_hash_digestv:
@@ -144,11 +136,7 @@ int qcrypto_hash_bytes(QCryptoHashAlgo alg,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_digestv(QCryptoHashAlgo alg,
-                         const struct iovec *iov,
-                         size_t niov,
-                         char **digest,
-                         Error **errp);
+int qcrypto_hash_digestv(QCryptoHashAlgo alg, const struct iovec* iov, size_t niov, char** digest, Error** errp);
 
 /**
  * qcrypto_hash_updatev:
@@ -162,10 +150,7 @@ int qcrypto_hash_digestv(QCryptoHashAlgo alg,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_updatev(QCryptoHash *hash,
-                         const struct iovec *iov,
-                         size_t niov,
-                         Error **errp);
+int qcrypto_hash_updatev(QCryptoHash* hash, const struct iovec* iov, size_t niov, Error** errp);
 /**
  * qcrypto_hash_update:
  * @hash: hash object from qcrypto_hash_new
@@ -178,10 +163,7 @@ int qcrypto_hash_updatev(QCryptoHash *hash,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_update(QCryptoHash *hash,
-                        const char *buf,
-                        size_t len,
-                        Error **errp);
+int qcrypto_hash_update(QCryptoHash* hash, const char* buf, size_t len, Error** errp);
 
 /**
  * qcrypto_hash_finalize_digest:
@@ -198,9 +180,7 @@ int qcrypto_hash_update(QCryptoHash *hash,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_finalize_digest(QCryptoHash *hash,
-                                 char **digest,
-                                 Error **errp);
+int qcrypto_hash_finalize_digest(QCryptoHash* hash, char** digest, Error** errp);
 
 /**
  * qcrypto_hash_finalize_base64:
@@ -216,9 +196,7 @@ int qcrypto_hash_finalize_digest(QCryptoHash *hash,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_finalize_base64(QCryptoHash *hash,
-                                 char **base64,
-                                 Error **errp);
+int qcrypto_hash_finalize_base64(QCryptoHash* hash, char** base64, Error** errp);
 
 /**
  * qcrypto_hash_finalize_bytes:
@@ -243,10 +221,7 @@ int qcrypto_hash_finalize_base64(QCryptoHash *hash,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_finalize_bytes(QCryptoHash *hash,
-                                uint8_t **result,
-                                size_t *result_len,
-                                Error **errp);
+int qcrypto_hash_finalize_bytes(QCryptoHash* hash, uint8_t** result, size_t* result_len, Error** errp);
 
 /**
  * qcrypto_hash_new:
@@ -258,7 +233,7 @@ int qcrypto_hash_finalize_bytes(QCryptoHash *hash,
  *
  * Returns: New hash object with the given algorithm, or NULL on error.
  */
-QCryptoHash *qcrypto_hash_new(QCryptoHashAlgo alg, Error **errp);
+QCryptoHash* qcrypto_hash_new(QCryptoHashAlgo alg, Error** errp);
 
 /**
  * qcrypto_hash_free:
@@ -266,7 +241,7 @@ QCryptoHash *qcrypto_hash_new(QCryptoHashAlgo alg, Error **errp);
  *
  * Frees a hashing context for the chosen algorithm.
  */
-void qcrypto_hash_free(QCryptoHash *hash);
+void qcrypto_hash_free(QCryptoHash* hash);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoHash, qcrypto_hash_free)
 
@@ -287,11 +262,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoHash, qcrypto_hash_free)
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_digest(QCryptoHashAlgo alg,
-                        const char *buf,
-                        size_t len,
-                        char **digest,
-                        Error **errp);
+int qcrypto_hash_digest(QCryptoHashAlgo alg, const char* buf, size_t len, char** digest, Error** errp);
 
 /**
  * qcrypto_hash_base64v:
@@ -310,11 +281,7 @@ int qcrypto_hash_digest(QCryptoHashAlgo alg,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_base64v(QCryptoHashAlgo alg,
-                         const struct iovec *iov,
-                         size_t niov,
-                         char **base64,
-                         Error **errp);
+int qcrypto_hash_base64v(QCryptoHashAlgo alg, const struct iovec* iov, size_t niov, char** base64, Error** errp);
 
 /**
  * qcrypto_hash_base64:
@@ -333,8 +300,4 @@ int qcrypto_hash_base64v(QCryptoHashAlgo alg,
  *
  * Returns: 0 on success, -1 on error
  */
-int qcrypto_hash_base64(QCryptoHashAlgo alg,
-                        const char *buf,
-                        size_t len,
-                        char **base64,
-                        Error **errp);
+int qcrypto_hash_base64(QCryptoHashAlgo alg, const char* buf, size_t len, char** base64, Error** errp);

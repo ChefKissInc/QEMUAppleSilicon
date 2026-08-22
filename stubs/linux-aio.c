@@ -11,22 +11,10 @@
 #include "block/aio.h"
 #include "block/raw-aio.h"
 
-void laio_detach_aio_context(LinuxAioState *s, AioContext *old_context)
-{
-    abort();
-}
+void laio_detach_aio_context(LinuxAioState* s, AioContext* old_context) { abort(); }
 
-void laio_attach_aio_context(LinuxAioState *s, AioContext *new_context)
-{
-    abort();
-}
+void laio_attach_aio_context(LinuxAioState* s, AioContext* new_context) { abort(); }
 
-LinuxAioState *laio_init(Error **errp)
-{
-    abort();
-}
+LinuxAioState* laio_init(Error** errp) { abort(); }
 
-void laio_cleanup(LinuxAioState *s)
-{
-    abort();
-}
+void laio_cleanup(LinuxAioState* s) { abort(); }

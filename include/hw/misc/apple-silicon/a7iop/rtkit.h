@@ -26,42 +26,35 @@
 #define TYPE_APPLE_RTKIT "apple-rtkit"
 OBJECT_DECLARE_TYPE(AppleRTKit, AppleRTKitClass, APPLE_RTKIT)
 
-typedef void AppleRTKitEPHandler(void *opaque, uint8_t ep, uint64_t msg);
+typedef void AppleRTKitEPHandler(void* opaque, uint8_t ep, uint64_t msg);
 
-typedef struct {
-    void *opaque;
-    AppleRTKitEPHandler *handler;
-    bool user;
+typedef struct
+{
+    void*                opaque;
+    AppleRTKitEPHandler* handler;
+    bool                 user;
 } AppleRTKitEPData;
 
-static inline size_t apple_rtkit_ep_table_key_hash(uint16_t x)
-{
-    return (size_t)x;
-}
+static inline size_t apple_rtkit_ep_table_key_hash(uint16_t x) { return (size_t)x; }
 
-static inline void apple_rtkit_ep_table_oor_set(uint16_t *k, uint8_t n)
-{
-    *k = 0xFFFFU - (uint16_t)n;
-}
+static inline void apple_rtkit_ep_table_oor_set(uint16_t* k, uint8_t n) { *k = 0xFFFFU - (uint16_t)n; }
 
-static inline bool apple_rtkit_ep_table_oor_equal(uint16_t k, uint8_t n)
-{
-    return k == 0xFFFFU - (uint16_t)n;
-}
+static inline bool apple_rtkit_ep_table_oor_equal(uint16_t k, uint8_t n) { return k == 0xFFFFU - (uint16_t)n; }
 
 DICT_OA_DEF2(AppleRTKitEPTable, uint16_t,
-             M_OPEXTEND(M_BASIC_OPLIST, HASH(apple_rtkit_ep_table_key_hash),
-                        OOR_EQUAL(apple_rtkit_ep_table_oor_equal),
+             M_OPEXTEND(M_BASIC_OPLIST, HASH(apple_rtkit_ep_table_key_hash), OOR_EQUAL(apple_rtkit_ep_table_oor_equal),
                         OOR_SET(apple_rtkit_ep_table_oor_set M_IPTR)),
              AppleRTKitEPData, M_POD_OPLIST)
 
-typedef struct {
-    void (*start)(void *opaque);
-    void (*wakeup)(void *opaque);
-    void (*boot_done)(void *opaque);
+typedef struct
+{
+    void (*start)(void* opaque);
+    void (*wakeup)(void* opaque);
+    void (*boot_done)(void* opaque);
 } AppleRTKitOps;
 
-struct AppleRTKitClass {
+struct AppleRTKitClass
+{
     /*< private >*/
     SysBusDevice base_class;
 
@@ -69,31 +62,28 @@ struct AppleRTKitClass {
     ResettablePhases parent_phases;
 };
 
-struct AppleRTKit {
+struct AppleRTKit
+{
     /*< private >*/
     AppleA7IOP parent_obj;
 
     /*< public >*/
-    const AppleRTKitOps *ops;
-    QemuMutex lock;
-    void *opaque;
-    uint8_t ep0_status;
-    uint32_t protocol_version;
-    AppleRTKitEPTable_t endpoints;
+    const AppleRTKitOps* ops;
+    QemuMutex            lock;
+    void*                opaque;
+    uint8_t              ep0_status;
+    uint32_t             protocol_version;
+    AppleRTKitEPTable_t  endpoints;
     QTAILQ_HEAD(, AppleA7IOPMessage) rollcall;
 };
 
-void apple_rtkit_send_control_msg(AppleRTKit *s, uint8_t ep, uint64_t data);
-void apple_rtkit_send_user_msg(AppleRTKit *s, uint8_t ep, uint64_t data);
-void apple_rtkit_register_control_ep(AppleRTKit *s, uint8_t ep, void *opaque,
-                                     AppleRTKitEPHandler *handler);
-void apple_rtkit_register_user_ep(AppleRTKit *s, uint8_t ep, void *opaque,
-                                  AppleRTKitEPHandler *handler);
-void apple_rtkit_unregister_control_ep(AppleRTKit *s, uint8_t ep);
-void apple_rtkit_unregister_user_ep(AppleRTKit *s, uint8_t ep);
-void apple_rtkit_init(AppleRTKit *s, void *opaque, const char *role,
-                      uint64_t mmio_size, AppleA7IOPVersion version,
-                      const AppleRTKitOps *ops);
-AppleRTKit *apple_rtkit_new(void *opaque, const char *role, uint64_t mmio_size,
-                            AppleA7IOPVersion version,
-                            const AppleRTKitOps *ops);
+void apple_rtkit_send_control_msg(AppleRTKit* s, uint8_t ep, uint64_t data);
+void apple_rtkit_send_user_msg(AppleRTKit* s, uint8_t ep, uint64_t data);
+void apple_rtkit_register_control_ep(AppleRTKit* s, uint8_t ep, void* opaque, AppleRTKitEPHandler* handler);
+void apple_rtkit_register_user_ep(AppleRTKit* s, uint8_t ep, void* opaque, AppleRTKitEPHandler* handler);
+void apple_rtkit_unregister_control_ep(AppleRTKit* s, uint8_t ep);
+void apple_rtkit_unregister_user_ep(AppleRTKit* s, uint8_t ep);
+void apple_rtkit_init(AppleRTKit* s, void* opaque, const char* role, uint64_t mmio_size, AppleA7IOPVersion version,
+                      const AppleRTKitOps* ops);
+AppleRTKit* apple_rtkit_new(void* opaque, const char* role, uint64_t mmio_size, AppleA7IOPVersion version,
+                            const AppleRTKitOps* ops);

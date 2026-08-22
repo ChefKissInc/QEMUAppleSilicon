@@ -2,18 +2,16 @@
 
 #include <libtasn1.h>
 
-const asn1_static_node img4_definitions_array[] = {
-  { "Img4", 536872976, NULL },
-  { NULL, 1073741836, NULL },
-  { "Img4Payload", 536870917, NULL },
-  { "magic", 1612709917, NULL },
-  { "4", 524298, "1"},
-  { "type", 1612709917, NULL },
-  { "4", 524298, "1"},
-  { "description", 1612709917, NULL },
-  { "128", 524298, "1"},
-  { "data", 1073741831, NULL },
-  { "extra", 1073758221, NULL },
-  { "payp", 16397, NULL },
-  { NULL, 0, NULL }
-};
+const asn1_static_node img4_definitions_array[] = {{"Img4", 536872976, NULL},
+                                                   {NULL, 1073741836, NULL},
+                                                   {"Img4Payload", 536870917, NULL},
+                                                   {"magic", 1612709917, NULL},
+                                                   {"4", 524298, "1"},
+                                                   {"type", 1612709917, NULL},
+                                                   {"4", 524298, "1"},
+                                                   {"description", 1612709917, NULL},
+                                                   {"128", 524298, "1"},
+                                                   {"data", 1073741831, NULL},
+                                                   {"extra", 1073758221, NULL},
+                                                   {"payp", 16397, NULL},
+                                                   {NULL, 0, NULL}};

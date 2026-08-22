@@ -30,57 +30,53 @@
 #include "qobject/qdict.h"
 #include "trace/control.h"
 #ifdef CONFIG_TRACE_SIMPLE
-#include "trace/simple.h"
+    #include "trace/simple.h"
 #endif
 
-void hmp_trace_event(Monitor *mon, const QDict *qdict)
+void hmp_trace_event(Monitor* mon, const QDict* qdict)
 {
-    const char *tp_name = qdict_get_str(qdict, "name");
-    bool new_state = qdict_get_bool(qdict, "option");
-    Error *local_err = NULL;
+    const char* tp_name   = qdict_get_str(qdict, "name");
+    bool        new_state = qdict_get_bool(qdict, "option");
+    Error*      local_err = NULL;
 
-    qmp_trace_event_set_state(tp_name, new_state,
-                              true, true, &local_err);
-    if (local_err) {
-        error_report_err(local_err);
-    }
+    qmp_trace_event_set_state(tp_name, new_state, true, true, &local_err);
+    if (local_err) { error_report_err(local_err); }
 }
 
 #ifdef CONFIG_TRACE_SIMPLE
-void hmp_trace_file(Monitor *mon, const QDict *qdict)
+void hmp_trace_file(Monitor* mon, const QDict* qdict)
 {
-    const char *op = qdict_get_try_str(qdict, "op");
-    const char *arg = qdict_get_try_str(qdict, "arg");
+    const char* op  = qdict_get_try_str(qdict, "op");
+    const char* arg = qdict_get_try_str(qdict, "arg");
 
-    if (!op) {
-        st_print_trace_file_status();
-    } else if (!strcmp(op, "on")) {
+    if (!op) { st_print_trace_file_status(); }
+    else if (!strcmp(op, "on")) {
         st_set_trace_file_enabled(true);
-    } else if (!strcmp(op, "off")) {
+    }
+    else if (!strcmp(op, "off")) {
         st_set_trace_file_enabled(false);
-    } else if (!strcmp(op, "flush")) {
+    }
+    else if (!strcmp(op, "flush")) {
         st_flush_trace_buffer();
-    } else if (!strcmp(op, "set")) {
-        if (arg) {
-            st_set_trace_file(arg);
-        }
-    } else {
+    }
+    else if (!strcmp(op, "set")) {
+        if (arg) { st_set_trace_file(arg); }
+    }
+    else {
         monitor_printf(mon, "unexpected argument \"%s\"\n", op);
         hmp_help_cmd(mon, "trace-file");
     }
 }
 #endif
 
-void hmp_info_trace_events(Monitor *mon, const QDict *qdict)
+void hmp_info_trace_events(Monitor* mon, const QDict* qdict)
 {
-    const char *name = qdict_get_try_str(qdict, "name");
-    TraceEventInfoList *events;
-    TraceEventInfoList *elem;
-    Error *local_err = NULL;
+    const char*         name = qdict_get_try_str(qdict, "name");
+    TraceEventInfoList* events;
+    TraceEventInfoList* elem;
+    Error*              local_err = NULL;
 
-    if (name == NULL) {
-        name = "*";
-    }
+    if (name == NULL) { name = "*"; }
 
     events = qmp_trace_event_get_state(name, &local_err);
     if (local_err) {
@@ -89,14 +85,13 @@ void hmp_info_trace_events(Monitor *mon, const QDict *qdict)
     }
 
     for (elem = events; elem != NULL; elem = elem->next) {
-        monitor_printf(mon, "%s : state %u\n",
-                       elem->value->name,
+        monitor_printf(mon, "%s : state %u\n", elem->value->name,
                        elem->value->state == TRACE_EVENT_STATE_ENABLED ? 1 : 0);
     }
     qapi_free_TraceEventInfoList(events);
 }
 
-void info_trace_events_completion(ReadLineState *rs, int nb_args, const char *str)
+void info_trace_events_completion(ReadLineState* rs, int nb_args, const char* str)
 {
     size_t len;
 
@@ -104,17 +99,15 @@ void info_trace_events_completion(ReadLineState *rs, int nb_args, const char *st
     readline_set_completion_index(rs, len);
     if (nb_args == 2) {
         TraceEventIter iter;
-        TraceEvent *ev;
-        char *pattern = g_strdup_printf("%s*", str);
+        TraceEvent*    ev;
+        char*          pattern = g_strdup_printf("%s*", str);
         trace_event_iter_init_pattern(&iter, pattern);
-        while ((ev = trace_event_iter_next(&iter)) != NULL) {
-            readline_add_completion(rs, trace_event_get_name(ev));
-        }
+        while ((ev = trace_event_iter_next(&iter)) != NULL) { readline_add_completion(rs, trace_event_get_name(ev)); }
         g_free(pattern);
     }
 }
 
-void trace_event_completion(ReadLineState *rs, int nb_args, const char *str)
+void trace_event_completion(ReadLineState* rs, int nb_args, const char* str)
 {
     size_t len;
 
@@ -122,14 +115,13 @@ void trace_event_completion(ReadLineState *rs, int nb_args, const char *str)
     readline_set_completion_index(rs, len);
     if (nb_args == 2) {
         TraceEventIter iter;
-        TraceEvent *ev;
-        char *pattern = g_strdup_printf("%s*", str);
+        TraceEvent*    ev;
+        char*          pattern = g_strdup_printf("%s*", str);
         trace_event_iter_init_pattern(&iter, pattern);
-        while ((ev = trace_event_iter_next(&iter)) != NULL) {
-            readline_add_completion(rs, trace_event_get_name(ev));
-        }
+        while ((ev = trace_event_iter_next(&iter)) != NULL) { readline_add_completion(rs, trace_event_get_name(ev)); }
         g_free(pattern);
-    } else if (nb_args == 3) {
+    }
+    else if (nb_args == 3) {
         readline_add_completion_of(rs, str, "on");
         readline_add_completion_of(rs, str, "off");
     }

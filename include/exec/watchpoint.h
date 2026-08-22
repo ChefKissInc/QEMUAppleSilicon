@@ -7,9 +7,7 @@
 
 #pragma once
 
-int cpu_watchpoint_insert(CPUState *cpu, vaddr addr, vaddr len,
-                          int flags, CPUWatchpoint **watchpoint);
-int cpu_watchpoint_remove(CPUState *cpu, vaddr addr,
-                          vaddr len, int flags);
-void cpu_watchpoint_remove_by_ref(CPUState *cpu, CPUWatchpoint *watchpoint);
-void cpu_watchpoint_remove_all(CPUState *cpu, int mask);
+int  cpu_watchpoint_insert(CPUState* cpu, vaddr addr, vaddr len, int flags, CPUWatchpoint** watchpoint);
+int  cpu_watchpoint_remove(CPUState* cpu, vaddr addr, vaddr len, int flags);
+void cpu_watchpoint_remove_by_ref(CPUState* cpu, CPUWatchpoint* watchpoint);
+void cpu_watchpoint_remove_all(CPUState* cpu, int mask);

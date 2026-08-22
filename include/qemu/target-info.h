@@ -13,7 +13,7 @@
  *
  * Returns: Canonical target name (i.e. "i386").
  */
-const char *target_name(void);
+const char* target_name(void);
 
 /**
  * target_long_bits:
@@ -28,14 +28,14 @@ unsigned target_long_bits(void);
  * Returns: Name of the QOM interface implemented by machines
  *          usable on this target binary.
  */
-const char *target_machine_typename(void);
+const char* target_machine_typename(void);
 
 /**
  * target_cpu_type:
  *
  * Returns: target CPU base QOM type name (i.e. TYPE_X86_CPU).
  */
-const char *target_cpu_type(void);
+const char* target_cpu_type(void);
 
 /**
  * target_big_endian:

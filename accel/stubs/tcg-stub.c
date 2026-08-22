@@ -13,7 +13,4 @@
 #include "qemu/osdep.h"
 #include "exec/cpu-common.h"
 
-G_NORETURN void cpu_loop_exit(CPUState *cpu)
-{
-    assert_not_reached();
-}
+G_NORETURN void cpu_loop_exit(CPUState* cpu) { assert_not_reached(); }

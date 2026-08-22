@@ -18,33 +18,34 @@
 typedef enum SSICSMode SSICSMode;
 
 #define TYPE_SSI_PERIPHERAL "ssi-peripheral"
-OBJECT_DECLARE_TYPE(SSIPeripheral, SSIPeripheralClass,
-                    SSI_PERIPHERAL)
+OBJECT_DECLARE_TYPE(SSIPeripheral, SSIPeripheralClass, SSI_PERIPHERAL)
 
 #define SSI_GPIO_CS "ssi-gpio-cs"
 
-enum SSICSMode {
+enum SSICSMode
+{
     SSI_CS_NONE = 0,
     SSI_CS_LOW,
     SSI_CS_HIGH,
 };
 
 /* Peripherals.  */
-struct SSIPeripheralClass {
+struct SSIPeripheralClass
+{
     DeviceClass parent_class;
 
-    void (*realize)(SSIPeripheral *dev, Error **errp);
+    void (*realize)(SSIPeripheral* dev, Error** errp);
 
     /* if you have standard or no CS behaviour, just override transfer.
      * This is called when the device cs is active (true by default).
      * See ssi_transfer().
      */
-    uint32_t (*transfer)(SSIPeripheral *dev, uint32_t val);
+    uint32_t (*transfer)(SSIPeripheral* dev, uint32_t val);
     /* called when the CS line changes. Optional, devices only need to implement
      * this if they have side effects associated with the cs line (beyond
      * tristating the txrx lines).
      */
-    int (*set_cs)(SSIPeripheral *dev, bool select);
+    int (*set_cs)(SSIPeripheral* dev, bool select);
     /* define whether or not CS exists and is active low/high */
     SSICSMode cs_polarity;
 
@@ -54,14 +55,15 @@ struct SSIPeripheralClass {
      * always be called for the device for every txrx access to the parent bus
      * See ssi_transfer().
      */
-    uint32_t (*transfer_raw)(SSIPeripheral *dev, uint32_t val);
+    uint32_t (*transfer_raw)(SSIPeripheral* dev, uint32_t val);
 };
 
-struct SSIPeripheral {
+struct SSIPeripheral
+{
     DeviceState parent_obj;
 
     /* cache the class */
-    SSIPeripheralClass *spc;
+    SSIPeripheralClass* spc;
 
     /* Chip select state */
     bool cs;
@@ -70,7 +72,7 @@ struct SSIPeripheral {
     uint8_t cs_index;
 };
 
-DeviceState *ssi_create_peripheral(SSIBus *bus, const char *name);
+DeviceState* ssi_create_peripheral(SSIBus* bus, const char* name);
 /**
  * ssi_realize_and_unref: realize and unref an SSI peripheral
  * @dev: SSI peripheral to realize
@@ -96,10 +98,10 @@ DeviceState *ssi_create_peripheral(SSIBus *bus, const char *name);
  * doesn't currently exist but would be trivial to create if we had
  * any code that wanted it.)
  */
-bool ssi_realize_and_unref(DeviceState *dev, SSIBus *bus, Error **errp);
+bool ssi_realize_and_unref(DeviceState* dev, SSIBus* bus, Error** errp);
 
 /* Master interface.  */
-SSIBus *ssi_create_bus(DeviceState *parent, const char *name);
+SSIBus* ssi_create_bus(DeviceState* parent, const char* name);
 
 /**
  * Transfer a word on a SSI bus
@@ -113,6 +115,6 @@ SSIBus *ssi_create_bus(DeviceState *parent, const char *name);
  *
  * Return: word value received
  */
-uint32_t ssi_transfer(SSIBus *bus, uint32_t val);
+uint32_t ssi_transfer(SSIBus* bus, uint32_t val);
 
-DeviceState *ssi_get_cs(SSIBus *bus, uint8_t cs_index);
+DeviceState* ssi_get_cs(SSIBus* bus, uint8_t cs_index);

@@ -23,13 +23,13 @@
  *   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=107389
  */
 #if defined(CONFIG_ATOMIC128_OPT)
-# if !defined(__OPTIMIZE__)
-#  define ATTRIBUTE_ATOMIC128_OPT  __attribute__((optimize("O1")))
-# endif
-# define CONFIG_ATOMIC128
+    #if !defined(__OPTIMIZE__)
+        #define ATTRIBUTE_ATOMIC128_OPT __attribute__((optimize("O1")))
+    #endif
+    #define CONFIG_ATOMIC128
 #endif
 #ifndef ATTRIBUTE_ATOMIC128_OPT
-# define ATTRIBUTE_ATOMIC128_OPT
+    #define ATTRIBUTE_ATOMIC128_OPT
 #endif
 
 /*

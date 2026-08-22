@@ -24,47 +24,38 @@
 
 #define MOV_W0_0_BYTES 0x00, 0x00, 0x80, 0x52
 
-typedef struct {
+typedef struct
+{
     /// Physical or virtual address.
     vaddr addr;
     vaddr length;
     /// Guaranteed to be an accessible host pointer.
-    void *ptr;
-    const char *name;
+    void*       ptr;
+    const char* name;
 } CKPatcherRange;
 
-CKPatcherRange *ck_patcher_range_from_ptr(const char *name, void *ptr,
-                                          vaddr size);
+CKPatcherRange* ck_patcher_range_from_ptr(const char* name, void* ptr, vaddr size);
 
 /// Precondition: `insn` must be masked.
-void *ck_patcher_find_next_insn(void *buffer, uint32_t num, uint32_t insn,
-                                uint32_t mask, uint32_t skip);
+void* ck_patcher_find_next_insn(void* buffer, uint32_t num, uint32_t insn, uint32_t mask, uint32_t skip);
 /// See `ck_patcher_find_next_insn`.
-void *ck_patcher_find_prev_insn(void *buffer, uint32_t num, uint32_t insn,
-                                uint32_t mask, uint32_t skip);
+void* ck_patcher_find_prev_insn(void* buffer, uint32_t num, uint32_t insn, uint32_t mask, uint32_t skip);
 
 /// Callback function prototype. `ctx` may be null.
-typedef bool (*CKPatcherCallback)(void *ctx, uint8_t *buffer);
+typedef bool (*CKPatcherCallback)(void* ctx, uint8_t* buffer);
 
 /// Precondition: bytes in `find` must be masked.
 /// If `align` is set to a non-zero value, the searching will be aligned
 /// to its value amount of bytes, otherwise it will align the search by
 /// a single byte.
-bool ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
-                                  const uint8_t *pattern, const uint8_t *mask,
-                                  size_t len, size_t align, void *ctx,
-                                  CKPatcherCallback callback);
+bool ck_patcher_find_callback_ctx(CKPatcherRange* range, const char* name, const uint8_t* pattern, const uint8_t* mask,
+                                  size_t len, size_t align, void* ctx, CKPatcherCallback callback);
 /// See `ck_patcher_find_callback_ctx`.
-bool ck_patcher_find_callback(CKPatcherRange *range, const char *name,
-                              const uint8_t *pattern, const uint8_t *mask,
-                              size_t len, size_t align,
-                              CKPatcherCallback callback);
+bool ck_patcher_find_callback(CKPatcherRange* range, const char* name, const uint8_t* pattern, const uint8_t* mask,
+                              size_t len, size_t align, CKPatcherCallback callback);
 /// See `ck_patcher_find_callback`.
 /// `replace_off` is the byte offset in the matched pattern
 /// which the `replacement` will be applied on.
-bool ck_patcher_find_replace(CKPatcherRange *range, const char *name,
-                             const uint8_t *pattern, const uint8_t *mask,
-                             size_t len, size_t align,
-                             const uint8_t *replacement,
-                             const uint8_t *replacement_mask,
+bool ck_patcher_find_replace(CKPatcherRange* range, const char* name, const uint8_t* pattern, const uint8_t* mask,
+                             size_t len, size_t align, const uint8_t* replacement, const uint8_t* replacement_mask,
                              size_t replace_off, size_t replace_len);

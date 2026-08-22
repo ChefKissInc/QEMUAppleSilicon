@@ -19,18 +19,20 @@
  * cross an 16-byte boundary then the access must be 16-byte atomic,
  * otherwise the access must be 8-byte atomic.
  */
-static inline uint64_t load_atom_extract_al16_or_al8(void *pv, int s)
+static inline uint64_t load_atom_extract_al16_or_al8(void* pv, int s)
 {
-    uintptr_t pi = (uintptr_t)pv;
-    Int128 *ptr_align = (Int128 *)(pi & ~7);
-    int shr = (pi & 7) * 8;
-    uint64_t l, h;
+    uintptr_t pi        = (uintptr_t)pv;
+    Int128*   ptr_align = (Int128*)(pi & ~7);
+    int       shr       = (pi & 7) * 8;
+    uint64_t  l, h;
 
     tcg_debug_assert(HAVE_ATOMIC128_RO);
     asm("vld $vr0, %2, 0\n\t"
         "vpickve2gr.d %0, $vr0, 0\n\t"
         "vpickve2gr.d %1, $vr0, 1"
-        : "=r"(l), "=r"(h) : "r"(ptr_align), "m"(*ptr_align) : "$f0");
+        : "=r"(l), "=r"(h)
+        : "r"(ptr_align), "m"(*ptr_align)
+        : "$f0");
 
     return (l >> shr) | (h << (-shr & 63));
 }

@@ -21,61 +21,60 @@
 
 static const Property ehci_sysbus_properties[] = {
     DEFINE_PROP_UINT32("maxframes", EHCISysBusState, ehci.maxframes, 128),
-    DEFINE_PROP_BOOL("companion-enable", EHCISysBusState, ehci.companion_enable,
-                     false),
+    DEFINE_PROP_BOOL("companion-enable", EHCISysBusState, ehci.companion_enable, false),
 };
 
-static void usb_ehci_sysbus_realize(DeviceState *dev, Error **errp)
+static void usb_ehci_sysbus_realize(DeviceState* dev, Error** errp)
 {
-    SysBusDevice *d = SYS_BUS_DEVICE(dev);
-    EHCISysBusState *i = SYS_BUS_EHCI(dev);
-    EHCIState *s = &i->ehci;
+    SysBusDevice*    d = SYS_BUS_DEVICE(dev);
+    EHCISysBusState* i = SYS_BUS_EHCI(dev);
+    EHCIState*       s = &i->ehci;
 
     usb_ehci_realize(s, dev, errp);
     sysbus_init_irq(d, &s->irq);
 }
 
-static void usb_ehci_sysbus_reset(DeviceState *dev)
+static void usb_ehci_sysbus_reset(DeviceState* dev)
 {
-    SysBusDevice *d = SYS_BUS_DEVICE(dev);
-    EHCISysBusState *i = SYS_BUS_EHCI(d);
-    EHCIState *s = &i->ehci;
+    SysBusDevice*    d = SYS_BUS_DEVICE(dev);
+    EHCISysBusState* i = SYS_BUS_EHCI(d);
+    EHCIState*       s = &i->ehci;
 
     ehci_reset(s);
 }
 
-static void ehci_sysbus_init(Object *obj)
+static void ehci_sysbus_init(Object* obj)
 {
-    SysBusDevice *d = SYS_BUS_DEVICE(obj);
-    EHCISysBusState *i = SYS_BUS_EHCI(obj);
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_GET_CLASS(obj);
-    EHCIState *s = &i->ehci;
+    SysBusDevice*    d   = SYS_BUS_DEVICE(obj);
+    EHCISysBusState* i   = SYS_BUS_EHCI(obj);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_GET_CLASS(obj);
+    EHCIState*       s   = &i->ehci;
 
-    s->capsbase = sec->capsbase;
-    s->opregbase = sec->opregbase;
+    s->capsbase   = sec->capsbase;
+    s->opregbase  = sec->opregbase;
     s->portscbase = sec->portscbase;
-    s->portnr = sec->portnr;
-    s->as = &address_space_memory;
+    s->portnr     = sec->portnr;
+    s->as         = &address_space_memory;
 
     usb_ehci_init(s, DEVICE(obj));
     sysbus_init_mmio(d, &s->mem);
 }
 
-static void ehci_sysbus_finalize(Object *obj)
+static void ehci_sysbus_finalize(Object* obj)
 {
-    EHCISysBusState *i = SYS_BUS_EHCI(obj);
-    EHCIState *s = &i->ehci;
+    EHCISysBusState* i = SYS_BUS_EHCI(obj);
+    EHCIState*       s = &i->ehci;
 
     usb_ehci_finalize(s);
 }
 
-static void ehci_sysbus_class_init(ObjectClass *klass, const void *data)
+static void ehci_sysbus_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(klass);
+    DeviceClass*     dc  = DEVICE_CLASS(klass);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(klass);
 
     sec->portscbase = 0x44;
-    sec->portnr = EHCI_PORTS;
+    sec->portnr     = EHCI_PORTS;
 
     dc->realize = usb_ehci_sysbus_realize;
     device_class_set_props(dc, ehci_sysbus_properties);
@@ -83,71 +82,71 @@ static void ehci_sysbus_class_init(ObjectClass *klass, const void *data)
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
 
-static void ehci_platform_class_init(ObjectClass *oc, const void *data)
+static void ehci_platform_class_init(ObjectClass* oc, const void* data)
 {
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(oc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
 
-    sec->capsbase = 0x0;
+    sec->capsbase  = 0x0;
     sec->opregbase = 0x20;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
 
-static void ehci_exynos4210_class_init(ObjectClass *oc, const void *data)
+static void ehci_exynos4210_class_init(ObjectClass* oc, const void* data)
 {
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(oc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
 
-    sec->capsbase = 0x0;
+    sec->capsbase  = 0x0;
     sec->opregbase = 0x10;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
 
-static void ehci_aw_h3_class_init(ObjectClass *oc, const void *data)
+static void ehci_aw_h3_class_init(ObjectClass* oc, const void* data)
 {
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(oc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
 
-    sec->capsbase = 0x0;
+    sec->capsbase  = 0x0;
     sec->opregbase = 0x10;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
 
-static void ehci_npcm7xx_class_init(ObjectClass *oc, const void *data)
+static void ehci_npcm7xx_class_init(ObjectClass* oc, const void* data)
 {
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(oc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
 
-    sec->capsbase = 0x0;
-    sec->opregbase = 0x10;
+    sec->capsbase   = 0x0;
+    sec->opregbase  = 0x10;
     sec->portscbase = 0x44;
-    sec->portnr = 1;
+    sec->portnr     = 1;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
 
-static void ehci_tegra2_class_init(ObjectClass *oc, const void *data)
+static void ehci_tegra2_class_init(ObjectClass* oc, const void* data)
 {
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(oc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
 
-    sec->capsbase = 0x100;
+    sec->capsbase  = 0x100;
     sec->opregbase = 0x140;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
 
-static void ehci_ppc4xx_init(Object *o)
+static void ehci_ppc4xx_init(Object* o)
 {
-    EHCISysBusState *s = SYS_BUS_EHCI(o);
+    EHCISysBusState* s = SYS_BUS_EHCI(o);
 
     s->ehci.companion_enable = true;
 }
 
-static void ehci_ppc4xx_class_init(ObjectClass *oc, const void *data)
+static void ehci_ppc4xx_class_init(ObjectClass* oc, const void* data)
 {
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(oc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
 
-    sec->capsbase = 0x0;
+    sec->capsbase  = 0x0;
     sec->opregbase = 0x10;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
@@ -161,100 +160,94 @@ static void ehci_ppc4xx_class_init(ObjectClass *oc, const void *data)
  * @FUSBH200_REG_EOF_ASTR: EOF/Async. Sleep Timer Register
  * @FUSBH200_REG_BMCSR: Bus Monitor Control/Status Register
  */
-enum FUSBH200EHCIRegs {
+enum FUSBH200EHCIRegs
+{
     FUSBH200_REG_EOF_ASTR = 0x34,
     FUSBH200_REG_BMCSR    = 0x40,
 };
 
-static uint64_t fusbh200_ehci_read(void *opaque, hwaddr addr, unsigned size)
+static uint64_t fusbh200_ehci_read(void* opaque, hwaddr addr, unsigned size)
 {
-    EHCIState *s = opaque;
-    hwaddr off = s->opregbase + s->portscbase + 4 * s->portnr + addr;
+    EHCIState* s   = opaque;
+    hwaddr     off = s->opregbase + s->portscbase + 4 * s->portnr + addr;
 
     switch (off) {
-    case FUSBH200_REG_EOF_ASTR:
-        return 0x00000041;
-    case FUSBH200_REG_BMCSR:
-        /* High-Speed, VBUS valid, interrupt level-high active */
-        return (2 << 9) | (1 << 8) | (1 << 3);
+        case FUSBH200_REG_EOF_ASTR: return 0x00000041;
+        case FUSBH200_REG_BMCSR:
+            /* High-Speed, VBUS valid, interrupt level-high active */
+            return (2 << 9) | (1 << 8) | (1 << 3);
     }
 
     return 0;
 }
 
-static void fusbh200_ehci_write(void *opaque, hwaddr addr, uint64_t val,
-                                unsigned size)
-{
-}
+static void fusbh200_ehci_write(void* opaque, hwaddr addr, uint64_t val, unsigned size) { }
 
 static const MemoryRegionOps fusbh200_ehci_mmio_ops = {
-    .read = fusbh200_ehci_read,
-    .write = fusbh200_ehci_write,
+    .read                  = fusbh200_ehci_read,
+    .write                 = fusbh200_ehci_write,
     .valid.min_access_size = 4,
     .valid.max_access_size = 4,
-    .endianness = DEVICE_LITTLE_ENDIAN,
+    .endianness            = DEVICE_LITTLE_ENDIAN,
 };
 
-static void fusbh200_ehci_init(Object *obj)
+static void fusbh200_ehci_init(Object* obj)
 {
-    EHCISysBusState *i = SYS_BUS_EHCI(obj);
-    FUSBH200EHCIState *f = FUSBH200_EHCI(obj);
-    EHCIState *s = &i->ehci;
+    EHCISysBusState*   i = SYS_BUS_EHCI(obj);
+    FUSBH200EHCIState* f = FUSBH200_EHCI(obj);
+    EHCIState*         s = &i->ehci;
 
-    memory_region_init_io(&f->mem_vendor, OBJECT(f), &fusbh200_ehci_mmio_ops, s,
-                          "fusbh200", 0x4c);
-    memory_region_add_subregion(&s->mem,
-                                s->opregbase + s->portscbase + 4 * s->portnr,
-                                &f->mem_vendor);
+    memory_region_init_io(&f->mem_vendor, OBJECT(f), &fusbh200_ehci_mmio_ops, s, "fusbh200", 0x4c);
+    memory_region_add_subregion(&s->mem, s->opregbase + s->portscbase + 4 * s->portnr, &f->mem_vendor);
 }
 
-static void fusbh200_ehci_class_init(ObjectClass *oc, const void *data)
+static void fusbh200_ehci_class_init(ObjectClass* oc, const void* data)
 {
-    SysBusEHCIClass *sec = SYS_BUS_EHCI_CLASS(oc);
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
 
-    sec->capsbase = 0x0;
-    sec->opregbase = 0x10;
+    sec->capsbase   = 0x0;
+    sec->opregbase  = 0x10;
     sec->portscbase = 0x20;
-    sec->portnr = 1;
+    sec->portnr     = 1;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
 }
 
 static const TypeInfo ehci_sysbus_types[] = {
     {
-        .name          = TYPE_SYS_BUS_EHCI,
-        .parent        = TYPE_SYS_BUS_DEVICE,
-        .instance_size = sizeof(EHCISysBusState),
-        .instance_init = ehci_sysbus_init,
+        .name              = TYPE_SYS_BUS_EHCI,
+        .parent            = TYPE_SYS_BUS_DEVICE,
+        .instance_size     = sizeof(EHCISysBusState),
+        .instance_init     = ehci_sysbus_init,
         .instance_finalize = ehci_sysbus_finalize,
-        .abstract      = true,
-        .class_init    = ehci_sysbus_class_init,
-        .class_size    = sizeof(SysBusEHCIClass),
+        .abstract          = true,
+        .class_init        = ehci_sysbus_class_init,
+        .class_size        = sizeof(SysBusEHCIClass),
     },
     {
-        .name          = TYPE_PLATFORM_EHCI,
-        .parent        = TYPE_SYS_BUS_EHCI,
-        .class_init    = ehci_platform_class_init,
+        .name       = TYPE_PLATFORM_EHCI,
+        .parent     = TYPE_SYS_BUS_EHCI,
+        .class_init = ehci_platform_class_init,
     },
     {
-        .name          = TYPE_EXYNOS4210_EHCI,
-        .parent        = TYPE_SYS_BUS_EHCI,
-        .class_init    = ehci_exynos4210_class_init,
+        .name       = TYPE_EXYNOS4210_EHCI,
+        .parent     = TYPE_SYS_BUS_EHCI,
+        .class_init = ehci_exynos4210_class_init,
     },
     {
-        .name          = TYPE_AW_H3_EHCI,
-        .parent        = TYPE_SYS_BUS_EHCI,
-        .class_init    = ehci_aw_h3_class_init,
+        .name       = TYPE_AW_H3_EHCI,
+        .parent     = TYPE_SYS_BUS_EHCI,
+        .class_init = ehci_aw_h3_class_init,
     },
     {
-        .name          = TYPE_NPCM7XX_EHCI,
-        .parent        = TYPE_SYS_BUS_EHCI,
-        .class_init    = ehci_npcm7xx_class_init,
+        .name       = TYPE_NPCM7XX_EHCI,
+        .parent     = TYPE_SYS_BUS_EHCI,
+        .class_init = ehci_npcm7xx_class_init,
     },
     {
-        .name          = TYPE_TEGRA2_EHCI,
-        .parent        = TYPE_SYS_BUS_EHCI,
-        .class_init    = ehci_tegra2_class_init,
+        .name       = TYPE_TEGRA2_EHCI,
+        .parent     = TYPE_SYS_BUS_EHCI,
+        .class_init = ehci_tegra2_class_init,
     },
     {
         .name          = TYPE_PPC4xx_EHCI,

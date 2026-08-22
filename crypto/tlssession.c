@@ -32,44 +32,39 @@
 
 #ifdef CONFIG_GNUTLS
 
+    #include <gnutls/x509.h>
 
-#include <gnutls/x509.h>
-
-
-struct QCryptoTLSSession {
-    QCryptoTLSCreds *creds;
-    gnutls_session_t handle;
-    char *hostname;
-    char *authzid;
-    bool handshakeComplete;
+struct QCryptoTLSSession
+{
+    QCryptoTLSCreds*           creds;
+    gnutls_session_t           handle;
+    char*                      hostname;
+    char*                      authzid;
+    bool                       handshakeComplete;
     QCryptoTLSSessionWriteFunc writeFunc;
-    QCryptoTLSSessionReadFunc readFunc;
-    void *opaque;
-    char *peername;
+    QCryptoTLSSessionReadFunc  readFunc;
+    void*                      opaque;
+    char*                      peername;
 
     /*
      * Allow concurrent reads and writes, so track
      * errors separately
      */
-    Error *rerr;
-    Error *werr;
+    Error* rerr;
+    Error* werr;
 
     /*
      * Used to protect against broken GNUTLS thread safety
      * https://gitlab.com/gnutls/gnutls/-/issues/1717
      */
-    bool requireThreadSafety;
-    bool lockEnabled;
+    bool      requireThreadSafety;
+    bool      lockEnabled;
     QemuMutex lock;
 };
 
-
-void
-qcrypto_tls_session_free(QCryptoTLSSession *session)
+void qcrypto_tls_session_free(QCryptoTLSSession* session)
 {
-    if (!session) {
-        return;
-    }
+    if (!session) { return; }
 
     error_free(session->rerr);
     error_free(session->werr);
@@ -83,48 +78,42 @@ qcrypto_tls_session_free(QCryptoTLSSession *session)
     g_free(session);
 }
 
-
-static ssize_t
-qcrypto_tls_session_push(void *opaque, const void *buf, size_t len)
+static ssize_t qcrypto_tls_session_push(void* opaque, const void* buf, size_t len)
 {
-    QCryptoTLSSession *session = opaque;
-    ssize_t ret;
+    QCryptoTLSSession* session = opaque;
+    ssize_t            ret;
 
     if (!session->writeFunc) {
         errno = EIO;
         return -1;
     };
 
-    if (session->lockEnabled) {
-        qemu_mutex_unlock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_unlock(&session->lock); }
 
     error_free(session->werr);
     session->werr = NULL;
 
     ret = session->writeFunc(buf, len, session->opaque, &session->werr);
 
-    if (session->lockEnabled) {
-        qemu_mutex_lock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_lock(&session->lock); }
 
     if (ret == QCRYPTO_TLS_SESSION_ERR_BLOCK) {
         errno = EAGAIN;
         return -1;
-    } else if (ret < 0) {
+    }
+    else if (ret < 0) {
         errno = EIO;
         return -1;
-    } else {
+    }
+    else {
         return ret;
     }
 }
 
-
-static ssize_t
-qcrypto_tls_session_pull(void *opaque, void *buf, size_t len)
+static ssize_t qcrypto_tls_session_pull(void* opaque, void* buf, size_t len)
 {
-    QCryptoTLSSession *session = opaque;
-    ssize_t ret;
+    QCryptoTLSSession* session = opaque;
+    ssize_t            ret;
 
     if (!session->readFunc) {
         errno = EIO;
@@ -134,51 +123,40 @@ qcrypto_tls_session_pull(void *opaque, void *buf, size_t len)
     error_free(session->rerr);
     session->rerr = NULL;
 
-    if (session->lockEnabled) {
-        qemu_mutex_unlock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_unlock(&session->lock); }
 
     ret = session->readFunc(buf, len, session->opaque, &session->rerr);
 
-    if (session->lockEnabled) {
-        qemu_mutex_lock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_lock(&session->lock); }
 
     if (ret == QCRYPTO_TLS_SESSION_ERR_BLOCK) {
         errno = EAGAIN;
         return -1;
-    } else if (ret < 0) {
+    }
+    else if (ret < 0) {
         errno = EIO;
         return -1;
-    } else {
+    }
+    else {
         return ret;
     }
 }
 
-#define TLS_PRIORITY_ADDITIONAL_ANON "+ANON-DH"
-#define TLS_PRIORITY_ADDITIONAL_PSK "+ECDHE-PSK:+DHE-PSK:+PSK"
+    #define TLS_PRIORITY_ADDITIONAL_ANON "+ANON-DH"
+    #define TLS_PRIORITY_ADDITIONAL_PSK  "+ECDHE-PSK:+DHE-PSK:+PSK"
 
-QCryptoTLSSession *
-qcrypto_tls_session_new(QCryptoTLSCreds *creds,
-                        const char *hostname,
-                        const char *authzid,
-                        QCryptoTLSCredsEndpoint endpoint,
-                        Error **errp)
+QCryptoTLSSession* qcrypto_tls_session_new(QCryptoTLSCreds* creds, const char* hostname, const char* authzid,
+                                           QCryptoTLSCredsEndpoint endpoint, Error** errp)
 {
-    QCryptoTLSSession *session;
-    int ret;
+    QCryptoTLSSession* session;
+    int                ret;
 
     session = g_new0(QCryptoTLSSession, 1);
-    trace_qcrypto_tls_session_new(
-        session, creds, hostname ? hostname : "<none>",
-        authzid ? authzid : "<none>", endpoint);
+    trace_qcrypto_tls_session_new(session, creds, hostname ? hostname : "<none>", authzid ? authzid : "<none>",
+                                  endpoint);
 
-    if (hostname) {
-        session->hostname = g_strdup(hostname);
-    }
-    if (authzid) {
-        session->authzid = g_strdup(authzid);
-    }
+    if (hostname) { session->hostname = g_strdup(hostname); }
+    if (authzid) { session->authzid = g_strdup(authzid); }
     session->creds = creds;
     object_ref(OBJECT(creds));
 
@@ -189,153 +167,118 @@ qcrypto_tls_session_new(QCryptoTLSCreds *creds,
         goto error;
     }
 
-    if (endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_SERVER) {
-        ret = gnutls_init(&session->handle, GNUTLS_SERVER);
-    } else {
+    if (endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_SERVER) { ret = gnutls_init(&session->handle, GNUTLS_SERVER); }
+    else {
         ret = gnutls_init(&session->handle, GNUTLS_CLIENT);
     }
     if (ret < 0) {
-        error_setg(errp, "Cannot initialize TLS session: %s",
-                   gnutls_strerror(ret));
+        error_setg(errp, "Cannot initialize TLS session: %s", gnutls_strerror(ret));
         goto error;
     }
 
-    if (object_dynamic_cast(OBJECT(creds),
-                            TYPE_QCRYPTO_TLS_CREDS_ANON)) {
-        QCryptoTLSCredsAnon *acreds = QCRYPTO_TLS_CREDS_ANON(creds);
-        char *prio;
+    if (object_dynamic_cast(OBJECT(creds), TYPE_QCRYPTO_TLS_CREDS_ANON)) {
+        QCryptoTLSCredsAnon* acreds = QCRYPTO_TLS_CREDS_ANON(creds);
+        char*                prio;
 
-        if (creds->priority != NULL) {
-            prio = g_strdup_printf("%s:%s",
-                                   creds->priority,
-                                   TLS_PRIORITY_ADDITIONAL_ANON);
-        } else {
-            prio = g_strdup(CONFIG_TLS_PRIORITY ":"
-                            TLS_PRIORITY_ADDITIONAL_ANON);
+        if (creds->priority != NULL) { prio = g_strdup_printf("%s:%s", creds->priority, TLS_PRIORITY_ADDITIONAL_ANON); }
+        else {
+            prio = g_strdup(CONFIG_TLS_PRIORITY ":" TLS_PRIORITY_ADDITIONAL_ANON);
         }
 
         ret = gnutls_priority_set_direct(session->handle, prio, NULL);
         if (ret < 0) {
-            error_setg(errp, "Unable to set TLS session priority %s: %s",
-                       prio, gnutls_strerror(ret));
+            error_setg(errp, "Unable to set TLS session priority %s: %s", prio, gnutls_strerror(ret));
             g_free(prio);
             goto error;
         }
         g_free(prio);
         if (creds->endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_SERVER) {
-            ret = gnutls_credentials_set(session->handle,
-                                         GNUTLS_CRD_ANON,
-                                         acreds->data.server);
-        } else {
-            ret = gnutls_credentials_set(session->handle,
-                                         GNUTLS_CRD_ANON,
-                                         acreds->data.client);
+            ret = gnutls_credentials_set(session->handle, GNUTLS_CRD_ANON, acreds->data.server);
+        }
+        else {
+            ret = gnutls_credentials_set(session->handle, GNUTLS_CRD_ANON, acreds->data.client);
         }
         if (ret < 0) {
-            error_setg(errp, "Cannot set session credentials: %s",
-                       gnutls_strerror(ret));
+            error_setg(errp, "Cannot set session credentials: %s", gnutls_strerror(ret));
             goto error;
         }
-    } else if (object_dynamic_cast(OBJECT(creds),
-                                   TYPE_QCRYPTO_TLS_CREDS_PSK)) {
-        QCryptoTLSCredsPSK *pcreds = QCRYPTO_TLS_CREDS_PSK(creds);
-        char *prio;
+    }
+    else if (object_dynamic_cast(OBJECT(creds), TYPE_QCRYPTO_TLS_CREDS_PSK)) {
+        QCryptoTLSCredsPSK* pcreds = QCRYPTO_TLS_CREDS_PSK(creds);
+        char*               prio;
 
-        if (creds->priority != NULL) {
-            prio = g_strdup_printf("%s:%s",
-                                   creds->priority,
-                                   TLS_PRIORITY_ADDITIONAL_PSK);
-        } else {
-            prio = g_strdup(CONFIG_TLS_PRIORITY ":"
-                            TLS_PRIORITY_ADDITIONAL_PSK);
+        if (creds->priority != NULL) { prio = g_strdup_printf("%s:%s", creds->priority, TLS_PRIORITY_ADDITIONAL_PSK); }
+        else {
+            prio = g_strdup(CONFIG_TLS_PRIORITY ":" TLS_PRIORITY_ADDITIONAL_PSK);
         }
 
         ret = gnutls_priority_set_direct(session->handle, prio, NULL);
         if (ret < 0) {
-            error_setg(errp, "Unable to set TLS session priority %s: %s",
-                       prio, gnutls_strerror(ret));
+            error_setg(errp, "Unable to set TLS session priority %s: %s", prio, gnutls_strerror(ret));
             g_free(prio);
             goto error;
         }
         g_free(prio);
         if (creds->endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_SERVER) {
-            ret = gnutls_credentials_set(session->handle,
-                                         GNUTLS_CRD_PSK,
-                                         pcreds->data.server);
-        } else {
-            ret = gnutls_credentials_set(session->handle,
-                                         GNUTLS_CRD_PSK,
-                                         pcreds->data.client);
+            ret = gnutls_credentials_set(session->handle, GNUTLS_CRD_PSK, pcreds->data.server);
+        }
+        else {
+            ret = gnutls_credentials_set(session->handle, GNUTLS_CRD_PSK, pcreds->data.client);
         }
         if (ret < 0) {
-            error_setg(errp, "Cannot set session credentials: %s",
-                       gnutls_strerror(ret));
+            error_setg(errp, "Cannot set session credentials: %s", gnutls_strerror(ret));
             goto error;
         }
-    } else if (object_dynamic_cast(OBJECT(creds),
-                                   TYPE_QCRYPTO_TLS_CREDS_X509)) {
-        QCryptoTLSCredsX509 *tcreds = QCRYPTO_TLS_CREDS_X509(creds);
-        const char *prio = creds->priority;
-        if (!prio) {
-            prio = CONFIG_TLS_PRIORITY;
-        }
+    }
+    else if (object_dynamic_cast(OBJECT(creds), TYPE_QCRYPTO_TLS_CREDS_X509)) {
+        QCryptoTLSCredsX509* tcreds = QCRYPTO_TLS_CREDS_X509(creds);
+        const char*          prio   = creds->priority;
+        if (!prio) { prio = CONFIG_TLS_PRIORITY; }
 
         ret = gnutls_priority_set_direct(session->handle, prio, NULL);
         if (ret < 0) {
-            error_setg(errp, "Cannot set default TLS session priority %s: %s",
-                       prio, gnutls_strerror(ret));
+            error_setg(errp, "Cannot set default TLS session priority %s: %s", prio, gnutls_strerror(ret));
             goto error;
         }
-        ret = gnutls_credentials_set(session->handle,
-                                     GNUTLS_CRD_CERTIFICATE,
-                                     tcreds->data);
+        ret = gnutls_credentials_set(session->handle, GNUTLS_CRD_CERTIFICATE, tcreds->data);
         if (ret < 0) {
-            error_setg(errp, "Cannot set session credentials: %s",
-                       gnutls_strerror(ret));
+            error_setg(errp, "Cannot set session credentials: %s", gnutls_strerror(ret));
             goto error;
         }
 
         if (creds->endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_SERVER) {
             /* This requests, but does not enforce a client cert.
              * The cert checking code later does enforcement */
-            gnutls_certificate_server_set_request(session->handle,
-                                                  GNUTLS_CERT_REQUEST);
+            gnutls_certificate_server_set_request(session->handle, GNUTLS_CERT_REQUEST);
         }
-    } else {
-        error_setg(errp, "Unsupported TLS credentials type %s",
-                   object_get_typename(OBJECT(creds)));
+    }
+    else {
+        error_setg(errp, "Unsupported TLS credentials type %s", object_get_typename(OBJECT(creds)));
         goto error;
     }
 
     gnutls_transport_set_ptr(session->handle, session);
-    gnutls_transport_set_push_function(session->handle,
-                                       qcrypto_tls_session_push);
-    gnutls_transport_set_pull_function(session->handle,
-                                       qcrypto_tls_session_pull);
+    gnutls_transport_set_push_function(session->handle, qcrypto_tls_session_push);
+    gnutls_transport_set_pull_function(session->handle, qcrypto_tls_session_pull);
 
     return session;
 
- error:
+error:
     qcrypto_tls_session_free(session);
     return NULL;
 }
 
-void qcrypto_tls_session_require_thread_safety(QCryptoTLSSession *sess)
-{
-    sess->requireThreadSafety = true;
-}
+void qcrypto_tls_session_require_thread_safety(QCryptoTLSSession* sess) { sess->requireThreadSafety = true; }
 
-static int
-qcrypto_tls_session_check_certificate(QCryptoTLSSession *session,
-                                      Error **errp)
+static int qcrypto_tls_session_check_certificate(QCryptoTLSSession* session, Error** errp)
 {
-    int ret;
-    unsigned int status;
-    const gnutls_datum_t *certs;
-    unsigned int nCerts, i;
-    time_t now;
-    gnutls_x509_crt_t cert = NULL;
-    Error *err = NULL;
+    int                   ret;
+    unsigned int          status;
+    const gnutls_datum_t* certs;
+    unsigned int          nCerts, i;
+    time_t                now;
+    gnutls_x509_crt_t     cert = NULL;
+    Error*                err  = NULL;
 
     now = time(NULL);
     if (now == ((time_t)-1)) {
@@ -350,23 +293,15 @@ qcrypto_tls_session_check_certificate(QCryptoTLSSession *session,
     }
 
     if (status != 0) {
-        const char *reason = "Invalid certificate";
+        const char* reason = "Invalid certificate";
 
-        if (status & GNUTLS_CERT_INVALID) {
-            reason = "The certificate is not trusted";
-        }
+        if (status & GNUTLS_CERT_INVALID) { reason = "The certificate is not trusted"; }
 
-        if (status & GNUTLS_CERT_SIGNER_NOT_FOUND) {
-            reason = "The certificate hasn't got a known issuer";
-        }
+        if (status & GNUTLS_CERT_SIGNER_NOT_FOUND) { reason = "The certificate hasn't got a known issuer"; }
 
-        if (status & GNUTLS_CERT_REVOKED) {
-            reason = "The certificate has been revoked";
-        }
+        if (status & GNUTLS_CERT_REVOKED) { reason = "The certificate has been revoked"; }
 
-        if (status & GNUTLS_CERT_INSECURE_ALGORITHM) {
-            reason = "The certificate uses an insecure algorithm";
-        }
+        if (status & GNUTLS_CERT_INSECURE_ALGORITHM) { reason = "The certificate uses an insecure algorithm"; }
 
         error_setg(errp, "%s", reason);
         return -1;
@@ -381,15 +316,13 @@ qcrypto_tls_session_check_certificate(QCryptoTLSSession *session,
     for (i = 0; i < nCerts; i++) {
         ret = gnutls_x509_crt_init(&cert);
         if (ret < 0) {
-            error_setg(errp, "Cannot initialize certificate: %s",
-                       gnutls_strerror(ret));
+            error_setg(errp, "Cannot initialize certificate: %s", gnutls_strerror(ret));
             return -1;
         }
 
         ret = gnutls_x509_crt_import(cert, &certs[i], GNUTLS_X509_FMT_DER);
         if (ret < 0) {
-            error_setg(errp, "Cannot import certificate: %s",
-                       gnutls_strerror(ret));
+            error_setg(errp, "Cannot import certificate: %s", gnutls_strerror(ret));
             goto error;
         }
 
@@ -409,45 +342,39 @@ qcrypto_tls_session_check_certificate(QCryptoTLSSession *session,
         }
 
         if (i == 0) {
-            size_t dnameSize = 1024;
+            size_t dnameSize  = 1024;
             session->peername = g_malloc(dnameSize);
         requery:
             ret = gnutls_x509_crt_get_dn(cert, session->peername, &dnameSize);
             if (ret < 0) {
                 if (ret == GNUTLS_E_SHORT_MEMORY_BUFFER) {
-                    session->peername = g_realloc(session->peername,
-                                                  dnameSize);
+                    session->peername = g_realloc(session->peername, dnameSize);
                     goto requery;
                 }
-                error_setg(errp, "Cannot get client distinguished name: %s",
-                           gnutls_strerror(ret));
+                error_setg(errp, "Cannot get client distinguished name: %s", gnutls_strerror(ret));
                 goto error;
             }
             if (session->authzid) {
                 bool allow;
 
-                allow = qauthz_is_allowed_by_id(session->authzid,
-                                                session->peername, &err);
+                allow = qauthz_is_allowed_by_id(session->authzid, session->peername, &err);
                 if (err) {
                     error_propagate(errp, err);
                     goto error;
                 }
                 if (!allow) {
-                    error_setg(errp, "TLS x509 authz check for %s is denied",
-                               session->peername);
+                    error_setg(errp, "TLS x509 authz check for %s is denied", session->peername);
                     goto error;
                 }
             }
             if (session->hostname) {
                 if (!gnutls_x509_crt_check_hostname(cert, session->hostname)) {
-                    error_setg(errp,
-                               "Certificate does not match the hostname %s",
-                               session->hostname);
+                    error_setg(errp, "Certificate does not match the hostname %s", session->hostname);
                     goto error;
                 }
-            } else {
-                if (session->creds->endpoint ==
-                    QCRYPTO_TLS_CREDS_ENDPOINT_CLIENT) {
+            }
+            else {
+                if (session->creds->endpoint == QCRYPTO_TLS_CREDS_ENDPOINT_CLIENT) {
                     error_setg(errp, "No hostname for certificate validation");
                     goto error;
                 }
@@ -459,86 +386,66 @@ qcrypto_tls_session_check_certificate(QCryptoTLSSession *session,
 
     return 0;
 
- error:
+error:
     gnutls_x509_crt_deinit(cert);
     return -1;
 }
 
-
-int
-qcrypto_tls_session_check_credentials(QCryptoTLSSession *session,
-                                      Error **errp)
+int qcrypto_tls_session_check_credentials(QCryptoTLSSession* session, Error** errp)
 {
-    if (object_dynamic_cast(OBJECT(session->creds),
-                            TYPE_QCRYPTO_TLS_CREDS_ANON)) {
+    if (object_dynamic_cast(OBJECT(session->creds), TYPE_QCRYPTO_TLS_CREDS_ANON)) {
         trace_qcrypto_tls_session_check_creds(session, "nop");
         return 0;
-    } else if (object_dynamic_cast(OBJECT(session->creds),
-                            TYPE_QCRYPTO_TLS_CREDS_PSK)) {
+    }
+    else if (object_dynamic_cast(OBJECT(session->creds), TYPE_QCRYPTO_TLS_CREDS_PSK)) {
         trace_qcrypto_tls_session_check_creds(session, "nop");
         return 0;
-    } else if (object_dynamic_cast(OBJECT(session->creds),
-                            TYPE_QCRYPTO_TLS_CREDS_X509)) {
+    }
+    else if (object_dynamic_cast(OBJECT(session->creds), TYPE_QCRYPTO_TLS_CREDS_X509)) {
         if (session->creds->verifyPeer) {
-            int ret = qcrypto_tls_session_check_certificate(session,
-                                                            errp);
-            trace_qcrypto_tls_session_check_creds(session,
-                                                  ret == 0 ? "pass" : "fail");
+            int ret = qcrypto_tls_session_check_certificate(session, errp);
+            trace_qcrypto_tls_session_check_creds(session, ret == 0 ? "pass" : "fail");
             return ret;
-        } else {
+        }
+        else {
             trace_qcrypto_tls_session_check_creds(session, "skip");
             return 0;
         }
-    } else {
+    }
+    else {
         trace_qcrypto_tls_session_check_creds(session, "error");
-        error_setg(errp, "Unexpected credential type %s",
-                   object_get_typename(OBJECT(session->creds)));
+        error_setg(errp, "Unexpected credential type %s", object_get_typename(OBJECT(session->creds)));
         return -1;
     }
 }
 
-
-void
-qcrypto_tls_session_set_callbacks(QCryptoTLSSession *session,
-                                  QCryptoTLSSessionWriteFunc writeFunc,
-                                  QCryptoTLSSessionReadFunc readFunc,
-                                  void *opaque)
+void qcrypto_tls_session_set_callbacks(QCryptoTLSSession* session, QCryptoTLSSessionWriteFunc writeFunc,
+                                       QCryptoTLSSessionReadFunc readFunc, void* opaque)
 {
     session->writeFunc = writeFunc;
-    session->readFunc = readFunc;
-    session->opaque = opaque;
+    session->readFunc  = readFunc;
+    session->opaque    = opaque;
 }
 
-
-ssize_t
-qcrypto_tls_session_write(QCryptoTLSSession *session,
-                          const char *buf,
-                          size_t len,
-                          Error **errp)
+ssize_t qcrypto_tls_session_write(QCryptoTLSSession* session, const char* buf, size_t len, Error** errp)
 {
     ssize_t ret;
 
-    if (session->lockEnabled) {
-        qemu_mutex_lock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_lock(&session->lock); }
 
     ret = gnutls_record_send(session->handle, buf, len);
 
-    if (session->lockEnabled) {
-        qemu_mutex_unlock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_unlock(&session->lock); }
 
     if (ret < 0) {
-        if (ret == GNUTLS_E_AGAIN) {
-            return QCRYPTO_TLS_SESSION_ERR_BLOCK;
-        } else {
+        if (ret == GNUTLS_E_AGAIN) { return QCRYPTO_TLS_SESSION_ERR_BLOCK; }
+        else {
             if (session->werr) {
                 error_propagate(errp, session->werr);
                 session->werr = NULL;
-            } else {
-                error_setg(errp,
-                           "Cannot write to TLS channel: %s",
-                           gnutls_strerror(ret));
+            }
+            else {
+                error_setg(errp, "Cannot write to TLS channel: %s", gnutls_strerror(ret));
             }
             return -1;
         }
@@ -547,40 +454,29 @@ qcrypto_tls_session_write(QCryptoTLSSession *session,
     return ret;
 }
 
-
-ssize_t
-qcrypto_tls_session_read(QCryptoTLSSession *session,
-                         char *buf,
-                         size_t len,
-                         bool gracefulTermination,
-                         Error **errp)
+ssize_t qcrypto_tls_session_read(QCryptoTLSSession* session, char* buf, size_t len, bool gracefulTermination,
+                                 Error** errp)
 {
     ssize_t ret;
 
-    if (session->lockEnabled) {
-        qemu_mutex_lock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_lock(&session->lock); }
 
     ret = gnutls_record_recv(session->handle, buf, len);
 
-    if (session->lockEnabled) {
-        qemu_mutex_unlock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_unlock(&session->lock); }
 
     if (ret < 0) {
-        if (ret == GNUTLS_E_AGAIN) {
-            return QCRYPTO_TLS_SESSION_ERR_BLOCK;
-        } else if ((ret == GNUTLS_E_PREMATURE_TERMINATION) &&
-                   gracefulTermination){
+        if (ret == GNUTLS_E_AGAIN) { return QCRYPTO_TLS_SESSION_ERR_BLOCK; }
+        else if ((ret == GNUTLS_E_PREMATURE_TERMINATION) && gracefulTermination) {
             return 0;
-        } else {
+        }
+        else {
             if (session->rerr) {
                 error_propagate(errp, session->rerr);
                 session->rerr = NULL;
-            } else {
-                error_setg(errp,
-                           "Cannot read from TLS channel: %s",
-                           gnutls_strerror(ret));
+            }
+            else {
+                error_setg(errp, "Cannot read from TLS channel: %s", gnutls_strerror(ret));
             }
             return -1;
         }
@@ -589,26 +485,18 @@ qcrypto_tls_session_read(QCryptoTLSSession *session,
     return ret;
 }
 
+size_t qcrypto_tls_session_check_pending(QCryptoTLSSession* session)
+{ return gnutls_record_check_pending(session->handle); }
 
-size_t
-qcrypto_tls_session_check_pending(QCryptoTLSSession *session)
-{
-    return gnutls_record_check_pending(session->handle);
-}
-
-
-int
-qcrypto_tls_session_handshake(QCryptoTLSSession *session,
-                              Error **errp)
+int qcrypto_tls_session_handshake(QCryptoTLSSession* session, Error** errp)
 {
     int ret;
     ret = gnutls_handshake(session->handle);
 
     if (!ret) {
-// #ifdef CONFIG_GNUTLS_BUG1717_WORKAROUND
-#if 1
-        gnutls_cipher_algorithm_t cipher =
-            gnutls_cipher_get(session->handle);
+    // #ifdef CONFIG_GNUTLS_BUG1717_WORKAROUND
+    #if 1
+        gnutls_cipher_algorithm_t cipher = gnutls_cipher_get(session->handle);
 
         /*
          * Any use of rekeying in TLS 1.3 is unsafe for
@@ -617,23 +505,19 @@ qcrypto_tls_session_handshake(QCryptoTLSSession *session,
          * only have to protect against automatic rekeying
          * which doesn't trigger with CHACHA20
          */
-        trace_qcrypto_tls_session_parameters(
-            session,
-            session->requireThreadSafety,
-            gnutls_protocol_get_version(session->handle),
-            cipher);
+        trace_qcrypto_tls_session_parameters(session, session->requireThreadSafety,
+                                             gnutls_protocol_get_version(session->handle), cipher);
 
-        if (session->requireThreadSafety &&
-            gnutls_protocol_get_version(session->handle) ==
-            GNUTLS_TLS1_3 &&
-            cipher != GNUTLS_CIPHER_CHACHA20_POLY1305) {
+        if (session->requireThreadSafety && gnutls_protocol_get_version(session->handle) == GNUTLS_TLS1_3
+            && cipher != GNUTLS_CIPHER_CHACHA20_POLY1305)
+        {
             warn_report("WARNING: activating thread safety countermeasures "
                         "for potentially broken GNUTLS with TLS1.3 cipher=%d",
                         cipher);
             trace_qcrypto_tls_session_bug1717_workaround(session);
             session->lockEnabled = true;
         }
-#endif
+    #endif
 
         session->handshakeComplete = true;
         return QCRYPTO_TLS_HANDSHAKE_COMPLETE;
@@ -641,18 +525,15 @@ qcrypto_tls_session_handshake(QCryptoTLSSession *session,
 
     if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
         int direction = gnutls_record_get_direction(session->handle);
-        return direction ? QCRYPTO_TLS_HANDSHAKE_SENDING :
-            QCRYPTO_TLS_HANDSHAKE_RECVING;
+        return direction ? QCRYPTO_TLS_HANDSHAKE_SENDING : QCRYPTO_TLS_HANDSHAKE_RECVING;
     }
 
     if (session->rerr || session->werr) {
-        error_setg(errp, "TLS handshake failed: %s: %s",
-                   gnutls_strerror(ret),
-                   error_get_pretty(session->rerr ?
-                                    session->rerr : session->werr));
-    } else {
-        error_setg(errp, "TLS handshake failed: %s",
-                   gnutls_strerror(ret));
+        error_setg(errp, "TLS handshake failed: %s: %s", gnutls_strerror(ret),
+                   error_get_pretty(session->rerr ? session->rerr : session->werr));
+    }
+    else {
+        error_setg(errp, "TLS handshake failed: %s", gnutls_strerror(ret));
     }
 
     error_free(session->rerr);
@@ -662,28 +543,18 @@ qcrypto_tls_session_handshake(QCryptoTLSSession *session,
     return -1;
 }
 
-
-int
-qcrypto_tls_session_bye(QCryptoTLSSession *session, Error **errp)
+int qcrypto_tls_session_bye(QCryptoTLSSession* session, Error** errp)
 {
     int ret;
 
-    if (!session->handshakeComplete) {
-        return 0;
-    }
+    if (!session->handshakeComplete) { return 0; }
 
-    if (session->lockEnabled) {
-        qemu_mutex_lock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_lock(&session->lock); }
     ret = gnutls_bye(session->handle, GNUTLS_SHUT_WR);
 
-    if (session->lockEnabled) {
-        qemu_mutex_unlock(&session->lock);
-    }
+    if (session->lockEnabled) { qemu_mutex_unlock(&session->lock); }
 
-    if (!ret) {
-        return QCRYPTO_TLS_BYE_COMPLETE;
-    }
+    if (!ret) { return QCRYPTO_TLS_BYE_COMPLETE; }
 
     if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
         int direction = gnutls_record_get_direction(session->handle);
@@ -692,9 +563,9 @@ qcrypto_tls_session_bye(QCryptoTLSSession *session, Error **errp)
 
     if (session->rerr || session->werr) {
         error_setg(errp, "TLS termination failed: %s: %s", gnutls_strerror(ret),
-                   error_get_pretty(session->rerr ?
-                                    session->rerr : session->werr));
-    } else {
+                   error_get_pretty(session->rerr ? session->rerr : session->werr));
+    }
+    else {
         error_setg(errp, "TLS termination failed: %s", gnutls_strerror(ret));
     }
 
@@ -705,15 +576,13 @@ qcrypto_tls_session_bye(QCryptoTLSSession *session, Error **errp)
     return -1;
 }
 
-int
-qcrypto_tls_session_get_key_size(QCryptoTLSSession *session,
-                                 Error **errp)
+int qcrypto_tls_session_get_key_size(QCryptoTLSSession* session, Error** errp)
 {
     gnutls_cipher_algorithm_t cipher;
-    int ssf;
+    int                       ssf;
 
     cipher = gnutls_cipher_get(session->handle);
-    ssf = gnutls_cipher_get_key_size(cipher);
+    ssf    = gnutls_cipher_get_key_size(cipher);
     if (!ssf) {
         error_setg(errp, "Cannot get TLS cipher key size");
         return -1;
@@ -721,119 +590,65 @@ qcrypto_tls_session_get_key_size(QCryptoTLSSession *session,
     return ssf;
 }
 
-
-char *
-qcrypto_tls_session_get_peer_name(QCryptoTLSSession *session)
+char* qcrypto_tls_session_get_peer_name(QCryptoTLSSession* session)
 {
-    if (session->peername) {
-        return g_strdup(session->peername);
-    }
+    if (session->peername) { return g_strdup(session->peername); }
     return NULL;
 }
-
 
 #else /* ! CONFIG_GNUTLS */
 
-
-QCryptoTLSSession *
-qcrypto_tls_session_new(QCryptoTLSCreds *creds G_GNUC_UNUSED,
-                        const char *hostname G_GNUC_UNUSED,
-                        const char *authzid G_GNUC_UNUSED,
-                        QCryptoTLSCredsEndpoint endpoint G_GNUC_UNUSED,
-                        Error **errp)
+QCryptoTLSSession* qcrypto_tls_session_new(QCryptoTLSCreds* creds G_GNUC_UNUSED, const char* hostname G_GNUC_UNUSED,
+                                           const char* authzid              G_GNUC_UNUSED,
+                                           QCryptoTLSCredsEndpoint endpoint G_GNUC_UNUSED, Error** errp)
 {
     error_setg(errp, "TLS requires GNUTLS support");
     return NULL;
 }
 
-void qcrypto_tls_session_require_thread_safety(QCryptoTLSSession *sess)
-{
-}
+void qcrypto_tls_session_require_thread_safety(QCryptoTLSSession* sess) { }
 
-void
-qcrypto_tls_session_free(QCryptoTLSSession *sess G_GNUC_UNUSED)
-{
-}
+void qcrypto_tls_session_free(QCryptoTLSSession* sess G_GNUC_UNUSED) { }
 
-
-int
-qcrypto_tls_session_check_credentials(QCryptoTLSSession *sess G_GNUC_UNUSED,
-                                      Error **errp)
+int qcrypto_tls_session_check_credentials(QCryptoTLSSession* sess G_GNUC_UNUSED, Error** errp)
 {
     error_setg(errp, "TLS requires GNUTLS support");
     return -1;
 }
 
+void qcrypto_tls_session_set_callbacks(QCryptoTLSSession* sess              G_GNUC_UNUSED,
+                                       QCryptoTLSSessionWriteFunc writeFunc G_GNUC_UNUSED,
+                                       QCryptoTLSSessionReadFunc readFunc G_GNUC_UNUSED, void* opaque G_GNUC_UNUSED)
+{ }
 
-void
-qcrypto_tls_session_set_callbacks(
-    QCryptoTLSSession *sess G_GNUC_UNUSED,
-    QCryptoTLSSessionWriteFunc writeFunc G_GNUC_UNUSED,
-    QCryptoTLSSessionReadFunc readFunc G_GNUC_UNUSED,
-    void *opaque G_GNUC_UNUSED)
-{
-}
-
-
-ssize_t
-qcrypto_tls_session_write(QCryptoTLSSession *sess,
-                          const char *buf,
-                          size_t len,
-                          Error **errp)
+ssize_t qcrypto_tls_session_write(QCryptoTLSSession* sess, const char* buf, size_t len, Error** errp)
 {
     error_setg(errp, "TLS requires GNUTLS support");
     return -1;
 }
 
-
-ssize_t
-qcrypto_tls_session_read(QCryptoTLSSession *sess,
-                         char *buf,
-                         size_t len,
-                         bool gracefulTermination,
-                         Error **errp)
+ssize_t qcrypto_tls_session_read(QCryptoTLSSession* sess, char* buf, size_t len, bool gracefulTermination, Error** errp)
 {
     error_setg(errp, "TLS requires GNUTLS support");
     return -1;
 }
 
+size_t qcrypto_tls_session_check_pending(QCryptoTLSSession* session) { return 0; }
 
-size_t
-qcrypto_tls_session_check_pending(QCryptoTLSSession *session)
-{
-    return 0;
-}
-
-
-int
-qcrypto_tls_session_handshake(QCryptoTLSSession *sess,
-                              Error **errp)
+int qcrypto_tls_session_handshake(QCryptoTLSSession* sess, Error** errp)
 {
     error_setg(errp, "TLS requires GNUTLS support");
     return -1;
 }
 
+int qcrypto_tls_session_bye(QCryptoTLSSession* session, Error** errp) { return QCRYPTO_TLS_BYE_COMPLETE; }
 
-int
-qcrypto_tls_session_bye(QCryptoTLSSession *session, Error **errp)
-{
-    return QCRYPTO_TLS_BYE_COMPLETE;
-}
-
-
-int
-qcrypto_tls_session_get_key_size(QCryptoTLSSession *sess,
-                                 Error **errp)
+int qcrypto_tls_session_get_key_size(QCryptoTLSSession* sess, Error** errp)
 {
     error_setg(errp, "TLS requires GNUTLS support");
     return -1;
 }
 
-
-char *
-qcrypto_tls_session_get_peer_name(QCryptoTLSSession *sess)
-{
-    return NULL;
-}
+char* qcrypto_tls_session_get_peer_name(QCryptoTLSSession* sess) { return NULL; }
 
 #endif

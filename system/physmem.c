@@ -28,8 +28,8 @@
 #include "qemu/lockable.h"
 
 #ifdef CONFIG_TCG
-#include "accel/tcg/cpu-ops.h"
-#include "accel/tcg/iommu.h"
+    #include "accel/tcg/cpu-ops.h"
+    #include "accel/tcg/iommu.h"
 #endif /* CONFIG_TCG */
 
 #include "exec/cputlb.h"
@@ -56,7 +56,7 @@
 #include "trace.h"
 
 #ifdef CONFIG_FALLOCATE_PUNCH_HOLE
-#include <linux/falloc.h>
+    #include <linux/falloc.h>
 #endif
 
 #include "qemu/rcu_queue.h"
@@ -68,26 +68,26 @@
 
 #include "qemu/range.h"
 #ifndef _WIN32
-#include "qemu/mmap-alloc.h"
+    #include "qemu/mmap-alloc.h"
 #endif
 
 #include "monitor/monitor.h"
 
 #ifdef CONFIG_LIBDAXCTL
-#include <daxctl/libdaxctl.h>
+    #include <daxctl/libdaxctl.h>
 #endif
 
 #include "memory-internal.h"
 
-//#define DEBUG_SUBPAGE
+// #define DEBUG_SUBPAGE
 
 /* ram_list is read under rcu_read_lock()/rcu_read_unlock().  Writes
  * are protected by the ramlist lock.
  */
-RAMList ram_list = { .blocks = QLIST_HEAD_INITIALIZER(ram_list.blocks) };
+RAMList ram_list = {.blocks = QLIST_HEAD_INITIALIZER(ram_list.blocks)};
 
-static MemoryRegion *system_memory;
-static MemoryRegion *system_io;
+static MemoryRegion* system_memory;
+static MemoryRegion* system_io;
 
 AddressSpace address_space_io;
 AddressSpace address_space_memory;
@@ -96,10 +96,11 @@ static MemoryRegion io_mem_unassigned;
 
 typedef struct PhysPageEntry PhysPageEntry;
 
-struct PhysPageEntry {
+struct PhysPageEntry
+{
     /* How many bits skip to next level (in units of L2_SIZE). 0 for a leaf. */
     uint32_t skip : 6;
-     /* index into phys_sections (!skip) or phys_map_nodes (skip) */
+    /* index into phys_sections (!skip) or phys_map_nodes (skip) */
     uint32_t ptr : 26;
 };
 
@@ -115,40 +116,43 @@ struct PhysPageEntry {
 
 typedef PhysPageEntry Node[P_L2_SIZE];
 
-typedef struct PhysPageMap {
+typedef struct PhysPageMap
+{
     struct rcu_head rcu;
 
-    unsigned sections_nb;
-    unsigned sections_nb_alloc;
-    unsigned nodes_nb;
-    unsigned nodes_nb_alloc;
-    Node *nodes;
-    MemoryRegionSection *sections;
+    unsigned             sections_nb;
+    unsigned             sections_nb_alloc;
+    unsigned             nodes_nb;
+    unsigned             nodes_nb_alloc;
+    Node*                nodes;
+    MemoryRegionSection* sections;
 } PhysPageMap;
 
-struct AddressSpaceDispatch {
-    MemoryRegionSection *mru_section;
+struct AddressSpaceDispatch
+{
+    MemoryRegionSection* mru_section;
     /* This is a multi-level map on the physical address space.
      * The bottom level has pointers to MemoryRegionSections.
      */
     PhysPageEntry phys_map;
-    PhysPageMap map;
+    PhysPageMap   map;
 };
 
 #define SUBPAGE_IDX(addr) ((addr) & ~TARGET_PAGE_MASK)
-typedef struct subpage_t {
+typedef struct subpage_t
+{
     MemoryRegion iomem;
-    FlatView *fv;
-    hwaddr base;
-    uint16_t sub_section[];
+    FlatView*    fv;
+    hwaddr       base;
+    uint16_t     sub_section[];
 } subpage_t;
 
 #define PHYS_SECTION_UNASSIGNED 0
 
 static void io_mem_init(void);
 static void memory_map_init(void);
-static void tcg_log_global_after_sync(MemoryListener *listener);
-static void tcg_commit(MemoryListener *listener);
+static void tcg_log_global_after_sync(MemoryListener* listener);
+static void tcg_commit(MemoryListener* listener);
 
 /**
  * CPUAddressSpace: all the information a CPU needs about an AddressSpace
@@ -156,77 +160,73 @@ static void tcg_commit(MemoryListener *listener);
  * @as: the AddressSpace itself
  * @tcg_as_listener: listener for tracking changes to the AddressSpace
  */
-typedef struct CPUAddressSpace {
-    CPUState *cpu;
-    AddressSpace *as;
+typedef struct CPUAddressSpace
+{
+    CPUState*      cpu;
+    AddressSpace*  as;
     MemoryListener tcg_as_listener;
 } CPUAddressSpace;
 
-struct DirtyBitmapSnapshot {
-    ram_addr_t start;
-    ram_addr_t end;
+struct DirtyBitmapSnapshot
+{
+    ram_addr_t    start;
+    ram_addr_t    end;
     unsigned long dirty[];
 };
 
-static void phys_map_node_reserve(PhysPageMap *map, unsigned nodes)
+static void phys_map_node_reserve(PhysPageMap* map, unsigned nodes)
 {
     static unsigned alloc_hint = 16;
     if (map->nodes_nb + nodes > map->nodes_nb_alloc) {
         map->nodes_nb_alloc = MAX(alloc_hint, map->nodes_nb + nodes);
-        map->nodes = g_renew(Node, map->nodes, map->nodes_nb_alloc);
-        alloc_hint = map->nodes_nb_alloc;
+        map->nodes          = g_renew(Node, map->nodes, map->nodes_nb_alloc);
+        alloc_hint          = map->nodes_nb_alloc;
     }
 }
 
-static uint32_t phys_map_node_alloc(PhysPageMap *map, bool leaf)
+static uint32_t phys_map_node_alloc(PhysPageMap* map, bool leaf)
 {
-    unsigned i;
-    uint32_t ret;
-    PhysPageEntry e;
-    PhysPageEntry *p;
+    unsigned       i;
+    uint32_t       ret;
+    PhysPageEntry  e;
+    PhysPageEntry* p;
 
     ret = map->nodes_nb++;
-    p = map->nodes[ret];
+    p   = map->nodes[ret];
     assert(ret != PHYS_MAP_NODE_NIL);
     assert(ret != map->nodes_nb_alloc);
 
     e.skip = leaf ? 0 : 1;
-    e.ptr = leaf ? PHYS_SECTION_UNASSIGNED : PHYS_MAP_NODE_NIL;
-    for (i = 0; i < P_L2_SIZE; ++i) {
-        memcpy(&p[i], &e, sizeof(e));
-    }
+    e.ptr  = leaf ? PHYS_SECTION_UNASSIGNED : PHYS_MAP_NODE_NIL;
+    for (i = 0; i < P_L2_SIZE; ++i) { memcpy(&p[i], &e, sizeof(e)); }
     return ret;
 }
 
-static void phys_page_set_level(PhysPageMap *map, PhysPageEntry *lp,
-                                hwaddr *index, uint64_t *nb, uint16_t leaf,
+static void phys_page_set_level(PhysPageMap* map, PhysPageEntry* lp, hwaddr* index, uint64_t* nb, uint16_t leaf,
                                 int level)
 {
-    PhysPageEntry *p;
-    hwaddr step = (hwaddr)1 << (level * P_L2_BITS);
+    PhysPageEntry* p;
+    hwaddr         step = (hwaddr)1 << (level * P_L2_BITS);
 
-    if (lp->skip && lp->ptr == PHYS_MAP_NODE_NIL) {
-        lp->ptr = phys_map_node_alloc(map, level == 0);
-    }
-    p = map->nodes[lp->ptr];
+    if (lp->skip && lp->ptr == PHYS_MAP_NODE_NIL) { lp->ptr = phys_map_node_alloc(map, level == 0); }
+    p  = map->nodes[lp->ptr];
     lp = &p[(*index >> (level * P_L2_BITS)) & (P_L2_SIZE - 1)];
 
     while (*nb && lp < &p[P_L2_SIZE]) {
         if ((*index & (step - 1)) == 0 && *nb >= step) {
-            lp->skip = 0;
-            lp->ptr = leaf;
-            *index += step;
-            *nb -= step;
-        } else {
+            lp->skip  = 0;
+            lp->ptr   = leaf;
+            *index   += step;
+            *nb      -= step;
+        }
+        else {
             phys_page_set_level(map, lp, index, nb, leaf, level - 1);
         }
         ++lp;
     }
 }
 
-static void phys_page_set(AddressSpaceDispatch *d,
-                          hwaddr index, uint64_t nb,
-                          uint16_t leaf)
+static void phys_page_set(AddressSpaceDispatch* d, hwaddr index, uint64_t nb, uint16_t leaf)
 {
     /* Wildly overreserve - it doesn't matter much. */
     phys_map_node_reserve(&d->map, 3 * P_L2_LEVELS);
@@ -237,42 +237,31 @@ static void phys_page_set(AddressSpaceDispatch *d,
 /* Compact a non leaf page entry. Simply detect that the entry has a single child,
  * and update our entry so we can skip it and go directly to the destination.
  */
-static void phys_page_compact(PhysPageEntry *lp, Node *nodes)
+static void phys_page_compact(PhysPageEntry* lp, Node* nodes)
 {
-    unsigned valid_ptr = P_L2_SIZE;
-    int valid = 0;
-    PhysPageEntry *p;
-    int i;
+    unsigned       valid_ptr = P_L2_SIZE;
+    int            valid     = 0;
+    PhysPageEntry* p;
+    int            i;
 
-    if (lp->ptr == PHYS_MAP_NODE_NIL) {
-        return;
-    }
+    if (lp->ptr == PHYS_MAP_NODE_NIL) { return; }
 
     p = nodes[lp->ptr];
     for (i = 0; i < P_L2_SIZE; i++) {
-        if (p[i].ptr == PHYS_MAP_NODE_NIL) {
-            continue;
-        }
+        if (p[i].ptr == PHYS_MAP_NODE_NIL) { continue; }
 
         valid_ptr = i;
         valid++;
-        if (p[i].skip) {
-            phys_page_compact(&p[i], nodes);
-        }
+        if (p[i].skip) { phys_page_compact(&p[i], nodes); }
     }
 
     /* We can only compress if there's only one child. */
-    if (valid != 1) {
-        return;
-    }
+    if (valid != 1) { return; }
 
     assert(valid_ptr < P_L2_SIZE);
 
     /* Don't compress if it won't fit in the # of bits we have. */
-    if (P_L2_LEVELS >= (1 << 6) &&
-        lp->skip + p[valid_ptr].skip >= (1 << 6)) {
-        return;
-    }
+    if (P_L2_LEVELS >= (1 << 6) && lp->skip + p[valid_ptr].skip >= (1 << 6)) { return; }
 
     lp->ptr = p[valid_ptr].ptr;
     if (!p[valid_ptr].skip) {
@@ -283,62 +272,53 @@ static void phys_page_compact(PhysPageEntry *lp, Node *nodes)
          * change this rule.
          */
         lp->skip = 0;
-    } else {
+    }
+    else {
         lp->skip += p[valid_ptr].skip;
     }
 }
 
-void address_space_dispatch_compact(AddressSpaceDispatch *d)
+void address_space_dispatch_compact(AddressSpaceDispatch* d)
 {
-    if (d->phys_map.skip) {
-        phys_page_compact(&d->phys_map, d->map.nodes);
-    }
+    if (d->phys_map.skip) { phys_page_compact(&d->phys_map, d->map.nodes); }
 }
 
-static inline bool section_covers_addr(const MemoryRegionSection *section,
-                                       hwaddr addr)
+static inline bool section_covers_addr(const MemoryRegionSection* section, hwaddr addr)
 {
     /* Memory topology clips a memory region to [0, 2^64); size.hi > 0 means
      * the section must cover the entire address space.
      */
-    return int128_gethi(section->size) ||
-           range_covers_byte(section->offset_within_address_space,
-                             int128_getlo(section->size), addr);
+    return int128_gethi(section->size)
+           || range_covers_byte(section->offset_within_address_space, int128_getlo(section->size), addr);
 }
 
-static MemoryRegionSection *phys_page_find(AddressSpaceDispatch *d, hwaddr addr)
+static MemoryRegionSection* phys_page_find(AddressSpaceDispatch* d, hwaddr addr)
 {
-    PhysPageEntry lp = d->phys_map, *p;
-    Node *nodes = d->map.nodes;
-    MemoryRegionSection *sections = d->map.sections;
-    hwaddr index = addr >> TARGET_PAGE_BITS;
-    int i;
+    PhysPageEntry        lp       = d->phys_map, *p;
+    Node*                nodes    = d->map.nodes;
+    MemoryRegionSection* sections = d->map.sections;
+    hwaddr               index    = addr >> TARGET_PAGE_BITS;
+    int                  i;
 
     for (i = P_L2_LEVELS; lp.skip && (i -= lp.skip) >= 0;) {
-        if (lp.ptr == PHYS_MAP_NODE_NIL) {
-            return &sections[PHYS_SECTION_UNASSIGNED];
-        }
-        p = nodes[lp.ptr];
+        if (lp.ptr == PHYS_MAP_NODE_NIL) { return &sections[PHYS_SECTION_UNASSIGNED]; }
+        p  = nodes[lp.ptr];
         lp = p[(index >> (i * P_L2_BITS)) & (P_L2_SIZE - 1)];
     }
 
-    if (section_covers_addr(&sections[lp.ptr], addr)) {
-        return &sections[lp.ptr];
-    } else {
+    if (section_covers_addr(&sections[lp.ptr], addr)) { return &sections[lp.ptr]; }
+    else {
         return &sections[PHYS_SECTION_UNASSIGNED];
     }
 }
 
 /* Called from RCU critical section */
-static MemoryRegionSection *address_space_lookup_region(AddressSpaceDispatch *d,
-                                                        hwaddr addr,
-                                                        bool resolve_subpage)
+static MemoryRegionSection* address_space_lookup_region(AddressSpaceDispatch* d, hwaddr addr, bool resolve_subpage)
 {
-    MemoryRegionSection *section = qatomic_read(&d->mru_section);
-    subpage_t *subpage;
+    MemoryRegionSection* section = qatomic_read(&d->mru_section);
+    subpage_t*           subpage;
 
-    if (!section || section == &d->map.sections[PHYS_SECTION_UNASSIGNED] ||
-        !section_covers_addr(section, addr)) {
+    if (!section || section == &d->map.sections[PHYS_SECTION_UNASSIGNED] || !section_covers_addr(section, addr)) {
         section = phys_page_find(d, addr);
         qatomic_set(&d->mru_section, section);
     }
@@ -350,13 +330,12 @@ static MemoryRegionSection *address_space_lookup_region(AddressSpaceDispatch *d,
 }
 
 /* Called from RCU critical section */
-static MemoryRegionSection *
-address_space_translate_internal(AddressSpaceDispatch *d, hwaddr addr, hwaddr *xlat,
-                                 hwaddr *plen, bool resolve_subpage)
+static MemoryRegionSection* address_space_translate_internal(AddressSpaceDispatch* d, hwaddr addr, hwaddr* xlat,
+                                                             hwaddr* plen, bool resolve_subpage)
 {
-    MemoryRegionSection *section;
-    MemoryRegion *mr;
-    Int128 diff;
+    MemoryRegionSection* section;
+    MemoryRegion*        mr;
+    Int128               diff;
 
     section = address_space_lookup_region(d, addr, resolve_subpage);
     /* Compute offset within MemoryRegionSection */
@@ -379,7 +358,7 @@ address_space_translate_internal(AddressSpaceDispatch *d, hwaddr addr, hwaddr *x
      * the caller really has to do the clamping through memory_access_size.
      */
     if (memory_region_is_ram(mr)) {
-        diff = int128_sub(section->size, int128_make64(addr));
+        diff  = int128_sub(section->size, int128_make64(addr));
         *plen = int128_get64(int128_min(diff, int128_make64(*plen)));
     }
     return section;
@@ -407,57 +386,45 @@ address_space_translate_internal(AddressSpaceDispatch *d, hwaddr addr, hwaddr *x
  * This function is called from RCU critical section.  It is the common
  * part of flatview_do_translate and address_space_translate_cached.
  */
-static MemoryRegionSection address_space_translate_iommu(IOMMUMemoryRegion *iommu_mr,
-                                                         hwaddr *xlat,
-                                                         hwaddr *plen_out,
-                                                         hwaddr *page_mask_out,
-                                                         bool is_write,
-                                                         bool is_mmio,
-                                                         AddressSpace **target_as,
-                                                         MemTxAttrs attrs)
+static MemoryRegionSection address_space_translate_iommu(IOMMUMemoryRegion* iommu_mr, hwaddr* xlat, hwaddr* plen_out,
+                                                         hwaddr* page_mask_out, bool is_write, bool is_mmio,
+                                                         AddressSpace** target_as, MemTxAttrs attrs)
 {
-    MemoryRegionSection *section;
-    hwaddr page_mask = (hwaddr)-1;
+    MemoryRegionSection* section;
+    hwaddr               page_mask = (hwaddr)-1;
 
     do {
-        hwaddr addr = *xlat;
-        IOMMUMemoryRegionClass *imrc = memory_region_get_iommu_class_nocheck(iommu_mr);
-        int iommu_idx;
-        IOMMUTLBEntry iotlb;
+        hwaddr                  addr = *xlat;
+        IOMMUMemoryRegionClass* imrc = memory_region_get_iommu_class_nocheck(iommu_mr);
+        int                     iommu_idx;
+        IOMMUTLBEntry           iotlb;
 
-        if (imrc->attrs_to_index) {
-            iommu_idx = imrc->attrs_to_index(iommu_mr, attrs);
-        } else {
+        if (imrc->attrs_to_index) { iommu_idx = imrc->attrs_to_index(iommu_mr, attrs); }
+        else {
             iommu_idx = 0;
         }
 
-        iotlb = imrc->translate(iommu_mr, addr, is_write ?
-                                IOMMU_WO : IOMMU_RO, iommu_idx);
+        iotlb = imrc->translate(iommu_mr, addr, is_write ? IOMMU_WO : IOMMU_RO, iommu_idx);
 
-        if (!(iotlb.perm & (1 << is_write))) {
-            goto unassigned;
-        }
+        if (!(iotlb.perm & (1 << is_write))) { goto unassigned; }
 
-        addr = ((iotlb.translated_addr & ~iotlb.addr_mask)
-                | (addr & iotlb.addr_mask));
-        page_mask &= iotlb.addr_mask;
-        *plen_out = MIN(*plen_out, (addr | iotlb.addr_mask) - addr + 1);
-        *target_as = iotlb.target_as;
+        addr        = ((iotlb.translated_addr & ~iotlb.addr_mask) | (addr & iotlb.addr_mask));
+        page_mask  &= iotlb.addr_mask;
+        *plen_out   = MIN(*plen_out, (addr | iotlb.addr_mask) - addr + 1);
+        *target_as  = iotlb.target_as;
 
-        section = address_space_translate_internal(
-                address_space_to_dispatch(iotlb.target_as), addr, xlat,
-                plen_out, is_mmio);
+        section =
+            address_space_translate_internal(address_space_to_dispatch(iotlb.target_as), addr, xlat, plen_out, is_mmio);
 
         iommu_mr = memory_region_get_iommu(section->mr);
-    } while (unlikely(iommu_mr));
-
-    if (page_mask_out) {
-        *page_mask_out = page_mask;
     }
+    while (unlikely(iommu_mr));
+
+    if (page_mask_out) { *page_mask_out = page_mask; }
     return *section;
 
 unassigned:
-    return (MemoryRegionSection) { .mr = &io_mem_unassigned };
+    return (MemoryRegionSection){.mr = &io_mem_unassigned};
 }
 
 /**
@@ -480,34 +447,22 @@ unassigned:
  *
  * This function is called from RCU critical section
  */
-static MemoryRegionSection flatview_do_translate(FlatView *fv,
-                                                 hwaddr addr,
-                                                 hwaddr *xlat,
-                                                 hwaddr *plen_out,
-                                                 hwaddr *page_mask_out,
-                                                 bool is_write,
-                                                 bool is_mmio,
-                                                 AddressSpace **target_as,
-                                                 MemTxAttrs attrs)
+static MemoryRegionSection flatview_do_translate(FlatView* fv, hwaddr addr, hwaddr* xlat, hwaddr* plen_out,
+                                                 hwaddr* page_mask_out, bool is_write, bool is_mmio,
+                                                 AddressSpace** target_as, MemTxAttrs attrs)
 {
-    MemoryRegionSection *section;
-    IOMMUMemoryRegion *iommu_mr;
-    hwaddr plen = (hwaddr)(-1);
+    MemoryRegionSection* section;
+    IOMMUMemoryRegion*   iommu_mr;
+    hwaddr               plen = (hwaddr)(-1);
 
-    if (!plen_out) {
-        plen_out = &plen;
-    }
+    if (!plen_out) { plen_out = &plen; }
 
-    section = address_space_translate_internal(
-            flatview_to_dispatch(fv), addr, xlat,
-            plen_out, is_mmio);
+    section = address_space_translate_internal(flatview_to_dispatch(fv), addr, xlat, plen_out, is_mmio);
 
     iommu_mr = memory_region_get_iommu(section->mr);
     if (unlikely(iommu_mr)) {
-        return address_space_translate_iommu(iommu_mr, xlat,
-                                             plen_out, page_mask_out,
-                                             is_write, is_mmio,
-                                             target_as, attrs);
+        return address_space_translate_iommu(iommu_mr, xlat, plen_out, page_mask_out, is_write, is_mmio, target_as,
+                                             attrs);
     }
     if (page_mask_out) {
         /* Not behind an IOMMU, use default page size. */
@@ -518,76 +473,67 @@ static MemoryRegionSection flatview_do_translate(FlatView *fv,
 }
 
 /* Called from RCU critical section */
-IOMMUTLBEntry address_space_get_iotlb_entry(AddressSpace *as, hwaddr addr,
-                                            bool is_write, MemTxAttrs attrs)
+IOMMUTLBEntry address_space_get_iotlb_entry(AddressSpace* as, hwaddr addr, bool is_write, MemTxAttrs attrs)
 {
     MemoryRegionSection section;
-    hwaddr xlat, page_mask;
+    hwaddr              xlat, page_mask;
 
     /*
      * This can never be MMIO, and we don't really care about plen,
      * but page mask.
      */
-    section = flatview_do_translate(address_space_to_flatview(as), addr, &xlat,
-                                    NULL, &page_mask, is_write, false, &as,
+    section = flatview_do_translate(address_space_to_flatview(as), addr, &xlat, NULL, &page_mask, is_write, false, &as,
                                     attrs);
 
     /* Illegal translation */
-    if (section.mr == &io_mem_unassigned) {
-        goto iotlb_fail;
-    }
+    if (section.mr == &io_mem_unassigned) { goto iotlb_fail; }
 
     /* Convert memory region offset into address space offset */
-    xlat += section.offset_within_address_space -
-        section.offset_within_region;
+    xlat += section.offset_within_address_space - section.offset_within_region;
 
-    return (IOMMUTLBEntry) {
-        .target_as = as,
-        .iova = addr & ~page_mask,
+    return (IOMMUTLBEntry){
+        .target_as       = as,
+        .iova            = addr & ~page_mask,
         .translated_addr = xlat & ~page_mask,
-        .addr_mask = page_mask,
+        .addr_mask       = page_mask,
         /* IOTLBs are for DMAs, and DMA only allows on RAMs. */
         .perm = IOMMU_RW,
     };
 
 iotlb_fail:
-    return (IOMMUTLBEntry) {0};
+    return (IOMMUTLBEntry){0};
 }
 
 /* Called from RCU critical section */
-MemoryRegion *flatview_translate(FlatView *fv, hwaddr addr, hwaddr *xlat,
-                                 hwaddr *plen, bool is_write,
-                                 MemTxAttrs attrs)
+MemoryRegion* flatview_translate(FlatView* fv, hwaddr addr, hwaddr* xlat, hwaddr* plen, bool is_write, MemTxAttrs attrs)
 {
-    MemoryRegion *mr;
+    MemoryRegion*       mr;
     MemoryRegionSection section;
-    AddressSpace *as = NULL;
+    AddressSpace*       as = NULL;
 
     /* This can be MMIO, so setup MMIO bit. */
-    section = flatview_do_translate(fv, addr, xlat, plen, NULL,
-                                    is_write, true, &as, attrs);
-    mr = section.mr;
+    section = flatview_do_translate(fv, addr, xlat, plen, NULL, is_write, true, &as, attrs);
+    mr      = section.mr;
 
     return mr;
 }
 
 #ifdef CONFIG_TCG
 
-typedef struct TCGIOMMUNotifier {
+typedef struct TCGIOMMUNotifier
+{
     IOMMUNotifier n;
-    MemoryRegion *mr;
-    CPUState *cpu;
-    int iommu_idx;
-    bool active;
+    MemoryRegion* mr;
+    CPUState*     cpu;
+    int           iommu_idx;
+    bool          active;
 } TCGIOMMUNotifier;
 
-static void tcg_iommu_unmap_notify(IOMMUNotifier *n, IOMMUTLBEntry *iotlb)
+static void tcg_iommu_unmap_notify(IOMMUNotifier* n, IOMMUTLBEntry* iotlb)
 {
-    TCGIOMMUNotifier *notifier = container_of(n, TCGIOMMUNotifier, n);
+    TCGIOMMUNotifier* notifier = container_of(n, TCGIOMMUNotifier, n);
 
-    if (!notifier->active) {
-        return;
-    }
+    if (!notifier->active) { return; }
     tlb_flush(notifier->cpu);
     notifier->active = false;
     /* We leave the notifier struct on the list to avoid reallocating it later.
@@ -597,100 +543,81 @@ static void tcg_iommu_unmap_notify(IOMMUNotifier *n, IOMMUTLBEntry *iotlb)
      */
 }
 
-static void tcg_register_iommu_notifier(CPUState *cpu,
-                                        IOMMUMemoryRegion *iommu_mr,
-                                        int iommu_idx)
+static void tcg_register_iommu_notifier(CPUState* cpu, IOMMUMemoryRegion* iommu_mr, int iommu_idx)
 {
     /* Make sure this CPU has an IOMMU notifier registered for this
      * IOMMU/IOMMU index combination, so that we can flush its TLB
      * when the IOMMU tells us the mappings we've cached have changed.
      */
-    MemoryRegion *mr = MEMORY_REGION(iommu_mr);
-    TCGIOMMUNotifier *notifier = NULL;
-    int i;
+    MemoryRegion*     mr       = MEMORY_REGION(iommu_mr);
+    TCGIOMMUNotifier* notifier = NULL;
+    int               i;
 
     for (i = 0; i < cpu->iommu_notifiers->len; i++) {
-        notifier = g_array_index(cpu->iommu_notifiers, TCGIOMMUNotifier *, i);
-        if (notifier->mr == mr && notifier->iommu_idx == iommu_idx) {
-            break;
-        }
+        notifier = g_array_index(cpu->iommu_notifiers, TCGIOMMUNotifier*, i);
+        if (notifier->mr == mr && notifier->iommu_idx == iommu_idx) { break; }
     }
     if (i == cpu->iommu_notifiers->len) {
         /* Not found, add a new entry at the end of the array */
-        cpu->iommu_notifiers = g_array_set_size(cpu->iommu_notifiers, i + 1);
-        notifier = g_new0(TCGIOMMUNotifier, 1);
-        g_array_index(cpu->iommu_notifiers, TCGIOMMUNotifier *, i) = notifier;
+        cpu->iommu_notifiers                                      = g_array_set_size(cpu->iommu_notifiers, i + 1);
+        notifier                                                  = g_new0(TCGIOMMUNotifier, 1);
+        g_array_index(cpu->iommu_notifiers, TCGIOMMUNotifier*, i) = notifier;
 
-        notifier->mr = mr;
+        notifier->mr        = mr;
         notifier->iommu_idx = iommu_idx;
-        notifier->cpu = cpu;
+        notifier->cpu       = cpu;
         /* Rather than trying to register interest in the specific part
          * of the iommu's address space that we've accessed and then
          * expand it later as subsequent accesses touch more of it, we
          * just register interest in the whole thing, on the assumption
          * that iommu reconfiguration will be rare.
          */
-        iommu_notifier_init(&notifier->n,
-                            tcg_iommu_unmap_notify,
-                            IOMMU_NOTIFIER_UNMAP,
-                            0,
-                            HWADDR_MAX,
-                            iommu_idx);
-        memory_region_register_iommu_notifier(notifier->mr, &notifier->n,
-                                              &error_fatal);
+        iommu_notifier_init(&notifier->n, tcg_iommu_unmap_notify, IOMMU_NOTIFIER_UNMAP, 0, HWADDR_MAX, iommu_idx);
+        memory_region_register_iommu_notifier(notifier->mr, &notifier->n, &error_fatal);
     }
 
-    if (!notifier->active) {
-        notifier->active = true;
-    }
+    if (!notifier->active) { notifier->active = true; }
 }
 
-void tcg_iommu_free_notifier_list(CPUState *cpu)
+void tcg_iommu_free_notifier_list(CPUState* cpu)
 {
     /* Destroy the CPU's notifier list */
-    int i;
-    TCGIOMMUNotifier *notifier;
+    int               i;
+    TCGIOMMUNotifier* notifier;
 
     for (i = 0; i < cpu->iommu_notifiers->len; i++) {
-        notifier = g_array_index(cpu->iommu_notifiers, TCGIOMMUNotifier *, i);
+        notifier = g_array_index(cpu->iommu_notifiers, TCGIOMMUNotifier*, i);
         memory_region_unregister_iommu_notifier(notifier->mr, &notifier->n);
         g_free(notifier);
     }
     g_array_free(cpu->iommu_notifiers, true);
 }
 
-void tcg_iommu_init_notifier_list(CPUState *cpu)
-{
-    cpu->iommu_notifiers = g_array_new(false, true, sizeof(TCGIOMMUNotifier *));
-}
+void tcg_iommu_init_notifier_list(CPUState* cpu)
+{ cpu->iommu_notifiers = g_array_new(false, true, sizeof(TCGIOMMUNotifier*)); }
 
 /* Called from RCU critical section */
-MemoryRegionSection *
-address_space_translate_for_iotlb(CPUState *cpu, int asidx, hwaddr orig_addr,
-                                  hwaddr *xlat, hwaddr *plen,
-                                  MemTxAttrs attrs, int *prot)
+MemoryRegionSection* address_space_translate_for_iotlb(CPUState* cpu, int asidx, hwaddr orig_addr, hwaddr* xlat,
+                                                       hwaddr* plen, MemTxAttrs attrs, int* prot)
 {
-    MemoryRegionSection *section;
-    IOMMUMemoryRegion *iommu_mr;
-    IOMMUMemoryRegionClass *imrc;
-    IOMMUTLBEntry iotlb;
-    int iommu_idx;
-    hwaddr addr = orig_addr;
-    AddressSpaceDispatch *d = address_space_to_dispatch(cpu->cpu_ases[asidx].as);
+    MemoryRegionSection*    section;
+    IOMMUMemoryRegion*      iommu_mr;
+    IOMMUMemoryRegionClass* imrc;
+    IOMMUTLBEntry           iotlb;
+    int                     iommu_idx;
+    hwaddr                  addr = orig_addr;
+    AddressSpaceDispatch*   d    = address_space_to_dispatch(cpu->cpu_ases[asidx].as);
 
     for (;;) {
         section = address_space_translate_internal(d, addr, &addr, plen, false);
 
         iommu_mr = memory_region_get_iommu(section->mr);
-        if (!iommu_mr) {
-            break;
-        }
+        if (!iommu_mr) { break; }
 
         imrc = memory_region_get_iommu_class_nocheck(iommu_mr);
 
-        if (imrc->attrs_to_index) {
-            iommu_idx = imrc->attrs_to_index(iommu_mr, attrs);
-        } else {
+        if (imrc->attrs_to_index) { iommu_idx = imrc->attrs_to_index(iommu_mr, attrs); }
+        else {
             iommu_idx = 0;
         }
         tcg_register_iommu_notifier(cpu, iommu_mr, iommu_idx);
@@ -698,22 +625,15 @@ address_space_translate_for_iotlb(CPUState *cpu, int asidx, hwaddr orig_addr,
          * doesn't short-cut its translation table walk.
          */
         iotlb = imrc->translate(iommu_mr, addr, IOMMU_NONE, iommu_idx);
-        addr = ((iotlb.translated_addr & ~iotlb.addr_mask)
-                | (addr & iotlb.addr_mask));
+        addr  = ((iotlb.translated_addr & ~iotlb.addr_mask) | (addr & iotlb.addr_mask));
         /* Update the caller's prot bits to remove permissions the IOMMU
          * is giving us a failure response for. If we get down to no
          * permissions left at all we can give up now.
          */
-        if (!(iotlb.perm & IOMMU_RO)) {
-            *prot &= ~(PAGE_READ | PAGE_EXEC);
-        }
-        if (!(iotlb.perm & IOMMU_WO)) {
-            *prot &= ~PAGE_WRITE;
-        }
+        if (!(iotlb.perm & IOMMU_RO)) { *prot &= ~(PAGE_READ | PAGE_EXEC); }
+        if (!(iotlb.perm & IOMMU_WO)) { *prot &= ~PAGE_WRITE; }
 
-        if (!*prot) {
-            goto translate_fail;
-        }
+        if (!*prot) { goto translate_fail; }
 
         d = flatview_to_dispatch(address_space_to_flatview(iotlb.target_as));
     }
@@ -738,12 +658,11 @@ translate_fail:
 
 #endif /* CONFIG_TCG */
 
-void cpu_address_space_init(CPUState *cpu, int asidx,
-                            const char *prefix, MemoryRegion *mr)
+void cpu_address_space_init(CPUState* cpu, int asidx, const char* prefix, MemoryRegion* mr)
 {
-    CPUAddressSpace *newas;
-    AddressSpace *as = g_new0(AddressSpace, 1);
-    char *as_name;
+    CPUAddressSpace* newas;
+    AddressSpace*    as = g_new0(AddressSpace, 1);
+    char*            as_name;
 
     assert(mr);
     as_name = g_strdup_printf("%s-%d", prefix, cpu->cpu_index);
@@ -758,25 +677,23 @@ void cpu_address_space_init(CPUState *cpu, int asidx,
         cpu->as = as;
     }
 
-    if (!cpu->cpu_ases) {
-        cpu->cpu_ases = g_new0(CPUAddressSpace, cpu->num_ases);
-    }
+    if (!cpu->cpu_ases) { cpu->cpu_ases = g_new0(CPUAddressSpace, cpu->num_ases); }
 
-    newas = &cpu->cpu_ases[asidx];
+    newas      = &cpu->cpu_ases[asidx];
     newas->cpu = cpu;
-    newas->as = as;
+    newas->as  = as;
     if (tcg_enabled()) {
         newas->tcg_as_listener.log_global_after_sync = tcg_log_global_after_sync;
-        newas->tcg_as_listener.commit = tcg_commit;
-        newas->tcg_as_listener.name = "tcg";
+        newas->tcg_as_listener.commit                = tcg_commit;
+        newas->tcg_as_listener.name                  = "tcg";
         memory_listener_register(&newas->tcg_as_listener, as);
     }
 }
 
-void cpu_destroy_address_spaces(CPUState *cpu)
+void cpu_destroy_address_spaces(CPUState* cpu)
 {
-    CPUAddressSpace *cpuas;
-    int asidx;
+    CPUAddressSpace* cpuas;
+    int              asidx;
 
     assert(cpu->cpu_ases);
 
@@ -789,34 +706,28 @@ void cpu_destroy_address_spaces(CPUState *cpu)
             /* This index was never initialized; no deinit needed */
             continue;
         }
-        if (tcg_enabled()) {
-            memory_listener_unregister(&cpuas->tcg_as_listener);
-        }
+        if (tcg_enabled()) { memory_listener_unregister(&cpuas->tcg_as_listener); }
         g_clear_pointer(&cpuas->as, address_space_destroy_free);
     }
 
     g_clear_pointer(&cpu->cpu_ases, g_free);
 }
 
-AddressSpace *cpu_get_address_space(CPUState *cpu, int asidx)
+AddressSpace* cpu_get_address_space(CPUState* cpu, int asidx)
 {
     /* Return the AddressSpace corresponding to the specified index */
     return cpu->cpu_ases[asidx].as;
 }
 
 /* Called from RCU critical section */
-static RAMBlock *qemu_get_ram_block(ram_addr_t addr)
+static RAMBlock* qemu_get_ram_block(ram_addr_t addr)
 {
-    RAMBlock *block;
+    RAMBlock* block;
 
     block = qatomic_rcu_read(&ram_list.mru_block);
-    if (block && addr - block->offset < block->max_length) {
-        return block;
-    }
-    RAMBLOCK_FOREACH(block) {
-        if (addr - block->offset < block->max_length) {
-            goto found;
-        }
+    if (block && addr - block->offset < block->max_length) { return block; }
+    RAMBLOCK_FOREACH (block) {
+        if (addr - block->offset < block->max_length) { goto found; }
     }
 
     fprintf(stderr, "Bad ram offset %" PRIx64 "\n", (uint64_t)addr);
@@ -845,81 +756,71 @@ found:
 
 void tlb_reset_dirty_range_all(ram_addr_t start, ram_addr_t length)
 {
-    CPUState *cpu;
+    CPUState*  cpu;
     ram_addr_t start1;
-    RAMBlock *block;
+    RAMBlock*  block;
     ram_addr_t end;
 
     assert(tcg_enabled());
-    end = TARGET_PAGE_ALIGN(start + length);
+    end    = TARGET_PAGE_ALIGN(start + length);
     start &= TARGET_PAGE_MASK;
 
     RCU_READ_LOCK_GUARD();
     block = qemu_get_ram_block(start);
     assert(block == qemu_get_ram_block(end - 1));
     start1 = (uintptr_t)ramblock_ptr(block, start - block->offset);
-    CPU_FOREACH(cpu) {
-        tlb_reset_dirty(cpu, start1, length);
-    }
+    CPU_FOREACH (cpu) { tlb_reset_dirty(cpu, start1, length); }
 }
 
 /* Note: start and end must be within the same ram block.  */
-bool cpu_physical_memory_test_and_clear_dirty(ram_addr_t start,
-                                              ram_addr_t length,
-                                              unsigned client)
+bool cpu_physical_memory_test_and_clear_dirty(ram_addr_t start, ram_addr_t length, unsigned client)
 {
-    DirtyMemoryBlocks *blocks;
-    unsigned long end, page, start_page;
-    bool dirty = false;
-    RAMBlock *ramblock;
-    uint64_t mr_offset, mr_size;
+    DirtyMemoryBlocks* blocks;
+    unsigned long      end, page, start_page;
+    bool               dirty = false;
+    RAMBlock*          ramblock;
+    uint64_t           mr_offset, mr_size;
 
-    if (length == 0) {
-        return false;
-    }
+    if (length == 0) { return false; }
 
-    end = TARGET_PAGE_ALIGN(start + length) >> TARGET_PAGE_BITS;
+    end        = TARGET_PAGE_ALIGN(start + length) >> TARGET_PAGE_BITS;
     start_page = start >> TARGET_PAGE_BITS;
-    page = start_page;
+    page       = start_page;
 
-    WITH_RCU_READ_LOCK_GUARD() {
-        blocks = qatomic_rcu_read(&ram_list.dirty_memory[client]);
+    WITH_RCU_READ_LOCK_GUARD()
+    {
+        blocks   = qatomic_rcu_read(&ram_list.dirty_memory[client]);
         ramblock = qemu_get_ram_block(start);
         /* Range sanity check on the ramblock */
-        assert(start >= ramblock->offset &&
-               start + length <= ramblock->offset + ramblock->used_length);
+        assert(start >= ramblock->offset && start + length <= ramblock->offset + ramblock->used_length);
 
         while (page < end) {
-            unsigned long idx = page / DIRTY_MEMORY_BLOCK_SIZE;
+            unsigned long idx    = page / DIRTY_MEMORY_BLOCK_SIZE;
             unsigned long offset = page % DIRTY_MEMORY_BLOCK_SIZE;
-            unsigned long num = MIN(end - page,
-                                    DIRTY_MEMORY_BLOCK_SIZE - offset);
+            unsigned long num    = MIN(end - page, DIRTY_MEMORY_BLOCK_SIZE - offset);
 
-            dirty |= bitmap_test_and_clear_atomic(blocks->blocks[idx],
-                                                  offset, num);
-            page += num;
+            dirty |= bitmap_test_and_clear_atomic(blocks->blocks[idx], offset, num);
+            page  += num;
         }
 
         mr_offset = (ram_addr_t)(start_page << TARGET_PAGE_BITS) - ramblock->offset;
-        mr_size = (end - start_page) << TARGET_PAGE_BITS;
+        mr_size   = (end - start_page) << TARGET_PAGE_BITS;
         memory_region_clear_dirty_bitmap(ramblock->mr, mr_offset, mr_size);
     }
 
-    if (dirty) {
-        cpu_physical_memory_dirty_bits_cleared(start, length);
-    }
+    if (dirty) { cpu_physical_memory_dirty_bits_cleared(start, length); }
 
     return dirty;
 }
 
-DirtyBitmapSnapshot *cpu_physical_memory_snapshot_and_clear_dirty
-    (MemoryRegion *mr, hwaddr offset, hwaddr length, unsigned client)
+DirtyBitmapSnapshot* cpu_physical_memory_snapshot_and_clear_dirty(MemoryRegion* mr, hwaddr offset, hwaddr length,
+                                                                  unsigned client)
 {
-    DirtyMemoryBlocks *blocks;
-    ram_addr_t start, first, last;
-    unsigned long align = 1UL << (TARGET_PAGE_BITS + BITS_PER_LEVEL);
-    DirtyBitmapSnapshot *snap;
-    unsigned long page, end, dest;
+    DirtyMemoryBlocks*   blocks;
+    ram_addr_t           start, first, last;
+    unsigned long        align = 1UL << (TARGET_PAGE_BITS + BITS_PER_LEVEL);
+    DirtyBitmapSnapshot* snap;
+    unsigned long        page, end, dest;
 
     start = memory_region_get_ram_addr(mr);
     /* We know we're only called for RAM MemoryRegions */
@@ -929,31 +830,28 @@ DirtyBitmapSnapshot *cpu_physical_memory_snapshot_and_clear_dirty
     first = QEMU_ALIGN_DOWN(start, align);
     last  = QEMU_ALIGN_UP(start + length, align);
 
-    snap = g_malloc0(sizeof(*snap) +
-                     ((last - first) >> (TARGET_PAGE_BITS + 3)));
+    snap        = g_malloc0(sizeof(*snap) + ((last - first) >> (TARGET_PAGE_BITS + 3)));
     snap->start = first;
     snap->end   = last;
 
     page = first >> TARGET_PAGE_BITS;
-    end  = last  >> TARGET_PAGE_BITS;
+    end  = last >> TARGET_PAGE_BITS;
     dest = 0;
 
-    WITH_RCU_READ_LOCK_GUARD() {
+    WITH_RCU_READ_LOCK_GUARD()
+    {
         blocks = qatomic_rcu_read(&ram_list.dirty_memory[client]);
 
         while (page < end) {
             unsigned long idx = page / DIRTY_MEMORY_BLOCK_SIZE;
             unsigned long ofs = page % DIRTY_MEMORY_BLOCK_SIZE;
-            unsigned long num = MIN(end - page,
-                                    DIRTY_MEMORY_BLOCK_SIZE - ofs);
+            unsigned long num = MIN(end - page, DIRTY_MEMORY_BLOCK_SIZE - ofs);
 
             assert(QEMU_IS_ALIGNED(ofs, (1 << BITS_PER_LEVEL)));
-            assert(QEMU_IS_ALIGNED(num,    (1 << BITS_PER_LEVEL)));
+            assert(QEMU_IS_ALIGNED(num, (1 << BITS_PER_LEVEL)));
             ofs >>= BITS_PER_LEVEL;
 
-            bitmap_copy_and_clear_atomic(snap->dirty + dest,
-                                         blocks->blocks[idx] + ofs,
-                                         num);
+            bitmap_copy_and_clear_atomic(snap->dirty + dest, blocks->blocks[idx] + ofs, num);
             page += num;
             dest += num >> BITS_PER_LEVEL;
         }
@@ -966,106 +864,94 @@ DirtyBitmapSnapshot *cpu_physical_memory_snapshot_and_clear_dirty
     return snap;
 }
 
-bool cpu_physical_memory_snapshot_get_dirty(DirtyBitmapSnapshot *snap,
-                                            ram_addr_t start,
-                                            ram_addr_t length)
+bool cpu_physical_memory_snapshot_get_dirty(DirtyBitmapSnapshot* snap, ram_addr_t start, ram_addr_t length)
 {
     unsigned long page, end;
 
     assert(start >= snap->start);
     assert(start + length <= snap->end);
 
-    end = TARGET_PAGE_ALIGN(start + length - snap->start) >> TARGET_PAGE_BITS;
+    end  = TARGET_PAGE_ALIGN(start + length - snap->start) >> TARGET_PAGE_BITS;
     page = (start - snap->start) >> TARGET_PAGE_BITS;
 
     while (page < end) {
-        if (test_bit(page, snap->dirty)) {
-            return true;
-        }
+        if (test_bit(page, snap->dirty)) { return true; }
         page++;
     }
     return false;
 }
 
-static int subpage_register(subpage_t *mmio, uint32_t start, uint32_t end,
-                            uint16_t section);
-static subpage_t *subpage_init(FlatView *fv, hwaddr base);
+static int        subpage_register(subpage_t* mmio, uint32_t start, uint32_t end, uint16_t section);
+static subpage_t* subpage_init(FlatView* fv, hwaddr base);
 
-static uint16_t phys_section_add(PhysPageMap *map,
-                                 MemoryRegionSection *section)
+static uint16_t phys_section_add(PhysPageMap* map, MemoryRegionSection* section)
 {
     if (map->sections_nb == map->sections_nb_alloc) {
         map->sections_nb_alloc = MAX(map->sections_nb_alloc * 2, 16);
-        map->sections = g_renew(MemoryRegionSection, map->sections,
-                                map->sections_nb_alloc);
+        map->sections          = g_renew(MemoryRegionSection, map->sections, map->sections_nb_alloc);
     }
     map->sections[map->sections_nb] = *section;
     memory_region_ref(section->mr);
     return map->sections_nb++;
 }
 
-static void phys_section_destroy(MemoryRegion *mr)
+static void phys_section_destroy(MemoryRegion* mr)
 {
     bool have_sub_page = mr->subpage;
 
     memory_region_unref(mr);
 
     if (have_sub_page) {
-        subpage_t *subpage = container_of(mr, subpage_t, iomem);
+        subpage_t* subpage = container_of(mr, subpage_t, iomem);
         object_unref(OBJECT(&subpage->iomem));
         g_free(subpage);
     }
 }
 
-static void phys_sections_free(PhysPageMap *map)
+static void phys_sections_free(PhysPageMap* map)
 {
     while (map->sections_nb > 0) {
-        MemoryRegionSection *section = &map->sections[--map->sections_nb];
+        MemoryRegionSection* section = &map->sections[--map->sections_nb];
         phys_section_destroy(section->mr);
     }
     g_free(map->sections);
     g_free(map->nodes);
 }
 
-static void register_subpage(FlatView *fv, MemoryRegionSection *section)
+static void register_subpage(FlatView* fv, MemoryRegionSection* section)
 {
-    AddressSpaceDispatch *d = flatview_to_dispatch(fv);
-    subpage_t *subpage;
-    hwaddr base = section->offset_within_address_space
-        & TARGET_PAGE_MASK;
-    MemoryRegionSection *existing = phys_page_find(d, base);
-    MemoryRegionSection subsection = {
+    AddressSpaceDispatch* d = flatview_to_dispatch(fv);
+    subpage_t*            subpage;
+    hwaddr                base       = section->offset_within_address_space & TARGET_PAGE_MASK;
+    MemoryRegionSection*  existing   = phys_page_find(d, base);
+    MemoryRegionSection   subsection = {
         .offset_within_address_space = base,
-        .size = int128_make64(TARGET_PAGE_SIZE),
+        .size                        = int128_make64(TARGET_PAGE_SIZE),
     };
     hwaddr start, end;
 
     assert(existing->mr->subpage || existing->mr == &io_mem_unassigned);
 
     if (!(existing->mr->subpage)) {
-        subpage = subpage_init(fv, base);
+        subpage       = subpage_init(fv, base);
         subsection.fv = fv;
         subsection.mr = &subpage->iomem;
-        phys_page_set(d, base >> TARGET_PAGE_BITS, 1,
-                      phys_section_add(&d->map, &subsection));
-    } else {
+        phys_page_set(d, base >> TARGET_PAGE_BITS, 1, phys_section_add(&d->map, &subsection));
+    }
+    else {
         subpage = container_of(existing->mr, subpage_t, iomem);
     }
     start = section->offset_within_address_space & ~TARGET_PAGE_MASK;
-    end = start + int128_get64(section->size) - 1;
-    subpage_register(subpage, start, end,
-                     phys_section_add(&d->map, section));
+    end   = start + int128_get64(section->size) - 1;
+    subpage_register(subpage, start, end, phys_section_add(&d->map, section));
 }
 
-
-static void register_multipage(FlatView *fv,
-                               MemoryRegionSection *section)
+static void register_multipage(FlatView* fv, MemoryRegionSection* section)
 {
-    AddressSpaceDispatch *d = flatview_to_dispatch(fv);
-    hwaddr start_addr = section->offset_within_address_space;
-    uint16_t section_index = phys_section_add(&d->map, section);
-    uint64_t num_pages = int128_get64(int128_rshift(section->size,
-                                                    TARGET_PAGE_BITS));
+    AddressSpaceDispatch* d             = flatview_to_dispatch(fv);
+    hwaddr                start_addr    = section->offset_within_address_space;
+    uint16_t              section_index = phys_section_add(&d->map, section);
+    uint64_t              num_pages     = int128_get64(int128_rshift(section->size, TARGET_PAGE_BITS));
 
     assert(num_pages);
     phys_page_set(d, start_addr >> TARGET_PAGE_BITS, num_pages, section_index);
@@ -1078,38 +964,33 @@ static void register_multipage(FlatView *fv,
  *
  * where s stands for subpage and P for page.
  */
-void flatview_add_to_dispatch(FlatView *fv, MemoryRegionSection *section)
+void flatview_add_to_dispatch(FlatView* fv, MemoryRegionSection* section)
 {
-    MemoryRegionSection remain = *section;
-    Int128 page_size = int128_make64(TARGET_PAGE_SIZE);
+    MemoryRegionSection remain    = *section;
+    Int128              page_size = int128_make64(TARGET_PAGE_SIZE);
 
     /* register first subpage */
     if (remain.offset_within_address_space & ~TARGET_PAGE_MASK) {
-        uint64_t left = TARGET_PAGE_ALIGN(remain.offset_within_address_space)
-                        - remain.offset_within_address_space;
+        uint64_t left = TARGET_PAGE_ALIGN(remain.offset_within_address_space) - remain.offset_within_address_space;
 
         MemoryRegionSection now = remain;
-        now.size = int128_min(int128_make64(left), now.size);
+        now.size                = int128_min(int128_make64(left), now.size);
         register_subpage(fv, &now);
-        if (int128_eq(remain.size, now.size)) {
-            return;
-        }
-        remain.size = int128_sub(remain.size, now.size);
+        if (int128_eq(remain.size, now.size)) { return; }
+        remain.size                         = int128_sub(remain.size, now.size);
         remain.offset_within_address_space += int128_get64(now.size);
-        remain.offset_within_region += int128_get64(now.size);
+        remain.offset_within_region        += int128_get64(now.size);
     }
 
     /* register whole pages */
     if (int128_ge(remain.size, page_size)) {
         MemoryRegionSection now = remain;
-        now.size = int128_and(now.size, int128_neg(page_size));
+        now.size                = int128_and(now.size, int128_neg(page_size));
         register_multipage(fv, &now);
-        if (int128_eq(remain.size, now.size)) {
-            return;
-        }
-        remain.size = int128_sub(remain.size, now.size);
+        if (int128_eq(remain.size, now.size)) { return; }
+        remain.size                         = int128_sub(remain.size, now.size);
         remain.offset_within_address_space += int128_get64(now.size);
-        remain.offset_within_region += int128_get64(now.size);
+        remain.offset_within_region        += int128_get64(now.size);
     }
 
     /* register last subpage */
@@ -1118,41 +999,29 @@ void flatview_add_to_dispatch(FlatView *fv, MemoryRegionSection *section)
 
 void qemu_flush_coalesced_mmio_buffer(void)
 {
-    if (kvm_enabled())
-        kvm_flush_coalesced_mmio_buffer();
+    if (kvm_enabled()) { kvm_flush_coalesced_mmio_buffer(); }
 }
 
-void qemu_mutex_lock_ramlist(void)
-{
-    qemu_mutex_lock(&ram_list.mutex);
-}
+void qemu_mutex_lock_ramlist(void) { qemu_mutex_lock(&ram_list.mutex); }
 
-void qemu_mutex_unlock_ramlist(void)
-{
-    qemu_mutex_unlock(&ram_list.mutex);
-}
+void qemu_mutex_unlock_ramlist(void) { qemu_mutex_unlock(&ram_list.mutex); }
 
-GString *ram_block_format(void)
+GString* ram_block_format(void)
 {
-    RAMBlock *block;
-    char *psize;
-    GString *buf = g_string_new("");
+    RAMBlock* block;
+    char*     psize;
+    GString*  buf = g_string_new("");
 
     RCU_READ_LOCK_GUARD();
-    g_string_append_printf(buf, "%24s %8s  %18s %18s %18s %18s %3s\n",
-                           "Block Name", "PSize", "Offset", "Used", "Total",
+    g_string_append_printf(buf, "%24s %8s  %18s %18s %18s %18s %3s\n", "Block Name", "PSize", "Offset", "Used", "Total",
                            "HVA", "RO");
 
-    RAMBLOCK_FOREACH(block) {
+    RAMBLOCK_FOREACH (block) {
         psize = size_to_str(block->page_size);
-        g_string_append_printf(buf, "%24s %8s  0x%016" PRIx64 " 0x%016" PRIx64
-                               " 0x%016" PRIx64 " 0x%016" PRIx64 " %3s\n",
-                               block->idstr, psize,
-                               (uint64_t)block->offset,
-                               (uint64_t)block->used_length,
-                               (uint64_t)block->max_length,
-                               (uint64_t)(uintptr_t)block->host,
-                               block->mr->readonly ? "ro" : "rw");
+        g_string_append_printf(
+            buf, "%24s %8s  0x%016" PRIx64 " 0x%016" PRIx64 " 0x%016" PRIx64 " 0x%016" PRIx64 " %3s\n", block->idstr,
+            psize, (uint64_t)block->offset, (uint64_t)block->used_length, (uint64_t)block->max_length,
+            (uint64_t)(uintptr_t)block->host, block->mr->readonly ? "ro" : "rw");
 
         g_free(psize);
     }
@@ -1160,33 +1029,29 @@ GString *ram_block_format(void)
     return buf;
 }
 
-static int find_min_backend_pagesize(Object *obj, void *opaque)
+static int find_min_backend_pagesize(Object* obj, void* opaque)
 {
-    long *hpsize_min = opaque;
+    long* hpsize_min = opaque;
 
     if (object_dynamic_cast(obj, TYPE_MEMORY_BACKEND)) {
-        HostMemoryBackend *backend = MEMORY_BACKEND(obj);
-        long hpsize = host_memory_backend_pagesize(backend);
+        HostMemoryBackend* backend = MEMORY_BACKEND(obj);
+        long               hpsize  = host_memory_backend_pagesize(backend);
 
-        if (host_memory_backend_is_mapped(backend) && (hpsize < *hpsize_min)) {
-            *hpsize_min = hpsize;
-        }
+        if (host_memory_backend_is_mapped(backend) && (hpsize < *hpsize_min)) { *hpsize_min = hpsize; }
     }
 
     return 0;
 }
 
-static int find_max_backend_pagesize(Object *obj, void *opaque)
+static int find_max_backend_pagesize(Object* obj, void* opaque)
 {
-    long *hpsize_max = opaque;
+    long* hpsize_max = opaque;
 
     if (object_dynamic_cast(obj, TYPE_MEMORY_BACKEND)) {
-        HostMemoryBackend *backend = MEMORY_BACKEND(obj);
-        long hpsize = host_memory_backend_pagesize(backend);
+        HostMemoryBackend* backend = MEMORY_BACKEND(obj);
+        long               hpsize  = host_memory_backend_pagesize(backend);
 
-        if (host_memory_backend_is_mapped(backend) && (hpsize > *hpsize_max)) {
-            *hpsize_max = hpsize;
-        }
+        if (host_memory_backend_is_mapped(backend) && (hpsize > *hpsize_max)) { *hpsize_max = hpsize; }
     }
 
     return 0;
@@ -1198,8 +1063,8 @@ static int find_max_backend_pagesize(Object *obj, void *opaque)
  */
 long qemu_minrampagesize(void)
 {
-    long hpsize = LONG_MAX;
-    Object *memdev_root = object_resolve_path("/objects", NULL);
+    long    hpsize      = LONG_MAX;
+    Object* memdev_root = object_resolve_path("/objects", NULL);
 
     object_child_foreach(memdev_root, find_min_backend_pagesize, &hpsize);
     return hpsize;
@@ -1207,8 +1072,8 @@ long qemu_minrampagesize(void)
 
 long qemu_maxrampagesize(void)
 {
-    long pagesize = 0;
-    Object *memdev_root = object_resolve_path("/objects", NULL);
+    long    pagesize    = 0;
+    Object* memdev_root = object_resolve_path("/objects", NULL);
 
     object_child_foreach(memdev_root, find_max_backend_pagesize, &pagesize);
     return pagesize;
@@ -1218,75 +1083,61 @@ long qemu_maxrampagesize(void)
 static int64_t get_file_size(int fd)
 {
     int64_t size;
-#if defined(__linux__)
+    #if defined(__linux__)
     struct stat st;
 
-    if (fstat(fd, &st) < 0) {
-        return -errno;
-    }
+    if (fstat(fd, &st) < 0) { return -errno; }
 
     /* Special handling for devdax character devices */
     if (S_ISCHR(st.st_mode)) {
-        g_autofree char *subsystem_path = NULL;
-        g_autofree char *subsystem = NULL;
+        g_autofree char* subsystem_path = NULL;
+        g_autofree char* subsystem      = NULL;
 
-        subsystem_path = g_strdup_printf("/sys/dev/char/%d:%d/subsystem",
-                                         major(st.st_rdev), minor(st.st_rdev));
-        subsystem = g_file_read_link(subsystem_path, NULL);
+        subsystem_path = g_strdup_printf("/sys/dev/char/%d:%d/subsystem", major(st.st_rdev), minor(st.st_rdev));
+        subsystem      = g_file_read_link(subsystem_path, NULL);
 
         if (subsystem && g_str_has_suffix(subsystem, "/dax")) {
-            g_autofree char *size_path = NULL;
-            g_autofree char *size_str = NULL;
+            g_autofree char* size_path = NULL;
+            g_autofree char* size_str  = NULL;
 
-            size_path = g_strdup_printf("/sys/dev/char/%d:%d/size",
-                                    major(st.st_rdev), minor(st.st_rdev));
+            size_path = g_strdup_printf("/sys/dev/char/%d:%d/size", major(st.st_rdev), minor(st.st_rdev));
 
-            if (g_file_get_contents(size_path, &size_str, NULL, NULL)) {
-                return g_ascii_strtoll(size_str, NULL, 0);
-            }
+            if (g_file_get_contents(size_path, &size_str, NULL, NULL)) { return g_ascii_strtoll(size_str, NULL, 0); }
         }
     }
-#endif /* defined(__linux__) */
+    #endif /* defined(__linux__) */
 
     /* st.st_size may be zero for special files yet lseek(2) works */
     size = lseek(fd, 0, SEEK_END);
-    if (size < 0) {
-        return -errno;
-    }
+    if (size < 0) { return -errno; }
     return size;
 }
 
 static int64_t get_file_align(int fd)
 {
     int64_t align = -1;
-#if defined(__linux__) && defined(CONFIG_LIBDAXCTL)
+    #if defined(__linux__) && defined(CONFIG_LIBDAXCTL)
     struct stat st;
 
-    if (fstat(fd, &st) < 0) {
-        return -errno;
-    }
+    if (fstat(fd, &st) < 0) { return -errno; }
 
     /* Special handling for devdax character devices */
     if (S_ISCHR(st.st_mode)) {
-        g_autofree char *path = NULL;
-        g_autofree char *rpath = NULL;
-        struct daxctl_ctx *ctx;
-        struct daxctl_region *region;
-        int rc = 0;
+        g_autofree char*      path  = NULL;
+        g_autofree char*      rpath = NULL;
+        struct daxctl_ctx*    ctx;
+        struct daxctl_region* region;
+        int                   rc = 0;
 
-        path = g_strdup_printf("/sys/dev/char/%d:%d",
-                    major(st.st_rdev), minor(st.st_rdev));
+        path  = g_strdup_printf("/sys/dev/char/%d:%d", major(st.st_rdev), minor(st.st_rdev));
         rpath = realpath(path, NULL);
-        if (!rpath) {
-            return -errno;
-        }
+        if (!rpath) { return -errno; }
 
         rc = daxctl_new(&ctx);
-        if (rc) {
-            return -1;
-        }
+        if (rc) { return -1; }
 
-        daxctl_region_foreach(ctx, region) {
+        daxctl_region_foreach(ctx, region)
+        {
             if (strstr(rpath, daxctl_region_get_path(region))) {
                 align = daxctl_region_get_align(region);
                 break;
@@ -1294,20 +1145,17 @@ static int64_t get_file_align(int fd)
         }
         daxctl_unref(ctx);
     }
-#endif /* defined(__linux__) && defined(CONFIG_LIBDAXCTL) */
+    #endif /* defined(__linux__) && defined(CONFIG_LIBDAXCTL) */
 
     return align;
 }
 
-static int file_ram_open(const char *path,
-                         const char *region_name,
-                         bool readonly,
-                         bool *created)
+static int file_ram_open(const char* path, const char* region_name, bool readonly, bool* created)
 {
-    char *filename;
-    char *sanitized_name;
-    char *c;
-    int fd = -1;
+    char* filename;
+    char* sanitized_name;
+    char* c;
+    int   fd = -1;
 
     *created = false;
     for (;;) {
@@ -1323,11 +1171,10 @@ static int file_ram_open(const char *path,
 
                 if (fstat(fd, &file_stat)) {
                     close(fd);
-                    if (errno == EINTR) {
-                        continue;
-                    }
+                    if (errno == EINTR) { continue; }
                     return -errno;
-                } else if (S_ISDIR(file_stat.st_mode)) {
+                }
+                else if (S_ISDIR(file_stat.st_mode)) {
                     close(fd);
                     return -EISDIR;
                 }
@@ -1346,18 +1193,16 @@ static int file_ram_open(const char *path,
                 *created = true;
                 break;
             }
-        } else if (errno == EISDIR) {
+        }
+        else if (errno == EISDIR) {
             /* @path names a directory, create a file there */
             /* Make name safe to use with mkstemp by replacing '/' with '_'. */
             sanitized_name = g_strdup(region_name);
             for (c = sanitized_name; *c != '\0'; c++) {
-                if (*c == '/') {
-                    *c = '_';
-                }
+                if (*c == '/') { *c = '_'; }
             }
 
-            filename = g_strdup_printf("%s/qemu_back_mem.%s.XXXXXX", path,
-                                       sanitized_name);
+            filename = g_strdup_printf("%s/qemu_back_mem.%s.XXXXXX", path, sanitized_name);
             g_free(sanitized_name);
 
             fd = mkstemp(filename);
@@ -1368,9 +1213,7 @@ static int file_ram_open(const char *path,
             }
             g_free(filename);
         }
-        if (errno != EEXIST && errno != EINTR) {
-            return -errno;
-        }
+        if (errno != EEXIST && errno != EINTR) { return -errno; }
         /*
          * Try again on EINTR and EEXIST.  The latter happens when
          * something else creates the file between our two open().
@@ -1380,41 +1223,33 @@ static int file_ram_open(const char *path,
     return fd;
 }
 
-static void *file_ram_alloc(RAMBlock *block,
-                            ram_addr_t memory,
-                            int fd,
-                            bool truncate,
-                            off_t offset,
-                            Error **errp)
+static void* file_ram_alloc(RAMBlock* block, ram_addr_t memory, int fd, bool truncate, off_t offset, Error** errp)
 {
     uint32_t qemu_map_flags;
-    void *area;
+    void*    area;
 
     block->page_size = qemu_fd_getpagesize(fd);
     if (block->mr->align % block->page_size) {
-        error_setg(errp, "alignment 0x%" PRIx64
-                   " must be multiples of page size 0x%zx",
-                   block->mr->align, block->page_size);
+        error_setg(errp, "alignment 0x%" PRIx64 " must be multiples of page size 0x%zx", block->mr->align,
+                   block->page_size);
         return NULL;
-    } else if (block->mr->align && !is_power_of_2(block->mr->align)) {
-        error_setg(errp, "alignment 0x%" PRIx64
-                   " must be a power of two", block->mr->align);
+    }
+    else if (block->mr->align && !is_power_of_2(block->mr->align)) {
+        error_setg(errp, "alignment 0x%" PRIx64 " must be a power of two", block->mr->align);
         return NULL;
-    } else if (offset % block->page_size) {
-        error_setg(errp, "offset 0x%" PRIx64
-                   " must be multiples of page size 0x%zx",
-                   offset, block->page_size);
+    }
+    else if (offset % block->page_size) {
+        error_setg(errp, "offset 0x%" PRIx64 " must be multiples of page size 0x%zx", offset, block->page_size);
         return NULL;
     }
     block->mr->align = MAX(block->page_size, block->mr->align);
-#if defined(__s390x__)
-    if (kvm_enabled()) {
-        block->mr->align = MAX(block->mr->align, QEMU_VMALLOC_ALIGN);
-    }
-#endif
+    #if defined(__s390x__)
+    if (kvm_enabled()) { block->mr->align = MAX(block->mr->align, QEMU_VMALLOC_ALIGN); }
+    #endif
 
     if (memory < block->page_size) {
-        error_setg(errp, "memory size 0x" RAM_ADDR_FMT " must be equal to "
+        error_setg(errp,
+                   "memory size 0x" RAM_ADDR_FMT " must be equal to "
                    "or larger than page size 0x%zx",
                    memory, block->page_size);
         return NULL;
@@ -1436,22 +1271,19 @@ static void *file_ram_alloc(RAMBlock *block,
      * those labels. Therefore, extending the non-empty backend file
      * is disabled as well.
      */
-    if (truncate && ftruncate(fd, offset + memory)) {
-        perror("ftruncate");
-    }
+    if (truncate && ftruncate(fd, offset + memory)) { perror("ftruncate"); }
 
-    qemu_map_flags = (block->flags & RAM_READONLY) ? QEMU_MAP_READONLY : 0;
+    qemu_map_flags  = (block->flags & RAM_READONLY) ? QEMU_MAP_READONLY : 0;
     qemu_map_flags |= (block->flags & RAM_SHARED) ? QEMU_MAP_SHARED : 0;
     qemu_map_flags |= (block->flags & RAM_PMEM) ? QEMU_MAP_SYNC : 0;
     qemu_map_flags |= (block->flags & RAM_NORESERVE) ? QEMU_MAP_NORESERVE : 0;
-    area = qemu_ram_mmap(fd, memory, block->mr->align, qemu_map_flags, offset);
+    area            = qemu_ram_mmap(fd, memory, block->mr->align, qemu_map_flags, offset);
     if (area == MAP_FAILED) {
-        error_setg_errno(errp, errno,
-                         "unable to map backing store for guest RAM");
+        error_setg_errno(errp, errno, "unable to map backing store for guest RAM");
         return NULL;
     }
 
-    block->fd = fd;
+    block->fd        = fd;
     block->fd_offset = offset;
     return area;
 }
@@ -1463,16 +1295,14 @@ static void *file_ram_alloc(RAMBlock *block,
  */
 static ram_addr_t find_ram_offset(ram_addr_t size)
 {
-    RAMBlock *block, *next_block;
+    RAMBlock * block, *next_block;
     ram_addr_t offset = RAM_ADDR_MAX, mingap = RAM_ADDR_MAX;
 
     assert(size != 0); /* it would hand out same offset multiple times */
 
-    if (QLIST_EMPTY_RCU(&ram_list.blocks)) {
-        return 0;
-    }
+    if (QLIST_EMPTY_RCU(&ram_list.blocks)) { return 0; }
 
-    RAMBLOCK_FOREACH(block) {
+    RAMBLOCK_FOREACH (block) {
         ram_addr_t candidate, next = RAM_ADDR_MAX;
 
         /* Align blocks to start on a 'long' in the bitmap
@@ -1484,10 +1314,8 @@ static ram_addr_t find_ram_offset(ram_addr_t size)
         /* Search for the closest following block
          * and find the gap.
          */
-        RAMBLOCK_FOREACH(next_block) {
-            if (next_block->offset >= candidate) {
-                next = MIN(next, next_block->offset);
-            }
+        RAMBLOCK_FOREACH (next_block) {
+            if (next_block->offset >= candidate) { next = MIN(next, next_block->offset); }
         }
 
         /* If it fits remember our place and remember the size
@@ -1503,8 +1331,7 @@ static ram_addr_t find_ram_offset(ram_addr_t size)
     }
 
     if (offset == RAM_ADDR_MAX) {
-        fprintf(stderr, "Failed to find gap of requested size: %" PRIu64 "\n",
-                (uint64_t)size);
+        fprintf(stderr, "Failed to find gap of requested size: %" PRIu64 "\n", (uint64_t)size);
         abort();
     }
 
@@ -1513,7 +1340,7 @@ static ram_addr_t find_ram_offset(ram_addr_t size)
     return offset;
 }
 
-static void qemu_ram_setup_dump(void *addr, ram_addr_t size)
+static void qemu_ram_setup_dump(void* addr, ram_addr_t size)
 {
     int ret;
 
@@ -1528,77 +1355,41 @@ static void qemu_ram_setup_dump(void *addr, ram_addr_t size)
     }
 }
 
-const char *qemu_ram_get_idstr(const RAMBlock *rb)
-{
-    return rb->idstr;
-}
+const char* qemu_ram_get_idstr(const RAMBlock* rb) { return rb->idstr; }
 
-void *qemu_ram_get_host_addr(const RAMBlock *rb)
-{
-    return rb->host;
-}
+void* qemu_ram_get_host_addr(const RAMBlock* rb) { return rb->host; }
 
-ram_addr_t qemu_ram_get_offset(const RAMBlock *rb)
-{
-    return rb->offset;
-}
+ram_addr_t qemu_ram_get_offset(const RAMBlock* rb) { return rb->offset; }
 
-ram_addr_t qemu_ram_get_fd_offset(const RAMBlock *rb)
-{
-    return rb->fd_offset;
-}
+ram_addr_t qemu_ram_get_fd_offset(const RAMBlock* rb) { return rb->fd_offset; }
 
-ram_addr_t qemu_ram_get_used_length(const RAMBlock *rb)
-{
-    return rb->used_length;
-}
+ram_addr_t qemu_ram_get_used_length(const RAMBlock* rb) { return rb->used_length; }
 
-ram_addr_t qemu_ram_get_max_length(const RAMBlock *rb)
-{
-    return rb->max_length;
-}
+ram_addr_t qemu_ram_get_max_length(const RAMBlock* rb) { return rb->max_length; }
 
-bool qemu_ram_is_shared(const RAMBlock *rb)
-{
-    return rb->flags & RAM_SHARED;
-}
+bool qemu_ram_is_shared(const RAMBlock* rb) { return rb->flags & RAM_SHARED; }
 
-bool qemu_ram_is_noreserve(const RAMBlock *rb)
-{
-    return rb->flags & RAM_NORESERVE;
-}
+bool qemu_ram_is_noreserve(const RAMBlock* rb) { return rb->flags & RAM_NORESERVE; }
 
 /* Note: Only set at the start of postcopy */
-bool qemu_ram_is_uf_zeroable(const RAMBlock *rb)
-{
-    return rb->flags & RAM_UF_ZEROPAGE;
-}
+bool qemu_ram_is_uf_zeroable(const RAMBlock* rb) { return rb->flags & RAM_UF_ZEROPAGE; }
 
-void qemu_ram_set_uf_zeroable(RAMBlock *rb)
-{
-    rb->flags |= RAM_UF_ZEROPAGE;
-}
+void qemu_ram_set_uf_zeroable(RAMBlock* rb) { rb->flags |= RAM_UF_ZEROPAGE; }
 
-bool qemu_ram_is_named_file(const RAMBlock *rb)
-{
-    return rb->flags & RAM_NAMED_FILE;
-}
+bool qemu_ram_is_named_file(const RAMBlock* rb) { return rb->flags & RAM_NAMED_FILE; }
 
-int qemu_ram_get_fd(const RAMBlock *rb)
-{
-    return rb->fd;
-}
+int qemu_ram_get_fd(const RAMBlock* rb) { return rb->fd; }
 
 /* Called with the BQL held.  */
-void qemu_ram_set_idstr(RAMBlock *new_block, const char *name, DeviceState *dev)
+void qemu_ram_set_idstr(RAMBlock* new_block, const char* name, DeviceState* dev)
 {
-    RAMBlock *block;
+    RAMBlock* block;
 
     assert(new_block);
     assert(!new_block->idstr[0]);
 
     if (dev) {
-        char *id = qdev_get_dev_path(dev);
+        char* id = qdev_get_dev_path(dev);
         if (id) {
             snprintf(new_block->idstr, sizeof(new_block->idstr), "%s/", id);
             g_free(id);
@@ -1607,59 +1398,49 @@ void qemu_ram_set_idstr(RAMBlock *new_block, const char *name, DeviceState *dev)
     pstrcat(new_block->idstr, sizeof(new_block->idstr), name);
 
     RCU_READ_LOCK_GUARD();
-    RAMBLOCK_FOREACH(block) {
-        if (block != new_block &&
-            !strcmp(block->idstr, new_block->idstr)) {
-            fprintf(stderr, "RAMBlock \"%s\" already registered, abort!\n",
-                    new_block->idstr);
+    RAMBLOCK_FOREACH (block) {
+        if (block != new_block && !strcmp(block->idstr, new_block->idstr)) {
+            fprintf(stderr, "RAMBlock \"%s\" already registered, abort!\n", new_block->idstr);
             abort();
         }
     }
 }
 
 /* Called with the BQL held.  */
-void qemu_ram_unset_idstr(RAMBlock *block)
+void qemu_ram_unset_idstr(RAMBlock* block)
 {
     /* FIXME: arch_init.c assumes that this is not called throughout
      * migration.  Ignore the problem since hot-unplug during migration
      * does not work anyway.
      */
-    if (block) {
-        memset(block->idstr, 0, sizeof(block->idstr));
-    }
+    if (block) { memset(block->idstr, 0, sizeof(block->idstr)); }
 }
 
-static char *cpr_name(const MemoryRegion *mr)
+static char* cpr_name(const MemoryRegion* mr)
 {
-    const char *mr_name = memory_region_name(mr);
-    g_autofree char *id = mr->dev ? qdev_get_dev_path(mr->dev) : NULL;
+    const char*      mr_name = memory_region_name(mr);
+    g_autofree char* id      = mr->dev ? qdev_get_dev_path(mr->dev) : NULL;
 
-    if (id) {
-        return g_strdup_printf("%s/%s", id, mr_name);
-    } else {
+    if (id) { return g_strdup_printf("%s/%s", id, mr_name); }
+    else {
         return g_strdup(mr_name);
     }
 }
 
-size_t qemu_ram_pagesize(const RAMBlock *rb)
-{
-    return rb->page_size;
-}
+size_t qemu_ram_pagesize(const RAMBlock* rb) { return rb->page_size; }
 
 /* Returns the largest size of page in use */
 size_t qemu_ram_pagesize_largest(void)
 {
-    RAMBlock *block;
-    size_t largest = 0;
+    RAMBlock* block;
+    size_t    largest = 0;
 
-    RAMBLOCK_FOREACH(block) {
-        largest = MAX(largest, qemu_ram_pagesize(block));
-    }
+    RAMBLOCK_FOREACH (block) { largest = MAX(largest, qemu_ram_pagesize(block)); }
 
     return largest;
 }
 
-static int memory_try_enable_merging(void *addr, size_t len)
+static int memory_try_enable_merging(void* addr, size_t len)
 {
     if (!machine_mem_merge(current_machine)) {
         /* disabled by the user */
@@ -1675,7 +1456,7 @@ static int memory_try_enable_merging(void *addr, size_t len)
  * Otherwise no-op.
  * @Note: this is supposed to be a synchronous op.
  */
-void qemu_ram_msync(RAMBlock *block, ram_addr_t start, ram_addr_t length)
+void qemu_ram_msync(RAMBlock* block, ram_addr_t start, ram_addr_t length)
 {
     /* The requested range should fit in within the block range */
     assert((start + length) <= block->used_length);
@@ -1683,7 +1464,7 @@ void qemu_ram_msync(RAMBlock *block, ram_addr_t start, ram_addr_t length)
 #ifdef CONFIG_LIBPMEM
     /* The lack of support for pmem should not block the sync */
     if (ramblock_is_pmem(block)) {
-        void *addr = ramblock_ptr(block, start);
+        void* addr = ramblock_ptr(block, start);
         pmem_persist(addr, length);
         return;
     }
@@ -1694,11 +1475,10 @@ void qemu_ram_msync(RAMBlock *block, ram_addr_t start, ram_addr_t length)
          * specified as persistent (or is not one) - use the msync.
          * Less optimal but still achieves the same goal
          */
-        void *addr = ramblock_ptr(block, start);
+        void* addr = ramblock_ptr(block, start);
         if (qemu_msync(addr, length, block->fd)) {
-            warn_report("%s: failed to sync memory range: start: "
-                    RAM_ADDR_FMT " length: " RAM_ADDR_FMT,
-                    __func__, start, length);
+            warn_report("%s: failed to sync memory range: start: " RAM_ADDR_FMT " length: " RAM_ADDR_FMT, __func__,
+                        start, length);
         }
     }
 }
@@ -1707,27 +1487,22 @@ void qemu_ram_msync(RAMBlock *block, ram_addr_t start, ram_addr_t length)
 static void dirty_memory_extend(ram_addr_t new_ram_size)
 {
     unsigned int old_num_blocks = ram_list.num_dirty_blocks;
-    unsigned int new_num_blocks = DIV_ROUND_UP(new_ram_size,
-                                               DIRTY_MEMORY_BLOCK_SIZE);
-    int i;
+    unsigned int new_num_blocks = DIV_ROUND_UP(new_ram_size, DIRTY_MEMORY_BLOCK_SIZE);
+    int          i;
 
     /* Only need to extend if block count increased */
-    if (new_num_blocks <= old_num_blocks) {
-        return;
-    }
+    if (new_num_blocks <= old_num_blocks) { return; }
 
     for (i = 0; i < DIRTY_MEMORY_NUM; i++) {
-        DirtyMemoryBlocks *old_blocks;
-        DirtyMemoryBlocks *new_blocks;
-        int j;
+        DirtyMemoryBlocks* old_blocks;
+        DirtyMemoryBlocks* new_blocks;
+        int                j;
 
         old_blocks = qatomic_rcu_read(&ram_list.dirty_memory[i]);
-        new_blocks = g_malloc(sizeof(*new_blocks) +
-                              sizeof(new_blocks->blocks[0]) * new_num_blocks);
+        new_blocks = g_malloc(sizeof(*new_blocks) + sizeof(new_blocks->blocks[0]) * new_num_blocks);
 
         if (old_num_blocks) {
-            memcpy(new_blocks->blocks, old_blocks->blocks,
-                   old_num_blocks * sizeof(old_blocks->blocks[0]));
+            memcpy(new_blocks->blocks, old_blocks->blocks, old_num_blocks * sizeof(old_blocks->blocks[0]));
         }
 
         for (j = old_num_blocks; j < new_num_blocks; j++) {
@@ -1736,34 +1511,28 @@ static void dirty_memory_extend(ram_addr_t new_ram_size)
 
         qatomic_rcu_set(&ram_list.dirty_memory[i], new_blocks);
 
-        if (old_blocks) {
-            g_free_rcu(old_blocks, rcu);
-        }
+        if (old_blocks) { g_free_rcu(old_blocks, rcu); }
     }
 
     ram_list.num_dirty_blocks = new_num_blocks;
 }
 
-static void ram_block_add(RAMBlock *new_block, Error **errp)
+static void ram_block_add(RAMBlock* new_block, Error** errp)
 {
     const bool noreserve = qemu_ram_is_noreserve(new_block);
-    const bool shared = qemu_ram_is_shared(new_block);
-    RAMBlock *block;
-    RAMBlock *last_block = NULL;
-    bool free_on_error = false;
+    const bool shared    = qemu_ram_is_shared(new_block);
+    RAMBlock*  block;
+    RAMBlock*  last_block    = NULL;
+    bool       free_on_error = false;
     ram_addr_t ram_size;
 
     qemu_mutex_lock_ramlist();
     new_block->offset = find_ram_offset(new_block->max_length);
 
     if (!new_block->host) {
-        new_block->host = qemu_anon_ram_alloc(new_block->max_length,
-                                              &new_block->mr->align,
-                                              shared, noreserve);
+        new_block->host = qemu_anon_ram_alloc(new_block->max_length, &new_block->mr->align, shared, noreserve);
         if (!new_block->host) {
-            error_setg_errno(errp, errno,
-                             "cannot set up guest memory '%s'",
-                             memory_region_name(new_block->mr));
+            error_setg_errno(errp, errno, "cannot set up guest memory '%s'", memory_region_name(new_block->mr));
             qemu_mutex_unlock_ramlist();
             return;
         }
@@ -1777,18 +1546,15 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
      * QLIST (which has an RCU-friendly variant) does not have insertion at
      * tail, so save the last element in last_block.
      */
-    RAMBLOCK_FOREACH(block) {
+    RAMBLOCK_FOREACH (block) {
         last_block = block;
-        if (block->max_length < new_block->max_length) {
-            break;
-        }
+        if (block->max_length < new_block->max_length) { break; }
     }
-    if (block) {
-        QLIST_INSERT_BEFORE_RCU(block, new_block, next);
-    } else if (last_block) {
+    if (block) { QLIST_INSERT_BEFORE_RCU(block, new_block, next); }
+    else if (last_block) {
         QLIST_INSERT_AFTER_RCU(last_block, new_block, next);
-    } else { /* list is empty */
-        QLIST_INSERT_HEAD_RCU(&ram_list.blocks, new_block, next);
+    }
+    else { /* list is empty */ QLIST_INSERT_HEAD_RCU(&ram_list.blocks, new_block, next);
     }
     ram_list.mru_block = NULL;
 
@@ -1797,9 +1563,7 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
     ram_list.version++;
     qemu_mutex_unlock_ramlist();
 
-    cpu_physical_memory_set_dirty_range(new_block->offset,
-                                        new_block->used_length,
-                                        DIRTY_CLIENTS_ALL);
+    cpu_physical_memory_set_dirty_range(new_block->offset, new_block->used_length, DIRTY_CLIENTS_ALL);
 
     if (new_block->host) {
         qemu_ram_setup_dump(new_block->host, new_block->max_length);
@@ -1807,8 +1571,7 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
         /*
          * MADV_DONTFORK is also needed by KVM in absence of synchronous MMU
          */
-        qemu_madvise(new_block->host, new_block->max_length,
-                     QEMU_MADV_DONTFORK);
+        qemu_madvise(new_block->host, new_block->max_length, QEMU_MADV_DONTFORK);
     }
     return;
 
@@ -1819,65 +1582,58 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
 }
 
 #if defined(CONFIG_POSIX) && !defined(EMSCRIPTEN)
-RAMBlock *qemu_ram_alloc_from_fd(ram_addr_t size, ram_addr_t max_size,
-                                 MemoryRegion *mr,
-                                 uint32_t ram_flags, int fd, off_t offset,
-                                 bool grow,
-                                 Error **errp)
+RAMBlock* qemu_ram_alloc_from_fd(ram_addr_t size, ram_addr_t max_size, MemoryRegion* mr, uint32_t ram_flags, int fd,
+                                 off_t offset, bool grow, Error** errp)
 {
     ERRP_GUARD();
-    RAMBlock *new_block;
-    Error *local_err = NULL;
-    int64_t file_size, file_align, share_flags;
+    RAMBlock* new_block;
+    Error*    local_err = NULL;
+    int64_t   file_size, file_align, share_flags;
 
     share_flags = ram_flags & (RAM_PRIVATE | RAM_SHARED);
     assert(share_flags != (RAM_SHARED | RAM_PRIVATE));
     ram_flags &= ~RAM_PRIVATE;
 
     /* Just support these ram flags by now. */
-    assert((ram_flags & ~(RAM_SHARED | RAM_PMEM | RAM_NORESERVE |
-                          RAM_PROTECTED | RAM_NAMED_FILE | RAM_READONLY |
-                          RAM_READONLY_FD)) == 0);
+    assert(
+        (ram_flags
+         & ~(RAM_SHARED | RAM_PMEM | RAM_NORESERVE | RAM_PROTECTED | RAM_NAMED_FILE | RAM_READONLY | RAM_READONLY_FD))
+        == 0);
     assert(max_size >= size);
 
     if (kvm_enabled() && !kvm_has_sync_mmu()) {
-        error_setg(errp,
-                   "host lacks kvm mmu notifiers, -mem-path unsupported");
+        error_setg(errp, "host lacks kvm mmu notifiers, -mem-path unsupported");
         return NULL;
     }
 
-    size = TARGET_PAGE_ALIGN(size);
-    size = REAL_HOST_PAGE_ALIGN(size);
+    size     = TARGET_PAGE_ALIGN(size);
+    size     = REAL_HOST_PAGE_ALIGN(size);
     max_size = TARGET_PAGE_ALIGN(max_size);
     max_size = REAL_HOST_PAGE_ALIGN(max_size);
 
     file_size = get_file_size(fd);
     if (file_size && file_size < offset + max_size && !grow) {
-        error_setg(errp, "%s backing store size 0x%" PRIx64
-                   " is too small for 'size' option 0x" RAM_ADDR_FMT
+        error_setg(errp,
+                   "%s backing store size 0x%" PRIx64 " is too small for 'size' option 0x" RAM_ADDR_FMT
                    " plus 'offset' option 0x%" PRIx64,
-                   memory_region_name(mr), file_size, max_size,
-                   (uint64_t)offset);
+                   memory_region_name(mr), file_size, max_size, (uint64_t)offset);
         return NULL;
     }
 
     file_align = get_file_align(fd);
     if (file_align > 0 && file_align > mr->align) {
-        error_setg(errp, "backing store align 0x%" PRIx64
-                   " is larger than 'align' option 0x%" PRIx64,
-                   file_align, mr->align);
+        error_setg(errp, "backing store align 0x%" PRIx64 " is larger than 'align' option 0x%" PRIx64, file_align,
+                   mr->align);
         return NULL;
     }
 
-    new_block = g_malloc0(sizeof(*new_block));
-    new_block->mr = mr;
+    new_block              = g_malloc0(sizeof(*new_block));
+    new_block->mr          = mr;
     new_block->used_length = size;
-    new_block->max_length = max_size;
-    new_block->flags = ram_flags;
+    new_block->max_length  = max_size;
+    new_block->flags       = ram_flags;
     new_block->guest_memfd = -1;
-    new_block->host = file_ram_alloc(new_block, max_size, fd,
-                                     file_size < offset + max_size,
-                                     offset, errp);
+    new_block->host        = file_ram_alloc(new_block, max_size, fd, file_size < offset + max_size, offset, errp);
     if (!new_block->host) {
         g_free(new_block);
         return NULL;
@@ -1890,51 +1646,39 @@ RAMBlock *qemu_ram_alloc_from_fd(ram_addr_t size, ram_addr_t max_size,
         return NULL;
     }
     return new_block;
-
 }
 
-
-RAMBlock *qemu_ram_alloc_from_file(ram_addr_t size, MemoryRegion *mr,
-                                   uint32_t ram_flags, const char *mem_path,
-                                   off_t offset, Error **errp)
+RAMBlock* qemu_ram_alloc_from_file(ram_addr_t size, MemoryRegion* mr, uint32_t ram_flags, const char* mem_path,
+                                   off_t offset, Error** errp)
 {
-    int fd;
-    bool created;
-    RAMBlock *block;
+    int       fd;
+    bool      created;
+    RAMBlock* block;
 
-    fd = file_ram_open(mem_path, memory_region_name(mr),
-                       !!(ram_flags & RAM_READONLY_FD), &created);
+    fd = file_ram_open(mem_path, memory_region_name(mr), !!(ram_flags & RAM_READONLY_FD), &created);
     if (fd < 0) {
-        error_setg_errno(errp, -fd, "can't open backing store %s for guest RAM",
-                         mem_path);
-        if (!(ram_flags & RAM_READONLY_FD) && !(ram_flags & RAM_SHARED) &&
-            fd == -EACCES) {
+        error_setg_errno(errp, -fd, "can't open backing store %s for guest RAM", mem_path);
+        if (!(ram_flags & RAM_READONLY_FD) && !(ram_flags & RAM_SHARED) && fd == -EACCES) {
             /*
              * If we can open the file R/O (note: will never create a new file)
              * and we are dealing with a private mapping, there are still ways
              * to consume such files and get RAM instead of ROM.
              */
-            fd = file_ram_open(mem_path, memory_region_name(mr), true,
-                               &created);
-            if (fd < 0) {
-                return NULL;
-            }
+            fd = file_ram_open(mem_path, memory_region_name(mr), true, &created);
+            if (fd < 0) { return NULL; }
             assert(!created);
             close(fd);
             error_append_hint(errp, "Consider opening the backing store"
-                " read-only but still creating writable RAM using"
-                " '-object memory-backend-file,readonly=on,rom=off...'"
-                " (see \"VM templating\" documentation)\n");
+                                    " read-only but still creating writable RAM using"
+                                    " '-object memory-backend-file,readonly=on,rom=off...'"
+                                    " (see \"VM templating\" documentation)\n");
         }
         return NULL;
     }
 
-    block = qemu_ram_alloc_from_fd(size, size, mr, ram_flags, fd, offset,
-                                   false, errp);
+    block = qemu_ram_alloc_from_fd(size, size, mr, ram_flags, fd, offset, false, errp);
     if (!block) {
-        if (created) {
-            unlink(mem_path);
-        }
+        if (created) { unlink(mem_path); }
         close(fd);
         return NULL;
     }
@@ -1944,13 +1688,12 @@ RAMBlock *qemu_ram_alloc_from_file(ram_addr_t size, MemoryRegion *mr,
 #endif
 
 #ifdef CONFIG_POSIX
-static int qemu_ram_get_shared_fd(const char *name, bool *reused, Error **errp)
+static int qemu_ram_get_shared_fd(const char* name, bool* reused, Error** errp)
 {
     int fd = -1;
 
-    if (qemu_memfd_check(0)) {
-        fd = qemu_memfd_create(name, 0, 0, 0, 0, errp);
-    } else {
+    if (qemu_memfd_check(0)) { fd = qemu_memfd_create(name, 0, 0, 0, 0, errp); }
+    else {
         fd = qemu_shm_alloc(0, errp);
     }
 
@@ -1959,38 +1702,31 @@ static int qemu_ram_get_shared_fd(const char *name, bool *reused, Error **errp)
 }
 #endif
 
-static
-RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
-                                  void *host, uint32_t ram_flags,
-                                  MemoryRegion *mr, Error **errp)
+static RAMBlock* qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size, void* host, uint32_t ram_flags,
+                                         MemoryRegion* mr, Error** errp)
 {
-    RAMBlock *new_block;
-    Error *local_err = NULL;
-    int align, share_flags;
+    RAMBlock* new_block;
+    Error*    local_err = NULL;
+    int       align, share_flags;
 
     share_flags = ram_flags & (RAM_PRIVATE | RAM_SHARED);
     assert(share_flags != (RAM_SHARED | RAM_PRIVATE));
     ram_flags &= ~RAM_PRIVATE;
 
-    assert((ram_flags & ~(RAM_SHARED | RAM_PREALLOC |
-                          RAM_NORESERVE)) == 0);
+    assert((ram_flags & ~(RAM_SHARED | RAM_PREALLOC | RAM_NORESERVE)) == 0);
     assert(!host ^ (ram_flags & RAM_PREALLOC));
     assert(max_size >= size);
 
     /* ignore RAM_SHARED for Windows and emscripten*/
 #if defined(CONFIG_POSIX) && !defined(EMSCRIPTEN)
     if (!host) {
-        if (!share_flags && current_machine->aux_ram_share) {
-            ram_flags |= RAM_SHARED;
-        }
+        if (!share_flags && current_machine->aux_ram_share) { ram_flags |= RAM_SHARED; }
         if (ram_flags & RAM_SHARED) {
-            bool reused;
-            g_autofree char *name = cpr_name(mr);
-            int fd = qemu_ram_get_shared_fd(name, &reused, errp);
+            bool             reused;
+            g_autofree char* name = cpr_name(mr);
+            int              fd   = qemu_ram_get_shared_fd(name, &reused, errp);
 
-            if (fd < 0) {
-                return NULL;
-            }
+            if (fd < 0) { return NULL; }
 
             /* Use same alignment as qemu_anon_ram_alloc */
             mr->align = QEMU_VMALLOC_ALIGN;
@@ -2006,12 +1742,9 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
              * region if necessary.  The extra space will be usable after a
              * guest reset.
              */
-            new_block = qemu_ram_alloc_from_fd(size, max_size, mr,
-                                               ram_flags, fd, 0, reused, NULL);
+            new_block = qemu_ram_alloc_from_fd(size, max_size, mr, ram_flags, fd, 0, reused, NULL);
             if (new_block) {
-                trace_qemu_ram_alloc_shared(name, new_block->used_length,
-                                            new_block->max_length, fd,
-                                            new_block->host);
+                trace_qemu_ram_alloc_shared(name, new_block->used_length, new_block->max_length, fd, new_block->host);
                 return new_block;
             }
 
@@ -2021,20 +1754,20 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
     }
 #endif
 
-    align = qemu_real_host_page_size();
-    align = MAX(align, TARGET_PAGE_SIZE);
-    size = ROUND_UP(size, align);
+    align    = qemu_real_host_page_size();
+    align    = MAX(align, TARGET_PAGE_SIZE);
+    size     = ROUND_UP(size, align);
     max_size = ROUND_UP(max_size, align);
 
-    new_block = g_malloc0(sizeof(*new_block));
-    new_block->mr = mr;
+    new_block              = g_malloc0(sizeof(*new_block));
+    new_block->mr          = mr;
     new_block->used_length = size;
-    new_block->max_length = max_size;
-    new_block->fd = -1;
+    new_block->max_length  = max_size;
+    new_block->fd          = -1;
     new_block->guest_memfd = -1;
-    new_block->page_size = qemu_real_host_page_size();
-    new_block->host = host;
-    new_block->flags = ram_flags;
+    new_block->page_size   = qemu_real_host_page_size();
+    new_block->host        = host;
+    new_block->flags       = ram_flags;
     ram_block_add(new_block, &local_err);
     if (local_err) {
         g_free(new_block);
@@ -2044,31 +1777,27 @@ RAMBlock *qemu_ram_alloc_internal(ram_addr_t size, ram_addr_t max_size,
     return new_block;
 }
 
-RAMBlock *qemu_ram_alloc_from_ptr(ram_addr_t size, void *host,
-                                   MemoryRegion *mr, Error **errp)
-{
-    return qemu_ram_alloc_internal(size, size, host, RAM_PREALLOC, mr,
-                                   errp);
-}
+RAMBlock* qemu_ram_alloc_from_ptr(ram_addr_t size, void* host, MemoryRegion* mr, Error** errp)
+{ return qemu_ram_alloc_internal(size, size, host, RAM_PREALLOC, mr, errp); }
 
-RAMBlock *qemu_ram_alloc(ram_addr_t size, uint32_t ram_flags,
-                         MemoryRegion *mr, Error **errp)
+RAMBlock* qemu_ram_alloc(ram_addr_t size, uint32_t ram_flags, MemoryRegion* mr, Error** errp)
 {
-    assert((ram_flags & ~(RAM_SHARED | RAM_NORESERVE |
-                          RAM_PRIVATE)) == 0);
+    assert((ram_flags & ~(RAM_SHARED | RAM_NORESERVE | RAM_PRIVATE)) == 0);
     return qemu_ram_alloc_internal(size, size, NULL, ram_flags, mr, errp);
 }
 
-static void reclaim_ramblock(RAMBlock *block)
+static void reclaim_ramblock(RAMBlock* block)
 {
     if (block->flags & RAM_PREALLOC) {
         ;
 #if !defined(_WIN32) && !defined(EMSCRIPTEN)
-    } else if (block->fd >= 0) {
+    }
+    else if (block->fd >= 0) {
         qemu_ram_munmap(block->fd, block->host, block->max_length);
         close(block->fd);
 #endif
-    } else {
+    }
+    else {
         qemu_anon_ram_free(block->host, block->max_length);
     }
 
@@ -2081,11 +1810,9 @@ static void reclaim_ramblock(RAMBlock *block)
     g_free(block);
 }
 
-void qemu_ram_free(RAMBlock *block)
+void qemu_ram_free(RAMBlock* block)
 {
-    if (!block) {
-        return;
-    }
+    if (!block) { return; }
 
     qemu_mutex_lock_ramlist();
     QLIST_REMOVE_RCU(block, next);
@@ -2099,19 +1826,19 @@ void qemu_ram_free(RAMBlock *block)
 
 #ifndef _WIN32
 /* Simply remap the given VM memory location from start to start+length */
-static int qemu_ram_remap_mmap(RAMBlock *block, uint64_t start, size_t length)
+static int qemu_ram_remap_mmap(RAMBlock* block, uint64_t start, size_t length)
 {
-    int flags, prot;
-    void *area;
-    void *host_startaddr = block->host + start;
+    int   flags, prot;
+    void* area;
+    void* host_startaddr = block->host + start;
 
     assert(block->fd < 0);
-    flags = MAP_FIXED | MAP_ANONYMOUS;
+    flags  = MAP_FIXED | MAP_ANONYMOUS;
     flags |= block->flags & RAM_SHARED ? MAP_SHARED : MAP_PRIVATE;
     flags |= block->flags & RAM_NORESERVE ? MAP_NORESERVE : 0;
-    prot = PROT_READ;
-    prot |= block->flags & RAM_READONLY ? 0 : PROT_WRITE;
-    area = mmap(host_startaddr, length, prot, flags, -1, 0);
+    prot   = PROT_READ;
+    prot  |= block->flags & RAM_READONLY ? 0 : PROT_WRITE;
+    area   = mmap(host_startaddr, length, prot, flags, -1, 0);
     return area != host_startaddr ? -errno : 0;
 }
 
@@ -2130,22 +1857,21 @@ static int qemu_ram_remap_mmap(RAMBlock *block, uint64_t start, size_t length)
  */
 void qemu_ram_remap(ram_addr_t addr)
 {
-    RAMBlock *block;
-    uint64_t offset;
-    void *vaddr;
-    size_t page_size;
+    RAMBlock* block;
+    uint64_t  offset;
+    void*     vaddr;
+    size_t    page_size;
 
-    RAMBLOCK_FOREACH(block) {
+    RAMBLOCK_FOREACH (block) {
         offset = addr - block->offset;
         if (offset < block->max_length) {
             /* Respect the pagesize of our RAMBlock */
             page_size = qemu_ram_pagesize(block);
-            offset = QEMU_ALIGN_DOWN(offset, page_size);
+            offset    = QEMU_ALIGN_DOWN(offset, page_size);
 
             vaddr = ramblock_ptr(block, offset);
-            if (block->flags & RAM_PREALLOC) {
-                ;
-            } else {
+            if (block->flags & RAM_PREALLOC) { ; }
+            else {
                 if (ram_block_discard_range(block, offset, page_size) != 0) {
                     /*
                      * Fall back to using mmap() only for anonymous mapping,
@@ -2154,14 +1880,12 @@ void qemu_ram_remap(ram_addr_t addr)
                      * So don't take the risk of using only mmap and fail now.
                      */
                     if (block->fd >= 0) {
-                        error_report("Could not remap RAM %s:%" PRIx64 "+%"
-                                     PRIx64 " +%zx", block->idstr, offset,
+                        error_report("Could not remap RAM %s:%" PRIx64 "+%" PRIx64 " +%zx", block->idstr, offset,
                                      block->fd_offset, page_size);
                         exit(1);
                     }
                     if (qemu_ram_remap_mmap(block, offset, page_size) != 0) {
-                        error_report("Could not remap RAM %s:%" PRIx64 " +%zx",
-                                     block->idstr, offset, page_size);
+                        error_report("Could not remap RAM %s:%" PRIx64 " +%zx", block->idstr, offset, page_size);
                         exit(1);
                     }
                 }
@@ -2190,23 +1914,19 @@ void qemu_ram_remap(ram_addr_t addr)
  *
  * Called within RCU critical section.
  */
-static void *qemu_ram_ptr_length(RAMBlock *block, ram_addr_t addr,
-                                 hwaddr *size, bool lock,
-                                 bool is_write)
+static void* qemu_ram_ptr_length(RAMBlock* block, ram_addr_t addr, hwaddr* size, bool lock, bool is_write)
 {
     hwaddr len = 0;
 
-    if (size && *size == 0) {
-        return NULL;
-    }
+    if (size && *size == 0) { return NULL; }
 
     if (block == NULL) {
-        block = qemu_get_ram_block(addr);
-        addr -= block->offset;
+        block  = qemu_get_ram_block(addr);
+        addr  -= block->offset;
     }
     if (size) {
         *size = MIN(*size, block->max_length - addr);
-        len = *size;
+        len   = *size;
     }
 
     return ramblock_ptr(block, addr);
@@ -2220,50 +1940,39 @@ static void *qemu_ram_ptr_length(RAMBlock *block, ram_addr_t addr,
  *
  * Called within RCU critical section.
  */
-void *qemu_map_ram_ptr(RAMBlock *ram_block, ram_addr_t addr)
-{
-    return qemu_ram_ptr_length(ram_block, addr, NULL, false, true);
-}
+void* qemu_map_ram_ptr(RAMBlock* ram_block, ram_addr_t addr)
+{ return qemu_ram_ptr_length(ram_block, addr, NULL, false, true); }
 
 /* Return the offset of a hostpointer within a ramblock */
-ram_addr_t qemu_ram_block_host_offset(const RAMBlock *rb, void *host)
+ram_addr_t qemu_ram_block_host_offset(const RAMBlock* rb, void* host)
 {
-    ram_addr_t res = (uint8_t *)host - (uint8_t *)rb->host;
+    ram_addr_t res = (uint8_t*)host - (uint8_t*)rb->host;
     assert((uintptr_t)host >= (uintptr_t)rb->host);
     assert(res < rb->max_length);
 
     return res;
 }
 
-RAMBlock *qemu_ram_block_from_host(void *ptr, bool round_offset,
-                                   ram_addr_t *offset)
+RAMBlock* qemu_ram_block_from_host(void* ptr, bool round_offset, ram_addr_t* offset)
 {
-    RAMBlock *block;
-    uint8_t *host = ptr;
+    RAMBlock* block;
+    uint8_t*  host = ptr;
 
     RCU_READ_LOCK_GUARD();
     block = qatomic_rcu_read(&ram_list.mru_block);
-    if (block && block->host && host - block->host < block->max_length) {
-        goto found;
-    }
+    if (block && block->host && host - block->host < block->max_length) { goto found; }
 
-    RAMBLOCK_FOREACH(block) {
+    RAMBLOCK_FOREACH (block) {
         /* This case append when the block is not mapped. */
-        if (block->host == NULL) {
-            continue;
-        }
-        if (host - block->host < block->max_length) {
-            goto found;
-        }
+        if (block->host == NULL) { continue; }
+        if (host - block->host < block->max_length) { goto found; }
     }
 
     return NULL;
 
 found:
     *offset = (host - block->host);
-    if (round_offset) {
-        *offset &= TARGET_PAGE_MASK;
-    }
+    if (round_offset) { *offset &= TARGET_PAGE_MASK; }
     return block;
 }
 
@@ -2274,14 +1983,12 @@ found:
  *
  * Returns: RAMBlock (or NULL if not found)
  */
-RAMBlock *qemu_ram_block_by_name(const char *name)
+RAMBlock* qemu_ram_block_by_name(const char* name)
 {
-    RAMBlock *block;
+    RAMBlock* block;
 
-    RAMBLOCK_FOREACH(block) {
-        if (!strcmp(name, block->idstr)) {
-            return block;
-        }
+    RAMBLOCK_FOREACH (block) {
+        if (!strcmp(name, block->idstr)) { return block; }
     }
 
     return NULL;
@@ -2291,20 +1998,18 @@ RAMBlock *qemu_ram_block_by_name(const char *name)
  * Some of the system routines need to translate from a host pointer
  * (typically a TLB entry) back to a ram offset.
  */
-ram_addr_t qemu_ram_addr_from_host(void *ptr)
+ram_addr_t qemu_ram_addr_from_host(void* ptr)
 {
-    RAMBlock *block;
+    RAMBlock*  block;
     ram_addr_t offset;
 
     block = qemu_ram_block_from_host(ptr, false, &offset);
-    if (!block) {
-        return RAM_ADDR_INVALID;
-    }
+    if (!block) { return RAM_ADDR_INVALID; }
 
     return block->offset + offset;
 }
 
-ram_addr_t qemu_ram_addr_from_host_nofail(void *ptr)
+ram_addr_t qemu_ram_addr_from_host_nofail(void* ptr)
 {
     ram_addr_t ram_addr;
 
@@ -2316,178 +2021,150 @@ ram_addr_t qemu_ram_addr_from_host_nofail(void *ptr)
     return ram_addr;
 }
 
-static MemTxResult flatview_read(FlatView *fv, hwaddr addr,
-                                 MemTxAttrs attrs, void *buf, hwaddr len);
-static MemTxResult flatview_write(FlatView *fv, hwaddr addr, MemTxAttrs attrs,
-                                  const void *buf, hwaddr len);
-static bool flatview_access_valid(FlatView *fv, hwaddr addr, hwaddr len,
-                                  bool is_write, MemTxAttrs attrs);
+static MemTxResult flatview_read(FlatView* fv, hwaddr addr, MemTxAttrs attrs, void* buf, hwaddr len);
+static MemTxResult flatview_write(FlatView* fv, hwaddr addr, MemTxAttrs attrs, const void* buf, hwaddr len);
+static bool        flatview_access_valid(FlatView* fv, hwaddr addr, hwaddr len, bool is_write, MemTxAttrs attrs);
 
-static MemTxResult subpage_read(void *opaque, hwaddr addr, uint64_t *data,
-                                unsigned len, MemTxAttrs attrs)
+static MemTxResult subpage_read(void* opaque, hwaddr addr, uint64_t* data, unsigned len, MemTxAttrs attrs)
 {
-    subpage_t *subpage = opaque;
-    uint8_t buf[8];
+    subpage_t*  subpage = opaque;
+    uint8_t     buf[8];
     MemTxResult res;
 
 #if defined(DEBUG_SUBPAGE)
-    printf("%s: subpage %p len %u addr " HWADDR_FMT_plx "\n", __func__,
-           subpage, len, addr);
+    printf("%s: subpage %p len %u addr " HWADDR_FMT_plx "\n", __func__, subpage, len, addr);
 #endif
     res = flatview_read(subpage->fv, addr + subpage->base, attrs, buf, len);
-    if (res) {
-        return res;
-    }
+    if (res) { return res; }
     *data = ldn_p(buf, len);
     return MEMTX_OK;
 }
 
-static MemTxResult subpage_write(void *opaque, hwaddr addr,
-                                 uint64_t value, unsigned len, MemTxAttrs attrs)
+static MemTxResult subpage_write(void* opaque, hwaddr addr, uint64_t value, unsigned len, MemTxAttrs attrs)
 {
-    subpage_t *subpage = opaque;
-    uint8_t buf[8];
+    subpage_t* subpage = opaque;
+    uint8_t    buf[8];
 
 #if defined(DEBUG_SUBPAGE)
-    printf("%s: subpage %p len %u addr " HWADDR_FMT_plx
-           " value %"PRIx64"\n",
-           __func__, subpage, len, addr, value);
+    printf("%s: subpage %p len %u addr " HWADDR_FMT_plx " value %" PRIx64 "\n", __func__, subpage, len, addr, value);
 #endif
     stn_p(buf, len, value);
     return flatview_write(subpage->fv, addr + subpage->base, attrs, buf, len);
 }
 
-static bool subpage_accepts(void *opaque, hwaddr addr,
-                            unsigned len, bool is_write,
-                            MemTxAttrs attrs)
+static bool subpage_accepts(void* opaque, hwaddr addr, unsigned len, bool is_write, MemTxAttrs attrs)
 {
-    subpage_t *subpage = opaque;
+    subpage_t* subpage = opaque;
 #if defined(DEBUG_SUBPAGE)
-    printf("%s: subpage %p %c len %u addr " HWADDR_FMT_plx "\n",
-           __func__, subpage, is_write ? 'w' : 'r', len, addr);
+    printf("%s: subpage %p %c len %u addr " HWADDR_FMT_plx "\n", __func__, subpage, is_write ? 'w' : 'r', len, addr);
 #endif
 
-    return flatview_access_valid(subpage->fv, addr + subpage->base,
-                                 len, is_write, attrs);
+    return flatview_access_valid(subpage->fv, addr + subpage->base, len, is_write, attrs);
 }
 
 static const MemoryRegionOps subpage_ops = {
-    .read_with_attrs = subpage_read,
-    .write_with_attrs = subpage_write,
-    .impl.min_access_size = 1,
-    .impl.max_access_size = 8,
+    .read_with_attrs       = subpage_read,
+    .write_with_attrs      = subpage_write,
+    .impl.min_access_size  = 1,
+    .impl.max_access_size  = 8,
     .valid.min_access_size = 1,
     .valid.max_access_size = 8,
-    .valid.accepts = subpage_accepts,
-    .endianness = DEVICE_NATIVE_ENDIAN,
+    .valid.accepts         = subpage_accepts,
+    .endianness            = DEVICE_NATIVE_ENDIAN,
 };
 
-static int subpage_register(subpage_t *mmio, uint32_t start, uint32_t end,
-                            uint16_t section)
+static int subpage_register(subpage_t* mmio, uint32_t start, uint32_t end, uint16_t section)
 {
     int idx, eidx;
 
-    if (start >= TARGET_PAGE_SIZE || end >= TARGET_PAGE_SIZE)
-        return -1;
-    idx = SUBPAGE_IDX(start);
+    if (start >= TARGET_PAGE_SIZE || end >= TARGET_PAGE_SIZE) { return -1; }
+    idx  = SUBPAGE_IDX(start);
     eidx = SUBPAGE_IDX(end);
 #if defined(DEBUG_SUBPAGE)
-    printf("%s: %p start %08x end %08x idx %08x eidx %08x section %d\n",
-           __func__, mmio, start, end, idx, eidx, section);
+    printf("%s: %p start %08x end %08x idx %08x eidx %08x section %d\n", __func__, mmio, start, end, idx, eidx,
+           section);
 #endif
-    for (; idx <= eidx; idx++) {
-        mmio->sub_section[idx] = section;
-    }
+    for (; idx <= eidx; idx++) { mmio->sub_section[idx] = section; }
 
     return 0;
 }
 
-static subpage_t *subpage_init(FlatView *fv, hwaddr base)
+static subpage_t* subpage_init(FlatView* fv, hwaddr base)
 {
-    subpage_t *mmio;
+    subpage_t* mmio;
 
     /* mmio->sub_section is set to PHYS_SECTION_UNASSIGNED with g_malloc0 */
-    mmio = g_malloc0(sizeof(subpage_t) + TARGET_PAGE_SIZE * sizeof(uint16_t));
-    mmio->fv = fv;
+    mmio       = g_malloc0(sizeof(subpage_t) + TARGET_PAGE_SIZE * sizeof(uint16_t));
+    mmio->fv   = fv;
     mmio->base = base;
-    memory_region_init_io(&mmio->iomem, NULL, &subpage_ops, mmio,
-                          NULL, TARGET_PAGE_SIZE);
+    memory_region_init_io(&mmio->iomem, NULL, &subpage_ops, mmio, NULL, TARGET_PAGE_SIZE);
     mmio->iomem.subpage = true;
 #if defined(DEBUG_SUBPAGE)
-    printf("%s: %p base " HWADDR_FMT_plx " len %08x\n", __func__,
-           mmio, base, TARGET_PAGE_SIZE);
+    printf("%s: %p base " HWADDR_FMT_plx " len %08x\n", __func__, mmio, base, TARGET_PAGE_SIZE);
 #endif
 
     return mmio;
 }
 
-static uint16_t dummy_section(PhysPageMap *map, FlatView *fv, MemoryRegion *mr)
+static uint16_t dummy_section(PhysPageMap* map, FlatView* fv, MemoryRegion* mr)
 {
     assert(fv);
     MemoryRegionSection section = {
-        .fv = fv,
-        .mr = mr,
+        .fv                          = fv,
+        .mr                          = mr,
         .offset_within_address_space = 0,
-        .offset_within_region = 0,
-        .size = int128_2_64(),
+        .offset_within_region        = 0,
+        .size                        = int128_2_64(),
     };
 
     return phys_section_add(map, &section);
 }
 
 static void io_mem_init(void)
-{
-    memory_region_init_io(&io_mem_unassigned, NULL, &unassigned_mem_ops, NULL,
-                          NULL, UINT64_MAX);
-}
+{ memory_region_init_io(&io_mem_unassigned, NULL, &unassigned_mem_ops, NULL, NULL, UINT64_MAX); }
 
-AddressSpaceDispatch *address_space_dispatch_new(FlatView *fv)
+AddressSpaceDispatch* address_space_dispatch_new(FlatView* fv)
 {
-    AddressSpaceDispatch *d = g_new0(AddressSpaceDispatch, 1);
-    uint16_t n;
+    AddressSpaceDispatch* d = g_new0(AddressSpaceDispatch, 1);
+    uint16_t              n;
 
     n = dummy_section(&d->map, fv, &io_mem_unassigned);
     assert(n == PHYS_SECTION_UNASSIGNED);
 
-    d->phys_map  = (PhysPageEntry) { .ptr = PHYS_MAP_NODE_NIL, .skip = 1 };
+    d->phys_map = (PhysPageEntry){.ptr = PHYS_MAP_NODE_NIL, .skip = 1};
 
     return d;
 }
 
-void address_space_dispatch_free(AddressSpaceDispatch *d)
+void address_space_dispatch_free(AddressSpaceDispatch* d)
 {
     phys_sections_free(&d->map);
     g_free(d);
 }
 
-static void do_nothing(CPUState *cpu, run_on_cpu_data d)
-{
-}
+static void do_nothing(CPUState* cpu, run_on_cpu_data d) { }
 
-static void tcg_log_global_after_sync(MemoryListener *listener)
+static void tcg_log_global_after_sync(MemoryListener* listener)
 {
-    CPUAddressSpace *cpuas;
+    CPUAddressSpace* cpuas;
 
     /* Wait for the CPU to end the current TB. */
     cpuas = container_of(listener, CPUAddressSpace, tcg_as_listener);
     run_on_cpu(cpuas->cpu, do_nothing, RUN_ON_CPU_NULL);
 }
 
-static void tcg_commit_cpu(CPUState *cpu, run_on_cpu_data data)
-{
-    tlb_flush(cpu);
-}
+static void tcg_commit_cpu(CPUState* cpu, run_on_cpu_data data) { tlb_flush(cpu); }
 
-static void tcg_commit(MemoryListener *listener)
+static void tcg_commit(MemoryListener* listener)
 {
-    CPUAddressSpace *cpuas;
-    CPUState *cpu;
+    CPUAddressSpace* cpuas;
+    CPUState*        cpu;
 
     assert(tcg_enabled());
     /* since each CPU stores ram addresses in its TLB cache, we must
        reset the modified entries */
     cpuas = container_of(listener, CPUAddressSpace, tcg_as_listener);
-    cpu = cpuas->cpu;
+    cpu   = cpuas->cpu;
 
     /*
      * Queueing the work function will kick the cpu back to
@@ -2497,9 +2174,8 @@ static void tcg_commit(MemoryListener *listener)
      * That said, the listener is also called during realize, before
      * all of the tcg machinery for run-on is initialized: thus halt_cond.
      */
-    if (cpu->halt_cond) {
-        async_run_on_cpu(cpu, tcg_commit_cpu, RUN_ON_CPU_HOST_PTR(cpuas));
-    } else {
+    if (cpu->halt_cond) { async_run_on_cpu(cpu, tcg_commit_cpu, RUN_ON_CPU_HOST_PTR(cpuas)); }
+    else {
         tcg_commit_cpu(cpu, RUN_ON_CPU_HOST_PTR(cpuas));
     }
 }
@@ -2512,26 +2188,18 @@ static void memory_map_init(void)
     address_space_init(&address_space_memory, system_memory, "memory");
 
     system_io = g_malloc(sizeof(*system_io));
-    memory_region_init_io(system_io, NULL, &unassigned_io_ops, NULL, "io",
-                          65536);
+    memory_region_init_io(system_io, NULL, &unassigned_io_ops, NULL, "io", 65536);
     address_space_init(&address_space_io, system_io, "I/O");
 }
 
-MemoryRegion *get_system_memory(void)
-{
-    return system_memory;
-}
+MemoryRegion* get_system_memory(void) { return system_memory; }
 
-MemoryRegion *get_system_io(void)
-{
-    return system_io;
-}
+MemoryRegion* get_system_io(void) { return system_io; }
 
-static void invalidate_and_set_dirty(MemoryRegion *mr, hwaddr addr,
-                                     hwaddr length)
+static void invalidate_and_set_dirty(MemoryRegion* mr, hwaddr addr, hwaddr length)
 {
-    uint8_t dirty_log_mask = memory_region_get_dirty_log_mask(mr);
-    ram_addr_t ramaddr = memory_region_get_ram_addr(mr);
+    uint8_t    dirty_log_mask = memory_region_get_dirty_log_mask(mr);
+    ram_addr_t ramaddr        = memory_region_get_ram_addr(mr);
 
     /* We know we're only called for RAM MemoryRegions */
     assert(ramaddr != RAM_ADDR_INVALID);
@@ -2541,10 +2209,7 @@ static void invalidate_and_set_dirty(MemoryRegion *mr, hwaddr addr,
      * cpu_physical_memory_set_dirty_range will still call
      * xen_modified_memory.
      */
-    if (dirty_log_mask) {
-        dirty_log_mask =
-            cpu_physical_memory_range_includes_clean(addr, length, dirty_log_mask);
-    }
+    if (dirty_log_mask) { dirty_log_mask = cpu_physical_memory_range_includes_clean(addr, length, dirty_log_mask); }
     if (dirty_log_mask & (1 << DIRTY_MEMORY_CODE)) {
         assert(tcg_enabled());
         tb_invalidate_phys_range(NULL, addr, addr + length - 1);
@@ -2553,7 +2218,7 @@ static void invalidate_and_set_dirty(MemoryRegion *mr, hwaddr addr,
     cpu_physical_memory_set_dirty_range(addr, length, dirty_log_mask);
 }
 
-void memory_region_flush_rom_device(MemoryRegion *mr, hwaddr addr, hwaddr size)
+void memory_region_flush_rom_device(MemoryRegion* mr, hwaddr addr, hwaddr size)
 {
     /*
      * In principle this function would work on other memory region types too,
@@ -2566,34 +2231,28 @@ void memory_region_flush_rom_device(MemoryRegion *mr, hwaddr addr, hwaddr size)
     invalidate_and_set_dirty(mr, addr, size);
 }
 
-int memory_access_size(MemoryRegion *mr, unsigned l, hwaddr addr)
+int memory_access_size(MemoryRegion* mr, unsigned l, hwaddr addr)
 {
     unsigned access_size_max = mr->ops->valid.max_access_size;
 
     /* Regions are assumed to support 1-4 byte accesses unless
        otherwise specified.  */
-    if (access_size_max == 0) {
-        access_size_max = 4;
-    }
+    if (access_size_max == 0) { access_size_max = 4; }
 
     /* Bound the maximum access by the alignment of the address.  */
     if (!mr->ops->impl.unaligned) {
         unsigned align_size_max = addr & -addr;
-        if (align_size_max != 0 && align_size_max < access_size_max) {
-            access_size_max = align_size_max;
-        }
+        if (align_size_max != 0 && align_size_max < access_size_max) { access_size_max = align_size_max; }
     }
 
     /* Don't attempt accesses larger than the maximum.  */
-    if (l > access_size_max) {
-        l = access_size_max;
-    }
+    if (l > access_size_max) { l = access_size_max; }
     l = pow2floor(l);
 
     return l;
 }
 
-bool prepare_mmio_access(MemoryRegion *mr)
+bool prepare_mmio_access(MemoryRegion* mr)
 {
     bool release_lock = false;
 
@@ -2601,9 +2260,7 @@ bool prepare_mmio_access(MemoryRegion *mr)
         bql_lock();
         release_lock = true;
     }
-    if (mr->flush_coalesced_mmio) {
-        qemu_flush_coalesced_mmio_buffer();
-    }
+    if (mr->flush_coalesced_mmio) { qemu_flush_coalesced_mmio_buffer(); }
 
     return release_lock;
 }
@@ -2619,35 +2276,27 @@ bool prepare_mmio_access(MemoryRegion *mr)
  *
  * Returns: true if transaction is allowed, false if denied.
  */
-static bool flatview_access_allowed(MemoryRegion *mr, MemTxAttrs attrs,
-                                    hwaddr addr, hwaddr len)
+static bool flatview_access_allowed(MemoryRegion* mr, MemTxAttrs attrs, hwaddr addr, hwaddr len)
 {
-    if (likely(!attrs.memory)) {
-        return true;
-    }
-    if (memory_region_is_ram(mr)) {
-        return true;
-    }
+    if (likely(!attrs.memory)) { return true; }
+    if (memory_region_is_ram(mr)) { return true; }
     qemu_log_mask(LOG_INVALID_MEM,
                   "Invalid access to non-RAM device at "
                   "addr 0x%" HWADDR_PRIX ", size %" HWADDR_PRIu ", "
-                  "region '%s'\n", addr, len, memory_region_name(mr));
+                  "region '%s'\n",
+                  addr, len, memory_region_name(mr));
     return false;
 }
 
-static MemTxResult flatview_write_continue_step(MemTxAttrs attrs,
-                                                const uint8_t *buf,
-                                                hwaddr len, hwaddr mr_addr,
-                                                hwaddr *l, MemoryRegion *mr)
+static MemTxResult flatview_write_continue_step(MemTxAttrs attrs, const uint8_t* buf, hwaddr len, hwaddr mr_addr,
+                                                hwaddr* l, MemoryRegion* mr)
 {
-    if (!flatview_access_allowed(mr, attrs, mr_addr, *l)) {
-        return MEMTX_ACCESS_ERROR;
-    }
+    if (!flatview_access_allowed(mr, attrs, mr_addr, *l)) { return MEMTX_ACCESS_ERROR; }
 
     if (!memory_access_is_direct(mr, true, attrs)) {
-        uint64_t val;
+        uint64_t    val;
         MemTxResult result;
-        bool release_lock = prepare_mmio_access(mr);
+        bool        release_lock = prepare_mmio_access(mr);
 
         *l = memory_access_size(mr, *l, mr_addr);
         /*
@@ -2660,23 +2309,17 @@ static MemTxResult flatview_write_continue_step(MemTxAttrs attrs,
          * the buffer by following ldn_he_p().
          */
 #ifdef QEMU_STATIC_ANALYSIS
-        assert((*l == 1 && len >= 1) ||
-               (*l == 2 && len >= 2) ||
-               (*l == 4 && len >= 4) ||
-               (*l == 8 && len >= 8));
+        assert((*l == 1 && len >= 1) || (*l == 2 && len >= 2) || (*l == 4 && len >= 4) || (*l == 8 && len >= 8));
 #endif
-        val = ldn_he_p(buf, *l);
-        result = memory_region_dispatch_write(mr, mr_addr, val,
-                                              size_memop(*l), attrs);
-        if (release_lock) {
-            bql_unlock();
-        }
+        val    = ldn_he_p(buf, *l);
+        result = memory_region_dispatch_write(mr, mr_addr, val, size_memop(*l), attrs);
+        if (release_lock) { bql_unlock(); }
 
         return result;
-    } else {
+    }
+    else {
         /* RAM case */
-        uint8_t *ram_ptr = qemu_ram_ptr_length(mr->ram_block, mr_addr, l,
-                                               false, true);
+        uint8_t* ram_ptr = qemu_ram_ptr_length(mr->ram_block, mr_addr, l, false, true);
 
         memmove(ram_ptr, buf, *l);
         invalidate_and_set_dirty(mr, mr_addr, *l);
@@ -2686,28 +2329,22 @@ static MemTxResult flatview_write_continue_step(MemTxAttrs attrs,
 }
 
 /* Called within RCU critical section.  */
-static MemTxResult flatview_write_continue(FlatView *fv, hwaddr addr,
-                                           MemTxAttrs attrs,
-                                           const void *ptr,
-                                           hwaddr len, hwaddr mr_addr,
-                                           hwaddr l, MemoryRegion *mr)
+static MemTxResult flatview_write_continue(FlatView* fv, hwaddr addr, MemTxAttrs attrs, const void* ptr, hwaddr len,
+                                           hwaddr mr_addr, hwaddr l, MemoryRegion* mr)
 {
-    MemTxResult result = MEMTX_OK;
-    const uint8_t *buf = ptr;
+    MemTxResult    result = MEMTX_OK;
+    const uint8_t* buf    = ptr;
 
     for (;;) {
-        result |= flatview_write_continue_step(attrs, buf, len, mr_addr, &l,
-                                               mr);
+        result |= flatview_write_continue_step(attrs, buf, len, mr_addr, &l, mr);
 
-        len -= l;
-        buf += l;
+        len  -= l;
+        buf  += l;
         addr += l;
 
-        if (!len) {
-            break;
-        }
+        if (!len) { break; }
 
-        l = len;
+        l  = len;
         mr = flatview_translate(fv, addr, &mr_addr, &l, true, attrs);
     }
 
@@ -2715,61 +2352,47 @@ static MemTxResult flatview_write_continue(FlatView *fv, hwaddr addr,
 }
 
 /* Called from RCU critical section.  */
-static MemTxResult flatview_write(FlatView *fv, hwaddr addr, MemTxAttrs attrs,
-                                  const void *buf, hwaddr len)
+static MemTxResult flatview_write(FlatView* fv, hwaddr addr, MemTxAttrs attrs, const void* buf, hwaddr len)
 {
-    hwaddr l;
-    hwaddr mr_addr;
-    MemoryRegion *mr;
+    hwaddr        l;
+    hwaddr        mr_addr;
+    MemoryRegion* mr;
 
-    l = len;
+    l  = len;
     mr = flatview_translate(fv, addr, &mr_addr, &l, true, attrs);
-    if (!flatview_access_allowed(mr, attrs, mr_addr, l)) {
-        return MEMTX_ACCESS_ERROR;
-    }
-    return flatview_write_continue(fv, addr, attrs, buf, len,
-                                   mr_addr, l, mr);
+    if (!flatview_access_allowed(mr, attrs, mr_addr, l)) { return MEMTX_ACCESS_ERROR; }
+    return flatview_write_continue(fv, addr, attrs, buf, len, mr_addr, l, mr);
 }
 
-static MemTxResult flatview_read_continue_step(MemTxAttrs attrs, uint8_t *buf,
-                                               hwaddr len, hwaddr mr_addr,
-                                               hwaddr *l,
-                                               MemoryRegion *mr)
+static MemTxResult flatview_read_continue_step(MemTxAttrs attrs, uint8_t* buf, hwaddr len, hwaddr mr_addr, hwaddr* l,
+                                               MemoryRegion* mr)
 {
-    if (!flatview_access_allowed(mr, attrs, mr_addr, *l)) {
-        return MEMTX_ACCESS_ERROR;
-    }
+    if (!flatview_access_allowed(mr, attrs, mr_addr, *l)) { return MEMTX_ACCESS_ERROR; }
 
     if (!memory_access_is_direct(mr, false, attrs)) {
         /* I/O case */
-        uint64_t val;
+        uint64_t    val;
         MemTxResult result;
-        bool release_lock = prepare_mmio_access(mr);
+        bool        release_lock = prepare_mmio_access(mr);
 
-        *l = memory_access_size(mr, *l, mr_addr);
-        result = memory_region_dispatch_read(mr, mr_addr, &val, size_memop(*l),
-                                             attrs);
+        *l     = memory_access_size(mr, *l, mr_addr);
+        result = memory_region_dispatch_read(mr, mr_addr, &val, size_memop(*l), attrs);
 
         /*
          * Assure Coverity (and ourselves) that we are not going to OVERRUN
          * the buffer by following stn_he_p().
          */
 #ifdef QEMU_STATIC_ANALYSIS
-        assert((*l == 1 && len >= 1) ||
-               (*l == 2 && len >= 2) ||
-               (*l == 4 && len >= 4) ||
-               (*l == 8 && len >= 8));
+        assert((*l == 1 && len >= 1) || (*l == 2 && len >= 2) || (*l == 4 && len >= 4) || (*l == 8 && len >= 8));
 #endif
         stn_he_p(buf, *l, val);
 
-        if (release_lock) {
-            bql_unlock();
-        }
+        if (release_lock) { bql_unlock(); }
         return result;
-    } else {
+    }
+    else {
         /* RAM case */
-        uint8_t *ram_ptr = qemu_ram_ptr_length(mr->ram_block, mr_addr, l,
-                                               false, false);
+        uint8_t* ram_ptr = qemu_ram_ptr_length(mr->ram_block, mr_addr, l, false, false);
 
         memcpy(buf, ram_ptr, *l);
 
@@ -2778,26 +2401,22 @@ static MemTxResult flatview_read_continue_step(MemTxAttrs attrs, uint8_t *buf,
 }
 
 /* Called within RCU critical section.  */
-MemTxResult flatview_read_continue(FlatView *fv, hwaddr addr,
-                                   MemTxAttrs attrs, void *ptr,
-                                   hwaddr len, hwaddr mr_addr, hwaddr l,
-                                   MemoryRegion *mr)
+MemTxResult flatview_read_continue(FlatView* fv, hwaddr addr, MemTxAttrs attrs, void* ptr, hwaddr len, hwaddr mr_addr,
+                                   hwaddr l, MemoryRegion* mr)
 {
     MemTxResult result = MEMTX_OK;
-    uint8_t *buf = ptr;
+    uint8_t*    buf    = ptr;
 
     for (;;) {
         result |= flatview_read_continue_step(attrs, buf, len, mr_addr, &l, mr);
 
-        len -= l;
-        buf += l;
+        len  -= l;
+        buf  += l;
         addr += l;
 
-        if (!len) {
-            break;
-        }
+        if (!len) { break; }
 
-        l = len;
+        l  = len;
         mr = flatview_translate(fv, addr, &mr_addr, &l, false, attrs);
     }
 
@@ -2805,144 +2424,117 @@ MemTxResult flatview_read_continue(FlatView *fv, hwaddr addr,
 }
 
 /* Called from RCU critical section.  */
-static MemTxResult flatview_read(FlatView *fv, hwaddr addr,
-                                 MemTxAttrs attrs, void *buf, hwaddr len)
+static MemTxResult flatview_read(FlatView* fv, hwaddr addr, MemTxAttrs attrs, void* buf, hwaddr len)
 {
-    hwaddr l;
-    hwaddr mr_addr;
-    MemoryRegion *mr;
+    hwaddr        l;
+    hwaddr        mr_addr;
+    MemoryRegion* mr;
 
-    l = len;
+    l  = len;
     mr = flatview_translate(fv, addr, &mr_addr, &l, false, attrs);
-    if (!flatview_access_allowed(mr, attrs, mr_addr, l)) {
-        return MEMTX_ACCESS_ERROR;
-    }
-    return flatview_read_continue(fv, addr, attrs, buf, len,
-                                  mr_addr, l, mr);
+    if (!flatview_access_allowed(mr, attrs, mr_addr, l)) { return MEMTX_ACCESS_ERROR; }
+    return flatview_read_continue(fv, addr, attrs, buf, len, mr_addr, l, mr);
 }
 
-MemTxResult address_space_read_full(AddressSpace *as, hwaddr addr,
-                                    MemTxAttrs attrs, void *buf, hwaddr len)
+MemTxResult address_space_read_full(AddressSpace* as, hwaddr addr, MemTxAttrs attrs, void* buf, hwaddr len)
 {
     MemTxResult result = MEMTX_OK;
-    FlatView *fv;
+    FlatView*   fv;
 
     if (len > 0) {
         RCU_READ_LOCK_GUARD();
-        fv = address_space_to_flatview(as);
+        fv     = address_space_to_flatview(as);
         result = flatview_read(fv, addr, attrs, buf, len);
     }
 
     return result;
 }
 
-MemTxResult address_space_write(AddressSpace *as, hwaddr addr,
-                                MemTxAttrs attrs,
-                                const void *buf, hwaddr len)
+MemTxResult address_space_write(AddressSpace* as, hwaddr addr, MemTxAttrs attrs, const void* buf, hwaddr len)
 {
     MemTxResult result = MEMTX_OK;
-    FlatView *fv;
+    FlatView*   fv;
 
     if (len > 0) {
         RCU_READ_LOCK_GUARD();
-        fv = address_space_to_flatview(as);
+        fv     = address_space_to_flatview(as);
         result = flatview_write(fv, addr, attrs, buf, len);
     }
 
     return result;
 }
 
-MemTxResult address_space_rw(AddressSpace *as, hwaddr addr, MemTxAttrs attrs,
-                             void *buf, hwaddr len, bool is_write)
+MemTxResult address_space_rw(AddressSpace* as, hwaddr addr, MemTxAttrs attrs, void* buf, hwaddr len, bool is_write)
 {
-    if (is_write) {
-        return address_space_write(as, addr, attrs, buf, len);
-    } else {
+    if (is_write) { return address_space_write(as, addr, attrs, buf, len); }
+    else {
         return address_space_read_full(as, addr, attrs, buf, len);
     }
 }
 
-MemTxResult address_space_set(AddressSpace *as, hwaddr addr,
-                              uint8_t c, hwaddr len, MemTxAttrs attrs)
+MemTxResult address_space_set(AddressSpace* as, hwaddr addr, uint8_t c, hwaddr len, MemTxAttrs attrs)
 {
 #define FILLBUF_SIZE 512
-    uint8_t fillbuf[FILLBUF_SIZE];
-    int l;
+    uint8_t     fillbuf[FILLBUF_SIZE];
+    int         l;
     MemTxResult error = MEMTX_OK;
 
     memset(fillbuf, c, FILLBUF_SIZE);
     while (len > 0) {
-        l = len < FILLBUF_SIZE ? len : FILLBUF_SIZE;
+        l      = len < FILLBUF_SIZE ? len : FILLBUF_SIZE;
         error |= address_space_write(as, addr, attrs, fillbuf, l);
-        len -= l;
-        addr += l;
+        len   -= l;
+        addr  += l;
     }
 
     return error;
 }
 
-void cpu_physical_memory_rw(hwaddr addr, void *buf,
-                            hwaddr len, bool is_write)
-{
-    address_space_rw(&address_space_memory, addr, MEMTXATTRS_UNSPECIFIED,
-                     buf, len, is_write);
-}
+void cpu_physical_memory_rw(hwaddr addr, void* buf, hwaddr len, bool is_write)
+{ address_space_rw(&address_space_memory, addr, MEMTXATTRS_UNSPECIFIED, buf, len, is_write); }
 
-enum write_rom_type {
+enum write_rom_type
+{
     WRITE_DATA,
     FLUSH_CACHE,
 };
 
-static inline MemTxResult address_space_write_rom_internal(AddressSpace *as,
-                                                           hwaddr addr,
-                                                           MemTxAttrs attrs,
-                                                           const void *ptr,
-                                                           hwaddr len,
-                                                           enum write_rom_type type)
+static inline MemTxResult address_space_write_rom_internal(AddressSpace* as, hwaddr addr, MemTxAttrs attrs,
+                                                           const void* ptr, hwaddr len, enum write_rom_type type)
 {
-    hwaddr l;
-    uint8_t *ram_ptr;
-    hwaddr addr1;
-    MemoryRegion *mr;
-    const uint8_t *buf = ptr;
+    hwaddr         l;
+    uint8_t*       ram_ptr;
+    hwaddr         addr1;
+    MemoryRegion*  mr;
+    const uint8_t* buf = ptr;
 
     RCU_READ_LOCK_GUARD();
     while (len > 0) {
-        l = len;
+        l  = len;
         mr = address_space_translate(as, addr, &addr1, &l, true, attrs);
 
-        if (!memory_region_supports_direct_access(mr)) {
-            l = memory_access_size(mr, l, addr1);
-        } else {
+        if (!memory_region_supports_direct_access(mr)) { l = memory_access_size(mr, l, addr1); }
+        else {
             /* ROM/RAM case */
             ram_ptr = qemu_map_ram_ptr(mr->ram_block, addr1);
             switch (type) {
-            case WRITE_DATA:
-                memcpy(ram_ptr, buf, l);
-                invalidate_and_set_dirty(mr, addr1, l);
-                break;
-            case FLUSH_CACHE:
-                flush_idcache_range((uintptr_t)ram_ptr, (uintptr_t)ram_ptr, l);
-                break;
+                case WRITE_DATA:
+                    memcpy(ram_ptr, buf, l);
+                    invalidate_and_set_dirty(mr, addr1, l);
+                    break;
+                case FLUSH_CACHE: flush_idcache_range((uintptr_t)ram_ptr, (uintptr_t)ram_ptr, l); break;
             }
         }
-        len -= l;
+        len  -= l;
         addr += l;
-        if (buf) {
-            buf += l;
-        }
+        if (buf) { buf += l; }
     }
     return MEMTX_OK;
 }
 
 /* used for ROM loading : can write in RAM and ROM */
-MemTxResult address_space_write_rom(AddressSpace *as, hwaddr addr,
-                                    MemTxAttrs attrs,
-                                    const void *buf, hwaddr len)
-{
-    return address_space_write_rom_internal(as, addr, attrs,
-                                            buf, len, WRITE_DATA);
-}
+MemTxResult address_space_write_rom(AddressSpace* as, hwaddr addr, MemTxAttrs attrs, const void* buf, hwaddr len)
+{ return address_space_write_rom_internal(as, addr, attrs, buf, len, WRITE_DATA); }
 
 void cpu_flush_icache_range(hwaddr start, hwaddr len)
 {
@@ -2952,13 +2544,9 @@ void cpu_flush_icache_range(hwaddr start, hwaddr len)
      * so there is no need to flush anything. For KVM / Xen we need to flush
      * the host's instruction cache at least.
      */
-    if (tcg_enabled()) {
-        return;
-    }
+    if (tcg_enabled()) { return; }
 
-    address_space_write_rom_internal(&address_space_memory,
-                                     start, MEMTXATTRS_UNSPECIFIED,
-                                     NULL, len, FLUSH_CACHE);
+    address_space_write_rom_internal(&address_space_memory, start, MEMTXATTRS_UNSPECIFIED, NULL, len, FLUSH_CACHE);
 }
 
 /*
@@ -2967,24 +2555,24 @@ void cpu_flush_icache_range(hwaddr start, hwaddr len)
  */
 #define BOUNCE_BUFFER_MAGIC 0xb4017ceb4ffe12ed
 
-typedef struct {
-    uint64_t magic;
-    MemoryRegion *mr;
-    hwaddr addr;
-    size_t len;
-    uint8_t buffer[];
+typedef struct
+{
+    uint64_t      magic;
+    MemoryRegion* mr;
+    hwaddr        addr;
+    size_t        len;
+    uint8_t       buffer[];
 } BounceBuffer;
 
-static void
-address_space_unregister_map_client_do(AddressSpaceMapClient *client)
+static void address_space_unregister_map_client_do(AddressSpaceMapClient* client)
 {
     QLIST_REMOVE(client, link);
     g_free(client);
 }
 
-static void address_space_notify_map_clients_locked(AddressSpace *as)
+static void address_space_notify_map_clients_locked(AddressSpace* as)
 {
-    AddressSpaceMapClient *client;
+    AddressSpaceMapClient* client;
 
     while (!QLIST_EMPTY(&as->map_client_list)) {
         client = QLIST_FIRST(&as->map_client_list);
@@ -2993,9 +2581,9 @@ static void address_space_notify_map_clients_locked(AddressSpace *as)
     }
 }
 
-void address_space_register_map_client(AddressSpace *as, QEMUBH *bh)
+void address_space_register_map_client(AddressSpace* as, QEMUBH* bh)
 {
-    AddressSpaceMapClient *client = g_malloc(sizeof(*client));
+    AddressSpaceMapClient* client = g_malloc(sizeof(*client));
 
     QEMU_LOCK_GUARD(&as->map_client_list_lock);
     client->bh = bh;
@@ -3022,12 +2610,12 @@ void cpu_exec_init_all(void)
     memory_map_init();
 }
 
-void address_space_unregister_map_client(AddressSpace *as, QEMUBH *bh)
+void address_space_unregister_map_client(AddressSpace* as, QEMUBH* bh)
 {
-    AddressSpaceMapClient *client;
+    AddressSpaceMapClient* client;
 
     QEMU_LOCK_GUARD(&as->map_client_list_lock);
-    QLIST_FOREACH(client, &as->map_client_list, link) {
+    QLIST_FOREACH (client, &as->map_client_list, link) {
         if (client->bh == bh) {
             address_space_unregister_map_client_do(client);
             break;
@@ -3035,69 +2623,56 @@ void address_space_unregister_map_client(AddressSpace *as, QEMUBH *bh)
     }
 }
 
-static void address_space_notify_map_clients(AddressSpace *as)
+static void address_space_notify_map_clients(AddressSpace* as)
 {
     QEMU_LOCK_GUARD(&as->map_client_list_lock);
     address_space_notify_map_clients_locked(as);
 }
 
-static bool flatview_access_valid(FlatView *fv, hwaddr addr, hwaddr len,
-                                  bool is_write, MemTxAttrs attrs)
+static bool flatview_access_valid(FlatView* fv, hwaddr addr, hwaddr len, bool is_write, MemTxAttrs attrs)
 {
-    MemoryRegion *mr;
-    hwaddr l, xlat;
+    MemoryRegion* mr;
+    hwaddr        l, xlat;
 
     while (len > 0) {
-        l = len;
+        l  = len;
         mr = flatview_translate(fv, addr, &xlat, &l, is_write, attrs);
         if (!memory_access_is_direct(mr, is_write, attrs)) {
             l = memory_access_size(mr, l, addr);
-            if (!memory_region_access_valid(mr, xlat, l, is_write, attrs)) {
-                return false;
-            }
+            if (!memory_region_access_valid(mr, xlat, l, is_write, attrs)) { return false; }
         }
 
-        len -= l;
+        len  -= l;
         addr += l;
     }
     return true;
 }
 
-bool address_space_access_valid(AddressSpace *as, hwaddr addr,
-                                hwaddr len, bool is_write,
-                                MemTxAttrs attrs)
+bool address_space_access_valid(AddressSpace* as, hwaddr addr, hwaddr len, bool is_write, MemTxAttrs attrs)
 {
-    FlatView *fv;
+    FlatView* fv;
 
     RCU_READ_LOCK_GUARD();
     fv = address_space_to_flatview(as);
     return flatview_access_valid(fv, addr, len, is_write, attrs);
 }
 
-static hwaddr
-flatview_extend_translation(FlatView *fv, hwaddr addr,
-                            hwaddr target_len,
-                            MemoryRegion *mr, hwaddr base, hwaddr len,
-                            bool is_write, MemTxAttrs attrs)
+static hwaddr flatview_extend_translation(FlatView* fv, hwaddr addr, hwaddr target_len, MemoryRegion* mr, hwaddr base,
+                                          hwaddr len, bool is_write, MemTxAttrs attrs)
 {
-    hwaddr done = 0;
-    hwaddr xlat;
-    MemoryRegion *this_mr;
+    hwaddr        done = 0;
+    hwaddr        xlat;
+    MemoryRegion* this_mr;
 
     for (;;) {
         target_len -= len;
-        addr += len;
-        done += len;
-        if (target_len == 0) {
-            return done;
-        }
+        addr       += len;
+        done       += len;
+        if (target_len == 0) { return done; }
 
-        len = target_len;
-        this_mr = flatview_translate(fv, addr, &xlat,
-                                     &len, is_write, attrs);
-        if (this_mr != mr || xlat != base + done) {
-            return done;
-        }
+        len     = target_len;
+        this_mr = flatview_translate(fv, addr, &xlat, &len, is_write, attrs);
+        if (this_mr != mr || xlat != base + done) { return done; }
     }
 }
 
@@ -3108,22 +2683,16 @@ flatview_extend_translation(FlatView *fv, hwaddr addr,
  * Use address_space_register_map_client() to know when retrying the map
  * operation is likely to succeed.
  */
-void *address_space_map(AddressSpace *as,
-                        hwaddr addr,
-                        hwaddr *plen,
-                        bool is_write,
-                        MemTxAttrs attrs)
+void* address_space_map(AddressSpace* as, hwaddr addr, hwaddr* plen, bool is_write, MemTxAttrs attrs)
 {
-    hwaddr len = *plen;
-    hwaddr l, xlat;
-    MemoryRegion *mr;
-    FlatView *fv;
+    hwaddr        len = *plen;
+    hwaddr        l, xlat;
+    MemoryRegion* mr;
+    FlatView*     fv;
 
-    trace_address_space_map(as, addr, len, is_write, *(uint32_t *) &attrs);
+    trace_address_space_map(as, addr, len, is_write, *(uint32_t*)&attrs);
 
-    if (len == 0) {
-        return NULL;
-    }
+    if (len == 0) { return NULL; }
 
     l = len;
     RCU_READ_LOCK_GUARD();
@@ -3133,10 +2702,9 @@ void *address_space_map(AddressSpace *as,
     if (!memory_access_is_direct(mr, is_write, attrs)) {
         size_t used = qatomic_read(&as->bounce_buffer_size);
         for (;;) {
-            hwaddr alloc = MIN(as->max_bounce_buffer_size - used, l);
+            hwaddr alloc    = MIN(as->max_bounce_buffer_size - used, l);
             size_t new_size = used + alloc;
-            size_t actual =
-                qatomic_cmpxchg(&as->bounce_buffer_size, used, new_size);
+            size_t actual   = qatomic_cmpxchg(&as->bounce_buffer_size, used, new_size);
             if (actual == used) {
                 l = alloc;
                 break;
@@ -3149,25 +2717,21 @@ void *address_space_map(AddressSpace *as,
             return NULL;
         }
 
-        BounceBuffer *bounce = g_malloc0(l + sizeof(BounceBuffer));
-        bounce->magic = BOUNCE_BUFFER_MAGIC;
+        BounceBuffer* bounce = g_malloc0(l + sizeof(BounceBuffer));
+        bounce->magic        = BOUNCE_BUFFER_MAGIC;
         memory_region_ref(mr);
-        bounce->mr = mr;
+        bounce->mr   = mr;
         bounce->addr = addr;
-        bounce->len = l;
+        bounce->len  = l;
 
-        if (!is_write) {
-            flatview_read(fv, addr, attrs,
-                          bounce->buffer, l);
-        }
+        if (!is_write) { flatview_read(fv, addr, attrs, bounce->buffer, l); }
 
         *plen = l;
         return bounce->buffer;
     }
 
     memory_region_ref(mr);
-    *plen = flatview_extend_translation(fv, addr, len, mr, xlat,
-                                        l, is_write, attrs);
+    *plen = flatview_extend_translation(fv, addr, len, mr, xlat, l, is_write, attrs);
     return qemu_ram_ptr_length(mr->ram_block, xlat, plen, true, is_write);
 }
 
@@ -3175,29 +2739,22 @@ void *address_space_map(AddressSpace *as,
  * Will also mark the memory as dirty if is_write is true.  access_len gives
  * the amount of memory that was actually read or written by the caller.
  */
-void address_space_unmap(AddressSpace *as, void *buffer, hwaddr len,
-                         bool is_write, hwaddr access_len)
+void address_space_unmap(AddressSpace* as, void* buffer, hwaddr len, bool is_write, hwaddr access_len)
 {
-    MemoryRegion *mr;
-    ram_addr_t addr1;
+    MemoryRegion* mr;
+    ram_addr_t    addr1;
 
     mr = memory_region_from_host(buffer, &addr1);
     if (mr != NULL) {
-        if (is_write) {
-            invalidate_and_set_dirty(mr, addr1, access_len);
-        }
+        if (is_write) { invalidate_and_set_dirty(mr, addr1, access_len); }
         memory_region_unref(mr);
         return;
     }
 
-
-    BounceBuffer *bounce = container_of(buffer, BounceBuffer, buffer);
+    BounceBuffer* bounce = container_of(buffer, BounceBuffer, buffer);
     assert(bounce->magic == BOUNCE_BUFFER_MAGIC);
 
-    if (is_write) {
-        address_space_write(as, bounce->addr, MEMTXATTRS_UNSPECIFIED,
-                            bounce->buffer, access_len);
-    }
+    if (is_write) { address_space_write(as, bounce->addr, MEMTXATTRS_UNSPECIFIED, bounce->buffer, access_len); }
 
     qatomic_sub(&as->bounce_buffer_size, bounce->len);
     bounce->magic = ~BOUNCE_BUFFER_MAGIC;
@@ -3208,44 +2765,32 @@ void address_space_unmap(AddressSpace *as, void *buffer, hwaddr len,
     address_space_notify_map_clients(as);
 }
 
-void *cpu_physical_memory_map(hwaddr addr,
-                              hwaddr *plen,
-                              bool is_write)
-{
-    return address_space_map(&address_space_memory, addr, plen, is_write,
-                             MEMTXATTRS_UNSPECIFIED);
-}
+void* cpu_physical_memory_map(hwaddr addr, hwaddr* plen, bool is_write)
+{ return address_space_map(&address_space_memory, addr, plen, is_write, MEMTXATTRS_UNSPECIFIED); }
 
-void cpu_physical_memory_unmap(void *buffer, hwaddr len,
-                               bool is_write, hwaddr access_len)
-{
-    return address_space_unmap(&address_space_memory, buffer, len, is_write, access_len);
-}
+void cpu_physical_memory_unmap(void* buffer, hwaddr len, bool is_write, hwaddr access_len)
+{ return address_space_unmap(&address_space_memory, buffer, len, is_write, access_len); }
 
-#define ARG1_DECL                AddressSpace *as
-#define ARG1                     as
+#define ARG1_DECL AddressSpace* as
+#define ARG1      as
 #define SUFFIX
-#define TRANSLATE(...)           address_space_translate(as, __VA_ARGS__)
-#define RCU_READ_LOCK(...)       rcu_read_lock()
-#define RCU_READ_UNLOCK(...)     rcu_read_unlock()
+#define TRANSLATE(...)       address_space_translate(as, __VA_ARGS__)
+#define RCU_READ_LOCK(...)   rcu_read_lock()
+#define RCU_READ_UNLOCK(...) rcu_read_unlock()
 #include "memory_ldst.c.inc"
 
-int64_t address_space_cache_init(MemoryRegionCache *cache,
-                                 AddressSpace *as,
-                                 hwaddr addr,
-                                 hwaddr len,
-                                 bool is_write)
+int64_t address_space_cache_init(MemoryRegionCache* cache, AddressSpace* as, hwaddr addr, hwaddr len, bool is_write)
 {
-    AddressSpaceDispatch *d;
-    hwaddr l;
-    MemoryRegion *mr;
-    Int128 diff;
+    AddressSpaceDispatch* d;
+    hwaddr                l;
+    MemoryRegion*         mr;
+    Int128                diff;
 
     assert(len > 0);
 
-    l = len;
-    cache->fv = address_space_get_flatview(as);
-    d = flatview_to_dispatch(cache->fv);
+    l          = len;
+    cache->fv  = address_space_get_flatview(as);
+    d          = flatview_to_dispatch(cache->fv);
     cache->mrs = *address_space_translate_internal(d, addr, &cache->xlat, &l, true);
 
     /*
@@ -3253,9 +2798,8 @@ int64_t address_space_cache_init(MemoryRegionCache *cache,
      * Take that into account to compute how many bytes are there between
      * cache->xlat and the end of the section.
      */
-    diff = int128_sub(cache->mrs.size,
-                      int128_make64(cache->xlat - cache->mrs.offset_within_region));
-    l = int128_get64(int128_min(diff, int128_make64(l)));
+    diff = int128_sub(cache->mrs.size, int128_make64(cache->xlat - cache->mrs.offset_within_region));
+    l    = int128_get64(int128_min(diff, int128_make64(l)));
 
     mr = cache->mrs.mr;
     memory_region_ref(mr);
@@ -3264,40 +2808,32 @@ int64_t address_space_cache_init(MemoryRegionCache *cache,
          * doing this if we found actual RAM, which behaves the same
          * regardless of attributes; so UNSPECIFIED is fine.
          */
-        l = flatview_extend_translation(cache->fv, addr, len, mr,
-                                        cache->xlat, l, is_write,
-                                        MEMTXATTRS_UNSPECIFIED);
-        cache->ptr = qemu_ram_ptr_length(mr->ram_block, cache->xlat, &l, true,
-                                         is_write);
-    } else {
+        l = flatview_extend_translation(cache->fv, addr, len, mr, cache->xlat, l, is_write, MEMTXATTRS_UNSPECIFIED);
+        cache->ptr = qemu_ram_ptr_length(mr->ram_block, cache->xlat, &l, true, is_write);
+    }
+    else {
         cache->ptr = NULL;
     }
 
-    cache->len = l;
+    cache->len      = l;
     cache->is_write = is_write;
     return l;
 }
 
-void address_space_cache_invalidate(MemoryRegionCache *cache,
-                                    hwaddr addr,
-                                    hwaddr access_len)
+void address_space_cache_invalidate(MemoryRegionCache* cache, hwaddr addr, hwaddr access_len)
 {
     assert(cache->is_write);
-    if (likely(cache->ptr)) {
-        invalidate_and_set_dirty(cache->mrs.mr, addr + cache->xlat, access_len);
-    }
+    if (likely(cache->ptr)) { invalidate_and_set_dirty(cache->mrs.mr, addr + cache->xlat, access_len); }
 }
 
-void address_space_cache_destroy(MemoryRegionCache *cache)
+void address_space_cache_destroy(MemoryRegionCache* cache)
 {
-    if (!cache->mrs.mr) {
-        return;
-    }
+    if (!cache->mrs.mr) { return; }
 
     memory_region_unref(cache->mrs.mr);
     flatview_unref(cache->fv);
     cache->mrs.mr = NULL;
-    cache->fv = NULL;
+    cache->fv     = NULL;
 }
 
 /* Called from RCU critical section.  This function has the same
@@ -3305,53 +2841,43 @@ void address_space_cache_destroy(MemoryRegionCache *cache)
  * predefined range of a MemoryRegion that was mapped with
  * address_space_cache_init.
  */
-static inline MemoryRegion *address_space_translate_cached(
-    MemoryRegionCache *cache, hwaddr addr, hwaddr *xlat,
-    hwaddr *plen, bool is_write, MemTxAttrs attrs)
+static inline MemoryRegion* address_space_translate_cached(MemoryRegionCache* cache, hwaddr addr, hwaddr* xlat,
+                                                           hwaddr* plen, bool is_write, MemTxAttrs attrs)
 {
     MemoryRegionSection section;
-    MemoryRegion *mr;
-    IOMMUMemoryRegion *iommu_mr;
-    AddressSpace *target_as;
+    MemoryRegion*       mr;
+    IOMMUMemoryRegion*  iommu_mr;
+    AddressSpace*       target_as;
 
     assert(!cache->ptr);
     *xlat = addr + cache->xlat;
 
-    mr = cache->mrs.mr;
+    mr       = cache->mrs.mr;
     iommu_mr = memory_region_get_iommu(mr);
     if (!iommu_mr) {
         /* MMIO region.  */
         return mr;
     }
 
-    section = address_space_translate_iommu(iommu_mr, xlat, plen,
-                                            NULL, is_write, true,
-                                            &target_as, attrs);
+    section = address_space_translate_iommu(iommu_mr, xlat, plen, NULL, is_write, true, &target_as, attrs);
     return section.mr;
 }
 
 /* Called within RCU critical section.  */
-static MemTxResult address_space_write_continue_cached(MemTxAttrs attrs,
-                                                       const void *ptr,
-                                                       hwaddr len,
-                                                       hwaddr mr_addr,
-                                                       hwaddr l,
-                                                       MemoryRegion *mr)
+static MemTxResult address_space_write_continue_cached(MemTxAttrs attrs, const void* ptr, hwaddr len, hwaddr mr_addr,
+                                                       hwaddr l, MemoryRegion* mr)
 {
-    MemTxResult result = MEMTX_OK;
-    const uint8_t *buf = ptr;
+    MemTxResult    result = MEMTX_OK;
+    const uint8_t* buf    = ptr;
 
     for (;;) {
-        result |= flatview_write_continue_step(attrs, buf, len, mr_addr, &l,
-                                               mr);
+        result |= flatview_write_continue_step(attrs, buf, len, mr_addr, &l, mr);
 
-        len -= l;
-        buf += l;
+        len     -= l;
+        buf     += l;
         mr_addr += l;
 
-        if (!len) {
-            break;
-        }
+        if (!len) { break; }
 
         l = len;
     }
@@ -3360,23 +2886,19 @@ static MemTxResult address_space_write_continue_cached(MemTxAttrs attrs,
 }
 
 /* Called within RCU critical section.  */
-static MemTxResult address_space_read_continue_cached(MemTxAttrs attrs,
-                                                      void *ptr, hwaddr len,
-                                                      hwaddr mr_addr, hwaddr l,
-                                                      MemoryRegion *mr)
+static MemTxResult address_space_read_continue_cached(MemTxAttrs attrs, void* ptr, hwaddr len, hwaddr mr_addr, hwaddr l,
+                                                      MemoryRegion* mr)
 {
     MemTxResult result = MEMTX_OK;
-    uint8_t *buf = ptr;
+    uint8_t*    buf    = ptr;
 
     for (;;) {
-        result |= flatview_read_continue_step(attrs, buf, len, mr_addr, &l, mr);
-        len -= l;
-        buf += l;
+        result  |= flatview_read_continue_step(attrs, buf, len, mr_addr, &l, mr);
+        len     -= l;
+        buf     += l;
         mr_addr += l;
 
-        if (!len) {
-            break;
-        }
+        if (!len) { break; }
         l = len;
     }
 
@@ -3386,76 +2908,62 @@ static MemTxResult address_space_read_continue_cached(MemTxAttrs attrs,
 /* Called from RCU critical section. address_space_read_cached uses this
  * out of line function when the target is an MMIO or IOMMU region.
  */
-MemTxResult
-address_space_read_cached_slow(MemoryRegionCache *cache, hwaddr addr,
-                                   void *buf, hwaddr len)
+MemTxResult address_space_read_cached_slow(MemoryRegionCache* cache, hwaddr addr, void* buf, hwaddr len)
 {
-    hwaddr mr_addr, l;
-    MemoryRegion *mr;
+    hwaddr        mr_addr, l;
+    MemoryRegion* mr;
 
-    l = len;
-    mr = address_space_translate_cached(cache, addr, &mr_addr, &l, false,
-                                        MEMTXATTRS_UNSPECIFIED);
-    return address_space_read_continue_cached(MEMTXATTRS_UNSPECIFIED,
-                                              buf, len, mr_addr, l, mr);
+    l  = len;
+    mr = address_space_translate_cached(cache, addr, &mr_addr, &l, false, MEMTXATTRS_UNSPECIFIED);
+    return address_space_read_continue_cached(MEMTXATTRS_UNSPECIFIED, buf, len, mr_addr, l, mr);
 }
 
 /* Called from RCU critical section. address_space_write_cached uses this
  * out of line function when the target is an MMIO or IOMMU region.
  */
-MemTxResult
-address_space_write_cached_slow(MemoryRegionCache *cache, hwaddr addr,
-                                    const void *buf, hwaddr len)
+MemTxResult address_space_write_cached_slow(MemoryRegionCache* cache, hwaddr addr, const void* buf, hwaddr len)
 {
-    hwaddr mr_addr, l;
-    MemoryRegion *mr;
+    hwaddr        mr_addr, l;
+    MemoryRegion* mr;
 
-    l = len;
-    mr = address_space_translate_cached(cache, addr, &mr_addr, &l, true,
-                                        MEMTXATTRS_UNSPECIFIED);
-    return address_space_write_continue_cached(MEMTXATTRS_UNSPECIFIED,
-                                               buf, len, mr_addr, l, mr);
+    l  = len;
+    mr = address_space_translate_cached(cache, addr, &mr_addr, &l, true, MEMTXATTRS_UNSPECIFIED);
+    return address_space_write_continue_cached(MEMTXATTRS_UNSPECIFIED, buf, len, mr_addr, l, mr);
 }
 
-#define ARG1_DECL                MemoryRegionCache *cache
-#define ARG1                     cache
-#define SUFFIX                   _cached_slow
-#define TRANSLATE(...)           address_space_translate_cached(cache, __VA_ARGS__)
-#define RCU_READ_LOCK()          ((void)0)
-#define RCU_READ_UNLOCK()        ((void)0)
+#define ARG1_DECL         MemoryRegionCache* cache
+#define ARG1              cache
+#define SUFFIX            _cached_slow
+#define TRANSLATE(...)    address_space_translate_cached(cache, __VA_ARGS__)
+#define RCU_READ_LOCK()   ((void)0)
+#define RCU_READ_UNLOCK() ((void)0)
 #include "memory_ldst.c.inc"
 
 /* virtual memory access for debug (includes writing to ROM) */
-int cpu_memory_rw_debug(CPUState *cpu, vaddr addr,
-                        void *ptr, size_t len, bool is_write)
+int cpu_memory_rw_debug(CPUState* cpu, vaddr addr, void* ptr, size_t len, bool is_write)
 {
-    hwaddr phys_addr;
-    vaddr l, page;
-    uint8_t *buf = ptr;
+    hwaddr   phys_addr;
+    vaddr    l, page;
+    uint8_t* buf = ptr;
 
     cpu_synchronize_state(cpu);
     while (len > 0) {
-        int asidx;
-        MemTxAttrs attrs;
+        int         asidx;
+        MemTxAttrs  attrs;
         MemTxResult res;
 
-        page = addr & TARGET_PAGE_MASK;
+        page      = addr & TARGET_PAGE_MASK;
         phys_addr = cpu_get_phys_page_attrs_debug(cpu, page, &attrs);
-        asidx = cpu_asidx_from_attrs(cpu, attrs);
+        asidx     = cpu_asidx_from_attrs(cpu, attrs);
         /* if no physical page mapped, return an error */
-        if (phys_addr == -1)
-            return -1;
+        if (phys_addr == -1) { return -1; }
         l = (page + TARGET_PAGE_SIZE) - addr;
-        if (l > len)
-            l = len;
+        if (l > len) { l = len; }
         phys_addr += (addr & ~TARGET_PAGE_MASK);
-        res = address_space_rw(cpu->cpu_ases[asidx].as, phys_addr, attrs, buf,
-                               l, is_write);
-        if (res != MEMTX_OK) {
-            return -1;
-        }
-        len -= l;
-        buf += l;
+        res        = address_space_rw(cpu->cpu_ases[asidx].as, phys_addr, attrs, buf, l, is_write);
+        if (res != MEMTX_OK) { return -1; }
+        len  -= l;
+        buf  += l;
         addr += l;
     }
     return 0;
@@ -3463,28 +2971,24 @@ int cpu_memory_rw_debug(CPUState *cpu, vaddr addr,
 
 bool cpu_physical_memory_is_io(hwaddr phys_addr)
 {
-    MemoryRegion*mr;
-    hwaddr l = 1;
+    MemoryRegion* mr;
+    hwaddr        l = 1;
 
     RCU_READ_LOCK_GUARD();
-    mr = address_space_translate(&address_space_memory,
-                                 phys_addr, &phys_addr, &l, false,
-                                 MEMTXATTRS_UNSPECIFIED);
+    mr = address_space_translate(&address_space_memory, phys_addr, &phys_addr, &l, false, MEMTXATTRS_UNSPECIFIED);
 
     return !(memory_region_is_ram(mr) || memory_region_is_romd(mr));
 }
 
-int qemu_ram_foreach_block(RAMBlockIterFunc func, void *opaque)
+int qemu_ram_foreach_block(RAMBlockIterFunc func, void* opaque)
 {
-    RAMBlock *block;
-    int ret = 0;
+    RAMBlock* block;
+    int       ret = 0;
 
     RCU_READ_LOCK_GUARD();
-    RAMBLOCK_FOREACH(block) {
+    RAMBLOCK_FOREACH (block) {
         ret = func(block, opaque);
-        if (ret) {
-            break;
-        }
+        if (ret) { break; }
     }
     return ret;
 }
@@ -3497,15 +3001,14 @@ int qemu_ram_foreach_block(RAMBlockIterFunc func, void *opaque)
  * Returns: 0 on success, none-0 on failure
  *
  */
-int ram_block_discard_range(RAMBlock *rb, uint64_t start, size_t length)
+int ram_block_discard_range(RAMBlock* rb, uint64_t start, size_t length)
 {
     int ret = -1;
 
-    uint8_t *host_startaddr = rb->host + start;
+    uint8_t* host_startaddr = rb->host + start;
 
     if (!QEMU_PTR_IS_ALIGNED(host_startaddr, rb->page_size)) {
-        error_report("%s: Unaligned start address: %p",
-                     __func__, host_startaddr);
+        error_report("%s: Unaligned start address: %p", __func__, host_startaddr);
         goto err;
     }
 
@@ -3523,7 +3026,7 @@ int ram_block_discard_range(RAMBlock *rb, uint64_t start, size_t length)
          *    fallocate works on hugepages and shmem
          *    shared anonymous memory requires madvise REMOVE
          */
-        need_madvise = (rb->page_size == qemu_real_host_page_size());
+        need_madvise   = (rb->page_size == qemu_real_host_page_size());
         need_fallocate = rb->fd != -1;
         if (need_fallocate) {
             /* For a file, this causes the area of the file to be zero'd
@@ -3537,9 +3040,9 @@ int ram_block_discard_range(RAMBlock *rb, uint64_t start, size_t length)
              */
             if (rb->flags & RAM_READONLY_FD) {
                 error_report("%s: Discarding RAM with readonly files is not"
-                             " supported", __func__);
+                             " supported",
+                             __func__);
                 goto err;
-
             }
             /*
              * We'll discard data from the actual file, even though we only
@@ -3556,23 +3059,22 @@ int ram_block_discard_range(RAMBlock *rb, uint64_t start, size_t length)
                                  " in private file mappings is possibly"
                                  " dangerous, because it will modify the"
                                  " underlying file and will affect other"
-                                 " users of the file", __func__);
+                                 " users of the file",
+                                 __func__);
             }
 
-            ret = fallocate(rb->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
-                            start + rb->fd_offset, length);
+            ret = fallocate(rb->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, start + rb->fd_offset, length);
             if (ret) {
                 ret = -errno;
-                error_report("%s: Failed to fallocate %s:%" PRIx64 "+%" PRIx64
-                             " +%zx (%d)", __func__, rb->idstr, start,
+                error_report("%s: Failed to fallocate %s:%" PRIx64 "+%" PRIx64 " +%zx (%d)", __func__, rb->idstr, start,
                              rb->fd_offset, length, ret);
                 goto err;
             }
 #else
             ret = -ENOSYS;
             error_report("%s: fallocate not available/file"
-                         "%s:%" PRIx64 "+%" PRIx64 " +%zx (%d)", __func__,
-                         rb->idstr, start, rb->fd_offset, length, ret);
+                         "%s:%" PRIx64 "+%" PRIx64 " +%zx (%d)",
+                         __func__, rb->idstr, start, rb->fd_offset, length, ret);
             goto err;
 #endif
         }
@@ -3583,9 +3085,8 @@ int ram_block_discard_range(RAMBlock *rb, uint64_t start, size_t length)
              * fallocate'd away).
              */
 #if defined(CONFIG_MADVISE)
-            if (qemu_ram_is_shared(rb) && rb->fd < 0) {
-                ret = madvise(host_startaddr, length, QEMU_MADV_REMOVE);
-            } else {
+            if (qemu_ram_is_shared(rb) && rb->fd < 0) { ret = madvise(host_startaddr, length, QEMU_MADV_REMOVE); }
+            else {
                 ret = madvise(host_startaddr, length, QEMU_MADV_DONTNEED);
             }
             if (ret) {
@@ -3597,73 +3098,63 @@ int ram_block_discard_range(RAMBlock *rb, uint64_t start, size_t length)
             }
 #else
             ret = -ENOSYS;
-            error_report("%s: MADVISE not available %s:%" PRIx64 " +%zx (%d)",
-                         __func__, rb->idstr, start, length, ret);
+            error_report("%s: MADVISE not available %s:%" PRIx64 " +%zx (%d)", __func__, rb->idstr, start, length, ret);
             goto err;
 #endif
         }
-        trace_ram_block_discard_range(rb->idstr, host_startaddr, length,
-                                      need_madvise, need_fallocate, ret);
-    } else {
-        error_report("%s: Overrun block '%s' (%" PRIu64 "/%zx/" RAM_ADDR_FMT")",
-                     __func__, rb->idstr, start, length, rb->max_length);
+        trace_ram_block_discard_range(rb->idstr, host_startaddr, length, need_madvise, need_fallocate, ret);
+    }
+    else {
+        error_report("%s: Overrun block '%s' (%" PRIu64 "/%zx/" RAM_ADDR_FMT ")", __func__, rb->idstr, start, length,
+                     rb->max_length);
     }
 
 err:
     return ret;
 }
 
-int ram_block_discard_guest_memfd_range(RAMBlock *rb, uint64_t start,
-                                        size_t length)
+int ram_block_discard_guest_memfd_range(RAMBlock* rb, uint64_t start, size_t length)
 {
     int ret = -1;
 
 #ifdef CONFIG_FALLOCATE_PUNCH_HOLE
     /* ignore fd_offset with guest_memfd */
-    ret = fallocate(rb->guest_memfd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
-                    start, length);
+    ret = fallocate(rb->guest_memfd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, start, length);
 
     if (ret) {
         ret = -errno;
-        error_report("%s: Failed to fallocate %s:%" PRIx64 " +%zx (%d)",
-                     __func__, rb->idstr, start, length, ret);
+        error_report("%s: Failed to fallocate %s:%" PRIx64 " +%zx (%d)", __func__, rb->idstr, start, length, ret);
     }
 #else
     ret = -ENOSYS;
-    error_report("%s: fallocate not available %s:%" PRIx64 " +%zx (%d)",
-                 __func__, rb->idstr, start, length, ret);
+    error_report("%s: fallocate not available %s:%" PRIx64 " +%zx (%d)", __func__, rb->idstr, start, length, ret);
 #endif
 
     return ret;
 }
 
-bool ramblock_is_pmem(RAMBlock *rb)
-{
-    return rb->flags & RAM_PMEM;
-}
+bool ramblock_is_pmem(RAMBlock* rb) { return rb->flags & RAM_PMEM; }
 
 static void mtree_print_phys_entries(int start, int end, int skip, int ptr)
 {
-    if (start == end - 1) {
-        qemu_printf("\t%3d      ", start);
-    } else {
+    if (start == end - 1) { qemu_printf("\t%3d      ", start); }
+    else {
         qemu_printf("\t%3d..%-3d ", start, end - 1);
     }
     qemu_printf(" skip=%d ", skip);
-    if (ptr == PHYS_MAP_NODE_NIL) {
-        qemu_printf(" ptr=NIL");
-    } else if (!skip) {
+    if (ptr == PHYS_MAP_NODE_NIL) { qemu_printf(" ptr=NIL"); }
+    else if (!skip) {
         qemu_printf(" ptr=#%d", ptr);
-    } else {
+    }
+    else {
         qemu_printf(" ptr=[%d]", ptr);
     }
     qemu_printf("\n");
 }
 
-#define MR_SIZE(size) (int128_nz(size) ? (hwaddr)int128_get64( \
-                           int128_sub((size), int128_one())) : 0)
+#define MR_SIZE(size) (int128_nz(size) ? (hwaddr)int128_get64(int128_sub((size), int128_one())) : 0)
 
-void mtree_print_dispatch(AddressSpaceDispatch *d, MemoryRegion *root)
+void mtree_print_dispatch(AddressSpaceDispatch* d, MemoryRegion* root)
 {
     int i;
 
@@ -3671,53 +3162,39 @@ void mtree_print_dispatch(AddressSpaceDispatch *d, MemoryRegion *root)
     qemu_printf("    Physical sections\n");
 
     for (i = 0; i < d->map.sections_nb; ++i) {
-        MemoryRegionSection *s = d->map.sections + i;
-        const char *names[] = { " [unassigned]", " [not dirty]",
-                                " [ROM]", " [watch]" };
+        MemoryRegionSection* s       = d->map.sections + i;
+        const char*          names[] = {" [unassigned]", " [not dirty]", " [ROM]", " [watch]"};
 
-        qemu_printf("      #%d @" HWADDR_FMT_plx ".." HWADDR_FMT_plx
-                    " %s%s%s%s%s",
-            i,
-            s->offset_within_address_space,
-            s->offset_within_address_space + MR_SIZE(s->size),
-            s->mr->name ? s->mr->name : "(noname)",
-            i < ARRAY_SIZE(names) ? names[i] : "",
-            s->mr == root ? " [ROOT]" : "",
-            s == d->mru_section ? " [MRU]" : "",
-            s->mr->is_iommu ? " [iommu]" : "");
+        qemu_printf("      #%d @" HWADDR_FMT_plx ".." HWADDR_FMT_plx " %s%s%s%s%s", i, s->offset_within_address_space,
+                    s->offset_within_address_space + MR_SIZE(s->size), s->mr->name ? s->mr->name : "(noname)",
+                    i < ARRAY_SIZE(names) ? names[i] : "", s->mr == root ? " [ROOT]" : "",
+                    s == d->mru_section ? " [MRU]" : "", s->mr->is_iommu ? " [iommu]" : "");
 
-        if (s->mr->alias) {
-            qemu_printf(" alias=%s", s->mr->alias->name ?
-                    s->mr->alias->name : "noname");
-        }
+        if (s->mr->alias) { qemu_printf(" alias=%s", s->mr->alias->name ? s->mr->alias->name : "noname"); }
         qemu_printf("\n");
     }
 
-    qemu_printf("    Nodes (%d bits per level, %d levels) ptr=[%d] skip=%d\n",
-               P_L2_BITS, P_L2_LEVELS, d->phys_map.ptr, d->phys_map.skip);
+    qemu_printf("    Nodes (%d bits per level, %d levels) ptr=[%d] skip=%d\n", P_L2_BITS, P_L2_LEVELS, d->phys_map.ptr,
+                d->phys_map.skip);
     for (i = 0; i < d->map.nodes_nb; ++i) {
-        int j, jprev;
+        int           j, jprev;
         PhysPageEntry prev;
-        Node *n = d->map.nodes + i;
+        Node*         n = d->map.nodes + i;
 
         qemu_printf("      [%d]\n", i);
 
         for (j = 0, jprev = 0, prev = *n[0]; j < ARRAY_SIZE(*n); ++j) {
-            PhysPageEntry *pe = *n + j;
+            PhysPageEntry* pe = *n + j;
 
-            if (pe->ptr == prev.ptr && pe->skip == prev.skip) {
-                continue;
-            }
+            if (pe->ptr == prev.ptr && pe->skip == prev.skip) { continue; }
 
             mtree_print_phys_entries(jprev, j, prev.skip, prev.ptr);
 
             jprev = j;
-            prev = *pe;
+            prev  = *pe;
         }
 
-        if (jprev != ARRAY_SIZE(*n)) {
-            mtree_print_phys_entries(jprev, j, prev.skip, prev.ptr);
-        }
+        if (jprev != ARRAY_SIZE(*n)) { mtree_print_phys_entries(jprev, j, prev.skip, prev.ptr); }
     }
 }
 
@@ -3729,7 +3206,7 @@ static unsigned int ram_block_coordinated_discard_required_cnt;
 static unsigned int ram_block_discard_disabled_cnt;
 /* Disable only uncoordinated discards. */
 static unsigned int ram_block_uncoordinated_discard_disabled_cnt;
-static QemuMutex ram_block_discard_disable_mutex;
+static QemuMutex    ram_block_discard_disable_mutex;
 
 static void ram_block_discard_disable_mutex_lock(void)
 {
@@ -3742,22 +3219,18 @@ static void ram_block_discard_disable_mutex_lock(void)
     qemu_mutex_lock(&ram_block_discard_disable_mutex);
 }
 
-static void ram_block_discard_disable_mutex_unlock(void)
-{
-    qemu_mutex_unlock(&ram_block_discard_disable_mutex);
-}
+static void ram_block_discard_disable_mutex_unlock(void) { qemu_mutex_unlock(&ram_block_discard_disable_mutex); }
 
 int ram_block_discard_disable(bool state)
 {
     int ret = 0;
 
     ram_block_discard_disable_mutex_lock();
-    if (!state) {
-        ram_block_discard_disabled_cnt--;
-    } else if (ram_block_discard_required_cnt ||
-               ram_block_coordinated_discard_required_cnt) {
+    if (!state) { ram_block_discard_disabled_cnt--; }
+    else if (ram_block_discard_required_cnt || ram_block_coordinated_discard_required_cnt) {
         ret = -EBUSY;
-    } else {
+    }
+    else {
         ram_block_discard_disabled_cnt++;
     }
     ram_block_discard_disable_mutex_unlock();
@@ -3769,11 +3242,11 @@ int ram_block_uncoordinated_discard_disable(bool state)
     int ret = 0;
 
     ram_block_discard_disable_mutex_lock();
-    if (!state) {
-        ram_block_uncoordinated_discard_disabled_cnt--;
-    } else if (ram_block_discard_required_cnt) {
+    if (!state) { ram_block_uncoordinated_discard_disabled_cnt--; }
+    else if (ram_block_discard_required_cnt) {
         ret = -EBUSY;
-    } else {
+    }
+    else {
         ram_block_uncoordinated_discard_disabled_cnt++;
     }
     ram_block_discard_disable_mutex_unlock();
@@ -3785,12 +3258,11 @@ int ram_block_discard_require(bool state)
     int ret = 0;
 
     ram_block_discard_disable_mutex_lock();
-    if (!state) {
-        ram_block_discard_required_cnt--;
-    } else if (ram_block_discard_disabled_cnt ||
-               ram_block_uncoordinated_discard_disabled_cnt) {
+    if (!state) { ram_block_discard_required_cnt--; }
+    else if (ram_block_discard_disabled_cnt || ram_block_uncoordinated_discard_disabled_cnt) {
         ret = -EBUSY;
-    } else {
+    }
+    else {
         ram_block_discard_required_cnt++;
     }
     ram_block_discard_disable_mutex_unlock();
@@ -3802,11 +3274,11 @@ int ram_block_coordinated_discard_require(bool state)
     int ret = 0;
 
     ram_block_discard_disable_mutex_lock();
-    if (!state) {
-        ram_block_coordinated_discard_required_cnt--;
-    } else if (ram_block_discard_disabled_cnt) {
+    if (!state) { ram_block_coordinated_discard_required_cnt--; }
+    else if (ram_block_discard_disabled_cnt) {
         ret = -EBUSY;
-    } else {
+    }
+    else {
         ram_block_coordinated_discard_required_cnt++;
     }
     ram_block_discard_disable_mutex_unlock();
@@ -3814,13 +3286,7 @@ int ram_block_coordinated_discard_require(bool state)
 }
 
 bool ram_block_discard_is_disabled(void)
-{
-    return qatomic_read(&ram_block_discard_disabled_cnt) ||
-           qatomic_read(&ram_block_uncoordinated_discard_disabled_cnt);
-}
+{ return qatomic_read(&ram_block_discard_disabled_cnt) || qatomic_read(&ram_block_uncoordinated_discard_disabled_cnt); }
 
 bool ram_block_discard_is_required(void)
-{
-    return qatomic_read(&ram_block_discard_required_cnt) ||
-           qatomic_read(&ram_block_coordinated_discard_required_cnt);
-}
+{ return qatomic_read(&ram_block_discard_required_cnt) || qatomic_read(&ram_block_coordinated_discard_required_cnt); }

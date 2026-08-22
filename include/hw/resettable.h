@@ -17,9 +17,7 @@
 #define TYPE_RESETTABLE_INTERFACE "resettable"
 
 typedef struct ResettableClass ResettableClass;
-DECLARE_CLASS_CHECKERS_IF(ResettableClass, RESETTABLE,
-                       TYPE_RESETTABLE_INTERFACE)
-
+DECLARE_CLASS_CHECKERS_IF(ResettableClass, RESETTABLE, TYPE_RESETTABLE_INTERFACE)
 
 typedef struct ResettableState ResettableState;
 
@@ -33,7 +31,8 @@ typedef struct ResettableState ResettableState;
  * TODO: Support has to be added to handle more types. In particular,
  * ResettableState structure needs to be expanded.
  */
-typedef enum ResetType {
+typedef enum ResetType
+{
     RESET_TYPE_COLD,
     RESET_TYPE_SNAPSHOT_LOAD,
     RESET_TYPE_WAKEUP,
@@ -96,21 +95,20 @@ typedef enum ResetType {
  * additional opaque and ResetType arguments which must be passed unmodified to
  * the callback.
  */
-typedef void (*ResettableEnterPhase)(Object *obj, ResetType type);
-typedef void (*ResettableHoldPhase)(Object *obj, ResetType type);
-typedef void (*ResettableExitPhase)(Object *obj, ResetType type);
-typedef ResettableState * (*ResettableGetState)(Object *obj);
-typedef void (*ResettableChildCallback)(Object *, void *opaque,
-                                        ResetType type);
-typedef void (*ResettableChildForeach)(Object *obj,
-                                       ResettableChildCallback cb,
-                                       void *opaque, ResetType type);
-typedef struct ResettablePhases {
+typedef void             (*ResettableEnterPhase)(Object* obj, ResetType type);
+typedef void             (*ResettableHoldPhase)(Object* obj, ResetType type);
+typedef void             (*ResettableExitPhase)(Object* obj, ResetType type);
+typedef ResettableState* (*ResettableGetState)(Object* obj);
+typedef void             (*ResettableChildCallback)(Object*, void* opaque, ResetType type);
+typedef void (*ResettableChildForeach)(Object* obj, ResettableChildCallback cb, void* opaque, ResetType type);
+typedef struct ResettablePhases
+{
     ResettableEnterPhase enter;
-    ResettableHoldPhase hold;
-    ResettableExitPhase exit;
+    ResettableHoldPhase  hold;
+    ResettableExitPhase  exit;
 } ResettablePhases;
-struct ResettableClass {
+struct ResettableClass
+{
     InterfaceClass parent_class;
 
     /* Phase methods */
@@ -135,10 +133,11 @@ struct ResettableClass {
  * phase handler for this object.
  * @exit_phase_in_progress: true if we are currently in the exit phase
  */
-struct ResettableState {
+struct ResettableState
+{
     unsigned count;
-    bool hold_phase_pending;
-    bool exit_phase_in_progress;
+    bool     hold_phase_pending;
+    bool     exit_phase_in_progress;
 };
 
 /**
@@ -147,10 +146,7 @@ struct ResettableState {
  * to reuse an object. Typically used in realize step of base classes
  * implementing the interface.
  */
-static inline void resettable_state_clear(ResettableState *state)
-{
-    memset(state, 0, sizeof(ResettableState));
-}
+static inline void resettable_state_clear(ResettableState* state) { memset(state, 0, sizeof(ResettableState)); }
 
 /**
  * resettable_reset:
@@ -160,7 +156,7 @@ static inline void resettable_state_clear(ResettableState *state)
  * Calling this function is equivalent to calling @resettable_assert_reset()
  * then @resettable_release_reset().
  */
-void resettable_reset(Object *obj, ResetType type);
+void resettable_reset(Object* obj, ResetType type);
 
 /**
  * resettable_assert_reset:
@@ -175,7 +171,7 @@ void resettable_reset(Object *obj, ResetType type);
  * that migration cannot be triggered in between. Prefer using
  * @resettable_reset() for now.
  */
-void resettable_assert_reset(Object *obj, ResetType type);
+void resettable_assert_reset(Object* obj, ResetType type);
 
 /**
  * resettable_release_reset:
@@ -183,7 +179,7 @@ void resettable_assert_reset(Object *obj, ResetType type);
  *
  * See @resettable_assert_reset() description for details.
  */
-void resettable_release_reset(Object *obj, ResetType type);
+void resettable_release_reset(Object* obj, ResetType type);
 
 /**
  * resettable_is_in_reset:
@@ -191,7 +187,7 @@ void resettable_release_reset(Object *obj, ResetType type);
  *
  * @obj must implement Resettable interface.
  */
-bool resettable_is_in_reset(Object *obj);
+bool resettable_is_in_reset(Object* obj);
 
 /**
  * resettable_change_parent:
@@ -207,7 +203,7 @@ bool resettable_is_in_reset(Object *obj);
  * When using this function during reset, it must only be called during
  * a hold phase method. Calling this during enter or exit phase is an error.
  */
-void resettable_change_parent(Object *obj, Object *newp, Object *oldp);
+void resettable_change_parent(Object* obj, Object* newp, Object* oldp);
 
 /**
  * resettable_class_set_parent_phases:
@@ -217,18 +213,12 @@ void resettable_change_parent(Object *obj, Object *newp, Object *oldp);
  * Each phase is overridden only if the new one is not NULL allowing to
  * override a subset of phases.
  */
-static inline void resettable_class_set_parent_phases(
-    ResettableClass *rc, ResettableEnterPhase enter, ResettableHoldPhase hold,
-    ResettableExitPhase exit, ResettablePhases *parent_phases)
+static inline void resettable_class_set_parent_phases(ResettableClass* rc, ResettableEnterPhase enter,
+                                                      ResettableHoldPhase hold, ResettableExitPhase exit,
+                                                      ResettablePhases* parent_phases)
 {
     *parent_phases = rc->phases;
-    if (enter) {
-        rc->phases.enter = enter;
-    }
-    if (hold) {
-        rc->phases.hold = hold;
-    }
-    if (exit) {
-        rc->phases.exit = exit;
-    }
+    if (enter) { rc->phases.enter = enter; }
+    if (hold) { rc->phases.hold = hold; }
+    if (exit) { rc->phases.exit = exit; }
 }

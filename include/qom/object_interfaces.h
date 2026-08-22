@@ -7,11 +7,8 @@
 #define TYPE_USER_CREATABLE "user-creatable"
 
 typedef struct UserCreatableClass UserCreatableClass;
-DECLARE_CLASS_CHECKERS_IF(UserCreatableClass, USER_CREATABLE,
-                       TYPE_USER_CREATABLE)
-#define USER_CREATABLE(obj) \
-     INTERFACE_CHECK(UserCreatable, (obj), \
-                     TYPE_USER_CREATABLE)
+DECLARE_CLASS_CHECKERS_IF(UserCreatableClass, USER_CREATABLE, TYPE_USER_CREATABLE)
+#define USER_CREATABLE(obj) INTERFACE_CHECK(UserCreatable, (obj), TYPE_USER_CREATABLE)
 
 typedef struct UserCreatable UserCreatable;
 
@@ -37,13 +34,14 @@ typedef struct UserCreatable UserCreatable;
  * object's type implements USER_CREATABLE interface and needs
  * complete() callback to be called.
  */
-struct UserCreatableClass {
+struct UserCreatableClass
+{
     /* <private> */
     InterfaceClass parent_class;
 
     /* <public> */
-    void (*complete)(UserCreatable *uc, Error **errp);
-    bool (*can_be_deleted)(UserCreatable *uc);
+    void (*complete)(UserCreatable* uc, Error** errp);
+    bool (*can_be_deleted)(UserCreatable* uc);
 };
 
 /**
@@ -57,7 +55,7 @@ struct UserCreatableClass {
  *
  * Returns: %true on success, %false on failure.
  */
-bool user_creatable_complete(UserCreatable *uc, Error **errp);
+bool user_creatable_complete(UserCreatable* uc, Error** errp);
 
 /**
  * user_creatable_can_be_deleted:
@@ -66,7 +64,7 @@ bool user_creatable_complete(UserCreatable *uc, Error **errp);
  * Wrapper to call can_be_deleted() method if one of types it's inherited
  * from implements USER_CREATABLE interface.
  */
-bool user_creatable_can_be_deleted(UserCreatable *uc);
+bool user_creatable_can_be_deleted(UserCreatable* uc);
 
 /**
  * user_creatable_add_type:
@@ -82,9 +80,7 @@ bool user_creatable_can_be_deleted(UserCreatable *uc);
  *
  * Returns: the newly created object or NULL on error
  */
-Object *user_creatable_add_type(const char *type, const char *id,
-                                const QDict *qdict,
-                                Visitor *v, Error **errp);
+Object* user_creatable_add_type(const char* type, const char* id, const QDict* qdict, Visitor* v, Error** errp);
 
 /**
  * user_creatable_add_qapi:
@@ -94,7 +90,7 @@ Object *user_creatable_add_type(const char *type, const char *id,
  * Create an instance of the user creatable object according to the
  * options passed in @opts as described in the QAPI schema documentation.
  */
-void user_creatable_add_qapi(ObjectOptions *options, Error **errp);
+void user_creatable_add_qapi(ObjectOptions* options, Error** errp);
 
 /**
  * user_creatable_parse_str:
@@ -109,7 +105,7 @@ void user_creatable_add_qapi(ObjectOptions *options, Error **errp);
  * Returns: ObjectOptions on success, NULL when an error occurred (*errp is set
  * then) or help was printed (*errp is not set).
  */
-ObjectOptions *user_creatable_parse_str(const char *str, Error **errp);
+ObjectOptions* user_creatable_parse_str(const char* str, Error** errp);
 
 /**
  * user_creatable_add_from_str:
@@ -125,7 +121,7 @@ ObjectOptions *user_creatable_parse_str(const char *str, Error **errp);
  * Returns: true when an object was successfully created, false when an error
  * occurred (*errp is set then) or help was printed (*errp is not set).
  */
-bool user_creatable_add_from_str(const char *str, Error **errp);
+bool user_creatable_add_from_str(const char* str, Error** errp);
 
 /**
  * user_creatable_process_cmdline:
@@ -140,7 +136,7 @@ bool user_creatable_add_from_str(const char *str, Error **errp);
  * This function is only meant to be called during command line parsing.
  * It exits the process on failure or after printing help.
  */
-void user_creatable_process_cmdline(const char *cmdline);
+void user_creatable_process_cmdline(const char* cmdline);
 
 /**
  * user_creatable_print_help:
@@ -154,7 +150,7 @@ void user_creatable_process_cmdline(const char *cmdline);
  * Returns: true if a help option was found and help was printed, false
  * otherwise.
  */
-bool user_creatable_print_help(const char *type, QemuOpts *opts);
+bool user_creatable_print_help(const char* type, QemuOpts* opts);
 
 /**
  * user_creatable_del:
@@ -166,7 +162,7 @@ bool user_creatable_print_help(const char *type, QemuOpts *opts);
  *
  * Returns: %true on success, %false on failure.
  */
-bool user_creatable_del(const char *id, Error **errp);
+bool user_creatable_del(const char* id, Error** errp);
 
 /**
  * user_creatable_cleanup:

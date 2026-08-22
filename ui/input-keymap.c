@@ -24,20 +24,17 @@
 
 int qemu_input_linux_to_qcode(unsigned int lnx)
 {
-    if (lnx >= qemu_input_map_linux_to_qcode_len) {
-        return 0;
-    }
+    if (lnx >= qemu_input_map_linux_to_qcode_len) { return 0; }
     return qemu_input_map_linux_to_qcode[lnx];
 }
 
-int qemu_input_key_value_to_number(const KeyValue *value)
+int qemu_input_key_value_to_number(const KeyValue* value)
 {
     if (value->type == KEY_VALUE_KIND_QCODE) {
-        if (value->u.qcode.data >= qemu_input_map_qcode_to_qnum_len) {
-            return 0;
-        }
+        if (value->u.qcode.data >= qemu_input_map_qcode_to_qnum_len) { return 0; }
         return qemu_input_map_qcode_to_qnum[value->u.qcode.data];
-    } else {
+    }
+    else {
         assert(value->type == KEY_VALUE_KIND_NUMBER);
         return value->u.number.data;
     }
@@ -45,44 +42,37 @@ int qemu_input_key_value_to_number(const KeyValue *value)
 
 int qemu_input_key_number_to_qcode(unsigned int nr)
 {
-    if (nr >= qemu_input_map_qnum_to_qcode_len) {
-        return 0;
-    }
+    if (nr >= qemu_input_map_qnum_to_qcode_len) { return 0; }
     return qemu_input_map_qnum_to_qcode[nr];
 }
 
-int qemu_input_key_value_to_qcode(const KeyValue *value)
+int qemu_input_key_value_to_qcode(const KeyValue* value)
 {
-    if (value->type == KEY_VALUE_KIND_QCODE) {
-        return value->u.qcode.data;
-    } else {
+    if (value->type == KEY_VALUE_KIND_QCODE) { return value->u.qcode.data; }
+    else {
         assert(value->type == KEY_VALUE_KIND_NUMBER);
         return qemu_input_key_number_to_qcode(value->u.number.data);
     }
 }
 
-int qemu_input_key_value_to_scancode(const KeyValue *value, bool down,
-                                     int *codes)
+int qemu_input_key_value_to_scancode(const KeyValue* value, bool down, int* codes)
 {
     int keycode = qemu_input_key_value_to_number(value);
-    int count = 0;
+    int count   = 0;
 
-    if (value->type == KEY_VALUE_KIND_QCODE &&
-        value->u.qcode.data == Q_KEY_CODE_PAUSE) {
+    if (value->type == KEY_VALUE_KIND_QCODE && value->u.qcode.data == Q_KEY_CODE_PAUSE) {
         /* specific case */
-        int v = down ? 0 : 0x80;
+        int v          = down ? 0 : 0x80;
         codes[count++] = 0xe1;
         codes[count++] = 0x1d | v;
         codes[count++] = 0x45 | v;
         return count;
     }
     if (keycode & SCANCODE_GREY) {
-        codes[count++] = SCANCODE_EMUL0;
-        keycode &= ~SCANCODE_GREY;
+        codes[count++]  = SCANCODE_EMUL0;
+        keycode        &= ~SCANCODE_GREY;
     }
-    if (!down) {
-        keycode |= SCANCODE_UP;
-    }
+    if (!down) { keycode |= SCANCODE_UP; }
     codes[count++] = keycode;
 
     return count;

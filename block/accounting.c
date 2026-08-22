@@ -30,81 +30,68 @@
 
 static QEMUClockType clock_type = QEMU_CLOCK_REALTIME;
 
-void block_acct_init(BlockAcctStats *stats)
+void block_acct_init(BlockAcctStats* stats)
 {
     qemu_mutex_init(&stats->lock);
     stats->account_invalid = true;
-    stats->account_failed = true;
+    stats->account_failed  = true;
 }
 
 static bool bool_from_onoffauto(OnOffAuto val, bool def)
 {
     switch (val) {
-    case ON_OFF_AUTO_AUTO:
-        return def;
-    case ON_OFF_AUTO_ON:
-        return true;
-    case ON_OFF_AUTO_OFF:
-        return false;
-    default:
-        abort();
+        case ON_OFF_AUTO_AUTO: return def;
+        case ON_OFF_AUTO_ON  : return true;
+        case ON_OFF_AUTO_OFF : return false;
+        default              : abort();
     }
 }
 
-void block_acct_setup(BlockAcctStats *stats, enum OnOffAuto account_invalid,
-                      enum OnOffAuto account_failed)
+void block_acct_setup(BlockAcctStats* stats, enum OnOffAuto account_invalid, enum OnOffAuto account_failed)
 {
-    stats->account_invalid = bool_from_onoffauto(account_invalid,
-                                                 stats->account_invalid);
-    stats->account_failed = bool_from_onoffauto(account_failed,
-                                                stats->account_failed);
+    stats->account_invalid = bool_from_onoffauto(account_invalid, stats->account_invalid);
+    stats->account_failed  = bool_from_onoffauto(account_failed, stats->account_failed);
 }
 
-void block_acct_cleanup(BlockAcctStats *stats)
+void block_acct_cleanup(BlockAcctStats* stats)
 {
     BlockAcctTimedStats *s, *next;
-    QSLIST_FOREACH_SAFE(s, &stats->intervals, entries, next) {
-        g_free(s);
-    }
+    QSLIST_FOREACH_SAFE (s, &stats->intervals, entries, next) { g_free(s); }
     qemu_mutex_destroy(&stats->lock);
 }
 
-void block_acct_add_interval(BlockAcctStats *stats, unsigned interval_length)
+void block_acct_add_interval(BlockAcctStats* stats, unsigned interval_length)
 {
-    BlockAcctTimedStats *s;
-    unsigned i;
+    BlockAcctTimedStats* s;
+    unsigned             i;
 
-    s = g_new0(BlockAcctTimedStats, 1);
+    s                  = g_new0(BlockAcctTimedStats, 1);
     s->interval_length = interval_length;
-    s->stats = stats;
+    s->stats           = stats;
     qemu_mutex_lock(&stats->lock);
     QSLIST_INSERT_HEAD(&stats->intervals, s, entries);
 
     for (i = 0; i < BLOCK_MAX_IOTYPE; i++) {
-        timed_average_init(&s->latency[i], clock_type,
-                           (uint64_t) interval_length * NANOSECONDS_PER_SECOND);
+        timed_average_init(&s->latency[i], clock_type, (uint64_t)interval_length * NANOSECONDS_PER_SECOND);
     }
     qemu_mutex_unlock(&stats->lock);
 }
 
-BlockAcctTimedStats *block_acct_interval_next(BlockAcctStats *stats,
-                                              BlockAcctTimedStats *s)
+BlockAcctTimedStats* block_acct_interval_next(BlockAcctStats* stats, BlockAcctTimedStats* s)
 {
-    if (s == NULL) {
-        return QSLIST_FIRST(&stats->intervals);
-    } else {
+    if (s == NULL) { return QSLIST_FIRST(&stats->intervals); }
+    else {
         return QSLIST_NEXT(s, entries);
     }
 }
 
-void block_acct_start(BlockAcctStats *stats, BlockAcctCookie *cookie,
-                      int64_t bytes, enum BlockAcctType type)
+void block_acct_start(BlockAcctStats* stats, BlockAcctCookie* cookie, int64_t bytes, enum BlockAcctType type)
 {
     assert(type < BLOCK_MAX_IOTYPE);
 
-    cookie->bytes = bytes;
+    cookie->bytes         = bytes;
     cookie->start_time_ns = qemu_clock_get_ns(clock_type);
-    cookie->type = type;
+    cookie->type          = type;
 }
 
 /* block_latency_histogram_compare_func:
@@ -113,25 +100,23 @@ void block_acct_start(BlockAcctStats *stats, BlockAcctCookie *cookie,
  *          0 if @key in [@it[0], @it[1])
  *         +1 if @key >= @it[1]
  */
-static int block_latency_histogram_compare_func(const void *key, const void *it)
+static int block_latency_histogram_compare_func(const void* key, const void* it)
 {
-    uint64_t k = *(uint64_t *)key;
-    uint64_t a = ((uint64_t *)it)[0];
-    uint64_t b = ((uint64_t *)it)[1];
+    uint64_t k = *(uint64_t*)key;
+    uint64_t a = ((uint64_t*)it)[0];
+    uint64_t b = ((uint64_t*)it)[1];
 
     return k < a ? -1 : (k < b ? 0 : 1);
 }
 
-static void block_latency_histogram_account(BlockLatencyHistogram *hist,
-                                            int64_t latency_ns)
+static void block_latency_histogram_account(BlockLatencyHistogram* hist, int64_t latency_ns)
 {
-    uint64_t *pos;
+    uint64_t* pos;
 
     if (hist->bins == NULL) {
         /* histogram disabled */
         return;
     }
-
 
     if (latency_ns < hist->boundaries[0]) {
         hist->bins[0]++;
@@ -143,27 +128,23 @@ static void block_latency_histogram_account(BlockLatencyHistogram *hist,
         return;
     }
 
-    pos = bsearch(&latency_ns, hist->boundaries, hist->nbins - 2,
-                  sizeof(hist->boundaries[0]),
+    pos = bsearch(&latency_ns, hist->boundaries, hist->nbins - 2, sizeof(hist->boundaries[0]),
                   block_latency_histogram_compare_func);
     assert(pos != NULL);
 
     hist->bins[pos - hist->boundaries + 1]++;
 }
 
-int block_latency_histogram_set(BlockAcctStats *stats, enum BlockAcctType type,
-                                uint64List *boundaries)
+int block_latency_histogram_set(BlockAcctStats* stats, enum BlockAcctType type, uint64List* boundaries)
 {
-    BlockLatencyHistogram *hist = &stats->latency_histogram[type];
-    uint64List *entry;
-    uint64_t *ptr;
-    uint64_t prev = 0;
-    int new_nbins = 1;
+    BlockLatencyHistogram* hist = &stats->latency_histogram[type];
+    uint64List*            entry;
+    uint64_t*              ptr;
+    uint64_t               prev      = 0;
+    int                    new_nbins = 1;
 
     for (entry = boundaries; entry; entry = entry->next) {
-        if (entry->value <= prev) {
-            return -EINVAL;
-        }
+        if (entry->value <= prev) { return -EINVAL; }
         new_nbins++;
         prev = entry->value;
     }
@@ -171,11 +152,7 @@ int block_latency_histogram_set(BlockAcctStats *stats, enum BlockAcctType type,
     hist->nbins = new_nbins;
     g_free(hist->boundaries);
     hist->boundaries = g_new(uint64_t, hist->nbins - 1);
-    for (entry = boundaries, ptr = hist->boundaries; entry;
-         entry = entry->next, ptr++)
-    {
-        *ptr = entry->value;
-    }
+    for (entry = boundaries, ptr = hist->boundaries; entry; entry = entry->next, ptr++) { *ptr = entry->value; }
 
     g_free(hist->bins);
     hist->bins = g_new0(uint64_t, hist->nbins);
@@ -183,47 +160,43 @@ int block_latency_histogram_set(BlockAcctStats *stats, enum BlockAcctType type,
     return 0;
 }
 
-void block_latency_histograms_clear(BlockAcctStats *stats)
+void block_latency_histograms_clear(BlockAcctStats* stats)
 {
     int i;
 
     for (i = 0; i < BLOCK_MAX_IOTYPE; i++) {
-        BlockLatencyHistogram *hist = &stats->latency_histogram[i];
+        BlockLatencyHistogram* hist = &stats->latency_histogram[i];
         g_free(hist->bins);
         g_free(hist->boundaries);
         memset(hist, 0, sizeof(*hist));
     }
 }
 
-static void block_account_one_io(BlockAcctStats *stats, BlockAcctCookie *cookie,
-                                 bool failed)
+static void block_account_one_io(BlockAcctStats* stats, BlockAcctCookie* cookie, bool failed)
 {
-    BlockAcctTimedStats *s;
-    int64_t time_ns = qemu_clock_get_ns(clock_type);
-    int64_t latency_ns = time_ns - cookie->start_time_ns;
+    BlockAcctTimedStats* s;
+    int64_t              time_ns    = qemu_clock_get_ns(clock_type);
+    int64_t              latency_ns = time_ns - cookie->start_time_ns;
 
     assert(cookie->type < BLOCK_MAX_IOTYPE);
 
-    if (cookie->type == BLOCK_ACCT_NONE) {
-        return;
-    }
+    if (cookie->type == BLOCK_ACCT_NONE) { return; }
 
-    WITH_QEMU_LOCK_GUARD(&stats->lock) {
-        if (failed) {
-            stats->failed_ops[cookie->type]++;
-        } else {
+    WITH_QEMU_LOCK_GUARD(&stats->lock)
+    {
+        if (failed) { stats->failed_ops[cookie->type]++; }
+        else {
             stats->nr_bytes[cookie->type] += cookie->bytes;
             stats->nr_ops[cookie->type]++;
         }
 
-        block_latency_histogram_account(&stats->latency_histogram[cookie->type],
-                                        latency_ns);
+        block_latency_histogram_account(&stats->latency_histogram[cookie->type], latency_ns);
 
         if (!failed || stats->account_failed) {
             stats->total_time_ns[cookie->type] += latency_ns;
-            stats->last_access_time_ns = time_ns;
+            stats->last_access_time_ns          = time_ns;
 
-            QSLIST_FOREACH(s, &stats->intervals, entries) {
+            QSLIST_FOREACH (s, &stats->intervals, entries) {
                 timed_average_account(&s->latency[cookie->type], latency_ns);
             }
         }
@@ -232,17 +205,11 @@ static void block_account_one_io(BlockAcctStats *stats, BlockAcctCookie *cookie,
     cookie->type = BLOCK_ACCT_NONE;
 }
 
-void block_acct_done(BlockAcctStats *stats, BlockAcctCookie *cookie)
-{
-    block_account_one_io(stats, cookie, false);
-}
+void block_acct_done(BlockAcctStats* stats, BlockAcctCookie* cookie) { block_account_one_io(stats, cookie, false); }
 
-void block_acct_failed(BlockAcctStats *stats, BlockAcctCookie *cookie)
-{
-    block_account_one_io(stats, cookie, true);
-}
+void block_acct_failed(BlockAcctStats* stats, BlockAcctCookie* cookie) { block_account_one_io(stats, cookie, true); }
 
-void block_acct_invalid(BlockAcctStats *stats, enum BlockAcctType type)
+void block_acct_invalid(BlockAcctStats* stats, enum BlockAcctType type)
 {
     assert(type < BLOCK_MAX_IOTYPE);
 
@@ -253,14 +220,11 @@ void block_acct_invalid(BlockAcctStats *stats, enum BlockAcctType type)
     qemu_mutex_lock(&stats->lock);
     stats->invalid_ops[type]++;
 
-    if (stats->account_invalid) {
-        stats->last_access_time_ns = qemu_clock_get_ns(clock_type);
-    }
+    if (stats->account_invalid) { stats->last_access_time_ns = qemu_clock_get_ns(clock_type); }
     qemu_mutex_unlock(&stats->lock);
 }
 
-void block_acct_merge_done(BlockAcctStats *stats, enum BlockAcctType type,
-                      int num_requests)
+void block_acct_merge_done(BlockAcctStats* stats, enum BlockAcctType type, int num_requests)
 {
     assert(type < BLOCK_MAX_IOTYPE);
 
@@ -269,13 +233,10 @@ void block_acct_merge_done(BlockAcctStats *stats, enum BlockAcctType type,
     qemu_mutex_unlock(&stats->lock);
 }
 
-int64_t block_acct_idle_time_ns(BlockAcctStats *stats)
-{
-    return qemu_clock_get_ns(clock_type) - stats->last_access_time_ns;
-}
+int64_t block_acct_idle_time_ns(BlockAcctStats* stats)
+{ return qemu_clock_get_ns(clock_type) - stats->last_access_time_ns; }
 
-double block_acct_queue_depth(BlockAcctTimedStats *stats,
-                              enum BlockAcctType type)
+double block_acct_queue_depth(BlockAcctTimedStats* stats, enum BlockAcctType type)
 {
     uint64_t sum, elapsed;
 
@@ -285,5 +246,5 @@ double block_acct_queue_depth(BlockAcctTimedStats *stats,
     sum = timed_average_sum(&stats->latency[type], &elapsed);
     qemu_mutex_unlock(&stats->stats->lock);
 
-    return (double) sum / elapsed;
+    return (double)sum / elapsed;
 }

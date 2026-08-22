@@ -27,16 +27,16 @@
 #define GIC_MAXIRQ 1020
 /* First 32 are private to each CPU (SGIs and PPIs). */
 #define GIC_INTERNAL 32
-#define GIC_NR_SGIS 16
+#define GIC_NR_SGIS  16
 /* Maximum number of possible CPU interfaces, determined by GIC architecture */
 #define GIC_NCPU 8
 /* Maximum number of possible CPU interfaces with their respective vCPU */
 #define GIC_NCPU_VCPU (GIC_NCPU * 2)
 
 #define MAX_NR_GROUP_PRIO 128
-#define GIC_NR_APRS (MAX_NR_GROUP_PRIO / 32)
+#define GIC_NR_APRS       (MAX_NR_GROUP_PRIO / 32)
 
-#define GIC_MIN_BPR 0
+#define GIC_MIN_BPR  0
 #define GIC_MIN_ABPR (GIC_MIN_BPR + 1)
 
 /* Architectural maximum number of list registers in the virtual interface */
@@ -44,24 +44,26 @@
 
 /* Only 32 priority levels and 32 preemption levels in the vCPU interfaces */
 #define GIC_VIRT_MAX_GROUP_PRIO_BITS 5
-#define GIC_VIRT_MAX_NR_GROUP_PRIO (1 << GIC_VIRT_MAX_GROUP_PRIO_BITS)
-#define GIC_VIRT_NR_APRS (GIC_VIRT_MAX_NR_GROUP_PRIO / 32)
+#define GIC_VIRT_MAX_NR_GROUP_PRIO   (1 << GIC_VIRT_MAX_GROUP_PRIO_BITS)
+#define GIC_VIRT_NR_APRS             (GIC_VIRT_MAX_NR_GROUP_PRIO / 32)
 
-#define GIC_VIRT_MIN_BPR 2
+#define GIC_VIRT_MIN_BPR  2
 #define GIC_VIRT_MIN_ABPR (GIC_VIRT_MIN_BPR + 1)
 
-typedef struct gic_irq_state {
+typedef struct gic_irq_state
+{
     /* The enable bits are only banked for per-cpu interrupts.  */
     uint8_t enabled;
     uint8_t pending;
     uint8_t active;
     uint8_t level;
-    bool model; /* 0 = N:N, 1 = 1:N */
-    bool edge_trigger; /* true: edge-triggered, false: level-triggered  */
+    bool    model;        /* 0 = N:N, 1 = 1:N */
+    bool    edge_trigger; /* true: edge-triggered, false: level-triggered  */
     uint8_t group;
 } gic_irq_state;
 
-struct GICState {
+struct GICState
+{
     /*< private >*/
     SysBusDevice parent_obj;
     /*< public >*/
@@ -84,9 +86,9 @@ struct GICState {
     uint32_t cpu_ctlr[GIC_NCPU_VCPU];
 
     gic_irq_state irq_state[GIC_MAXIRQ];
-    uint8_t irq_target[GIC_MAXIRQ];
-    uint8_t priority1[GIC_INTERNAL][GIC_NCPU];
-    uint8_t priority2[GIC_MAXIRQ - GIC_INTERNAL];
+    uint8_t       irq_target[GIC_MAXIRQ];
+    uint8_t       priority1[GIC_INTERNAL][GIC_NCPU];
+    uint8_t       priority2[GIC_MAXIRQ - GIC_INTERNAL];
     /* For each SGI on the target CPU, we store 8 bits
      * indicating which source CPUs have made this SGI
      * pending on the target CPU. These correspond to
@@ -106,8 +108,8 @@ struct GICState {
      * For a GIC with Security Extensions we use use bpr for the
      * secure copy and abpr as storage for the non-secure copy of the register.
      */
-    uint8_t  bpr[GIC_NCPU_VCPU];
-    uint8_t  abpr[GIC_NCPU_VCPU];
+    uint8_t bpr[GIC_NCPU_VCPU];
+    uint8_t abpr[GIC_NCPU_VCPU];
 
     /* The APR is implementation defined, so we choose a layout identical to
      * the KVM ABI layout for QEMU's implementation of the gic:
@@ -135,31 +137,30 @@ struct GICState {
     /* This is just so we can have an opaque pointer which identifies
      * both this GIC and which CPU interface we should be accessing.
      */
-    struct GICState *backref[GIC_NCPU];
-    MemoryRegion cpuiomem[GIC_NCPU + 1]; /* CPU interfaces */
-    MemoryRegion vifaceiomem[GIC_NCPU + 1]; /* Virtual interfaces */
-    MemoryRegion vcpuiomem; /* vCPU interface */
+    struct GICState* backref[GIC_NCPU];
+    MemoryRegion     cpuiomem[GIC_NCPU + 1];    /* CPU interfaces */
+    MemoryRegion     vifaceiomem[GIC_NCPU + 1]; /* Virtual interfaces */
+    MemoryRegion     vcpuiomem;                 /* vCPU interface */
 
     uint32_t num_irq;
     uint32_t revision;
-    bool security_extn;
-    bool virt_extn;
-    bool irq_reset_nonsecure; /* configure IRQs as group 1 (NS) on reset? */
-    int dev_fd; /* kvm device fd if backed by kvm vgic support */
+    bool     security_extn;
+    bool     virt_extn;
+    bool     irq_reset_nonsecure; /* configure IRQs as group 1 (NS) on reset? */
+    int      dev_fd;              /* kvm device fd if backed by kvm vgic support */
 };
 typedef struct GICState GICState;
 
 #define TYPE_ARM_GIC_COMMON "arm_gic_common"
 typedef struct ARMGICCommonClass ARMGICCommonClass;
-DECLARE_OBJ_CHECKERS(GICState, ARMGICCommonClass,
-                     ARM_GIC_COMMON, TYPE_ARM_GIC_COMMON)
+DECLARE_OBJ_CHECKERS(GICState, ARMGICCommonClass, ARM_GIC_COMMON, TYPE_ARM_GIC_COMMON)
 
-struct ARMGICCommonClass {
+struct ARMGICCommonClass
+{
     /*< private >*/
     SysBusDeviceClass parent_class;
     /*< public >*/
 };
 
-void gic_init_irqs_and_mmio(GICState *s, qemu_irq_handler handler,
-                            const MemoryRegionOps *ops,
-                            const MemoryRegionOps *virt_ops);
+void gic_init_irqs_and_mmio(GICState* s, qemu_irq_handler handler, const MemoryRegionOps* ops,
+                            const MemoryRegionOps* virt_ops);

@@ -17,58 +17,46 @@
 
 #include "block/reqlist.h"
 
-void reqlist_init_req(BlockReqList *reqs, BlockReq *req, int64_t offset,
-                      int64_t bytes)
+void reqlist_init_req(BlockReqList* reqs, BlockReq* req, int64_t offset, int64_t bytes)
 {
-    *req = (BlockReq) {
+    *req = (BlockReq){
         .offset = offset,
-        .bytes = bytes,
+        .bytes  = bytes,
     };
     qemu_co_queue_init(&req->wait_queue);
     QLIST_INSERT_HEAD(reqs, req, list);
 }
 
-BlockReq *reqlist_find_conflict(BlockReqList *reqs, int64_t offset,
-                                int64_t bytes)
+BlockReq* reqlist_find_conflict(BlockReqList* reqs, int64_t offset, int64_t bytes)
 {
-    BlockReq *r;
+    BlockReq* r;
 
-    QLIST_FOREACH(r, reqs, list) {
-        if (ranges_overlap(offset, bytes, r->offset, r->bytes)) {
-            return r;
-        }
+    QLIST_FOREACH (r, reqs, list) {
+        if (ranges_overlap(offset, bytes, r->offset, r->bytes)) { return r; }
     }
 
     return NULL;
 }
 
-bool coroutine_fn reqlist_wait_one(BlockReqList *reqs, int64_t offset,
-                                   int64_t bytes, CoMutex *lock)
+bool coroutine_fn reqlist_wait_one(BlockReqList* reqs, int64_t offset, int64_t bytes, CoMutex* lock)
 {
-    BlockReq *r = reqlist_find_conflict(reqs, offset, bytes);
+    BlockReq* r = reqlist_find_conflict(reqs, offset, bytes);
 
-    if (!r) {
-        return false;
-    }
+    if (!r) { return false; }
 
     qemu_co_queue_wait(&r->wait_queue, lock);
 
     return true;
 }
 
-void coroutine_fn reqlist_wait_all(BlockReqList *reqs, int64_t offset,
-                                   int64_t bytes, CoMutex *lock)
+void coroutine_fn reqlist_wait_all(BlockReqList* reqs, int64_t offset, int64_t bytes, CoMutex* lock)
 {
-    while (reqlist_wait_one(reqs, offset, bytes, lock)) {
-        /* continue */
-    }
+    while (reqlist_wait_one(reqs, offset, bytes, lock)) { /* continue */ }
 }
 
-void coroutine_fn reqlist_shrink_req(BlockReq *req, int64_t new_bytes)
+void coroutine_fn reqlist_shrink_req(BlockReq* req, int64_t new_bytes)
 {
-    if (new_bytes == req->bytes) {
-        return;
-    }
+    if (new_bytes == req->bytes) { return; }
 
     assert(new_bytes > 0 && new_bytes < req->bytes);
 
@@ -76,7 +64,7 @@ void coroutine_fn reqlist_shrink_req(BlockReq *req, int64_t new_bytes)
     qemu_co_queue_restart_all(&req->wait_queue);
 }
 
-void coroutine_fn reqlist_remove_req(BlockReq *req)
+void coroutine_fn reqlist_remove_req(BlockReq* req)
 {
     QLIST_REMOVE(req, list);
     qemu_co_queue_restart_all(&req->wait_queue);

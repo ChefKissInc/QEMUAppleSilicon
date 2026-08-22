@@ -28,7 +28,6 @@
 #define TYPE_QIO_CHANNEL_SOCKET "qio-channel-socket"
 OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelSocket, QIO_CHANNEL_SOCKET)
 
-
 /**
  * QIOChannelSocket:
  *
@@ -39,17 +38,17 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelSocket, QIO_CHANNEL_SOCKET)
  * parameters and getting socket address strings.
  */
 
-struct QIOChannelSocket {
-    QIOChannel parent;
-    int fd;
+struct QIOChannelSocket
+{
+    QIOChannel              parent;
+    int                     fd;
     struct sockaddr_storage localAddr;
-    socklen_t localAddrLen;
+    socklen_t               localAddrLen;
     struct sockaddr_storage remoteAddr;
-    socklen_t remoteAddrLen;
-    ssize_t zero_copy_queued;
-    ssize_t zero_copy_sent;
+    socklen_t               remoteAddrLen;
+    ssize_t                 zero_copy_queued;
+    ssize_t                 zero_copy_sent;
 };
-
 
 /**
  * qio_channel_socket_new:
@@ -61,8 +60,7 @@ struct QIOChannelSocket {
  *
  * Returns: the socket channel object
  */
-QIOChannelSocket *
-qio_channel_socket_new(void);
+QIOChannelSocket* qio_channel_socket_new(void);
 
 /**
  * qio_channel_socket_new_fd:
@@ -74,10 +72,7 @@ qio_channel_socket_new(void);
  *
  * Returns: the socket channel object, or NULL on error
  */
-QIOChannelSocket *
-qio_channel_socket_new_fd(int fd,
-                          Error **errp);
-
+QIOChannelSocket* qio_channel_socket_new_fd(int fd, Error** errp);
 
 /**
  * qio_channel_socket_connect_sync:
@@ -90,9 +85,7 @@ qio_channel_socket_new_fd(int fd,
  * execution control until the connection is established or
  * an error occurs.
  */
-int qio_channel_socket_connect_sync(QIOChannelSocket *ioc,
-                                    SocketAddress *addr,
-                                    Error **errp);
+int qio_channel_socket_connect_sync(QIOChannelSocket* ioc, SocketAddress* addr, Error** errp);
 
 /**
  * qio_channel_socket_connect_async:
@@ -111,13 +104,8 @@ int qio_channel_socket_connect_sync(QIOChannelSocket *ioc,
  * parameter will be copied, so may be freed as soon
  * as this function returns without waiting for completion.
  */
-void qio_channel_socket_connect_async(QIOChannelSocket *ioc,
-                                      SocketAddress *addr,
-                                      QIOTaskFunc callback,
-                                      gpointer opaque,
-                                      GDestroyNotify destroy,
-                                      GMainContext *context);
-
+void qio_channel_socket_connect_async(QIOChannelSocket* ioc, SocketAddress* addr, QIOTaskFunc callback, gpointer opaque,
+                                      GDestroyNotify destroy, GMainContext* context);
 
 /**
  * qio_channel_socket_listen_sync:
@@ -131,10 +119,7 @@ void qio_channel_socket_connect_async(QIOChannelSocket *ioc,
  * execution control until the connection is established or
  * an error occurs.
  */
-int qio_channel_socket_listen_sync(QIOChannelSocket *ioc,
-                                   SocketAddress *addr,
-                                   int num,
-                                   Error **errp);
+int qio_channel_socket_listen_sync(QIOChannelSocket* ioc, SocketAddress* addr, int num, Error** errp);
 
 /**
  * qio_channel_socket_listen_async:
@@ -154,14 +139,8 @@ int qio_channel_socket_listen_sync(QIOChannelSocket *ioc,
  * parameter will be copied, so may be freed as soon
  * as this function returns without waiting for completion.
  */
-void qio_channel_socket_listen_async(QIOChannelSocket *ioc,
-                                     SocketAddress *addr,
-                                     int num,
-                                     QIOTaskFunc callback,
-                                     gpointer opaque,
-                                     GDestroyNotify destroy,
-                                     GMainContext *context);
-
+void qio_channel_socket_listen_async(QIOChannelSocket* ioc, SocketAddress* addr, int num, QIOTaskFunc callback,
+                                     gpointer opaque, GDestroyNotify destroy, GMainContext* context);
 
 /**
  * qio_channel_socket_dgram_sync:
@@ -176,10 +155,8 @@ void qio_channel_socket_listen_async(QIOChannelSocket *ioc,
  * will not regain execution control until the socket
  * is established or an error occurs.
  */
-int qio_channel_socket_dgram_sync(QIOChannelSocket *ioc,
-                                  SocketAddress *localAddr,
-                                  SocketAddress *remoteAddr,
-                                  Error **errp);
+int qio_channel_socket_dgram_sync(QIOChannelSocket* ioc, SocketAddress* localAddr, SocketAddress* remoteAddr,
+                                  Error** errp);
 
 /**
  * qio_channel_socket_dgram_async:
@@ -201,14 +178,9 @@ int qio_channel_socket_dgram_sync(QIOChannelSocket *ioc,
  * so may be freed as soon as this function returns without
  * waiting for completion.
  */
-void qio_channel_socket_dgram_async(QIOChannelSocket *ioc,
-                                    SocketAddress *localAddr,
-                                    SocketAddress *remoteAddr,
-                                    QIOTaskFunc callback,
-                                    gpointer opaque,
-                                    GDestroyNotify destroy,
-                                    GMainContext *context);
-
+void qio_channel_socket_dgram_async(QIOChannelSocket* ioc, SocketAddress* localAddr, SocketAddress* remoteAddr,
+                                    QIOTaskFunc callback, gpointer opaque, GDestroyNotify destroy,
+                                    GMainContext* context);
 
 /**
  * qio_channel_socket_get_local_address:
@@ -223,9 +195,7 @@ void qio_channel_socket_dgram_async(QIOChannelSocket *ioc,
  *
  * Returns: 0 on success, -1 on error
  */
-SocketAddress *
-qio_channel_socket_get_local_address(QIOChannelSocket *ioc,
-                                     Error **errp);
+SocketAddress* qio_channel_socket_get_local_address(QIOChannelSocket* ioc, Error** errp);
 
 /**
  * qio_channel_socket_get_remote_address:
@@ -240,10 +210,7 @@ qio_channel_socket_get_local_address(QIOChannelSocket *ioc,
  *
  * Returns: the socket address struct, or NULL on error
  */
-SocketAddress *
-qio_channel_socket_get_remote_address(QIOChannelSocket *ioc,
-                                      Error **errp);
-
+SocketAddress* qio_channel_socket_get_remote_address(QIOChannelSocket* ioc, Error** errp);
 
 /**
  * qio_channel_socket_accept:
@@ -256,9 +223,7 @@ qio_channel_socket_get_remote_address(QIOChannelSocket *ioc,
  *
  * Returns: the new client channel, or NULL on error
  */
-QIOChannelSocket *
-qio_channel_socket_accept(QIOChannelSocket *ioc,
-                          Error **errp);
+QIOChannelSocket* qio_channel_socket_accept(QIOChannelSocket* ioc, Error** errp);
 
 /**
  * qio_channel_socket_set_send_buffer:
@@ -270,6 +235,4 @@ qio_channel_socket_accept(QIOChannelSocket *ioc,
  *
  * Retruns: 0 on success, or -1 on error.
  */
-int qio_channel_socket_set_send_buffer(QIOChannelSocket *ioc,
-                                       size_t size,
-                                       Error **errp);
+int qio_channel_socket_set_send_buffer(QIOChannelSocket* ioc, size_t size, Error** errp);

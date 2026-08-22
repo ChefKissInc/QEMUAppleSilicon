@@ -24,12 +24,11 @@
 #include "hw/sysbus.h"
 #include "qom/object.h"
 
-#define APPLE_MCA_MMIO_SIO (0)
-#define APPLE_MCA_MMIO_DMA (1)
+#define APPLE_MCA_MMIO_SIO      (0)
+#define APPLE_MCA_MMIO_DMA      (1)
 #define APPLE_MCA_MMIO_MCLK_CFG (2)
 
 #define TYPE_APPLE_MCA "apple.mca"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleMCAState, APPLE_MCA)
 
-SysBusDevice *apple_mca_create(AppleDTNode *node, AppleSIODMAEndpoint *tx_ep,
-                               AppleSIODMAEndpoint *rx_ep);
+SysBusDevice* apple_mca_create(AppleDTNode* node, AppleSIODMAEndpoint* tx_ep, AppleSIODMAEndpoint* rx_ep);

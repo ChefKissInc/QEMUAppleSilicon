@@ -12,9 +12,9 @@
 
 /* Through gcc 10, aarch64 has no support for 128-bit atomics.  */
 #if defined(CONFIG_ATOMIC128) || defined(CONFIG_CMPXCHG128)
-#include "host/include/generic/host/atomic128-cas.h.inc"
+    #include "host/include/generic/host/atomic128-cas.h.inc"
 #else
-static inline Int128 atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new)
+static inline Int128 atomic16_cmpxchg(Int128* ptr, Int128 cmp, Int128 new)
 {
     uint64_t cmpl = int128_getlo(cmp), cmph = int128_gethi(cmp);
     uint64_t newl = int128_getlo(new), newh = int128_gethi(new);
@@ -28,16 +28,14 @@ static inline Int128 atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new)
         "stlxp %w[tmp], %[newl], %[newh], %[mem]\n\t"
         "cbnz %w[tmp], 0b\n"
         "1:"
-        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp),
-          [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
-        : [cmpl] "r"(cmpl), [cmph] "r"(cmph),
-          [newl] "r"(newl), [newh] "r"(newh)
+        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp), [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
+        : [cmpl] "r"(cmpl), [cmph] "r"(cmph), [newl] "r"(newl), [newh] "r"(newh)
         : "memory", "cc");
 
     return int128_make128(oldl, oldh);
 }
 
-static inline Int128 atomic16_xchg(Int128 *ptr, Int128 new)
+static inline Int128 atomic16_xchg(Int128* ptr, Int128 new)
 {
     uint64_t newl = int128_getlo(new), newh = int128_gethi(new);
     uint64_t oldl, oldh;
@@ -46,15 +44,14 @@ static inline Int128 atomic16_xchg(Int128 *ptr, Int128 new)
     asm("0: ldaxp %[oldl], %[oldh], %[mem]\n\t"
         "stlxp %w[tmp], %[newl], %[newh], %[mem]\n\t"
         "cbnz %w[tmp], 0b"
-        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp),
-          [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
+        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp), [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
         : [newl] "r"(newl), [newh] "r"(newh)
         : "memory");
 
     return int128_make128(oldl, oldh);
 }
 
-static inline Int128 atomic16_fetch_and(Int128 *ptr, Int128 new)
+static inline Int128 atomic16_fetch_and(Int128* ptr, Int128 new)
 {
     uint64_t newl = int128_getlo(new), newh = int128_gethi(new);
     uint64_t oldl, oldh, tmpl, tmph;
@@ -65,16 +62,14 @@ static inline Int128 atomic16_fetch_and(Int128 *ptr, Int128 new)
         "and %[tmph], %[oldh], %[newh]\n\t"
         "stlxp %w[tmp], %[tmpl], %[tmph], %[mem]\n\t"
         "cbnz %w[tmp], 0b"
-        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp),
-          [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
-        : [newl] "r"(newl), [newh] "r"(newh),
-          [tmpl] "r"(tmpl), [tmph] "r"(tmph)
+        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp), [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
+        : [newl] "r"(newl), [newh] "r"(newh), [tmpl] "r"(tmpl), [tmph] "r"(tmph)
         : "memory");
 
     return int128_make128(oldl, oldh);
 }
 
-static inline Int128 atomic16_fetch_or(Int128 *ptr, Int128 new)
+static inline Int128 atomic16_fetch_or(Int128* ptr, Int128 new)
 {
     uint64_t newl = int128_getlo(new), newh = int128_gethi(new);
     uint64_t oldl, oldh, tmpl, tmph;
@@ -85,15 +80,13 @@ static inline Int128 atomic16_fetch_or(Int128 *ptr, Int128 new)
         "orr %[tmph], %[oldh], %[newh]\n\t"
         "stlxp %w[tmp], %[tmpl], %[tmph], %[mem]\n\t"
         "cbnz %w[tmp], 0b"
-        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp),
-          [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
-        : [newl] "r"(newl), [newh] "r"(newh),
-          [tmpl] "r"(tmpl), [tmph] "r"(tmph)
+        : [mem] "+m"(*ptr), [tmp] "=&r"(tmp), [oldl] "=&r"(oldl), [oldh] "=&r"(oldh)
+        : [newl] "r"(newl), [newh] "r"(newh), [tmpl] "r"(tmpl), [tmph] "r"(tmph)
         : "memory");
 
     return int128_make128(oldl, oldh);
 }
 
-# define CONFIG_CMPXCHG128 1
-# define HAVE_CMPXCHG128 1
+    #define CONFIG_CMPXCHG128 1
+    #define HAVE_CMPXCHG128   1
 #endif

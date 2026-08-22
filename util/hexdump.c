@@ -1,5 +1,5 @@
 /*
-* Helper to hexdump a buffer
+ * Helper to hexdump a buffer
  *
  * Copyright (c) 2013 Red Hat, Inc.
  * Copyright (c) 2013 Gerd Hoffmann <kraxel@redhat.com>
@@ -17,26 +17,18 @@
 #include "qemu/cutils.h"
 #include "qemu/host-utils.h"
 
-static inline char hexdump_nibble(unsigned x)
-{
-    return (x < 10 ? '0' : 'a' - 10) + x;
-}
+static inline char hexdump_nibble(unsigned x) { return (x < 10 ? '0' : 'a' - 10) + x; }
 
-GString *qemu_hexdump_line(GString *str, const void *vbuf, size_t len,
-                           size_t unit_len, size_t block_len)
+GString* qemu_hexdump_line(GString* str, const void* vbuf, size_t len, size_t unit_len, size_t block_len)
 {
-    const uint8_t *buf = vbuf;
-    size_t u, b;
+    const uint8_t* buf = vbuf;
+    size_t         u, b;
 
     if (str == NULL) {
         /* Estimate the length of the output to avoid reallocs. */
         size_t est = len * 2;
-        if (unit_len) {
-            est += len / unit_len;
-        }
-        if (block_len) {
-            est += len / block_len;
-        }
+        if (unit_len) { est += len / unit_len; }
+        if (block_len) { est += len / block_len; }
         str = g_string_sized_new(est + 1);
     }
 
@@ -60,30 +52,26 @@ GString *qemu_hexdump_line(GString *str, const void *vbuf, size_t len,
     return str;
 }
 
-static void asciidump_line(char *line, const void *bufptr, size_t len)
+static void asciidump_line(char* line, const void* bufptr, size_t len)
 {
-    const char *buf = bufptr;
+    const char* buf = bufptr;
 
     for (size_t i = 0; i < len; i++) {
         char c = buf[i];
 
-        if (c < ' ' || c > '~') {
-            c = '.';
-        }
+        if (c < ' ' || c > '~') { c = '.'; }
         *line++ = c;
     }
     *line = '\0';
 }
 
 #define QEMU_HEXDUMP_LINE_BYTES 16
-#define QEMU_HEXDUMP_LINE_WIDTH \
-    (QEMU_HEXDUMP_LINE_BYTES * 2 + QEMU_HEXDUMP_LINE_BYTES / 4)
+#define QEMU_HEXDUMP_LINE_WIDTH (QEMU_HEXDUMP_LINE_BYTES * 2 + QEMU_HEXDUMP_LINE_BYTES / 4)
 
-void qemu_hexdump(FILE *fp, const char *prefix,
-                  const void *bufptr, size_t size)
+void qemu_hexdump(FILE* fp, const char* prefix, const void* bufptr, size_t size)
 {
     g_autoptr(GString) str = g_string_sized_new(QEMU_HEXDUMP_LINE_WIDTH + 1);
-    char ascii[QEMU_HEXDUMP_LINE_BYTES + 1];
+    char   ascii[QEMU_HEXDUMP_LINE_BYTES + 1];
     size_t b, len;
 
     for (b = 0; b < size; b += len) {
@@ -93,19 +81,16 @@ void qemu_hexdump(FILE *fp, const char *prefix,
         qemu_hexdump_line(str, bufptr + b, len, 1, 4);
         asciidump_line(ascii, bufptr + b, len);
 
-        fprintf(fp, "%s: %04zx: %-*s %s\n",
-                prefix, b, QEMU_HEXDUMP_LINE_WIDTH, str->str, ascii);
+        fprintf(fp, "%s: %04zx: %-*s %s\n", prefix, b, QEMU_HEXDUMP_LINE_WIDTH, str->str, ascii);
     }
-
 }
 
-void qemu_hexdump_to_buffer(char *restrict buffer, size_t buffer_size,
-                            const uint8_t *restrict data, size_t data_size)
+void qemu_hexdump_to_buffer(char* restrict buffer, size_t buffer_size, const uint8_t* restrict data, size_t data_size)
 {
-    size_t i;
+    size_t   i;
     uint64_t required_buffer_size;
-    bool overflow = umul64_overflow(data_size, 2, &required_buffer_size);
-    overflow |= uadd64_overflow(required_buffer_size, 1, &required_buffer_size);
+    bool     overflow  = umul64_overflow(data_size, 2, &required_buffer_size);
+    overflow          |= uadd64_overflow(required_buffer_size, 1, &required_buffer_size);
     assert(!overflow && buffer_size >= required_buffer_size);
 
     for (i = 0; i < data_size; i++) {

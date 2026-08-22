@@ -26,20 +26,13 @@
  * Finally, return the host address for a page that is backed by RAM,
  * or NULL if the page requires I/O.
  */
-void *probe_access(CPUArchState *env, vaddr addr, int size,
-                   MMUAccessType access_type, int mmu_idx, uintptr_t retaddr);
+void* probe_access(CPUArchState* env, vaddr addr, int size, MMUAccessType access_type, int mmu_idx, uintptr_t retaddr);
 
-static inline void *probe_write(CPUArchState *env, vaddr addr, int size,
-                                int mmu_idx, uintptr_t retaddr)
-{
-    return probe_access(env, addr, size, MMU_DATA_STORE, mmu_idx, retaddr);
-}
+static inline void* probe_write(CPUArchState* env, vaddr addr, int size, int mmu_idx, uintptr_t retaddr)
+{ return probe_access(env, addr, size, MMU_DATA_STORE, mmu_idx, retaddr); }
 
-static inline void *probe_read(CPUArchState *env, vaddr addr, int size,
-                               int mmu_idx, uintptr_t retaddr)
-{
-    return probe_access(env, addr, size, MMU_DATA_LOAD, mmu_idx, retaddr);
-}
+static inline void* probe_read(CPUArchState* env, vaddr addr, int size, int mmu_idx, uintptr_t retaddr)
+{ return probe_access(env, addr, size, MMU_DATA_LOAD, mmu_idx, retaddr); }
 
 /**
  * probe_access_flags:
@@ -60,9 +53,8 @@ static inline void *probe_read(CPUArchState *env, vaddr addr, int size,
  * Do handle clean pages, so exclude TLB_NOTDIRY from the returned flags.
  * For simplicity, all "mmio-like" flags are folded to TLB_MMIO.
  */
-int probe_access_flags(CPUArchState *env, vaddr addr, int size,
-                       MMUAccessType access_type, int mmu_idx,
-                       bool nonfault, void **phost, uintptr_t retaddr);
+int probe_access_flags(CPUArchState* env, vaddr addr, int size, MMUAccessType access_type, int mmu_idx, bool nonfault,
+                       void** phost, uintptr_t retaddr);
 
 /**
  * probe_access_full:
@@ -76,10 +68,8 @@ int probe_access_flags(CPUArchState *env, vaddr addr, int size,
  * return TLB_INVALID_MASK if the page is not mapped, or is not
  * accessible with @access_type.
  */
-int probe_access_full(CPUArchState *env, vaddr addr, int size,
-                      MMUAccessType access_type, int mmu_idx,
-                      bool nonfault, void **phost,
-                      CPUTLBEntryFull **pfull, uintptr_t retaddr);
+int probe_access_full(CPUArchState* env, vaddr addr, int size, MMUAccessType access_type, int mmu_idx, bool nonfault,
+                      void** phost, CPUTLBEntryFull** pfull, uintptr_t retaddr);
 
 /**
  * probe_access_full_mmu:
@@ -90,9 +80,8 @@ int probe_access_full(CPUArchState *env, vaddr addr, int size,
  * handling another potential mmu fault, this function never raises
  * exceptions (akin to @nonfault true for probe_access_full).
  */
-int probe_access_full_mmu(CPUArchState *env, vaddr addr, int size,
-                          MMUAccessType access_type, int mmu_idx,
-                          void **phost, CPUTLBEntryFull **pfull);
+int probe_access_full_mmu(CPUArchState* env, vaddr addr, int size, MMUAccessType access_type, int mmu_idx, void** phost,
+                          CPUTLBEntryFull** pfull);
 
 /**
  * tlb_vaddr_to_host:
@@ -107,5 +96,4 @@ int probe_access_full_mmu(CPUArchState *env, vaddr addr, int size,
  * Otherwise (TLB entry is for an I/O access, guest software
  * TLB fill required, etc) return NULL.
  */
-void *tlb_vaddr_to_host(CPUArchState *env, vaddr addr,
-                        MMUAccessType access_type, int mmu_idx);
+void* tlb_vaddr_to_host(CPUArchState* env, vaddr addr, MMUAccessType access_type, int mmu_idx);

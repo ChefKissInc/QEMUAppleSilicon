@@ -35,12 +35,7 @@
  * the GS API.
  */
 
-BlockDriverState *bdrv_cbw_append(BlockDriverState *source,
-                                  BlockDriverState *target,
-                                  const char *filter_node_name,
-                                  bool discard_source,
-                                  uint64_t min_cluster_size,
-                                  BlockCopyState **bcs,
-                                  OnCbwError on_cbw_error,
-                                  Error **errp);
-void bdrv_cbw_drop(BlockDriverState *bs);
+BlockDriverState* bdrv_cbw_append(BlockDriverState* source, BlockDriverState* target, const char* filter_node_name,
+                                  bool discard_source, uint64_t min_cluster_size, BlockCopyState** bcs,
+                                  OnCbwError on_cbw_error, Error** errp);
+void              bdrv_cbw_drop(BlockDriverState* bs);

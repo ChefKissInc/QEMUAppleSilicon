@@ -26,12 +26,11 @@
 #include "hw/qdev-properties.h"
 #include "system/kvm.h"
 
-void gic_init_irqs_and_mmio(GICState *s, qemu_irq_handler handler,
-                            const MemoryRegionOps *ops,
-                            const MemoryRegionOps *virt_ops)
+void gic_init_irqs_and_mmio(GICState* s, qemu_irq_handler handler, const MemoryRegionOps* ops,
+                            const MemoryRegionOps* virt_ops)
 {
-    SysBusDevice *sbd = SYS_BUS_DEVICE(s);
-    int i = s->num_irq - GIC_INTERNAL;
+    SysBusDevice* sbd = SYS_BUS_DEVICE(s);
+    int           i   = s->num_irq - GIC_INTERNAL;
 
     /* For the GIC, also expose incoming GPIO lines for PPIs for each CPU.
      * GPIO array layout is thus:
@@ -43,22 +42,12 @@ void gic_init_irqs_and_mmio(GICState *s, qemu_irq_handler handler,
     i += (GIC_INTERNAL * s->num_cpu);
     qdev_init_gpio_in(DEVICE(s), handler, i);
 
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->parent_irq[i]);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->parent_fiq[i]);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->parent_virq[i]);
-    }
-    for (i = 0; i < s->num_cpu; i++) {
-        sysbus_init_irq(sbd, &s->parent_vfiq[i]);
-    }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->parent_irq[i]); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->parent_fiq[i]); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->parent_virq[i]); }
+    for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->parent_vfiq[i]); }
     if (s->virt_extn) {
-        for (i = 0; i < s->num_cpu; i++) {
-            sysbus_init_irq(sbd, &s->maintenance_irq[i]);
-        }
+        for (i = 0; i < s->num_cpu; i++) { sysbus_init_irq(sbd, &s->maintenance_irq[i]); }
     }
 
     /* Distributor */
@@ -68,36 +57,30 @@ void gic_init_irqs_and_mmio(GICState *s, qemu_irq_handler handler,
     /* This is the main CPU interface "for this core". It is always
      * present because it is required by both software emulation and KVM.
      */
-    memory_region_init_io(&s->cpuiomem[0], OBJECT(s), ops ? &ops[1] : NULL,
-                          s, "gic_cpu", s->revision == 2 ? 0x2000 : 0x100);
+    memory_region_init_io(&s->cpuiomem[0], OBJECT(s), ops ? &ops[1] : NULL, s, "gic_cpu",
+                          s->revision == 2 ? 0x2000 : 0x100);
     sysbus_init_mmio(sbd, &s->cpuiomem[0]);
 
     if (s->virt_extn) {
-        memory_region_init_io(&s->vifaceiomem[0], OBJECT(s), virt_ops,
-                              s, "gic_viface", 0x1000);
+        memory_region_init_io(&s->vifaceiomem[0], OBJECT(s), virt_ops, s, "gic_viface", 0x1000);
         sysbus_init_mmio(sbd, &s->vifaceiomem[0]);
 
-        memory_region_init_io(&s->vcpuiomem, OBJECT(s),
-                              virt_ops ? &virt_ops[1] : NULL,
-                              s, "gic_vcpu", 0x2000);
+        memory_region_init_io(&s->vcpuiomem, OBJECT(s), virt_ops ? &virt_ops[1] : NULL, s, "gic_vcpu", 0x2000);
         sysbus_init_mmio(sbd, &s->vcpuiomem);
     }
 }
 
-static void arm_gic_common_realize(DeviceState *dev, Error **errp)
+static void arm_gic_common_realize(DeviceState* dev, Error** errp)
 {
-    GICState *s = ARM_GIC_COMMON(dev);
-    int num_irq = s->num_irq;
+    GICState* s       = ARM_GIC_COMMON(dev);
+    int       num_irq = s->num_irq;
 
     if (s->num_cpu > GIC_NCPU) {
-        error_setg(errp, "requested %u CPUs exceeds GIC maximum %d",
-                   s->num_cpu, GIC_NCPU);
+        error_setg(errp, "requested %u CPUs exceeds GIC maximum %d", s->num_cpu, GIC_NCPU);
         return;
     }
     if (s->num_irq > GIC_MAXIRQ) {
-        error_setg(errp,
-                   "requested %u interrupt lines exceeds GIC maximum %d",
-                   num_irq, GIC_MAXIRQ);
+        error_setg(errp, "requested %u interrupt lines exceeds GIC maximum %d", num_irq, GIC_MAXIRQ);
         return;
     }
     /* ITLinesNumber is represented as (N / 32) - 1 (see
@@ -105,23 +88,20 @@ static void arm_gic_common_realize(DeviceState *dev, Error **errp)
      * restriction, not an architectural one:
      */
     if (s->num_irq < 32 || (s->num_irq % 32)) {
-        error_setg(errp,
-                   "%d interrupt lines unsupported: not divisible by 32",
-                   num_irq);
+        error_setg(errp, "%d interrupt lines unsupported: not divisible by 32", num_irq);
         return;
     }
 
-    if (s->security_extn &&
-        (s->revision == REV_11MPCORE)) {
+    if (s->security_extn && (s->revision == REV_11MPCORE)) {
         error_setg(errp, "this GIC revision does not implement "
-                   "the security extensions");
+                         "the security extensions");
         return;
     }
 
     if (s->virt_extn) {
         if (s->revision != 2) {
             error_setg(errp, "GIC virtualization extensions are only "
-                       "supported by revision 2");
+                             "supported by revision 2");
             return;
         }
 
@@ -133,39 +113,33 @@ static void arm_gic_common_realize(DeviceState *dev, Error **errp)
     }
 }
 
-static inline void arm_gic_common_reset_irq_state(GICState *s, int cidx,
-                                                  int resetprio)
+static inline void arm_gic_common_reset_irq_state(GICState* s, int cidx, int resetprio)
 {
     int i, j;
 
     for (i = cidx; i < cidx + s->num_cpu; i++) {
-        if (s->revision == REV_11MPCORE) {
-            s->priority_mask[i] = 0xf0;
-        } else {
+        if (s->revision == REV_11MPCORE) { s->priority_mask[i] = 0xf0; }
+        else {
             s->priority_mask[i] = resetprio;
         }
-        s->current_pending[i] = 1023;
+        s->current_pending[i]  = 1023;
         s->running_priority[i] = 0x100;
-        s->cpu_ctlr[i] = 0;
-        s->bpr[i] = gic_is_vcpu(i) ? GIC_VIRT_MIN_BPR : GIC_MIN_BPR;
-        s->abpr[i] = gic_is_vcpu(i) ? GIC_VIRT_MIN_ABPR : GIC_MIN_ABPR;
+        s->cpu_ctlr[i]         = 0;
+        s->bpr[i]              = gic_is_vcpu(i) ? GIC_VIRT_MIN_BPR : GIC_MIN_BPR;
+        s->abpr[i]             = gic_is_vcpu(i) ? GIC_VIRT_MIN_ABPR : GIC_MIN_ABPR;
 
         if (!gic_is_vcpu(i)) {
-            for (j = 0; j < GIC_INTERNAL; j++) {
-                s->priority1[j][i] = resetprio;
-            }
-            for (j = 0; j < GIC_NR_SGIS; j++) {
-                s->sgi_pending[j][i] = 0;
-            }
+            for (j = 0; j < GIC_INTERNAL; j++) { s->priority1[j][i] = resetprio; }
+            for (j = 0; j < GIC_NR_SGIS; j++) { s->sgi_pending[j][i] = 0; }
         }
     }
 }
 
-static void arm_gic_common_reset_hold(Object *obj, ResetType type)
+static void arm_gic_common_reset_hold(Object* obj, ResetType type)
 {
-    GICState *s = ARM_GIC_COMMON(obj);
-    int i, j;
-    int resetprio;
+    GICState* s = ARM_GIC_COMMON(obj);
+    int       i, j;
+    int       resetprio;
 
     /* If we're resetting a TZ-aware GIC as if secure firmware
      * had set it up ready to start a kernel in non-secure,
@@ -174,9 +148,8 @@ static void arm_gic_common_reset_hold(Object *obj, ResetType type)
      * priority_mask[] values, because if they are zero then NS
      * code cannot ever rewrite the priority to anything else.
      */
-    if (s->security_extn && s->irq_reset_nonsecure) {
-        resetprio = 0x80;
-    } else {
+    if (s->security_extn && s->irq_reset_nonsecure) { resetprio = 0x80; }
+    else {
         resetprio = 0;
     }
 
@@ -195,33 +168,26 @@ static void arm_gic_common_reset_hold(Object *obj, ResetType type)
         GIC_DIST_SET_EDGE_TRIGGER(i);
     }
 
-    for (i = 0; i < ARRAY_SIZE(s->priority2); i++) {
-        s->priority2[i] = resetprio;
-    }
+    for (i = 0; i < ARRAY_SIZE(s->priority2); i++) { s->priority2[i] = resetprio; }
 
     for (i = 0; i < GIC_MAXIRQ; i++) {
         /* For uniprocessor GICs all interrupts always target the sole CPU */
-        if (s->num_cpu == 1) {
-            s->irq_target[i] = 1;
-        } else {
+        if (s->num_cpu == 1) { s->irq_target[i] = 1; }
+        else {
             s->irq_target[i] = 0;
         }
     }
     if (s->security_extn && s->irq_reset_nonsecure) {
-        for (i = 0; i < GIC_MAXIRQ; i++) {
-            GIC_DIST_SET_GROUP(i, ALL_CPU_MASK);
-        }
+        for (i = 0; i < GIC_MAXIRQ; i++) { GIC_DIST_SET_GROUP(i, ALL_CPU_MASK); }
     }
 
     if (s->virt_extn) {
         for (i = 0; i < s->num_lrs; i++) {
-            for (j = 0; j < s->num_cpu; j++) {
-                s->h_lr[i][j] = 0;
-            }
+            for (j = 0; j < s->num_cpu; j++) { s->h_lr[i][j] = 0; }
         }
 
         for (i = 0; i < s->num_cpu; i++) {
-            s->h_hcr[i] = 0;
+            s->h_hcr[i]  = 0;
             s->h_misr[i] = 0;
         }
     }
@@ -244,33 +210,26 @@ static const Property arm_gic_common_properties[] = {
     DEFINE_PROP_UINT32("num-priority-bits", GICState, n_prio_bits, 8),
 };
 
-static void arm_gic_common_class_init(ObjectClass *klass, const void *data)
+static void arm_gic_common_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
-    ResettableClass *rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
 
     rc->phases.hold = arm_gic_common_reset_hold;
-    dc->realize = arm_gic_common_realize;
+    dc->realize     = arm_gic_common_realize;
     device_class_set_props(dc, arm_gic_common_properties);
 }
 
 static const TypeInfo arm_gic_common_type = {
-    .name = TYPE_ARM_GIC_COMMON,
-    .parent = TYPE_SYS_BUS_DEVICE,
+    .name          = TYPE_ARM_GIC_COMMON,
+    .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(GICState),
-    .class_size = sizeof(ARMGICCommonClass),
-    .class_init = arm_gic_common_class_init,
-    .abstract = true,
+    .class_size    = sizeof(ARMGICCommonClass),
+    .class_init    = arm_gic_common_class_init,
+    .abstract      = true,
 };
 
-static void register_types(void)
-{
-    type_register_static(&arm_gic_common_type);
-}
+static void register_types(void) { type_register_static(&arm_gic_common_type); }
 
-type_init(register_types)
-
-const char *gic_class_name(void)
-{
-    return kvm_irqchip_in_kernel() ? "kvm-arm-gic" : "arm_gic";
-}
+type_init(register_types) const char* gic_class_name(void)
+{ return kvm_irqchip_in_kernel() ? "kvm-arm-gic" : "arm_gic"; }

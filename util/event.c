@@ -25,22 +25,22 @@
  * transitioned to free or busy.
  */
 
-#define EV_SET         0
-#define EV_FREE        1
-#define EV_BUSY       -1
+#define EV_SET  0
+#define EV_FREE 1
+#define EV_BUSY -1
 
-void qemu_event_init(QemuEvent *ev, bool init)
+void qemu_event_init(QemuEvent* ev, bool init)
 {
 #ifndef HAVE_FUTEX
     pthread_mutex_init(&ev->lock, NULL);
     pthread_cond_init(&ev->cond, NULL);
 #endif
 
-    ev->value = (init ? EV_SET : EV_FREE);
+    ev->value       = (init ? EV_SET : EV_FREE);
     ev->initialized = true;
 }
 
-void qemu_event_destroy(QemuEvent *ev)
+void qemu_event_destroy(QemuEvent* ev)
 {
     assert(ev->initialized);
     ev->initialized = false;
@@ -50,7 +50,7 @@ void qemu_event_destroy(QemuEvent *ev)
 #endif
 }
 
-void qemu_event_set(QemuEvent *ev)
+void qemu_event_set(QemuEvent* ev)
 {
     assert(ev->initialized);
 
@@ -81,7 +81,7 @@ void qemu_event_set(QemuEvent *ev)
 #endif
 }
 
-void qemu_event_reset(QemuEvent *ev)
+void qemu_event_reset(QemuEvent* ev)
 {
     assert(ev->initialized);
 
@@ -121,7 +121,7 @@ void qemu_event_reset(QemuEvent *ev)
 #endif
 }
 
-void qemu_event_wait(QemuEvent *ev)
+void qemu_event_wait(QemuEvent* ev)
 {
     assert(ev->initialized);
 
@@ -133,9 +133,7 @@ void qemu_event_wait(QemuEvent *ev)
          * synchronizes with the first memory barrier in qemu_event_set().
          */
         unsigned value = qatomic_load_acquire(&ev->value);
-        if (value == EV_SET) {
-            break;
-        }
+        if (value == EV_SET) { break; }
 
         if (value == EV_FREE) {
             /*
@@ -149,9 +147,7 @@ void qemu_event_wait(QemuEvent *ev)
              * qemu_event_set() to issue _more_ wakeups), the failing case needs
              * acquire semantics like the load above.
              */
-            if (qatomic_cmpxchg(&ev->value, EV_FREE, EV_BUSY) == EV_SET) {
-                break;
-            }
+            if (qatomic_cmpxchg(&ev->value, EV_FREE, EV_BUSY) == EV_SET) { break; }
         }
 
         /*
@@ -163,9 +159,7 @@ void qemu_event_wait(QemuEvent *ev)
     }
 #else
     pthread_mutex_lock(&ev->lock);
-    while (qatomic_read(&ev->value) != EV_SET) {
-        pthread_cond_wait(&ev->cond, &ev->lock);
-    }
+    while (qatomic_read(&ev->value) != EV_SET) { pthread_cond_wait(&ev->cond, &ev->lock); }
     pthread_mutex_unlock(&ev->lock);
 #endif
 }

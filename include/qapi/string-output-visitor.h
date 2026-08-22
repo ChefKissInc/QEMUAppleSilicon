@@ -29,4 +29,4 @@ typedef struct StringOutputVisitor StringOutputVisitor;
  * or arbitrary QTypes.  Struct fields are not shown.  It also requires a
  * non-null list argument to visit_start_list().
  */
-Visitor *string_output_visitor_new(bool human, char **result);
+Visitor* string_output_visitor_new(bool human, char** result);

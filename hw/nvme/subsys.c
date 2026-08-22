@@ -14,15 +14,13 @@
 
 #define NVME_DEFAULT_RU_SIZE (96 * MiB)
 
-int nvme_subsys_register_ctrl(NvmeCtrl *n, Error **errp)
+int nvme_subsys_register_ctrl(NvmeCtrl* n, Error** errp)
 {
-    NvmeSubsystem *subsys = n->subsys;
-    int cntlid;
+    NvmeSubsystem* subsys = n->subsys;
+    int            cntlid;
 
     for (cntlid = 0; cntlid < ARRAY_SIZE(subsys->ctrls); cntlid++) {
-        if (!subsys->ctrls[cntlid]) {
-            break;
-        }
+        if (!subsys->ctrls[cntlid]) { break; }
     }
 
     if (cntlid == ARRAY_SIZE(subsys->ctrls)) {
@@ -30,9 +28,8 @@ int nvme_subsys_register_ctrl(NvmeCtrl *n, Error **errp)
         return -1;
     }
 
-    if (!subsys->serial) {
-        subsys->serial = g_strdup(n->params.serial);
-    } else if (strcmp(subsys->serial, n->params.serial)) {
+    if (!subsys->serial) { subsys->serial = g_strdup(n->params.serial); }
+    else if (strcmp(subsys->serial, n->params.serial)) {
         error_setg(errp, "invalid controller serial");
         return -1;
     }
@@ -42,16 +39,16 @@ int nvme_subsys_register_ctrl(NvmeCtrl *n, Error **errp)
     return cntlid;
 }
 
-void nvme_subsys_unregister_ctrl(NvmeSubsystem *subsys, NvmeCtrl *n)
+void nvme_subsys_unregister_ctrl(NvmeSubsystem* subsys, NvmeCtrl* n)
 {
     subsys->ctrls[n->cntlid] = NULL;
 
     n->cntlid = -1;
 }
 
-static bool nvme_calc_rgif(uint16_t nruh, uint16_t nrg, uint8_t *rgif)
+static bool nvme_calc_rgif(uint16_t nruh, uint16_t nrg, uint8_t* rgif)
 {
-    uint16_t val;
+    uint16_t     val;
     unsigned int i;
 
     if (unlikely(nrg == 1)) {
@@ -61,7 +58,7 @@ static bool nvme_calc_rgif(uint16_t nruh, uint16_t nrg, uint8_t *rgif)
     }
 
     val = nrg;
-    i = 0;
+    i   = 0;
     while (val) {
         val >>= 1;
         i++;
@@ -77,9 +74,9 @@ static bool nvme_calc_rgif(uint16_t nruh, uint16_t nrg, uint8_t *rgif)
     return true;
 }
 
-static bool nvme_subsys_setup_fdp(NvmeSubsystem *subsys, Error **errp)
+static bool nvme_subsys_setup_fdp(NvmeSubsystem* subsys, Error** errp)
 {
-    NvmeEnduranceGroup *endgrp = &subsys->endgrp;
+    NvmeEnduranceGroup* endgrp = &subsys->endgrp;
 
     if (!subsys->params.fdp.runs) {
         error_setg(errp, "fdp.runs must be non-zero");
@@ -95,26 +92,23 @@ static bool nvme_subsys_setup_fdp(NvmeSubsystem *subsys, Error **errp)
 
     endgrp->fdp.nrg = subsys->params.fdp.nrg;
 
-    if (!subsys->params.fdp.nruh ||
-        subsys->params.fdp.nruh > NVME_FDP_MAXPIDS) {
-        error_setg(errp, "fdp.nruh must be non-zero and less than %u",
-                   NVME_FDP_MAXPIDS);
+    if (!subsys->params.fdp.nruh || subsys->params.fdp.nruh > NVME_FDP_MAXPIDS) {
+        error_setg(errp, "fdp.nruh must be non-zero and less than %u", NVME_FDP_MAXPIDS);
         return false;
     }
 
     endgrp->fdp.nruh = subsys->params.fdp.nruh;
 
     if (!nvme_calc_rgif(endgrp->fdp.nruh, endgrp->fdp.nrg, &endgrp->fdp.rgif)) {
-        error_setg(errp,
-                   "cannot derive a valid rgif (nruh %"PRIu16" nrg %"PRIu32")",
-                   endgrp->fdp.nruh, endgrp->fdp.nrg);
+        error_setg(errp, "cannot derive a valid rgif (nruh %" PRIu16 " nrg %" PRIu32 ")", endgrp->fdp.nruh,
+                   endgrp->fdp.nrg);
         return false;
     }
 
     endgrp->fdp.ruhs = g_new(NvmeRuHandle, endgrp->fdp.nruh);
 
     for (uint16_t ruhid = 0; ruhid < endgrp->fdp.nruh; ruhid++) {
-        endgrp->fdp.ruhs[ruhid] = (NvmeRuHandle) {
+        endgrp->fdp.ruhs[ruhid] = (NvmeRuHandle){
             .ruht = NVME_RUHT_INITIALLY_ISOLATED,
             .ruha = NVME_RUHA_UNUSED,
         };
@@ -127,24 +121,20 @@ static bool nvme_subsys_setup_fdp(NvmeSubsystem *subsys, Error **errp)
     return true;
 }
 
-static bool nvme_subsys_setup(NvmeSubsystem *subsys, Error **errp)
+static bool nvme_subsys_setup(NvmeSubsystem* subsys, Error** errp)
 {
-    const char *nqn = subsys->params.nqn ?
-        subsys->params.nqn : subsys->parent_obj.id;
+    const char* nqn = subsys->params.nqn ? subsys->params.nqn : subsys->parent_obj.id;
 
-    snprintf((char *)subsys->subnqn, sizeof(subsys->subnqn),
-             "nqn.2019-08.org.qemu:%s", nqn);
+    snprintf((char*)subsys->subnqn, sizeof(subsys->subnqn), "nqn.2019-08.org.qemu:%s", nqn);
 
-    if (subsys->params.fdp.enabled && !nvme_subsys_setup_fdp(subsys, errp)) {
-        return false;
-    }
+    if (subsys->params.fdp.enabled && !nvme_subsys_setup_fdp(subsys, errp)) { return false; }
 
     return true;
 }
 
-static void nvme_subsys_realize(DeviceState *dev, Error **errp)
+static void nvme_subsys_realize(DeviceState* dev, Error** errp)
 {
-    NvmeSubsystem *subsys = NVME_SUBSYS(dev);
+    NvmeSubsystem* subsys = NVME_SUBSYS(dev);
 
     qbus_init(&subsys->bus, sizeof(NvmeBus), TYPE_NVME_BUS, dev, dev->id);
 
@@ -154,34 +144,30 @@ static void nvme_subsys_realize(DeviceState *dev, Error **errp)
 static const Property nvme_subsystem_props[] = {
     DEFINE_PROP_STRING("nqn", NvmeSubsystem, params.nqn),
     DEFINE_PROP_BOOL("fdp", NvmeSubsystem, params.fdp.enabled, false),
-    DEFINE_PROP_SIZE("fdp.runs", NvmeSubsystem, params.fdp.runs,
-                     NVME_DEFAULT_RU_SIZE),
+    DEFINE_PROP_SIZE("fdp.runs", NvmeSubsystem, params.fdp.runs, NVME_DEFAULT_RU_SIZE),
     DEFINE_PROP_UINT32("fdp.nrg", NvmeSubsystem, params.fdp.nrg, 1),
     DEFINE_PROP_UINT16("fdp.nruh", NvmeSubsystem, params.fdp.nruh, 0),
 };
 
-static void nvme_subsys_class_init(ObjectClass *oc, const void *data)
+static void nvme_subsys_class_init(ObjectClass* oc, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(oc);
+    DeviceClass* dc = DEVICE_CLASS(oc);
 
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
 
     dc->realize = nvme_subsys_realize;
-    dc->desc = "Virtual NVMe subsystem";
+    dc->desc    = "Virtual NVMe subsystem";
 
     device_class_set_props(dc, nvme_subsystem_props);
 }
 
 static const TypeInfo nvme_subsys_info = {
-    .name = TYPE_NVME_SUBSYS,
-    .parent = TYPE_DEVICE,
-    .class_init = nvme_subsys_class_init,
+    .name          = TYPE_NVME_SUBSYS,
+    .parent        = TYPE_DEVICE,
+    .class_init    = nvme_subsys_class_init,
     .instance_size = sizeof(NvmeSubsystem),
 };
 
-static void nvme_subsys_register_types(void)
-{
-    type_register_static(&nvme_subsys_info);
-}
+static void nvme_subsys_register_types(void) { type_register_static(&nvme_subsys_info); }
 
 type_init(nvme_subsys_register_types)

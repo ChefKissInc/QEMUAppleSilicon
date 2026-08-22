@@ -26,23 +26,25 @@
 #define ARM_MPTIMER_MAX_CPUS 4
 
 /* State of a single timer or watchdog block */
-typedef struct {
-    uint32_t control;
-    uint32_t status;
-    struct ptimer_state *timer;
-    qemu_irq irq;
-    MemoryRegion iomem;
+typedef struct
+{
+    uint32_t             control;
+    uint32_t             status;
+    struct ptimer_state* timer;
+    qemu_irq             irq;
+    MemoryRegion         iomem;
 } TimerBlock;
 
 #define TYPE_ARM_MPTIMER "arm_mptimer"
 OBJECT_DECLARE_SIMPLE_TYPE(ARMMPTimerState, ARM_MPTIMER)
 
-struct ARMMPTimerState {
+struct ARMMPTimerState
+{
     /*< private >*/
     SysBusDevice parent_obj;
     /*< public >*/
 
-    uint32_t num_cpu;
-    TimerBlock timerblock[ARM_MPTIMER_MAX_CPUS];
+    uint32_t     num_cpu;
+    TimerBlock   timerblock[ARM_MPTIMER_MAX_CPUS];
     MemoryRegion iomem;
 };

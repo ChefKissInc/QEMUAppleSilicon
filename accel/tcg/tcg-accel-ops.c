@@ -47,7 +47,7 @@
 
 /* common functionality among all TCG variants */
 
-void tcg_cpu_init_cflags(CPUState *cpu, bool parallel)
+void tcg_cpu_init_cflags(CPUState* cpu, bool parallel)
 {
     uint32_t cflags;
 
@@ -65,12 +65,9 @@ void tcg_cpu_init_cflags(CPUState *cpu, bool parallel)
     tcg_cflags_set(cpu, cflags);
 }
 
-void tcg_cpu_destroy(CPUState *cpu)
-{
-    cpu_thread_signal_destroyed(cpu);
-}
+void tcg_cpu_destroy(CPUState* cpu) { cpu_thread_signal_destroyed(cpu); }
 
-int tcg_cpu_exec(CPUState *cpu)
+int tcg_cpu_exec(CPUState* cpu)
 {
     int ret;
     assert(tcg_enabled());
@@ -81,7 +78,7 @@ int tcg_cpu_exec(CPUState *cpu)
     return ret;
 }
 
-static void tcg_cpu_reset_hold(CPUState *cpu)
+static void tcg_cpu_reset_hold(CPUState* cpu)
 {
     tcg_flush_jmp_cache(cpu);
 
@@ -89,7 +86,7 @@ static void tcg_cpu_reset_hold(CPUState *cpu)
 }
 
 /* mask must never be zero, except for A20 change call */
-void tcg_handle_interrupt(CPUState *cpu, int mask)
+void tcg_handle_interrupt(CPUState* cpu, int mask)
 {
     cpu_set_interrupt(cpu, mask);
 
@@ -97,20 +94,16 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
      * If called from iothread context, wake the target cpu in
      * case its halted.
      */
-    if (!qemu_cpu_is_self(cpu)) {
-        qemu_cpu_kick(cpu);
-    } else {
+    if (!qemu_cpu_is_self(cpu)) { qemu_cpu_kick(cpu); }
+    else {
         qatomic_set(&cpu->neg.icount_decr.u16.high, -1);
     }
 }
 
-static bool tcg_supports_guest_debug(void)
-{
-    return true;
-}
+static bool tcg_supports_guest_debug(void) { return true; }
 
 /* Translate GDB watchpoint type to a flags value for cpu_watchpoint_* */
-static inline int xlat_gdb_type(CPUState *cpu, int gdbtype)
+static inline int xlat_gdb_type(CPUState* cpu, int gdbtype)
 {
     static const int xlat[] = {
         [GDB_WATCHPOINT_WRITE]  = BP_GDB | BP_MEM_WRITE,
@@ -120,104 +113,91 @@ static inline int xlat_gdb_type(CPUState *cpu, int gdbtype)
 
     int cputype = xlat[gdbtype];
 
-    if (cpu->cc->gdb_stop_before_watchpoint) {
-        cputype |= BP_STOP_BEFORE_ACCESS;
-    }
+    if (cpu->cc->gdb_stop_before_watchpoint) { cputype |= BP_STOP_BEFORE_ACCESS; }
     return cputype;
 }
 
-static int tcg_insert_breakpoint(CPUState *cs, int type, vaddr addr, vaddr len)
+static int tcg_insert_breakpoint(CPUState* cs, int type, vaddr addr, vaddr len)
 {
-    CPUState *cpu;
-    int err = 0;
+    CPUState* cpu;
+    int       err = 0;
 
     switch (type) {
-    case GDB_BREAKPOINT_SW:
-    case GDB_BREAKPOINT_HW:
-        CPU_FOREACH(cpu) {
-            err = cpu_breakpoint_insert(cpu, addr, BP_GDB, NULL);
-            if (err) {
-                break;
+        case GDB_BREAKPOINT_SW:
+        case GDB_BREAKPOINT_HW:
+            CPU_FOREACH (cpu) {
+                err = cpu_breakpoint_insert(cpu, addr, BP_GDB, NULL);
+                if (err) { break; }
             }
-        }
-        return err;
-    case GDB_WATCHPOINT_WRITE:
-    case GDB_WATCHPOINT_READ:
-    case GDB_WATCHPOINT_ACCESS:
-        CPU_FOREACH(cpu) {
-            err = cpu_watchpoint_insert(cpu, addr, len,
-                                        xlat_gdb_type(cpu, type), NULL);
-            if (err) {
-                break;
+            return err;
+        case GDB_WATCHPOINT_WRITE:
+        case GDB_WATCHPOINT_READ:
+        case GDB_WATCHPOINT_ACCESS:
+            CPU_FOREACH (cpu) {
+                err = cpu_watchpoint_insert(cpu, addr, len, xlat_gdb_type(cpu, type), NULL);
+                if (err) { break; }
             }
-        }
-        return err;
-    default:
-        return -ENOSYS;
+            return err;
+        default: return -ENOSYS;
     }
 }
 
-static int tcg_remove_breakpoint(CPUState *cs, int type, vaddr addr, vaddr len)
+static int tcg_remove_breakpoint(CPUState* cs, int type, vaddr addr, vaddr len)
 {
-    CPUState *cpu;
-    int err = 0;
+    CPUState* cpu;
+    int       err = 0;
 
     switch (type) {
-    case GDB_BREAKPOINT_SW:
-    case GDB_BREAKPOINT_HW:
-        CPU_FOREACH(cpu) {
-            err = cpu_breakpoint_remove(cpu, addr, BP_GDB);
-            if (err) {
-                break;
+        case GDB_BREAKPOINT_SW:
+        case GDB_BREAKPOINT_HW:
+            CPU_FOREACH (cpu) {
+                err = cpu_breakpoint_remove(cpu, addr, BP_GDB);
+                if (err) { break; }
             }
-        }
-        return err;
-    case GDB_WATCHPOINT_WRITE:
-    case GDB_WATCHPOINT_READ:
-    case GDB_WATCHPOINT_ACCESS:
-        CPU_FOREACH(cpu) {
-            err = cpu_watchpoint_remove(cpu, addr, len,
-                                        xlat_gdb_type(cpu, type));
-            if (err) {
-                break;
+            return err;
+        case GDB_WATCHPOINT_WRITE:
+        case GDB_WATCHPOINT_READ:
+        case GDB_WATCHPOINT_ACCESS:
+            CPU_FOREACH (cpu) {
+                err = cpu_watchpoint_remove(cpu, addr, len, xlat_gdb_type(cpu, type));
+                if (err) { break; }
             }
-        }
-        return err;
-    default:
-        return -ENOSYS;
+            return err;
+        default: return -ENOSYS;
     }
 }
 
-static inline void tcg_remove_all_breakpoints(CPUState *cpu)
+static inline void tcg_remove_all_breakpoints(CPUState* cpu)
 {
     cpu_breakpoint_remove_all(cpu, BP_GDB);
     cpu_watchpoint_remove_all(cpu, BP_GDB);
 }
 
-static void tcg_accel_ops_init(AccelClass *ac)
+static void tcg_accel_ops_init(AccelClass* ac)
 {
-    AccelOpsClass *ops = ac->ops;
+    AccelOpsClass* ops = ac->ops;
 
     if (qemu_tcg_mttcg_enabled()) {
         ops->create_vcpu_thread = mttcg_start_vcpu_thread;
-        ops->kick_vcpu_thread = tcg_kick_vcpu_thread;
-        ops->handle_interrupt = tcg_handle_interrupt;
-    } else {
+        ops->kick_vcpu_thread   = tcg_kick_vcpu_thread;
+        ops->handle_interrupt   = tcg_handle_interrupt;
+    }
+    else {
         ops->create_vcpu_thread = rr_start_vcpu_thread;
-        ops->kick_vcpu_thread = rr_kick_vcpu_thread;
-        ops->handle_interrupt = tcg_handle_interrupt;
+        ops->kick_vcpu_thread   = rr_kick_vcpu_thread;
+        ops->handle_interrupt   = tcg_handle_interrupt;
     }
 
-    ops->cpu_reset_hold = tcg_cpu_reset_hold;
-    ops->supports_guest_debug = tcg_supports_guest_debug;
-    ops->insert_breakpoint = tcg_insert_breakpoint;
-    ops->remove_breakpoint = tcg_remove_breakpoint;
+    ops->cpu_reset_hold         = tcg_cpu_reset_hold;
+    ops->supports_guest_debug   = tcg_supports_guest_debug;
+    ops->insert_breakpoint      = tcg_insert_breakpoint;
+    ops->remove_breakpoint      = tcg_remove_breakpoint;
     ops->remove_all_breakpoints = tcg_remove_all_breakpoints;
 }
 
-static void tcg_accel_ops_class_init(ObjectClass *oc, const void *data)
+static void tcg_accel_ops_class_init(ObjectClass* oc, const void* data)
 {
-    AccelOpsClass *ops = ACCEL_OPS_CLASS(oc);
+    AccelOpsClass* ops = ACCEL_OPS_CLASS(oc);
 
     ops->ops_init = tcg_accel_ops_init;
 }
@@ -225,14 +205,11 @@ static void tcg_accel_ops_class_init(ObjectClass *oc, const void *data)
 static const TypeInfo tcg_accel_ops_type = {
     .name = ACCEL_OPS_NAME("tcg"),
 
-    .parent = TYPE_ACCEL_OPS,
+    .parent     = TYPE_ACCEL_OPS,
     .class_init = tcg_accel_ops_class_init,
-    .abstract = true,
+    .abstract   = true,
 };
 module_obj(ACCEL_OPS_NAME("tcg"));
 
-static void tcg_accel_ops_register_types(void)
-{
-    type_register_static(&tcg_accel_ops_type);
-}
+static void tcg_accel_ops_register_types(void) { type_register_static(&tcg_accel_ops_type); }
 type_init(tcg_accel_ops_register_types);

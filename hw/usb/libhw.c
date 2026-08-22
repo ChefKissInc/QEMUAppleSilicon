@@ -23,29 +23,23 @@
 #include "hw/usb.h"
 #include "system/dma.h"
 
-int usb_packet_map(USBPacket *p, QEMUSGList *sgl)
+int usb_packet_map(USBPacket* p, QEMUSGList* sgl)
 {
-    DMADirection dir = (p->pid == USB_TOKEN_IN) ?
-        DMA_DIRECTION_FROM_DEVICE : DMA_DIRECTION_TO_DEVICE;
-    void *mem;
-    int i;
+    DMADirection dir = (p->pid == USB_TOKEN_IN) ? DMA_DIRECTION_FROM_DEVICE : DMA_DIRECTION_TO_DEVICE;
+    void*        mem;
+    int          i;
 
     for (i = 0; i < sgl->nsg; i++) {
         dma_addr_t base = sgl->sg[i].base;
-        dma_addr_t len = sgl->sg[i].len;
+        dma_addr_t len  = sgl->sg[i].len;
 
         while (len) {
             dma_addr_t xlen = len;
-            mem = dma_memory_map(sgl->as, base, &xlen, dir,
-                                 MEMTXATTRS_UNSPECIFIED);
-            if (!mem) {
-                goto err;
-            }
-            if (xlen > len) {
-                xlen = len;
-            }
+            mem             = dma_memory_map(sgl->as, base, &xlen, dir, MEMTXATTRS_UNSPECIFIED);
+            if (!mem) { goto err; }
+            if (xlen > len) { xlen = len; }
             qemu_iovec_add(&p->iov, mem, xlen);
-            len -= xlen;
+            len  -= xlen;
             base += xlen;
         }
     }
@@ -56,15 +50,12 @@ err:
     return -1;
 }
 
-void usb_packet_unmap(USBPacket *p, QEMUSGList *sgl)
+void usb_packet_unmap(USBPacket* p, QEMUSGList* sgl)
 {
-    DMADirection dir = (p->pid == USB_TOKEN_IN) ?
-        DMA_DIRECTION_FROM_DEVICE : DMA_DIRECTION_TO_DEVICE;
-    int i;
+    DMADirection dir = (p->pid == USB_TOKEN_IN) ? DMA_DIRECTION_FROM_DEVICE : DMA_DIRECTION_TO_DEVICE;
+    int          i;
 
     for (i = 0; i < p->iov.niov; i++) {
-        dma_memory_unmap(sgl->as, p->iov.iov[i].iov_base,
-                         p->iov.iov[i].iov_len, dir,
-                         p->iov.iov[i].iov_len);
+        dma_memory_unmap(sgl->as, p->iov.iov[i].iov_base, p->iov.iov[i].iov_len, dir, p->iov.iov[i].iov_len);
     }
 }

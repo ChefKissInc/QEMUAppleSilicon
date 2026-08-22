@@ -33,65 +33,54 @@
 /* Maximum compressed block size */
 #define MAX_BLOCK_SIZE (64 * 1024 * 1024)
 
-typedef struct BDRVCloopState {
-    CoMutex lock;
-    uint32_t block_size;
-    uint32_t n_blocks;
-    uint64_t *offsets;
-    uint32_t sectors_per_block;
-    uint32_t current_block;
-    uint8_t *compressed_block;
-    uint8_t *uncompressed_block;
-    z_stream zstream;
+typedef struct BDRVCloopState
+{
+    CoMutex   lock;
+    uint32_t  block_size;
+    uint32_t  n_blocks;
+    uint64_t* offsets;
+    uint32_t  sectors_per_block;
+    uint32_t  current_block;
+    uint8_t*  compressed_block;
+    uint8_t*  uncompressed_block;
+    z_stream  zstream;
 } BDRVCloopState;
 
-static int cloop_probe(const uint8_t *buf, int buf_size, const char *filename)
+static int cloop_probe(const uint8_t* buf, int buf_size, const char* filename)
 {
-    const char *magic_version_2_0 = "#!/bin/sh\n"
-        "#V2.0 Format\n"
-        "modprobe cloop file=$0 && mount -r -t iso9660 /dev/cloop $1\n";
-    int length = strlen(magic_version_2_0);
-    if (length > buf_size) {
-        length = buf_size;
-    }
-    if (!memcmp(magic_version_2_0, buf, length)) {
-        return 2;
-    }
+    const char* magic_version_2_0 = "#!/bin/sh\n"
+                                    "#V2.0 Format\n"
+                                    "modprobe cloop file=$0 && mount -r -t iso9660 /dev/cloop $1\n";
+    int         length            = strlen(magic_version_2_0);
+    if (length > buf_size) { length = buf_size; }
+    if (!memcmp(magic_version_2_0, buf, length)) { return 2; }
     return 0;
 }
 
-static int cloop_open(BlockDriverState *bs, QDict *options, int flags,
-                      Error **errp)
+static int cloop_open(BlockDriverState* bs, QDict* options, int flags, Error** errp)
 {
-    BDRVCloopState *s = bs->opaque;
-    uint32_t offsets_size, max_compressed_block_size = 1, i;
-    int ret;
+    BDRVCloopState* s = bs->opaque;
+    uint32_t        offsets_size, max_compressed_block_size = 1, i;
+    int             ret;
 
     GLOBAL_STATE_CODE();
 
     bdrv_graph_rdlock_main_loop();
     ret = bdrv_apply_auto_read_only(bs, NULL, errp);
     bdrv_graph_rdunlock_main_loop();
-    if (ret < 0) {
-        return ret;
-    }
+    if (ret < 0) { return ret; }
 
     ret = bdrv_open_file_child(NULL, options, "file", bs, errp);
-    if (ret < 0) {
-        return ret;
-    }
+    if (ret < 0) { return ret; }
 
     GRAPH_RDLOCK_GUARD_MAINLOOP();
 
     /* read header */
     ret = bdrv_pread(bs->file, 128, 4, &s->block_size, 0);
-    if (ret < 0) {
-        return ret;
-    }
+    if (ret < 0) { return ret; }
     s->block_size = be32_to_cpu(s->block_size);
     if (s->block_size % 512) {
-        error_setg(errp, "block_size %" PRIu32 " must be a multiple of 512",
-                   s->block_size);
+        error_setg(errp, "block_size %" PRIu32 " must be a multiple of 512", s->block_size);
         return -EINVAL;
     }
     if (s->block_size == 0) {
@@ -104,24 +93,18 @@ static int cloop_open(BlockDriverState *bs, QDict *options, int flags,
      * need a buffer this big.
      */
     if (s->block_size > MAX_BLOCK_SIZE) {
-        error_setg(errp, "block_size %" PRIu32 " must be %u MB or less",
-                   s->block_size,
-                   MAX_BLOCK_SIZE / (1024 * 1024));
+        error_setg(errp, "block_size %" PRIu32 " must be %u MB or less", s->block_size, MAX_BLOCK_SIZE / (1024 * 1024));
         return -EINVAL;
     }
 
     ret = bdrv_pread(bs->file, 128 + 4, 4, &s->n_blocks, 0);
-    if (ret < 0) {
-        return ret;
-    }
+    if (ret < 0) { return ret; }
     s->n_blocks = be32_to_cpu(s->n_blocks);
 
     /* read offsets */
     if (s->n_blocks > (UINT32_MAX - 1) / sizeof(uint64_t)) {
         /* Prevent integer overflow */
-        error_setg(errp, "n_blocks %" PRIu32 " must be %zu or less",
-                   s->n_blocks,
-                   (UINT32_MAX - 1) / sizeof(uint64_t));
+        error_setg(errp, "n_blocks %" PRIu32 " must be %zu or less", s->n_blocks, (UINT32_MAX - 1) / sizeof(uint64_t));
         return -EINVAL;
     }
     offsets_size = (s->n_blocks + 1) * sizeof(uint64_t);
@@ -131,7 +114,7 @@ static int cloop_open(BlockDriverState *bs, QDict *options, int flags,
          * offsets[] limit supports 16 TB images at 256 KB block size.
          */
         error_setg(errp, "image requires too many offsets, "
-                   "try increasing block size");
+                         "try increasing block size");
         return -EINVAL;
     }
 
@@ -142,21 +125,19 @@ static int cloop_open(BlockDriverState *bs, QDict *options, int flags,
     }
 
     ret = bdrv_pread(bs->file, 128 + 4 + 4, offsets_size, s->offsets, 0);
-    if (ret < 0) {
-        goto fail;
-    }
+    if (ret < 0) { goto fail; }
 
     for (i = 0; i < s->n_blocks + 1; i++) {
         uint64_t size;
 
         s->offsets[i] = be64_to_cpu(s->offsets[i]);
-        if (i == 0) {
-            continue;
-        }
+        if (i == 0) { continue; }
 
         if (s->offsets[i] < s->offsets[i - 1]) {
-            error_setg(errp, "offsets not monotonically increasing at "
-                       "index %" PRIu32 ", image file is corrupt", i);
+            error_setg(errp,
+                       "offsets not monotonically increasing at "
+                       "index %" PRIu32 ", image file is corrupt",
+                       i);
             ret = -EINVAL;
             goto fail;
         }
@@ -169,15 +150,12 @@ static int cloop_open(BlockDriverState *bs, QDict *options, int flags,
          * ridiculous s->compressed_block allocation.
          */
         if (size > 2 * MAX_BLOCK_SIZE) {
-            error_setg(errp, "invalid compressed block size at index %" PRIu32
-                       ", image file is corrupt", i);
+            error_setg(errp, "invalid compressed block size at index %" PRIu32 ", image file is corrupt", i);
             ret = -EINVAL;
             goto fail;
         }
 
-        if (size > max_compressed_block_size) {
-            max_compressed_block_size = size;
-        }
+        if (size > max_compressed_block_size) { max_compressed_block_size = size; }
     }
 
     /* initialize zlib engine */
@@ -201,8 +179,8 @@ static int cloop_open(BlockDriverState *bs, QDict *options, int flags,
     }
     s->current_block = s->n_blocks;
 
-    s->sectors_per_block = s->block_size/512;
-    bs->total_sectors = s->n_blocks * s->sectors_per_block;
+    s->sectors_per_block = s->block_size / 512;
+    bs->total_sectors    = s->n_blocks * s->sectors_per_block;
     qemu_co_mutex_init(&s->lock);
     return 0;
 
@@ -213,52 +191,41 @@ fail:
     return ret;
 }
 
-static void cloop_refresh_limits(BlockDriverState *bs, Error **errp)
-{
-    bs->bl.request_alignment = BDRV_SECTOR_SIZE; /* No sub-sector I/O */
-}
+static void cloop_refresh_limits(BlockDriverState* bs, Error** errp)
+{ bs->bl.request_alignment = BDRV_SECTOR_SIZE; /* No sub-sector I/O */ }
 
-static int coroutine_fn GRAPH_RDLOCK
-cloop_read_block(BlockDriverState *bs, int block_num)
+static int coroutine_fn GRAPH_RDLOCK cloop_read_block(BlockDriverState* bs, int block_num)
 {
-    BDRVCloopState *s = bs->opaque;
+    BDRVCloopState* s = bs->opaque;
 
     if (s->current_block != block_num) {
-        int ret;
+        int      ret;
         uint32_t bytes = s->offsets[block_num + 1] - s->offsets[block_num];
 
-        ret = bdrv_co_pread(bs->file, s->offsets[block_num], bytes,
-                            s->compressed_block, 0);
-        if (ret < 0) {
-            return -1;
-        }
+        ret = bdrv_co_pread(bs->file, s->offsets[block_num], bytes, s->compressed_block, 0);
+        if (ret < 0) { return -1; }
 
-        s->zstream.next_in = s->compressed_block;
-        s->zstream.avail_in = bytes;
-        s->zstream.next_out = s->uncompressed_block;
+        s->zstream.next_in   = s->compressed_block;
+        s->zstream.avail_in  = bytes;
+        s->zstream.next_out  = s->uncompressed_block;
         s->zstream.avail_out = s->block_size;
-        ret = inflateReset(&s->zstream);
-        if (ret != Z_OK) {
-            return -1;
-        }
+        ret                  = inflateReset(&s->zstream);
+        if (ret != Z_OK) { return -1; }
         ret = inflate(&s->zstream, Z_FINISH);
-        if (ret != Z_STREAM_END || s->zstream.total_out != s->block_size) {
-            return -1;
-        }
+        if (ret != Z_STREAM_END || s->zstream.total_out != s->block_size) { return -1; }
 
         s->current_block = block_num;
     }
     return 0;
 }
 
-static int coroutine_fn GRAPH_RDLOCK
-cloop_co_preadv(BlockDriverState *bs, int64_t offset, int64_t bytes,
-                QEMUIOVector *qiov, BdrvRequestFlags flags)
+static int coroutine_fn GRAPH_RDLOCK cloop_co_preadv(BlockDriverState* bs, int64_t offset, int64_t bytes,
+                                                     QEMUIOVector* qiov, BdrvRequestFlags flags)
 {
-    BDRVCloopState *s = bs->opaque;
-    uint64_t sector_num = offset >> BDRV_SECTOR_BITS;
-    int nb_sectors = bytes >> BDRV_SECTOR_BITS;
-    int ret, i;
+    BDRVCloopState* s          = bs->opaque;
+    uint64_t        sector_num = offset >> BDRV_SECTOR_BITS;
+    int             nb_sectors = bytes >> BDRV_SECTOR_BITS;
+    int             ret, i;
 
     assert(QEMU_IS_ALIGNED(offset, BDRV_SECTOR_SIZE));
     assert(QEMU_IS_ALIGNED(bytes, BDRV_SECTOR_SIZE));
@@ -266,10 +233,9 @@ cloop_co_preadv(BlockDriverState *bs, int64_t offset, int64_t bytes,
     qemu_co_mutex_lock(&s->lock);
 
     for (i = 0; i < nb_sectors; i++) {
-        void *data;
-        uint32_t sector_offset_in_block =
-            ((sector_num + i) % s->sectors_per_block),
-            block_num = (sector_num + i) / s->sectors_per_block;
+        void*    data;
+        uint32_t sector_offset_in_block = ((sector_num + i) % s->sectors_per_block),
+                 block_num              = (sector_num + i) / s->sectors_per_block;
         if (cloop_read_block(bs, block_num) != 0) {
             ret = -EIO;
             goto fail;
@@ -286,9 +252,9 @@ fail:
     return ret;
 }
 
-static void cloop_close(BlockDriverState *bs)
+static void cloop_close(BlockDriverState* bs)
 {
-    BDRVCloopState *s = bs->opaque;
+    BDRVCloopState* s = bs->opaque;
     g_free(s->offsets);
     g_free(s->compressed_block);
     g_free(s->uncompressed_block);
@@ -296,20 +262,17 @@ static void cloop_close(BlockDriverState *bs)
 }
 
 static BlockDriver bdrv_cloop = {
-    .format_name    = "cloop",
-    .instance_size  = sizeof(BDRVCloopState),
-    .bdrv_probe     = cloop_probe,
-    .bdrv_open      = cloop_open,
+    .format_name         = "cloop",
+    .instance_size       = sizeof(BDRVCloopState),
+    .bdrv_probe          = cloop_probe,
+    .bdrv_open           = cloop_open,
     .bdrv_child_perm     = bdrv_default_perms,
     .bdrv_refresh_limits = cloop_refresh_limits,
-    .bdrv_co_preadv = cloop_co_preadv,
-    .bdrv_close     = cloop_close,
-    .is_format      = true,
+    .bdrv_co_preadv      = cloop_co_preadv,
+    .bdrv_close          = cloop_close,
+    .is_format           = true,
 };
 
-static void bdrv_cloop_init(void)
-{
-    bdrv_register(&bdrv_cloop);
-}
+static void bdrv_cloop_init(void) { bdrv_register(&bdrv_cloop); }
 
 block_init(bdrv_cloop_init);

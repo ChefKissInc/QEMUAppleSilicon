@@ -25,10 +25,7 @@
 
 #define TYPE_QAUTHZ_SIMPLE "authz-simple"
 
-OBJECT_DECLARE_SIMPLE_TYPE(QAuthZSimple,
-                           QAUTHZ_SIMPLE)
-
-
+OBJECT_DECLARE_SIMPLE_TYPE(QAuthZSimple, QAUTHZ_SIMPLE)
 
 /**
  * QAuthZSimple:
@@ -54,15 +51,11 @@ OBJECT_DECLARE_SIMPLE_TYPE(QAuthZSimple,
  *   -object authz-simple,id=authz0,identity=fred
  *
  */
-struct QAuthZSimple {
+struct QAuthZSimple
+{
     QAuthZ parent_obj;
 
-    char *identity;
+    char* identity;
 };
 
-
-
-
-QAuthZSimple *qauthz_simple_new(const char *id,
-                                const char *identity,
-                                Error **errp);
+QAuthZSimple* qauthz_simple_new(const char* id, const char* identity, Error** errp);

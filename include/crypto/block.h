@@ -28,24 +28,13 @@ typedef struct QCryptoBlock QCryptoBlock;
 /* See also QCryptoBlockFormat, QCryptoBlockCreateOptions
  * and QCryptoBlockOpenOptions in qapi/crypto.json */
 
-typedef int (*QCryptoBlockReadFunc)(QCryptoBlock *block,
-                                    size_t offset,
-                                    uint8_t *buf,
-                                    size_t buflen,
-                                    void *opaque,
-                                    Error **errp);
+typedef int (*QCryptoBlockReadFunc)(QCryptoBlock* block, size_t offset, uint8_t* buf, size_t buflen, void* opaque,
+                                    Error** errp);
 
-typedef int (*QCryptoBlockInitFunc)(QCryptoBlock *block,
-                                    size_t headerlen,
-                                    void *opaque,
-                                    Error **errp);
+typedef int (*QCryptoBlockInitFunc)(QCryptoBlock* block, size_t headerlen, void* opaque, Error** errp);
 
-typedef int (*QCryptoBlockWriteFunc)(QCryptoBlock *block,
-                                     size_t offset,
-                                     const uint8_t *buf,
-                                     size_t buflen,
-                                     void *opaque,
-                                     Error **errp);
+typedef int (*QCryptoBlockWriteFunc)(QCryptoBlock* block, size_t offset, const uint8_t* buf, size_t buflen,
+                                     void* opaque, Error** errp);
 
 /**
  * qcrypto_block_has_format:
@@ -59,12 +48,11 @@ typedef int (*QCryptoBlockWriteFunc)(QCryptoBlock *block,
  *
  * Returns: true if the data in @buf matches @format
  */
-bool qcrypto_block_has_format(QCryptoBlockFormat format,
-                              const uint8_t *buf,
-                              size_t buflen);
+bool qcrypto_block_has_format(QCryptoBlockFormat format, const uint8_t* buf, size_t buflen);
 
-typedef enum {
-    QCRYPTO_BLOCK_OPEN_NO_IO = (1 << 0),
+typedef enum
+{
+    QCRYPTO_BLOCK_OPEN_NO_IO    = (1 << 0),
     QCRYPTO_BLOCK_OPEN_DETACHED = (1 << 1),
 } QCryptoBlockOpenFlags;
 
@@ -106,14 +94,11 @@ typedef enum {
  *
  * Returns: a block encryption format, or NULL on error
  */
-QCryptoBlock *qcrypto_block_open(QCryptoBlockOpenOptions *options,
-                                 const char *optprefix,
-                                 QCryptoBlockReadFunc readfunc,
-                                 void *opaque,
-                                 unsigned int flags,
-                                 Error **errp);
+QCryptoBlock* qcrypto_block_open(QCryptoBlockOpenOptions* options, const char* optprefix, QCryptoBlockReadFunc readfunc,
+                                 void* opaque, unsigned int flags, Error** errp);
 
-typedef enum {
+typedef enum
+{
     QCRYPTO_BLOCK_CREATE_DETACHED = (1 << 0),
 } QCryptoBlockCreateFlags;
 
@@ -149,13 +134,9 @@ typedef enum {
  *
  * Returns: a block encryption format, or NULL on error
  */
-QCryptoBlock *qcrypto_block_create(QCryptoBlockCreateOptions *options,
-                                   const char *optprefix,
-                                   QCryptoBlockInitFunc initfunc,
-                                   QCryptoBlockWriteFunc writefunc,
-                                   void *opaque,
-                                   unsigned int flags,
-                                   Error **errp);
+QCryptoBlock* qcrypto_block_create(QCryptoBlockCreateOptions* options, const char* optprefix,
+                                   QCryptoBlockInitFunc initfunc, QCryptoBlockWriteFunc writefunc, void* opaque,
+                                   unsigned int flags, Error** errp);
 
 /**
  * qcrypto_block_amend_options:
@@ -171,14 +152,8 @@ QCryptoBlock *qcrypto_block_create(QCryptoBlockCreateOptions *options,
  * Changes the crypto options of the encryption format
  *
  */
-int qcrypto_block_amend_options(QCryptoBlock *block,
-                                QCryptoBlockReadFunc readfunc,
-                                QCryptoBlockWriteFunc writefunc,
-                                void *opaque,
-                                QCryptoBlockAmendOptions *options,
-                                bool force,
-                                Error **errp);
-
+int qcrypto_block_amend_options(QCryptoBlock* block, QCryptoBlockReadFunc readfunc, QCryptoBlockWriteFunc writefunc,
+                                void* opaque, QCryptoBlockAmendOptions* options, bool force, Error** errp);
 
 /**
  * qcrypto_block_calculate_payload_offset:
@@ -193,12 +168,8 @@ int qcrypto_block_amend_options(QCryptoBlock *block,
  *
  * Returns: true on success, false on error
  */
-bool
-qcrypto_block_calculate_payload_offset(QCryptoBlockCreateOptions *create_opts,
-                                       const char *optprefix,
-                                       size_t *len,
-                                       Error **errp);
-
+bool qcrypto_block_calculate_payload_offset(QCryptoBlockCreateOptions* create_opts, const char* optprefix, size_t* len,
+                                            Error** errp);
 
 /**
  * qcrypto_block_get_info:
@@ -212,8 +183,7 @@ qcrypto_block_calculate_payload_offset(QCryptoBlockCreateOptions *create_opts,
  *
  * Returns: a block encryption info object, or NULL on error
  */
-QCryptoBlockInfo *qcrypto_block_get_info(QCryptoBlock *block,
-                                         Error **errp);
+QCryptoBlockInfo* qcrypto_block_get_info(QCryptoBlock* block, Error** errp);
 
 /**
  * @qcrypto_block_decrypt:
@@ -229,11 +199,7 @@ QCryptoBlockInfo *qcrypto_block_get_info(QCryptoBlock *block,
  *
  * Returns 0 on success, -1 on failure
  */
-int qcrypto_block_decrypt(QCryptoBlock *block,
-                          uint64_t offset,
-                          uint8_t *buf,
-                          size_t len,
-                          Error **errp);
+int qcrypto_block_decrypt(QCryptoBlock* block, uint64_t offset, uint8_t* buf, size_t len, Error** errp);
 
 /**
  * @qcrypto_block_encrypt:
@@ -249,11 +215,7 @@ int qcrypto_block_decrypt(QCryptoBlock *block,
  *
  * Returns 0 on success, -1 on failure
  */
-int qcrypto_block_encrypt(QCryptoBlock *block,
-                          uint64_t offset,
-                          uint8_t *buf,
-                          size_t len,
-                          Error **errp);
+int qcrypto_block_encrypt(QCryptoBlock* block, uint64_t offset, uint8_t* buf, size_t len, Error** errp);
 
 /**
  * qcrypto_block_get_cipher:
@@ -263,7 +225,7 @@ int qcrypto_block_encrypt(QCryptoBlock *block,
  *
  * Returns: the cipher object
  */
-QCryptoCipher *qcrypto_block_get_cipher(QCryptoBlock *block);
+QCryptoCipher* qcrypto_block_get_cipher(QCryptoBlock* block);
 
 /**
  * qcrypto_block_get_ivgen:
@@ -274,8 +236,7 @@ QCryptoCipher *qcrypto_block_get_cipher(QCryptoBlock *block);
  *
  * Returns: the IV generator object
  */
-QCryptoIVGen *qcrypto_block_get_ivgen(QCryptoBlock *block);
-
+QCryptoIVGen* qcrypto_block_get_ivgen(QCryptoBlock* block);
 
 /**
  * qcrypto_block_get_kdf_hash:
@@ -286,7 +247,7 @@ QCryptoIVGen *qcrypto_block_get_ivgen(QCryptoBlock *block);
  *
  * Returns: the hash algorithm
  */
-QCryptoHashAlgo qcrypto_block_get_kdf_hash(QCryptoBlock *block);
+QCryptoHashAlgo qcrypto_block_get_kdf_hash(QCryptoBlock* block);
 
 /**
  * qcrypto_block_get_payload_offset:
@@ -297,7 +258,7 @@ QCryptoHashAlgo qcrypto_block_get_kdf_hash(QCryptoBlock *block);
  *
  * Returns: the payload offset in bytes
  */
-uint64_t qcrypto_block_get_payload_offset(QCryptoBlock *block);
+uint64_t qcrypto_block_get_payload_offset(QCryptoBlock* block);
 
 /**
  * qcrypto_block_get_sector_size:
@@ -312,7 +273,7 @@ uint64_t qcrypto_block_get_payload_offset(QCryptoBlock *block);
  *
  * Returns: the sector in bytes
  */
-uint64_t qcrypto_block_get_sector_size(QCryptoBlock *block);
+uint64_t qcrypto_block_get_sector_size(QCryptoBlock* block);
 
 /**
  * qcrypto_block_free:
@@ -321,6 +282,6 @@ uint64_t qcrypto_block_get_sector_size(QCryptoBlock *block);
  * Release all resources associated with the encryption
  * object
  */
-void qcrypto_block_free(QCryptoBlock *block);
+void qcrypto_block_free(QCryptoBlock* block);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoBlock, qcrypto_block_free)

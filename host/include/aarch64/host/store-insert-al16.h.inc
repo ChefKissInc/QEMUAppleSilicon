@@ -15,8 +15,7 @@
  *
  * Atomically store @val to @p masked by @msk.
  */
-static inline void ATTRIBUTE_ATOMIC128_OPT
-store_atom_insert_al16(Int128 *ps, Int128 val, Int128 msk)
+static inline void ATTRIBUTE_ATOMIC128_OPT store_atom_insert_al16(Int128* ps, Int128 val, Int128 msk)
 {
     /*
      * GCC only implements __sync* primitives for int128 on aarch64.

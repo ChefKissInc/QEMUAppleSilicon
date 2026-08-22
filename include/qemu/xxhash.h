@@ -35,11 +35,11 @@
 
 #include "qemu/bitops.h"
 
-#define PRIME32_1   2654435761U
-#define PRIME32_2   2246822519U
-#define PRIME32_3   3266489917U
-#define PRIME32_4    668265263U
-#define PRIME32_5    374761393U
+#define PRIME32_1 2654435761U
+#define PRIME32_2 2246822519U
+#define PRIME32_3 3266489917U
+#define PRIME32_4 668265263U
+#define PRIME32_5 374761393U
 
 #define QEMU_XXHASH_SEED 1
 
@@ -47,38 +47,37 @@
  * xxhash32, customized for input variables that are not guaranteed to be
  * contiguous in memory.
  */
-static inline uint32_t qemu_xxhash8(uint64_t ab, uint64_t cd, uint64_t ef,
-                                    uint32_t g, uint32_t h)
+static inline uint32_t qemu_xxhash8(uint64_t ab, uint64_t cd, uint64_t ef, uint32_t g, uint32_t h)
 {
     uint32_t v1 = QEMU_XXHASH_SEED + PRIME32_1 + PRIME32_2;
     uint32_t v2 = QEMU_XXHASH_SEED + PRIME32_2;
     uint32_t v3 = QEMU_XXHASH_SEED + 0;
     uint32_t v4 = QEMU_XXHASH_SEED - PRIME32_1;
-    uint32_t a = ab;
-    uint32_t b = ab >> 32;
-    uint32_t c = cd;
-    uint32_t d = cd >> 32;
-    uint32_t e = ef;
-    uint32_t f = ef >> 32;
+    uint32_t a  = ab;
+    uint32_t b  = ab >> 32;
+    uint32_t c  = cd;
+    uint32_t d  = cd >> 32;
+    uint32_t e  = ef;
+    uint32_t f  = ef >> 32;
     uint32_t h32;
 
     v1 += a * PRIME32_2;
-    v1 = rol32(v1, 13);
+    v1  = rol32(v1, 13);
     v1 *= PRIME32_1;
 
     v2 += b * PRIME32_2;
-    v2 = rol32(v2, 13);
+    v2  = rol32(v2, 13);
     v2 *= PRIME32_1;
 
     v3 += c * PRIME32_2;
-    v3 = rol32(v3, 13);
+    v3  = rol32(v3, 13);
     v3 *= PRIME32_1;
 
     v4 += d * PRIME32_2;
-    v4 = rol32(v4, 13);
+    v4  = rol32(v4, 13);
     v4 *= PRIME32_1;
 
-    h32 = rol32(v1, 1) + rol32(v2, 7) + rol32(v3, 12) + rol32(v4, 18);
+    h32  = rol32(v1, 1) + rol32(v2, 7) + rol32(v3, 12) + rol32(v4, 18);
     h32 += 28;
 
     h32 += e * PRIME32_3;
@@ -102,32 +101,17 @@ static inline uint32_t qemu_xxhash8(uint64_t ab, uint64_t cd, uint64_t ef,
     return h32;
 }
 
-static inline uint32_t qemu_xxhash2(uint64_t ab)
-{
-    return qemu_xxhash8(ab, 0, 0, 0, 0);
-}
+static inline uint32_t qemu_xxhash2(uint64_t ab) { return qemu_xxhash8(ab, 0, 0, 0, 0); }
 
-static inline uint32_t qemu_xxhash4(uint64_t ab, uint64_t cd)
-{
-    return qemu_xxhash8(ab, cd, 0, 0, 0);
-}
+static inline uint32_t qemu_xxhash4(uint64_t ab, uint64_t cd) { return qemu_xxhash8(ab, cd, 0, 0, 0); }
 
-static inline uint32_t qemu_xxhash5(uint64_t ab, uint64_t cd, uint32_t e)
-{
-    return qemu_xxhash8(ab, cd, 0, e, 0);
-}
+static inline uint32_t qemu_xxhash5(uint64_t ab, uint64_t cd, uint32_t e) { return qemu_xxhash8(ab, cd, 0, e, 0); }
 
-static inline uint32_t qemu_xxhash6(uint64_t ab, uint64_t cd, uint32_t e,
-                                    uint32_t f)
-{
-    return qemu_xxhash8(ab, cd, 0, e, f);
-}
+static inline uint32_t qemu_xxhash6(uint64_t ab, uint64_t cd, uint32_t e, uint32_t f)
+{ return qemu_xxhash8(ab, cd, 0, e, f); }
 
-static inline uint32_t qemu_xxhash7(uint64_t ab, uint64_t cd, uint64_t ef,
-                                    uint32_t g)
-{
-    return qemu_xxhash8(ab, cd, ef, g, 0);
-}
+static inline uint32_t qemu_xxhash7(uint64_t ab, uint64_t cd, uint64_t ef, uint32_t g)
+{ return qemu_xxhash8(ab, cd, ef, g, 0); }
 
 /*
  * Component parts of the XXH64 algorithm from
@@ -171,24 +155,19 @@ static inline uint32_t qemu_xxhash7(uint64_t ab, uint64_t cd, uint64_t ef,
  * Exposing the pieces instead allows for simplified usage when
  * the length is a known constant and the inputs are in registers.
  */
-#define XXH_PRIME64_1   0x9E3779B185EBCA87ULL
-#define XXH_PRIME64_2   0xC2B2AE3D27D4EB4FULL
-#define XXH_PRIME64_3   0x165667B19E3779F9ULL
-#define XXH_PRIME64_4   0x85EBCA77C2B2AE63ULL
-#define XXH_PRIME64_5   0x27D4EB2F165667C5ULL
+#define XXH_PRIME64_1 0x9E3779B185EBCA87ULL
+#define XXH_PRIME64_2 0xC2B2AE3D27D4EB4FULL
+#define XXH_PRIME64_3 0x165667B19E3779F9ULL
+#define XXH_PRIME64_4 0x85EBCA77C2B2AE63ULL
+#define XXH_PRIME64_5 0x27D4EB2F165667C5ULL
 
 static inline uint64_t XXH64_round(uint64_t acc, uint64_t input)
-{
-    return rol64(acc + input * XXH_PRIME64_2, 31) * XXH_PRIME64_1;
-}
+{ return rol64(acc + input * XXH_PRIME64_2, 31) * XXH_PRIME64_1; }
 
 static inline uint64_t XXH64_mergeround(uint64_t acc, uint64_t val)
-{
-    return (acc ^ XXH64_round(0, val)) * XXH_PRIME64_1 + XXH_PRIME64_4;
-}
+{ return (acc ^ XXH64_round(0, val)) * XXH_PRIME64_1 + XXH_PRIME64_4; }
 
-static inline uint64_t XXH64_mergerounds(uint64_t v1, uint64_t v2,
-                                         uint64_t v3, uint64_t v4)
+static inline uint64_t XXH64_mergerounds(uint64_t v1, uint64_t v2, uint64_t v3, uint64_t v4)
 {
     uint64_t h64;
 
@@ -211,8 +190,7 @@ static inline uint64_t XXH64_avalanche(uint64_t h64)
     return h64;
 }
 
-static inline uint64_t qemu_xxhash64_4(uint64_t a, uint64_t b,
-                                       uint64_t c, uint64_t d)
+static inline uint64_t qemu_xxhash64_4(uint64_t a, uint64_t b, uint64_t c, uint64_t d)
 {
     uint64_t v1 = QEMU_XXHASH_SEED + XXH_PRIME64_1 + XXH_PRIME64_2;
     uint64_t v2 = QEMU_XXHASH_SEED + XXH_PRIME64_2;

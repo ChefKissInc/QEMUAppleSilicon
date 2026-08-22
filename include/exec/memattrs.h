@@ -21,20 +21,21 @@
  * confusion if different parts of QEMU used the same bit for
  * different semantics.
  */
-typedef struct MemTxAttrs {
+typedef struct MemTxAttrs
+{
     /*
      * ARM/AMBA: TrustZone Secure access
      * x86: System Management Mode access
      */
-    unsigned int secure:1;
+    unsigned int secure : 1;
     /*
      * ARM: ArmSecuritySpace.  This partially overlaps secure, but it is
      * easier to have both fields to assist code that does not understand
      * ARMv9 RME, or no specific knowledge of ARM at all (e.g. pflash).
      */
-    unsigned int space:2;
+    unsigned int space : 2;
     /* Memory access is usermode (unprivileged) */
-    unsigned int user:1;
+    unsigned int user : 1;
     /*
      * Bus interconnect and peripherals can access anything (memories,
      * devices) by default. By setting the 'memory' bit, bus transaction
@@ -42,19 +43,19 @@ typedef struct MemTxAttrs {
      * versus devices. Access to devices will be logged and rejected
      * (see MEMTX_ACCESS_ERROR).
      */
-    unsigned int memory:1;
+    unsigned int memory : 1;
     /* Debug access that can even write to ROM. */
-    unsigned int debug:1;
+    unsigned int debug : 1;
     /* Requester ID (for MSI for example) */
-    unsigned int requester_id:16;
+    unsigned int requester_id : 16;
 
     /*
      * PID (PCI PASID) support: Limited to 8 bits process identifier.
      */
-    unsigned int pid:8;
+    unsigned int pid : 8;
 
     /* PCI - IOMMU operations, see PCIAddressType */
-    unsigned int address_type:1;
+    unsigned int address_type : 1;
 
     /*
      * Bus masters which don't specify any attributes will get this
@@ -65,7 +66,7 @@ typedef struct MemTxAttrs {
      */
     bool unspecified;
 
-    uint8_t _reserved1;
+    uint8_t  _reserved1;
     uint16_t _reserved2;
 } MemTxAttrs;
 
@@ -76,15 +77,15 @@ QEMU_BUILD_BUG_ON(sizeof(MemTxAttrs) > 8);
  * (so that we can distinguish "all attributes deliberately clear"
  * from "didn't specify" if necessary).
  */
-#define MEMTXATTRS_UNSPECIFIED ((MemTxAttrs) { .unspecified = true })
+#define MEMTXATTRS_UNSPECIFIED ((MemTxAttrs){.unspecified = true})
 
 /* New-style MMIO accessors can indicate that the transaction failed.
  * A zero (MEMTX_OK) response means success; anything else is a failure
  * of some kind. The memory subsystem will bitwise-OR together results
  * if it is synthesizing an operation from multiple smaller accesses.
  */
-#define MEMTX_OK 0
-#define MEMTX_ERROR             (1U << 0) /* device returned an error */
-#define MEMTX_DECODE_ERROR      (1U << 1) /* nothing at that address */
-#define MEMTX_ACCESS_ERROR      (1U << 2) /* access denied */
+#define MEMTX_OK           0
+#define MEMTX_ERROR        (1U << 0) /* device returned an error */
+#define MEMTX_DECODE_ERROR (1U << 1) /* nothing at that address */
+#define MEMTX_ACCESS_ERROR (1U << 2) /* access denied */
 typedef uint32_t MemTxResult;

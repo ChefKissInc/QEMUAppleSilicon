@@ -21,30 +21,26 @@
 #include "qemu/bswap.h"
 #include "qemu/error-report.h"
 
-CKPatcherRange *ck_patcher_range_from_ptr(const char *name, void *ptr,
-                                          vaddr size)
+CKPatcherRange* ck_patcher_range_from_ptr(const char* name, void* ptr, vaddr size)
 {
-    CKPatcherRange *range = g_new0(CKPatcherRange, 1);
-    range->addr = 0x0;
-    range->length = size;
-    range->ptr = ptr;
-    range->name = name;
+    CKPatcherRange* range = g_new0(CKPatcherRange, 1);
+    range->addr           = 0x0;
+    range->length         = size;
+    range->ptr            = ptr;
+    range->name           = name;
     return range;
 }
 
-bool ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
-                                  const uint8_t *pattern, const uint8_t *mask,
-                                  size_t len, size_t align, void *ctx,
-                                  CKPatcherCallback callback)
+bool ck_patcher_find_callback_ctx(CKPatcherRange* range, const char* name, const uint8_t* pattern, const uint8_t* mask,
+                                  size_t len, size_t align, void* ctx, CKPatcherCallback callback)
 {
-    size_t i;
-    size_t match_i;
-    uint8_t *match;
-    bool found;
+    size_t   i;
+    size_t   match_i;
+    uint8_t* match;
+    bool     found;
 
-    if (align == 0) {
-        align = 1;
-    } else {
+    if (align == 0) { align = 1; }
+    else {
         assert_cmpuint(len % align, ==, 0);
     }
 
@@ -68,10 +64,9 @@ bool ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
                 return true;
             }
         }
-    } else {
-        for (i = 0; i < len; ++i) {
-            assert_cmphex(pattern[i] & mask[i], ==, pattern[i]);
-        }
+    }
+    else {
+        for (i = 0; i < len; ++i) { assert_cmphex(pattern[i] & mask[i], ==, pattern[i]); }
 
         for (i = 0; i < range->length; i += align) {
             found = true;
@@ -93,45 +88,36 @@ bool ck_patcher_find_callback_ctx(CKPatcherRange *range, const char *name,
     return false;
 }
 
-bool ck_patcher_find_callback(CKPatcherRange *range, const char *name,
-                              const uint8_t *pattern, const uint8_t *mask,
-                              size_t len, size_t align,
-                              CKPatcherCallback callback)
-{
-    return ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align,
-                                        NULL, callback);
-}
+bool ck_patcher_find_callback(CKPatcherRange* range, const char* name, const uint8_t* pattern, const uint8_t* mask,
+                              size_t len, size_t align, CKPatcherCallback callback)
+{ return ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align, NULL, callback); }
 
-typedef struct {
-    const uint8_t *replacement;
-    const uint8_t *mask;
-    size_t offset;
-    size_t len;
+typedef struct
+{
+    const uint8_t* replacement;
+    const uint8_t* mask;
+    size_t         offset;
+    size_t         len;
 } CKPatcherFindReplaceContext;
 
-static bool ck_patcher_find_replace_callback(void *ctx, uint8_t *buffer)
+static bool ck_patcher_find_replace_callback(void* ctx, uint8_t* buffer)
 {
-    CKPatcherFindReplaceContext *repl_ctx;
-    size_t i;
+    CKPatcherFindReplaceContext* repl_ctx;
+    size_t                       i;
 
     repl_ctx = ctx;
-    if (repl_ctx->mask == NULL) {
-        memcpy(buffer + repl_ctx->offset, repl_ctx->replacement, repl_ctx->len);
-    } else {
+    if (repl_ctx->mask == NULL) { memcpy(buffer + repl_ctx->offset, repl_ctx->replacement, repl_ctx->len); }
+    else {
         for (i = 0; i < repl_ctx->len; ++i) {
             buffer[repl_ctx->offset + i] =
-                (buffer[repl_ctx->offset + i] & repl_ctx->mask[i]) |
-                repl_ctx->replacement[i];
+                (buffer[repl_ctx->offset + i] & repl_ctx->mask[i]) | repl_ctx->replacement[i];
         }
     }
     return true;
 }
 
-bool ck_patcher_find_replace(CKPatcherRange *range, const char *name,
-                             const uint8_t *pattern, const uint8_t *mask,
-                             size_t len, size_t align,
-                             const uint8_t *replacement,
-                             const uint8_t *replacement_mask,
+bool ck_patcher_find_replace(CKPatcherRange* range, const char* name, const uint8_t* pattern, const uint8_t* mask,
+                             size_t len, size_t align, const uint8_t* replacement, const uint8_t* replacement_mask,
                              size_t replace_off, size_t replace_len)
 {
     CKPatcherFindReplaceContext ctx;
@@ -139,25 +125,21 @@ bool ck_patcher_find_replace(CKPatcherRange *range, const char *name,
     assert_cmphex(replace_off + replace_len, <=, len);
 
     ctx.replacement = replacement;
-    ctx.mask = replacement_mask;
-    ctx.offset = replace_off;
-    ctx.len = replace_len;
+    ctx.mask        = replacement_mask;
+    ctx.offset      = replace_off;
+    ctx.len         = replace_len;
 
-    return ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align,
-                                        &ctx, ck_patcher_find_replace_callback);
+    return ck_patcher_find_callback_ctx(range, name, pattern, mask, len, align, &ctx, ck_patcher_find_replace_callback);
 }
 
-void *ck_patcher_find_next_insn(void *buffer, uint32_t num, uint32_t insn,
-                                uint32_t mask, uint32_t skip)
+void* ck_patcher_find_next_insn(void* buffer, uint32_t num, uint32_t insn, uint32_t mask, uint32_t skip)
 {
     assert_cmphex(insn & mask, ==, insn);
 
     for (uint32_t i = 0; i < num; ++i) {
-        uint8_t *cur = buffer + (i * sizeof(uint32_t));
+        uint8_t* cur = buffer + (i * sizeof(uint32_t));
         if ((ldl_le_p(cur) & mask) == insn) {
-            if (skip == 0) {
-                return cur;
-            }
+            if (skip == 0) { return cur; }
             --skip;
         }
     }
@@ -165,17 +147,14 @@ void *ck_patcher_find_next_insn(void *buffer, uint32_t num, uint32_t insn,
     return NULL;
 }
 
-void *ck_patcher_find_prev_insn(void *buffer, uint32_t num, uint32_t insn,
-                                uint32_t mask, uint32_t skip)
+void* ck_patcher_find_prev_insn(void* buffer, uint32_t num, uint32_t insn, uint32_t mask, uint32_t skip)
 {
     assert_cmphex(insn & mask, ==, insn);
 
     for (uint32_t i = 0; i < num; ++i) {
-        void *cur = buffer - (i * sizeof(uint32_t));
+        void* cur = buffer - (i * sizeof(uint32_t));
         if ((ldl_le_p(cur) & mask) == insn) {
-            if (skip == 0) {
-                return cur;
-            }
+            if (skip == 0) { return cur; }
             --skip;
         }
     }

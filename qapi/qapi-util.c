@@ -4,7 +4,7 @@
  * Authors:
  *  Hu Tao       <hutao@cn.fujitsu.com>
  *  Peter Lieven <pl@kamp.de>
- * 
+ *
  * This work is licensed under the terms of the GNU LGPL, version 2.1 or later.
  * See the COPYING.LIB file in the top-level directory.
  *
@@ -18,91 +18,70 @@
 
 CompatPolicy compat_policy;
 
-static bool compat_policy_input_ok1(const char *adjective,
-                                    CompatPolicyInput policy,
-                                    ErrorClass error_class,
-                                    const char *kind, const char *name,
-                                    Error **errp)
+static bool compat_policy_input_ok1(const char* adjective, CompatPolicyInput policy, ErrorClass error_class,
+                                    const char* kind, const char* name, Error** errp)
 {
     switch (policy) {
-    case COMPAT_POLICY_INPUT_ACCEPT:
-        return true;
-    case COMPAT_POLICY_INPUT_REJECT:
-        error_set(errp, error_class, "%s %s %s disabled by policy",
-                  adjective, kind, name);
-        return false;
-    case COMPAT_POLICY_INPUT_CRASH:
-    default:
-        abort();
+        case COMPAT_POLICY_INPUT_ACCEPT: return true;
+        case COMPAT_POLICY_INPUT_REJECT:
+            error_set(errp, error_class, "%s %s %s disabled by policy", adjective, kind, name);
+            return false;
+        case COMPAT_POLICY_INPUT_CRASH:
+        default                       : abort();
     }
 }
 
-bool compat_policy_input_ok(uint64_t features,
-                            const CompatPolicy *policy,
-                            ErrorClass error_class,
-                            const char *kind, const char *name,
-                            Error **errp)
+bool compat_policy_input_ok(uint64_t features, const CompatPolicy* policy, ErrorClass error_class, const char* kind,
+                            const char* name, Error** errp)
 {
     if ((features & 1u << QAPI_DEPRECATED)
-        && !compat_policy_input_ok1("Deprecated",
-                                    policy->deprecated_input,
-                                    error_class, kind, name, errp)) {
+        && !compat_policy_input_ok1("Deprecated", policy->deprecated_input, error_class, kind, name, errp))
+    {
         return false;
     }
     if ((features & (1u << QAPI_UNSTABLE))
-        && !compat_policy_input_ok1("Unstable",
-                                    policy->unstable_input,
-                                    error_class, kind, name, errp)) {
+        && !compat_policy_input_ok1("Unstable", policy->unstable_input, error_class, kind, name, errp))
+    {
         return false;
     }
     return true;
 }
 
-const char *qapi_enum_lookup(const QEnumLookup *lookup, int val)
+const char* qapi_enum_lookup(const QEnumLookup* lookup, int val)
 {
     assert(val >= 0 && val < lookup->size);
 
     return lookup->array[val];
 }
 
-int qapi_enum_parse(const QEnumLookup *lookup, const char *buf,
-                    int def, Error **errp)
+int qapi_enum_parse(const QEnumLookup* lookup, const char* buf, int def, Error** errp)
 {
     int i;
 
-    if (!buf) {
-        return def;
-    }
+    if (!buf) { return def; }
 
     for (i = 0; i < lookup->size; i++) {
-        if (!strcmp(buf, lookup->array[i])) {
-            return i;
-        }
+        if (!strcmp(buf, lookup->array[i])) { return i; }
     }
 
     error_setg(errp, "invalid parameter value: %s", buf);
     return def;
 }
 
-bool qapi_bool_parse(const char *name, const char *value, bool *obj, Error **errp)
+bool qapi_bool_parse(const char* name, const char* value, bool* obj, Error** errp)
 {
-    if (g_str_equal(value, "on") ||
-        g_str_equal(value, "yes") ||
-        g_str_equal(value, "true") ||
-        g_str_equal(value, "y")) {
+    if (g_str_equal(value, "on") || g_str_equal(value, "yes") || g_str_equal(value, "true") || g_str_equal(value, "y"))
+    {
         *obj = true;
         return true;
     }
-    if (g_str_equal(value, "off") ||
-        g_str_equal(value, "no") ||
-        g_str_equal(value, "false") ||
-        g_str_equal(value, "n")) {
+    if (g_str_equal(value, "off") || g_str_equal(value, "no") || g_str_equal(value, "false") || g_str_equal(value, "n"))
+    {
         *obj = false;
         return true;
     }
 
-    error_setg(errp, QERR_INVALID_PARAMETER_VALUE, name,
-               "'on' or 'off'");
+    error_setg(errp, QERR_INVALID_PARAMETER_VALUE, name, "'on' or 'off'");
     return false;
 }
 
@@ -117,38 +96,26 @@ bool qapi_bool_parse(const char *name, const char *value, bool *obj, Error **err
  * If @complete, the parse fails unless it consumes @str completely.
  * Return its length on success, -1 on failure.
  */
-int parse_qapi_name(const char *str, bool complete)
+int parse_qapi_name(const char* str, bool complete)
 {
-    const char *p = str;
+    const char* p = str;
 
-    if (*p == '_') {            /* Downstream __RFQDN_ */
+    if (*p == '_') { /* Downstream __RFQDN_ */
         p++;
-        if (*p != '_') {
-            return -1;
-        }
+        if (*p != '_') { return -1; }
         while (*++p) {
-            if (!qemu_isalnum(*p) && *p != '-' && *p != '.') {
-                break;
-            }
+            if (!qemu_isalnum(*p) && *p != '-' && *p != '.') { break; }
         }
 
-        if (*p != '_') {
-            return -1;
-        }
+        if (*p != '_') { return -1; }
         p++;
     }
 
-    if (!qemu_isalpha(*p)) {
-        return -1;
-    }
+    if (!qemu_isalpha(*p)) { return -1; }
     while (*++p) {
-        if (!qemu_isalnum(*p) && *p != '-' && *p != '_') {
-            break;
-        }
+        if (!qemu_isalnum(*p) && *p != '-' && *p != '_') { break; }
     }
 
-    if (complete && *p) {
-        return -1;
-    }
+    if (complete && *p) { return -1; }
     return p - str;
 }

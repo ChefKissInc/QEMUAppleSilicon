@@ -15,14 +15,16 @@
  * Save pc_save across a branch, so that we may restore the value from
  * before the branch at the point the label is emitted.
  */
-typedef struct DisasLabel {
-    TCGLabel *label;
+typedef struct DisasLabel
+{
+    TCGLabel*    label;
     target_ulong pc_save;
 } DisasLabel;
 
-typedef struct DisasContext {
-    DisasContextBase base;
-    const ARMISARegisters *isar;
+typedef struct DisasContext
+{
+    DisasContextBase       base;
+    const ARMISARegisters* isar;
 
     /* The address of the current instruction being translated. */
     target_ulong pc_curr;
@@ -41,7 +43,7 @@ typedef struct DisasContext {
      */
     target_ulong pc_save;
     target_ulong page_start;
-    uint32_t insn;
+    uint32_t     insn;
     /* Nonzero if this instruction has been conditionally skipped.  */
     int condjmp;
     /* The label that will be jumped to when the instruction is skipped.  */
@@ -55,35 +57,35 @@ typedef struct DisasContext {
      * trans_ functions for insns which are continuable should set this true
      * after decode (ie after any UNDEF checks)
      */
-    bool eci_handled;
-    int sctlr_b;
-    MemOp be_data;
-    int user;
-    ARMMMUIdx mmu_idx; /* MMU index to use for normal loads/stores */
-    uint8_t tbii;      /* TBI1|TBI0 for insns */
-    uint8_t tbid;      /* TBI1|TBI0 for data */
-    uint8_t tcma;      /* TCMA1|TCMA0 for MTE */
-    bool ns;        /* Use non-secure CPREG bank on access */
-    int fp_excp_el; /* FP exception EL or 0 if enabled */
-    int sve_excp_el; /* SVE exception EL or 0 if enabled */
-    int sme_excp_el; /* SME exception EL or 0 if enabled */
-    int zt0_excp_el; /* ZT0 exception EL or 0 if enabled */
-    int vl;          /* current vector length in bytes */
-    int svl;         /* current streaming vector length in bytes */
-    int max_svl;     /* maximum implemented streaming vector length */
-    bool vfp_enabled; /* FP enabled via FPSCR.EN */
-    int vec_len;
-    int vec_stride;
+    bool      eci_handled;
+    int       sctlr_b;
+    MemOp     be_data;
+    int       user;
+    ARMMMUIdx mmu_idx;     /* MMU index to use for normal loads/stores */
+    uint8_t   tbii;        /* TBI1|TBI0 for insns */
+    uint8_t   tbid;        /* TBI1|TBI0 for data */
+    uint8_t   tcma;        /* TCMA1|TCMA0 for MTE */
+    bool      ns;          /* Use non-secure CPREG bank on access */
+    int       fp_excp_el;  /* FP exception EL or 0 if enabled */
+    int       sve_excp_el; /* SVE exception EL or 0 if enabled */
+    int       sme_excp_el; /* SME exception EL or 0 if enabled */
+    int       zt0_excp_el; /* ZT0 exception EL or 0 if enabled */
+    int       vl;          /* current vector length in bytes */
+    int       svl;         /* current streaming vector length in bytes */
+    int       max_svl;     /* maximum implemented streaming vector length */
+    bool      vfp_enabled; /* FP enabled via FPSCR.EN */
+    int       vec_len;
+    int       vec_stride;
     /* Immediate value in AArch32 SVC insn; must be set if is_jmp == DISAS_SWI
      * so that top level loop can generate correct syndrome information.
      */
-    uint32_t svc_imm;
-    int current_el;
+    uint32_t          svc_imm;
+    int               current_el;
     ARMCPRegTable_ptr cp_regs;
-    uint64_t features; /* CPU features bits */
-    bool aarch64;
-    bool thumb;
-    bool lse2;
+    uint64_t          features; /* CPU features bits */
+    bool              aarch64;
+    bool              thumb;
+    bool              lse2;
     /*
      * Because unallocated encodings generate different exception syndrome
      * information from traps due to FP being disabled, we can't do a single
@@ -172,8 +174,9 @@ typedef struct DisasContext {
     uint32_t nv2_redirect_offset;
 } DisasContext;
 
-typedef struct DisasCompare {
-    TCGCond cond;
+typedef struct DisasCompare
+{
+    TCGCond  cond;
     TCGv_i32 value;
 } DisasCompare;
 
@@ -186,103 +189,52 @@ extern TCGv_i64 cpu_exclusive_val;
  * Constant expanders for the decoders.
  */
 
-static inline int negate(DisasContext *s, int x)
-{
-    return -x;
-}
+static inline int negate(DisasContext* s, int x) { return -x; }
 
-static inline int plus_1(DisasContext *s, int x)
-{
-    return x + 1;
-}
+static inline int plus_1(DisasContext* s, int x) { return x + 1; }
 
-static inline int plus_2(DisasContext *s, int x)
-{
-    return x + 2;
-}
+static inline int plus_2(DisasContext* s, int x) { return x + 2; }
 
-static inline int plus_8(DisasContext *s, int x)
-{
-    return x + 8;
-}
+static inline int plus_8(DisasContext* s, int x) { return x + 8; }
 
-static inline int plus_12(DisasContext *s, int x)
-{
-    return x + 12;
-}
+static inline int plus_12(DisasContext* s, int x) { return x + 12; }
 
-static inline int times_2(DisasContext *s, int x)
-{
-    return x * 2;
-}
+static inline int times_2(DisasContext* s, int x) { return x * 2; }
 
-static inline int times_4(DisasContext *s, int x)
-{
-    return x * 4;
-}
+static inline int times_4(DisasContext* s, int x) { return x * 4; }
 
-static inline int times_8(DisasContext *s, int x)
-{
-    return x * 8;
-}
+static inline int times_8(DisasContext* s, int x) { return x * 8; }
 
-static inline int times_2_plus_1(DisasContext *s, int x)
-{
-    return x * 2 + 1;
-}
+static inline int times_2_plus_1(DisasContext* s, int x) { return x * 2 + 1; }
 
-static inline int rsub_64(DisasContext *s, int x)
-{
-    return 64 - x;
-}
+static inline int rsub_64(DisasContext* s, int x) { return 64 - x; }
 
-static inline int rsub_32(DisasContext *s, int x)
-{
-    return 32 - x;
-}
+static inline int rsub_32(DisasContext* s, int x) { return 32 - x; }
 
-static inline int rsub_16(DisasContext *s, int x)
-{
-    return 16 - x;
-}
+static inline int rsub_16(DisasContext* s, int x) { return 16 - x; }
 
-static inline int rsub_8(DisasContext *s, int x)
-{
-    return 8 - x;
-}
+static inline int rsub_8(DisasContext* s, int x) { return 8 - x; }
 
-static inline int shl_12(DisasContext *s, int x)
-{
-    return x << 12;
-}
+static inline int shl_12(DisasContext* s, int x) { return x << 12; }
 
-static inline int xor_2(DisasContext *s, int x)
-{
-    return x ^ 2;
-}
+static inline int xor_2(DisasContext* s, int x) { return x ^ 2; }
 
-static inline int neon_3same_fp_size(DisasContext *s, int x)
+static inline int neon_3same_fp_size(DisasContext* s, int x)
 {
     /* Convert 0==fp32, 1==fp16 into a MO_* value */
     return MO_32 - x;
 }
 
-static inline int arm_dc_feature(DisasContext *dc, int feature)
-{
-    return (dc->features & (1ULL << feature)) != 0;
-}
+static inline int arm_dc_feature(DisasContext* dc, int feature) { return (dc->features & (1ULL << feature)) != 0; }
 
-static inline int get_mem_index(DisasContext *s)
-{
-    return arm_to_core_mmu_idx(s->mmu_idx);
-}
+static inline int get_mem_index(DisasContext* s) { return arm_to_core_mmu_idx(s->mmu_idx); }
 
-static inline void disas_set_insn_syndrome(DisasContext *s, uint32_t syn)
+static inline void disas_set_insn_syndrome(DisasContext* s, uint32_t syn)
 {
     /* We don't need to save all of the syndrome so we mask and shift
      * out unneeded bits to help the sleb128 encoder do a better job.
      */
-    syn &= ARM_INSN_START_WORD2_MASK;
+    syn  &= ARM_INSN_START_WORD2_MASK;
     syn >>= ARM_INSN_START_WORD2_SHIFT;
 
     /* Check for multiple updates.  */
@@ -291,26 +243,23 @@ static inline void disas_set_insn_syndrome(DisasContext *s, uint32_t syn)
     tcg_set_insn_start_param(s->base.insn_start, 2, syn);
 }
 
-static inline int curr_insn_len(DisasContext *s)
-{
-    return s->base.pc_next - s->pc_curr;
-}
+static inline int curr_insn_len(DisasContext* s) { return s->base.pc_next - s->pc_curr; }
 
 /* is_jmp field values */
-#define DISAS_JUMP      DISAS_TARGET_0 /* only pc was modified dynamically */
+#define DISAS_JUMP DISAS_TARGET_0 /* only pc was modified dynamically */
 /* CPU state was modified dynamically; exit to main loop for interrupts. */
-#define DISAS_UPDATE_EXIT  DISAS_TARGET_1
+#define DISAS_UPDATE_EXIT DISAS_TARGET_1
 /* These instructions trap after executing, so the A32/T32 decoder must
  * defer them until after the conditional execution state has been updated.
  * WFI also needs special handling when single-stepping.
  */
-#define DISAS_WFI       DISAS_TARGET_2
-#define DISAS_SWI       DISAS_TARGET_3
+#define DISAS_WFI DISAS_TARGET_2
+#define DISAS_SWI DISAS_TARGET_3
 /* WFE */
-#define DISAS_WFE       DISAS_TARGET_4
-#define DISAS_HVC       DISAS_TARGET_5
-#define DISAS_SMC       DISAS_TARGET_6
-#define DISAS_YIELD     DISAS_TARGET_7
+#define DISAS_WFE   DISAS_TARGET_4
+#define DISAS_HVC   DISAS_TARGET_5
+#define DISAS_SMC   DISAS_TARGET_6
+#define DISAS_YIELD DISAS_TARGET_7
 /*
  * For instructions which want an immediate exit to the main loop, as opposed
  * to attempting to use lookup_and_goto_ptr.  Unlike DISAS_UPDATE_EXIT, this
@@ -318,34 +267,28 @@ static inline int curr_insn_len(DisasContext *s)
  * something (gen_a64_update_pc or runtime helper) has done so before we reach
  * return from cpu_tb_exec.
  */
-#define DISAS_EXIT      DISAS_TARGET_9
+#define DISAS_EXIT DISAS_TARGET_9
 /* CPU state was modified dynamically; no need to exit, but do not chain. */
-#define DISAS_UPDATE_NOCHAIN  DISAS_TARGET_10
+#define DISAS_UPDATE_NOCHAIN DISAS_TARGET_10
 
 #ifdef TARGET_AARCH64
-void a64_translate_init(void);
-void gen_a64_update_pc(DisasContext *s, target_long diff);
+void                       a64_translate_init(void);
+void                       gen_a64_update_pc(DisasContext* s, target_long diff);
 extern const TranslatorOps aarch64_translator_ops;
 #else
-static inline void a64_translate_init(void)
-{
-}
+static inline void a64_translate_init(void) { }
 
-static inline void gen_a64_update_pc(DisasContext *s, target_long diff)
-{
-}
+static inline void gen_a64_update_pc(DisasContext* s, target_long diff) { }
 #endif
 
-void arm_test_cc(DisasCompare *cmp, int cc);
-void arm_jump_cc(DisasCompare *cmp, TCGLabel *label);
-void arm_gen_test_cc(int cc, TCGLabel *label);
+void  arm_test_cc(DisasCompare* cmp, int cc);
+void  arm_jump_cc(DisasCompare* cmp, TCGLabel* label);
+void  arm_gen_test_cc(int cc, TCGLabel* label);
 MemOp pow2_align(unsigned i);
-void unallocated_encoding(DisasContext *s);
-void gen_exception_internal(int excp);
-void gen_exception_insn_el(DisasContext *s, target_long pc_diff, int excp,
-                           uint32_t syn, uint32_t target_el);
-void gen_exception_insn(DisasContext *s, target_long pc_diff,
-                        int excp, uint32_t syn);
+void  unallocated_encoding(DisasContext* s);
+void  gen_exception_internal(int excp);
+void  gen_exception_insn_el(DisasContext* s, target_long pc_diff, int excp, uint32_t syn, uint32_t target_el);
+void  gen_exception_insn(DisasContext* s, target_long pc_diff, int excp, uint32_t syn);
 
 /* Return state of Alternate Half-precision flag, caller frees result */
 static inline TCGv_i32 get_ahp_flag(void)
@@ -383,7 +326,7 @@ static inline void clear_pstate_bits(uint32_t bits)
 }
 
 /* If the singlestep state is Active-not-pending, advance to Active-pending. */
-static inline void gen_ss_advance(DisasContext *s)
+static inline void gen_ss_advance(DisasContext* s)
 {
     if (s->ss_active) {
         s->pstate_ss = 0;
@@ -392,7 +335,7 @@ static inline void gen_ss_advance(DisasContext *s)
 }
 
 /* Generate an architectural singlestep exception */
-static inline void gen_swstep_exception(DisasContext *s, int isv, int ex)
+static inline void gen_swstep_exception(DisasContext* s, int isv, int ex)
 {
     /* Fill in the same_el field of the syndrome in the helper. */
     uint32_t syn = syn_swstep(false, isv, ex);
@@ -406,91 +349,52 @@ static inline void gen_swstep_exception(DisasContext *s, int isv, int ex)
  */
 uint64_t vfp_expand_imm(int size, uint8_t imm8);
 
-static inline void gen_vfp_absh(TCGv_i32 d, TCGv_i32 s)
-{
-    tcg_gen_andi_i32(d, s, INT16_MAX);
-}
+static inline void gen_vfp_absh(TCGv_i32 d, TCGv_i32 s) { tcg_gen_andi_i32(d, s, INT16_MAX); }
 
-static inline void gen_vfp_abss(TCGv_i32 d, TCGv_i32 s)
-{
-    tcg_gen_andi_i32(d, s, INT32_MAX);
-}
+static inline void gen_vfp_abss(TCGv_i32 d, TCGv_i32 s) { tcg_gen_andi_i32(d, s, INT32_MAX); }
 
-static inline void gen_vfp_absd(TCGv_i64 d, TCGv_i64 s)
-{
-    tcg_gen_andi_i64(d, s, INT64_MAX);
-}
+static inline void gen_vfp_absd(TCGv_i64 d, TCGv_i64 s) { tcg_gen_andi_i64(d, s, INT64_MAX); }
 
-static inline void gen_vfp_negh(TCGv_i32 d, TCGv_i32 s)
-{
-    tcg_gen_xori_i32(d, s, 1u << 15);
-}
+static inline void gen_vfp_negh(TCGv_i32 d, TCGv_i32 s) { tcg_gen_xori_i32(d, s, 1u << 15); }
 
-static inline void gen_vfp_negs(TCGv_i32 d, TCGv_i32 s)
-{
-    tcg_gen_xori_i32(d, s, 1u << 31);
-}
+static inline void gen_vfp_negs(TCGv_i32 d, TCGv_i32 s) { tcg_gen_xori_i32(d, s, 1u << 31); }
 
-static inline void gen_vfp_negd(TCGv_i64 d, TCGv_i64 s)
-{
-    tcg_gen_xori_i64(d, s, 1ull << 63);
-}
+static inline void gen_vfp_negd(TCGv_i64 d, TCGv_i64 s) { tcg_gen_xori_i64(d, s, 1ull << 63); }
 
 /* Vector operations shared between ARM and AArch64.  */
-void gen_gvec_ceq0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_clt0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_cgt0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_cle0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_cge0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_ceq0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_clt0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_cgt0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_cle0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_cge0(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_mla(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                  uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_mls(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                  uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_mla(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_mls(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_cmtst(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_sshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_ushl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_srshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_urshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_neon_sqshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_neon_uqshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_neon_sqrshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_neon_uqrshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_cmtst(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_ushl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_srshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_urshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_neon_sqshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_neon_uqshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_neon_sqrshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                     uint32_t max_sz);
+void gen_neon_uqrshl(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                     uint32_t max_sz);
 
-void gen_neon_sqshli(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     int64_t c, uint32_t opr_sz, uint32_t max_sz);
-void gen_neon_uqshli(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     int64_t c, uint32_t opr_sz, uint32_t max_sz);
-void gen_neon_sqshlui(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                      int64_t c, uint32_t opr_sz, uint32_t max_sz);
+void gen_neon_sqshli(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, int64_t c, uint32_t opr_sz, uint32_t max_sz);
+void gen_neon_uqshli(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, int64_t c, uint32_t opr_sz, uint32_t max_sz);
+void gen_neon_sqshlui(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, int64_t c, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_shadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_uhadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_shsub(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_uhsub(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_srhadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_urhadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_shadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uhadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_shsub(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uhsub(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_srhadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                     uint32_t max_sz);
+void gen_gvec_urhadd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                     uint32_t max_sz);
 
 void gen_cmtst_i64(TCGv_i64 d, TCGv_i64 a, TCGv_i64 b);
 void gen_ushl_i32(TCGv_i32 d, TCGv_i32 a, TCGv_i32 b);
@@ -498,148 +402,108 @@ void gen_sshl_i32(TCGv_i32 d, TCGv_i32 a, TCGv_i32 b);
 void gen_ushl_i64(TCGv_i64 d, TCGv_i64 a, TCGv_i64 b);
 void gen_sshl_i64(TCGv_i64 d, TCGv_i64 a, TCGv_i64 b);
 
-void gen_uqadd_bhs(TCGv_i64 res, TCGv_i64 qc,
-                   TCGv_i64 a, TCGv_i64 b, MemOp esz);
+void gen_uqadd_bhs(TCGv_i64 res, TCGv_i64 qc, TCGv_i64 a, TCGv_i64 b, MemOp esz);
 void gen_uqadd_d(TCGv_i64 d, TCGv_i64 q, TCGv_i64 a, TCGv_i64 b);
-void gen_gvec_uqadd_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                       uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uqadd_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                       uint32_t max_sz);
 
-void gen_sqadd_bhs(TCGv_i64 res, TCGv_i64 qc,
-                   TCGv_i64 a, TCGv_i64 b, MemOp esz);
+void gen_sqadd_bhs(TCGv_i64 res, TCGv_i64 qc, TCGv_i64 a, TCGv_i64 b, MemOp esz);
 void gen_sqadd_d(TCGv_i64 d, TCGv_i64 q, TCGv_i64 a, TCGv_i64 b);
-void gen_gvec_sqadd_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                       uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sqadd_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                       uint32_t max_sz);
 
-void gen_uqsub_bhs(TCGv_i64 res, TCGv_i64 qc,
-                   TCGv_i64 a, TCGv_i64 b, MemOp esz);
+void gen_uqsub_bhs(TCGv_i64 res, TCGv_i64 qc, TCGv_i64 a, TCGv_i64 b, MemOp esz);
 void gen_uqsub_d(TCGv_i64 d, TCGv_i64 q, TCGv_i64 a, TCGv_i64 b);
-void gen_gvec_uqsub_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                       uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uqsub_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                       uint32_t max_sz);
 
-void gen_sqsub_bhs(TCGv_i64 res, TCGv_i64 qc,
-                   TCGv_i64 a, TCGv_i64 b, MemOp esz);
+void gen_sqsub_bhs(TCGv_i64 res, TCGv_i64 qc, TCGv_i64 a, TCGv_i64 b, MemOp esz);
 void gen_sqsub_d(TCGv_i64 d, TCGv_i64 q, TCGv_i64 a, TCGv_i64 b);
-void gen_gvec_sqsub_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                       uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sqsub_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                       uint32_t max_sz);
 
-void gen_gvec_sshr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   int64_t shift, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_ushr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sshr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_ushr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_ssra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   int64_t shift, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_usra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                   int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_ssra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_usra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
 
 void gen_srshr32_i32(TCGv_i32 d, TCGv_i32 a, int32_t sh);
 void gen_srshr64_i64(TCGv_i64 d, TCGv_i64 a, int64_t sh);
 void gen_urshr32_i32(TCGv_i32 d, TCGv_i32 a, int32_t sh);
 void gen_urshr64_i64(TCGv_i64 d, TCGv_i64 a, int64_t sh);
 
-void gen_gvec_srshr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                    int64_t shift, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_urshr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                    int64_t shift, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_srsra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                    int64_t shift, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_ursra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                    int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_srshr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_urshr(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_srsra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_ursra(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_sri(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                  int64_t shift, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_sli(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs,
-                  int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sri(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sli(unsigned vece, uint32_t rd_ofs, uint32_t rm_ofs, int64_t shift, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_sqdmulh_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                         uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_sqrdmulh_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                          uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_sqrdmlah_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                          uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_sqrdmlsh_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                          uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sqdmulh_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                         uint32_t max_sz);
+void gen_gvec_sqrdmulh_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                          uint32_t max_sz);
+void gen_gvec_sqrdmlah_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                          uint32_t max_sz);
+void gen_gvec_sqrdmlsh_qc(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz,
+                          uint32_t max_sz);
 
-void gen_gvec_sabd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_uabd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sabd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uabd(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_saba(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_uaba(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_saba(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uaba(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_addp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_smaxp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_sminp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_umaxp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_uminp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_addp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_smaxp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sminp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_umaxp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uminp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t rm_ofs, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_cls(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                  uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_clz(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                  uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_cnt(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                  uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_rbit(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                   uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_rev16(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_rev32(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_rev64(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                    uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_cls(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_clz(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_cnt(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_rbit(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_rev16(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_rev32(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_rev64(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
 
-void gen_gvec_saddlp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_sadalp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_uaddlp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_uadalp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_saddlp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_sadalp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uaddlp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_uadalp(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
 
 /* These exclusively manipulate the sign bit. */
-void gen_gvec_fabs(unsigned vece, uint32_t dofs, uint32_t aofs,
-                   uint32_t oprsz, uint32_t maxsz);
-void gen_gvec_fneg(unsigned vece, uint32_t dofs, uint32_t aofs,
-                   uint32_t oprsz, uint32_t maxsz);
+void gen_gvec_fabs(unsigned vece, uint32_t dofs, uint32_t aofs, uint32_t oprsz, uint32_t maxsz);
+void gen_gvec_fneg(unsigned vece, uint32_t dofs, uint32_t aofs, uint32_t oprsz, uint32_t maxsz);
 
-void gen_gvec_urecpe(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                     uint32_t opr_sz, uint32_t max_sz);
-void gen_gvec_ursqrte(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs,
-                      uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_urecpe(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
+void gen_gvec_ursqrte(unsigned vece, uint32_t rd_ofs, uint32_t rn_ofs, uint32_t opr_sz, uint32_t max_sz);
 
 /*
  * Forward to the isar_feature_* tests given a DisasContext pointer.
  */
-#define dc_isar_feature(name, ctx) \
-    ({ DisasContext *ctx_ = (ctx); isar_feature_##name(ctx_->isar); })
+#define dc_isar_feature(name, ctx)       \
+    ({                                   \
+        DisasContext* ctx_ = (ctx);      \
+        isar_feature_##name(ctx_->isar); \
+    })
 
 /* Note that the gvec expanders operate on offsets + sizes.  */
 typedef void GVecGen2Fn(unsigned, uint32_t, uint32_t, uint32_t, uint32_t);
-typedef void GVecGen2iFn(unsigned, uint32_t, uint32_t, int64_t,
-                         uint32_t, uint32_t);
-typedef void GVecGen3Fn(unsigned, uint32_t, uint32_t,
-                        uint32_t, uint32_t, uint32_t);
-typedef void GVecGen4Fn(unsigned, uint32_t, uint32_t, uint32_t,
-                        uint32_t, uint32_t, uint32_t);
-typedef void GVecGen3FnVar(unsigned, TCGv_ptr, uint32_t, TCGv_ptr, uint32_t,
-                           TCGv_ptr, uint32_t, uint32_t, uint32_t);
+typedef void GVecGen2iFn(unsigned, uint32_t, uint32_t, int64_t, uint32_t, uint32_t);
+typedef void GVecGen3Fn(unsigned, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+typedef void GVecGen4Fn(unsigned, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+typedef void GVecGen3FnVar(unsigned, TCGv_ptr, uint32_t, TCGv_ptr, uint32_t, TCGv_ptr, uint32_t, uint32_t, uint32_t);
 
 /* Function prototype for gen_ functions for calling Neon helpers */
 typedef void NeonGenOneOpFn(TCGv_i32, TCGv_i32);
 typedef void NeonGenOneOpEnvFn(TCGv_i32, TCGv_ptr, TCGv_i32);
 typedef void NeonGenTwoOpFn(TCGv_i32, TCGv_i32, TCGv_i32);
 typedef void NeonGenTwoOpEnvFn(TCGv_i32, TCGv_ptr, TCGv_i32, TCGv_i32);
-typedef void NeonGenThreeOpEnvFn(TCGv_i32, TCGv_env, TCGv_i32,
-                                 TCGv_i32, TCGv_i32);
+typedef void NeonGenThreeOpEnvFn(TCGv_i32, TCGv_env, TCGv_i32, TCGv_i32, TCGv_i32);
 typedef void NeonGenTwo64OpFn(TCGv_i64, TCGv_i64, TCGv_i64);
 typedef void NeonGenTwo64OpEnvFn(TCGv_i64, TCGv_ptr, TCGv_i64, TCGv_i64);
 typedef void NeonGenNarrowFn(TCGv_i32, TCGv_i64);
@@ -665,10 +529,8 @@ typedef void ShiftFn(TCGv_i32, TCGv_ptr, TCGv_i32, TCGv_i32);
  *
  * Extract the flag values from @tb.
  */
-static inline CPUARMTBFlags arm_tbflags_from_tb(const TranslationBlock *tb)
-{
-    return (CPUARMTBFlags){ tb->flags, tb->cs_base };
-}
+static inline CPUARMTBFlags arm_tbflags_from_tb(const TranslationBlock* tb)
+{ return (CPUARMTBFlags){tb->flags, tb->cs_base}; }
 
 /**
  * fpstatus_ptr: return TCGv_ptr to the specified fp_status field
@@ -680,7 +542,7 @@ static inline CPUARMTBFlags arm_tbflags_from_tb(const TranslationBlock *tb)
 static inline TCGv_ptr fpstatus_ptr(ARMFPStatusFlavour flavour)
 {
     TCGv_ptr statusptr = tcg_temp_new_ptr();
-    int offset = offsetof(CPUARMState, vfp.fp_status[flavour]);
+    int      offset    = offsetof(CPUARMState, vfp.fp_status[flavour]);
 
     tcg_gen_addi_ptr(statusptr, tcg_env, offset);
     return statusptr;
@@ -703,11 +565,9 @@ static inline TCGv_ptr fpstatus_ptr(ARMFPStatusFlavour flavour)
  * and this is applied here.  Note that there is no way to indicate that
  * no alignment should ever be enforced; this must be handled manually.
  */
-static inline MemOp finalize_memop_atom(DisasContext *s, MemOp opc, MemOp atom)
+static inline MemOp finalize_memop_atom(DisasContext* s, MemOp opc, MemOp atom)
 {
-    if (s->align_mem && !(opc & MO_AMASK)) {
-        opc |= MO_ALIGN;
-    }
+    if (s->align_mem && !(opc & MO_AMASK)) { opc |= MO_ALIGN; }
     return opc | atom | s->be_data;
 }
 
@@ -718,7 +578,7 @@ static inline MemOp finalize_memop_atom(DisasContext *s, MemOp opc, MemOp atom)
  *
  * Like finalize_memop_atom, but with default atomicity.
  */
-static inline MemOp finalize_memop(DisasContext *s, MemOp opc)
+static inline MemOp finalize_memop(DisasContext* s, MemOp opc)
 {
     MemOp atom = s->lse2 ? MO_ATOM_WITHIN16 : MO_ATOM_IFALIGN;
     return finalize_memop_atom(s, opc, atom);
@@ -732,7 +592,7 @@ static inline MemOp finalize_memop(DisasContext *s, MemOp opc)
  * Like finalize_memop_atom, but with atomicity for a pair.
  * C.f. Pseudocode for Mem[], operand ispair.
  */
-static inline MemOp finalize_memop_pair(DisasContext *s, MemOp opc)
+static inline MemOp finalize_memop_pair(DisasContext* s, MemOp opc)
 {
     MemOp atom = s->lse2 ? MO_ATOM_WITHIN16_PAIR : MO_ATOM_IFALIGN_PAIR;
     return finalize_memop_atom(s, opc, atom);
@@ -745,7 +605,7 @@ static inline MemOp finalize_memop_pair(DisasContext *s, MemOp opc)
  *
  * Like finalize_memop_atom, but with atomicity of AccessType_ASIMD.
  */
-static inline MemOp finalize_memop_asimd(DisasContext *s, MemOp opc)
+static inline MemOp finalize_memop_asimd(DisasContext* s, MemOp opc)
 {
     /*
      * In the pseudocode for Mem[], with AccessType_ASIMD, size == 16,
@@ -756,9 +616,7 @@ static inline MemOp finalize_memop_asimd(DisasContext *s, MemOp opc)
      *
      * For other sizes, normal LSE2 rules apply.
      */
-    if ((opc & MO_SIZE) == MO_128) {
-        return finalize_memop_atom(s, opc, MO_ATOM_IFALIGN_PAIR);
-    }
+    if ((opc & MO_SIZE) == MO_128) { return finalize_memop_atom(s, opc, MO_ATOM_IFALIGN_PAIR); }
     return finalize_memop(s, opc);
 }
 
@@ -783,10 +641,10 @@ uint64_t asimd_imm_const(uint32_t imm, int cmode, int op);
  * gen_disas_label:
  * Create a label and cache a copy of pc_save.
  */
-static inline DisasLabel gen_disas_label(DisasContext *s)
+static inline DisasLabel gen_disas_label(DisasContext* s)
 {
     return (DisasLabel){
-        .label = gen_new_label(),
+        .label   = gen_new_label(),
         .pc_save = s->pc_save,
     };
 }
@@ -795,7 +653,7 @@ static inline DisasLabel gen_disas_label(DisasContext *s)
  * set_disas_label:
  * Emit a label and restore the cached copy of pc_save.
  */
-static inline void set_disas_label(DisasContext *s, DisasLabel l)
+static inline void set_disas_label(DisasContext* s, DisasLabel l)
 {
     gen_set_label(l.label);
     s->pc_save = l.pc_save;
@@ -820,25 +678,21 @@ static inline TCGv_i32 gen_set_rmode(ARMFPRounding rmode, TCGv_ptr fpst)
     return old;
 }
 
-static inline void gen_restore_rmode(TCGv_i32 old, TCGv_ptr fpst)
-{
-    gen_helper_set_rmode(old, old, fpst);
-}
+static inline void gen_restore_rmode(TCGv_i32 old, TCGv_ptr fpst) { gen_helper_set_rmode(old, old, fpst); }
 
 /*
  * Helpers for implementing sets of trans_* functions.
  * Defer the implementation of NAME to FUNC, with optional extra arguments.
  */
-#define TRANS(NAME, FUNC, ...) \
-    static bool trans_##NAME(DisasContext *s, arg_##NAME *a) \
-    { return FUNC(s, __VA_ARGS__); }
-#define TRANS_FEAT(NAME, FEAT, FUNC, ...) \
-    static bool trans_##NAME(DisasContext *s, arg_##NAME *a) \
+#define TRANS(NAME, FUNC, ...)                                                                \
+    static bool trans_##NAME(DisasContext* s, arg_##NAME* a) { return FUNC(s, __VA_ARGS__); }
+#define TRANS_FEAT(NAME, FEAT, FUNC, ...)                        \
+    static bool trans_##NAME(DisasContext* s, arg_##NAME* a)     \
     { return dc_isar_feature(FEAT, s) && FUNC(s, __VA_ARGS__); }
 
-#define TRANS_FEAT_NONSTREAMING(NAME, FEAT, FUNC, ...)            \
-    static bool trans_##NAME(DisasContext *s, arg_##NAME *a)      \
-    {                                                             \
-        s->is_nonstreaming = true;                                \
-        return dc_isar_feature(FEAT, s) && FUNC(s, __VA_ARGS__);  \
+#define TRANS_FEAT_NONSTREAMING(NAME, FEAT, FUNC, ...)           \
+    static bool trans_##NAME(DisasContext* s, arg_##NAME* a)     \
+    {                                                            \
+        s->is_nonstreaming = true;                               \
+        return dc_isar_feature(FEAT, s) && FUNC(s, __VA_ARGS__); \
     }

@@ -26,40 +26,41 @@
 #define TYPE_RAM_BLOCK_ATTRIBUTES "ram-block-attributes"
 OBJECT_DECLARE_SIMPLE_TYPE(RamBlockAttributes, RAM_BLOCK_ATTRIBUTES)
 
-struct RAMBlock {
-    struct rcu_head rcu;
-    struct MemoryRegion *mr;
-    uint8_t *host;
-    ram_addr_t offset;
-    ram_addr_t used_length;
-    ram_addr_t max_length;
-    uint32_t flags;
+struct RAMBlock
+{
+    struct rcu_head      rcu;
+    struct MemoryRegion* mr;
+    uint8_t*             host;
+    ram_addr_t           offset;
+    ram_addr_t           used_length;
+    ram_addr_t           max_length;
+    uint32_t             flags;
     /* Protected by the BQL.  */
     char idstr[256];
     /* RCU-enabled, writes protected by the ramlist lock */
     QLIST_ENTRY(RAMBlock) next;
-    int fd;
-    uint64_t fd_offset;
-    int guest_memfd;
-    RamBlockAttributes *attributes;
-    size_t page_size;
+    int                 fd;
+    uint64_t            fd_offset;
+    int                 guest_memfd;
+    RamBlockAttributes* attributes;
+    size_t              page_size;
     /* dirty bitmap used during migration */
-    unsigned long *bmap;
+    unsigned long* bmap;
 
     /*
      * Below fields are only used by mapped-ram migration
      */
     /* bitmap of pages present in the migration file */
-    unsigned long *file_bmap;
+    unsigned long* file_bmap;
     /*
      * offset in the file pages belonging to this ramblock are saved,
      * used only during migration to a file.
      */
-    off_t bitmap_offset;
+    off_t    bitmap_offset;
     uint64_t pages_offset;
 
     /* Bitmap of already received pages.  Only used on destination side. */
-    unsigned long *receivedmap;
+    unsigned long* receivedmap;
 
     /*
      * bitmap to track already cleared dirty bitmap.  When the bit is
@@ -77,23 +78,23 @@ struct RAMBlock {
      * destination side, this should always be NULL, and the variable
      * `clear_bmap_shift' is meaningless.
      */
-    unsigned long *clear_bmap;
-    uint8_t clear_bmap_shift;
+    unsigned long* clear_bmap;
+    uint8_t        clear_bmap_shift;
 };
 
-struct RamBlockAttributes {
+struct RamBlockAttributes
+{
     Object parent;
 
-    RAMBlock *ram_block;
+    RAMBlock* ram_block;
 
     /* 1-setting of the bitmap represents ram is populated (shared) */
-    unsigned bitmap_size;
-    unsigned long *bitmap;
+    unsigned       bitmap_size;
+    unsigned long* bitmap;
 
     QLIST_HEAD(, RamDiscardListener) rdl_list;
 };
 
-RamBlockAttributes *ram_block_attributes_create(RAMBlock *ram_block);
-void ram_block_attributes_destroy(RamBlockAttributes *attr);
-int ram_block_attributes_state_change(RamBlockAttributes *attr, uint64_t offset,
-                                      uint64_t size, bool to_discard);
+RamBlockAttributes* ram_block_attributes_create(RAMBlock* ram_block);
+void                ram_block_attributes_destroy(RamBlockAttributes* attr);
+int ram_block_attributes_state_change(RamBlockAttributes* attr, uint64_t offset, uint64_t size, bool to_discard);

@@ -27,7 +27,7 @@
 
 #include "standard-headers/linux/virtio_net.h"
 
-int tap_enable(NetClientState *nc);
-int tap_disable(NetClientState *nc);
+int tap_enable(NetClientState* nc);
+int tap_disable(NetClientState* nc);
 
-int tap_get_fd(NetClientState *nc);
+int tap_get_fd(NetClientState* nc);

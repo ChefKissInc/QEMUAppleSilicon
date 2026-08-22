@@ -7,5 +7,5 @@
 
 #pragma once
 
-void win32_kbd_set_window(void *hwnd);
+void win32_kbd_set_window(void* hwnd);
 void win32_kbd_set_grab(bool grab);

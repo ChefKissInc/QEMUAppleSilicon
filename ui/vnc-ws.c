@@ -25,35 +25,28 @@
 #include "qemu/bswap.h"
 #include "trace.h"
 
-static void vncws_tls_handshake_done(QIOTask *task,
-                                     gpointer user_data)
+static void vncws_tls_handshake_done(QIOTask* task, gpointer user_data)
 {
-    VncState *vs = user_data;
-    Error *err = NULL;
+    VncState* vs  = user_data;
+    Error*    err = NULL;
 
     if (qio_task_propagate_error(task, &err)) {
         VNC_DEBUG("Handshake failed %s\n", error_get_pretty(err));
         vnc_client_error(vs);
         error_free(err);
-    } else {
+    }
+    else {
         VNC_DEBUG("TLS handshake complete, starting websocket handshake\n");
-        if (vs->ioc_tag) {
-            g_source_remove(vs->ioc_tag);
-        }
-        vs->ioc_tag = qio_channel_add_watch(vs->ioc,
-                                            G_IO_IN | G_IO_HUP | G_IO_ERR,
-                                            vncws_handshake_io, vs, NULL);
+        if (vs->ioc_tag) { g_source_remove(vs->ioc_tag); }
+        vs->ioc_tag = qio_channel_add_watch(vs->ioc, G_IO_IN | G_IO_HUP | G_IO_ERR, vncws_handshake_io, vs, NULL);
     }
 }
 
-
-gboolean vncws_tls_handshake_io(QIOChannel *ioc G_GNUC_UNUSED,
-                                GIOCondition condition,
-                                void *opaque)
+gboolean vncws_tls_handshake_io(QIOChannel* ioc G_GNUC_UNUSED, GIOCondition condition, void* opaque)
 {
-    VncState *vs = opaque;
-    QIOChannelTLS *tls;
-    Error *err = NULL;
+    VncState*      vs = opaque;
+    QIOChannelTLS* tls;
+    Error*         err = NULL;
 
     if (vs->ioc_tag) {
         g_source_remove(vs->ioc_tag);
@@ -65,11 +58,7 @@ gboolean vncws_tls_handshake_io(QIOChannel *ioc G_GNUC_UNUSED,
         return TRUE;
     }
 
-    tls = qio_channel_tls_new_server(
-        vs->ioc,
-        vs->vd->tlscreds,
-        vs->vd->tlsauthzid,
-        &err);
+    tls = qio_channel_tls_new_server(vs->ioc, vs->vd->tlscreds, vs->vd->tlsauthzid, &err);
     if (!tls) {
         VNC_DEBUG("Failed to setup TLS %s\n", error_get_pretty(err));
         error_free(err);
@@ -84,45 +73,33 @@ gboolean vncws_tls_handshake_io(QIOChannel *ioc G_GNUC_UNUSED,
     trace_vnc_client_io_wrap(vs, vs->ioc, "tls");
     vs->tls = qio_channel_tls_get_session(tls);
 
-    qio_channel_tls_handshake(tls,
-                              vncws_tls_handshake_done,
-                              vs,
-                              NULL,
-                              NULL);
+    qio_channel_tls_handshake(tls, vncws_tls_handshake_done, vs, NULL, NULL);
 
     return TRUE;
 }
 
-
-static void vncws_handshake_done(QIOTask *task,
-                                 gpointer user_data)
+static void vncws_handshake_done(QIOTask* task, gpointer user_data)
 {
-    VncState *vs = user_data;
-    Error *err = NULL;
+    VncState* vs  = user_data;
+    Error*    err = NULL;
 
     if (qio_task_propagate_error(task, &err)) {
         VNC_DEBUG("Websock handshake failed %s\n", error_get_pretty(err));
         vnc_client_error(vs);
         error_free(err);
-    } else {
+    }
+    else {
         VNC_DEBUG("Websock handshake complete, starting VNC protocol\n");
         vnc_start_protocol(vs);
-        if (vs->ioc_tag) {
-            g_source_remove(vs->ioc_tag);
-        }
-        vs->ioc_tag = qio_channel_add_watch(
-            vs->ioc, G_IO_IN | G_IO_HUP | G_IO_ERR,
-            vnc_client_io, vs, NULL);
+        if (vs->ioc_tag) { g_source_remove(vs->ioc_tag); }
+        vs->ioc_tag = qio_channel_add_watch(vs->ioc, G_IO_IN | G_IO_HUP | G_IO_ERR, vnc_client_io, vs, NULL);
     }
 }
 
-
-gboolean vncws_handshake_io(QIOChannel *ioc G_GNUC_UNUSED,
-                            GIOCondition condition,
-                            void *opaque)
+gboolean vncws_handshake_io(QIOChannel* ioc G_GNUC_UNUSED, GIOCondition condition, void* opaque)
 {
-    VncState *vs = opaque;
-    QIOChannelWebsock *wioc;
+    VncState*          vs = opaque;
+    QIOChannelWebsock* wioc;
 
     if (vs->ioc_tag) {
         g_source_remove(vs->ioc_tag);
@@ -141,10 +118,7 @@ gboolean vncws_handshake_io(QIOChannel *ioc G_GNUC_UNUSED,
     vs->ioc = QIO_CHANNEL(wioc);
     trace_vnc_client_io_wrap(vs, vs->ioc, "websock");
 
-    qio_channel_websock_handshake(wioc,
-                                  vncws_handshake_done,
-                                  vs,
-                                  NULL);
+    qio_channel_websock_handshake(wioc, vncws_handshake_done, vs, NULL);
 
     return TRUE;
 }

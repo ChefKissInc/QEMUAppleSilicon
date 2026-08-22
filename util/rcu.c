@@ -33,20 +33,20 @@
 #include "qemu/main-loop.h"
 #include "qemu/lockable.h"
 #if defined(CONFIG_MALLOC_TRIM)
-#include <malloc.h>
+    #include <malloc.h>
 #endif
 
 /*
  * Global grace period counter.  Bit 0 is always one in rcu_gp_ctr.
  * Bits 1 and above are defined in synchronize_rcu.
  */
-#define RCU_GP_LOCKED           (1UL << 0)
-#define RCU_GP_CTR              (1UL << 1)
+#define RCU_GP_LOCKED (1UL << 0)
+#define RCU_GP_CTR    (1UL << 1)
 
 unsigned long rcu_gp_ctr = RCU_GP_LOCKED;
 
-QemuEvent rcu_gp_event;
-static int in_drain_call_rcu;
+QemuEvent        rcu_gp_event;
+static int       in_drain_call_rcu;
 static QemuMutex rcu_registry_lock;
 static QemuMutex rcu_sync_lock;
 
@@ -54,7 +54,7 @@ static QemuMutex rcu_sync_lock;
  * Check whether a quiescent state was crossed between the beginning of
  * update_counter_and_wait and now.
  */
-static inline int rcu_gp_ongoing(unsigned long *ctr)
+static inline int rcu_gp_ongoing(unsigned long* ctr)
 {
     unsigned long v;
 
@@ -74,7 +74,7 @@ static ThreadList registry = QLIST_HEAD_INITIALIZER(registry);
 /* Wait for previous parity/grace period to be empty of readers.  */
 static void wait_for_readers(void)
 {
-    ThreadList qsreaders = QLIST_HEAD_INITIALIZER(qsreaders);
+    ThreadList              qsreaders = QLIST_HEAD_INITIALIZER(qsreaders);
     struct rcu_reader_data *index, *tmp;
 
     for (;;) {
@@ -83,9 +83,7 @@ static void wait_for_readers(void)
          */
         qemu_event_reset(&rcu_gp_event);
 
-        QLIST_FOREACH(index, &registry, node) {
-            qatomic_set(&index->waiting, true);
-        }
+        QLIST_FOREACH (index, &registry, node) { qatomic_set(&index->waiting, true); }
 
         /* Here, order the stores to index->waiting before the loads of
          * index->ctr.  Pairs with smp_mb_placeholder() in rcu_read_unlock(),
@@ -97,7 +95,7 @@ static void wait_for_readers(void)
          */
         smp_mb_global();
 
-        QLIST_FOREACH_SAFE(index, &registry, node, tmp) {
+        QLIST_FOREACH_SAFE (index, &registry, node, tmp) {
             if (!rcu_gp_ongoing(&index->ctr)) {
                 QLIST_REMOVE(index, node);
                 QLIST_INSERT_HEAD(&qsreaders, index, node);
@@ -106,14 +104,13 @@ static void wait_for_readers(void)
                  * get some extra futex wakeups.
                  */
                 qatomic_set(&index->waiting, false);
-            } else if (qatomic_read(&in_drain_call_rcu)) {
+            }
+            else if (qatomic_read(&in_drain_call_rcu)) {
                 notifier_list_notify(&index->force_rcu, NULL);
             }
         }
 
-        if (QLIST_EMPTY(&registry)) {
-            break;
-        }
+        if (QLIST_EMPTY(&registry)) { break; }
 
         /* Wait for one thread to report a quiescent state and try again.
          * Release rcu_registry_lock, so rcu_(un)register_thread() doesn't
@@ -164,7 +161,8 @@ void synchronize_rcu(void)
             qatomic_set(&rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
             wait_for_readers();
             qatomic_set(&rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
-        } else {
+        }
+        else {
             /* Increment current grace period.  */
             qatomic_set(&rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
         }
@@ -173,20 +171,19 @@ void synchronize_rcu(void)
     }
 }
 
-
-#define RCU_CALL_MIN_SIZE        30
+#define RCU_CALL_MIN_SIZE 30
 
 /* Multi-producer, single-consumer queue based on urcu/static/wfqueue.h
  * from liburcu.  Note that head is only used by the consumer.
  */
-static struct rcu_head dummy;
+static struct rcu_head  dummy;
 static struct rcu_head *head = &dummy, **tail = &dummy.next;
-static int rcu_call_count;
-static QemuEvent rcu_call_ready_event;
+static int              rcu_call_count;
+static QemuEvent        rcu_call_ready_event;
 
-static void enqueue(struct rcu_head *node)
+static void enqueue(struct rcu_head* node)
 {
-    struct rcu_head **old_tail;
+    struct rcu_head** old_tail;
 
     node->next = NULL;
 
@@ -207,7 +204,7 @@ static void enqueue(struct rcu_head *node)
     qatomic_store_release(old_tail, node);
 }
 
-static struct rcu_head *try_dequeue(void)
+static struct rcu_head* try_dequeue(void)
 {
     struct rcu_head *node, *next;
 
@@ -220,9 +217,7 @@ retry:
      * wrong and we need to wait until its enqueuer finishes the update.
      */
     next = qatomic_load_acquire(&node->next);
-    if (!next) {
-        return NULL;
-    }
+    if (!next) { return NULL; }
 
     /*
      * Test for an empty list, which we do not expect.  Note that for
@@ -231,9 +226,7 @@ retry:
      * The tail, because it is the first step in the enqueuing.
      * It is only the next pointers that might be inconsistent.
      */
-    if (head == &dummy && qatomic_read(&tail) == &dummy.next) {
-        abort();
-    }
+    if (head == &dummy && qatomic_read(&tail) == &dummy.next) { abort(); }
 
     /*
      * Since we are the sole consumer, and we excluded the empty case
@@ -252,15 +245,15 @@ retry:
     return node;
 }
 
-static void *call_rcu_thread(void *opaque)
+static void* call_rcu_thread(void* opaque)
 {
-    struct rcu_head *node;
+    struct rcu_head* node;
 
     rcu_register_thread();
 
     for (;;) {
         int tries = 0;
-        int n = qatomic_read(&rcu_call_count);
+        int n     = qatomic_read(&rcu_call_count);
 
         /* Heuristically wait for a decent number of callbacks to pile up.
          * Fetch rcu_call_count now, we only must process elements that were
@@ -305,7 +298,7 @@ static void *call_rcu_thread(void *opaque)
     abort();
 }
 
-void call_rcu1(struct rcu_head *node, void (*func)(struct rcu_head *node))
+void call_rcu1(struct rcu_head* node, void (*func)(struct rcu_head* node))
 {
     node->func = func;
     enqueue(node);
@@ -313,15 +306,15 @@ void call_rcu1(struct rcu_head *node, void (*func)(struct rcu_head *node))
     qemu_event_set(&rcu_call_ready_event);
 }
 
-
-struct rcu_drain {
+struct rcu_drain
+{
     struct rcu_head rcu;
-    QemuEvent drain_complete_event;
+    QemuEvent       drain_complete_event;
 };
 
-static void drain_rcu_callback(struct rcu_head *node)
+static void drain_rcu_callback(struct rcu_head* node)
 {
-    struct rcu_drain *event = (struct rcu_drain *)node;
+    struct rcu_drain* event = (struct rcu_drain*)node;
     qemu_event_set(&event->drain_complete_event);
 }
 
@@ -337,15 +330,12 @@ static void drain_rcu_callback(struct rcu_head *node)
 void drain_call_rcu(void)
 {
     struct rcu_drain rcu_drain;
-    bool locked = bql_locked();
+    bool             locked = bql_locked();
 
     memset(&rcu_drain, 0, sizeof(struct rcu_drain));
     qemu_event_init(&rcu_drain.drain_complete_event, false);
 
-    if (locked) {
-        bql_unlock();
-    }
-
+    if (locked) { bql_unlock(); }
 
     /*
      * RCU callbacks are invoked in the same order as in which they
@@ -364,10 +354,7 @@ void drain_call_rcu(void)
     qemu_event_wait(&rcu_drain.drain_complete_event);
     qatomic_dec(&in_drain_call_rcu);
 
-    if (locked) {
-        bql_lock();
-    }
-
+    if (locked) { bql_lock(); }
 }
 
 void rcu_register_thread(void)
@@ -385,14 +372,14 @@ void rcu_unregister_thread(void)
     qemu_mutex_unlock(&rcu_registry_lock);
 }
 
-void rcu_add_force_rcu_notifier(Notifier *n)
+void rcu_add_force_rcu_notifier(Notifier* n)
 {
     qemu_mutex_lock(&rcu_registry_lock);
     notifier_list_add(&get_ptr_rcu_reader()->force_rcu, n);
     qemu_mutex_unlock(&rcu_registry_lock);
 }
 
-void rcu_remove_force_rcu_notifier(Notifier *n)
+void rcu_remove_force_rcu_notifier(Notifier* n)
 {
     qemu_mutex_lock(&rcu_registry_lock);
     notifier_remove(n);
@@ -412,30 +399,21 @@ static void rcu_init_complete(void)
     /* The caller is assumed to have BQL, so the call_rcu thread
      * must have been quiescent even after forking, just recreate it.
      */
-    qemu_thread_create(&thread, "call_rcu", call_rcu_thread,
-                       NULL, QEMU_THREAD_DETACHED);
+    qemu_thread_create(&thread, "call_rcu", call_rcu_thread, NULL, QEMU_THREAD_DETACHED);
 
     rcu_register_thread();
 }
 
 static int atfork_depth = 1;
 
-void rcu_enable_atfork(void)
-{
-    atfork_depth++;
-}
+void rcu_enable_atfork(void) { atfork_depth++; }
 
-void rcu_disable_atfork(void)
-{
-    atfork_depth--;
-}
+void rcu_disable_atfork(void) { atfork_depth--; }
 
 #ifdef CONFIG_POSIX
 static void rcu_init_lock(void)
 {
-    if (atfork_depth < 1) {
-        return;
-    }
+    if (atfork_depth < 1) { return; }
 
     qemu_mutex_lock(&rcu_sync_lock);
     qemu_mutex_lock(&rcu_registry_lock);
@@ -443,9 +421,7 @@ static void rcu_init_lock(void)
 
 static void rcu_init_unlock(void)
 {
-    if (atfork_depth < 1) {
-        return;
-    }
+    if (atfork_depth < 1) { return; }
 
     qemu_mutex_unlock(&rcu_registry_lock);
     qemu_mutex_unlock(&rcu_sync_lock);
@@ -453,9 +429,7 @@ static void rcu_init_unlock(void)
 
 static void rcu_init_child(void)
 {
-    if (atfork_depth < 1) {
-        return;
-    }
+    if (atfork_depth < 1) { return; }
 
     memset(&registry, 0, sizeof(registry));
     rcu_init_complete();

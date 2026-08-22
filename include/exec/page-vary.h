@@ -19,9 +19,10 @@
 
 #pragma once
 
-typedef struct {
-    bool decided;
-    int bits;
+typedef struct
+{
+    bool     decided;
+    int      bits;
     uint64_t mask;
 } TargetPageBits;
 

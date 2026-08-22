@@ -21,10 +21,9 @@
  * qdev_init_clocklist:
  * Add a new clock in a device
  */
-static NamedClockList *qdev_init_clocklist(DeviceState *dev, const char *name,
-                                           bool alias, bool output, Clock *clk)
+static NamedClockList* qdev_init_clocklist(DeviceState* dev, const char* name, bool alias, bool output, Clock* clk)
 {
-    NamedClockList *ncl;
+    NamedClockList* ncl;
 
     /*
      * Clock must be added before realize() so that we can compute the
@@ -36,22 +35,22 @@ static NamedClockList *qdev_init_clocklist(DeviceState *dev, const char *name,
      * The ncl structure is freed by qdev_finalize_clocklist() which will
      * be called during @dev's device_finalize().
      */
-    ncl = g_new0(NamedClockList, 1);
-    ncl->name = g_strdup(name);
-    ncl->alias = alias;
+    ncl         = g_new0(NamedClockList, 1);
+    ncl->name   = g_strdup(name);
+    ncl->alias  = alias;
     ncl->output = output;
-    ncl->clock = clk;
+    ncl->clock  = clk;
 
     QLIST_INSERT_HEAD(&dev->clocks, ncl, node);
     return ncl;
 }
 
-void qdev_finalize_clocklist(DeviceState *dev)
+void qdev_finalize_clocklist(DeviceState* dev)
 {
     /* called by @dev's device_finalize() */
     NamedClockList *ncl, *ncl_next;
 
-    QLIST_FOREACH_SAFE(ncl, &dev->clocks, node, ncl_next) {
+    QLIST_FOREACH_SAFE (ncl, &dev->clocks, node, ncl_next) {
         QLIST_REMOVE(ncl, node);
         if (!ncl->alias) {
             /*
@@ -65,70 +64,62 @@ void qdev_finalize_clocklist(DeviceState *dev)
     }
 }
 
-Clock *qdev_init_clock_out(DeviceState *dev, const char *name)
+Clock* qdev_init_clock_out(DeviceState* dev, const char* name)
 {
-    Clock *clk = CLOCK(object_new(TYPE_CLOCK));
+    Clock* clk = CLOCK(object_new(TYPE_CLOCK));
     object_property_add_child(OBJECT(dev), name, OBJECT(clk));
 
     qdev_init_clocklist(dev, name, false, true, clk);
     return clk;
 }
 
-Clock *qdev_init_clock_in(DeviceState *dev, const char *name,
-                          ClockCallback *callback, void *opaque,
+Clock* qdev_init_clock_in(DeviceState* dev, const char* name, ClockCallback* callback, void* opaque,
                           unsigned int events)
 {
-    Clock *clk = CLOCK(object_new(TYPE_CLOCK));
+    Clock* clk = CLOCK(object_new(TYPE_CLOCK));
     object_property_add_child(OBJECT(dev), name, OBJECT(clk));
 
     qdev_init_clocklist(dev, name, false, false, clk);
-    if (callback) {
-        clock_set_callback(clk, callback, opaque, events);
-    }
+    if (callback) { clock_set_callback(clk, callback, opaque, events); }
     return clk;
 }
 
-void qdev_init_clocks(DeviceState *dev, const ClockPortInitArray clocks)
+void qdev_init_clocks(DeviceState* dev, const ClockPortInitArray clocks)
 {
-    const struct ClockPortInitElem *elem;
+    const struct ClockPortInitElem* elem;
 
     for (elem = &clocks[0]; elem->name != NULL; elem++) {
-        Clock **clkp;
+        Clock** clkp;
         /* offset cannot be inside the DeviceState part */
         assert(elem->offset > sizeof(DeviceState));
-        clkp = ((void *)dev) + elem->offset;
-        if (elem->is_output) {
-            *clkp = qdev_init_clock_out(dev, elem->name);
-        } else {
-            *clkp = qdev_init_clock_in(dev, elem->name, elem->callback, dev,
-                                       elem->callback_events);
+        clkp = ((void*)dev) + elem->offset;
+        if (elem->is_output) { *clkp = qdev_init_clock_out(dev, elem->name); }
+        else {
+            *clkp = qdev_init_clock_in(dev, elem->name, elem->callback, dev, elem->callback_events);
         }
     }
 }
 
-static NamedClockList *qdev_get_clocklist(DeviceState *dev, const char *name)
+static NamedClockList* qdev_get_clocklist(DeviceState* dev, const char* name)
 {
-    NamedClockList *ncl;
+    NamedClockList* ncl;
 
-    QLIST_FOREACH(ncl, &dev->clocks, node) {
-        if (strcmp(name, ncl->name) == 0) {
-            return ncl;
-        }
+    QLIST_FOREACH (ncl, &dev->clocks, node) {
+        if (strcmp(name, ncl->name) == 0) { return ncl; }
     }
 
     return NULL;
 }
 
-Clock *qdev_get_clock_in(DeviceState *dev, const char *name)
+Clock* qdev_get_clock_in(DeviceState* dev, const char* name)
 {
-    NamedClockList *ncl;
+    NamedClockList* ncl;
 
     assert(name);
 
     ncl = qdev_get_clocklist(dev, name);
     if (!ncl) {
-        error_report("Can not find clock-in '%s' for device type '%s'",
-                     name, object_get_typename(OBJECT(dev)));
+        error_report("Can not find clock-in '%s' for device type '%s'", name, object_get_typename(OBJECT(dev)));
         abort();
     }
     assert(!ncl->output);
@@ -136,16 +127,15 @@ Clock *qdev_get_clock_in(DeviceState *dev, const char *name)
     return ncl->clock;
 }
 
-Clock *qdev_get_clock_out(DeviceState *dev, const char *name)
+Clock* qdev_get_clock_out(DeviceState* dev, const char* name)
 {
-    NamedClockList *ncl;
+    NamedClockList* ncl;
 
     assert(name);
 
     ncl = qdev_get_clocklist(dev, name);
     if (!ncl) {
-        error_report("Can not find clock-out '%s' for device type '%s'",
-                     name, object_get_typename(OBJECT(dev)));
+        error_report("Can not find clock-out '%s' for device type '%s'", name, object_get_typename(OBJECT(dev)));
         abort();
     }
     assert(ncl->output);
@@ -153,18 +143,15 @@ Clock *qdev_get_clock_out(DeviceState *dev, const char *name)
     return ncl->clock;
 }
 
-Clock *qdev_alias_clock(DeviceState *dev, const char *name,
-                        DeviceState *alias_dev, const char *alias_name)
+Clock* qdev_alias_clock(DeviceState* dev, const char* name, DeviceState* alias_dev, const char* alias_name)
 {
-    NamedClockList *ncl = qdev_get_clocklist(dev, name);
-    Clock *clk = ncl->clock;
+    NamedClockList* ncl = qdev_get_clocklist(dev, name);
+    Clock*          clk = ncl->clock;
 
     ncl = qdev_init_clocklist(alias_dev, alias_name, true, ncl->output, clk);
 
-    object_property_add_link(OBJECT(alias_dev), alias_name,
-                             TYPE_CLOCK,
-                             (Object **) &ncl->clock,
-                             NULL, OBJ_PROP_LINK_STRONG);
+    object_property_add_link(OBJECT(alias_dev), alias_name, TYPE_CLOCK, (Object**)&ncl->clock, NULL,
+                             OBJ_PROP_LINK_STRONG);
     /*
      * Since the link property has the OBJ_PROP_LINK_STRONG flag, the clk
      * object reference count gets decremented on property deletion.
@@ -177,7 +164,7 @@ Clock *qdev_alias_clock(DeviceState *dev, const char *name,
     return clk;
 }
 
-void qdev_connect_clock_in(DeviceState *dev, const char *name, Clock *source)
+void qdev_connect_clock_in(DeviceState* dev, const char* name, Clock* source)
 {
     assert(!dev->realized);
     clock_set_source(qdev_get_clock_in(dev, name), source);

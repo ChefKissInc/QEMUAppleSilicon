@@ -21,10 +21,8 @@
 
 #include "qemu/osdep.h"
 
-typedef uint64_t (*ArmAarch64FallbackEmuGetReg)(CPUState *cpu, int rt);
-typedef void (*ArmAarch64FallbackEmuSetReg)(CPUState *cpu, int rt,
-                                            uint64_t val);
+typedef uint64_t (*ArmAarch64FallbackEmuGetReg)(CPUState* cpu, int rt);
+typedef void     (*ArmAarch64FallbackEmuSetReg)(CPUState* cpu, int rt, uint64_t val);
 
-bool arm_aarch64_fallback_emu_single(CPUState *cpu, AddressSpace *as,
-                                     ArmAarch64FallbackEmuGetReg get_reg,
+bool arm_aarch64_fallback_emu_single(CPUState* cpu, AddressSpace* as, ArmAarch64FallbackEmuGetReg get_reg,
                                      ArmAarch64FallbackEmuSetReg set_reg);

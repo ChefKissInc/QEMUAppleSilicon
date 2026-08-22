@@ -3,11 +3,12 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-struct QemuMutex {
+struct QemuMutex
+{
     pthread_mutex_t lock;
 #ifdef CONFIG_DEBUG_MUTEX
-    const char *file;
-    int line;
+    const char* file;
+    int         line;
 #endif
     bool initialized;
 };
@@ -16,21 +17,25 @@ struct QemuMutex {
  * QemuRecMutex cannot be a typedef of QemuMutex lest we have two
  * compatible cases in _Generic.  See qemu/lockable.h.
  */
-typedef struct QemuRecMutex {
+typedef struct QemuRecMutex
+{
     QemuMutex m;
 } QemuRecMutex;
 
-struct QemuCond {
+struct QemuCond
+{
     pthread_cond_t cond;
-    bool initialized;
+    bool           initialized;
 };
 
-struct QemuSemaphore {
-    QemuMutex mutex;
-    QemuCond cond;
+struct QemuSemaphore
+{
+    QemuMutex    mutex;
+    QemuCond     cond;
     unsigned int count;
 };
 
-struct QemuThread {
+struct QemuThread
+{
     pthread_t thread;
 };

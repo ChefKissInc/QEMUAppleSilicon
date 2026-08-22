@@ -21,4 +21,4 @@ typedef struct StringInputVisitor StringInputVisitor;
  * QAPI structs, alternates, null, or arbitrary QTypes. Only flat lists
  * of integers (except type "size") are supported.
  */
-Visitor *string_input_visitor_new(const char *str);
+Visitor* string_input_visitor_new(const char* str);

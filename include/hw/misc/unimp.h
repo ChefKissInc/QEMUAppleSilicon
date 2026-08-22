@@ -16,12 +16,13 @@
 
 OBJECT_DECLARE_SIMPLE_TYPE(UnimplementedDeviceState, UNIMPLEMENTED_DEVICE)
 
-struct UnimplementedDeviceState {
+struct UnimplementedDeviceState
+{
     SysBusDevice parent_obj;
     MemoryRegion iomem;
-    unsigned offset_fmt_width;
-    char *name;
-    uint64_t size;
+    unsigned     offset_fmt_width;
+    char*        name;
+    uint64_t     size;
 };
 
 /**
@@ -37,11 +38,9 @@ struct UnimplementedDeviceState {
  * use it to cover a large region and then map other devices on top of it
  * if necessary.
  */
-static inline void create_unimplemented_device(const char *name,
-                                               hwaddr base,
-                                               hwaddr size)
+static inline void create_unimplemented_device(const char* name, hwaddr base, hwaddr size)
 {
-    DeviceState *dev = qdev_new(TYPE_UNIMPLEMENTED_DEVICE);
+    DeviceState* dev = qdev_new(TYPE_UNIMPLEMENTED_DEVICE);
 
     qdev_prop_set_string(dev, "name", name);
     qdev_prop_set_uint64(dev, "size", size);

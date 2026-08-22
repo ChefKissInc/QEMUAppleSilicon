@@ -17,11 +17,8 @@
 
 extern CompatPolicy compat_policy;
 
-bool compat_policy_input_ok(uint64_t features,
-                            const CompatPolicy *policy,
-                            ErrorClass error_class,
-                            const char *kind, const char *name,
-                            Error **errp);
+bool compat_policy_input_ok(uint64_t features, const CompatPolicy* policy, ErrorClass error_class, const char* kind,
+                            const char* name, Error** errp);
 
 /*
  * Create a QObject input visitor for @obj for use with QMP
@@ -30,7 +27,7 @@ bool compat_policy_input_ok(uint64_t features,
  * policy for handling deprecated management interfaces set with
  * -compat.
  */
-Visitor *qobject_input_visitor_new_qmp(QObject *obj);
+Visitor* qobject_input_visitor_new_qmp(QObject* obj);
 
 /*
  * Create a QObject output visitor for @obj for use with QMP
@@ -39,4 +36,4 @@ Visitor *qobject_input_visitor_new_qmp(QObject *obj);
  * policy for handling deprecated management interfaces set with
  * -compat.
  */
-Visitor *qobject_output_visitor_new_qmp(QObject **result);
+Visitor* qobject_output_visitor_new_qmp(QObject** result);

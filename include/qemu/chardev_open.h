@@ -11,4 +11,4 @@
 
 #pragma once
 
-int open_cdev(const char *devpath, dev_t cdev);
+int open_cdev(const char* devpath, dev_t cdev);

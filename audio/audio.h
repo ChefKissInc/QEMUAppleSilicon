@@ -29,154 +29,138 @@
 #include "hw/qdev-properties.h"
 #include "hw/qdev-properties-system.h"
 
-typedef void (*audio_callback_fn) (void *opaque, int avail);
+typedef void (*audio_callback_fn)(void* opaque, int avail);
 
 #if HOST_BIG_ENDIAN
-#define AUDIO_HOST_ENDIANNESS 1
+    #define AUDIO_HOST_ENDIANNESS 1
 #else
-#define AUDIO_HOST_ENDIANNESS 0
+    #define AUDIO_HOST_ENDIANNESS 0
 #endif
 
-typedef struct audsettings {
-    int freq;
-    int nchannels;
+typedef struct audsettings
+{
+    int         freq;
+    int         nchannels;
     AudioFormat fmt;
-    int endianness;
+    int         endianness;
 } audsettings;
 
-audsettings audiodev_to_audsettings(AudiodevPerDirectionOptions *pdo);
-int audioformat_bytes_per_sample(AudioFormat fmt);
-int audio_buffer_frames(AudiodevPerDirectionOptions *pdo,
-                        audsettings *as, int def_usecs);
-int audio_buffer_samples(AudiodevPerDirectionOptions *pdo,
-                         audsettings *as, int def_usecs);
-int audio_buffer_bytes(AudiodevPerDirectionOptions *pdo,
-                       audsettings *as, int def_usecs);
+audsettings audiodev_to_audsettings(AudiodevPerDirectionOptions* pdo);
+int         audioformat_bytes_per_sample(AudioFormat fmt);
+int         audio_buffer_frames(AudiodevPerDirectionOptions* pdo, audsettings* as, int def_usecs);
+int         audio_buffer_samples(AudiodevPerDirectionOptions* pdo, audsettings* as, int def_usecs);
+int         audio_buffer_bytes(AudiodevPerDirectionOptions* pdo, audsettings* as, int def_usecs);
 
-typedef enum {
+typedef enum
+{
     AUD_CNOTIFY_ENABLE,
     AUD_CNOTIFY_DISABLE
 } audcnotification_e;
 
-struct audio_capture_ops {
-    void (*notify) (void *opaque, audcnotification_e cmd);
-    void (*capture) (void *opaque, const void *buf, int size);
-    void (*destroy) (void *opaque);
+struct audio_capture_ops
+{
+    void (*notify)(void* opaque, audcnotification_e cmd);
+    void (*capture)(void* opaque, const void* buf, int size);
+    void (*destroy)(void* opaque);
 };
 
-struct capture_ops {
-    void (*info) (void *opaque);
-    void (*destroy) (void *opaque);
+struct capture_ops
+{
+    void (*info)(void* opaque);
+    void (*destroy)(void* opaque);
 };
 
-typedef struct CaptureState {
-    void *opaque;
+typedef struct CaptureState
+{
+    void*              opaque;
     struct capture_ops ops;
-    QLIST_ENTRY (CaptureState) entries;
+    QLIST_ENTRY(CaptureState) entries;
 } CaptureState;
 
-typedef struct SWVoiceOut SWVoiceOut;
+typedef struct SWVoiceOut      SWVoiceOut;
 typedef struct CaptureVoiceOut CaptureVoiceOut;
-typedef struct SWVoiceIn SWVoiceIn;
+typedef struct SWVoiceIn       SWVoiceIn;
 
 typedef struct AudioState AudioState;
-typedef struct QEMUSoundCard {
-    char *name;
-    AudioState *state;
-    QLIST_ENTRY (QEMUSoundCard) entries;
+typedef struct QEMUSoundCard
+{
+    char*       name;
+    AudioState* state;
+    QLIST_ENTRY(QEMUSoundCard) entries;
 } QEMUSoundCard;
 
-typedef struct QEMUAudioTimeStamp {
+typedef struct QEMUAudioTimeStamp
+{
     uint64_t old_ts;
 } QEMUAudioTimeStamp;
 
-void AUD_vlog (const char *cap, const char *fmt, va_list ap) G_GNUC_PRINTF(2, 0);
-void AUD_log (const char *cap, const char *fmt, ...) G_GNUC_PRINTF(2, 3);
+void AUD_vlog(const char* cap, const char* fmt, va_list ap) G_GNUC_PRINTF(2, 0);
+void AUD_log(const char* cap, const char* fmt, ...) G_GNUC_PRINTF(2, 3);
 
-bool AUD_register_card (const char *name, QEMUSoundCard *card, Error **errp);
-void AUD_remove_card (QEMUSoundCard *card);
-CaptureVoiceOut *AUD_add_capture(
-    AudioState *s,
-    struct audsettings *as,
-    struct audio_capture_ops *ops,
-    void *opaque
-    );
-void AUD_del_capture (CaptureVoiceOut *cap, void *cb_opaque);
+bool             AUD_register_card(const char* name, QEMUSoundCard* card, Error** errp);
+void             AUD_remove_card(QEMUSoundCard* card);
+CaptureVoiceOut* AUD_add_capture(AudioState* s, struct audsettings* as, struct audio_capture_ops* ops, void* opaque);
+void             AUD_del_capture(CaptureVoiceOut* cap, void* cb_opaque);
 
-SWVoiceOut *AUD_open_out (
-    QEMUSoundCard *card,
-    SWVoiceOut *sw,
-    const char *name,
-    void *callback_opaque,
-    audio_callback_fn callback_fn,
-    struct audsettings *settings
-    );
+SWVoiceOut* AUD_open_out(QEMUSoundCard* card, SWVoiceOut* sw, const char* name, void* callback_opaque,
+                         audio_callback_fn callback_fn, struct audsettings* settings);
 
-void AUD_close_out (QEMUSoundCard *card, SWVoiceOut *sw);
-size_t AUD_write (SWVoiceOut *sw, void *pcm_buf, size_t size);
-int  AUD_get_buffer_size_out (SWVoiceOut *sw);
-void AUD_set_active_out (SWVoiceOut *sw, int on);
-int  AUD_is_active_out (SWVoiceOut *sw);
+void   AUD_close_out(QEMUSoundCard* card, SWVoiceOut* sw);
+size_t AUD_write(SWVoiceOut* sw, void* pcm_buf, size_t size);
+int    AUD_get_buffer_size_out(SWVoiceOut* sw);
+void   AUD_set_active_out(SWVoiceOut* sw, int on);
+int    AUD_is_active_out(SWVoiceOut* sw);
 
-void     AUD_init_time_stamp_out (SWVoiceOut *sw, QEMUAudioTimeStamp *ts);
-uint64_t AUD_get_elapsed_usec_out (SWVoiceOut *sw, QEMUAudioTimeStamp *ts);
+void     AUD_init_time_stamp_out(SWVoiceOut* sw, QEMUAudioTimeStamp* ts);
+uint64_t AUD_get_elapsed_usec_out(SWVoiceOut* sw, QEMUAudioTimeStamp* ts);
 
-void AUD_set_volume_out (SWVoiceOut *sw, int mute, uint8_t lvol, uint8_t rvol);
-void AUD_set_volume_in (SWVoiceIn *sw, int mute, uint8_t lvol, uint8_t rvol);
+void AUD_set_volume_out(SWVoiceOut* sw, int mute, uint8_t lvol, uint8_t rvol);
+void AUD_set_volume_in(SWVoiceIn* sw, int mute, uint8_t lvol, uint8_t rvol);
 
 #define AUDIO_MAX_CHANNELS 16
-typedef struct Volume {
-    bool mute;
-    int channels;
+typedef struct Volume
+{
+    bool    mute;
+    int     channels;
     uint8_t vol[AUDIO_MAX_CHANNELS];
 } Volume;
 
-void audio_set_volume_out(SWVoiceOut *sw, Volume *vol);
-void audio_set_volume_in(SWVoiceIn *sw, Volume *vol);
+void audio_set_volume_out(SWVoiceOut* sw, Volume* vol);
+void audio_set_volume_in(SWVoiceIn* sw, Volume* vol);
 
-SWVoiceIn *AUD_open_in (
-    QEMUSoundCard *card,
-    SWVoiceIn *sw,
-    const char *name,
-    void *callback_opaque,
-    audio_callback_fn callback_fn,
-    struct audsettings *settings
-    );
+SWVoiceIn* AUD_open_in(QEMUSoundCard* card, SWVoiceIn* sw, const char* name, void* callback_opaque,
+                       audio_callback_fn callback_fn, struct audsettings* settings);
 
-void AUD_close_in (QEMUSoundCard *card, SWVoiceIn *sw);
-size_t AUD_read (SWVoiceIn *sw, void *pcm_buf, size_t size);
-void AUD_set_active_in (SWVoiceIn *sw, int on);
-int  AUD_is_active_in (SWVoiceIn *sw);
+void   AUD_close_in(QEMUSoundCard* card, SWVoiceIn* sw);
+size_t AUD_read(SWVoiceIn* sw, void* pcm_buf, size_t size);
+void   AUD_set_active_in(SWVoiceIn* sw, int on);
+int    AUD_is_active_in(SWVoiceIn* sw);
 
-void     AUD_init_time_stamp_in (SWVoiceIn *sw, QEMUAudioTimeStamp *ts);
-uint64_t AUD_get_elapsed_usec_in (SWVoiceIn *sw, QEMUAudioTimeStamp *ts);
+void     AUD_init_time_stamp_in(SWVoiceIn* sw, QEMUAudioTimeStamp* ts);
+uint64_t AUD_get_elapsed_usec_in(SWVoiceIn* sw, QEMUAudioTimeStamp* ts);
 
-static inline void *advance (void *p, int incr)
+static inline void* advance(void* p, int incr)
 {
-    uint8_t *d = p;
+    uint8_t* d = p;
     return (d + incr);
 }
 
-int wav_start_capture(AudioState *state, CaptureState *s, const char *path,
-                      int freq, int bits, int nchannels);
+int wav_start_capture(AudioState* state, CaptureState* s, const char* path, int freq, int bits, int nchannels);
 
 void audio_cleanup(void);
 
-void audio_sample_to_uint64(const void *samples, int pos,
-                            uint64_t *left, uint64_t *right);
-void audio_sample_from_uint64(void *samples, int pos,
-                            uint64_t left, uint64_t right);
+void audio_sample_to_uint64(const void* samples, int pos, uint64_t* left, uint64_t* right);
+void audio_sample_from_uint64(void* samples, int pos, uint64_t left, uint64_t right);
 
-void audio_define(Audiodev *audio);
-void audio_define_default(Audiodev *dev, Error **errp);
-void audio_parse_option(const char *opt);
+void audio_define(Audiodev* audio);
+void audio_define_default(Audiodev* dev, Error** errp);
+void audio_parse_option(const char* opt);
 void audio_create_default_audiodevs(void);
 void audio_init_audiodevs(void);
 void audio_help(void);
 
-AudioState *audio_state_by_name(const char *name, Error **errp);
-AudioState *audio_get_default_audio_state(Error **errp);
-const char *audio_get_id(QEMUSoundCard *card);
+AudioState* audio_state_by_name(const char* name, Error** errp);
+AudioState* audio_get_default_audio_state(Error** errp);
+const char* audio_get_id(QEMUSoundCard* card);
 
-#define DEFINE_AUDIO_PROPERTIES(_s, _f)         \
-    DEFINE_PROP_AUDIODEV("audiodev", _s, _f)
+#define DEFINE_AUDIO_PROPERTIES(_s, _f) DEFINE_PROP_AUDIODEV("audiodev", _s, _f)

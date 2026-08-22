@@ -28,41 +28,45 @@
 #define TYPE_APPLE_SEP_SIM "apple-sep-sim"
 OBJECT_DECLARE_TYPE(AppleSEPSimState, AppleSEPSimClass, APPLE_SEP_SIM)
 
-struct AppleSEPSimClass {
+struct AppleSEPSimClass
+{
     /*< private >*/
     SysBusDeviceClass base_class;
 
-    DeviceRealize parent_realize;
+    DeviceRealize    parent_realize;
     ResettablePhases parent_phases;
 };
 
 #define SEP_ENDPOINT_MAX 0x20
 
-typedef struct {
+typedef struct
+{
     uint8_t in_min_pages;
     uint8_t in_max_pages;
     uint8_t out_min_pages;
     uint8_t out_max_pages;
 } QEMU_PACKED AppleSEPSimOOLInfo;
 
-typedef struct {
+typedef struct
+{
     uint64_t in_addr;
     uint32_t in_size;
     uint64_t out_addr;
     uint32_t out_size;
 } AppleSEPSimOOLState;
 
-struct AppleSEPSimState {
+struct AppleSEPSimState
+{
     /*< private >*/
     AppleA7IOP parent_obj;
 
-    MemoryRegion *dma_mr;
-    AddressSpace *dma_as;
-    QemuMutex lock;
-    bool rsep;
-    uint32_t status;
-    AppleSEPSimOOLInfo ool_info[SEP_ENDPOINT_MAX];
+    MemoryRegion*       dma_mr;
+    AddressSpace*       dma_as;
+    QemuMutex           lock;
+    bool                rsep;
+    uint32_t            status;
+    AppleSEPSimOOLInfo  ool_info[SEP_ENDPOINT_MAX];
     AppleSEPSimOOLState ool_state[SEP_ENDPOINT_MAX];
 };
 
-AppleSEPSimState *apple_sep_sim_from_node(AppleDTNode *node, bool modern);
+AppleSEPSimState* apple_sep_sim_from_node(AppleDTNode* node, bool modern);

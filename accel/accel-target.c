@@ -27,15 +27,12 @@
 #include "accel/accel-cpu-target.h"
 
 static const TypeInfo accel_cpu_type = {
-    .name = TYPE_ACCEL_CPU,
-    .parent = TYPE_OBJECT,
-    .abstract = true,
+    .name       = TYPE_ACCEL_CPU,
+    .parent     = TYPE_OBJECT,
+    .abstract   = true,
     .class_size = sizeof(AccelCPUClass),
 };
 
-static void register_accel_types(void)
-{
-    type_register_static(&accel_cpu_type);
-}
+static void register_accel_types(void) { type_register_static(&accel_cpu_type); }
 
 type_init(register_accel_types);

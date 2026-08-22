@@ -17,10 +17,10 @@
 #define TYPE_ARM_GICV3 "arm-gicv3"
 typedef struct ARMGICv3Class ARMGICv3Class;
 /* This is reusing the GICState typedef from TYPE_ARM_GICV3_COMMON */
-DECLARE_OBJ_CHECKERS(GICv3State, ARMGICv3Class,
-                     ARM_GICV3, TYPE_ARM_GICV3)
+DECLARE_OBJ_CHECKERS(GICv3State, ARMGICv3Class, ARM_GICV3, TYPE_ARM_GICV3)
 
-struct ARMGICv3Class {
+struct ARMGICv3Class
+{
     /*< private >*/
     ARMGICv3CommonClass parent_class;
     /*< public >*/

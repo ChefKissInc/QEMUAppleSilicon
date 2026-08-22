@@ -32,7 +32,7 @@
 #include "system/accel-blocker.h"
 
 static QemuLockCnt accel_in_ioctl_lock;
-static QemuEvent accel_in_ioctl_event;
+static QemuEvent   accel_in_ioctl_event;
 
 void accel_blocker_init(void)
 {
@@ -42,9 +42,7 @@ void accel_blocker_init(void)
 
 void accel_ioctl_begin(void)
 {
-    if (likely(bql_locked())) {
-        return;
-    }
+    if (likely(bql_locked())) { return; }
 
     /* block if lock is taken in kvm_ioctl_inhibit_begin() */
     qemu_lockcnt_inc(&accel_in_ioctl_lock);
@@ -52,30 +50,24 @@ void accel_ioctl_begin(void)
 
 void accel_ioctl_end(void)
 {
-    if (likely(bql_locked())) {
-        return;
-    }
+    if (likely(bql_locked())) { return; }
 
     qemu_lockcnt_dec(&accel_in_ioctl_lock);
     /* change event to SET. If event was BUSY, wake up all waiters */
     qemu_event_set(&accel_in_ioctl_event);
 }
 
-void accel_cpu_ioctl_begin(CPUState *cpu)
+void accel_cpu_ioctl_begin(CPUState* cpu)
 {
-    if (unlikely(bql_locked())) {
-        return;
-    }
+    if (unlikely(bql_locked())) { return; }
 
     /* block if lock is taken in kvm_ioctl_inhibit_begin() */
     qemu_lockcnt_inc(&cpu->in_ioctl_lock);
 }
 
-void accel_cpu_ioctl_end(CPUState *cpu)
+void accel_cpu_ioctl_end(CPUState* cpu)
 {
-    if (unlikely(bql_locked())) {
-        return;
-    }
+    if (unlikely(bql_locked())) { return; }
 
     qemu_lockcnt_dec(&cpu->in_ioctl_lock);
     /* change event to SET. If event was BUSY, wake up all waiters */
@@ -84,10 +76,10 @@ void accel_cpu_ioctl_end(CPUState *cpu)
 
 static bool accel_has_to_wait(void)
 {
-    CPUState *cpu;
-    bool needs_to_wait = false;
+    CPUState* cpu;
+    bool      needs_to_wait = false;
 
-    CPU_FOREACH(cpu) {
+    CPU_FOREACH (cpu) {
         if (qemu_lockcnt_count(&cpu->in_ioctl_lock)) {
             /* exit the ioctl, if vcpu is running it */
             qemu_cpu_kick(cpu);
@@ -100,7 +92,7 @@ static bool accel_has_to_wait(void)
 
 void accel_ioctl_inhibit_begin(void)
 {
-    CPUState *cpu;
+    CPUState* cpu;
 
     /*
      * We allow to inhibit only when holding the BQL, so we can identify
@@ -109,9 +101,7 @@ void accel_ioctl_inhibit_begin(void)
     assert(bql_locked());
 
     /* Block further invocations of the ioctls outside the BQL.  */
-    CPU_FOREACH(cpu) {
-        qemu_lockcnt_lock(&cpu->in_ioctl_lock);
-    }
+    CPU_FOREACH (cpu) { qemu_lockcnt_lock(&cpu->in_ioctl_lock); }
     qemu_lockcnt_lock(&accel_in_ioctl_lock);
 
     /* Keep waiting until there are running ioctls */
@@ -136,7 +126,8 @@ void accel_ioctl_inhibit_begin(void)
              * to re-enter the wait if there are other running ioctls.
              */
             qemu_event_wait(&accel_in_ioctl_event);
-        } else {
+        }
+        else {
             /* No ioctl is running */
             return;
         }
@@ -145,11 +136,8 @@ void accel_ioctl_inhibit_begin(void)
 
 void accel_ioctl_inhibit_end(void)
 {
-    CPUState *cpu;
+    CPUState* cpu;
 
     qemu_lockcnt_unlock(&accel_in_ioctl_lock);
-    CPU_FOREACH(cpu) {
-        qemu_lockcnt_unlock(&cpu->in_ioctl_lock);
-    }
+    CPU_FOREACH (cpu) { qemu_lockcnt_unlock(&cpu->in_ioctl_lock); }
 }
-

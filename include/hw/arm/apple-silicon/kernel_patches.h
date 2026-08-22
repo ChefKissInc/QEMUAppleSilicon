@@ -21,4 +21,4 @@
 
 #include "hw/arm/apple-silicon/boot.h"
 
-void ck_patch_kernel(MachoHeader64 *hdr);
+void ck_patch_kernel(MachoHeader64* hdr);

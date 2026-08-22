@@ -7,16 +7,18 @@
 #pragma once
 
 #if defined(__i386__) || defined(__x86_64__)
-# define cpu_relax() asm volatile("rep; nop" ::: "memory")
+    #define cpu_relax() asm volatile("rep; nop" ::: "memory")
 
 #elif defined(__aarch64__)
-# define cpu_relax() asm volatile("yield" ::: "memory")
+    #define cpu_relax() asm volatile("yield" ::: "memory")
 
 #elif defined(__powerpc64__)
-/* set Hardware Multi-Threading (HMT) priority to low; then back to medium */
-# define cpu_relax() asm volatile("or 1, 1, 1;" \
-                                  "or 2, 2, 2;" ::: "memory")
+    /* set Hardware Multi-Threading (HMT) priority to low; then back to medium */
+    #define cpu_relax()               \
+        asm volatile("or 1, 1, 1;"    \
+                     "or 2, 2, 2;" :: \
+                         : "memory")
 
 #else
-# define cpu_relax() barrier()
+    #define cpu_relax() barrier()
 #endif

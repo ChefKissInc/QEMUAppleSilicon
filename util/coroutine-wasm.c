@@ -25,12 +25,13 @@
 
 #include <emscripten/fiber.h>
 
-typedef struct {
+typedef struct
+{
     Coroutine base;
-    void *stack;
-    size_t stack_size;
+    void*     stack;
+    size_t    stack_size;
 
-    void *asyncify_stack;
+    void*  asyncify_stack;
     size_t asyncify_stack_size;
 
     CoroutineAction action;
@@ -41,13 +42,13 @@ typedef struct {
 /**
  * Per-thread coroutine bookkeeping
  */
-QEMU_DEFINE_STATIC_CO_TLS(Coroutine *, current);
-QEMU_DEFINE_STATIC_CO_TLS(CoroutineEmscripten *, leader);
+QEMU_DEFINE_STATIC_CO_TLS(Coroutine*, current);
+QEMU_DEFINE_STATIC_CO_TLS(CoroutineEmscripten*, leader);
 size_t leader_asyncify_stack_size = COROUTINE_STACK_SIZE;
 
-static void coroutine_trampoline(void *co_)
+static void coroutine_trampoline(void* co_)
 {
-    Coroutine *co = co_;
+    Coroutine* co = co_;
 
     while (true) {
         co->entry(co->entry_arg);
@@ -55,38 +56,36 @@ static void coroutine_trampoline(void *co_)
     }
 }
 
-Coroutine *qemu_coroutine_new(void)
+Coroutine* qemu_coroutine_new(void)
 {
-    CoroutineEmscripten *co;
+    CoroutineEmscripten* co;
 
     co = g_malloc0(sizeof(*co));
 
     co->stack_size = COROUTINE_STACK_SIZE;
-    co->stack = qemu_alloc_stack(&co->stack_size);
+    co->stack      = qemu_alloc_stack(&co->stack_size);
 
     co->asyncify_stack_size = COROUTINE_STACK_SIZE;
-    co->asyncify_stack = g_malloc0(co->asyncify_stack_size);
-    emscripten_fiber_init(&co->fiber, coroutine_trampoline, &co->base,
-                          co->stack, co->stack_size, co->asyncify_stack,
+    co->asyncify_stack      = g_malloc0(co->asyncify_stack_size);
+    emscripten_fiber_init(&co->fiber, coroutine_trampoline, &co->base, co->stack, co->stack_size, co->asyncify_stack,
                           co->asyncify_stack_size);
 
     return &co->base;
 }
 
-void qemu_coroutine_delete(Coroutine *co_)
+void qemu_coroutine_delete(Coroutine* co_)
 {
-    CoroutineEmscripten *co = DO_UPCAST(CoroutineEmscripten, base, co_);
+    CoroutineEmscripten* co = DO_UPCAST(CoroutineEmscripten, base, co_);
 
     qemu_free_stack(co->stack, co->stack_size);
     g_free(co->asyncify_stack);
     g_free(co);
 }
 
-CoroutineAction qemu_coroutine_switch(Coroutine *from_, Coroutine *to_,
-                      CoroutineAction action)
+CoroutineAction qemu_coroutine_switch(Coroutine* from_, Coroutine* to_, CoroutineAction action)
 {
-    CoroutineEmscripten *from = DO_UPCAST(CoroutineEmscripten, base, from_);
-    CoroutineEmscripten *to = DO_UPCAST(CoroutineEmscripten, base, to_);
+    CoroutineEmscripten* from = DO_UPCAST(CoroutineEmscripten, base, from_);
+    CoroutineEmscripten* to   = DO_UPCAST(CoroutineEmscripten, base, to_);
 
     set_current(to_);
     to->action = action;
@@ -94,23 +93,20 @@ CoroutineAction qemu_coroutine_switch(Coroutine *from_, Coroutine *to_,
     return from->action;
 }
 
-Coroutine *qemu_coroutine_self(void)
+Coroutine* qemu_coroutine_self(void)
 {
-    Coroutine *self = get_current();
+    Coroutine* self = get_current();
 
     if (!self) {
-        CoroutineEmscripten *leaderp = get_leader();
+        CoroutineEmscripten* leaderp = get_leader();
         if (!leaderp) {
-            leaderp = g_malloc0(sizeof(*leaderp));
-            leaderp->asyncify_stack = g_malloc0(leader_asyncify_stack_size);
+            leaderp                      = g_malloc0(sizeof(*leaderp));
+            leaderp->asyncify_stack      = g_malloc0(leader_asyncify_stack_size);
             leaderp->asyncify_stack_size = leader_asyncify_stack_size;
-            emscripten_fiber_init_from_current_context(
-                &leaderp->fiber,
-                leaderp->asyncify_stack,
-                leaderp->asyncify_stack_size);
-            leaderp->stack = leaderp->fiber.stack_limit;
-            leaderp->stack_size =
-                leaderp->fiber.stack_base - leaderp->fiber.stack_limit;
+            emscripten_fiber_init_from_current_context(&leaderp->fiber, leaderp->asyncify_stack,
+                                                       leaderp->asyncify_stack_size);
+            leaderp->stack      = leaderp->fiber.stack_limit;
+            leaderp->stack_size = leaderp->fiber.stack_base - leaderp->fiber.stack_limit;
             set_leader(leaderp);
         }
         self = &leaderp->base;
@@ -121,7 +117,7 @@ Coroutine *qemu_coroutine_self(void)
 
 bool qemu_in_coroutine(void)
 {
-    Coroutine *self = get_current();
+    Coroutine* self = get_current();
 
     return self && self->caller;
 }

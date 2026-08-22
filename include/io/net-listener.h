@@ -24,13 +24,9 @@
 #include "qom/object.h"
 
 #define TYPE_QIO_NET_LISTENER "qio-net-listener"
-OBJECT_DECLARE_SIMPLE_TYPE(QIONetListener,
-                           QIO_NET_LISTENER)
+OBJECT_DECLARE_SIMPLE_TYPE(QIONetListener, QIO_NET_LISTENER)
 
-
-typedef void (*QIONetListenerClientFunc)(QIONetListener *listener,
-                                         QIOChannelSocket *sioc,
-                                         gpointer data);
+typedef void (*QIONetListenerClientFunc)(QIONetListener* listener, QIOChannelSocket* sioc, gpointer data);
 
 /**
  * QIONetListener:
@@ -42,24 +38,23 @@ typedef void (*QIONetListenerClientFunc)(QIONetListener *listener,
  * subset of interface IP addresses, instead of the wildcard
  * address.
  */
-struct QIONetListener {
+struct QIONetListener
+{
     Object parent;
 
-    char *name;
-    QIOChannelSocket **sioc;
-    GSource **io_source;
-    size_t nsioc;
-    GMainContext *context;
+    char*              name;
+    QIOChannelSocket** sioc;
+    GSource**          io_source;
+    size_t             nsioc;
+    GMainContext*      context;
 
     bool connected;
 
-    QemuMutex lock; /* Protects remaining fields */
+    QemuMutex                lock; /* Protects remaining fields */
     QIONetListenerClientFunc io_func;
-    gpointer io_data;
-    GDestroyNotify io_notify;
+    gpointer                 io_data;
+    GDestroyNotify           io_notify;
 };
-
-
 
 /**
  * qio_net_listener_new:
@@ -69,8 +64,7 @@ struct QIONetListener {
  *
  * Returns: the new listener
  */
-QIONetListener *qio_net_listener_new(void);
-
+QIONetListener* qio_net_listener_new(void);
 
 /**
  * qio_net_listener_set_name:
@@ -81,8 +75,7 @@ QIONetListener *qio_net_listener_new(void);
  * aid, to set names on any GSource instances associated
  * with the listener
  */
-void qio_net_listener_set_name(QIONetListener *listener,
-                               const char *name);
+void qio_net_listener_set_name(QIONetListener* listener, const char* name);
 
 /**
  * qio_net_listener_open_sync:
@@ -96,10 +89,7 @@ void qio_net_listener_set_name(QIONetListener *listener,
  * also be invoked multiple times, in order to have a
  * single listener on multiple distinct addresses.
  */
-int qio_net_listener_open_sync(QIONetListener *listener,
-                               SocketAddress *addr,
-                               int num,
-                               Error **errp);
+int qio_net_listener_open_sync(QIONetListener* listener, SocketAddress* addr, int num, Error** errp);
 
 /**
  * qio_net_listener_add:
@@ -111,8 +101,7 @@ int qio_net_listener_open_sync(QIONetListener *listener,
  * on @sioc, so the caller should release its own reference
  * if it no longer requires the object.
  */
-void qio_net_listener_add(QIONetListener *listener,
-                          QIOChannelSocket *sioc);
+void qio_net_listener_add(QIONetListener* listener, QIOChannelSocket* sioc);
 
 /**
  * qio_net_listener_set_client_func_full:
@@ -128,11 +117,8 @@ void qio_net_listener_add(QIONetListener *listener,
  * passing in the QIOChannelSocket instance for the
  * client.
  */
-void qio_net_listener_set_client_func_full(QIONetListener *listener,
-                                           QIONetListenerClientFunc func,
-                                           gpointer data,
-                                           GDestroyNotify notify,
-                                           GMainContext *context);
+void qio_net_listener_set_client_func_full(QIONetListener* listener, QIONetListenerClientFunc func, gpointer data,
+                                           GDestroyNotify notify, GMainContext* context);
 
 /**
  * qio_net_listener_set_client_func:
@@ -144,9 +130,7 @@ void qio_net_listener_set_client_func_full(QIONetListener *listener,
  * Wrapper of qio_net_listener_set_client_func_full(), only that the
  * sources will always be bound to default main context.
  */
-void qio_net_listener_set_client_func(QIONetListener *listener,
-                                      QIONetListenerClientFunc func,
-                                      gpointer data,
+void qio_net_listener_set_client_func(QIONetListener* listener, QIONetListenerClientFunc func, gpointer data,
                                       GDestroyNotify notify);
 
 /**
@@ -160,8 +144,7 @@ void qio_net_listener_set_client_func(QIONetListener *listener,
  *
  * Returns: the new client socket
  */
-QIOChannelSocket *qio_net_listener_wait_client(QIONetListener *listener);
-
+QIOChannelSocket* qio_net_listener_wait_client(QIONetListener* listener);
 
 /**
  * qio_net_listener_disconnect:
@@ -170,8 +153,7 @@ QIOChannelSocket *qio_net_listener_wait_client(QIONetListener *listener);
  * Disconnect the listener, removing all I/O callback
  * watches and closing the socket channels.
  */
-void qio_net_listener_disconnect(QIONetListener *listener);
-
+void qio_net_listener_disconnect(QIONetListener* listener);
 
 /**
  * qio_net_listener_is_connected:
@@ -182,4 +164,4 @@ void qio_net_listener_disconnect(QIONetListener *listener);
  *
  * Returns: true if connected, false otherwise
  */
-bool qio_net_listener_is_connected(QIONetListener *listener);
+bool qio_net_listener_is_connected(QIONetListener* listener);

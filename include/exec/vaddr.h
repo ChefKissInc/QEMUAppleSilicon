@@ -14,4 +14,4 @@ typedef uintptr_t vaddr;
 #define VADDR_PRIo PRIoPTR
 #define VADDR_PRIx PRIxPTR
 #define VADDR_PRIX PRIXPTR
-#define VADDR_MAX UINTPTR_MAX
+#define VADDR_MAX  UINTPTR_MAX

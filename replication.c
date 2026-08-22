@@ -18,20 +18,20 @@
 
 static QLIST_HEAD(, ReplicationState) replication_states;
 
-ReplicationState *replication_new(void *opaque, ReplicationOps *ops)
+ReplicationState* replication_new(void* opaque, ReplicationOps* ops)
 {
-    ReplicationState *rs;
+    ReplicationState* rs;
 
     assert(ops != NULL);
-    rs = g_new0(ReplicationState, 1);
+    rs         = g_new0(ReplicationState, 1);
     rs->opaque = opaque;
-    rs->ops = ops;
+    rs->ops    = ops;
     QLIST_INSERT_HEAD(&replication_states, rs, node);
 
     return rs;
 }
 
-void replication_remove(ReplicationState *rs)
+void replication_remove(ReplicationState* rs)
 {
     if (rs) {
         QLIST_REMOVE(rs, node);
@@ -42,15 +42,13 @@ void replication_remove(ReplicationState *rs)
 /*
  * The caller of the function MUST make sure vm stopped
  */
-void replication_start_all(ReplicationMode mode, Error **errp)
+void replication_start_all(ReplicationMode mode, Error** errp)
 {
     ReplicationState *rs, *next;
-    Error *local_err = NULL;
+    Error*            local_err = NULL;
 
-    QLIST_FOREACH_SAFE(rs, &replication_states, node, next) {
-        if (rs->ops && rs->ops->start) {
-            rs->ops->start(rs, mode, &local_err);
-        }
+    QLIST_FOREACH_SAFE (rs, &replication_states, node, next) {
+        if (rs->ops && rs->ops->start) { rs->ops->start(rs, mode, &local_err); }
         if (local_err) {
             error_propagate(errp, local_err);
             return;
@@ -58,15 +56,13 @@ void replication_start_all(ReplicationMode mode, Error **errp)
     }
 }
 
-void replication_do_checkpoint_all(Error **errp)
+void replication_do_checkpoint_all(Error** errp)
 {
     ReplicationState *rs, *next;
-    Error *local_err = NULL;
+    Error*            local_err = NULL;
 
-    QLIST_FOREACH_SAFE(rs, &replication_states, node, next) {
-        if (rs->ops && rs->ops->checkpoint) {
-            rs->ops->checkpoint(rs, &local_err);
-        }
+    QLIST_FOREACH_SAFE (rs, &replication_states, node, next) {
+        if (rs->ops && rs->ops->checkpoint) { rs->ops->checkpoint(rs, &local_err); }
         if (local_err) {
             error_propagate(errp, local_err);
             return;
@@ -74,15 +70,13 @@ void replication_do_checkpoint_all(Error **errp)
     }
 }
 
-void replication_get_error_all(Error **errp)
+void replication_get_error_all(Error** errp)
 {
     ReplicationState *rs, *next;
-    Error *local_err = NULL;
+    Error*            local_err = NULL;
 
-    QLIST_FOREACH_SAFE(rs, &replication_states, node, next) {
-        if (rs->ops && rs->ops->get_error) {
-            rs->ops->get_error(rs, &local_err);
-        }
+    QLIST_FOREACH_SAFE (rs, &replication_states, node, next) {
+        if (rs->ops && rs->ops->get_error) { rs->ops->get_error(rs, &local_err); }
         if (local_err) {
             error_propagate(errp, local_err);
             return;
@@ -90,15 +84,13 @@ void replication_get_error_all(Error **errp)
     }
 }
 
-void replication_stop_all(bool failover, Error **errp)
+void replication_stop_all(bool failover, Error** errp)
 {
     ReplicationState *rs, *next;
-    Error *local_err = NULL;
+    Error*            local_err = NULL;
 
-    QLIST_FOREACH_SAFE(rs, &replication_states, node, next) {
-        if (rs->ops && rs->ops->stop) {
-            rs->ops->stop(rs, failover, &local_err);
-        }
+    QLIST_FOREACH_SAFE (rs, &replication_states, node, next) {
+        if (rs->ops && rs->ops->stop) { rs->ops->stop(rs, failover, &local_err); }
         if (local_err) {
             error_propagate(errp, local_err);
             return;

@@ -29,11 +29,12 @@
  *
  * Opaque generic description of a tracing event.
  */
-typedef struct TraceEvent {
-    uint32_t id;
-    const char * name;
-    const bool sstate;
-    uint16_t *dstate;
+typedef struct TraceEvent
+{
+    uint32_t    id;
+    const char* name;
+    const bool  sstate;
+    uint16_t*   dstate;
 } TraceEvent;
 
-void trace_event_set_state_dynamic_init(TraceEvent *ev, bool state);
+void trace_event_set_state_dynamic_init(TraceEvent* ev, bool state);

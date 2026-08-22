@@ -8,7 +8,8 @@
    defer their response (eg. CPU slave interfaces where the data is supplied
    by the device driver in response to an interrupt).  */
 
-enum i2c_event {
+enum i2c_event
+{
     I2C_START_RECV,
     I2C_START_SEND,
     I2C_START_SEND_ASYNC,
@@ -19,30 +20,30 @@ enum i2c_event {
 typedef struct I2CNodeList I2CNodeList;
 
 #define TYPE_I2C_SLAVE "i2c-slave"
-OBJECT_DECLARE_TYPE(I2CSlave, I2CSlaveClass,
-                    I2C_SLAVE)
+OBJECT_DECLARE_TYPE(I2CSlave, I2CSlaveClass, I2C_SLAVE)
 
-struct I2CSlaveClass {
+struct I2CSlaveClass
+{
     DeviceClass parent_class;
 
     /* Master to slave. Returns non-zero for a NAK, 0 for success. */
-    int (*send)(I2CSlave *s, uint8_t data);
+    int (*send)(I2CSlave* s, uint8_t data);
 
     /* Master to slave (asynchronous). Receiving slave must call i2c_ack(). */
-    void (*send_async)(I2CSlave *s, uint8_t data);
+    void (*send_async)(I2CSlave* s, uint8_t data);
 
     /*
      * Slave to master.  This cannot fail, the device should always
      * return something here.
      */
-    uint8_t (*recv)(I2CSlave *s);
+    uint8_t (*recv)(I2CSlave* s);
 
     /*
      * Notify the slave of a bus state change.  For start event,
      * returns non-zero to NAK an operation.  For other events the
      * return code is not used and should be zero.
      */
-    int (*event)(I2CSlave *s, enum i2c_event event);
+    int (*event)(I2CSlave* s, enum i2c_event event);
 
     /*
      * Check if this device matches the address provided.  Returns bool of
@@ -51,11 +52,11 @@ struct I2CSlaveClass {
      *
      * If broadcast is true, match should add the device and return true.
      */
-    bool (*match_and_add)(I2CSlave *candidate, uint8_t address, bool broadcast,
-                          I2CNodeList *current_devs);
+    bool (*match_and_add)(I2CSlave* candidate, uint8_t address, bool broadcast, I2CNodeList* current_devs);
 };
 
-struct I2CSlave {
+struct I2CSlave
+{
     DeviceState qdev;
 
     /* Remaining fields for internal use by the I2C code.  */
@@ -67,34 +68,37 @@ OBJECT_DECLARE_SIMPLE_TYPE(I2CBus, I2C_BUS)
 
 typedef struct I2CNode I2CNode;
 
-struct I2CNode {
-    I2CSlave *elt;
+struct I2CNode
+{
+    I2CSlave* elt;
     QLIST_ENTRY(I2CNode) next;
 };
 
 typedef struct I2CPendingMaster I2CPendingMaster;
 
-struct I2CPendingMaster {
-    QEMUBH *bh;
+struct I2CPendingMaster
+{
+    QEMUBH* bh;
     QSIMPLEQ_ENTRY(I2CPendingMaster) entry;
 };
 
 typedef QLIST_HEAD(I2CNodeList, I2CNode) I2CNodeList;
 typedef QSIMPLEQ_HEAD(I2CPendingMasters, I2CPendingMaster) I2CPendingMasters;
 
-struct I2CBus {
-    BusState qbus;
-    I2CNodeList current_devs;
+struct I2CBus
+{
+    BusState          qbus;
+    I2CNodeList       current_devs;
     I2CPendingMasters pending_masters;
-    uint8_t saved_address;
-    bool broadcast;
+    uint8_t           saved_address;
+    bool              broadcast;
 
     /* Set from slave currently mastering the bus. */
-    QEMUBH *bh;
+    QEMUBH* bh;
 };
 
-I2CBus *i2c_init_bus(DeviceState *parent, const char *name);
-int i2c_bus_busy(I2CBus *bus);
+I2CBus* i2c_init_bus(DeviceState* parent, const char* name);
+int     i2c_bus_busy(I2CBus* bus);
 
 /**
  * i2c_start_transfer: start a transfer on an I2C bus.
@@ -108,7 +112,7 @@ int i2c_bus_busy(I2CBus *bus);
  *
  * Returns: 0 on success, -1 on error
  */
-int i2c_start_transfer(I2CBus *bus, uint8_t address, bool is_recv);
+int i2c_start_transfer(I2CBus* bus, uint8_t address, bool is_recv);
 
 /**
  * i2c_start_recv: start a 'receive' transfer on an I2C bus.
@@ -118,7 +122,7 @@ int i2c_start_transfer(I2CBus *bus, uint8_t address, bool is_recv);
  *
  * Returns: 0 on success, -1 on error
  */
-int i2c_start_recv(I2CBus *bus, uint8_t address);
+int i2c_start_recv(I2CBus* bus, uint8_t address);
 
 /**
  * i2c_start_send: start a 'send' transfer on an I2C bus.
@@ -128,7 +132,7 @@ int i2c_start_recv(I2CBus *bus, uint8_t address);
  *
  * Returns: 0 on success, -1 on error
  */
-int i2c_start_send(I2CBus *bus, uint8_t address);
+int i2c_start_send(I2CBus* bus, uint8_t address);
 
 /**
  * i2c_start_send_async: start an asynchronous 'send' transfer on an I2C bus.
@@ -138,20 +142,19 @@ int i2c_start_send(I2CBus *bus, uint8_t address);
  *
  * Return: 0 on success, -1 on error
  */
-int i2c_start_send_async(I2CBus *bus, uint8_t address);
+int i2c_start_send_async(I2CBus* bus, uint8_t address);
 
-void i2c_schedule_pending_master(I2CBus *bus);
+void i2c_schedule_pending_master(I2CBus* bus);
 
-void i2c_end_transfer(I2CBus *bus);
-void i2c_nack(I2CBus *bus);
-void i2c_ack(I2CBus *bus);
-void i2c_bus_master(I2CBus *bus, QEMUBH *bh);
-void i2c_bus_release(I2CBus *bus);
-int i2c_send(I2CBus *bus, uint8_t data);
-int i2c_send_async(I2CBus *bus, uint8_t data);
-uint8_t i2c_recv(I2CBus *bus);
-bool i2c_scan_bus(I2CBus *bus, uint8_t address, bool broadcast,
-                  I2CNodeList *current_devs);
+void    i2c_end_transfer(I2CBus* bus);
+void    i2c_nack(I2CBus* bus);
+void    i2c_ack(I2CBus* bus);
+void    i2c_bus_master(I2CBus* bus, QEMUBH* bh);
+void    i2c_bus_release(I2CBus* bus);
+int     i2c_send(I2CBus* bus, uint8_t data);
+int     i2c_send_async(I2CBus* bus, uint8_t data);
+uint8_t i2c_recv(I2CBus* bus);
+bool    i2c_scan_bus(I2CBus* bus, uint8_t address, bool broadcast, I2CNodeList* current_devs);
 
 /**
  * Create an I2C slave device on the heap.
@@ -162,7 +165,7 @@ bool i2c_scan_bus(I2CBus *bus, uint8_t address, bool broadcast,
  * properties to be set. Type @name must exist. The device still
  * needs to be realized. See qdev-core.h.
  */
-I2CSlave *i2c_slave_new(const char *name, uint8_t addr);
+I2CSlave* i2c_slave_new(const char* name, uint8_t addr);
 
 /**
  * Create and realize an I2C slave device on the heap.
@@ -173,7 +176,7 @@ I2CSlave *i2c_slave_new(const char *name, uint8_t addr);
  * Create the device state structure, initialize it, put it on the
  * specified @bus, and drop the reference to it (the device is realized).
  */
-I2CSlave *i2c_slave_create_simple(I2CBus *bus, const char *name, uint8_t addr);
+I2CSlave* i2c_slave_create_simple(I2CBus* bus, const char* name, uint8_t addr);
 
 /**
  * Realize and drop a reference an I2C slave device
@@ -203,11 +206,11 @@ I2CSlave *i2c_slave_create_simple(I2CBus *bus, const char *name, uint8_t addr);
  * which doesn't currently exist but would be trivial to create if we
  * had any code that wanted it.)
  */
-bool i2c_slave_realize_and_unref(I2CSlave *dev, I2CBus *bus, Error **errp);
+bool i2c_slave_realize_and_unref(I2CSlave* dev, I2CBus* bus, Error** errp);
 
 /**
  * Set the I2C bus address of a slave device
  * @dev: I2C slave device
  * @address: I2C address of the slave when put on a bus
  */
-void i2c_slave_set_address(I2CSlave *dev, uint8_t address);
+void i2c_slave_set_address(I2CSlave* dev, uint8_t address);

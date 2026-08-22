@@ -25,8 +25,5 @@
 #define TYPE_APPLE_MIC_TEMP_SENSOR "apple-mic-temp-sensor"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleMicTempSensorState, APPLE_MIC_TEMP_SENSOR);
 
-
-I2CSlave *apple_mic_temp_sensor_create(uint8_t addr, I2CBus *bus,
-                                       uint8_t product_id, uint8_t vendor_id,
-                                       uint8_t revision, uint8_t fab_id,
-                                       Error **errp);
+I2CSlave* apple_mic_temp_sensor_create(uint8_t addr, I2CBus* bus, uint8_t product_id, uint8_t vendor_id,
+                                       uint8_t revision, uint8_t fab_id, Error** errp);

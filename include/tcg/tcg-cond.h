@@ -32,85 +32,59 @@
  *    bit 2 is used with bit 1 for swapping.
  *    bit 3 is used for unsigned conditions.
  */
-typedef enum {
+typedef enum
+{
     /* non-signed */
     TCG_COND_NEVER  = 0 | 0 | 0 | 0,
     TCG_COND_ALWAYS = 0 | 0 | 0 | 1,
 
     /* equality */
-    TCG_COND_EQ     = 8 | 0 | 0 | 0,
-    TCG_COND_NE     = 8 | 0 | 0 | 1,
+    TCG_COND_EQ = 8 | 0 | 0 | 0,
+    TCG_COND_NE = 8 | 0 | 0 | 1,
 
     /* "test" i.e. and then compare vs 0 */
-    TCG_COND_TSTEQ  = 8 | 4 | 0 | 0,
-    TCG_COND_TSTNE  = 8 | 4 | 0 | 1,
+    TCG_COND_TSTEQ = 8 | 4 | 0 | 0,
+    TCG_COND_TSTNE = 8 | 4 | 0 | 1,
 
     /* signed */
-    TCG_COND_LT     = 0 | 0 | 2 | 0,
-    TCG_COND_GE     = 0 | 0 | 2 | 1,
-    TCG_COND_GT     = 0 | 4 | 2 | 0,
-    TCG_COND_LE     = 0 | 4 | 2 | 1,
+    TCG_COND_LT = 0 | 0 | 2 | 0,
+    TCG_COND_GE = 0 | 0 | 2 | 1,
+    TCG_COND_GT = 0 | 4 | 2 | 0,
+    TCG_COND_LE = 0 | 4 | 2 | 1,
 
     /* unsigned */
-    TCG_COND_LTU    = 8 | 0 | 2 | 0,
-    TCG_COND_GEU    = 8 | 0 | 2 | 1,
-    TCG_COND_GTU    = 8 | 4 | 2 | 0,
-    TCG_COND_LEU    = 8 | 4 | 2 | 1,
+    TCG_COND_LTU = 8 | 0 | 2 | 0,
+    TCG_COND_GEU = 8 | 0 | 2 | 1,
+    TCG_COND_GTU = 8 | 4 | 2 | 0,
+    TCG_COND_LEU = 8 | 4 | 2 | 1,
 } TCGCond;
 
 /* Invert the sense of the comparison.  */
-static inline TCGCond tcg_invert_cond(TCGCond c)
-{
-    return (TCGCond)(c ^ 1);
-}
+static inline TCGCond tcg_invert_cond(TCGCond c) { return (TCGCond)(c ^ 1); }
 
 /* Swap the operands in a comparison.  */
-static inline TCGCond tcg_swap_cond(TCGCond c)
-{
-    return (TCGCond)(c ^ ((c & 2) << 1));
-}
+static inline TCGCond tcg_swap_cond(TCGCond c) { return (TCGCond)(c ^ ((c & 2) << 1)); }
 
 /* Must a comparison be considered signed?  */
-static inline bool is_signed_cond(TCGCond c)
-{
-    return (c & (8 | 2)) == 2;
-}
+static inline bool is_signed_cond(TCGCond c) { return (c & (8 | 2)) == 2; }
 
 /* Must a comparison be considered unsigned?  */
-static inline bool is_unsigned_cond(TCGCond c)
-{
-    return (c & (8 | 2)) == (8 | 2);
-}
+static inline bool is_unsigned_cond(TCGCond c) { return (c & (8 | 2)) == (8 | 2); }
 
 /* Must a comparison be considered a test?  */
-static inline bool is_tst_cond(TCGCond c)
-{
-    return (c | 1) == TCG_COND_TSTNE;
-}
+static inline bool is_tst_cond(TCGCond c) { return (c | 1) == TCG_COND_TSTNE; }
 
 /* Create an "unsigned" version of a "signed" comparison.  */
-static inline TCGCond tcg_unsigned_cond(TCGCond c)
-{
-    return is_signed_cond(c) ? (TCGCond)(c + 8) : c;
-}
+static inline TCGCond tcg_unsigned_cond(TCGCond c) { return is_signed_cond(c) ? (TCGCond)(c + 8) : c; }
 
 /* Create a "signed" version of an "unsigned" comparison.  */
-static inline TCGCond tcg_signed_cond(TCGCond c)
-{
-    return is_unsigned_cond(c) ? (TCGCond)(c - 8) : c;
-}
+static inline TCGCond tcg_signed_cond(TCGCond c) { return is_unsigned_cond(c) ? (TCGCond)(c - 8) : c; }
 
 /* Create the eq/ne version of a tsteq/tstne comparison.  */
-static inline TCGCond tcg_tst_eqne_cond(TCGCond c)
-{
-    return is_tst_cond(c) ? (TCGCond)(c - 4) : c;
-}
+static inline TCGCond tcg_tst_eqne_cond(TCGCond c) { return is_tst_cond(c) ? (TCGCond)(c - 4) : c; }
 
 /* Create the lt/ge version of a tstne/tsteq comparison of the sign.  */
-static inline TCGCond tcg_tst_ltge_cond(TCGCond c)
-{
-    return is_tst_cond(c) ? (TCGCond)(c ^ 0xf) : c;
-}
+static inline TCGCond tcg_tst_ltge_cond(TCGCond c) { return is_tst_cond(c) ? (TCGCond)(c ^ 0xf) : c; }
 
 /*
  * Create a "high" version of a double-word comparison.
@@ -119,12 +93,10 @@ static inline TCGCond tcg_tst_ltge_cond(TCGCond c)
 static inline TCGCond tcg_high_cond(TCGCond c)
 {
     switch (c) {
-    case TCG_COND_GE:
-    case TCG_COND_LE:
-    case TCG_COND_GEU:
-    case TCG_COND_LEU:
-        return (TCGCond)(c ^ (4 | 1));
-    default:
-        return c;
+        case TCG_COND_GE:
+        case TCG_COND_LE:
+        case TCG_COND_GEU:
+        case TCG_COND_LEU: return (TCGCond)(c ^ (4 | 1));
+        default          : return c;
     }
 }

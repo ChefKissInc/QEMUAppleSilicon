@@ -45,17 +45,17 @@
 #include "qemu/main-loop.h"
 
 #ifdef CONFIG_LINUX
-#include <sys/syscall.h>
+    #include <sys/syscall.h>
 #endif
 
 #ifdef __FreeBSD__
-#include <sys/thr.h>
-#include <sys/user.h>
-#include <libutil.h>
+    #include <sys/thr.h>
+    #include <sys/user.h>
+    #include <libutil.h>
 #endif
 
 #ifdef __NetBSD__
-#include <lwp.h>
+    #include <lwp.h>
 #endif
 
 #include "qemu/memalign.h"
@@ -65,34 +65,35 @@
 
 struct MemsetThread;
 
-static QLIST_HEAD(, MemsetContext) memset_contexts =
-    QLIST_HEAD_INITIALIZER(memset_contexts);
+static QLIST_HEAD(, MemsetContext) memset_contexts = QLIST_HEAD_INITIALIZER(memset_contexts);
 
-typedef struct MemsetContext {
-    bool all_threads_created;
-    bool any_thread_failed;
-    struct MemsetThread *threads;
-    int num_threads;
+typedef struct MemsetContext
+{
+    bool                 all_threads_created;
+    bool                 any_thread_failed;
+    struct MemsetThread* threads;
+    int                  num_threads;
     QLIST_ENTRY(MemsetContext) next;
 } MemsetContext;
 
-struct MemsetThread {
-    char *addr;
-    size_t numpages;
-    size_t hpagesize;
-    QemuThread pgthread;
-    sigjmp_buf env;
-    MemsetContext *context;
+struct MemsetThread
+{
+    char*          addr;
+    size_t         numpages;
+    size_t         hpagesize;
+    QemuThread     pgthread;
+    sigjmp_buf     env;
+    MemsetContext* context;
 };
 typedef struct MemsetThread MemsetThread;
 
 /* used by sigbus_handler() */
-static MemsetContext *sigbus_memset_context;
-struct sigaction sigbus_oldact;
-static QemuMutex sigbus_mutex;
+static MemsetContext* sigbus_memset_context;
+struct sigaction      sigbus_oldact;
+static QemuMutex      sigbus_mutex;
 
 static QemuMutex page_mutex;
-static QemuCond page_cond;
+static QemuCond  page_cond;
 
 int qemu_get_thread_id(void)
 {
@@ -127,28 +128,23 @@ int qemu_kill_thread(int tid, int sig)
 #endif
 }
 
-int qemu_daemon(int nochdir, int noclose)
-{
-    return daemon(nochdir, noclose);
-}
+int qemu_daemon(int nochdir, int noclose) { return daemon(nochdir, noclose); }
 
-bool qemu_write_pidfile(const char *path, Error **errp)
+bool qemu_write_pidfile(const char* path, Error** errp)
 {
-    int fd;
+    int  fd;
     char pidstr[32];
 
     while (1) {
-        struct stat a, b;
+        struct stat  a, b;
         struct flock lock = {
-            .l_type = F_WRLCK,
+            .l_type   = F_WRLCK,
             .l_whence = SEEK_SET,
-            .l_len = 0,
+            .l_len    = 0,
         };
 
         fd = qemu_create(path, O_WRONLY, S_IRUSR | S_IWUSR, errp);
-        if (fd == -1) {
-            return false;
-        }
+        if (fd == -1) { return false; }
 
         if (fstat(fd, &b) < 0) {
             error_setg_errno(errp, errno, "Cannot stat file");
@@ -173,9 +169,7 @@ bool qemu_write_pidfile(const char *path, Error **errp)
             continue;
         }
 
-        if (a.st_ino == b.st_ino) {
-            break;
-        }
+        if (a.st_ino == b.st_ino) { break; }
 
         /*
          * PID file was recreated, someone else must be racing with
@@ -205,18 +199,14 @@ fail_close:
 }
 
 /* alloc shared memory pages */
-void *qemu_anon_ram_alloc(size_t size, uint64_t *alignment, bool shared,
-                          bool noreserve)
+void* qemu_anon_ram_alloc(size_t size, uint64_t* alignment, bool shared, bool noreserve)
 {
-    const uint32_t qemu_map_flags = (shared ? QEMU_MAP_SHARED : 0) |
-                                    (noreserve ? QEMU_MAP_NORESERVE : 0);
-    size_t align = QEMU_VMALLOC_ALIGN;
+    const uint32_t qemu_map_flags = (shared ? QEMU_MAP_SHARED : 0) | (noreserve ? QEMU_MAP_NORESERVE : 0);
+    size_t         align          = QEMU_VMALLOC_ALIGN;
 #ifndef EMSCRIPTEN
-    void *ptr = qemu_ram_mmap(-1, size, align, qemu_map_flags, 0);
+    void* ptr = qemu_ram_mmap(-1, size, align, qemu_map_flags, 0);
 
-    if (ptr == MAP_FAILED) {
-        return NULL;
-    }
+    if (ptr == MAP_FAILED) { return NULL; }
 #else
     /*
      * qemu_ram_mmap is not implemented for Emscripten. Use qemu_memalign
@@ -224,18 +214,16 @@ void *qemu_anon_ram_alloc(size_t size, uint64_t *alignment, bool shared,
      * space on Emscripten, and shared is ignored as there is no other
      * processes on Emscripten.
      */
-    void *ptr = qemu_memalign(align, size);
+    void* ptr = qemu_memalign(align, size);
 #endif
 
-    if (alignment) {
-        *alignment = align;
-    }
+    if (alignment) { *alignment = align; }
 
     trace_qemu_anon_ram_alloc(size, ptr);
     return ptr;
 }
 
-void qemu_anon_ram_free(void *ptr, size_t size)
+void qemu_anon_ram_free(void* ptr, size_t size)
 {
     trace_qemu_anon_ram_free(ptr, size);
 #ifndef EMSCRIPTEN
@@ -250,14 +238,12 @@ void qemu_anon_ram_free(void *ptr, size_t size)
 #endif
 }
 
-bool qemu_set_blocking(int fd, bool block, Error **errp)
+bool qemu_set_blocking(int fd, bool block, Error** errp)
 {
     g_autoptr(GError) err = NULL;
 
     if (!g_unix_set_fd_nonblocking(fd, !block, &err)) {
-        error_setg_errno(errp, errno,
-                         "Can't set file descriptor %d %s: %s", fd,
-                         block ? "blocking" : "non-blocking",
+        error_setg_errno(errp, errno, "Can't set file descriptor %d %s: %s", fd, block ? "blocking" : "non-blocking",
                          err->message);
         return false;
     }
@@ -269,8 +255,7 @@ int socket_set_fast_reuse(int fd)
 {
     int val = 1, ret;
 
-    ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
-                     (const char *)&val, sizeof(val));
+    ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&val, sizeof(val));
 
     assert(ret == 0);
 
@@ -292,9 +277,7 @@ int qemu_socketpair(int domain, int type, int protocol, int sv[2])
 
 #ifdef SOCK_CLOEXEC
     ret = socketpair(domain, type | SOCK_CLOEXEC, protocol, sv);
-    if (ret != -1 || errno != EINVAL) {
-        return ret;
-    }
+    if (ret != -1 || errno != EINVAL) { return ret; }
 #endif
     ret = socketpair(domain, type, protocol, sv);
     if (ret == 0) {
@@ -305,11 +288,7 @@ int qemu_socketpair(int domain, int type, int protocol, int sv[2])
     return ret;
 }
 
-char *
-qemu_get_local_state_dir(void)
-{
-    return get_relocated_path(CONFIG_QEMU_LOCALSTATEDIR);
-}
+char* qemu_get_local_state_dir(void) { return get_relocated_path(CONFIG_QEMU_LOCALSTATEDIR); }
 
 void qemu_set_tty_echo(int fd, bool echo)
 {
@@ -317,9 +296,8 @@ void qemu_set_tty_echo(int fd, bool echo)
 
     tcgetattr(fd, &tty);
 
-    if (echo) {
-        tty.c_lflag |= ECHO | ECHONL | ICANON | IEXTEN;
-    } else {
+    if (echo) { tty.c_lflag |= ECHO | ECHONL | ICANON | IEXTEN; }
+    else {
         tty.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN);
     }
 
@@ -327,8 +305,8 @@ void qemu_set_tty_echo(int fd, bool echo)
 }
 
 #ifdef CONFIG_LINUX
-static void sigbus_handler(int signal, siginfo_t *siginfo, void *ctx)
-#else /* CONFIG_LINUX */
+static void sigbus_handler(int signal, siginfo_t* siginfo, void* ctx)
+#else  /* CONFIG_LINUX */
 static void sigbus_handler(int signal)
 #endif /* CONFIG_LINUX */
 {
@@ -336,11 +314,9 @@ static void sigbus_handler(int signal)
 
     if (sigbus_memset_context) {
         for (i = 0; i < sigbus_memset_context->num_threads; i++) {
-            MemsetThread *thread = &sigbus_memset_context->threads[i];
+            MemsetThread* thread = &sigbus_memset_context->threads[i];
 
-            if (qemu_thread_is_self(&thread->pgthread)) {
-                siglongjmp(thread->env, 1);
-            }
+            if (qemu_thread_is_self(&thread->pgthread)) { siglongjmp(thread->env, 1); }
         }
     }
 
@@ -365,11 +341,11 @@ static void sigbus_handler(int signal)
     warn_report("qemu_prealloc_mem: unrelated SIGBUS detected and ignored");
 }
 
-static void *do_touch_pages(void *arg)
+static void* do_touch_pages(void* arg)
 {
-    MemsetThread *memset_args = (MemsetThread *)arg;
-    sigset_t set, oldset;
-    int ret = 0;
+    MemsetThread* memset_args = (MemsetThread*)arg;
+    sigset_t      set, oldset;
+    int           ret = 0;
 
     /*
      * On Linux, the page faults from the loop below can cause mmap_sem
@@ -377,9 +353,7 @@ static void *do_touch_pages(void *arg)
      * clearing until all threads have been created.
      */
     qemu_mutex_lock(&page_mutex);
-    while (!memset_args->context->all_threads_created) {
-        qemu_cond_wait(&page_cond, &page_mutex);
-    }
+    while (!memset_args->context->all_threads_created) { qemu_cond_wait(&page_cond, &page_mutex); }
     qemu_mutex_unlock(&page_mutex);
 
     /* unblock SIGBUS */
@@ -387,11 +361,10 @@ static void *do_touch_pages(void *arg)
     sigaddset(&set, SIGBUS);
     pthread_sigmask(SIG_UNBLOCK, &set, &oldset);
 
-    if (sigsetjmp(memset_args->env, 1)) {
-        ret = -EFAULT;
-    } else {
-        char *addr = memset_args->addr;
-        size_t numpages = memset_args->numpages;
+    if (sigsetjmp(memset_args->env, 1)) { ret = -EFAULT; }
+    else {
+        char*  addr      = memset_args->addr;
+        size_t numpages  = memset_args->numpages;
         size_t hpagesize = memset_args->hpagesize;
         size_t i;
         for (i = 0; i < numpages; i++) {
@@ -403,43 +376,36 @@ static void *do_touch_pages(void *arg)
              * 'volatile' to stop compiler optimizing this away
              * to a no-op
              */
-            *(volatile char *)addr = *addr;
-            addr += hpagesize;
+            *(volatile char*)addr  = *addr;
+            addr                  += hpagesize;
         }
     }
     pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-    return (void *)(uintptr_t)ret;
+    return (void*)(uintptr_t)ret;
 }
 
-static void *do_madv_populate_write_pages(void *arg)
+static void* do_madv_populate_write_pages(void* arg)
 {
-    MemsetThread *memset_args = (MemsetThread *)arg;
-    const size_t size = memset_args->numpages * memset_args->hpagesize;
-    char * const addr = memset_args->addr;
-    int ret = 0;
+    MemsetThread* memset_args = (MemsetThread*)arg;
+    const size_t  size        = memset_args->numpages * memset_args->hpagesize;
+    char* const   addr        = memset_args->addr;
+    int           ret         = 0;
 
     /* See do_touch_pages(). */
     qemu_mutex_lock(&page_mutex);
-    while (!memset_args->context->all_threads_created) {
-        qemu_cond_wait(&page_cond, &page_mutex);
-    }
+    while (!memset_args->context->all_threads_created) { qemu_cond_wait(&page_cond, &page_mutex); }
     qemu_mutex_unlock(&page_mutex);
 
-    if (size && qemu_madvise(addr, size, QEMU_MADV_POPULATE_WRITE)) {
-        ret = -errno;
-    }
-    return (void *)(uintptr_t)ret;
+    if (size && qemu_madvise(addr, size, QEMU_MADV_POPULATE_WRITE)) { ret = -errno; }
+    return (void*)(uintptr_t)ret;
 }
 
-static inline int get_memset_num_threads(size_t hpagesize, size_t numpages,
-                                         int max_threads)
+static inline int get_memset_num_threads(size_t hpagesize, size_t numpages, int max_threads)
 {
     long host_procs = sysconf(_SC_NPROCESSORS_ONLN);
-    int ret = 1;
+    int  ret        = 1;
 
-    if (host_procs > 0) {
-        ret = MIN(MIN(host_procs, MAX_MEM_PREALLOC_THREAD_COUNT), max_threads);
-    }
+    if (host_procs > 0) { ret = MIN(MIN(host_procs, MAX_MEM_PREALLOC_THREAD_COUNT), max_threads); }
 
     /* Especially with gigantic pages, don't create more threads than pages. */
     ret = MIN(ret, numpages);
@@ -450,43 +416,37 @@ static inline int get_memset_num_threads(size_t hpagesize, size_t numpages,
     return ret;
 }
 
-static int wait_and_free_mem_prealloc_context(MemsetContext *context)
+static int wait_and_free_mem_prealloc_context(MemsetContext* context)
 {
     int i, ret = 0, tmp;
 
     for (i = 0; i < context->num_threads; i++) {
         tmp = (uintptr_t)qemu_thread_join(&context->threads[i].pgthread);
 
-        if (tmp) {
-            ret = tmp;
-        }
+        if (tmp) { ret = tmp; }
     }
     g_free(context->threads);
     g_free(context);
     return ret;
 }
 
-static int touch_all_pages(char *area, size_t hpagesize, size_t numpages,
-                           int max_threads, ThreadContext *tc, bool async,
-                           bool use_madv_populate_write)
+static int touch_all_pages(char* area, size_t hpagesize, size_t numpages, int max_threads, ThreadContext* tc,
+                           bool async, bool use_madv_populate_write)
 {
-    static gsize initialized = 0;
-    MemsetContext *context = g_malloc0(sizeof(MemsetContext));
-    size_t numpages_per_thread, leftover;
-    void *(*touch_fn)(void *);
-    int ret, i = 0;
-    char *addr = area;
+    static gsize   initialized = 0;
+    MemsetContext* context     = g_malloc0(sizeof(MemsetContext));
+    size_t         numpages_per_thread, leftover;
+    void*          (*touch_fn)(void*);
+    int            ret, i = 0;
+    char*          addr = area;
 
     /*
      * Asynchronous preallocation is only allowed when using MADV_POPULATE_WRITE
      * and prealloc context for thread placement.
      */
-    if (!use_madv_populate_write || !tc) {
-        async = false;
-    }
+    if (!use_madv_populate_write || !tc) { async = false; }
 
-    context->num_threads =
-        get_memset_num_threads(hpagesize, numpages, max_threads);
+    context->num_threads = get_memset_num_threads(hpagesize, numpages, max_threads);
 
     if (g_once_init_enter(&initialized)) {
         qemu_mutex_init(&page_mutex);
@@ -501,34 +461,30 @@ static int touch_all_pages(char *area, size_t hpagesize, size_t numpages,
          */
         if (context->num_threads == 1 && !async) {
             ret = 0;
-            if (qemu_madvise(area, hpagesize * numpages,
-                             QEMU_MADV_POPULATE_WRITE)) {
-                ret = -errno;
-            }
+            if (qemu_madvise(area, hpagesize * numpages, QEMU_MADV_POPULATE_WRITE)) { ret = -errno; }
             g_free(context);
             return ret;
         }
         touch_fn = do_madv_populate_write_pages;
-    } else {
+    }
+    else {
         touch_fn = do_touch_pages;
     }
 
-    context->threads = g_new0(MemsetThread, context->num_threads);
+    context->threads    = g_new0(MemsetThread, context->num_threads);
     numpages_per_thread = numpages / context->num_threads;
-    leftover = numpages % context->num_threads;
+    leftover            = numpages % context->num_threads;
     for (i = 0; i < context->num_threads; i++) {
-        context->threads[i].addr = addr;
-        context->threads[i].numpages = numpages_per_thread + (i < leftover);
+        context->threads[i].addr      = addr;
+        context->threads[i].numpages  = numpages_per_thread + (i < leftover);
         context->threads[i].hpagesize = hpagesize;
-        context->threads[i].context = context;
+        context->threads[i].context   = context;
         if (tc) {
-            thread_context_create_thread(tc, &context->threads[i].pgthread,
-                                         "touch_pages",
-                                         touch_fn, &context->threads[i],
-                                         QEMU_THREAD_JOINABLE);
-        } else {
-            qemu_thread_create(&context->threads[i].pgthread, "touch_pages",
-                               touch_fn, &context->threads[i],
+            thread_context_create_thread(tc, &context->threads[i].pgthread, "touch_pages", touch_fn,
+                                         &context->threads[i], QEMU_THREAD_JOINABLE);
+        }
+        else {
+            qemu_thread_create(&context->threads[i].pgthread, "touch_pages", touch_fn, &context->threads[i],
                                QEMU_THREAD_JOINABLE);
         }
         addr += context->threads[i].numpages * hpagesize;
@@ -544,9 +500,7 @@ static int touch_all_pages(char *area, size_t hpagesize, size_t numpages,
         return 0;
     }
 
-    if (!use_madv_populate_write) {
-        sigbus_memset_context = context;
-    }
+    if (!use_madv_populate_write) { sigbus_memset_context = context; }
 
     qemu_mutex_lock(&page_mutex);
     context->all_threads_created = true;
@@ -555,57 +509,44 @@ static int touch_all_pages(char *area, size_t hpagesize, size_t numpages,
 
     ret = wait_and_free_mem_prealloc_context(context);
 
-    if (!use_madv_populate_write) {
-        sigbus_memset_context = NULL;
-    }
+    if (!use_madv_populate_write) { sigbus_memset_context = NULL; }
     return ret;
 }
 
-bool qemu_finish_async_prealloc_mem(Error **errp)
+bool qemu_finish_async_prealloc_mem(Error** errp)
 {
-    int ret = 0, tmp;
+    int            ret = 0, tmp;
     MemsetContext *context, *next_context;
 
     /* Waiting for preallocation requires the BQL. */
     assert(bql_locked());
-    if (QLIST_EMPTY(&memset_contexts)) {
-        return true;
-    }
+    if (QLIST_EMPTY(&memset_contexts)) { return true; }
 
     qemu_mutex_lock(&page_mutex);
-    QLIST_FOREACH(context, &memset_contexts, next) {
-        context->all_threads_created = true;
-    }
+    QLIST_FOREACH (context, &memset_contexts, next) { context->all_threads_created = true; }
     qemu_cond_broadcast(&page_cond);
     qemu_mutex_unlock(&page_mutex);
 
-    QLIST_FOREACH_SAFE(context, &memset_contexts, next, next_context) {
+    QLIST_FOREACH_SAFE (context, &memset_contexts, next, next_context) {
         QLIST_REMOVE(context, next);
         tmp = wait_and_free_mem_prealloc_context(context);
-        if (tmp) {
-            ret = tmp;
-        }
+        if (tmp) { ret = tmp; }
     }
 
     if (ret) {
-        error_setg_errno(errp, -ret,
-                         "qemu_prealloc_mem: preallocating memory failed");
+        error_setg_errno(errp, -ret, "qemu_prealloc_mem: preallocating memory failed");
         return false;
     }
     return true;
 }
 
-static bool madv_populate_write_possible(char *area, size_t pagesize)
-{
-    return !qemu_madvise(area, pagesize, QEMU_MADV_POPULATE_WRITE) ||
-           errno != EINVAL;
-}
+static bool madv_populate_write_possible(char* area, size_t pagesize)
+{ return !qemu_madvise(area, pagesize, QEMU_MADV_POPULATE_WRITE) || errno != EINVAL; }
 
-bool qemu_prealloc_mem(int fd, char *area, size_t sz, int max_threads,
-                       ThreadContext *tc, bool async, Error **errp)
+bool qemu_prealloc_mem(int fd, char* area, size_t sz, int max_threads, ThreadContext* tc, bool async, Error** errp)
 {
     static gsize initialized;
-    int ret;
+    int          ret;
 #ifndef EMSCRIPTEN
     size_t hpagesize = qemu_fd_getpagesize(fd);
 #else
@@ -615,10 +556,10 @@ bool qemu_prealloc_mem(int fd, char *area, size_t sz, int max_threads,
      */
     size_t hpagesize = qemu_real_host_page_size();
 #endif
-    size_t numpages = DIV_ROUND_UP(sz, hpagesize);
-    bool use_madv_populate_write;
+    size_t           numpages = DIV_ROUND_UP(sz, hpagesize);
+    bool             use_madv_populate_write;
     struct sigaction act;
-    bool rv = true;
+    bool             rv = true;
 
     /*
      * Sense on every invocation, as MADV_POPULATE_WRITE cannot be used for
@@ -636,27 +577,24 @@ bool qemu_prealloc_mem(int fd, char *area, size_t sz, int max_threads,
         memset(&act, 0, sizeof(act));
 #ifdef CONFIG_LINUX
         act.sa_sigaction = &sigbus_handler;
-        act.sa_flags = SA_SIGINFO;
-#else /* CONFIG_LINUX */
+        act.sa_flags     = SA_SIGINFO;
+#else  /* CONFIG_LINUX */
         act.sa_handler = &sigbus_handler;
-        act.sa_flags = 0;
+        act.sa_flags   = 0;
 #endif /* CONFIG_LINUX */
 
         ret = sigaction(SIGBUS, &act, &sigbus_oldact);
         if (ret) {
             qemu_mutex_unlock(&sigbus_mutex);
-            error_setg_errno(errp, errno,
-                "qemu_prealloc_mem: failed to install signal handler");
+            error_setg_errno(errp, errno, "qemu_prealloc_mem: failed to install signal handler");
             return false;
         }
     }
 
     /* touch pages simultaneously */
-    ret = touch_all_pages(area, hpagesize, numpages, max_threads, tc, async,
-                          use_madv_populate_write);
+    ret = touch_all_pages(area, hpagesize, numpages, max_threads, tc, async, use_madv_populate_write);
     if (ret) {
-        error_setg_errno(errp, -ret,
-                         "qemu_prealloc_mem: preallocating memory failed");
+        error_setg_errno(errp, -ret, "qemu_prealloc_mem: preallocating memory failed");
         rv = false;
     }
 
@@ -672,13 +610,13 @@ bool qemu_prealloc_mem(int fd, char *area, size_t sz, int max_threads,
     return rv;
 }
 
-char *qemu_get_pid_name(pid_t pid)
+char* qemu_get_pid_name(pid_t pid)
 {
-    char *name = NULL;
+    char* name = NULL;
 
 #if defined(__FreeBSD__)
     /* BSDs don't have /proc, but they provide a nice substitute */
-    struct kinfo_proc *proc = kinfo_getproc(pid);
+    struct kinfo_proc* proc = kinfo_getproc(pid);
 
     if (proc) {
         name = g_strdup(proc->ki_comm);
@@ -686,7 +624,7 @@ char *qemu_get_pid_name(pid_t pid)
     }
 #else
     /* Assume a system with reasonable procfs */
-    char *pid_path;
+    char*  pid_path;
     size_t len;
 
     pid_path = g_strdup_printf("/proc/%d/cmdline", pid);
@@ -697,19 +635,18 @@ char *qemu_get_pid_name(pid_t pid)
     return name;
 }
 
-
-void *qemu_alloc_stack(size_t *sz)
+void* qemu_alloc_stack(size_t* sz)
 {
-    void *ptr;
-    int flags;
+    void* ptr;
+    int   flags;
 #ifdef CONFIG_DEBUG_STACK_USAGE
-    void *ptr2;
+    void* ptr2;
 #endif
     size_t pagesz = qemu_real_host_page_size();
 #ifdef _SC_THREAD_STACK_MIN
     /* avoid stacks smaller than _SC_THREAD_STACK_MIN */
     long min_stack_sz = sysconf(_SC_THREAD_STACK_MIN);
-    *sz = MAX(MAX(min_stack_sz, 0), *sz);
+    *sz               = MAX(MAX(min_stack_sz, 0), *sz);
 #endif
     /* adjust stack size to a multiple of the page size */
     *sz = ROUND_UP(*sz, pagesz);
@@ -740,9 +677,7 @@ void *qemu_alloc_stack(size_t *sz)
     }
 
 #ifdef CONFIG_DEBUG_STACK_USAGE
-    for (ptr2 = ptr + pagesz; ptr2 < ptr + *sz; ptr2 += sizeof(uint32_t)) {
-        *(uint32_t *)ptr2 = 0xdeadbeaf;
-    }
+    for (ptr2 = ptr + pagesz; ptr2 < ptr + *sz; ptr2 += sizeof(uint32_t)) { *(uint32_t*)ptr2 = 0xdeadbeaf; }
 #endif
 
     return ptr;
@@ -752,22 +687,18 @@ void *qemu_alloc_stack(size_t *sz)
 static __thread unsigned int max_stack_usage;
 #endif
 
-void qemu_free_stack(void *stack, size_t sz)
+void qemu_free_stack(void* stack, size_t sz)
 {
 #ifdef CONFIG_DEBUG_STACK_USAGE
     unsigned int usage;
-    void *ptr;
+    void*        ptr;
 
-    for (ptr = stack + qemu_real_host_page_size(); ptr < stack + sz;
-         ptr += sizeof(uint32_t)) {
-        if (*(uint32_t *)ptr != 0xdeadbeaf) {
-            break;
-        }
+    for (ptr = stack + qemu_real_host_page_size(); ptr < stack + sz; ptr += sizeof(uint32_t)) {
+        if (*(uint32_t*)ptr != 0xdeadbeaf) { break; }
     }
-    usage = sz - (uintptr_t) (ptr - stack);
+    usage = sz - (uintptr_t)(ptr - stack);
     if (usage > max_stack_usage) {
-        error_report("thread %d max stack usage increased from %u to %u",
-                     qemu_get_thread_id(), max_stack_usage, usage);
+        error_report("thread %d max stack usage increased from %u to %u", qemu_get_thread_id(), max_stack_usage, usage);
         max_stack_usage = usage;
     }
 #endif
@@ -785,13 +716,12 @@ void qemu_free_stack(void *stack, size_t sz)
  * which is not as easy as overwriting a pointer in memory.
  */
 QEMU_DISABLE_CFI
-void sigaction_invoke(struct sigaction *action,
-                      struct qemu_signalfd_siginfo *info)
+void sigaction_invoke(struct sigaction* action, struct qemu_signalfd_siginfo* info)
 {
     siginfo_t si = {};
-    si.si_signo = info->ssi_signo;
-    si.si_errno = info->ssi_errno;
-    si.si_code = info->ssi_code;
+    si.si_signo  = info->ssi_signo;
+    si.si_errno  = info->ssi_errno;
+    si.si_code   = info->ssi_code;
 
     /* Convert the minimal set of fields defined by POSIX.
      * Positive si_code values are reserved for kernel-generated
@@ -800,18 +730,20 @@ void sigaction_invoke(struct sigaction *action,
      * whether SI_USER and SI_QUEUE have values less than or equal to
      * zero.
      */
-    if (info->ssi_code == SI_USER || info->ssi_code == SI_QUEUE ||
-        info->ssi_code <= 0) {
+    if (info->ssi_code == SI_USER || info->ssi_code == SI_QUEUE || info->ssi_code <= 0) {
         /* SIGTERM, etc.  */
         si.si_pid = info->ssi_pid;
         si.si_uid = info->ssi_uid;
-    } else if (info->ssi_signo == SIGILL || info->ssi_signo == SIGFPE ||
-               info->ssi_signo == SIGSEGV || info->ssi_signo == SIGBUS) {
-        si.si_addr = (void *)(uintptr_t)info->ssi_addr;
-    } else if (info->ssi_signo == SIGCHLD) {
-        si.si_pid = info->ssi_pid;
+    }
+    else if (info->ssi_signo == SIGILL || info->ssi_signo == SIGFPE || info->ssi_signo == SIGSEGV
+             || info->ssi_signo == SIGBUS)
+    {
+        si.si_addr = (void*)(uintptr_t)info->ssi_addr;
+    }
+    else if (info->ssi_signo == SIGCHLD) {
+        si.si_pid    = info->ssi_pid;
         si.si_status = info->ssi_status;
-        si.si_uid = info->ssi_uid;
+        si.si_uid    = info->ssi_uid;
     }
     action->sa_sigaction(info->ssi_signo, &si, NULL);
 }
@@ -821,9 +753,8 @@ size_t qemu_get_host_physmem(void)
 #ifdef _SC_PHYS_PAGES
     long pages = sysconf(_SC_PHYS_PAGES);
     if (pages > 0) {
-        if (pages > SIZE_MAX / qemu_real_host_page_size()) {
-            return SIZE_MAX;
-        } else {
+        if (pages > SIZE_MAX / qemu_real_host_page_size()) { return SIZE_MAX; }
+        else {
             return pages * qemu_real_host_page_size();
         }
     }
@@ -831,7 +762,7 @@ size_t qemu_get_host_physmem(void)
     return 0;
 }
 
-int qemu_msync(void *addr, size_t length, int fd)
+int qemu_msync(void* addr, size_t length, int fd)
 {
     size_t align_mask = ~(qemu_real_host_page_size() - 1);
 
@@ -842,19 +773,19 @@ int qemu_msync(void *addr, size_t length, int fd)
      * of PAGE_SIZE
      */
     length += ((uintptr_t)addr & (qemu_real_host_page_size() - 1));
-    length = (length + ~align_mask) & align_mask;
+    length  = (length + ~align_mask) & align_mask;
 
-    addr = (void *)((uintptr_t)addr & align_mask);
+    addr = (void*)((uintptr_t)addr & align_mask);
 
     return msync(addr, length, MS_SYNC);
 }
 
-static bool qemu_close_all_open_fd_proc(const int *skip, unsigned int nskip)
+static bool qemu_close_all_open_fd_proc(const int* skip, unsigned int nskip)
 {
-    struct dirent *de;
-    int fd, dfd;
-    DIR *dir;
-    unsigned int skip_start = 0, skip_end = nskip;
+    struct dirent* de;
+    int            fd, dfd;
+    DIR*           dir;
+    unsigned int   skip_start = 0, skip_end = nskip;
 
     dir = opendir("/proc/self/fd");
     if (!dir) {
@@ -867,48 +798,40 @@ static bool qemu_close_all_open_fd_proc(const int *skip, unsigned int nskip)
     for (de = readdir(dir); de; de = readdir(dir)) {
         bool close_fd = true;
 
-        if (de->d_name[0] == '.') {
-            continue;
-        }
+        if (de->d_name[0] == '.') { continue; }
         fd = atoi(de->d_name);
-        if (fd == dfd) {
-            continue;
-        }
+        if (fd == dfd) { continue; }
 
         for (unsigned int i = skip_start; i < skip_end; i++) {
             if (fd < skip[i]) {
                 /* We are below the next skipped fd, break */
                 break;
-            } else if (fd == skip[i]) {
+            }
+            else if (fd == skip[i]) {
                 close_fd = false;
                 /* Restrict the range as we found fds matching start/end */
-                if (i == skip_start) {
-                    skip_start++;
-                } else if (i == skip_end) {
+                if (i == skip_start) { skip_start++; }
+                else if (i == skip_end) {
                     skip_end--;
                 }
                 break;
             }
         }
 
-        if (close_fd) {
-            close(fd);
-        }
+        if (close_fd) { close(fd); }
     }
     closedir(dir);
 
     return true;
 }
 
-static bool qemu_close_all_open_fd_close_range(const int *skip,
-                                               unsigned int nskip,
-                                               int open_max)
+static bool qemu_close_all_open_fd_close_range(const int* skip, unsigned int nskip, int open_max)
 {
 #ifdef CONFIG_CLOSE_RANGE
-    int max_fd = open_max - 1;
-    int first = 0, last;
+    int          max_fd   = open_max - 1;
+    int          first    = 0, last;
     unsigned int cur_skip = 0;
-    int ret;
+    int          ret;
 
     do {
         /* Find the start boundary of the range to close */
@@ -925,17 +848,14 @@ static bool qemu_close_all_open_fd_close_range(const int *skip,
         }
 
         /* With the adjustments to the range, we might be done. */
-        if (first > last) {
-            break;
-        }
+        if (first > last) { break; }
 
         ret = close_range(first, last, 0);
-        if (ret < 0) {
-            return false;
-        }
+        if (ret < 0) { return false; }
 
         first = last + 1;
-    } while (last < max_fd);
+    }
+    while (last < max_fd);
 
     return true;
 #else
@@ -943,8 +863,7 @@ static bool qemu_close_all_open_fd_close_range(const int *skip,
 #endif
 }
 
-static void qemu_close_all_open_fd_fallback(const int *skip, unsigned int nskip,
-                                            int open_max)
+static void qemu_close_all_open_fd_fallback(const int* skip, unsigned int nskip, int open_max)
 {
     unsigned int cur_skip = 0;
 
@@ -961,24 +880,23 @@ static void qemu_close_all_open_fd_fallback(const int *skip, unsigned int nskip,
 /*
  * Close all open file descriptors.
  */
-void qemu_close_all_open_fd(const int *skip, unsigned int nskip)
+void qemu_close_all_open_fd(const int* skip, unsigned int nskip)
 {
     int open_max = sysconf(_SC_OPEN_MAX);
 
     assert(skip != NULL || nskip == 0);
 
-    if (!qemu_close_all_open_fd_close_range(skip, nskip, open_max) &&
-        !qemu_close_all_open_fd_proc(skip, nskip)) {
+    if (!qemu_close_all_open_fd_close_range(skip, nskip, open_max) && !qemu_close_all_open_fd_proc(skip, nskip)) {
         qemu_close_all_open_fd_fallback(skip, nskip, open_max);
     }
 }
 
-int qemu_shm_alloc(size_t size, Error **errp)
+int qemu_shm_alloc(size_t size, Error** errp)
 {
     g_autoptr(GString) shm_name = g_string_new(NULL);
-    int fd, oflag, cur_sequence;
+    int        fd, oflag, cur_sequence;
     static int sequence;
-    mode_t mode;
+    mode_t     mode;
 
     cur_sequence = qatomic_fetch_inc(&sequence);
 
@@ -986,7 +904,7 @@ int qemu_shm_alloc(size_t size, Error **errp)
      * Let's use `mode = 0` because we don't want other processes to open our
      * memory unless we share the file descriptor with them.
      */
-    mode = 0;
+    mode  = 0;
     oflag = O_RDWR | O_CREAT | O_EXCL;
 
     /*
@@ -998,13 +916,11 @@ int qemu_shm_alloc(size_t size, Error **errp)
      *   For  portable  use,  a shared  memory  object should be identified
      *   by a name of the form /somename;"
      */
-    g_string_printf(shm_name, "/qemu-" FMT_pid "-shm-%d", getpid(),
-                    cur_sequence);
+    g_string_printf(shm_name, "/qemu-" FMT_pid "-shm-%d", getpid(), cur_sequence);
 
     fd = shm_open(shm_name->str, oflag, mode);
     if (fd < 0) {
-        error_setg_errno(errp, errno,
-                         "failed to create POSIX shared memory");
+        error_setg_errno(errp, errno, "failed to create POSIX shared memory");
         return -1;
     }
 
@@ -1016,8 +932,7 @@ int qemu_shm_alloc(size_t size, Error **errp)
     shm_unlink(shm_name->str);
 
     if (ftruncate(fd, size) == -1) {
-        error_setg_errno(errp, errno,
-                         "failed to resize POSIX shared memory to %zu", size);
+        error_setg_errno(errp, errno, "failed to resize POSIX shared memory to %zu", size);
         close(fd);
         return -1;
     }

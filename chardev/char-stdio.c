@@ -30,21 +30,21 @@
 #include "chardev/char.h"
 
 #ifdef _WIN32
-#include "chardev/char-win.h"
-#include "chardev/char-win-stdio.h"
+    #include "chardev/char-win.h"
+    #include "chardev/char-win-stdio.h"
 #else
-#include <termios.h>
-#include "chardev/char-fd.h"
+    #include <termios.h>
+    #include "chardev/char-fd.h"
 #endif
 
 #ifndef _WIN32
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
-static int old_fd0_flags;
-static int old_fd1_flags;
-static bool stdio_in_use;
-static bool stdio_allow_signal;
-static bool stdio_echo_state;
+static int            old_fd0_flags;
+static int            old_fd1_flags;
+static bool           stdio_in_use;
+static bool           stdio_allow_signal;
+static bool           stdio_echo_state;
 
 static void term_exit(void)
 {
@@ -56,25 +56,22 @@ static void term_exit(void)
     }
 }
 
-static void stdio_chr_set_echo(Chardev *chr, bool echo)
+static void stdio_chr_set_echo(Chardev* chr, bool echo)
 {
     struct termios tty;
 
     stdio_echo_state = echo;
-    tty = oldtty;
+    tty              = oldtty;
     if (!echo) {
-        tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP
-                         | INLCR | IGNCR | ICRNL | IXON);
-        tty.c_oflag |= OPOST;
-        tty.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN);
-        tty.c_cflag &= ~(CSIZE | PARENB);
-        tty.c_cflag |= CS8;
-        tty.c_cc[VMIN] = 1;
-        tty.c_cc[VTIME] = 0;
+        tty.c_iflag     &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+        tty.c_oflag     |= OPOST;
+        tty.c_lflag     &= ~(ECHO | ECHONL | ICANON | IEXTEN);
+        tty.c_cflag     &= ~(CSIZE | PARENB);
+        tty.c_cflag     |= CS8;
+        tty.c_cc[VMIN]   = 1;
+        tty.c_cc[VTIME]  = 0;
     }
-    if (!stdio_allow_signal) {
-        tty.c_lflag &= ~ISIG;
-    }
+    if (!stdio_allow_signal) { tty.c_lflag &= ~ISIG; }
 
     tcsetattr(0, TCSANOW, &tty);
 }
@@ -85,9 +82,9 @@ static void term_stdio_handler(int sig)
     stdio_chr_set_echo(NULL, stdio_echo_state);
 }
 
-static bool stdio_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
+static bool stdio_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevStdio *opts = backend->u.stdio.data;
+    ChardevStdio*    opts = backend->u.stdio.data;
     struct sigaction act;
 
     if (is_daemonized()) {
@@ -100,17 +97,13 @@ static bool stdio_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
         return false;
     }
 
-    stdio_in_use = true;
+    stdio_in_use  = true;
     old_fd0_flags = fcntl(0, F_GETFL);
     old_fd1_flags = fcntl(1, F_GETFL);
     tcgetattr(0, &oldtty);
-    if (!qemu_set_blocking(0, false, errp)) {
-        return false;
-    }
+    if (!qemu_set_blocking(0, false, errp)) { return false; }
 
-    if (!qemu_chr_open_fd(chr, 0, 1, errp)) {
-        return false;
-    }
+    if (!qemu_chr_open_fd(chr, 0, 1, errp)) { return false; }
 
     atexit(term_exit);
 
@@ -126,30 +119,29 @@ static bool stdio_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
 }
 #endif
 
-static void stdio_chr_parse(QemuOpts *opts, ChardevBackend *backend,
-                                 Error **errp)
+static void stdio_chr_parse(QemuOpts* opts, ChardevBackend* backend, Error** errp)
 {
-    ChardevStdio *stdio;
+    ChardevStdio* stdio;
 
     backend->type = CHARDEV_BACKEND_KIND_STDIO;
     stdio = backend->u.stdio.data = g_new0(ChardevStdio, 1);
     qemu_chr_parse_common(opts, qapi_ChardevStdio_base(stdio));
     stdio->has_signal = true;
-    stdio->signal = qemu_opt_get_bool(opts, "signal", true);
+    stdio->signal     = qemu_opt_get_bool(opts, "signal", true);
 }
 
-static void char_stdio_class_init(ObjectClass *oc, const void *data)
+static void char_stdio_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
     cc->chr_parse = stdio_chr_parse;
 #ifndef _WIN32
-    cc->chr_open = stdio_chr_open;
+    cc->chr_open     = stdio_chr_open;
     cc->chr_set_echo = stdio_chr_set_echo;
 #endif
 }
 
-static void char_stdio_finalize(Object *obj)
+static void char_stdio_finalize(Object* obj)
 {
 #ifndef _WIN32
     term_exit();
@@ -164,12 +156,9 @@ static const TypeInfo char_stdio_type_info = {
     .parent = TYPE_CHARDEV_FD,
 #endif
     .instance_finalize = char_stdio_finalize,
-    .class_init = char_stdio_class_init,
+    .class_init        = char_stdio_class_init,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_stdio_type_info);
-}
+static void register_types(void) { type_register_static(&char_stdio_type_info); }
 
 type_init(register_types);

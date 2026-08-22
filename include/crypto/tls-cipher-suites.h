@@ -15,17 +15,15 @@
 
 #define TYPE_QCRYPTO_TLS_CIPHER_SUITES "tls-cipher-suites"
 typedef struct QCryptoTLSCipherSuites QCryptoTLSCipherSuites;
-DECLARE_INSTANCE_CHECKER(QCryptoTLSCipherSuites, QCRYPTO_TLS_CIPHER_SUITES,
-                         TYPE_QCRYPTO_TLS_CIPHER_SUITES)
+DECLARE_INSTANCE_CHECKER(QCryptoTLSCipherSuites, QCRYPTO_TLS_CIPHER_SUITES, TYPE_QCRYPTO_TLS_CIPHER_SUITES)
 
 /**
-  * qcrypto_tls_cipher_suites_get_data:
-  * @obj: pointer to a TLS cipher suites object
-  * @errp: pointer to a NULL-initialized error object
-  *
-  * Returns: reference to a byte array containing the data.
-  * The caller should release the reference when no longer
-  * required.
-  */
-GByteArray *qcrypto_tls_cipher_suites_get_data(QCryptoTLSCipherSuites *obj,
-                                               Error **errp);
+ * qcrypto_tls_cipher_suites_get_data:
+ * @obj: pointer to a TLS cipher suites object
+ * @errp: pointer to a NULL-initialized error object
+ *
+ * Returns: reference to a byte array containing the data.
+ * The caller should release the reference when no longer
+ * required.
+ */
+GByteArray* qcrypto_tls_cipher_suites_get_data(QCryptoTLSCipherSuites* obj, Error** errp);

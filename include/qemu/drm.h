@@ -1,3 +1,3 @@
 #pragma once
 
-int qemu_drm_rendernode_open(const char *rendernode);
+int qemu_drm_rendernode_open(const char* rendernode);

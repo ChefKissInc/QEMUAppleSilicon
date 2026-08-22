@@ -12,7 +12,7 @@
  * support the LP64* ABI for now.
  */
 #if defined(__loongarch64)
-# define TCG_TARGET_REG_BITS 64
+    #define TCG_TARGET_REG_BITS 64
 #else
-# error unsupported LoongArch register size
+    #error unsupported LoongArch register size
 #endif

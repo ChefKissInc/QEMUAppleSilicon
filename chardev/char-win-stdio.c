@@ -30,7 +30,8 @@
 #include "chardev/char-win-stdio.h"
 #include "qom/object.h"
 
-struct WinStdioChardev {
+struct WinStdioChardev
+{
     Chardev parent;
     HANDLE  hStdIn;
     DWORD   dwOldMode;
@@ -41,17 +42,16 @@ struct WinStdioChardev {
 };
 typedef struct WinStdioChardev WinStdioChardev;
 
-DECLARE_INSTANCE_CHECKER(WinStdioChardev, WIN_STDIO_CHARDEV,
-                         TYPE_CHARDEV_WIN_STDIO)
+DECLARE_INSTANCE_CHECKER(WinStdioChardev, WIN_STDIO_CHARDEV, TYPE_CHARDEV_WIN_STDIO)
 
-static void win_stdio_wait_func(void *opaque)
+static void win_stdio_wait_func(void* opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    WinStdioChardev *stdio = WIN_STDIO_CHARDEV(opaque);
-    INPUT_RECORD       buf[4];
-    int                ret;
-    DWORD              dwSize;
-    int                i;
+    Chardev*         chr   = CHARDEV(opaque);
+    WinStdioChardev* stdio = WIN_STDIO_CHARDEV(opaque);
+    INPUT_RECORD     buf[4];
+    int              ret;
+    DWORD            dwSize;
+    int              i;
 
     ret = ReadConsoleInput(stdio->hStdIn, buf, ARRAY_SIZE(buf), &dwSize);
 
@@ -62,7 +62,7 @@ static void win_stdio_wait_func(void *opaque)
     }
 
     for (i = 0; i < dwSize; i++) {
-        KEY_EVENT_RECORD *kev = &buf[i].Event.KeyEvent;
+        KEY_EVENT_RECORD* kev = &buf[i].Event.KeyEvent;
 
         if (buf[i].EventType == KEY_EVENT && kev->bKeyDown) {
             int j;
@@ -80,9 +80,9 @@ static void win_stdio_wait_func(void *opaque)
 
 static DWORD WINAPI win_stdio_thread(LPVOID param)
 {
-    WinStdioChardev *stdio = WIN_STDIO_CHARDEV(param);
-    int                ret;
-    DWORD              dwSize;
+    WinStdioChardev* stdio = WIN_STDIO_CHARDEV(param);
+    int              ret;
+    DWORD            dwSize;
 
     while (1) {
 
@@ -90,67 +90,51 @@ static DWORD WINAPI win_stdio_thread(LPVOID param)
         ret = ReadFile(stdio->hStdIn, &stdio->win_stdio_buf, 1, &dwSize, NULL);
 
         /* Exit in case of error, continue if nothing read */
-        if (!ret) {
-            break;
-        }
-        if (!dwSize) {
-            continue;
-        }
+        if (!ret) { break; }
+        if (!dwSize) { continue; }
 
         /* Some terminal emulator returns \r\n for Enter, just pass \n */
-        if (stdio->win_stdio_buf == '\r') {
-            continue;
-        }
+        if (stdio->win_stdio_buf == '\r') { continue; }
 
         /* Signal the main thread and wait until the byte was eaten */
-        if (!SetEvent(stdio->hInputReadyEvent)) {
-            break;
-        }
-        if (WaitForSingleObject(stdio->hInputDoneEvent, INFINITE)
-            != WAIT_OBJECT_0) {
-            break;
-        }
+        if (!SetEvent(stdio->hInputReadyEvent)) { break; }
+        if (WaitForSingleObject(stdio->hInputDoneEvent, INFINITE) != WAIT_OBJECT_0) { break; }
     }
 
     qemu_del_wait_object(stdio->hInputReadyEvent, NULL, NULL);
     return 0;
 }
 
-static void win_stdio_thread_wait_func(void *opaque)
+static void win_stdio_thread_wait_func(void* opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    WinStdioChardev *stdio = WIN_STDIO_CHARDEV(opaque);
+    Chardev*         chr   = CHARDEV(opaque);
+    WinStdioChardev* stdio = WIN_STDIO_CHARDEV(opaque);
 
-    if (qemu_chr_be_can_write(chr)) {
-        qemu_chr_be_write(chr, &stdio->win_stdio_buf, 1);
-    }
+    if (qemu_chr_be_can_write(chr)) { qemu_chr_be_write(chr, &stdio->win_stdio_buf, 1); }
 
     SetEvent(stdio->hInputDoneEvent);
 }
 
-static void win_stiod_chr_set_echo(Chardev *chr, bool echo)
+static void win_stiod_chr_set_echo(Chardev* chr, bool echo)
 {
-    WinStdioChardev *stdio = WIN_STDIO_CHARDEV(chr);
-    DWORD              dwMode = 0;
+    WinStdioChardev* stdio  = WIN_STDIO_CHARDEV(chr);
+    DWORD            dwMode = 0;
 
     GetConsoleMode(stdio->hStdIn, &dwMode);
 
-    if (echo) {
-        SetConsoleMode(stdio->hStdIn, dwMode | ENABLE_ECHO_INPUT);
-    } else {
+    if (echo) { SetConsoleMode(stdio->hStdIn, dwMode | ENABLE_ECHO_INPUT); }
+    else {
         SetConsoleMode(stdio->hStdIn, dwMode & ~ENABLE_ECHO_INPUT);
     }
 }
 
-static bool win_stdio_chr_open(Chardev *chr,
-                               ChardevBackend *backend,
-                               Error **errp)
+static bool win_stdio_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevStdio *opts = backend->u.stdio.data;
-    bool stdio_allow_signal = !opts->has_signal || opts->signal;
-    WinStdioChardev *stdio = WIN_STDIO_CHARDEV(chr);
-    DWORD              dwMode;
-    int                is_console = 0;
+    ChardevStdio*    opts               = backend->u.stdio.data;
+    bool             stdio_allow_signal = !opts->has_signal || opts->signal;
+    WinStdioChardev* stdio              = WIN_STDIO_CHARDEV(chr);
+    DWORD            dwMode;
+    int              is_console = 0;
 
     stdio->hStdIn = GetStdHandle(STD_INPUT_HANDLE);
     if (stdio->hStdIn == INVALID_HANDLE_VALUE) {
@@ -158,32 +142,29 @@ static bool win_stdio_chr_open(Chardev *chr,
         return false;
     }
 
-    is_console = GetConsoleMode(stdio->hStdIn, &dwMode) != 0;
+    is_console       = GetConsoleMode(stdio->hStdIn, &dwMode) != 0;
     stdio->dwOldMode = dwMode;
 
     if (is_console) {
-        if (qemu_add_wait_object(stdio->hStdIn,
-                                 win_stdio_wait_func, chr)) {
+        if (qemu_add_wait_object(stdio->hStdIn, win_stdio_wait_func, chr)) {
             error_setg(errp, "qemu_add_wait_object: failed");
             goto err1;
         }
-    } else {
-        DWORD   dwId;
+    }
+    else {
+        DWORD dwId;
 
         stdio->hInputReadyEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
         stdio->hInputDoneEvent  = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (stdio->hInputReadyEvent == INVALID_HANDLE_VALUE
-            || stdio->hInputDoneEvent == INVALID_HANDLE_VALUE) {
+        if (stdio->hInputReadyEvent == INVALID_HANDLE_VALUE || stdio->hInputDoneEvent == INVALID_HANDLE_VALUE) {
             error_setg(errp, "cannot create event");
             goto err2;
         }
-        if (qemu_add_wait_object(stdio->hInputReadyEvent,
-                                 win_stdio_thread_wait_func, chr)) {
+        if (qemu_add_wait_object(stdio->hInputReadyEvent, win_stdio_thread_wait_func, chr)) {
             error_setg(errp, "qemu_add_wait_object: failed");
             goto err2;
         }
-        stdio->hInputThread     = CreateThread(NULL, 0, win_stdio_thread,
-                                               chr, 0, &dwId);
+        stdio->hInputThread = CreateThread(NULL, 0, win_stdio_thread, chr, 0, &dwId);
 
         if (stdio->hInputThread == INVALID_HANDLE_VALUE) {
             error_setg(errp, "cannot create stdio thread");
@@ -196,9 +177,8 @@ static bool win_stdio_chr_open(Chardev *chr,
     if (is_console) {
         /* set the terminal in raw mode */
         /* ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS */
-        if (stdio_allow_signal) {
-            dwMode |= ENABLE_PROCESSED_INPUT;
-        } else {
+        if (stdio_allow_signal) { dwMode |= ENABLE_PROCESSED_INPUT; }
+        else {
             dwMode &= ~ENABLE_PROCESSED_INPUT;
         }
     }
@@ -220,36 +200,26 @@ err1:
     return false;
 }
 
-static void char_win_stdio_finalize(Object *obj)
+static void char_win_stdio_finalize(Object* obj)
 {
-    WinStdioChardev *stdio = WIN_STDIO_CHARDEV(obj);
+    WinStdioChardev* stdio = WIN_STDIO_CHARDEV(obj);
 
-    if (stdio->hStdIn != INVALID_HANDLE_VALUE) {
-        SetConsoleMode(stdio->hStdIn, stdio->dwOldMode);
-    }
-    if (stdio->hInputReadyEvent != INVALID_HANDLE_VALUE) {
-        CloseHandle(stdio->hInputReadyEvent);
-    }
-    if (stdio->hInputDoneEvent != INVALID_HANDLE_VALUE) {
-        CloseHandle(stdio->hInputDoneEvent);
-    }
-    if (stdio->hInputThread != INVALID_HANDLE_VALUE) {
-        TerminateThread(stdio->hInputThread, 0);
-    }
+    if (stdio->hStdIn != INVALID_HANDLE_VALUE) { SetConsoleMode(stdio->hStdIn, stdio->dwOldMode); }
+    if (stdio->hInputReadyEvent != INVALID_HANDLE_VALUE) { CloseHandle(stdio->hInputReadyEvent); }
+    if (stdio->hInputDoneEvent != INVALID_HANDLE_VALUE) { CloseHandle(stdio->hInputDoneEvent); }
+    if (stdio->hInputThread != INVALID_HANDLE_VALUE) { TerminateThread(stdio->hInputThread, 0); }
 }
 
-static int win_stdio_chr_write(Chardev *chr, const uint8_t *buf, int len)
+static int win_stdio_chr_write(Chardev* chr, const uint8_t* buf, int len)
 {
-    HANDLE  hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD   dwSize;
-    int     len1;
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD  dwSize;
+    int    len1;
 
     len1 = len;
 
     while (len1 > 0) {
-        if (!WriteFile(hStdOut, buf, len1, &dwSize, NULL)) {
-            break;
-        }
+        if (!WriteFile(hStdOut, buf, len1, &dwSize, NULL)) { break; }
         buf  += dwSize;
         len1 -= dwSize;
     }
@@ -257,27 +227,24 @@ static int win_stdio_chr_write(Chardev *chr, const uint8_t *buf, int len)
     return len - len1;
 }
 
-static void char_win_stdio_class_init(ObjectClass *oc, const void *data)
+static void char_win_stdio_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
-    cc->chr_open = win_stdio_chr_open;
-    cc->chr_write = win_stdio_chr_write;
+    cc->chr_open     = win_stdio_chr_open;
+    cc->chr_write    = win_stdio_chr_write;
     cc->chr_set_echo = win_stiod_chr_set_echo;
 }
 
 static const TypeInfo char_win_stdio_type_info = {
-    .name = TYPE_CHARDEV_WIN_STDIO,
-    .parent = TYPE_CHARDEV,
-    .instance_size = sizeof(WinStdioChardev),
+    .name              = TYPE_CHARDEV_WIN_STDIO,
+    .parent            = TYPE_CHARDEV,
+    .instance_size     = sizeof(WinStdioChardev),
     .instance_finalize = char_win_stdio_finalize,
-    .class_init = char_win_stdio_class_init,
-    .abstract = true,
+    .class_init        = char_win_stdio_class_init,
+    .abstract          = true,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_win_stdio_type_info);
-}
+static void register_types(void) { type_register_static(&char_win_stdio_type_info); }
 
 type_init(register_types);

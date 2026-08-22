@@ -16,26 +16,15 @@
 
 #include "qapi/qapi-types-crypto.h"
 
-struct QCryptoCipherDriver {
-    int (*cipher_encrypt)(QCryptoCipher *cipher,
-                          const void *in,
-                          void *out,
-                          size_t len,
-                          Error **errp);
+struct QCryptoCipherDriver
+{
+    int (*cipher_encrypt)(QCryptoCipher* cipher, const void* in, void* out, size_t len, Error** errp);
 
-    int (*cipher_decrypt)(QCryptoCipher *cipher,
-                          const void *in,
-                          void *out,
-                          size_t len,
-                          Error **errp);
+    int (*cipher_decrypt)(QCryptoCipher* cipher, const void* in, void* out, size_t len, Error** errp);
 
-    int (*cipher_setiv)(QCryptoCipher *cipher,
-                        const uint8_t *iv, size_t niv,
-                        Error **errp);
+    int (*cipher_setiv)(QCryptoCipher* cipher, const uint8_t* iv, size_t niv, Error** errp);
 
-    int (*cipher_getiv)(QCryptoCipher *cipher,
-                        uint8_t *iv, size_t niv,
-                        Error **errp);
+    int (*cipher_getiv)(QCryptoCipher* cipher, uint8_t* iv, size_t niv, Error** errp);
 
-    void (*cipher_free)(QCryptoCipher *cipher);
+    void (*cipher_free)(QCryptoCipher* cipher);
 };

@@ -29,8 +29,7 @@
  * This adds a child<> property.
  * The callback will be called with @opaque as opaque parameter.
  */
-Clock *qdev_init_clock_in(DeviceState *dev, const char *name,
-                          ClockCallback *callback, void *opaque,
+Clock* qdev_init_clock_in(DeviceState* dev, const char* name, ClockCallback* callback, void* opaque,
                           unsigned int events);
 
 /**
@@ -42,7 +41,7 @@ Clock *qdev_init_clock_in(DeviceState *dev, const char *name,
  * Add an output clock to device @dev as a clock named @name.
  * This adds a child<> property.
  */
-Clock *qdev_init_clock_out(DeviceState *dev, const char *name);
+Clock* qdev_init_clock_out(DeviceState* dev, const char* name);
 
 /**
  * qdev_get_clock_in:
@@ -52,7 +51,7 @@ Clock *qdev_init_clock_out(DeviceState *dev, const char *name);
  *
  * Get the input clock @name from @dev or NULL if does not exist.
  */
-Clock *qdev_get_clock_in(DeviceState *dev, const char *name);
+Clock* qdev_get_clock_in(DeviceState* dev, const char* name);
 
 /**
  * qdev_get_clock_out:
@@ -62,7 +61,7 @@ Clock *qdev_get_clock_in(DeviceState *dev, const char *name);
  *
  * Get the output clock @name from @dev or NULL if does not exist.
  */
-Clock *qdev_get_clock_out(DeviceState *dev, const char *name);
+Clock* qdev_get_clock_out(DeviceState* dev, const char* name);
 
 /**
  * qdev_connect_clock_in:
@@ -75,7 +74,7 @@ Clock *qdev_get_clock_out(DeviceState *dev, const char *name);
  *
  * Must be called before @dev is realized.
  */
-void qdev_connect_clock_in(DeviceState *dev, const char *name, Clock *source);
+void qdev_connect_clock_in(DeviceState* dev, const char* name, Clock* source);
 
 /**
  * qdev_alias_clock:
@@ -90,8 +89,7 @@ void qdev_connect_clock_in(DeviceState *dev, const char *name, Clock *source);
  * An alias clock must not be modified or used by @alias_dev and should
  * typically be only only for device composition purpose.
  */
-Clock *qdev_alias_clock(DeviceState *dev, const char *name,
-                        DeviceState *alias_dev, const char *alias_name);
+Clock* qdev_alias_clock(DeviceState* dev, const char* name, DeviceState* alias_dev, const char* alias_name);
 
 /**
  * qdev_finalize_clocklist:
@@ -99,7 +97,7 @@ Clock *qdev_alias_clock(DeviceState *dev, const char *name,
  *
  * Clear the clocklist from @dev. Only used internally in qdev.
  */
-void qdev_finalize_clocklist(DeviceState *dev);
+void qdev_finalize_clocklist(DeviceState* dev);
 
 /**
  * ClockPortInitElem:
@@ -111,25 +109,26 @@ void qdev_finalize_clocklist(DeviceState *dev);
  * @offset: optional offset to store the ClockIn or ClockOut pointer in device
  * state structure (0 means unused)
  */
-struct ClockPortInitElem {
-    const char *name;
-    bool is_output;
-    ClockCallback *callback;
-    unsigned int callback_events;
-    size_t offset;
+struct ClockPortInitElem
+{
+    const char*    name;
+    bool           is_output;
+    ClockCallback* callback;
+    unsigned int   callback_events;
+    size_t         offset;
 };
 
-#define clock_offset_value(devstate, field) \
-    (offsetof(devstate, field) + \
-     type_check(Clock *, typeof_field(devstate, field)))
+#define clock_offset_value(devstate, field)                                         \
+    (offsetof(devstate, field) + type_check(Clock*, typeof_field(devstate, field)))
 
-#define QDEV_CLOCK(out_not_in, devstate, field, cb, cbevents) {  \
-    .name = (stringify(field)), \
-    .is_output = out_not_in, \
-    .callback = cb, \
-    .callback_events = cbevents, \
-    .offset = clock_offset_value(devstate, field), \
-}
+#define QDEV_CLOCK(out_not_in, devstate, field, cb, cbevents)   \
+    {                                                           \
+        .name            = (stringify(field)),                  \
+        .is_output       = out_not_in,                          \
+        .callback        = cb,                                  \
+        .callback_events = cbevents,                            \
+        .offset          = clock_offset_value(devstate, field), \
+    }
 
 /**
  * QDEV_CLOCK_(IN|OUT):
@@ -142,13 +141,11 @@ struct ClockPortInitElem {
  *
  * The name of the clock will be derived from @field
  */
-#define QDEV_CLOCK_IN(devstate, field, callback, cbevents)       \
-    QDEV_CLOCK(false, devstate, field, callback, cbevents)
+#define QDEV_CLOCK_IN(devstate, field, callback, cbevents) QDEV_CLOCK(false, devstate, field, callback, cbevents)
 
-#define QDEV_CLOCK_OUT(devstate, field) \
-    QDEV_CLOCK(true, devstate, field, NULL, 0)
+#define QDEV_CLOCK_OUT(devstate, field) QDEV_CLOCK(true, devstate, field, NULL, 0)
 
-#define QDEV_CLOCK_END { .name = NULL }
+#define QDEV_CLOCK_END {.name = NULL}
 
 typedef struct ClockPortInitElem ClockPortInitArray[];
 
@@ -158,4 +155,4 @@ typedef struct ClockPortInitElem ClockPortInitArray[];
  * @clocks: a QDEV_CLOCK_END-terminated array which contains the
  * clocks information.
  */
-void qdev_init_clocks(DeviceState *dev, const ClockPortInitArray clocks);
+void qdev_init_clocks(DeviceState* dev, const ClockPortInitArray clocks);

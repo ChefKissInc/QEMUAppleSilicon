@@ -33,14 +33,14 @@
 #include "lzss.h"
 
 #if 0
-#define DINFO(fmt, ...) info_report(fmt, ##__VA_ARGS__)
+    #define DINFO(fmt, ...) info_report(fmt, ##__VA_ARGS__)
 #else
-#define DINFO(fmt, ...) \
-    do {                \
-    } while (0)
+    #define DINFO(fmt, ...) \
+        do { }              \
+        while (0)
 #endif
 
-static const char *KEEP_COMP[] = {
+static const char* KEEP_COMP[] = {
     "adbe0,s8000\0$",
     // "aop-audio\0$",
     // "aop-audio-control\0$",
@@ -157,7 +157,7 @@ static const char *KEEP_COMP[] = {
     "accbuck,fan53740\0$",
 };
 
-static const char *REM_NAMES[] = {
+static const char* REM_NAMES[] = {
     "accel\0$",
     "gyro\0$",
     "compass\0$",
@@ -196,12 +196,12 @@ static const char *REM_NAMES[] = {
     "Lynx\0$",
 };
 
-static const char *REM_DEV_TYPES[] = {
+static const char* REM_DEV_TYPES[] = {
     "wlan\0$",
     "pmp\0$",
 };
 
-static const char *REM_PROPS[] = {
+static const char* REM_PROPS[] = {
 #ifndef ENABLE_DATA_ENCRYPTION
     "content-protect",
     "encryptable",
@@ -213,7 +213,7 @@ static const char *REM_PROPS[] = {
     "function-pmp_control",
     "mcc-power-gating",
     "nand-debug",
-    "nvme-coastguard", // FIXME: panic: "pmap_iommu_map failed\n"
+    "nvme-coastguard",    // FIXME: panic: "pmap_iommu_map failed\n"
     "pmp",
     "soc-tuning",
 #ifndef ENABLE_BASEBAND
@@ -240,44 +240,36 @@ static const char *REM_PROPS[] = {
 #endif
 };
 
-static const char *srawmemchr(const char *str, int chr)
+static const char* srawmemchr(const char* str, int chr)
 {
-    while (*str != chr) {
-        str++;
-    }
+    while (*str != chr) { str++; }
 
     return str;
 }
 
-static uint64_t sstrlen(const char *str)
-{
-    return srawmemchr(str, '$') - str;
-}
+static uint64_t sstrlen(const char* str) { return srawmemchr(str, '$') - str; }
 
-static void apple_boot_process_dt_node(AppleDTNode *node, AppleDTNode *parent)
+static void apple_boot_process_dt_node(AppleDTNode* node, AppleDTNode* parent)
 {
-    GList *iter = NULL;
-    AppleDTNode *child = NULL;
-    AppleDTProp *prop = NULL;
-    uint64_t i;
-    bool found;
+    GList*       iter  = NULL;
+    AppleDTNode* child = NULL;
+    AppleDTProp* prop  = NULL;
+    uint64_t     i;
+    bool         found;
 
     if ((prop = apple_dt_get_prop(node, "compatible")) != NULL) {
         assert_nonnull(prop->data);
         found = false;
         for (i = 0; i < ARRAY_SIZE(KEEP_COMP); i++) {
-            if (memcmp(prop->data, KEEP_COMP[i],
-                       MIN(prop->len, sstrlen(KEEP_COMP[i]))) == 0) {
+            if (memcmp(prop->data, KEEP_COMP[i], MIN(prop->len, sstrlen(KEEP_COMP[i]))) == 0) {
                 found = true;
                 break;
             }
         }
         if (!found) {
             assert_nonnull(parent);
-            DINFO(
-                "Removing node `%s` (non-whitelisted compatible property `%s`)",
-                apple_dt_get_prop_str_or(node, "name", "(null)", &error_fatal),
-                (char *)prop->data);
+            DINFO("Removing node `%s` (non-whitelisted compatible property `%s`)",
+                  apple_dt_get_prop_str_or(node, "name", "(null)", &error_fatal), (char*)prop->data);
             apple_dt_del_node(parent, node);
             return;
         }
@@ -289,8 +281,7 @@ static void apple_boot_process_dt_node(AppleDTNode *node, AppleDTNode *parent)
             uint64_t size = MIN(prop->len, sstrlen(REM_NAMES[i]));
             if (memcmp(prop->data, REM_NAMES[i], size) == 0) {
                 assert_nonnull(parent);
-                DINFO("Removing node `%s` (blacklisted name)",
-                      (char *)prop->data);
+                DINFO("Removing node `%s` (blacklisted name)", (char*)prop->data);
                 apple_dt_del_node(parent, node);
                 return;
             }
@@ -304,9 +295,7 @@ static void apple_boot_process_dt_node(AppleDTNode *node, AppleDTNode *parent)
             if (memcmp(prop->data, REM_DEV_TYPES[i], size) == 0) {
                 assert_nonnull(parent);
                 DINFO("Removing node `%s` (blacklisted device type `%s`)",
-                      apple_dt_get_prop_str_or(node, "name", "(null)",
-                                               &error_fatal),
-                      (char *)prop->data);
+                      apple_dt_get_prop_str_or(node, "name", "(null)", &error_fatal), (char*)prop->data);
                 apple_dt_del_node(parent, node);
                 return;
             }
@@ -315,14 +304,13 @@ static void apple_boot_process_dt_node(AppleDTNode *node, AppleDTNode *parent)
 
     for (i = 0; i < ARRAY_SIZE(REM_PROPS); i++) {
         if (apple_dt_del_prop_named(node, REM_PROPS[i])) {
-            DINFO(
-                "Removing prop `%s` from node `%s`", REM_PROPS[i],
-                apple_dt_get_prop_str_or(node, "name", "(null)", &error_fatal));
+            DINFO("Removing prop `%s` from node `%s`", REM_PROPS[i],
+                  apple_dt_get_prop_str_or(node, "name", "(null)", &error_fatal));
         }
     }
 
     for (iter = node->children; iter != NULL;) {
-        child = (AppleDTNode *)iter->data;
+        child = (AppleDTNode*)iter->data;
 
         // iter might get invalidated
         iter = iter->next;
@@ -333,44 +321,39 @@ static void apple_boot_process_dt_node(AppleDTNode *node, AppleDTNode *parent)
 /*
  * @param payload_type must be at least 4 bytes long
  */
-static void extract_im4p_payload(const char *filename, char *payload_type,
-                                 uint8_t **data, uint32_t *length,
-                                 uint8_t **secure_monitor)
+static void extract_im4p_payload(const char* filename, char* payload_type, uint8_t** data, uint32_t* length,
+                                 uint8_t** secure_monitor)
 {
-    uint8_t *file_data;
-    gsize fsize;
-    char errorDescription[ASN1_MAX_ERROR_DESCRIPTION_SIZE];
+    uint8_t*  file_data;
+    gsize     fsize;
+    char      errorDescription[ASN1_MAX_ERROR_DESCRIPTION_SIZE];
     asn1_node img4_definitions = NULL;
     asn1_node img4;
-    int ret;
-    char magic[4];
-    char description[128];
-    int len;
-    uint8_t *payload_data;
+    int       ret;
+    char      magic[4];
+    char      description[128];
+    int       len;
+    uint8_t*  payload_data;
 
-    if (!g_file_get_contents(filename, (gchar **)&file_data, &fsize, NULL)) {
+    if (!g_file_get_contents(filename, (gchar**)&file_data, &fsize, NULL)) {
         error_setg(&error_fatal, "file read for `%s` failed", filename);
         return;
     }
 
-    if (asn1_array2tree(img4_definitions_array, &img4_definitions,
-                        errorDescription) != ASN1_SUCCESS) {
-        error_setg(&error_fatal, "ASN.1 parser initialisation failed: `%s`",
-                   errorDescription);
+    if (asn1_array2tree(img4_definitions_array, &img4_definitions, errorDescription) != ASN1_SUCCESS) {
+        error_setg(&error_fatal, "ASN.1 parser initialisation failed: `%s`", errorDescription);
         return;
     }
 
     ret = asn1_create_element(img4_definitions, "Img4.Img4Payload", &img4);
     if (ret != ASN1_SUCCESS) {
-        error_setg(&error_fatal, "Img4Payload element creation failed: %d",
-                   ret);
+        error_setg(&error_fatal, "Img4Payload element creation failed: %d", ret);
         return;
     }
 
-    ret =
-        asn1_der_decoding(&img4, file_data, (uint32_t)fsize, errorDescription);
+    ret = asn1_der_decoding(&img4, file_data, (uint32_t)fsize, errorDescription);
     if (ret != ASN1_SUCCESS) {
-        *data = file_data;
+        *data   = file_data;
         *length = (uint32_t)fsize;
         strncpy(payload_type, "raw", 4);
         asn1_delete_structure(&img4);
@@ -381,8 +364,7 @@ static void extract_im4p_payload(const char *filename, char *payload_type,
     len = 4;
     ret = asn1_read_value(img4, "magic", magic, &len);
     if (ret != ASN1_SUCCESS) {
-        error_setg(&error_fatal, "im4p magic read for `%s` failed: %d",
-                   filename, ret);
+        error_setg(&error_fatal, "im4p magic read for `%s` failed: %d", filename, ret);
         return;
     }
 
@@ -394,35 +376,30 @@ static void extract_im4p_payload(const char *filename, char *payload_type,
     len = 4;
     ret = asn1_read_value(img4, "type", payload_type, &len);
     if (ret != ASN1_SUCCESS) {
-        error_setg(&error_fatal, "img4 payload type read for `%s` failed: %d",
-                   filename, ret);
+        error_setg(&error_fatal, "img4 payload type read for `%s` failed: %d", filename, ret);
         return;
     }
 
     len = 128;
     ret = asn1_read_value(img4, "description", description, &len);
     if (ret != ASN1_SUCCESS) {
-        error_setg(&error_fatal,
-                   "img4 payload description read for `%s` failed: %d",
-                   filename, ret);
+        error_setg(&error_fatal, "img4 payload description read for `%s` failed: %d", filename, ret);
         return;
     }
 
     len = 0;
     ret = asn1_read_value(img4, "data", NULL, &len);
     if (ret != ASN1_MEM_ERROR) {
-        error_setg(&error_fatal, "img4 payload size read for `%s` failed: %d",
-                   filename, ret);
+        error_setg(&error_fatal, "img4 payload size read for `%s` failed: %d", filename, ret);
         return;
     }
 
     payload_data = g_malloc0(len);
-    ret = asn1_read_value(img4, "data", payload_data, &len);
+    ret          = asn1_read_value(img4, "data", payload_data, &len);
     g_free(file_data);
 
     if (ret != ASN1_SUCCESS) {
-        error_setg(&error_fatal, "img4 payload read for `%s` failed: %d",
-                   filename, ret);
+        error_setg(&error_fatal, "img4 payload read for `%s` failed: %d", filename, ret);
         return;
     }
 
@@ -430,36 +407,30 @@ static void extract_im4p_payload(const char *filename, char *payload_type,
     asn1_delete_structure(&img4_definitions);
 
     if (memcmp(payload_data, "bvx", 3) == 0) {
-        size_t decode_buffer_size = len * 8;
-        uint8_t *decode_buffer = g_malloc0(decode_buffer_size);
-        int decoded_length = lzfse_decode_buffer(
-            decode_buffer, decode_buffer_size, payload_data, len, NULL);
+        size_t   decode_buffer_size = len * 8;
+        uint8_t* decode_buffer      = g_malloc0(decode_buffer_size);
+        int      decoded_length     = lzfse_decode_buffer(decode_buffer, decode_buffer_size, payload_data, len, NULL);
         g_free(payload_data);
 
         if (decoded_length == 0 || decoded_length == decode_buffer_size) {
-            error_setg(
-                &error_fatal,
-                "LZFSE decompression for `%s` failed; insufficient buffer size",
-                filename);
+            error_setg(&error_fatal, "LZFSE decompression for `%s` failed; insufficient buffer size", filename);
             g_free(decode_buffer);
             return;
         }
 
-        *data = decode_buffer;
+        *data   = decode_buffer;
         *length = decoded_length;
         return;
     }
 
     if (memcmp(payload_data, "complzss", 8) == 0) {
-        LzssCompHeader *comp_header = (LzssCompHeader *)payload_data;
-        size_t uncompressed_size = be32_to_cpu(comp_header->uncompressed_size);
-        size_t compressed_size = be32_to_cpu(comp_header->compressed_size);
-        uint8_t *decode_buffer = g_malloc0(uncompressed_size);
-        int decoded_length =
-            decompress_lzss(decode_buffer, comp_header->data, compressed_size);
+        LzssCompHeader* comp_header       = (LzssCompHeader*)payload_data;
+        size_t          uncompressed_size = be32_to_cpu(comp_header->uncompressed_size);
+        size_t          compressed_size   = be32_to_cpu(comp_header->compressed_size);
+        uint8_t*        decode_buffer     = g_malloc0(uncompressed_size);
+        int             decoded_length    = decompress_lzss(decode_buffer, comp_header->data, compressed_size);
         if (decoded_length == 0 || decoded_length != uncompressed_size) {
-            error_setg(&error_fatal, "LZSS decompression for `%s` failed",
-                       filename);
+            error_setg(&error_fatal, "LZSS decompression for `%s` failed", filename);
             g_free(decode_buffer);
             return;
         }
@@ -467,40 +438,35 @@ static void extract_im4p_payload(const char *filename, char *payload_type,
         size_t monitor_off = compressed_size + sizeof(LzssCompHeader);
         if (secure_monitor && monitor_off < len) {
             size_t monitor_size = len - monitor_off;
-            DINFO("Found AP Secure Monitor in payload with size 0x%zX!",
-                  monitor_size);
+            DINFO("Found AP Secure Monitor in payload with size 0x%zX!", monitor_size);
             *secure_monitor = g_malloc0(monitor_size);
             memcpy(*secure_monitor, payload_data + monitor_off, monitor_size);
         }
 
         g_free(payload_data);
 
-        *data = decode_buffer;
+        *data   = decode_buffer;
         *length = decoded_length;
         return;
     }
 
-    *data = payload_data;
+    *data   = payload_data;
     *length = len;
 }
 
-AppleDTNode *apple_boot_load_dt_file(const char *filename)
+AppleDTNode* apple_boot_load_dt_file(const char* filename)
 {
-    AppleDTNode *root = NULL;
-    uint8_t *file_data = NULL;
-    uint32_t fsize;
-    char payload_type[4];
+    AppleDTNode* root      = NULL;
+    uint8_t*     file_data = NULL;
+    uint32_t     fsize;
+    char         payload_type[4];
 
-    if (filename == NULL) {
-        return NULL;
-    }
+    if (filename == NULL) { return NULL; }
 
     extract_im4p_payload(filename, payload_type, &file_data, &fsize, NULL);
 
-    if (memcmp(payload_type, "dtre", 4) != 0 &&
-        memcmp(payload_type, "raw", 4) != 0) {
-        error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `dtre`)",
-                   filename, payload_type);
+    if (memcmp(payload_type, "dtre", 4) != 0 && memcmp(payload_type, "raw", 4) != 0) {
+        error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `dtre`)", filename, payload_type);
         return NULL;
     }
 
@@ -509,9 +475,9 @@ AppleDTNode *apple_boot_load_dt_file(const char *filename)
     return root;
 }
 
-static void apple_boot_init_mem_ranges(AppleDTNode *root)
+static void apple_boot_init_mem_ranges(AppleDTNode* root)
 {
-    AppleDTNode *child;
+    AppleDTNode* child;
 
     child = apple_dt_get_node(root, "chosen/memory-map");
     assert_nonnull(child);
@@ -523,15 +489,14 @@ static void apple_boot_init_mem_ranges(AppleDTNode *root)
     apple_dt_set_prop(child, "DeviceTree", 16, NULL);
 }
 
-void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
-                            bool auto_boot)
+void apple_boot_populate_dt(AppleDTNode* root, AppleBootInfo* info, bool auto_boot)
 {
-    AppleDTNode *child;
-    AppleDTProp *prop;
-    char *boot_nonce_data;
-    size_t boot_nonce_len;
-    uint8_t *hash = NULL;
-    size_t hash_len = 0;
+    AppleDTNode* child;
+    AppleDTProp* prop;
+    char*        boot_nonce_data;
+    size_t       boot_nonce_len;
+    uint8_t*     hash     = NULL;
+    size_t       hash_len = 0;
 
     assert_cmphex(info->nvram_size, <=, XNU_MAX_NVRAM_SIZE);
 
@@ -547,7 +512,7 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
     prop = apple_dt_get_prop(child, "boot-nonce");
     assert_nonnull(prop);
     boot_nonce_data = prop->data;
-    boot_nonce_len = prop->len;
+    boot_nonce_len  = prop->len;
     qemu_guest_getrandom_nofail(boot_nonce_data, boot_nonce_len);
 
     apple_dt_set_prop_u64(child, "dram-base", info->dram_base);
@@ -557,8 +522,7 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
 
     apple_dt_set_prop_u32(child, "nvram-total-size", info->nvram_size);
     apple_dt_set_prop_u32(child, "nvram-bank-size", info->nvram_size);
-    apple_dt_set_prop(child, "nvram-proxy-data", info->nvram_size,
-                      info->nvram_data);
+    apple_dt_set_prop(child, "nvram-proxy-data", info->nvram_size, info->nvram_data);
 
     // apple_dt_set_prop_u32(child, "research-enabled", 1);
     apple_dt_set_prop_u32(child, "effective-production-status-ap", 1);
@@ -576,8 +540,7 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
     // 0x05: embedded-darwinos-environment
     // 0x06: trusted-darwinos-environment/"PrivateCloudOS detected"
     // TODO: Don't set this one manually, process osenvironments node.
-    apple_dt_set_prop_u32(child, "darwinos-security-environment",
-                          auto_boot ? 1 : 2);
+    apple_dt_set_prop_u32(child, "darwinos-security-environment", auto_boot ? 1 : 2);
     // 7: Erase/darwinOS RAMDisk?
     // 3: Upgrade RAMDisk?
     // 1: Main OS?
@@ -591,14 +554,15 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
 
     child = apple_dt_get_node(root, "chosen/manifest-properties");
     assert_nonnull(child);
-    if (qcrypto_hash_bytes(QCRYPTO_HASH_ALGO_SHA256, boot_nonce_data,
-                           boot_nonce_len, &hash, &hash_len,
-                           &error_fatal) >= 0) {
+    if (qcrypto_hash_bytes(QCRYPTO_HASH_ALGO_SHA256, boot_nonce_data, boot_nonce_len, &hash, &hash_len, &error_fatal)
+        >= 0)
+    {
         apple_dt_set_prop(child, "BNCH", hash_len, hash);
         g_free(hash);
-        hash = NULL;
+        hash     = NULL;
         hash_len = 0;
-    } else {
+    }
+    else {
         return;
     }
 
@@ -614,11 +578,10 @@ void apple_boot_populate_dt(AppleDTNode *root, AppleBootInfo *info,
     info->device_tree_size = ROUND_UP_16K(apple_dt_finalise(root));
 }
 
-static void set_memory_range(AppleDTNode *root, const char *name, uint64_t addr,
-                             uint64_t size)
+static void set_memory_range(AppleDTNode* root, const char* name, uint64_t addr, uint64_t size)
 {
-    AppleDTNode *child;
-    AppleDTProp *prop;
+    AppleDTNode* child;
+    AppleDTProp* prop;
 
     child = apple_dt_get_node(root, "chosen/memory-map");
     assert_nonnull(child);
@@ -636,51 +599,46 @@ static void set_memory_range(AppleDTNode *root, const char *name, uint64_t addr,
     stq_le_p(prop->data + sizeof(uint64_t), size);
 }
 
-void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
-                            AppleBootInfo *info)
+void apple_boot_finalise_dt(AppleDTNode* root, AddressSpace* as, AppleBootInfo* info)
 {
-    uint8_t *buf;
+    uint8_t*        buf;
     QCryptoHashAlgo alg;
-    uint8_t *hash = NULL;
-    size_t hash_len = 0;
-    AppleDTNode *child;
-    const char *crypto_hash_method;
-    AppleDTProp *prop;
+    uint8_t*        hash     = NULL;
+    size_t          hash_len = 0;
+    AppleDTNode*    child;
+    const char*     crypto_hash_method;
+    AppleDTProp*    prop;
 
-    set_memory_range(root, "DeviceTree", info->device_tree_addr,
-                     info->device_tree_size);
+    set_memory_range(root, "DeviceTree", info->device_tree_addr, info->device_tree_size);
     set_memory_range(root, "RAMDisk", info->ramdisk_addr, info->ramdisk_size);
-    set_memory_range(root, "TrustCache", info->trustcache_addr,
-                     info->trustcache_size);
+    set_memory_range(root, "TrustCache", info->trustcache_addr, info->trustcache_size);
     set_memory_range(root, "SEPFW", info->sep_fw_addr, info->sep_fw_size);
-    set_memory_range(root, "BootArgs", info->kern_boot_args_addr,
-                     info->kern_boot_args_size);
+    set_memory_range(root, "BootArgs", info->kern_boot_args_addr, info->kern_boot_args_size);
 
     if (info->ticket_data != NULL && info->ticket_length != 0) {
         child = apple_dt_get_node(root, "chosen");
         assert_nonnull(child);
 
-        crypto_hash_method = apple_dt_get_prop_str_or(
-            child, "crypto-hash-method", "sha1", &error_fatal);
-        if (strcmp(crypto_hash_method, "sha2-384") == 0) {
-            alg = QCRYPTO_HASH_ALGO_SHA384;
-        } else if (strcmp(crypto_hash_method, "sha1") == 0) {
+        crypto_hash_method = apple_dt_get_prop_str_or(child, "crypto-hash-method", "sha1", &error_fatal);
+        if (strcmp(crypto_hash_method, "sha2-384") == 0) { alg = QCRYPTO_HASH_ALGO_SHA384; }
+        else if (strcmp(crypto_hash_method, "sha1") == 0) {
             alg = QCRYPTO_HASH_ALGO_SHA1;
-        } else {
+        }
+        else {
             assert_not_reached();
         }
 
         prop = apple_dt_get_prop(child, "boot-manifest-hash");
         assert_nonnull(prop);
 
-        if (qcrypto_hash_bytes(alg, info->ticket_data, info->ticket_length,
-                               &hash, &hash_len, &error_fatal) >= 0) {
+        if (qcrypto_hash_bytes(alg, info->ticket_data, info->ticket_length, &hash, &hash_len, &error_fatal) >= 0) {
             assert_cmpuint(hash_len, ==, prop->len);
             memcpy(prop->data, hash, hash_len);
             g_free(hash);
-            hash = NULL;
+            hash     = NULL;
             hash_len = 0;
-        } else {
+        }
+        else {
             return;
         }
     }
@@ -688,41 +646,38 @@ void apple_boot_finalise_dt(AppleDTNode *root, AddressSpace *as,
     buf = g_malloc(info->device_tree_size);
     apple_dt_serialise(root, buf);
 
-    address_space_rw(as, info->device_tree_addr, MEMTXATTRS_UNSPECIFIED, buf,
-                     info->device_tree_size, true);
+    address_space_rw(as, info->device_tree_addr, MEMTXATTRS_UNSPECIFIED, buf, info->device_tree_size, true);
     g_free(buf);
 }
 
-uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size)
+uint8_t* apple_boot_load_trustcache_file(const char* filename, uint64_t* size)
 {
-    uint32_t *trustcache_data;
-    uint64_t trustcache_size;
-    g_autofree uint8_t *file_data;
-    unsigned long file_size;
-    uint32_t length;
-    char payload_type[4];
-    uint32_t trustcache_version;
-    uint32_t trustcache_entry_count;
-    uint32_t expected_file_size;
-    uint32_t trustcache_entry_size;
+    uint32_t*           trustcache_data;
+    uint64_t            trustcache_size;
+    g_autofree uint8_t* file_data;
+    unsigned long       file_size;
+    uint32_t            length;
+    char                payload_type[4];
+    uint32_t            trustcache_version;
+    uint32_t            trustcache_entry_count;
+    uint32_t            expected_file_size;
+    uint32_t            trustcache_entry_size;
 
     extract_im4p_payload(filename, payload_type, &file_data, &length, NULL);
 
-    if (memcmp(payload_type, "trst", 4) != 0 &&
-        memcmp(payload_type, "rtsc", 4) != 0 &&
-        memcmp(payload_type, "raw", 4) != 0) {
-        error_setg(&error_fatal,
-                   "`%s` is a `%.4s` object (expected `trst`/`rtsc`)", filename,
-                   payload_type);
+    if (memcmp(payload_type, "trst", 4) != 0 && memcmp(payload_type, "rtsc", 4) != 0
+        && memcmp(payload_type, "raw", 4) != 0)
+    {
+        error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `trst`/`rtsc`)", filename, payload_type);
         return NULL;
     }
 
     file_size = (unsigned long)length;
 
-    trustcache_size = ROUND_UP_16K(file_size + 8);
-    trustcache_data = (uint32_t *)g_malloc0(trustcache_size);
-    trustcache_data[0] = 1; // #trustcaches
-    trustcache_data[1] = 8; // offset
+    trustcache_size    = ROUND_UP_16K(file_size + 8);
+    trustcache_data    = (uint32_t*)g_malloc0(trustcache_size);
+    trustcache_data[0] = 1;    // #trustcaches
+    trustcache_data[1] = 8;    // offset
     memcpy(&trustcache_data[2], file_data, file_size);
 
     // Validate the trustcache v1 header. The layout is:
@@ -734,22 +689,16 @@ uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size)
     // contains a 20 byte hash and 2 additional bytes (hence is 22 bytes long)
     // for v1 and contains a 20 byte hash and 4 additional bytes (hence is 24
     // bytes long) for v2
-    trustcache_version = trustcache_data[2];
+    trustcache_version     = trustcache_data[2];
     trustcache_entry_count = trustcache_data[7];
 
     switch (trustcache_version) {
-    case 1:
-        trustcache_entry_size = 22;
-        break;
-    case 2:
-        trustcache_entry_size = 24;
-        break;
-    default:
-        error_setg(
-            &error_fatal,
-            "invalid trustcache header in `%s` (expected v1 or v2, got %d)",
-            filename, trustcache_version);
-        return NULL;
+        case 1: trustcache_entry_size = 22; break;
+        case 2: trustcache_entry_size = 24; break;
+        default:
+            error_setg(&error_fatal, "invalid trustcache header in `%s` (expected v1 or v2, got %d)", filename,
+                       trustcache_version);
+            return NULL;
     }
 
     // 24 is header size
@@ -758,214 +707,169 @@ uint8_t *apple_boot_load_trustcache_file(const char *filename, uint64_t *size)
     assert_cmpuint(file_size, ==, expected_file_size);
 
     *size = trustcache_size;
-    return (uint8_t *)trustcache_data;
+    return (uint8_t*)trustcache_data;
 }
 
-void apple_boot_load_ramdisk(const char *filename, AddressSpace *as, hwaddr pa,
-                             uint64_t *size)
+void apple_boot_load_ramdisk(const char* filename, AddressSpace* as, hwaddr pa, uint64_t* size)
 {
-    uint8_t *file_data = NULL;
+    uint8_t*      file_data = NULL;
     unsigned long file_size = 0;
-    uint32_t length = 0;
-    char payload_type[4];
+    uint32_t      length    = 0;
+    char          payload_type[4];
 
     extract_im4p_payload(filename, payload_type, &file_data, &length, NULL);
-    if (memcmp(payload_type, "rdsk", 4) != 0 &&
-        memcmp(payload_type, "raw", 4) != 0) {
-        error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `rdsk`)",
-                   filename, payload_type);
+    if (memcmp(payload_type, "rdsk", 4) != 0 && memcmp(payload_type, "raw", 4) != 0) {
+        error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `rdsk`)", filename, payload_type);
         return;
     }
 
     file_size = length;
     file_data = g_realloc(file_data, file_size);
 
-    address_space_rw(as, pa, MEMTXATTRS_UNSPECIFIED, file_data, file_size,
-                     true);
+    address_space_rw(as, pa, MEMTXATTRS_UNSPECIFIED, file_data, file_size, true);
     *size = file_size;
     g_free(file_data);
 }
 
-void apple_boot_load_raw_file(const char *filename, AddressSpace *as,
-                              hwaddr file_pa, uint64_t *size)
+void apple_boot_load_raw_file(const char* filename, AddressSpace* as, hwaddr file_pa, uint64_t* size)
 {
-    uint8_t *file_data;
-    gsize sizef;
+    uint8_t* file_data;
+    gsize    sizef;
 
-    if (g_file_get_contents(filename, (gchar **)&file_data, &sizef, NULL)) {
+    if (g_file_get_contents(filename, (gchar**)&file_data, &sizef, NULL)) {
         *size = sizef;
-        address_space_rw(as, file_pa, MEMTXATTRS_UNSPECIFIED, file_data, sizef,
-                         true);
+        address_space_rw(as, file_pa, MEMTXATTRS_UNSPECIFIED, file_data, sizef, true);
         g_free(file_data);
-    } else {
+    }
+    else {
         error_setg(&error_fatal, "file read for `%s` failed", filename);
     }
 }
 
-bool apple_boot_contains_boot_arg(const char *boot_args, const char *arg,
-                                  bool match_prefix)
+bool apple_boot_contains_boot_arg(const char* boot_args, const char* arg, bool match_prefix)
 {
-    g_autofree char *args = g_strdup(boot_args);
-    char *pos = args;
-    char *token;
-    size_t arglen = strlen(arg);
+    g_autofree char* args = g_strdup(boot_args);
+    char*            pos  = args;
+    char*            token;
+    size_t           arglen = strlen(arg);
 
-    if (args == NULL) {
-        return false;
-    }
+    if (args == NULL) { return false; }
 
     while ((token = qemu_strsep(&pos, " ")) != NULL) {
-        if ((match_prefix && strncmp(token, arg, arglen) == 0) ||
-            strcmp(token, arg) == 0) {
-            return true;
-        }
+        if ((match_prefix && strncmp(token, arg, arglen) == 0) || strcmp(token, arg) == 0) { return true; }
     }
 
     return false;
 }
 
-void apple_boot_setup_monitor_boot_args(
-    AddressSpace *as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
-    hwaddr mem_size, hwaddr kern_args, vaddr kern_entry, hwaddr kern_phys_base,
-    hwaddr kern_phys_slide, vaddr kern_virt_slide, vaddr kern_text_section_off)
+void apple_boot_setup_monitor_boot_args(AddressSpace* as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
+                                        hwaddr mem_size, hwaddr kern_args, vaddr kern_entry, hwaddr kern_phys_base,
+                                        hwaddr kern_phys_slide, vaddr kern_virt_slide, vaddr kern_text_section_off)
 {
-    AppleMonitorBootArgs args = { 0 };
+    AppleMonitorBootArgs args = {0};
 
-    args.version = 4;
-    args.virt_base = virt_base;
-    args.phys_base = phys_base;
-    args.mem_size = mem_size;
-    args.kern_args = kern_args;
-    args.kern_entry = kern_entry;
-    args.kern_phys_base = kern_phys_base;
-    args.kern_phys_slide = kern_phys_slide;
-    args.kern_virt_slide = kern_virt_slide;
+    args.version               = 4;
+    args.virt_base             = virt_base;
+    args.phys_base             = phys_base;
+    args.mem_size              = mem_size;
+    args.kern_args             = kern_args;
+    args.kern_entry            = kern_entry;
+    args.kern_phys_base        = kern_phys_base;
+    args.kern_phys_slide       = kern_phys_slide;
+    args.kern_virt_slide       = kern_virt_slide;
     args.kern_text_section_off = kern_text_section_off;
     qemu_guest_getrandom_nofail(args.random_bytes, sizeof(args.random_bytes));
 
-    address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args),
-                     true);
+    address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args), true);
 }
 
-static void apple_boot_setup_bootargs_rev2(
-    AddressSpace *as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
-    hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va, vaddr dtb_size,
-    AppleVideoArgs *video_args, const char *cmdline, hwaddr mem_size_actual)
+static void apple_boot_setup_bootargs_rev2(AddressSpace* as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
+                                           hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va, vaddr dtb_size,
+                                           AppleVideoArgs* video_args, const char* cmdline, hwaddr mem_size_actual)
 {
-    AppleKernelBootArgsRev2 args = { 0 };
+    AppleKernelBootArgsRev2 args = {0};
 
-    args.revision = 2;
-    args.version = 2;
-    args.virt_base = virt_base;
-    args.phys_base = phys_base;
-    args.mem_size = mem_size;
-    args.kernel_top = kernel_top;
-    args.video_args = *video_args;
-    args.device_tree_ptr = dtb_va;
+    args.revision           = 2;
+    args.version            = 2;
+    args.virt_base          = virt_base;
+    args.phys_base          = phys_base;
+    args.mem_size           = mem_size;
+    args.kernel_top         = kernel_top;
+    args.video_args         = *video_args;
+    args.device_tree_ptr    = dtb_va;
     args.device_tree_length = dtb_size;
-    if (cmdline != NULL) {
-        g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline));
-    }
-    args.boot_flags = BOOT_FLAGS_DARK_BOOT;
+    if (cmdline != NULL) { g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline)); }
+    args.boot_flags      = BOOT_FLAGS_DARK_BOOT;
     args.mem_size_actual = mem_size_actual;
 
     // iOS 13: mem_size_actual is not a thing
     // however, the boot args region should always
     // be large enough (one page).
-    address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args),
-                     true);
+    address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args), true);
 }
 
-static void apple_boot_setup_bootargs_rev3(
-    AddressSpace *as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
-    hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va, vaddr dtb_size,
-    AppleVideoArgs *video_args, const char *cmdline, hwaddr mem_size_actual)
+static void apple_boot_setup_bootargs_rev3(AddressSpace* as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
+                                           hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va, vaddr dtb_size,
+                                           AppleVideoArgs* video_args, const char* cmdline, hwaddr mem_size_actual)
 {
-    AppleKernelBootArgsRev3 args = { 0 };
+    AppleKernelBootArgsRev3 args = {0};
 
-    args.revision = 3;
-    args.version = 2;
-    args.virt_base = virt_base;
-    args.phys_base = phys_base;
-    args.mem_size = mem_size;
-    args.kernel_top = kernel_top;
-    args.video_args = *video_args;
-    args.device_tree_ptr = dtb_va;
+    args.revision           = 3;
+    args.version            = 2;
+    args.virt_base          = virt_base;
+    args.phys_base          = phys_base;
+    args.mem_size           = mem_size;
+    args.kernel_top         = kernel_top;
+    args.video_args         = *video_args;
+    args.device_tree_ptr    = dtb_va;
     args.device_tree_length = dtb_size;
-    if (cmdline != NULL) {
-        g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline));
-    }
-    args.boot_flags = BOOT_FLAGS_DARK_BOOT;
+    if (cmdline != NULL) { g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline)); }
+    args.boot_flags      = BOOT_FLAGS_DARK_BOOT;
     args.mem_size_actual = mem_size_actual;
 
-    address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args),
-                     true);
+    address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args), true);
 }
 
-void apple_boot_setup_bootargs(uint32_t build_version, AddressSpace *as,
-                               hwaddr addr, vaddr virt_base, hwaddr phys_base,
-                               hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va,
-                               vaddr dtb_size, AppleVideoArgs *video_args,
-                               const char *cmdline, hwaddr mem_size_actual)
+void apple_boot_setup_bootargs(uint32_t build_version, AddressSpace* as, hwaddr addr, vaddr virt_base, hwaddr phys_base,
+                               hwaddr mem_size, hwaddr kernel_top, vaddr dtb_va, vaddr dtb_size,
+                               AppleVideoArgs* video_args, const char* cmdline, hwaddr mem_size_actual)
 {
     if (BUILD_VERSION_MAJOR(build_version) >= 17) {
-        apple_boot_setup_bootargs_rev3(as, addr, virt_base, phys_base, mem_size,
-                                       kernel_top, dtb_va, dtb_size, video_args,
-                                       cmdline, mem_size_actual);
-    } else {
-        apple_boot_setup_bootargs_rev2(as, addr, virt_base, phys_base, mem_size,
-                                       kernel_top, dtb_va, dtb_size, video_args,
-                                       cmdline, mem_size_actual);
+        apple_boot_setup_bootargs_rev3(as, addr, virt_base, phys_base, mem_size, kernel_top, dtb_va, dtb_size,
+                                       video_args, cmdline, mem_size_actual);
+    }
+    else {
+        apple_boot_setup_bootargs_rev2(as, addr, virt_base, phys_base, mem_size, kernel_top, dtb_va, dtb_size,
+                                       video_args, cmdline, mem_size_actual);
     }
 }
 
-void apple_boot_get_kc_bounds(MachoHeader64 *header, vaddr *text_base,
-                              vaddr *kc_base, vaddr *kc_end, vaddr *ro_lower,
-                              vaddr *ro_upper)
+void apple_boot_get_kc_bounds(MachoHeader64* header, vaddr* text_base, vaddr* kc_base, vaddr* kc_end, vaddr* ro_lower,
+                              vaddr* ro_upper)
 {
-    MachoLoadCommand *cmd = (MachoLoadCommand *)(header + 1);
-    vaddr text_base_cur = -1ULL, kc_base_cur = -1ULL, kc_end_cur = 0,
-          ro_lower_cur = -1ULL, ro_upper_cur = 0;
+    MachoLoadCommand* cmd      = (MachoLoadCommand*)(header + 1);
+    vaddr        text_base_cur = -1ULL, kc_base_cur = -1ULL, kc_end_cur = 0, ro_lower_cur = -1ULL, ro_upper_cur = 0;
     unsigned int i;
 
-    for (i = 0; i < header->n_cmds;
-         i++, cmd = (MachoLoadCommand *)((char *)cmd + cmd->cmd_size)) {
-        if (cmd->cmd != LC_SEGMENT_64) {
-            continue;
-        }
+    for (i = 0; i < header->n_cmds; i++, cmd = (MachoLoadCommand*)((char*)cmd + cmd->cmd_size)) {
+        if (cmd->cmd != LC_SEGMENT_64) { continue; }
 
-        MachoSegmentCommand64 *seg_cmd = (MachoSegmentCommand64 *)cmd;
+        MachoSegmentCommand64* seg_cmd = (MachoSegmentCommand64*)cmd;
 
-        if (strncmp(seg_cmd->segname, "__PAGEZERO", 10) == 0 ||
-            seg_cmd->vmsize == 0) {
-            continue;
-        }
+        if (strncmp(seg_cmd->segname, "__PAGEZERO", 10) == 0 || seg_cmd->vmsize == 0) { continue; }
 
-        if (seg_cmd->filesize != 0 && seg_cmd->fileoff == 0) {
-            text_base_cur = seg_cmd->vmaddr;
-        }
+        if (seg_cmd->filesize != 0 && seg_cmd->fileoff == 0) { text_base_cur = seg_cmd->vmaddr; }
 
-        if (seg_cmd->vmaddr < kc_base_cur) {
-            kc_base_cur = seg_cmd->vmaddr;
-        }
+        if (seg_cmd->vmaddr < kc_base_cur) { kc_base_cur = seg_cmd->vmaddr; }
 
-        if (seg_cmd->vmaddr + seg_cmd->vmsize > kc_end_cur) {
-            kc_end_cur = seg_cmd->vmaddr + seg_cmd->vmsize;
-        }
+        if (seg_cmd->vmaddr + seg_cmd->vmsize > kc_end_cur) { kc_end_cur = seg_cmd->vmaddr + seg_cmd->vmsize; }
 
-        if ((seg_cmd->maxprot & VM_PROT_WRITE) != 0 ||
-            strncmp(seg_cmd->segname, "__LINKEDIT", 10) == 0) {
-            continue;
-        }
+        if ((seg_cmd->maxprot & VM_PROT_WRITE) != 0 || strncmp(seg_cmd->segname, "__LINKEDIT", 10) == 0) { continue; }
 
-        if (ro_lower_cur >= seg_cmd->vmaddr) {
-            ro_lower_cur = seg_cmd->vmaddr;
-        }
+        if (ro_lower_cur >= seg_cmd->vmaddr) { ro_lower_cur = seg_cmd->vmaddr; }
 
         hwaddr vmend = seg_cmd->vmaddr + seg_cmd->vmsize;
-        if (ro_upper_cur <= vmend) {
-            ro_upper_cur = vmend;
-        }
+        if (ro_upper_cur <= vmend) { ro_upper_cur = vmend; }
     }
 
     assert_cmphex(text_base_cur, !=, 0);
@@ -977,42 +881,28 @@ void apple_boot_get_kc_bounds(MachoHeader64 *header, vaddr *text_base,
     assert_cmphex(ro_lower_cur, !=, -1ULL);
     assert_cmphex(ro_upper_cur, !=, 0);
 
-    if (text_base != NULL) {
-        *text_base = text_base_cur;
-    }
+    if (text_base != NULL) { *text_base = text_base_cur; }
 
-    if (kc_base != NULL) {
-        *kc_base = kc_base_cur & -0x2000000ull;
-    }
+    if (kc_base != NULL) { *kc_base = kc_base_cur & -0x2000000ull; }
 
-    if (kc_end != NULL) {
-        *kc_end = kc_end_cur;
-    }
+    if (kc_end != NULL) { *kc_end = kc_end_cur; }
 
-    if (ro_lower != NULL) {
-        *ro_lower = ro_lower_cur;
-    }
+    if (ro_lower != NULL) { *ro_lower = ro_lower_cur; }
 
-    if (ro_upper != NULL) {
-        *ro_upper = ro_upper_cur;
-    }
+    if (ro_upper != NULL) { *ro_upper = ro_upper_cur; }
 }
 
-MachoHeader64 *apple_boot_load_kernel(const char *filename,
-                                      MachoHeader64 **secure_monitor)
+MachoHeader64* apple_boot_load_kernel(const char* filename, MachoHeader64** secure_monitor)
 {
-    uint32_t len;
-    uint8_t *data = NULL;
-    char payload_type[4];
-    MachoHeader64 *header;
+    uint32_t       len;
+    uint8_t*       data = NULL;
+    char           payload_type[4];
+    MachoHeader64* header;
 
-    extract_im4p_payload(filename, payload_type, &data, &len,
-                         (uint8_t **)secure_monitor);
+    extract_im4p_payload(filename, payload_type, &data, &len, (uint8_t**)secure_monitor);
 
-    if (memcmp(payload_type, "krnl", 4) != 0 &&
-        memcmp(payload_type, "raw", 4) != 0) {
-        error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `krnl`)",
-                   filename, payload_type);
+    if (memcmp(payload_type, "krnl", 4) != 0 && memcmp(payload_type, "raw", 4) != 0) {
+        error_setg(&error_fatal, "`%s` is a `%.4s` object (expected `krnl`)", filename, payload_type);
         return NULL;
     }
 
@@ -1021,17 +911,17 @@ MachoHeader64 *apple_boot_load_kernel(const char *filename,
     return header;
 }
 
-MachoHeader64 *apple_boot_parse_macho(uint8_t *data, uint32_t len)
+MachoHeader64* apple_boot_parse_macho(uint8_t* data, uint32_t len)
 {
-    uint8_t *phys_base;
-    MachoHeader64 *header;
-    MachoLoadCommand *cmd;
-    vaddr text_base;
-    vaddr kc_base;
-    vaddr kc_end;
-    int i;
+    uint8_t*          phys_base;
+    MachoHeader64*    header;
+    MachoLoadCommand* cmd;
+    vaddr             text_base;
+    vaddr             kc_base;
+    vaddr             kc_end;
+    int               i;
 
-    header = (MachoHeader64 *)data;
+    header = (MachoHeader64*)data;
     assert_cmphex(header->magic, ==, MACH_MAGIC_64);
 
     apple_boot_get_kc_bounds(header, &text_base, &kc_base, &kc_end, NULL, NULL);
@@ -1039,67 +929,53 @@ MachoHeader64 *apple_boot_parse_macho(uint8_t *data, uint32_t len)
 
     phys_base = g_malloc0(kc_end - kc_base);
 
-    cmd = (MachoLoadCommand *)(header + 1);
-    for (i = 0; i < header->n_cmds;
-         i++, cmd = (MachoLoadCommand *)((char *)cmd + cmd->cmd_size)) {
-        if (cmd->cmd != LC_SEGMENT_64) {
-            continue;
-        }
+    cmd = (MachoLoadCommand*)(header + 1);
+    for (i = 0; i < header->n_cmds; i++, cmd = (MachoLoadCommand*)((char*)cmd + cmd->cmd_size)) {
+        if (cmd->cmd != LC_SEGMENT_64) { continue; }
 
-        MachoSegmentCommand64 *segCmd = (MachoSegmentCommand64 *)cmd;
-        if (strncmp(segCmd->segname, "__PAGEZERO", 10) == 0 ||
-            segCmd->vmsize == 0) {
-            continue;
-        }
+        MachoSegmentCommand64* segCmd = (MachoSegmentCommand64*)cmd;
+        if (strncmp(segCmd->segname, "__PAGEZERO", 10) == 0 || segCmd->vmsize == 0) { continue; }
         assert_cmphex(segCmd->fileoff, <, len);
-        memcpy(phys_base + (segCmd->vmaddr - kc_base), data + segCmd->fileoff,
-               segCmd->filesize);
+        memcpy(phys_base + (segCmd->vmaddr - kc_base), data + segCmd->fileoff, segCmd->filesize);
     }
 
-    return (MachoHeader64 *)(phys_base + text_base - kc_base);
+    return (MachoHeader64*)(phys_base + text_base - kc_base);
 }
 
-uint32_t apple_boot_build_version(MachoHeader64 *header)
+uint32_t apple_boot_build_version(MachoHeader64* header)
 {
-    MachoLoadCommand *cmd;
-    int index;
+    MachoLoadCommand* cmd;
+    int               index;
 
-    if (header->file_type == MH_FILESET) {
-        header = apple_boot_get_fileset_header(header, "com.apple.kernel");
-    }
-    cmd = (MachoLoadCommand *)(header + 1);
+    if (header->file_type == MH_FILESET) { header = apple_boot_get_fileset_header(header, "com.apple.kernel"); }
+    cmd = (MachoLoadCommand*)(header + 1);
 
     for (index = 0; index < header->n_cmds; index++) {
         switch (cmd->cmd) {
-        case LC_BUILD_VERSION: {
-            return ((MachoBuildVersionCommand *)cmd)->sdk;
+            case LC_BUILD_VERSION: {
+                return ((MachoBuildVersionCommand*)cmd)->sdk;
+            }
+
+            default: break;
         }
 
-        default:
-            break;
-        }
-
-        cmd = (MachoLoadCommand *)((char *)cmd + cmd->cmd_size);
+        cmd = (MachoLoadCommand*)((char*)cmd + cmd->cmd_size);
     }
     return 0;
 }
 
-uint32_t apple_boot_platform(MachoHeader64 *header)
+uint32_t apple_boot_platform(MachoHeader64* header)
 {
-    MachoLoadCommand *cmd;
-    uint32_t i;
+    MachoLoadCommand* cmd;
+    uint32_t          i;
 
-    if (header->file_type == MH_FILESET) {
-        header = apple_boot_get_fileset_header(header, "com.apple.kernel");
-    }
+    if (header->file_type == MH_FILESET) { header = apple_boot_get_fileset_header(header, "com.apple.kernel"); }
 
-    cmd = (MachoLoadCommand *)(header + 1);
+    cmd = (MachoLoadCommand*)(header + 1);
 
-    for (i = 0; i < header->n_cmds;
-         i++, cmd = (MachoLoadCommand *)((char *)cmd + cmd->cmd_size)) {
+    for (i = 0; i < header->n_cmds; i++, cmd = (MachoLoadCommand*)((char*)cmd + cmd->cmd_size)) {
         if (cmd->cmd == LC_BUILD_VERSION) {
-            MachoBuildVersionCommand *buildVerCmd =
-                (MachoBuildVersionCommand *)cmd;
+            MachoBuildVersionCommand* buildVerCmd = (MachoBuildVersionCommand*)cmd;
             return buildVerCmd->platform;
         }
     }
@@ -1107,466 +983,374 @@ uint32_t apple_boot_platform(MachoHeader64 *header)
     return 0;
 }
 
-const char *apple_boot_platform_string(MachoHeader64 *header)
+const char* apple_boot_platform_string(MachoHeader64* header)
 {
     switch (apple_boot_platform(header)) {
-    case PLATFORM_MACOS:
-        return "macOS";
-    case PLATFORM_IOS:
-        return "iOS";
-    case PLATFORM_TVOS:
-        return "tvOS";
-    case PLATFORM_WATCHOS:
-        return "watchOS";
-    case PLATFORM_BRIDGEOS:
-        return "bridgeOS";
-    case PLATFORM_MAC_CATALYST:
-        return "Mac Catalyst";
-    case PLATFORM_IOS_SIMULATOR:
-        return "iOS Simulator";
-    case PLATFORM_TVOS_SIMULATOR:
-        return "tvOS Simulator";
-    case PLATFORM_WATCHOS_SIMULATOR:
-        return "watchOS Simulator";
-    case PLATFORM_DRIVERKIT:
-        return "DriverKit";
-    case PLATFORM_VISIONOS:
-        return "visionOS";
-    case PLATFORM_VISIONOS_SIMULATOR:
-        return "visionOS Simulator";
-    case PLATFORM_FIRMWARE:
-        return "Firmware";
-    case PLATFORM_SEPOS:
-        return "sepOS";
-    case PLATFORM_MACOS_EXCLAVECORE:
-        return "macOS ExclaveCore";
-    case PLATFORM_MACOS_EXCLAVEKIT:
-        return "macOS ExclaveKit";
-    case PLATFORM_IOS_EXCLAVECORE:
-        return "iOS ExclaveCore";
-    case PLATFORM_IOS_EXCLAVEKIT:
-        return "iOS ExclaveKit";
-    case PLATFORM_TVOS_EXCLAVECORE:
-        return "tvOS ExclaveCore";
-    case PLATFORM_TVOS_EXCLAVEKIT:
-        return "tvOS ExclaveKit";
-    case PLATFORM_WATCHOS_EXCLAVECORE:
-        return "watchOS ExclaveCore";
-    case PLATFORM_WATCHOS_EXCLAVEKIT:
-        return "watchOS ExclaveKit";
-    case PLATFORM_VISIONOS_EXCLAVECORE:
-        return "visionOS ExclaveCore";
-    case PLATFORM_VISIONOS_EXCLAVEKIT:
-        return "visionOS ExclaveKit";
-    default:
-        return "Unknown";
+        case PLATFORM_MACOS               : return "macOS";
+        case PLATFORM_IOS                 : return "iOS";
+        case PLATFORM_TVOS                : return "tvOS";
+        case PLATFORM_WATCHOS             : return "watchOS";
+        case PLATFORM_BRIDGEOS            : return "bridgeOS";
+        case PLATFORM_MAC_CATALYST        : return "Mac Catalyst";
+        case PLATFORM_IOS_SIMULATOR       : return "iOS Simulator";
+        case PLATFORM_TVOS_SIMULATOR      : return "tvOS Simulator";
+        case PLATFORM_WATCHOS_SIMULATOR   : return "watchOS Simulator";
+        case PLATFORM_DRIVERKIT           : return "DriverKit";
+        case PLATFORM_VISIONOS            : return "visionOS";
+        case PLATFORM_VISIONOS_SIMULATOR  : return "visionOS Simulator";
+        case PLATFORM_FIRMWARE            : return "Firmware";
+        case PLATFORM_SEPOS               : return "sepOS";
+        case PLATFORM_MACOS_EXCLAVECORE   : return "macOS ExclaveCore";
+        case PLATFORM_MACOS_EXCLAVEKIT    : return "macOS ExclaveKit";
+        case PLATFORM_IOS_EXCLAVECORE     : return "iOS ExclaveCore";
+        case PLATFORM_IOS_EXCLAVEKIT      : return "iOS ExclaveKit";
+        case PLATFORM_TVOS_EXCLAVECORE    : return "tvOS ExclaveCore";
+        case PLATFORM_TVOS_EXCLAVEKIT     : return "tvOS ExclaveKit";
+        case PLATFORM_WATCHOS_EXCLAVECORE : return "watchOS ExclaveCore";
+        case PLATFORM_WATCHOS_EXCLAVEKIT  : return "watchOS ExclaveKit";
+        case PLATFORM_VISIONOS_EXCLAVECORE: return "visionOS ExclaveCore";
+        case PLATFORM_VISIONOS_EXCLAVEKIT : return "visionOS ExclaveKit";
+        default                           : return "Unknown";
     }
 }
 
-static MachoSegmentCommand64 *apple_boot_get_first_seg(MachoHeader64 *header)
+static MachoSegmentCommand64* apple_boot_get_first_seg(MachoHeader64* header)
 {
-    MachoSegmentCommand64 *sgp;
-    uint32_t i;
+    MachoSegmentCommand64* sgp;
+    uint32_t               i;
 
-    sgp = (MachoSegmentCommand64 *)(header + 1);
+    sgp = (MachoSegmentCommand64*)(header + 1);
 
-    for (i = 0; i < header->n_cmds;
-         i++, sgp = (MachoSegmentCommand64 *)((char *)sgp + sgp->cmd_size)) {
-        if (sgp->cmd == LC_SEGMENT_64) {
-            return sgp;
-        }
+    for (i = 0; i < header->n_cmds; i++, sgp = (MachoSegmentCommand64*)((char*)sgp + sgp->cmd_size)) {
+        if (sgp->cmd == LC_SEGMENT_64) { return sgp; }
     }
 
     // not found
     return NULL;
 }
 
-static MachoSegmentCommand64 *
-apple_boot_get_next_seg(MachoHeader64 *header, MachoSegmentCommand64 *seg)
+static MachoSegmentCommand64* apple_boot_get_next_seg(MachoHeader64* header, MachoSegmentCommand64* seg)
 {
-    MachoSegmentCommand64 *sgp;
-    uint32_t i;
-    bool found = false;
+    MachoSegmentCommand64* sgp;
+    uint32_t               i;
+    bool                   found = false;
 
-    sgp = (MachoSegmentCommand64 *)(header + 1);
+    sgp = (MachoSegmentCommand64*)(header + 1);
 
-    for (i = 0; i < header->n_cmds;
-         i++, sgp = (MachoSegmentCommand64 *)((char *)sgp + sgp->cmd_size)) {
-        if (found && sgp->cmd == LC_SEGMENT_64) {
-            return sgp;
-        }
-        if (seg == sgp) {
-            found = true;
-        }
+    for (i = 0; i < header->n_cmds; i++, sgp = (MachoSegmentCommand64*)((char*)sgp + sgp->cmd_size)) {
+        if (found && sgp->cmd == LC_SEGMENT_64) { return sgp; }
+        if (seg == sgp) { found = true; }
     }
 
     // not found
     return NULL;
 }
 
-static MachoSection64 *apple_boot_first_sect(MachoSegmentCommand64 *seg)
-{
-    return (MachoSection64 *)(seg + 1);
-}
+static MachoSection64* apple_boot_first_sect(MachoSegmentCommand64* seg) { return (MachoSection64*)(seg + 1); }
 
-static MachoSection64 *apple_boot_next_sect(MachoSection64 *sp)
-{
-    return sp + 1;
-}
+static MachoSection64* apple_boot_next_sect(MachoSection64* sp) { return sp + 1; }
 
-static MachoSection64 *apple_boot_end_sect(MachoSegmentCommand64 *seg)
+static MachoSection64* apple_boot_end_sect(MachoSegmentCommand64* seg)
 {
-    MachoSection64 *sp;
+    MachoSection64* sp;
 
-    sp = (MachoSection64 *)(seg + 1);
+    sp = (MachoSection64*)(seg + 1);
     return &sp[seg->nsects];
 }
 
-static void apple_boot_process_symbols(MachoHeader64 *header, uint64_t slide)
+static void apple_boot_process_symbols(MachoHeader64* header, uint64_t slide)
 {
-    MachoLoadCommand *cmd;
-    uint8_t *data;
-    vaddr text_base;
-    vaddr kernel_low;
-    vaddr kernel_high;
-    uint32_t index;
-    void *base;
-    MachoSegmentCommand64 *linkedit_seg;
-    MachoNList64 *sym;
-    uint32_t off;
+    MachoLoadCommand*      cmd;
+    uint8_t*               data;
+    vaddr                  text_base;
+    vaddr                  kernel_low;
+    vaddr                  kernel_high;
+    uint32_t               index;
+    void*                  base;
+    MachoSegmentCommand64* linkedit_seg;
+    MachoNList64*          sym;
+    uint32_t               off;
 
-    if (slide == 0) {
-        return;
-    }
+    if (slide == 0) { return; }
 
-    apple_boot_get_kc_bounds(header, &text_base, &kernel_low, &kernel_high,
-                             NULL, NULL);
+    apple_boot_get_kc_bounds(header, &text_base, &kernel_low, &kernel_high, NULL, NULL);
 
-    data = apple_boot_get_macho_buffer(header);
+    data         = apple_boot_get_macho_buffer(header);
     linkedit_seg = apple_boot_get_segment(header, "__LINKEDIT");
 
-    cmd = (MachoLoadCommand *)(header + 1);
+    cmd = (MachoLoadCommand*)(header + 1);
     for (index = 0; index < header->n_cmds; index++) {
         switch (cmd->cmd) {
-        case LC_SYMTAB: {
-            MachoSymtabCommand *symtab = (MachoSymtabCommand *)cmd;
-            if (linkedit_seg == NULL) {
-                error_report("Did not find __LINKEDIT segment");
-                return;
-            }
-            base = data + (linkedit_seg->vmaddr - kernel_low);
-            off = linkedit_seg->fileoff;
-            sym = (MachoNList64 *)(base + (symtab->sym_off - off));
-            for (int i = 0; i < symtab->nsyms; i++) {
-                if (sym[i].n_type & N_STAB) {
-                    continue;
+            case LC_SYMTAB: {
+                MachoSymtabCommand* symtab = (MachoSymtabCommand*)cmd;
+                if (linkedit_seg == NULL) {
+                    error_report("Did not find __LINKEDIT segment");
+                    return;
                 }
-                sym[i].n_value += slide;
-            }
-            break;
-        }
-        case LC_DYSYMTAB: {
-            MachoDysymtabCommand *dysymtab = (MachoDysymtabCommand *)cmd;
-            if (!dysymtab->loc_rel_n) {
+                base = data + (linkedit_seg->vmaddr - kernel_low);
+                off  = linkedit_seg->fileoff;
+                sym  = (MachoNList64*)(base + (symtab->sym_off - off));
+                for (int i = 0; i < symtab->nsyms; i++) {
+                    if (sym[i].n_type & N_STAB) { continue; }
+                    sym[i].n_value += slide;
+                }
                 break;
             }
+            case LC_DYSYMTAB: {
+                MachoDysymtabCommand* dysymtab = (MachoDysymtabCommand*)cmd;
+                if (!dysymtab->loc_rel_n) { break; }
 
-            if (linkedit_seg == NULL) {
-                error_report("Did not find __LINKEDIT segment");
-                return;
-            }
+                if (linkedit_seg == NULL) {
+                    error_report("Did not find __LINKEDIT segment");
+                    return;
+                }
 
-            base = data + (linkedit_seg->vmaddr - kernel_low);
-            off = linkedit_seg->fileoff;
-            for (size_t i = 0; i < dysymtab->loc_rel_n; i++) {
-                int32_t r_address = *(
-                    int32_t *)(base + (dysymtab->loc_rel_off - off) + (i * 8));
-                *(uint64_t *)(data + ((text_base - kernel_low) + r_address)) +=
-                    slide;
+                base = data + (linkedit_seg->vmaddr - kernel_low);
+                off  = linkedit_seg->fileoff;
+                for (size_t i = 0; i < dysymtab->loc_rel_n; i++) {
+                    int32_t r_address = *(int32_t*)(base + (dysymtab->loc_rel_off - off) + (i * 8));
+                    *(uint64_t*)(data + ((text_base - kernel_low) + r_address)) += slide;
+                }
+                break;
             }
-            break;
+            default: break;
         }
-        default:
-            break;
-        }
-        cmd = (MachoLoadCommand *)((char *)cmd + cmd->cmd_size);
+        cmd = (MachoLoadCommand*)((char*)cmd + cmd->cmd_size);
     }
 }
 
-void apple_boot_allocate_segment_records(AppleDTNode *memory_map,
-                                         MachoHeader64 *header)
+void apple_boot_allocate_segment_records(AppleDTNode* memory_map, MachoHeader64* header)
 {
-    unsigned int index;
-    MachoLoadCommand *cmd;
+    unsigned int      index;
+    MachoLoadCommand* cmd;
 
-    cmd = (MachoLoadCommand *)((char *)header + sizeof(MachoHeader64));
-    for (index = 0; index < header->n_cmds;
-         index++, cmd = (MachoLoadCommand *)((char *)cmd + cmd->cmd_size)) {
-        if (cmd->cmd != LC_SEGMENT_64) {
-            continue;
-        }
-        MachoSegmentCommand64 *segCmd = (MachoSegmentCommand64 *)cmd;
-        char region_name[32];
+    cmd = (MachoLoadCommand*)((char*)header + sizeof(MachoHeader64));
+    for (index = 0; index < header->n_cmds; index++, cmd = (MachoLoadCommand*)((char*)cmd + cmd->cmd_size)) {
+        if (cmd->cmd != LC_SEGMENT_64) { continue; }
+        MachoSegmentCommand64* segCmd = (MachoSegmentCommand64*)cmd;
+        char                   region_name[32];
 
-        snprintf(region_name, sizeof(region_name), "Kernel-%s",
-                 segCmd->segname);
-        struct MemoryMapFileInfo {
+        snprintf(region_name, sizeof(region_name), "Kernel-%s", segCmd->segname);
+        struct MemoryMapFileInfo
+        {
             uint64_t paddr;
             uint64_t length;
-        } file_info = { 0 };
-        apple_dt_set_prop(memory_map, region_name, sizeof(file_info),
-                          &file_info);
+        } file_info = {0};
+        apple_dt_set_prop(memory_map, region_name, sizeof(file_info), &file_info);
     }
 }
 
-vaddr apple_boot_load_macho(MachoHeader64 *header, AddressSpace *as,
-                            AppleDTNode *memory_map, hwaddr phys_base,
+vaddr apple_boot_load_macho(MachoHeader64* header, AddressSpace* as, AppleDTNode* memory_map, hwaddr phys_base,
                             vaddr virt_slide)
 {
-    uint8_t *data = NULL;
-    unsigned int i;
-    MachoLoadCommand *cmd;
-    hwaddr pc = 0;
-    data = apple_boot_get_macho_buffer(header);
-    vaddr kc_base;
-    vaddr kc_end;
-    bool is_fileset = header->file_type == MH_FILESET;
-    MachoHeader64 *header2 = NULL;
-    void *load_from2 = NULL;
+    uint8_t*          data = NULL;
+    unsigned int      i;
+    MachoLoadCommand* cmd;
+    hwaddr            pc = 0;
+    data                 = apple_boot_get_macho_buffer(header);
+    vaddr          kc_base;
+    vaddr          kc_end;
+    bool           is_fileset = header->file_type == MH_FILESET;
+    MachoHeader64* header2    = NULL;
+    void*          load_from2 = NULL;
 
     apple_boot_get_kc_bounds(header, NULL, &kc_base, &kc_end, NULL, NULL);
 
-    cmd = (MachoLoadCommand *)(header + 1);
-    if (!is_fileset) {
-        apple_boot_process_symbols(header, virt_slide);
-    }
-    for (i = 0; i < header->n_cmds;
-         i++, cmd = (MachoLoadCommand *)((char *)cmd + cmd->cmd_size)) {
+    cmd = (MachoLoadCommand*)(header + 1);
+    if (!is_fileset) { apple_boot_process_symbols(header, virt_slide); }
+    for (i = 0; i < header->n_cmds; i++, cmd = (MachoLoadCommand*)((char*)cmd + cmd->cmd_size)) {
         switch (cmd->cmd) {
-        case LC_SEGMENT_64: {
-            MachoSegmentCommand64 *segCmd = (MachoSegmentCommand64 *)cmd;
+            case LC_SEGMENT_64: {
+                MachoSegmentCommand64* segCmd = (MachoSegmentCommand64*)cmd;
 
-            if (strncmp(segCmd->segname, "__PAGEZERO", 10) == 0) {
-                continue;
-            }
+                if (strncmp(segCmd->segname, "__PAGEZERO", 10) == 0) { continue; }
 
-            char region_name[64];
-            void *load_from = (void *)(data + segCmd->vmaddr - kc_base);
-            hwaddr load_to = (phys_base + segCmd->vmaddr - kc_base);
+                char   region_name[64];
+                void*  load_from = (void*)(data + segCmd->vmaddr - kc_base);
+                hwaddr load_to   = (phys_base + segCmd->vmaddr - kc_base);
 
-            if (memory_map) {
-                snprintf(region_name, sizeof(region_name), "Kernel-%s",
-                         segCmd->segname);
-                struct MemoryMapFileInfo {
-                    uint64_t paddr;
-                    uint64_t length;
-                } file_info = { load_to, segCmd->vmsize };
-                apple_dt_set_prop(memory_map, region_name, sizeof(file_info),
-                                  &file_info);
-            } else {
-                snprintf(region_name, sizeof(region_name), "TZ1-%s",
-                         segCmd->segname);
-            }
+                if (memory_map) {
+                    snprintf(region_name, sizeof(region_name), "Kernel-%s", segCmd->segname);
+                    struct MemoryMapFileInfo
+                    {
+                        uint64_t paddr;
+                        uint64_t length;
+                    } file_info = {load_to, segCmd->vmsize};
+                    apple_dt_set_prop(memory_map, region_name, sizeof(file_info), &file_info);
+                }
+                else {
+                    snprintf(region_name, sizeof(region_name), "TZ1-%s", segCmd->segname);
+                }
 
-            if (segCmd->vmsize == 0) {
+                if (segCmd->vmsize == 0) { break; }
+
+                if (!is_fileset) {
+                    MachoSection64* sp;
+                    for (sp = apple_boot_first_sect(segCmd); sp != apple_boot_end_sect(segCmd);
+                         sp = apple_boot_next_sect(sp))
+                    {
+                        if ((sp->flags & SECTION_TYPE) == S_NON_LAZY_SYMBOL_POINTERS) {
+                            load_from2 = (void*)(data + sp->addr - kc_base);
+                            void** nl_symbol_ptr;
+                            for (nl_symbol_ptr = load_from2; nl_symbol_ptr < (void**)(load_from2 + sp->size);
+                                 nl_symbol_ptr++)
+                            {
+                                *nl_symbol_ptr += virt_slide;
+                            }
+                        }
+                    }
+                }
+
+                if (!is_fileset) {
+                    if (strcmp(segCmd->segname, "__TEXT") == 0) {
+                        header2 = load_from;
+                        MachoSegmentCommand64* seg;
+                        assert_cmphex(header2->magic, ==, MACH_MAGIC_64);
+                        for (seg = apple_boot_get_first_seg(header2); seg != NULL;
+                             seg = apple_boot_get_next_seg(header2, seg))
+                        {
+                            MachoSection64* sp;
+                            seg->vmaddr += virt_slide;
+                            for (sp = apple_boot_first_sect(seg); sp != apple_boot_end_sect(seg);
+                                 sp = apple_boot_next_sect(sp))
+                            {
+                                sp->addr += virt_slide;
+                            }
+                        }
+                    }
+                }
+
+                DINFO("Loading %s to 0x%" PRIx64 " (filesize: 0x%" PRIx64 " vmsize: 0x%" PRIx64 ")", region_name,
+                      load_to, segCmd->filesize, segCmd->vmsize);
+                uint8_t* buf = g_malloc0(segCmd->vmsize);
+                memcpy(buf, load_from, segCmd->filesize);
+                address_space_rw(as, load_to, MEMTXATTRS_UNSPECIFIED, buf, segCmd->vmsize, true);
+                g_free(buf);
+
+                if (!is_fileset) {
+                    if (strcmp(segCmd->segname, "__TEXT") == 0) {
+                        header2 = load_from;
+                        MachoSegmentCommand64* seg;
+                        assert_cmphex(header2->magic, ==, MACH_MAGIC_64);
+                        for (seg = apple_boot_get_first_seg(header2); seg != NULL;
+                             seg = apple_boot_get_next_seg(header2, seg))
+                        {
+                            MachoSection64* sp;
+                            for (sp = apple_boot_first_sect(seg); sp != apple_boot_end_sect(seg);
+                                 sp = apple_boot_next_sect(sp))
+                            {
+                                sp->addr -= virt_slide;
+                            }
+                            // probably won't change anything, it's just for the
+                            // symmetry
+                            seg->vmaddr -= virt_slide;
+                        }
+                    }
+                }
+
+                if (!is_fileset) {
+                    MachoSection64* sp;
+                    for (sp = apple_boot_first_sect(segCmd); sp != apple_boot_end_sect(segCmd);
+                         sp = apple_boot_next_sect(sp))
+                    {
+                        if ((sp->flags & SECTION_TYPE) == S_NON_LAZY_SYMBOL_POINTERS) {
+                            load_from2 = (void*)(data + sp->addr - kc_base);
+                            void** nl_symbol_ptr;
+                            for (nl_symbol_ptr = load_from2; nl_symbol_ptr < (void**)(load_from2 + sp->size);
+                                 nl_symbol_ptr++)
+                            {
+                                *nl_symbol_ptr -= virt_slide;
+                            }
+                        }
+                    }
+                }
                 break;
             }
+            case LC_UNIXTHREAD: {
+                // grab just the entry point PC
+                uint64_t* ptrPc = (uint64_t*)((char*)cmd + 0x110);
 
-            if (!is_fileset) {
-                MachoSection64 *sp;
-                for (sp = apple_boot_first_sect(segCmd);
-                     sp != apple_boot_end_sect(segCmd);
-                     sp = apple_boot_next_sect(sp)) {
-                    if ((sp->flags & SECTION_TYPE) ==
-                        S_NON_LAZY_SYMBOL_POINTERS) {
-                        load_from2 = (void *)(data + sp->addr - kc_base);
-                        void **nl_symbol_ptr;
-                        for (nl_symbol_ptr = load_from2;
-                             nl_symbol_ptr < (void **)(load_from2 + sp->size);
-                             nl_symbol_ptr++) {
-                            *nl_symbol_ptr += virt_slide;
-                        }
-                    }
-                }
+                // 0x110 for arm64 only.
+                pc = vtop_bases(*ptrPc, phys_base, kc_base);
+
+                break;
             }
-
-            if (!is_fileset) {
-                if (strcmp(segCmd->segname, "__TEXT") == 0) {
-                    header2 = load_from;
-                    MachoSegmentCommand64 *seg;
-                    assert_cmphex(header2->magic, ==, MACH_MAGIC_64);
-                    for (seg = apple_boot_get_first_seg(header2); seg != NULL;
-                         seg = apple_boot_get_next_seg(header2, seg)) {
-                        MachoSection64 *sp;
-                        seg->vmaddr += virt_slide;
-                        for (sp = apple_boot_first_sect(seg);
-                             sp != apple_boot_end_sect(seg);
-                             sp = apple_boot_next_sect(sp)) {
-                            sp->addr += virt_slide;
-                        }
-                    }
-                }
+            default: {
+                break;
             }
-
-
-            DINFO("Loading %s to 0x%" PRIx64 " (filesize: 0x%" PRIx64
-                  " vmsize: 0x%" PRIx64 ")",
-                  region_name, load_to, segCmd->filesize, segCmd->vmsize);
-            uint8_t *buf = g_malloc0(segCmd->vmsize);
-            memcpy(buf, load_from, segCmd->filesize);
-            address_space_rw(as, load_to, MEMTXATTRS_UNSPECIFIED, buf,
-                             segCmd->vmsize, true);
-            g_free(buf);
-
-            if (!is_fileset) {
-                if (strcmp(segCmd->segname, "__TEXT") == 0) {
-                    header2 = load_from;
-                    MachoSegmentCommand64 *seg;
-                    assert_cmphex(header2->magic, ==, MACH_MAGIC_64);
-                    for (seg = apple_boot_get_first_seg(header2); seg != NULL;
-                         seg = apple_boot_get_next_seg(header2, seg)) {
-                        MachoSection64 *sp;
-                        for (sp = apple_boot_first_sect(seg);
-                             sp != apple_boot_end_sect(seg);
-                             sp = apple_boot_next_sect(sp)) {
-                            sp->addr -= virt_slide;
-                        }
-                        // probably won't change anything, it's just for the
-                        // symmetry
-                        seg->vmaddr -= virt_slide;
-                    }
-                }
-            }
-
-            if (!is_fileset) {
-                MachoSection64 *sp;
-                for (sp = apple_boot_first_sect(segCmd);
-                     sp != apple_boot_end_sect(segCmd);
-                     sp = apple_boot_next_sect(sp)) {
-                    if ((sp->flags & SECTION_TYPE) ==
-                        S_NON_LAZY_SYMBOL_POINTERS) {
-                        load_from2 = (void *)(data + sp->addr - kc_base);
-                        void **nl_symbol_ptr;
-                        for (nl_symbol_ptr = load_from2;
-                             nl_symbol_ptr < (void **)(load_from2 + sp->size);
-                             nl_symbol_ptr++) {
-                            *nl_symbol_ptr -= virt_slide;
-                        }
-                    }
-                }
-            }
-            break;
-        }
-        case LC_UNIXTHREAD: {
-            // grab just the entry point PC
-            uint64_t *ptrPc = (uint64_t *)((char *)cmd + 0x110);
-
-            // 0x110 for arm64 only.
-            pc = vtop_bases(*ptrPc, phys_base, kc_base);
-
-            break;
-        }
-        default: {
-            break;
-        }
         }
     }
 
-    if (!is_fileset) {
-        apple_boot_process_symbols(header, -virt_slide);
-    }
+    if (!is_fileset) { apple_boot_process_symbols(header, -virt_slide); }
 
     return pc;
 }
 
-uint8_t *apple_boot_get_macho_buffer(MachoHeader64 *header)
+uint8_t* apple_boot_get_macho_buffer(MachoHeader64* header)
 {
     vaddr text_base, kc_base;
 
     apple_boot_get_kc_bounds(header, &text_base, &kc_base, NULL, NULL, NULL);
 
-    return (uint8_t *)header - text_base + kc_base;
+    return (uint8_t*)header - text_base + kc_base;
 }
 
-MachoFilesetEntryCommand *apple_boot_get_fileset(MachoHeader64 *header,
-                                                 const char *entry)
+MachoFilesetEntryCommand* apple_boot_get_fileset(MachoHeader64* header, const char* entry)
 {
-    if (header->file_type != MH_FILESET) {
-        return NULL;
-    }
+    if (header->file_type != MH_FILESET) { return NULL; }
 
-    MachoFilesetEntryCommand *fileset;
-    fileset =
-        (MachoFilesetEntryCommand *)((char *)header + sizeof(MachoHeader64));
+    MachoFilesetEntryCommand* fileset;
+    fileset = (MachoFilesetEntryCommand*)((char*)header + sizeof(MachoHeader64));
 
     for (uint32_t i = 0; i < header->n_cmds;
-         i++, fileset = (MachoFilesetEntryCommand *)((char *)fileset +
-                                                     fileset->cmd_size)) {
+         i++, fileset = (MachoFilesetEntryCommand*)((char*)fileset + fileset->cmd_size))
+    {
         if (fileset->cmd == LC_FILESET_ENTRY) {
-            const char *entry_id = (char *)fileset + fileset->entry_id;
-            if (strcmp(entry_id, entry) == 0) {
-                return fileset;
-            }
+            const char* entry_id = (char*)fileset + fileset->entry_id;
+            if (strcmp(entry_id, entry) == 0) { return fileset; }
         }
     }
 
     return NULL;
 }
 
-MachoHeader64 *apple_boot_get_fileset_header(MachoHeader64 *header,
-                                             const char *entry)
+MachoHeader64* apple_boot_get_fileset_header(MachoHeader64* header, const char* entry)
 {
-    MachoFilesetEntryCommand *fileset = apple_boot_get_fileset(header, entry);
-    if (fileset == NULL) {
-        return NULL;
-    }
-    return (MachoHeader64 *)((char *)header + fileset->file_off);
+    MachoFilesetEntryCommand* fileset = apple_boot_get_fileset(header, entry);
+    if (fileset == NULL) { return NULL; }
+    return (MachoHeader64*)((char*)header + fileset->file_off);
 }
 
-MachoSegmentCommand64 *apple_boot_get_segment(MachoHeader64 *header,
-                                              const char *name)
+MachoSegmentCommand64* apple_boot_get_segment(MachoHeader64* header, const char* name)
 {
-    uint32_t i;
-    MachoSegmentCommand64 *sgp;
+    uint32_t               i;
+    MachoSegmentCommand64* sgp;
 
     if (header->file_type == MH_FILESET) {
-        return apple_boot_get_segment(
-            apple_boot_get_fileset_header(header, "com.apple.kernel"), name);
+        return apple_boot_get_segment(apple_boot_get_fileset_header(header, "com.apple.kernel"), name);
     }
 
-    for (sgp = (MachoSegmentCommand64 *)(header + 1), i = 0; i < header->n_cmds;
-         i++, sgp = (MachoSegmentCommand64 *)((char *)sgp + sgp->cmd_size)) {
-        if (sgp->cmd == LC_SEGMENT_64 &&
-            strncmp(sgp->segname, name, sizeof(sgp->segname) - 1) == 0) {
-            return sgp;
-        }
+    for (sgp = (MachoSegmentCommand64*)(header + 1), i = 0; i < header->n_cmds;
+         i++, sgp                                      = (MachoSegmentCommand64*)((char*)sgp + sgp->cmd_size))
+    {
+        if (sgp->cmd == LC_SEGMENT_64 && strncmp(sgp->segname, name, sizeof(sgp->segname) - 1) == 0) { return sgp; }
     }
 
     return NULL;
 }
 
-MachoSection64 *apple_boot_get_section(MachoSegmentCommand64 *segment,
-                                       const char *name)
+MachoSection64* apple_boot_get_section(MachoSegmentCommand64* segment, const char* name)
 {
-    MachoSection64 *sp;
-    uint32_t i;
+    MachoSection64* sp;
+    uint32_t        i;
 
-    for (sp = (MachoSection64 *)(segment + 1), i = 0; i < segment->nsects;
-         i++, sp++) {
-        if (strncmp(sp->sect_name, name, sizeof(sp->sect_name) - 1) == 0) {
-            return sp;
-        }
+    for (sp = (MachoSection64*)(segment + 1), i = 0; i < segment->nsects; i++, sp++) {
+        if (strncmp(sp->sect_name, name, sizeof(sp->sect_name) - 1) == 0) { return sp; }
     }
 
     return NULL;
 }
 
-vaddr apple_boot_fixup_slide_va(vaddr va)
-{
-    return (0xFFFF000000000000 | va) + g_virt_slide;
-}
+vaddr apple_boot_fixup_slide_va(vaddr va) { return (0xFFFF000000000000 | va) + g_virt_slide; }
 
-void *apple_boot_va_to_ptr(vaddr va)
-{
-    return (void *)(apple_boot_fixup_slide_va(va) - g_virt_base + g_phys_base);
-}
+void* apple_boot_va_to_ptr(vaddr va) { return (void*)(apple_boot_fixup_slide_va(va) - g_virt_base + g_phys_base); }

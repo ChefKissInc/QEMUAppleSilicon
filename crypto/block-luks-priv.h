@@ -43,43 +43,41 @@
  * Oct 16, 2011.
  */
 
-typedef struct QCryptoBlockLUKSHeader QCryptoBlockLUKSHeader;
+typedef struct QCryptoBlockLUKSHeader  QCryptoBlockLUKSHeader;
 typedef struct QCryptoBlockLUKSKeySlot QCryptoBlockLUKSKeySlot;
-
 
 /* The following constants are all defined by the LUKS spec */
 #define QCRYPTO_BLOCK_LUKS_VERSION 1
 
-#define QCRYPTO_BLOCK_LUKS_MAGIC_LEN 6
-#define QCRYPTO_BLOCK_LUKS_CIPHER_NAME_LEN 32
-#define QCRYPTO_BLOCK_LUKS_CIPHER_MODE_LEN 32
-#define QCRYPTO_BLOCK_LUKS_HASH_SPEC_LEN 32
-#define QCRYPTO_BLOCK_LUKS_DIGEST_LEN 20
-#define QCRYPTO_BLOCK_LUKS_SALT_LEN 32
-#define QCRYPTO_BLOCK_LUKS_UUID_LEN 40
-#define QCRYPTO_BLOCK_LUKS_NUM_KEY_SLOTS 8
-#define QCRYPTO_BLOCK_LUKS_STRIPES 4000
-#define QCRYPTO_BLOCK_LUKS_MIN_SLOT_KEY_ITERS 1000
+#define QCRYPTO_BLOCK_LUKS_MAGIC_LEN            6
+#define QCRYPTO_BLOCK_LUKS_CIPHER_NAME_LEN      32
+#define QCRYPTO_BLOCK_LUKS_CIPHER_MODE_LEN      32
+#define QCRYPTO_BLOCK_LUKS_HASH_SPEC_LEN        32
+#define QCRYPTO_BLOCK_LUKS_DIGEST_LEN           20
+#define QCRYPTO_BLOCK_LUKS_SALT_LEN             32
+#define QCRYPTO_BLOCK_LUKS_UUID_LEN             40
+#define QCRYPTO_BLOCK_LUKS_NUM_KEY_SLOTS        8
+#define QCRYPTO_BLOCK_LUKS_STRIPES              4000
+#define QCRYPTO_BLOCK_LUKS_MIN_SLOT_KEY_ITERS   1000
 #define QCRYPTO_BLOCK_LUKS_MIN_MASTER_KEY_ITERS 1000
-#define QCRYPTO_BLOCK_LUKS_KEY_SLOT_OFFSET 4096
+#define QCRYPTO_BLOCK_LUKS_KEY_SLOT_OFFSET      4096
 
 #define QCRYPTO_BLOCK_LUKS_KEY_SLOT_DISABLED 0x0000DEAD
-#define QCRYPTO_BLOCK_LUKS_KEY_SLOT_ENABLED 0x00AC71F3
+#define QCRYPTO_BLOCK_LUKS_KEY_SLOT_ENABLED  0x00AC71F3
 
 #define QCRYPTO_BLOCK_LUKS_SECTOR_SIZE 512LL
 
 #define QCRYPTO_BLOCK_LUKS_DEFAULT_ITER_TIME_MS 2000
-#define QCRYPTO_BLOCK_LUKS_ERASE_ITERATIONS 40
+#define QCRYPTO_BLOCK_LUKS_ERASE_ITERATIONS     40
 
-static const char qcrypto_block_luks_magic[QCRYPTO_BLOCK_LUKS_MAGIC_LEN] = {
-    'L', 'U', 'K', 'S', 0xBA, 0xBE
-};
+static const char qcrypto_block_luks_magic[QCRYPTO_BLOCK_LUKS_MAGIC_LEN] = {'L', 'U', 'K', 'S', 0xBA, 0xBE};
 
 /*
  * This struct is written to disk in big-endian format,
  * but operated upon in native-endian format.
  */
-struct QCryptoBlockLUKSKeySlot {
+struct QCryptoBlockLUKSKeySlot
+{
     /* state of keyslot, enabled/disable */
     uint32_t active;
     /* iterations for PBKDF2 */
@@ -96,7 +94,8 @@ struct QCryptoBlockLUKSKeySlot {
  * This struct is written to disk in big-endian format,
  * but operated upon in native-endian format.
  */
-struct QCryptoBlockLUKSHeader {
+struct QCryptoBlockLUKSHeader
+{
     /* 'L', 'U', 'K', 'S', '0xBA', '0xBE' */
     char magic[QCRYPTO_BLOCK_LUKS_MAGIC_LEN];
 
@@ -134,8 +133,5 @@ struct QCryptoBlockLUKSHeader {
     QCryptoBlockLUKSKeySlot key_slots[QCRYPTO_BLOCK_LUKS_NUM_KEY_SLOTS];
 };
 
-
-void
-qcrypto_block_luks_to_disk_endian(QCryptoBlockLUKSHeader *hdr);
-void
-qcrypto_block_luks_from_disk_endian(QCryptoBlockLUKSHeader *hdr);
+void qcrypto_block_luks_to_disk_endian(QCryptoBlockLUKSHeader* hdr);
+void qcrypto_block_luks_from_disk_endian(QCryptoBlockLUKSHeader* hdr);

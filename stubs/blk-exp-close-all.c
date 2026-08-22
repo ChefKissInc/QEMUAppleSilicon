@@ -2,6 +2,4 @@
 #include "block/export.h"
 
 /* Only used in programs that support block exports (libblockdev.a) */
-void blk_exp_close_all(void)
-{
-}
+void blk_exp_close_all(void) { }

@@ -10,7 +10,8 @@
 
 #include "qemu/interval-tree.h"
 
-typedef struct {
+typedef struct
+{
     IntervalTreeNode itree;
 
     /* flags */
@@ -19,10 +20,10 @@ typedef struct {
     bool is_exec;
     bool is_priv;
 
-    dev_t dev;
-    ino_t inode;
-    uint64_t offset;
-    const char *path;
+    dev_t       dev;
+    ino_t       inode;
+    uint64_t    offset;
+    const char* path;
 } MapInfo;
 
 /**
@@ -30,7 +31,7 @@ typedef struct {
  *
  * Read /proc/self/maps and return a tree of MapInfo structures.
  */
-IntervalTreeRoot *read_self_maps(void);
+IntervalTreeRoot* read_self_maps(void);
 
 /**
  * free_self_maps:
@@ -38,4 +39,4 @@ IntervalTreeRoot *read_self_maps(void);
  *
  * Free a tree of MapInfo structures.
  */
-void free_self_maps(IntervalTreeRoot *root);
+void free_self_maps(IntervalTreeRoot* root);

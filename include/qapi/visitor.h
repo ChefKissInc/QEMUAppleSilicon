@@ -231,16 +231,18 @@
 /* This struct is layout-compatible with all other *List structs
  * created by the QAPI generator.  It is used as a typical
  * singly-linked list. */
-typedef struct GenericList {
-    struct GenericList *next;
-    char padding[];
+typedef struct GenericList
+{
+    struct GenericList* next;
+    char                padding[];
 } GenericList;
 
 /* This struct is layout-compatible with all Alternate types
  * created by the QAPI generator. */
-typedef struct GenericAlternate {
+typedef struct GenericAlternate
+{
     QType type;
-    char padding[];
+    char  padding[];
 } GenericAlternate;
 
 /*** Visitor cleanup ***/
@@ -255,7 +257,7 @@ typedef struct GenericAlternate {
  * visitor, or NULL for any other visitor.  Needed for output
  * visitors, but may also be called with other visitors.
  */
-void visit_complete(Visitor *v, void *opaque);
+void visit_complete(Visitor* v, void* opaque);
 
 /*
  * Free @v and any resources it has tied up.
@@ -265,8 +267,7 @@ void visit_complete(Visitor *v, void *opaque);
  * visit_type_FOO() or visit_start_ITEM() has been performed on the
  * visitor.  Safe if @v is NULL.
  */
-void visit_free(Visitor *v);
-
+void visit_free(Visitor* v);
 
 /*** Visiting structures ***/
 
@@ -295,8 +296,7 @@ void visit_free(Visitor *v);
  * FIXME Should this be named visit_start_object, since it is also
  * used for QAPI unions, and maps to JSON objects?
  */
-bool visit_start_struct(Visitor *v, const char *name, void **obj,
-                        size_t size, Error **errp);
+bool visit_start_struct(Visitor* v, const char* name, void** obj, size_t size, Error** errp);
 
 /*
  * Prepare for completing an object visit.
@@ -311,7 +311,7 @@ bool visit_start_struct(Visitor *v, const char *name, void **obj,
  * last chance to report errors.  May be skipped on a cleanup path,
  * where there is no need to check for further errors.
  */
-bool visit_check_struct(Visitor *v, Error **errp);
+bool visit_check_struct(Visitor* v, Error** errp);
 
 /*
  * Complete an object visit started earlier.
@@ -323,8 +323,7 @@ bool visit_check_struct(Visitor *v, Error **errp);
  * the backend to release any resources.  Destroying the visitor early
  * with visit_free() behaves as if this was implicitly called.
  */
-void visit_end_struct(Visitor *v, void **obj);
-
+void visit_end_struct(Visitor* v, void** obj);
 
 /*** Visiting lists ***/
 
@@ -355,8 +354,7 @@ void visit_end_struct(Visitor *v, void **obj);
  * same @list to clean up, even if intermediate visits fail.  See the
  * examples above.
  */
-bool visit_start_list(Visitor *v, const char *name, GenericList **list,
-                      size_t size, Error **errp);
+bool visit_start_list(Visitor* v, const char* name, GenericList** list, size_t size, Error** errp);
 
 /*
  * Iterate over a GenericList during a non-virtual list visit.
@@ -372,7 +370,7 @@ bool visit_start_list(Visitor *v, const char *name, GenericList **list,
  * that function's name parameter set to NULL and obj set to the
  * address of @tail->value.
  */
-GenericList *visit_next_list(Visitor *v, GenericList *tail, size_t size);
+GenericList* visit_next_list(Visitor* v, GenericList* tail, size_t size);
 
 /*
  * Prepare for completing a list visit.
@@ -387,7 +385,7 @@ GenericList *visit_next_list(Visitor *v, GenericList *tail, size_t size);
  * last chance to report errors.  May be skipped on a cleanup path,
  * where there is no need to check for further errors.
  */
-bool visit_check_list(Visitor *v, Error **errp);
+bool visit_check_list(Visitor* v, Error** errp);
 
 /*
  * Complete a list visit started earlier.
@@ -399,8 +397,7 @@ bool visit_check_list(Visitor *v, Error **errp);
  * backend to release any resources.  Destroying the visitor early
  * with visit_free() behaves as if this was implicitly called.
  */
-void visit_end_list(Visitor *v, void **list);
-
+void visit_end_list(Visitor* v, void** list);
 
 /*** Visiting alternates ***/
 
@@ -424,9 +421,7 @@ void visit_end_list(Visitor *v, void **list);
  * the same @obj to clean up, even if visiting the contents of the
  * alternate fails.
  */
-bool visit_start_alternate(Visitor *v, const char *name,
-                           GenericAlternate **obj, size_t size,
-                           Error **errp);
+bool visit_start_alternate(Visitor* v, const char* name, GenericAlternate** obj, size_t size, Error** errp);
 
 /*
  * Finish visiting an alternate type.
@@ -439,8 +434,7 @@ bool visit_start_alternate(Visitor *v, const char *name,
  * with visit_free() behaves as if this was implicitly called.
  *
  */
-void visit_end_alternate(Visitor *v, void **obj);
-
+void visit_end_alternate(Visitor* v, void** obj);
 
 /*** Other helpers ***/
 
@@ -457,7 +451,7 @@ void visit_end_alternate(Visitor *v, void **obj);
  * leave it unchanged.  In either case, return *@present for
  * convenience.
  */
-bool visit_optional(Visitor *v, const char *name, bool *present);
+bool visit_optional(Visitor* v, const char* name, bool* present);
 
 /*
  * Should we reject member @name due to policy?
@@ -469,8 +463,7 @@ bool visit_optional(Visitor *v, const char *name, bool *present);
  * visit_start_struct() and visit_end_struct(), since only objects
  * have deprecated members.
  */
-bool visit_policy_reject(Visitor *v, const char *name,
-                         uint64_t features, Error **errp);
+bool visit_policy_reject(Visitor* v, const char* name, uint64_t features, Error** errp);
 
 /*
  *
@@ -483,8 +476,7 @@ bool visit_policy_reject(Visitor *v, const char *name,
  * visit_start_struct() and visit_end_struct(), since only objects
  * have deprecated members.
  */
-bool visit_policy_skip(Visitor *v, const char *name,
-                       uint64_t features);
+bool visit_policy_skip(Visitor* v, const char* name, uint64_t features);
 
 /*
  * Set policy for handling deprecated management interfaces.
@@ -492,7 +484,7 @@ bool visit_policy_skip(Visitor *v, const char *name,
  * Intended use: call visit_set_policy(v, &compat_policy) when
  * visiting management interface input or output.
  */
-void visit_set_policy(Visitor *v, CompatPolicy *policy);
+void visit_set_policy(Visitor* v, CompatPolicy* policy);
 
 /*
  * Visit an enum value.
@@ -518,18 +510,17 @@ void visit_set_policy(Visitor *v, CompatPolicy *policy);
  * that an input visitor's visit_type_str() must have no unwelcome
  * side effects.
  */
-bool visit_type_enum(Visitor *v, const char *name, int *obj,
-                     const QEnumLookup *lookup, Error **errp);
+bool visit_type_enum(Visitor* v, const char* name, int* obj, const QEnumLookup* lookup, Error** errp);
 
 /*
  * Check if visitor is an input visitor.
  */
-bool visit_is_input(Visitor *v);
+bool visit_is_input(Visitor* v);
 
 /*
  * Check if visitor is a dealloc visitor.
  */
-bool visit_is_dealloc(Visitor *v);
+bool visit_is_dealloc(Visitor* v);
 
 /*** Visiting built-in types ***/
 
@@ -547,63 +538,56 @@ bool visit_is_dealloc(Visitor *v);
  *
  * Return true on success, false on failure.
  */
-bool visit_type_int(Visitor *v, const char *name, int64_t *obj, Error **errp);
+bool visit_type_int(Visitor* v, const char* name, int64_t* obj, Error** errp);
 
 /*
  * Visit a uint8_t value.
  * Like visit_type_int(), except clamps the value to uint8_t range.
  */
-bool visit_type_uint8(Visitor *v, const char *name, uint8_t *obj,
-                      Error **errp);
+bool visit_type_uint8(Visitor* v, const char* name, uint8_t* obj, Error** errp);
 
 /*
  * Visit a uint16_t value.
  * Like visit_type_int(), except clamps the value to uint16_t range.
  */
-bool visit_type_uint16(Visitor *v, const char *name, uint16_t *obj,
-                       Error **errp);
+bool visit_type_uint16(Visitor* v, const char* name, uint16_t* obj, Error** errp);
 
 /*
  * Visit a uint32_t value.
  * Like visit_type_int(), except clamps the value to uint32_t range.
  */
-bool visit_type_uint32(Visitor *v, const char *name, uint32_t *obj,
-                       Error **errp);
+bool visit_type_uint32(Visitor* v, const char* name, uint32_t* obj, Error** errp);
 
 /*
  * Visit a uint64_t value.
  * Like visit_type_int(), except clamps the value to uint64_t range,
  * that is, ensures it is unsigned.
  */
-bool visit_type_uint64(Visitor *v, const char *name, uint64_t *obj,
-                       Error **errp);
+bool visit_type_uint64(Visitor* v, const char* name, uint64_t* obj, Error** errp);
 
 /*
  * Visit an int8_t value.
  * Like visit_type_int(), except clamps the value to int8_t range.
  */
-bool visit_type_int8(Visitor *v, const char *name, int8_t *obj, Error **errp);
+bool visit_type_int8(Visitor* v, const char* name, int8_t* obj, Error** errp);
 
 /*
  * Visit an int16_t value.
  * Like visit_type_int(), except clamps the value to int16_t range.
  */
-bool visit_type_int16(Visitor *v, const char *name, int16_t *obj,
-                      Error **errp);
+bool visit_type_int16(Visitor* v, const char* name, int16_t* obj, Error** errp);
 
 /*
  * Visit an int32_t value.
  * Like visit_type_int(), except clamps the value to int32_t range.
  */
-bool visit_type_int32(Visitor *v, const char *name, int32_t *obj,
-                      Error **errp);
+bool visit_type_int32(Visitor* v, const char* name, int32_t* obj, Error** errp);
 
 /*
  * Visit an int64_t value.
  * Identical to visit_type_int().
  */
-bool visit_type_int64(Visitor *v, const char *name, int64_t *obj,
-                      Error **errp);
+bool visit_type_int64(Visitor* v, const char* name, int64_t* obj, Error** errp);
 
 /*
  * Visit a uint64_t value.
@@ -611,8 +595,7 @@ bool visit_type_int64(Visitor *v, const char *name, int64_t *obj,
  * recognize additional syntax, such as suffixes for easily scaling
  * values.
  */
-bool visit_type_size(Visitor *v, const char *name, uint64_t *obj,
-                     Error **errp);
+bool visit_type_size(Visitor* v, const char* name, uint64_t* obj, Error** errp);
 
 /*
  * Visit a boolean value.
@@ -628,7 +611,7 @@ bool visit_type_size(Visitor *v, const char *name, uint64_t *obj,
  *
  * Return true on success, false on failure.
  */
-bool visit_type_bool(Visitor *v, const char *name, bool *obj, Error **errp);
+bool visit_type_bool(Visitor* v, const char* name, bool* obj, Error** errp);
 
 /*
  * Visit a string value.
@@ -651,7 +634,7 @@ bool visit_type_bool(Visitor *v, const char *name, bool *obj, Error **errp);
  *
  * FIXME: Callers that try to output NULL *obj should not be allowed.
  */
-bool visit_type_str(Visitor *v, const char *name, char **obj, Error **errp);
+bool visit_type_str(Visitor* v, const char* name, char** obj, Error** errp);
 
 /*
  * Visit a number (i.e. double) value.
@@ -668,8 +651,7 @@ bool visit_type_str(Visitor *v, const char *name, char **obj, Error **errp);
  *
  * Return true on success, false on failure.
  */
-bool visit_type_number(Visitor *v, const char *name, double *obj,
-                       Error **errp);
+bool visit_type_number(Visitor* v, const char* name, double* obj, Error** errp);
 
 /*
  * Visit an arbitrary value.
@@ -690,7 +672,7 @@ bool visit_type_number(Visitor *v, const char *name, double *obj,
  * E.g. the visitor returned by qobject_input_visitor_new_keyval()
  * can't create numbers or booleans, only strings.
  */
-bool visit_type_any(Visitor *v, const char *name, QObject **obj, Error **errp);
+bool visit_type_any(Visitor* v, const char* name, QObject** obj, Error** errp);
 
 /*
  * Visit a JSON null value.
@@ -706,5 +688,4 @@ bool visit_type_any(Visitor *v, const char *name, QObject **obj, Error **errp);
  *
  * Return true on success, false on failure.
  */
-bool visit_type_null(Visitor *v, const char *name, QNull **obj,
-                     Error **errp);
+bool visit_type_null(Visitor* v, const char* name, QNull** obj, Error** errp);

@@ -13,30 +13,31 @@
 #pragma once
 
 #ifdef _WIN32
-#include <windows.h>
+    #include <windows.h>
 #endif
 
-struct EventNotifier {
+struct EventNotifier
+{
 #ifdef _WIN32
     HANDLE event;
 #else
-    int rfd;
-    int wfd;
+    int  rfd;
+    int  wfd;
     bool initialized;
 #endif
 };
 
-typedef void EventNotifierHandler(EventNotifier *);
+typedef void EventNotifierHandler(EventNotifier*);
 
-int event_notifier_init(EventNotifier *, int active);
-void event_notifier_cleanup(EventNotifier *);
-int event_notifier_set(EventNotifier *);
-int event_notifier_test_and_clear(EventNotifier *);
+int  event_notifier_init(EventNotifier*, int active);
+void event_notifier_cleanup(EventNotifier*);
+int  event_notifier_set(EventNotifier*);
+int  event_notifier_test_and_clear(EventNotifier*);
 
 #ifdef CONFIG_POSIX
-void event_notifier_init_fd(EventNotifier *, int fd);
-int event_notifier_get_fd(const EventNotifier *);
-int event_notifier_get_wfd(const EventNotifier *);
+void event_notifier_init_fd(EventNotifier*, int fd);
+int  event_notifier_get_fd(const EventNotifier*);
+int  event_notifier_get_wfd(const EventNotifier*);
 #else
-HANDLE event_notifier_get_handle(EventNotifier *);
+HANDLE event_notifier_get_handle(EventNotifier*);
 #endif

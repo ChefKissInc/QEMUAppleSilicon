@@ -19,58 +19,50 @@
 
 /* Common timer implementation.  */
 
-#define TIMER_CTRL_ONESHOT      (1 << 0)
-#define TIMER_CTRL_32BIT        (1 << 1)
-#define TIMER_CTRL_DIV1         (0 << 2)
-#define TIMER_CTRL_DIV16        (1 << 2)
-#define TIMER_CTRL_DIV256       (2 << 2)
-#define TIMER_CTRL_IE           (1 << 5)
-#define TIMER_CTRL_PERIODIC     (1 << 6)
-#define TIMER_CTRL_ENABLE       (1 << 7)
+#define TIMER_CTRL_ONESHOT  (1 << 0)
+#define TIMER_CTRL_32BIT    (1 << 1)
+#define TIMER_CTRL_DIV1     (0 << 2)
+#define TIMER_CTRL_DIV16    (1 << 2)
+#define TIMER_CTRL_DIV256   (2 << 2)
+#define TIMER_CTRL_IE       (1 << 5)
+#define TIMER_CTRL_PERIODIC (1 << 6)
+#define TIMER_CTRL_ENABLE   (1 << 7)
 
-typedef struct {
-    ptimer_state *timer;
-    uint32_t control;
-    uint32_t limit;
-    int freq;
-    int int_level;
-    qemu_irq irq;
+typedef struct
+{
+    ptimer_state* timer;
+    uint32_t      control;
+    uint32_t      limit;
+    int           freq;
+    int           int_level;
+    qemu_irq      irq;
 } arm_timer_state;
 
 /* Check all active timers, and schedule the next timer interrupt.  */
 
-static void arm_timer_update(arm_timer_state *s)
+static void arm_timer_update(arm_timer_state* s)
 {
     /* Update interrupts.  */
-    if (s->int_level && (s->control & TIMER_CTRL_IE)) {
-        qemu_irq_raise(s->irq);
-    } else {
+    if (s->int_level && (s->control & TIMER_CTRL_IE)) { qemu_irq_raise(s->irq); }
+    else {
         qemu_irq_lower(s->irq);
     }
 }
 
-static uint32_t arm_timer_read(void *opaque, hwaddr offset)
+static uint32_t arm_timer_read(void* opaque, hwaddr offset)
 {
-    arm_timer_state *s = (arm_timer_state *)opaque;
+    arm_timer_state* s = (arm_timer_state*)opaque;
 
     switch (offset >> 2) {
-    case 0: /* TimerLoad */
-    case 6: /* TimerBGLoad */
-        return s->limit;
-    case 1: /* TimerValue */
-        return ptimer_get_count(s->timer);
-    case 2: /* TimerControl */
-        return s->control;
-    case 4: /* TimerRIS */
-        return s->int_level;
-    case 5: /* TimerMIS */
-        if ((s->control & TIMER_CTRL_IE) == 0)
-            return 0;
-        return s->int_level;
-    default:
-        qemu_log_mask(LOG_GUEST_ERROR,
-                      "%s: Bad offset %x\n", __func__, (int)offset);
-        return 0;
+        case 0: /* TimerLoad */
+        case 6: /* TimerBGLoad */ return s->limit;
+        case 1: /* TimerValue */ return ptimer_get_count(s->timer);
+        case 2: /* TimerControl */ return s->control;
+        case 4: /* TimerRIS */ return s->int_level;
+        case 5: /* TimerMIS */
+            if ((s->control & TIMER_CTRL_IE) == 0) { return 0; }
+            return s->int_level;
+        default: qemu_log_mask(LOG_GUEST_ERROR, "%s: Bad offset %x\n", __func__, (int)offset); return 0;
     }
 }
 
@@ -78,92 +70,88 @@ static uint32_t arm_timer_read(void *opaque, hwaddr offset)
  * Reset the timer limit after settings have changed.
  * May only be called from inside a ptimer transaction block.
  */
-static void arm_timer_recalibrate(arm_timer_state *s, int reload)
+static void arm_timer_recalibrate(arm_timer_state* s, int reload)
 {
     uint32_t limit;
 
     if ((s->control & (TIMER_CTRL_PERIODIC | TIMER_CTRL_ONESHOT)) == 0) {
         /* Free running.  */
-        if (s->control & TIMER_CTRL_32BIT)
-            limit = 0xffffffff;
-        else
+        if (s->control & TIMER_CTRL_32BIT) { limit = 0xffffffff; }
+        else {
             limit = 0xffff;
-    } else {
-          /* Periodic.  */
-          limit = s->limit;
+        }
+    }
+    else {
+        /* Periodic.  */
+        limit = s->limit;
     }
     ptimer_set_limit(s->timer, limit, reload);
 }
 
-static void arm_timer_write(void *opaque, hwaddr offset,
-                            uint32_t value)
+static void arm_timer_write(void* opaque, hwaddr offset, uint32_t value)
 {
-    arm_timer_state *s = (arm_timer_state *)opaque;
-    int freq;
+    arm_timer_state* s = (arm_timer_state*)opaque;
+    int              freq;
 
     switch (offset >> 2) {
-    case 0: /* TimerLoad */
-        s->limit = value;
-        ptimer_transaction_begin(s->timer);
-        arm_timer_recalibrate(s, 1);
-        ptimer_transaction_commit(s->timer);
-        break;
-    case 1: /* TimerValue */
-        /* ??? Linux seems to want to write to this readonly register.
-           Ignore it.  */
-        break;
-    case 2: /* TimerControl */
-        ptimer_transaction_begin(s->timer);
-        if (s->control & TIMER_CTRL_ENABLE) {
-            /* Pause the timer if it is running.  This may cause some
-               inaccuracy dure to rounding, but avoids a whole lot of other
-               messyness.  */
-            ptimer_stop(s->timer);
-        }
-        s->control = value;
-        freq = s->freq;
-        /* ??? Need to recalculate expiry time after changing divisor.  */
-        switch ((value >> 2) & 3) {
-        case 1: freq >>= 4; break;
-        case 2: freq >>= 8; break;
-        }
-        arm_timer_recalibrate(s, s->control & TIMER_CTRL_ENABLE);
-        ptimer_set_freq(s->timer, freq);
-        if (s->control & TIMER_CTRL_ENABLE) {
-            /* Restart the timer if still enabled.  */
-            ptimer_run(s->timer, (s->control & TIMER_CTRL_ONESHOT) != 0);
-        }
-        ptimer_transaction_commit(s->timer);
-        break;
-    case 3: /* TimerIntClr */
-        s->int_level = 0;
-        break;
-    case 6: /* TimerBGLoad */
-        s->limit = value;
-        ptimer_transaction_begin(s->timer);
-        arm_timer_recalibrate(s, 0);
-        ptimer_transaction_commit(s->timer);
-        break;
-    default:
-        qemu_log_mask(LOG_GUEST_ERROR,
-                      "%s: Bad offset %x\n", __func__, (int)offset);
+        case 0: /* TimerLoad */
+            s->limit = value;
+            ptimer_transaction_begin(s->timer);
+            arm_timer_recalibrate(s, 1);
+            ptimer_transaction_commit(s->timer);
+            break;
+        case 1: /* TimerValue */
+            /* ??? Linux seems to want to write to this readonly register.
+               Ignore it.  */
+            break;
+        case 2: /* TimerControl */
+            ptimer_transaction_begin(s->timer);
+            if (s->control & TIMER_CTRL_ENABLE) {
+                /* Pause the timer if it is running.  This may cause some
+                   inaccuracy dure to rounding, but avoids a whole lot of other
+                   messyness.  */
+                ptimer_stop(s->timer);
+            }
+            s->control = value;
+            freq       = s->freq;
+            /* ??? Need to recalculate expiry time after changing divisor.  */
+            switch ((value >> 2) & 3) {
+                case 1: freq >>= 4; break;
+                case 2: freq >>= 8; break;
+            }
+            arm_timer_recalibrate(s, s->control & TIMER_CTRL_ENABLE);
+            ptimer_set_freq(s->timer, freq);
+            if (s->control & TIMER_CTRL_ENABLE) {
+                /* Restart the timer if still enabled.  */
+                ptimer_run(s->timer, (s->control & TIMER_CTRL_ONESHOT) != 0);
+            }
+            ptimer_transaction_commit(s->timer);
+            break;
+        case 3: /* TimerIntClr */ s->int_level = 0; break;
+        case 6: /* TimerBGLoad */
+            s->limit = value;
+            ptimer_transaction_begin(s->timer);
+            arm_timer_recalibrate(s, 0);
+            ptimer_transaction_commit(s->timer);
+            break;
+        default: qemu_log_mask(LOG_GUEST_ERROR, "%s: Bad offset %x\n", __func__, (int)offset);
     }
     arm_timer_update(s);
 }
 
-static void arm_timer_tick(void *opaque)
+static void arm_timer_tick(void* opaque)
 {
-    arm_timer_state *s = (arm_timer_state *)opaque;
-    s->int_level = 1;
+    arm_timer_state* s = (arm_timer_state*)opaque;
+    s->int_level       = 1;
     arm_timer_update(s);
 }
 
-static arm_timer_state *arm_timer_init(uint32_t freq)
+static arm_timer_state* arm_timer_init(uint32_t freq)
 {
-    arm_timer_state *s;
+    arm_timer_state* s;
 
-    s = g_new0(arm_timer_state, 1);
-    s->freq = freq;
+    s          = g_new0(arm_timer_state, 1);
+    s->freq    = freq;
     s->control = TIMER_CTRL_IE;
 
     s->timer = ptimer_init(arm_timer_tick, s, PTIMER_POLICY_LEGACY);
@@ -179,68 +167,57 @@ static arm_timer_state *arm_timer_init(uint32_t freq)
 #define TYPE_SP804 "sp804"
 OBJECT_DECLARE_SIMPLE_TYPE(SP804State, SP804)
 
-struct SP804State {
+struct SP804State
+{
     SysBusDevice parent_obj;
 
-    MemoryRegion iomem;
-    arm_timer_state *timer[2];
-    uint32_t freq0, freq1;
-    int level[2];
-    qemu_irq irq;
+    MemoryRegion     iomem;
+    arm_timer_state* timer[2];
+    uint32_t         freq0, freq1;
+    int              level[2];
+    qemu_irq         irq;
 };
 
 static const uint8_t sp804_ids[] = {
     /* Timer ID */
     0x04, 0x18, 0x14, 0,
     /* PrimeCell ID */
-    0xd, 0xf0, 0x05, 0xb1
-};
+    0xd, 0xf0, 0x05, 0xb1};
 
 /* Merge the IRQs from the two component devices.  */
-static void sp804_set_irq(void *opaque, int irq, int level)
+static void sp804_set_irq(void* opaque, int irq, int level)
 {
-    SP804State *s = (SP804State *)opaque;
+    SP804State* s = (SP804State*)opaque;
 
     s->level[irq] = level;
     qemu_set_irq(s->irq, s->level[0] || s->level[1]);
 }
 
-static uint64_t sp804_read(void *opaque, hwaddr offset,
-                           unsigned size)
+static uint64_t sp804_read(void* opaque, hwaddr offset, unsigned size)
 {
-    SP804State *s = (SP804State *)opaque;
+    SP804State* s = (SP804State*)opaque;
 
-    if (offset < 0x20) {
-        return arm_timer_read(s->timer[0], offset);
-    }
-    if (offset < 0x40) {
-        return arm_timer_read(s->timer[1], offset - 0x20);
-    }
+    if (offset < 0x20) { return arm_timer_read(s->timer[0], offset); }
+    if (offset < 0x40) { return arm_timer_read(s->timer[1], offset - 0x20); }
 
     /* TimerPeriphID */
-    if (offset >= 0xfe0 && offset <= 0xffc) {
-        return sp804_ids[(offset - 0xfe0) >> 2];
-    }
+    if (offset >= 0xfe0 && offset <= 0xffc) { return sp804_ids[(offset - 0xfe0) >> 2]; }
 
     switch (offset) {
-    /* Integration Test control registers, which we won't support */
-    case 0xf00: /* TimerITCR */
-    case 0xf04: /* TimerITOP (strictly write only but..) */
-        qemu_log_mask(LOG_UNIMP,
-                      "%s: integration test registers unimplemented\n",
-                      __func__);
-        return 0;
+        /* Integration Test control registers, which we won't support */
+        case 0xf00: /* TimerITCR */
+        case 0xf04: /* TimerITOP (strictly write only but..) */
+            qemu_log_mask(LOG_UNIMP, "%s: integration test registers unimplemented\n", __func__);
+            return 0;
     }
 
-    qemu_log_mask(LOG_GUEST_ERROR,
-                  "%s: Bad offset %x\n", __func__, (int)offset);
+    qemu_log_mask(LOG_GUEST_ERROR, "%s: Bad offset %x\n", __func__, (int)offset);
     return 0;
 }
 
-static void sp804_write(void *opaque, hwaddr offset,
-                        uint64_t value, unsigned size)
+static void sp804_write(void* opaque, hwaddr offset, uint64_t value, unsigned size)
 {
-    SP804State *s = (SP804State *)opaque;
+    SP804State* s = (SP804State*)opaque;
 
     if (offset < 0x20) {
         arm_timer_write(s->timer[0], offset, value);
@@ -253,33 +230,31 @@ static void sp804_write(void *opaque, hwaddr offset,
     }
 
     /* Technically we could be writing to the Test Registers, but not likely */
-    qemu_log_mask(LOG_GUEST_ERROR, "%s: Bad offset %x\n",
-                  __func__, (int)offset);
+    qemu_log_mask(LOG_GUEST_ERROR, "%s: Bad offset %x\n", __func__, (int)offset);
 }
 
 static const MemoryRegionOps sp804_ops = {
-    .read = sp804_read,
-    .write = sp804_write,
+    .read       = sp804_read,
+    .write      = sp804_write,
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
-static void sp804_init(Object *obj)
+static void sp804_init(Object* obj)
 {
-    SP804State *s = SP804(obj);
-    SysBusDevice *sbd = SYS_BUS_DEVICE(obj);
+    SP804State*   s   = SP804(obj);
+    SysBusDevice* sbd = SYS_BUS_DEVICE(obj);
 
     sysbus_init_irq(sbd, &s->irq);
-    memory_region_init_io(&s->iomem, obj, &sp804_ops, s,
-                          "sp804", 0x1000);
+    memory_region_init_io(&s->iomem, obj, &sp804_ops, s, "sp804", 0x1000);
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static void sp804_realize(DeviceState *dev, Error **errp)
+static void sp804_realize(DeviceState* dev, Error** errp)
 {
-    SP804State *s = SP804(dev);
+    SP804State* s = SP804(dev);
 
-    s->timer[0] = arm_timer_init(s->freq0);
-    s->timer[1] = arm_timer_init(s->freq1);
+    s->timer[0]      = arm_timer_init(s->freq0);
+    s->timer[1]      = arm_timer_init(s->freq1);
     s->timer[0]->irq = qemu_allocate_irq(sp804_set_irq, s, 0);
     s->timer[1]->irq = qemu_allocate_irq(sp804_set_irq, s, 1);
 }
@@ -289,18 +264,18 @@ static void sp804_realize(DeviceState *dev, Error **errp)
 #define TYPE_INTEGRATOR_PIT "integrator_pit"
 OBJECT_DECLARE_SIMPLE_TYPE(icp_pit_state, INTEGRATOR_PIT)
 
-struct icp_pit_state {
+struct icp_pit_state
+{
     SysBusDevice parent_obj;
 
-    MemoryRegion iomem;
-    arm_timer_state *timer[3];
+    MemoryRegion     iomem;
+    arm_timer_state* timer[3];
 };
 
-static uint64_t icp_pit_read(void *opaque, hwaddr offset,
-                             unsigned size)
+static uint64_t icp_pit_read(void* opaque, hwaddr offset, unsigned size)
 {
-    icp_pit_state *s = (icp_pit_state *)opaque;
-    int n;
+    icp_pit_state* s = (icp_pit_state*)opaque;
+    int            n;
 
     /* ??? Don't know the PrimeCell ID for this device.  */
     n = offset >> 8;
@@ -312,11 +287,10 @@ static uint64_t icp_pit_read(void *opaque, hwaddr offset,
     return arm_timer_read(s->timer[n], offset & 0xff);
 }
 
-static void icp_pit_write(void *opaque, hwaddr offset,
-                          uint64_t value, unsigned size)
+static void icp_pit_write(void* opaque, hwaddr offset, uint64_t value, unsigned size)
 {
-    icp_pit_state *s = (icp_pit_state *)opaque;
-    int n;
+    icp_pit_state* s = (icp_pit_state*)opaque;
+    int            n;
 
     n = offset >> 8;
     if (n > 2) {
@@ -328,15 +302,15 @@ static void icp_pit_write(void *opaque, hwaddr offset,
 }
 
 static const MemoryRegionOps icp_pit_ops = {
-    .read = icp_pit_read,
-    .write = icp_pit_write,
+    .read       = icp_pit_read,
+    .write      = icp_pit_write,
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
-static void icp_pit_init(Object *obj)
+static void icp_pit_init(Object* obj)
 {
-    icp_pit_state *s = INTEGRATOR_PIT(obj);
-    SysBusDevice *dev = SYS_BUS_DEVICE(obj);
+    icp_pit_state* s   = INTEGRATOR_PIT(obj);
+    SysBusDevice*  dev = SYS_BUS_DEVICE(obj);
 
     /* Timer 0 runs at the system clock speed (40MHz).  */
     s->timer[0] = arm_timer_init(40000000);
@@ -348,8 +322,7 @@ static void icp_pit_init(Object *obj)
     sysbus_init_irq(dev, &s->timer[1]->irq);
     sysbus_init_irq(dev, &s->timer[2]->irq);
 
-    memory_region_init_io(&s->iomem, obj, &icp_pit_ops, s,
-                          "icp_pit", 0x1000);
+    memory_region_init_io(&s->iomem, obj, &icp_pit_ops, s, "icp_pit", 0x1000);
     sysbus_init_mmio(dev, &s->iomem);
     /* This device has no state to save/restore.  The component timers will
        save themselves.  */
@@ -367,9 +340,9 @@ static const Property sp804_properties[] = {
     DEFINE_PROP_UINT32("freq1", SP804State, freq1, 1000000),
 };
 
-static void sp804_class_init(ObjectClass *klass, const void *data)
+static void sp804_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *k = DEVICE_CLASS(klass);
+    DeviceClass* k = DEVICE_CLASS(klass);
 
     k->realize = sp804_realize;
     device_class_set_props(k, sp804_properties);

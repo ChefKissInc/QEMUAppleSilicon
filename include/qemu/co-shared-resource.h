@@ -33,7 +33,7 @@ typedef struct SharedResource SharedResource;
  *
  * @total: total amount of some resource to be shared between clients
  */
-SharedResource *shres_create(uint64_t total);
+SharedResource* shres_create(uint64_t total);
 
 /*
  * Release SharedResource structure
@@ -41,13 +41,13 @@ SharedResource *shres_create(uint64_t total);
  * This function may only be called once everything allocated by all
  * clients has been deallocated.
  */
-void shres_destroy(SharedResource *s);
+void shres_destroy(SharedResource* s);
 
 /*
  * Allocate an amount of @n, and, if necessary, yield until
  * that becomes possible.
  */
-void coroutine_fn co_get_from_shres(SharedResource *s, uint64_t n);
+void coroutine_fn co_get_from_shres(SharedResource* s, uint64_t n);
 
 /*
  * Deallocate an amount of @n.  The total amount allocated by a caller
@@ -55,4 +55,4 @@ void coroutine_fn co_get_from_shres(SharedResource *s, uint64_t n);
  * be split over several calls.  For example, get(4), get(3), and then
  * put(5), put(2).
  */
-void coroutine_fn co_put_to_shres(SharedResource *s, uint64_t n);
+void coroutine_fn co_put_to_shres(SharedResource* s, uint64_t n);

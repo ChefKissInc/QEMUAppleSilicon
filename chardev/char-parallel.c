@@ -30,18 +30,18 @@
 #include <sys/ioctl.h>
 
 #ifdef CONFIG_BSD
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-#include <dev/ppbus/ppi.h>
-#include <dev/ppbus/ppbconf.h>
-#elif defined(__DragonFly__)
-#include <dev/misc/ppi/ppi.h>
-#include <bus/ppbus/ppbconf.h>
-#endif
+    #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+        #include <dev/ppbus/ppi.h>
+        #include <dev/ppbus/ppbconf.h>
+    #elif defined(__DragonFly__)
+        #include <dev/misc/ppi/ppi.h>
+        #include <bus/ppbus/ppbconf.h>
+    #endif
 #else
-#ifdef __linux__
-#include <linux/ppdev.h>
-#include <linux/parport.h>
-#endif
+    #ifdef __linux__
+        #include <linux/ppdev.h>
+        #include <linux/parport.h>
+    #endif
 #endif
 
 #include "chardev/char-fd.h"
@@ -49,117 +49,94 @@
 
 #if defined(__linux__)
 
-typedef struct {
+typedef struct
+{
     Chardev parent;
-    int fd;
-    int mode;
+    int     fd;
+    int     mode;
 } ParallelChardev;
 
-#define PARALLEL_CHARDEV(obj) \
-    OBJECT_CHECK(ParallelChardev, (obj), TYPE_CHARDEV_PARALLEL)
+    #define PARALLEL_CHARDEV(obj) OBJECT_CHECK(ParallelChardev, (obj), TYPE_CHARDEV_PARALLEL)
 
-static int pp_hw_mode(ParallelChardev *s, uint16_t mode)
+static int pp_hw_mode(ParallelChardev* s, uint16_t mode)
 {
     if (s->mode != mode) {
         int m = mode;
-        if (ioctl(s->fd, PPSETMODE, &m) < 0) {
-            return 0;
-        }
+        if (ioctl(s->fd, PPSETMODE, &m) < 0) { return 0; }
         s->mode = mode;
     }
     return 1;
 }
 
-static int parallel_chr_ioctl(Chardev *chr, int cmd, void *arg)
+static int parallel_chr_ioctl(Chardev* chr, int cmd, void* arg)
 {
-    ParallelChardev *drv = PARALLEL_CHARDEV(chr);
-    int fd = drv->fd;
-    uint8_t b;
+    ParallelChardev* drv = PARALLEL_CHARDEV(chr);
+    int              fd  = drv->fd;
+    uint8_t          b;
 
     switch (cmd) {
-    case CHR_IOCTL_PP_READ_DATA:
-        if (ioctl(fd, PPRDATA, &b) < 0) {
-            return -ENOTSUP;
-        }
-        *(uint8_t *)arg = b;
-        break;
-    case CHR_IOCTL_PP_WRITE_DATA:
-        b = *(uint8_t *)arg;
-        if (ioctl(fd, PPWDATA, &b) < 0) {
-            return -ENOTSUP;
-        }
-        break;
-    case CHR_IOCTL_PP_READ_CONTROL:
-        if (ioctl(fd, PPRCONTROL, &b) < 0) {
-            return -ENOTSUP;
-        }
-        /* Linux gives only the lowest bits, and no way to know data
-           direction! For better compatibility set the fixed upper
-           bits. */
-        *(uint8_t *)arg = b | 0xc0;
-        break;
-    case CHR_IOCTL_PP_WRITE_CONTROL:
-        b = *(uint8_t *)arg;
-        if (ioctl(fd, PPWCONTROL, &b) < 0) {
-            return -ENOTSUP;
-        }
-        break;
-    case CHR_IOCTL_PP_READ_STATUS:
-        if (ioctl(fd, PPRSTATUS, &b) < 0) {
-            return -ENOTSUP;
-        }
-        *(uint8_t *)arg = b;
-        break;
-    case CHR_IOCTL_PP_DATA_DIR:
-        if (ioctl(fd, PPDATADIR, (int *)arg) < 0) {
-            return -ENOTSUP;
-        }
-        break;
-    case CHR_IOCTL_PP_EPP_READ_ADDR:
-        if (pp_hw_mode(drv, IEEE1284_MODE_EPP | IEEE1284_ADDR)) {
-            struct ParallelIOArg *parg = arg;
-            int n = read(fd, parg->buffer, parg->count);
-            if (n != parg->count) {
-                return -EIO;
+        case CHR_IOCTL_PP_READ_DATA:
+            if (ioctl(fd, PPRDATA, &b) < 0) { return -ENOTSUP; }
+            *(uint8_t*)arg = b;
+            break;
+        case CHR_IOCTL_PP_WRITE_DATA:
+            b = *(uint8_t*)arg;
+            if (ioctl(fd, PPWDATA, &b) < 0) { return -ENOTSUP; }
+            break;
+        case CHR_IOCTL_PP_READ_CONTROL:
+            if (ioctl(fd, PPRCONTROL, &b) < 0) { return -ENOTSUP; }
+            /* Linux gives only the lowest bits, and no way to know data
+               direction! For better compatibility set the fixed upper
+               bits. */
+            *(uint8_t*)arg = b | 0xc0;
+            break;
+        case CHR_IOCTL_PP_WRITE_CONTROL:
+            b = *(uint8_t*)arg;
+            if (ioctl(fd, PPWCONTROL, &b) < 0) { return -ENOTSUP; }
+            break;
+        case CHR_IOCTL_PP_READ_STATUS:
+            if (ioctl(fd, PPRSTATUS, &b) < 0) { return -ENOTSUP; }
+            *(uint8_t*)arg = b;
+            break;
+        case CHR_IOCTL_PP_DATA_DIR:
+            if (ioctl(fd, PPDATADIR, (int*)arg) < 0) { return -ENOTSUP; }
+            break;
+        case CHR_IOCTL_PP_EPP_READ_ADDR:
+            if (pp_hw_mode(drv, IEEE1284_MODE_EPP | IEEE1284_ADDR)) {
+                struct ParallelIOArg* parg = arg;
+                int                   n    = read(fd, parg->buffer, parg->count);
+                if (n != parg->count) { return -EIO; }
             }
-        }
-        break;
-    case CHR_IOCTL_PP_EPP_READ:
-        if (pp_hw_mode(drv, IEEE1284_MODE_EPP)) {
-            struct ParallelIOArg *parg = arg;
-            int n = read(fd, parg->buffer, parg->count);
-            if (n != parg->count) {
-                return -EIO;
+            break;
+        case CHR_IOCTL_PP_EPP_READ:
+            if (pp_hw_mode(drv, IEEE1284_MODE_EPP)) {
+                struct ParallelIOArg* parg = arg;
+                int                   n    = read(fd, parg->buffer, parg->count);
+                if (n != parg->count) { return -EIO; }
             }
-        }
-        break;
-    case CHR_IOCTL_PP_EPP_WRITE_ADDR:
-        if (pp_hw_mode(drv, IEEE1284_MODE_EPP | IEEE1284_ADDR)) {
-            struct ParallelIOArg *parg = arg;
-            int n = write(fd, parg->buffer, parg->count);
-            if (n != parg->count) {
-                return -EIO;
+            break;
+        case CHR_IOCTL_PP_EPP_WRITE_ADDR:
+            if (pp_hw_mode(drv, IEEE1284_MODE_EPP | IEEE1284_ADDR)) {
+                struct ParallelIOArg* parg = arg;
+                int                   n    = write(fd, parg->buffer, parg->count);
+                if (n != parg->count) { return -EIO; }
             }
-        }
-        break;
-    case CHR_IOCTL_PP_EPP_WRITE:
-        if (pp_hw_mode(drv, IEEE1284_MODE_EPP)) {
-            struct ParallelIOArg *parg = arg;
-            int n = write(fd, parg->buffer, parg->count);
-            if (n != parg->count) {
-                return -EIO;
+            break;
+        case CHR_IOCTL_PP_EPP_WRITE:
+            if (pp_hw_mode(drv, IEEE1284_MODE_EPP)) {
+                struct ParallelIOArg* parg = arg;
+                int                   n    = write(fd, parg->buffer, parg->count);
+                if (n != parg->count) { return -EIO; }
             }
-        }
-        break;
-    default:
-        return -ENOTSUP;
+            break;
+        default: return -ENOTSUP;
     }
     return 0;
 }
 
-static bool parallel_chr_open_fd(Chardev *chr, int fd, Error **errp)
+static bool parallel_chr_open_fd(Chardev* chr, int fd, Error** errp)
 {
-    ParallelChardev *drv = PARALLEL_CHARDEV(chr);
+    ParallelChardev* drv = PARALLEL_CHARDEV(chr);
 
     drv->fd = fd;
 
@@ -176,84 +153,68 @@ static bool parallel_chr_open_fd(Chardev *chr, int fd, Error **errp)
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__DragonFly__)
 
-typedef struct {
+typedef struct
+{
     Chardev parent;
-    int fd;
+    int     fd;
 } ParallelChardev;
 
-#define PARALLEL_CHARDEV(obj)                                   \
-    OBJECT_CHECK(ParallelChardev, (obj), TYPE_CHARDEV_PARALLEL)
+    #define PARALLEL_CHARDEV(obj) OBJECT_CHECK(ParallelChardev, (obj), TYPE_CHARDEV_PARALLEL)
 
-static int parallel_chr_ioctl(Chardev *chr, int cmd, void *arg)
+static int parallel_chr_ioctl(Chardev* chr, int cmd, void* arg)
 {
-    ParallelChardev *drv = PARALLEL_CHARDEV(chr);
-    uint8_t b;
+    ParallelChardev* drv = PARALLEL_CHARDEV(chr);
+    uint8_t          b;
 
     switch (cmd) {
-    case CHR_IOCTL_PP_READ_DATA:
-        if (ioctl(drv->fd, PPIGDATA, &b) < 0) {
-            return -ENOTSUP;
-        }
-        *(uint8_t *)arg = b;
-        break;
-    case CHR_IOCTL_PP_WRITE_DATA:
-        b = *(uint8_t *)arg;
-        if (ioctl(drv->fd, PPISDATA, &b) < 0) {
-            return -ENOTSUP;
-        }
-        break;
-    case CHR_IOCTL_PP_READ_CONTROL:
-        if (ioctl(drv->fd, PPIGCTRL, &b) < 0) {
-            return -ENOTSUP;
-        }
-        *(uint8_t *)arg = b;
-        break;
-    case CHR_IOCTL_PP_WRITE_CONTROL:
-        b = *(uint8_t *)arg;
-        if (ioctl(drv->fd, PPISCTRL, &b) < 0) {
-            return -ENOTSUP;
-        }
-        break;
-    case CHR_IOCTL_PP_READ_STATUS:
-        if (ioctl(drv->fd, PPIGSTATUS, &b) < 0) {
-            return -ENOTSUP;
-        }
-        *(uint8_t *)arg = b;
-        break;
-    default:
-        return -ENOTSUP;
+        case CHR_IOCTL_PP_READ_DATA:
+            if (ioctl(drv->fd, PPIGDATA, &b) < 0) { return -ENOTSUP; }
+            *(uint8_t*)arg = b;
+            break;
+        case CHR_IOCTL_PP_WRITE_DATA:
+            b = *(uint8_t*)arg;
+            if (ioctl(drv->fd, PPISDATA, &b) < 0) { return -ENOTSUP; }
+            break;
+        case CHR_IOCTL_PP_READ_CONTROL:
+            if (ioctl(drv->fd, PPIGCTRL, &b) < 0) { return -ENOTSUP; }
+            *(uint8_t*)arg = b;
+            break;
+        case CHR_IOCTL_PP_WRITE_CONTROL:
+            b = *(uint8_t*)arg;
+            if (ioctl(drv->fd, PPISCTRL, &b) < 0) { return -ENOTSUP; }
+            break;
+        case CHR_IOCTL_PP_READ_STATUS:
+            if (ioctl(drv->fd, PPIGSTATUS, &b) < 0) { return -ENOTSUP; }
+            *(uint8_t*)arg = b;
+            break;
+        default: return -ENOTSUP;
     }
     return 0;
 }
 
-static bool parallel_chr_open_fd(Chardev *chr, int fd, Error **errp)
+static bool parallel_chr_open_fd(Chardev* chr, int fd, Error** errp)
 {
-    ParallelChardev *drv = PARALLEL_CHARDEV(chr);
-    drv->fd = fd;
+    ParallelChardev* drv = PARALLEL_CHARDEV(chr);
+    drv->fd              = fd;
     return true;
 }
 #endif
 
 #ifdef HAVE_CHARDEV_PARALLEL
-static bool parallel_chr_open(Chardev *chr,
-                              ChardevBackend *backend,
-                              Error **errp)
+static bool parallel_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevHostdev *parallel = backend->u.parallel.data;
-    int fd;
+    ChardevHostdev* parallel = backend->u.parallel.data;
+    int             fd;
 
     fd = qmp_chardev_open_file_source(parallel->device, O_RDWR, errp);
-    if (fd < 0) {
-        return false;
-    }
+    if (fd < 0) { return false; }
     return parallel_chr_open_fd(chr, fd, errp);
 }
 
-static void parallel_chr_parse(QemuOpts *opts, ChardevBackend *backend,
-                               Error **errp)
+static void parallel_chr_parse(QemuOpts* opts, ChardevBackend* backend, Error** errp)
 {
-    const char *device = qemu_opt_get(opts, "path");
-    ChardevHostdev *parallel;
+    const char*     device = qemu_opt_get(opts, "path");
+    ChardevHostdev* parallel;
 
     if (device == NULL) {
         error_setg(errp, "chardev: parallel: no device path given");
@@ -265,42 +226,39 @@ static void parallel_chr_parse(QemuOpts *opts, ChardevBackend *backend,
     parallel->device = g_strdup(device);
 }
 
-static void char_parallel_class_init(ObjectClass *oc, const void *data)
+static void char_parallel_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
     cc->chr_parse = parallel_chr_parse;
-    cc->chr_open = parallel_chr_open;
+    cc->chr_open  = parallel_chr_open;
     cc->chr_ioctl = parallel_chr_ioctl;
 }
 
-static void char_parallel_finalize(Object *obj)
+static void char_parallel_finalize(Object* obj)
 {
-    Chardev *chr = CHARDEV(obj);
-    ParallelChardev *drv = PARALLEL_CHARDEV(chr);
-    int fd = drv->fd;
+    Chardev*         chr = CHARDEV(obj);
+    ParallelChardev* drv = PARALLEL_CHARDEV(chr);
+    int              fd  = drv->fd;
 
-#if defined(__linux__)
+    #if defined(__linux__)
     pp_hw_mode(drv, IEEE1284_MODE_COMPAT);
     ioctl(fd, PPRELEASE);
-#endif
+    #endif
     close(fd);
     qemu_chr_be_event(chr, CHR_EVENT_CLOSED);
 }
 
 static const TypeInfo char_parallel_type_info = {
-    .name = TYPE_CHARDEV_PARALLEL,
-    .parent = TYPE_CHARDEV,
-    .instance_size = sizeof(ParallelChardev),
+    .name              = TYPE_CHARDEV_PARALLEL,
+    .parent            = TYPE_CHARDEV,
+    .instance_size     = sizeof(ParallelChardev),
     .instance_finalize = char_parallel_finalize,
-    .class_init = char_parallel_class_init,
+    .class_init        = char_parallel_class_init,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_parallel_type_info);
-}
+static void register_types(void) { type_register_static(&char_parallel_type_info); }
 
 type_init(register_types);
 
-#endif  /* HAVE_CHARDEV_PARALLEL */
+#endif /* HAVE_CHARDEV_PARALLEL */

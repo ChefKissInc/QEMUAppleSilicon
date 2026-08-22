@@ -26,22 +26,18 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-int qcrypto_random_bytes(void *buf,
-                         size_t buflen,
-                         Error **errp)
+int qcrypto_random_bytes(void* buf, size_t buflen, Error** errp)
 {
     int ret;
 
     ret = gnutls_rnd(GNUTLS_RND_RANDOM, buf, buflen);
 
     if (ret < 0) {
-        error_setg(errp, "Cannot get random bytes: %s",
-                   gnutls_strerror(ret));
+        error_setg(errp, "Cannot get random bytes: %s", gnutls_strerror(ret));
         return -1;
     }
 
     return 0;
 }
 
-
-int qcrypto_random_init(Error **errp G_GNUC_UNUSED) { return 0; }
+int qcrypto_random_init(Error** errp G_GNUC_UNUSED) { return 0; }

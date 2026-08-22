@@ -60,20 +60,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    IEEE Trans. Signal. Process., Vol.41, pp.3445-3462 (1993).
 */
 
-
 /* Template Macro stuffs. */
 #undef ZYWRLE_ANALYZE
 #undef ZYWRLE_SYNTHESIZE
 
-#define ZYWRLE_SUFFIX     ZRLE_CONCAT2(ZRLE_BPP,ZRLE_ENDIAN_SUFFIX)
+#define ZYWRLE_SUFFIX ZRLE_CONCAT2(ZRLE_BPP, ZRLE_ENDIAN_SUFFIX)
 
-#define ZYWRLE_ANALYZE    ZRLE_CONCAT2(zywrle_analyze_,   ZYWRLE_SUFFIX)
-#define ZYWRLE_SYNTHESIZE ZRLE_CONCAT2(zywrle_synthesize_,ZYWRLE_SUFFIX)
+#define ZYWRLE_ANALYZE    ZRLE_CONCAT2(zywrle_analyze_, ZYWRLE_SUFFIX)
+#define ZYWRLE_SYNTHESIZE ZRLE_CONCAT2(zywrle_synthesize_, ZYWRLE_SUFFIX)
 
-#define ZYWRLE_RGBYUV     ZRLE_CONCAT2(zywrle_rgbyuv_,    ZYWRLE_SUFFIX)
-#define ZYWRLE_YUVRGB     ZRLE_CONCAT2(zywrle_yuvrgb_,    ZYWRLE_SUFFIX)
-#define ZYWRLE_YMASK      ZRLE_CONCAT2(ZYWRLE_YMASK,      ZRLE_BPP)
-#define ZYWRLE_UVMASK     ZRLE_CONCAT2(ZYWRLE_UVMASK,     ZRLE_BPP)
+#define ZYWRLE_RGBYUV     ZRLE_CONCAT2(zywrle_rgbyuv_, ZYWRLE_SUFFIX)
+#define ZYWRLE_YUVRGB     ZRLE_CONCAT2(zywrle_yuvrgb_, ZYWRLE_SUFFIX)
+#define ZYWRLE_YMASK      ZRLE_CONCAT2(ZYWRLE_YMASK, ZRLE_BPP)
+#define ZYWRLE_UVMASK     ZRLE_CONCAT2(ZYWRLE_UVMASK, ZRLE_BPP)
 #define ZYWRLE_LOAD_PIXEL ZRLE_CONCAT2(ZYWRLE_LOAD_PIXEL, ZRLE_BPP)
 #define ZYWRLE_SAVE_PIXEL ZRLE_CONCAT2(ZYWRLE_SAVE_PIXEL, ZRLE_BPP)
 
@@ -86,17 +85,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #undef L_2
 
 #if ZYWRLE_ENDIAN == ENDIAN_BIG
-#  define S_0   1
-#  define S_1   0
-#  define L_0   3
-#  define L_1   2
-#  define L_2   1
+    #define S_0 1
+    #define S_1 0
+    #define L_0 3
+    #define L_1 2
+    #define L_2 1
 #else
-#  define S_0   0
-#  define S_1   1
-#  define L_0   0
-#  define L_1   1
-#  define L_2   2
+    #define S_0 0
+    #define S_1 1
+    #define L_0 0
+    #define L_1 1
+    #define L_2 2
 #endif
 
 #define ZYWRLE_QUANTIZE
@@ -104,13 +103,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vnc-enc-zywrle.h"
 
 #ifndef ZRLE_COMPACT_PIXEL
-static inline void ZYWRLE_RGBYUV(int *buf, ZRLE_PIXEL *data,
-                                 int width, int height, int scanline)
+static inline void ZYWRLE_RGBYUV(int* buf, ZRLE_PIXEL* data, int width, int height, int scanline)
 {
-    int r, g, b;
-    int y, u, v;
-    int *line;
-    int *end;
+    int  r, g, b;
+    int  y, u, v;
+    int* line;
+    int* end;
 
     end = buf + height * width;
     while (buf < end) {
@@ -126,44 +124,39 @@ static inline void ZYWRLE_RGBYUV(int *buf, ZRLE_PIXEL *data,
     }
 }
 
-static ZRLE_PIXEL *ZYWRLE_ANALYZE(ZRLE_PIXEL *dst, ZRLE_PIXEL *src,
-                                  int w, int h, int scanline, int level,
-                                  int *buf) {
-    int l;
-    int uw = w;
-    int uh = h;
-    int *top;
-    int *end;
-    int *line;
-    ZRLE_PIXEL *p;
-    int r, g, b;
-    int s;
-    int *ph;
+static ZRLE_PIXEL* ZYWRLE_ANALYZE(ZRLE_PIXEL* dst, ZRLE_PIXEL* src, int w, int h, int scanline, int level, int* buf)
+{
+    int         l;
+    int         uw = w;
+    int         uh = h;
+    int*        top;
+    int*        end;
+    int*        line;
+    ZRLE_PIXEL* p;
+    int         r, g, b;
+    int         s;
+    int*        ph;
 
     zywrle_calc_size(&w, &h, level);
 
-    if (w == 0 || h == 0) {
-        return NULL;
-    }
+    if (w == 0 || h == 0) { return NULL; }
     uw -= w;
     uh -= h;
 
     p = dst;
-    ZYWRLE_LOAD_UNALIGN(src,*(ZRLE_PIXEL*)top = *p;);
+    ZYWRLE_LOAD_UNALIGN(src, *(ZRLE_PIXEL*)top = *p;);
     ZYWRLE_RGBYUV(buf, src, w, h, scanline);
     wavelet(buf, w, h, level);
     for (l = 0; l < level; l++) {
         ZYWRLE_PACK_COEFF(buf, dst, 3, w, h, scanline, l);
         ZYWRLE_PACK_COEFF(buf, dst, 2, w, h, scanline, l);
         ZYWRLE_PACK_COEFF(buf, dst, 1, w, h, scanline, l);
-        if (l == level - 1) {
-            ZYWRLE_PACK_COEFF(buf, dst, 0, w, h, scanline, l);
-        }
+        if (l == level - 1) { ZYWRLE_PACK_COEFF(buf, dst, 0, w, h, scanline, l); }
     }
-    ZYWRLE_SAVE_UNALIGN(dst,*dst = *(ZRLE_PIXEL*)top;);
+    ZYWRLE_SAVE_UNALIGN(dst, *dst = *(ZRLE_PIXEL*)top;);
     return dst;
 }
-#endif  /* ZRLE_COMPACT_PIXEL */
+#endif /* ZRLE_COMPACT_PIXEL */
 
 #undef ZYWRLE_RGBYUV
 #undef ZYWRLE_YUVRGB

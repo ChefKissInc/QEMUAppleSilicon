@@ -20,18 +20,19 @@
 
 #define TYPE_IOTHREAD "iothread"
 
-struct IOThread {
+struct IOThread
+{
     EventLoopBase parent_obj;
 
-    QemuThread thread;
-    AioContext *ctx;
-    bool run_gcontext;          /* whether we should run gcontext */
-    GMainContext *worker_context;
-    GMainLoop *main_loop;
+    QemuThread    thread;
+    AioContext*   ctx;
+    bool          run_gcontext; /* whether we should run gcontext */
+    GMainContext* worker_context;
+    GMainLoop*    main_loop;
     QemuSemaphore init_done_sem; /* is thread init done? */
-    bool stopping;              /* has iothread_stop() been called? */
-    bool running;               /* should iothread_run() continue? */
-    int thread_id;
+    bool          stopping;      /* has iothread_stop() been called? */
+    bool          running;       /* should iothread_run() continue? */
+    int           thread_id;
 
     /* AioContext poll parameters */
     int64_t poll_max_ns;
@@ -40,22 +41,21 @@ struct IOThread {
 };
 typedef struct IOThread IOThread;
 
-DECLARE_INSTANCE_CHECKER(IOThread, IOTHREAD,
-                         TYPE_IOTHREAD)
+DECLARE_INSTANCE_CHECKER(IOThread, IOTHREAD, TYPE_IOTHREAD)
 
-char *iothread_get_id(IOThread *iothread);
-IOThread *iothread_by_id(const char *id);
-AioContext *iothread_get_aio_context(IOThread *iothread);
-GMainContext *iothread_get_g_main_context(IOThread *iothread);
+char*         iothread_get_id(IOThread* iothread);
+IOThread*     iothread_by_id(const char* id);
+AioContext*   iothread_get_aio_context(IOThread* iothread);
+GMainContext* iothread_get_g_main_context(IOThread* iothread);
 
 /*
  * Helpers used to allocate iothreads for internal use.  These
  * iothreads will not be seen by monitor clients when query using
  * "query-iothreads".
  */
-IOThread *iothread_create(const char *id, Error **errp);
-void iothread_stop(IOThread *iothread);
-void iothread_destroy(IOThread *iothread);
+IOThread* iothread_create(const char* id, Error** errp);
+void      iothread_stop(IOThread* iothread);
+void      iothread_destroy(IOThread* iothread);
 
 /*
  * Returns true if executing within IOThread context,

@@ -17,10 +17,13 @@
 
 /* Version 4 UUID (pseudo random numbers), RFC4122 4.4. */
 
-typedef struct {
-    union {
+typedef struct
+{
+    union
+    {
         unsigned char data[16];
-        struct {
+        struct
+        {
             /* Generated in BE endian, can be swapped with qemu_uuid_bswap. */
             uint32_t time_low;
             uint16_t time_mid;
@@ -50,49 +53,68 @@ typedef struct {
  * @node4: The spatially unique node4 identifier
  * @node5: The spatially unique node5 identifier
  */
-#define UUID_LE(time_low, time_mid, time_hi_and_version,                    \
-  clock_seq_hi_and_reserved, clock_seq_low, node0, node1, node2,            \
-  node3, node4, node5)                                                      \
-  { (time_low) & 0xff, ((time_low) >> 8) & 0xff, ((time_low) >> 16) & 0xff, \
-    ((time_low) >> 24) & 0xff, (time_mid) & 0xff, ((time_mid) >> 8) & 0xff, \
-    (time_hi_and_version) & 0xff, ((time_hi_and_version) >> 8) & 0xff,      \
-    (clock_seq_hi_and_reserved), (clock_seq_low), (node0), (node1), (node2),\
-    (node3), (node4), (node5) }
+#define UUID_LE(time_low, time_mid, time_hi_and_version, clock_seq_hi_and_reserved, clock_seq_low, node0, node1, \
+                node2, node3, node4, node5)                                                                      \
+    {(time_low) & 0xff,                                                                                          \
+     ((time_low) >> 8) & 0xff,                                                                                   \
+     ((time_low) >> 16) & 0xff,                                                                                  \
+     ((time_low) >> 24) & 0xff,                                                                                  \
+     (time_mid) & 0xff,                                                                                          \
+     ((time_mid) >> 8) & 0xff,                                                                                   \
+     (time_hi_and_version) & 0xff,                                                                               \
+     ((time_hi_and_version) >> 8) & 0xff,                                                                        \
+     (clock_seq_hi_and_reserved),                                                                                \
+     (clock_seq_low),                                                                                            \
+     (node0),                                                                                                    \
+     (node1),                                                                                                    \
+     (node2),                                                                                                    \
+     (node3),                                                                                                    \
+     (node4),                                                                                                    \
+     (node5)}
 
 /* Normal (network byte order) UUID */
-#define UUID(time_low, time_mid, time_hi_and_version,                    \
-  clock_seq_hi_and_reserved, clock_seq_low, node0, node1, node2,         \
-  node3, node4, node5)                                                   \
-  { ((time_low) >> 24) & 0xff, ((time_low) >> 16) & 0xff,                \
-    ((time_low) >> 8) & 0xff, (time_low) & 0xff,                         \
-    ((time_mid) >> 8) & 0xff, (time_mid) & 0xff,                         \
-    ((time_hi_and_version) >> 8) & 0xff, (time_hi_and_version) & 0xff,   \
-    (clock_seq_hi_and_reserved), (clock_seq_low),                        \
-    (node0), (node1), (node2), (node3), (node4), (node5)                 \
-  }
+#define UUID(time_low, time_mid, time_hi_and_version, clock_seq_hi_and_reserved, clock_seq_low, node0, node1, node2, \
+             node3, node4, node5)                                                                                    \
+    {((time_low) >> 24) & 0xff,                                                                                      \
+     ((time_low) >> 16) & 0xff,                                                                                      \
+     ((time_low) >> 8) & 0xff,                                                                                       \
+     (time_low) & 0xff,                                                                                              \
+     ((time_mid) >> 8) & 0xff,                                                                                       \
+     (time_mid) & 0xff,                                                                                              \
+     ((time_hi_and_version) >> 8) & 0xff,                                                                            \
+     (time_hi_and_version) & 0xff,                                                                                   \
+     (clock_seq_hi_and_reserved),                                                                                    \
+     (clock_seq_low),                                                                                                \
+     (node0),                                                                                                        \
+     (node1),                                                                                                        \
+     (node2),                                                                                                        \
+     (node3),                                                                                                        \
+     (node4),                                                                                                        \
+     (node5)}
 
-#define UUID_FMT "%02hhx%02hhx%02hhx%02hhx-" \
-                 "%02hhx%02hhx-%02hhx%02hhx-" \
-                 "%02hhx%02hhx-" \
-                 "%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx"
+#define UUID_FMT                           \
+    "%02hhx%02hhx%02hhx%02hhx-"            \
+    "%02hhx%02hhx-%02hhx%02hhx-"           \
+    "%02hhx%02hhx-"                        \
+    "%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx"
 
 #define UUID_NONE "00000000-0000-0000-0000-000000000000"
 QEMU_BUILD_BUG_ON(sizeof(UUID_NONE) - 1 != 36);
 
 #define UUID_STR_LEN sizeof(UUID_NONE)
 
-void qemu_uuid_generate(QemuUUID *out);
+void qemu_uuid_generate(QemuUUID* out);
 
-int qemu_uuid_is_null(const QemuUUID *uu);
+int qemu_uuid_is_null(const QemuUUID* uu);
 
-int qemu_uuid_is_equal(const QemuUUID *lhv, const QemuUUID *rhv);
+int qemu_uuid_is_equal(const QemuUUID* lhv, const QemuUUID* rhv);
 
-void qemu_uuid_unparse(const QemuUUID *uuid, char *out);
+void qemu_uuid_unparse(const QemuUUID* uuid, char* out);
 
-char *qemu_uuid_unparse_strdup(const QemuUUID *uuid);
+char* qemu_uuid_unparse_strdup(const QemuUUID* uuid);
 
-int qemu_uuid_parse(const char *str, QemuUUID *uuid);
+int qemu_uuid_parse(const char* str, QemuUUID* uuid);
 
 QemuUUID qemu_uuid_bswap(QemuUUID uuid);
 
-uint32_t qemu_uuid_hash(const void *uuid);
+uint32_t qemu_uuid_hash(const void* uuid);

@@ -30,17 +30,16 @@
 #include "qom/object.h"
 
 #define TYPE_IDAU_INTERFACE "idau-interface"
-#define IDAU_INTERFACE(obj) \
-    INTERFACE_CHECK(IDAUInterface, (obj), TYPE_IDAU_INTERFACE)
+#define IDAU_INTERFACE(obj) INTERFACE_CHECK(IDAUInterface, (obj), TYPE_IDAU_INTERFACE)
 typedef struct IDAUInterfaceClass IDAUInterfaceClass;
-DECLARE_CLASS_CHECKERS_IF(IDAUInterfaceClass, IDAU_INTERFACE,
-                       TYPE_IDAU_INTERFACE)
+DECLARE_CLASS_CHECKERS_IF(IDAUInterfaceClass, IDAU_INTERFACE, TYPE_IDAU_INTERFACE)
 
 typedef struct IDAUInterface IDAUInterface;
 
 #define IREGION_NOTVALID -1
 
-struct IDAUInterfaceClass {
+struct IDAUInterfaceClass
+{
     InterfaceClass parent;
 
     /* Check the specified address and return the IDAU security information
@@ -50,6 +49,5 @@ struct IDAUInterfaceClass {
      *  ns: true if the address is NonSecure
      *  nsc: true if the address is NonSecure-callable
      */
-    void (*check)(IDAUInterface *ii, uint32_t address, int *iregion,
-                  bool *exempt, bool *ns, bool *nsc);
+    void (*check)(IDAUInterface* ii, uint32_t address, int* iregion, bool* exempt, bool* ns, bool* nsc);
 };

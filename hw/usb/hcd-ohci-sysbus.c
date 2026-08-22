@@ -30,16 +30,14 @@
 #include "trace.h"
 #include "hcd-ohci.h"
 
-
-static void ohci_sysbus_realize(DeviceState *dev, Error **errp)
+static void ohci_sysbus_realize(DeviceState* dev, Error** errp)
 {
-    OHCISysBusState *s = SYSBUS_OHCI(dev);
-    SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
-    Error *err = NULL;
+    OHCISysBusState* s   = SYSBUS_OHCI(dev);
+    SysBusDevice*    sbd = SYS_BUS_DEVICE(dev);
+    Error*           err = NULL;
 
-    usb_ohci_init(&s->ohci, dev, s->num_ports, s->dma_offset,
-                  s->masterbus, s->firstport,
-                  &address_space_memory, ohci_sysbus_die, &err);
+    usb_ohci_init(&s->ohci, dev, s->num_ports, s->dma_offset, s->masterbus, s->firstport, &address_space_memory,
+                  ohci_sysbus_die, &err);
     if (err) {
         error_propagate(errp, err);
         return;
@@ -48,10 +46,10 @@ static void ohci_sysbus_realize(DeviceState *dev, Error **errp)
     sysbus_init_mmio(sbd, &s->ohci.mem);
 }
 
-static void ohci_sysbus_reset(DeviceState *dev)
+static void ohci_sysbus_reset(DeviceState* dev)
 {
-    OHCISysBusState *s = SYSBUS_OHCI(dev);
-    OHCIState *ohci = &s->ohci;
+    OHCISysBusState* s    = SYSBUS_OHCI(dev);
+    OHCIState*       ohci = &s->ohci;
 
     ohci_hard_reset(ohci);
 }
@@ -63,9 +61,9 @@ static const Property ohci_sysbus_properties[] = {
     DEFINE_PROP_DMAADDR("dma-offset", OHCISysBusState, dma_offset, 0),
 };
 
-static void ohci_sysbus_class_init(ObjectClass *klass, const void *data)
+static void ohci_sysbus_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
+    DeviceClass* dc = DEVICE_CLASS(klass);
 
     dc->realize = ohci_sysbus_realize;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);

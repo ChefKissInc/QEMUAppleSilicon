@@ -16,20 +16,20 @@
 
 struct Error
 {
-    char *msg;
+    char*      msg;
     ErrorClass err_class;
 
     /* Used for error_abort only, may be NULL. */
-    const char *func;
+    const char* func;
 
     /*
      * src might be NUL-terminated or not.  If it is, src_len is negative.
      * If it is not, src_len is the length.
      */
-    const char *src;
-    int src_len;
-    int line;
-    GString *hint;
+    const char* src;
+    int         src_len;
+    int         line;
+    GString*    hint;
 };
 
 #endif

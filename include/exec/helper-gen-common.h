@@ -8,4 +8,4 @@
 
 #define HELPER_H "accel/tcg/tcg-runtime.h"
 #include "exec/helper-gen.h.inc"
-#undef  HELPER_H
+#undef HELPER_H

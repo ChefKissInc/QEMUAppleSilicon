@@ -30,23 +30,17 @@
 #include <lzfse.h>
 #pragma GCC diagnostic pop
 
-static int dmg_uncompress_lzfse_do(char *next_in, unsigned int avail_in,
-                                   char *next_out, unsigned int avail_out)
+static int dmg_uncompress_lzfse_do(char* next_in, unsigned int avail_in, char* next_out, unsigned int avail_out)
 {
-    size_t out_size = lzfse_decode_buffer((uint8_t *) next_out, avail_out,
-                                          (uint8_t *) next_in, avail_in,
-                                          NULL);
+    size_t out_size = lzfse_decode_buffer((uint8_t*)next_out, avail_out, (uint8_t*)next_in, avail_in, NULL);
 
     /* We need to decode the single chunk only. */
     /* So, out_size == avail_out is not an error here. */
-    if (out_size > 0) {
-        return out_size;
-    }
+    if (out_size > 0) { return out_size; }
     return -1;
 }
 
-__attribute__((constructor))
-static void dmg_lzfse_init(void)
+__attribute__((constructor)) static void dmg_lzfse_init(void)
 {
     assert(!dmg_uncompress_lzfse);
     dmg_uncompress_lzfse = dmg_uncompress_lzfse_do;

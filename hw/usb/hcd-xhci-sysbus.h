@@ -14,16 +14,15 @@
 #include "hcd-xhci.h"
 #include "hw/sysbus.h"
 
-#define XHCI_SYSBUS(obj) \
-    OBJECT_CHECK(XHCISysbusState, (obj), TYPE_XHCI_SYSBUS)
+#define XHCI_SYSBUS(obj) OBJECT_CHECK(XHCISysbusState, (obj), TYPE_XHCI_SYSBUS)
 
-
-typedef struct XHCISysbusState {
+typedef struct XHCISysbusState
+{
     /*< private >*/
     SysBusDevice parent_obj;
     /*< public >*/
     XHCIState xhci;
-    qemu_irq *irq;
+    qemu_irq* irq;
 } XHCISysbusState;
 
-void xhci_sysbus_reset(DeviceState *dev);
+void xhci_sysbus_reset(DeviceState* dev);

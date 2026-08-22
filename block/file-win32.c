@@ -38,28 +38,31 @@
 #include <windows.h>
 #include <winioctl.h>
 
-#define FTYPE_FILE 0
-#define FTYPE_CD     1
+#define FTYPE_FILE     0
+#define FTYPE_CD       1
 #define FTYPE_HARDDISK 2
 
-typedef struct RawWin32AIOData {
-    BlockDriverState *bs;
-    HANDLE hfile;
-    struct iovec *aio_iov;
-    int aio_niov;
-    size_t aio_nbytes;
-    off64_t aio_offset;
-    int aio_type;
+typedef struct RawWin32AIOData
+{
+    BlockDriverState* bs;
+    HANDLE            hfile;
+    struct iovec*     aio_iov;
+    int               aio_niov;
+    size_t            aio_nbytes;
+    off64_t           aio_offset;
+    int               aio_type;
 } RawWin32AIOData;
 
-typedef struct BDRVRawState {
-    HANDLE hfile;
-    int type;
-    char drive_path[16]; /* format: "d:\" */
-    QEMUWin32AIOState *aio;
+typedef struct BDRVRawState
+{
+    HANDLE             hfile;
+    int                type;
+    char               drive_path[16]; /* format: "d:\" */
+    QEMUWin32AIOState* aio;
 } BDRVRawState;
 
-typedef struct BDRVRawReopenState {
+typedef struct BDRVRawReopenState
+{
     HANDLE hfile;
 } BDRVRawReopenState;
 
@@ -69,29 +72,26 @@ typedef struct BDRVRawReopenState {
  * Returns the number of bytes handles or -errno in case of an error. Short
  * reads are only returned if the end of the file is reached.
  */
-static size_t handle_aiocb_rw(RawWin32AIOData *aiocb)
+static size_t handle_aiocb_rw(RawWin32AIOData* aiocb)
 {
     size_t offset = 0;
-    int i;
+    int    i;
 
     for (i = 0; i < aiocb->aio_niov; i++) {
         OVERLAPPED ov;
-        DWORD ret, ret_count, len;
+        DWORD      ret, ret_count, len;
 
         memset(&ov, 0, sizeof(ov));
-        ov.Offset = (aiocb->aio_offset + offset);
+        ov.Offset     = (aiocb->aio_offset + offset);
         ov.OffsetHigh = (aiocb->aio_offset + offset) >> 32;
-        len = aiocb->aio_iov[i].iov_len;
+        len           = aiocb->aio_iov[i].iov_len;
         if (aiocb->aio_type & QEMU_AIO_WRITE) {
-            ret = WriteFile(aiocb->hfile, aiocb->aio_iov[i].iov_base,
-                            len, &ret_count, &ov);
-        } else {
-            ret = ReadFile(aiocb->hfile, aiocb->aio_iov[i].iov_base,
-                           len, &ret_count, &ov);
+            ret = WriteFile(aiocb->hfile, aiocb->aio_iov[i].iov_base, len, &ret_count, &ov);
         }
-        if (!ret) {
-            ret_count = 0;
+        else {
+            ret = ReadFile(aiocb->hfile, aiocb->aio_iov[i].iov_base, len, &ret_count, &ov);
         }
+        if (!ret) { ret_count = 0; }
         if (ret_count != len) {
             offset += ret_count;
             break;
@@ -102,64 +102,58 @@ static size_t handle_aiocb_rw(RawWin32AIOData *aiocb)
     return offset;
 }
 
-static int aio_worker(void *arg)
+static int aio_worker(void* arg)
 {
-    RawWin32AIOData *aiocb = arg;
-    ssize_t ret = 0;
-    size_t count;
+    RawWin32AIOData* aiocb = arg;
+    ssize_t          ret   = 0;
+    size_t           count;
 
     switch (aiocb->aio_type & QEMU_AIO_TYPE_MASK) {
-    case QEMU_AIO_READ:
-        count = handle_aiocb_rw(aiocb);
-        if (count < aiocb->aio_nbytes) {
-            /* A short read means that we have reached EOF. Pad the buffer
-             * with zeros for bytes after EOF. */
-            iov_memset(aiocb->aio_iov, aiocb->aio_niov, count,
-                      0, aiocb->aio_nbytes - count);
+        case QEMU_AIO_READ:
+            count = handle_aiocb_rw(aiocb);
+            if (count < aiocb->aio_nbytes) {
+                /* A short read means that we have reached EOF. Pad the buffer
+                 * with zeros for bytes after EOF. */
+                iov_memset(aiocb->aio_iov, aiocb->aio_niov, count, 0, aiocb->aio_nbytes - count);
 
-            count = aiocb->aio_nbytes;
-        }
-        if (count == aiocb->aio_nbytes) {
-            ret = 0;
-        } else {
+                count = aiocb->aio_nbytes;
+            }
+            if (count == aiocb->aio_nbytes) { ret = 0; }
+            else {
+                ret = -EINVAL;
+            }
+            break;
+        case QEMU_AIO_WRITE:
+            count = handle_aiocb_rw(aiocb);
+            if (count == aiocb->aio_nbytes) { ret = 0; }
+            else {
+                ret = -EINVAL;
+            }
+            break;
+        case QEMU_AIO_FLUSH:
+            if (!FlushFileBuffers(aiocb->hfile)) { return -EIO; }
+            break;
+        default:
+            fprintf(stderr, "invalid aio request (0x%x)\n", aiocb->aio_type);
             ret = -EINVAL;
-        }
-        break;
-    case QEMU_AIO_WRITE:
-        count = handle_aiocb_rw(aiocb);
-        if (count == aiocb->aio_nbytes) {
-            ret = 0;
-        } else {
-            ret = -EINVAL;
-        }
-        break;
-    case QEMU_AIO_FLUSH:
-        if (!FlushFileBuffers(aiocb->hfile)) {
-            return -EIO;
-        }
-        break;
-    default:
-        fprintf(stderr, "invalid aio request (0x%x)\n", aiocb->aio_type);
-        ret = -EINVAL;
-        break;
+            break;
     }
 
     g_free(aiocb);
     return ret;
 }
 
-static BlockAIOCB *paio_submit(BlockDriverState *bs, HANDLE hfile,
-        int64_t offset, QEMUIOVector *qiov, int count,
-        BlockCompletionFunc *cb, void *opaque, int type)
+static BlockAIOCB* paio_submit(BlockDriverState* bs, HANDLE hfile, int64_t offset, QEMUIOVector* qiov, int count,
+                               BlockCompletionFunc* cb, void* opaque, int type)
 {
-    RawWin32AIOData *acb = g_new(RawWin32AIOData, 1);
+    RawWin32AIOData* acb = g_new(RawWin32AIOData, 1);
 
-    acb->bs = bs;
-    acb->hfile = hfile;
+    acb->bs       = bs;
+    acb->hfile    = hfile;
     acb->aio_type = type;
 
     if (qiov) {
-        acb->aio_iov = qiov->iov;
+        acb->aio_iov  = qiov->iov;
         acb->aio_niov = qiov->niov;
         assert(qiov->size == count);
     }
@@ -173,28 +167,23 @@ static BlockAIOCB *paio_submit(BlockDriverState *bs, HANDLE hfile,
 int qemu_ftruncate64(int fd, int64_t length)
 {
     LARGE_INTEGER li;
-    DWORD dw;
-    LONG high;
-    HANDLE h;
-    BOOL res;
+    DWORD         dw;
+    LONG          high;
+    HANDLE        h;
+    BOOL          res;
 
-    if ((GetVersion() & 0x80000000UL) && (length >> 32) != 0)
-        return -1;
+    if ((GetVersion() & 0x80000000UL) && (length >> 32) != 0) { return -1; }
 
     h = (HANDLE)_get_osfhandle(fd);
 
     /* get current position, ftruncate do not change position */
     li.HighPart = 0;
-    li.LowPart = SetFilePointer (h, 0, &li.HighPart, FILE_CURRENT);
-    if (li.LowPart == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) {
-        return -1;
-    }
+    li.LowPart  = SetFilePointer(h, 0, &li.HighPart, FILE_CURRENT);
+    if (li.LowPart == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) { return -1; }
 
     high = length >> 32;
-    dw = SetFilePointer(h, (DWORD) length, &high, FILE_BEGIN);
-    if (dw == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) {
-        return -1;
-    }
+    dw   = SetFilePointer(h, (DWORD)length, &high, FILE_BEGIN);
+    if (dw == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) { return -1; }
     res = SetEndOfFile(h);
 
     /* back to old position */
@@ -205,43 +194,36 @@ int qemu_ftruncate64(int fd, int64_t length)
 static int set_sparse(int fd)
 {
     DWORD returned;
-    return (int) DeviceIoControl((HANDLE)_get_osfhandle(fd), FSCTL_SET_SPARSE,
-                                 NULL, 0, NULL, 0, &returned, NULL);
+    return (int)DeviceIoControl((HANDLE)_get_osfhandle(fd), FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &returned, NULL);
 }
 
-static void raw_detach_aio_context(BlockDriverState *bs)
+static void raw_detach_aio_context(BlockDriverState* bs)
 {
-    BDRVRawState *s = bs->opaque;
+    BDRVRawState* s = bs->opaque;
 
-    if (s->aio) {
-        win32_aio_detach_aio_context(s->aio, bdrv_get_aio_context(bs));
-    }
+    if (s->aio) { win32_aio_detach_aio_context(s->aio, bdrv_get_aio_context(bs)); }
 }
 
-static void raw_attach_aio_context(BlockDriverState *bs,
-                                   AioContext *new_context)
+static void raw_attach_aio_context(BlockDriverState* bs, AioContext* new_context)
 {
-    BDRVRawState *s = bs->opaque;
+    BDRVRawState* s = bs->opaque;
 
-    if (s->aio) {
-        win32_aio_attach_aio_context(s->aio, new_context);
-    }
+    if (s->aio) { win32_aio_attach_aio_context(s->aio, new_context); }
 }
 
-static void raw_probe_alignment(BlockDriverState *bs, Error **errp)
+static void raw_probe_alignment(BlockDriverState* bs, Error** errp)
 {
-    BDRVRawState *s = bs->opaque;
-    DWORD sectorsPerCluster, freeClusters, totalClusters, count;
+    BDRVRawState*    s = bs->opaque;
+    DWORD            sectorsPerCluster, freeClusters, totalClusters, count;
     DISK_GEOMETRY_EX dg;
-    BOOL status;
+    BOOL             status;
 
     if (s->type == FTYPE_CD) {
         bs->bl.request_alignment = 2048;
         return;
     }
     if (s->type == FTYPE_HARDDISK) {
-        status = DeviceIoControl(s->hfile, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,
-                                 NULL, 0, &dg, sizeof(dg), &count, NULL);
+        status = DeviceIoControl(s->hfile, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, NULL, 0, &dg, sizeof(dg), &count, NULL);
         if (status != 0) {
             bs->bl.request_alignment = dg.Geometry.BytesPerSector;
             return;
@@ -250,9 +232,7 @@ static void raw_probe_alignment(BlockDriverState *bs, Error **errp)
     }
 
     if (s->drive_path[0]) {
-        GetDiskFreeSpace(s->drive_path, &sectorsPerCluster,
-                         &dg.Geometry.BytesPerSector,
-                         &freeClusters, &totalClusters);
+        GetDiskFreeSpace(s->drive_path, &sectorsPerCluster, &dg.Geometry.BytesPerSector, &freeClusters, &totalClusters);
         bs->bl.request_alignment = dg.Geometry.BytesPerSector;
         return;
     }
@@ -261,88 +241,71 @@ static void raw_probe_alignment(BlockDriverState *bs, Error **errp)
     bs->bl.request_alignment = 512;
 }
 
-static void raw_parse_flags(int flags, bool use_aio, int *access_flags,
-                            DWORD *overlapped)
+static void raw_parse_flags(int flags, bool use_aio, int* access_flags, DWORD* overlapped)
 {
     assert(access_flags != NULL);
     assert(overlapped != NULL);
 
-    if (flags & BDRV_O_RDWR) {
-        *access_flags = GENERIC_READ | GENERIC_WRITE;
-    } else {
+    if (flags & BDRV_O_RDWR) { *access_flags = GENERIC_READ | GENERIC_WRITE; }
+    else {
         *access_flags = GENERIC_READ;
     }
 
     *overlapped = FILE_ATTRIBUTE_NORMAL;
-    if (use_aio) {
-        *overlapped |= FILE_FLAG_OVERLAPPED;
-    }
-    if (flags & BDRV_O_NOCACHE) {
-        *overlapped |= FILE_FLAG_NO_BUFFERING;
-    }
+    if (use_aio) { *overlapped |= FILE_FLAG_OVERLAPPED; }
+    if (flags & BDRV_O_NOCACHE) { *overlapped |= FILE_FLAG_NO_BUFFERING; }
 }
 
-static void raw_parse_filename(const char *filename, QDict *options,
-                               Error **errp)
-{
-    bdrv_parse_filename_strip_prefix(filename, "file:", options);
-}
+static void raw_parse_filename(const char* filename, QDict* options, Error** errp)
+{ bdrv_parse_filename_strip_prefix(filename, "file:", options); }
 
 static QemuOptsList raw_runtime_opts = {
     .name = "raw",
     .head = QTAILQ_HEAD_INITIALIZER(raw_runtime_opts.head),
-    .desc = {
-        {
-            .name = "filename",
-            .type = QEMU_OPT_STRING,
-            .help = "File name of the image",
-        },
-        {
-            .name = "aio",
-            .type = QEMU_OPT_STRING,
-            .help = "host AIO implementation (threads, native)",
-        },
-        {
-            .name = "locking",
-            .type = QEMU_OPT_STRING,
-            .help = "file locking mode (on/off/auto, default: auto)",
-        },
-        { /* end of list */ }
-    },
+    .desc = {{
+                 .name = "filename",
+                 .type = QEMU_OPT_STRING,
+                 .help = "File name of the image",
+             },
+             {
+                 .name = "aio",
+                 .type = QEMU_OPT_STRING,
+                 .help = "host AIO implementation (threads, native)",
+             },
+             {
+                 .name = "locking",
+                 .type = QEMU_OPT_STRING,
+                 .help = "file locking mode (on/off/auto, default: auto)",
+             },
+             {/* end of list */}},
 };
 
-static bool get_aio_option(QemuOpts *opts, int flags, Error **errp)
+static bool get_aio_option(QemuOpts* opts, int flags, Error** errp)
 {
     BlockdevAioOptions aio, aio_default;
 
-    aio_default = (flags & BDRV_O_NATIVE_AIO) ? BLOCKDEV_AIO_OPTIONS_NATIVE
-                                              : BLOCKDEV_AIO_OPTIONS_THREADS;
-    aio = qapi_enum_parse(&BlockdevAioOptions_lookup, qemu_opt_get(opts, "aio"),
-                          aio_default, errp);
+    aio_default = (flags & BDRV_O_NATIVE_AIO) ? BLOCKDEV_AIO_OPTIONS_NATIVE : BLOCKDEV_AIO_OPTIONS_THREADS;
+    aio         = qapi_enum_parse(&BlockdevAioOptions_lookup, qemu_opt_get(opts, "aio"), aio_default, errp);
 
     switch (aio) {
-    case BLOCKDEV_AIO_OPTIONS_NATIVE:
-        return true;
-    case BLOCKDEV_AIO_OPTIONS_THREADS:
-        return false;
-    default:
-        error_setg(errp, "Invalid AIO option");
+        case BLOCKDEV_AIO_OPTIONS_NATIVE : return true;
+        case BLOCKDEV_AIO_OPTIONS_THREADS: return false;
+        default                          : error_setg(errp, "Invalid AIO option");
     }
     return false;
 }
 
-static int raw_open(BlockDriverState *bs, QDict *options, int flags,
-                    Error **errp)
+static int raw_open(BlockDriverState* bs, QDict* options, int flags, Error** errp)
 {
-    BDRVRawState *s = bs->opaque;
-    int access_flags;
-    DWORD overlapped;
-    QemuOpts *opts;
-    Error *local_err = NULL;
-    const char *filename;
-    bool use_aio;
-    OnOffAuto locking;
-    int ret;
+    BDRVRawState* s = bs->opaque;
+    int           access_flags;
+    DWORD         overlapped;
+    QemuOpts*     opts;
+    Error*        local_err = NULL;
+    const char*   filename;
+    bool          use_aio;
+    OnOffAuto     locking;
+    int           ret;
 
     s->type = FTYPE_FILE;
 
@@ -352,24 +315,20 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags,
         goto fail;
     }
 
-    locking = qapi_enum_parse(&OnOffAuto_lookup,
-                              qemu_opt_get(opts, "locking"),
-                              ON_OFF_AUTO_AUTO, &local_err);
+    locking = qapi_enum_parse(&OnOffAuto_lookup, qemu_opt_get(opts, "locking"), ON_OFF_AUTO_AUTO, &local_err);
     if (local_err) {
         error_propagate(errp, local_err);
         ret = -EINVAL;
         goto fail;
     }
     switch (locking) {
-    case ON_OFF_AUTO_ON:
-        error_setg(errp, "locking=on is not supported on Windows");
-        ret = -EINVAL;
-        goto fail;
-    case ON_OFF_AUTO_OFF:
-    case ON_OFF_AUTO_AUTO:
-        break;
-    default:
-        assert_not_reached();
+        case ON_OFF_AUTO_ON:
+            error_setg(errp, "locking=on is not supported on Windows");
+            ret = -EINVAL;
+            goto fail;
+        case ON_OFF_AUTO_OFF:
+        case ON_OFF_AUTO_AUTO: break;
+        default              : assert_not_reached();
     }
 
     filename = qemu_opt_get(opts, "filename");
@@ -383,27 +342,25 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags,
 
     raw_parse_flags(flags, use_aio, &access_flags, &overlapped);
 
-    if (filename[0] && filename[1] == ':') {
-        snprintf(s->drive_path, sizeof(s->drive_path), "%c:\\", filename[0]);
-    } else if (filename[0] == '\\' && filename[1] == '\\') {
+    if (filename[0] && filename[1] == ':') { snprintf(s->drive_path, sizeof(s->drive_path), "%c:\\", filename[0]); }
+    else if (filename[0] == '\\' && filename[1] == '\\') {
         s->drive_path[0] = 0;
-    } else {
+    }
+    else {
         /* Relative path.  */
         char buf[MAX_PATH];
         GetCurrentDirectory(MAX_PATH, buf);
         snprintf(s->drive_path, sizeof(s->drive_path), "%c:\\", buf[0]);
     }
 
-    s->hfile = CreateFile(filename, access_flags,
-                          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                          OPEN_EXISTING, overlapped, NULL);
+    s->hfile =
+        CreateFile(filename, access_flags, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, overlapped, NULL);
     if (s->hfile == INVALID_HANDLE_VALUE) {
         int err = GetLastError();
 
         error_setg_win32(errp, err, "Could not open '%s'", filename);
-        if (err == ERROR_ACCESS_DENIED) {
-            ret = -EACCES;
-        } else {
+        if (err == ERROR_ACCESS_DENIED) { ret = -EACCES; }
+        else {
             ret = -EINVAL;
         }
         goto fail;
@@ -438,46 +395,35 @@ fail:
     return ret;
 }
 
-static BlockAIOCB *raw_aio_preadv(BlockDriverState *bs,
-                                  int64_t offset, int64_t bytes,
-                                  QEMUIOVector *qiov, BdrvRequestFlags flags,
-                                  BlockCompletionFunc *cb, void *opaque)
+static BlockAIOCB* raw_aio_preadv(BlockDriverState* bs, int64_t offset, int64_t bytes, QEMUIOVector* qiov,
+                                  BdrvRequestFlags flags, BlockCompletionFunc* cb, void* opaque)
 {
-    BDRVRawState *s = bs->opaque;
-    if (s->aio) {
-        return win32_aio_submit(bs, s->aio, s->hfile, offset, bytes, qiov,
-                                cb, opaque, QEMU_AIO_READ);
-    } else {
-        return paio_submit(bs, s->hfile, offset, qiov, bytes,
-                           cb, opaque, QEMU_AIO_READ);
+    BDRVRawState* s = bs->opaque;
+    if (s->aio) { return win32_aio_submit(bs, s->aio, s->hfile, offset, bytes, qiov, cb, opaque, QEMU_AIO_READ); }
+    else {
+        return paio_submit(bs, s->hfile, offset, qiov, bytes, cb, opaque, QEMU_AIO_READ);
     }
 }
 
-static BlockAIOCB *raw_aio_pwritev(BlockDriverState *bs,
-                                   int64_t offset, int64_t bytes,
-                                   QEMUIOVector *qiov, BdrvRequestFlags flags,
-                                   BlockCompletionFunc *cb, void *opaque)
+static BlockAIOCB* raw_aio_pwritev(BlockDriverState* bs, int64_t offset, int64_t bytes, QEMUIOVector* qiov,
+                                   BdrvRequestFlags flags, BlockCompletionFunc* cb, void* opaque)
 {
-    BDRVRawState *s = bs->opaque;
-    if (s->aio) {
-        return win32_aio_submit(bs, s->aio, s->hfile, offset, bytes, qiov,
-                                cb, opaque, QEMU_AIO_WRITE);
-    } else {
-        return paio_submit(bs, s->hfile, offset, qiov, bytes,
-                           cb, opaque, QEMU_AIO_WRITE);
+    BDRVRawState* s = bs->opaque;
+    if (s->aio) { return win32_aio_submit(bs, s->aio, s->hfile, offset, bytes, qiov, cb, opaque, QEMU_AIO_WRITE); }
+    else {
+        return paio_submit(bs, s->hfile, offset, qiov, bytes, cb, opaque, QEMU_AIO_WRITE);
     }
 }
 
-static BlockAIOCB *raw_aio_flush(BlockDriverState *bs,
-                         BlockCompletionFunc *cb, void *opaque)
+static BlockAIOCB* raw_aio_flush(BlockDriverState* bs, BlockCompletionFunc* cb, void* opaque)
 {
-    BDRVRawState *s = bs->opaque;
+    BDRVRawState* s = bs->opaque;
     return paio_submit(bs, s->hfile, 0, NULL, 0, cb, opaque, QEMU_AIO_FLUSH);
 }
 
-static void raw_close(BlockDriverState *bs)
+static void raw_close(BlockDriverState* bs)
 {
-    BDRVRawState *s = bs->opaque;
+    BDRVRawState* s = bs->opaque;
 
     if (s->aio) {
         win32_aio_detach_aio_context(s->aio, bdrv_get_aio_context(bs));
@@ -486,26 +432,22 @@ static void raw_close(BlockDriverState *bs)
     }
 
     CloseHandle(s->hfile);
-    if (bs->open_flags & BDRV_O_TEMPORARY) {
-        unlink(bs->filename);
-    }
+    if (bs->open_flags & BDRV_O_TEMPORARY) { unlink(bs->filename); }
 }
 
-static int coroutine_fn raw_co_truncate(BlockDriverState *bs, int64_t offset,
-                                        bool exact, PreallocMode prealloc,
-                                        BdrvRequestFlags flags, Error **errp)
+static int coroutine_fn raw_co_truncate(BlockDriverState* bs, int64_t offset, bool exact, PreallocMode prealloc,
+                                        BdrvRequestFlags flags, Error** errp)
 {
-    BDRVRawState *s = bs->opaque;
-    LONG low, high;
-    DWORD dwPtrLow;
+    BDRVRawState* s = bs->opaque;
+    LONG          low, high;
+    DWORD         dwPtrLow;
 
     if (prealloc != PREALLOC_MODE_OFF) {
-        error_setg(errp, "Unsupported preallocation mode '%s'",
-                   PreallocMode_str(prealloc));
+        error_setg(errp, "Unsupported preallocation mode '%s'", PreallocMode_str(prealloc));
         return -ENOTSUP;
     }
 
-    low = offset;
+    low  = offset;
     high = offset >> 32;
 
     /*
@@ -524,68 +466,56 @@ static int coroutine_fn raw_co_truncate(BlockDriverState *bs, int64_t offset,
     return 0;
 }
 
-static int64_t coroutine_fn raw_co_getlength(BlockDriverState *bs)
+static int64_t coroutine_fn raw_co_getlength(BlockDriverState* bs)
 {
-    BDRVRawState *s = bs->opaque;
-    LARGE_INTEGER l;
-    ULARGE_INTEGER available, total, total_free;
+    BDRVRawState*    s = bs->opaque;
+    LARGE_INTEGER    l;
+    ULARGE_INTEGER   available, total, total_free;
     DISK_GEOMETRY_EX dg;
-    DWORD count;
-    BOOL status;
+    DWORD            count;
+    BOOL             status;
 
-    switch(s->type) {
-    case FTYPE_FILE:
-        l.LowPart = GetFileSize(s->hfile, (PDWORD)&l.HighPart);
-        if (l.LowPart == 0xffffffffUL && GetLastError() != NO_ERROR)
-            return -EIO;
-        break;
-    case FTYPE_CD:
-        if (!GetDiskFreeSpaceEx(s->drive_path, &available, &total, &total_free))
-            return -EIO;
-        l.QuadPart = total.QuadPart;
-        break;
-    case FTYPE_HARDDISK:
-        status = DeviceIoControl(s->hfile, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,
-                                 NULL, 0, &dg, sizeof(dg), &count, NULL);
-        if (status != 0) {
-            l = dg.DiskSize;
-        }
-        break;
-    default:
-        return -EIO;
+    switch (s->type) {
+        case FTYPE_FILE:
+            l.LowPart = GetFileSize(s->hfile, (PDWORD)&l.HighPart);
+            if (l.LowPart == 0xffffffffUL && GetLastError() != NO_ERROR) { return -EIO; }
+            break;
+        case FTYPE_CD:
+            if (!GetDiskFreeSpaceEx(s->drive_path, &available, &total, &total_free)) { return -EIO; }
+            l.QuadPart = total.QuadPart;
+            break;
+        case FTYPE_HARDDISK:
+            status =
+                DeviceIoControl(s->hfile, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, NULL, 0, &dg, sizeof(dg), &count, NULL);
+            if (status != 0) { l = dg.DiskSize; }
+            break;
+        default: return -EIO;
     }
     return l.QuadPart;
 }
 
-static int64_t coroutine_fn raw_co_get_allocated_file_size(BlockDriverState *bs)
+static int64_t coroutine_fn raw_co_get_allocated_file_size(BlockDriverState* bs)
 {
-    typedef DWORD (WINAPI * get_compressed_t)(const char *filename,
-                                              DWORD * high);
+    typedef DWORD(WINAPI * get_compressed_t)(const char* filename, DWORD* high);
     get_compressed_t get_compressed;
-    struct _stati64 st;
-    const char *filename = bs->filename;
+    struct _stati64  st;
+    const char*      filename = bs->filename;
     /* WinNT support GetCompressedFileSize to determine allocate size */
-    get_compressed =
-        (get_compressed_t) GetProcAddress(GetModuleHandle("kernel32"),
-                                            "GetCompressedFileSizeA");
+    get_compressed = (get_compressed_t)GetProcAddress(GetModuleHandle("kernel32"), "GetCompressedFileSizeA");
     if (get_compressed) {
         DWORD high, low;
         low = get_compressed(filename, &high);
-        if (low != 0xFFFFFFFFlu || GetLastError() == NO_ERROR) {
-            return (((int64_t) high) << 32) + low;
-        }
+        if (low != 0xFFFFFFFFlu || GetLastError() == NO_ERROR) { return (((int64_t)high) << 32) + low; }
     }
 
-    if (_stati64(filename, &st) < 0) {
-        return -1;
-    }
+    if (_stati64(filename, &st) < 0) { return -1; }
     return st.st_size;
 }
 
-static int raw_co_create(BlockdevCreateOptions *options, Error **errp)
+static int raw_co_create(BlockdevCreateOptions* options, Error** errp)
 {
-    BlockdevCreateOptionsFile *file_opts;
-    int fd;
+    BlockdevCreateOptionsFile* file_opts;
+    int                        fd;
 
     assert(options->driver == BLOCKDEV_DRIVER_FILE);
     file_opts = &options->u.file;
@@ -599,11 +529,8 @@ static int raw_co_create(BlockdevCreateOptions *options, Error **errp)
         return -EINVAL;
     }
 
-    fd = qemu_create(file_opts->filename, O_WRONLY | O_TRUNC | O_BINARY,
-                     0644, errp);
-    if (fd < 0) {
-        return -EIO;
-    }
+    fd = qemu_create(file_opts->filename, O_WRONLY | O_TRUNC | O_BINARY, 0644, errp);
+    if (fd < 0) { return -EIO; }
     set_sparse(fd);
     ftruncate(fd, file_opts->size);
     qemu_close(fd);
@@ -611,39 +538,37 @@ static int raw_co_create(BlockdevCreateOptions *options, Error **errp)
     return 0;
 }
 
-static int coroutine_fn GRAPH_RDLOCK
-raw_co_create_opts(BlockDriver *drv, const char *filename,
-                   QemuOpts *opts, Error **errp)
+static int coroutine_fn GRAPH_RDLOCK raw_co_create_opts(BlockDriver* drv, const char* filename, QemuOpts* opts,
+                                                        Error** errp)
 {
     BlockdevCreateOptions options;
-    int64_t total_size = 0;
+    int64_t               total_size = 0;
 
     strstart(filename, "file:", &filename);
 
     /* Read out options */
-    total_size = ROUND_UP(qemu_opt_get_size_del(opts, BLOCK_OPT_SIZE, 0),
-                          BDRV_SECTOR_SIZE);
+    total_size = ROUND_UP(qemu_opt_get_size_del(opts, BLOCK_OPT_SIZE, 0), BDRV_SECTOR_SIZE);
 
-    options = (BlockdevCreateOptions) {
-        .driver     = BLOCKDEV_DRIVER_FILE,
-        .u.file     = {
-            .filename           = (char *) filename,
-            .size               = total_size,
-            .has_preallocation  = false,
-            .has_nocow          = false,
-        },
+    options = (BlockdevCreateOptions){
+        .driver = BLOCKDEV_DRIVER_FILE,
+        .u.file =
+            {
+                .filename          = (char*)filename,
+                .size              = total_size,
+                .has_preallocation = false,
+                .has_nocow         = false,
+            },
     };
     return raw_co_create(&options, errp);
 }
 
-static int raw_reopen_prepare(BDRVReopenState *state,
-                              BlockReopenQueue *queue, Error **errp)
+static int raw_reopen_prepare(BDRVReopenState* state, BlockReopenQueue* queue, Error** errp)
 {
-    BDRVRawState *s = state->bs->opaque;
-    BDRVRawReopenState *rs;
-    int access_flags;
-    DWORD overlapped;
-    int ret = 0;
+    BDRVRawState*       s = state->bs->opaque;
+    BDRVRawReopenState* rs;
+    int                 access_flags;
+    DWORD               overlapped;
+    int                 ret = 0;
 
     if (s->type != FTYPE_FILE) {
         error_setg(errp, "Can only reopen files");
@@ -660,18 +585,15 @@ static int raw_reopen_prepare(BDRVReopenState *state,
      */
 
     raw_parse_flags(state->flags, s->aio != NULL, &access_flags, &overlapped);
-    rs->hfile = CreateFile(state->bs->filename, access_flags,
-                           FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                           OPEN_EXISTING, overlapped, NULL);
+    rs->hfile = CreateFile(state->bs->filename, access_flags, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+                           overlapped, NULL);
 
     if (rs->hfile == INVALID_HANDLE_VALUE) {
         int err = GetLastError();
 
-        error_setg_win32(errp, err, "Could not reopen '%s'",
-                         state->bs->filename);
-        if (err == ERROR_ACCESS_DENIED) {
-            ret = -EACCES;
-        } else {
+        error_setg_win32(errp, err, "Could not reopen '%s'", state->bs->filename);
+        if (err == ERROR_ACCESS_DENIED) { ret = -EACCES; }
+        else {
             ret = -EINVAL;
         }
         goto fail;
@@ -697,10 +619,10 @@ fail:
     return ret;
 }
 
-static void raw_reopen_commit(BDRVReopenState *state)
+static void raw_reopen_commit(BDRVReopenState* state)
 {
-    BDRVRawState *s = state->bs->opaque;
-    BDRVRawReopenState *rs = state->opaque;
+    BDRVRawState*       s  = state->bs->opaque;
+    BDRVRawReopenState* rs = state->opaque;
 
     assert(rs != NULL);
 
@@ -711,17 +633,13 @@ static void raw_reopen_commit(BDRVReopenState *state)
     state->opaque = NULL;
 }
 
-static void raw_reopen_abort(BDRVReopenState *state)
+static void raw_reopen_abort(BDRVReopenState* state)
 {
-    BDRVRawReopenState *rs = state->opaque;
+    BDRVRawReopenState* rs = state->opaque;
 
-    if (!rs) {
-        return;
-    }
+    if (!rs) { return; }
 
-    if (rs->hfile != INVALID_HANDLE_VALUE) {
-        CloseHandle(rs->hfile);
-    }
+    if (rs->hfile != INVALID_HANDLE_VALUE) { CloseHandle(rs->hfile); }
 
     g_free(rs);
     state->opaque = NULL;
@@ -730,130 +648,110 @@ static void raw_reopen_abort(BDRVReopenState *state)
 static QemuOptsList raw_create_opts = {
     .name = "raw-create-opts",
     .head = QTAILQ_HEAD_INITIALIZER(raw_create_opts.head),
-    .desc = {
-        {
-            .name = BLOCK_OPT_SIZE,
-            .type = QEMU_OPT_SIZE,
-            .help = "Virtual disk size"
-        },
-        { /* end of list */ }
-    }
-};
+    .desc = {{.name = BLOCK_OPT_SIZE, .type = QEMU_OPT_SIZE, .help = "Virtual disk size"}, {/* end of list */}}};
 
 BlockDriver bdrv_file = {
-    .format_name	= "file",
-    .protocol_name	= "file",
-    .instance_size	= sizeof(BDRVRawState),
+    .format_name         = "file",
+    .protocol_name       = "file",
+    .instance_size       = sizeof(BDRVRawState),
     .bdrv_needs_filename = true,
     .bdrv_parse_filename = raw_parse_filename,
-    .bdrv_open          = raw_open,
+    .bdrv_open           = raw_open,
     .bdrv_refresh_limits = raw_probe_alignment,
-    .bdrv_close         = raw_close,
+    .bdrv_close          = raw_close,
     .bdrv_co_create_opts = raw_co_create_opts,
-    .bdrv_has_zero_init = bdrv_has_zero_init_1,
+    .bdrv_has_zero_init  = bdrv_has_zero_init_1,
 
     .bdrv_reopen_prepare = raw_reopen_prepare,
     .bdrv_reopen_commit  = raw_reopen_commit,
     .bdrv_reopen_abort   = raw_reopen_abort,
 
-    .bdrv_aio_preadv    = raw_aio_preadv,
-    .bdrv_aio_pwritev   = raw_aio_pwritev,
-    .bdrv_aio_flush     = raw_aio_flush,
+    .bdrv_aio_preadv  = raw_aio_preadv,
+    .bdrv_aio_pwritev = raw_aio_pwritev,
+    .bdrv_aio_flush   = raw_aio_flush,
 
-    .bdrv_co_truncate   = raw_co_truncate,
-    .bdrv_co_getlength  = raw_co_getlength,
-    .bdrv_co_get_allocated_file_size
-                        = raw_co_get_allocated_file_size,
+    .bdrv_co_truncate                = raw_co_truncate,
+    .bdrv_co_getlength               = raw_co_getlength,
+    .bdrv_co_get_allocated_file_size = raw_co_get_allocated_file_size,
 
-    .create_opts        = &raw_create_opts,
+    .create_opts = &raw_create_opts,
 };
 
 /***********************************************/
 /* host device */
 
-static int find_cdrom(char *cdrom_name, int cdrom_name_size)
+static int find_cdrom(char* cdrom_name, int cdrom_name_size)
 {
     char drives[256], *pdrv = drives;
     UINT type;
 
     memset(drives, 0, sizeof(drives));
     GetLogicalDriveStrings(sizeof(drives), drives);
-    while(pdrv[0] != '\0') {
+    while (pdrv[0] != '\0') {
         type = GetDriveType(pdrv);
-        switch(type) {
-        case DRIVE_CDROM:
-            snprintf(cdrom_name, cdrom_name_size, "\\\\.\\%c:", pdrv[0]);
-            return 0;
-            break;
+        switch (type) {
+            case DRIVE_CDROM:
+                snprintf(cdrom_name, cdrom_name_size, "\\\\.\\%c:", pdrv[0]);
+                return 0;
+                break;
         }
         pdrv += lstrlen(pdrv) + 1;
     }
     return -1;
 }
 
-static int find_device_type(BlockDriverState *bs, const char *filename)
+static int find_device_type(BlockDriverState* bs, const char* filename)
 {
-    BDRVRawState *s = bs->opaque;
-    UINT type;
-    const char *p;
+    BDRVRawState* s = bs->opaque;
+    UINT          type;
+    const char*   p;
 
-    if (strstart(filename, "\\\\.\\", &p) ||
-        strstart(filename, "//./", &p)) {
-        if (stristart(p, "PhysicalDrive", NULL))
-            return FTYPE_HARDDISK;
+    if (strstart(filename, "\\\\.\\", &p) || strstart(filename, "//./", &p)) {
+        if (stristart(p, "PhysicalDrive", NULL)) { return FTYPE_HARDDISK; }
         snprintf(s->drive_path, sizeof(s->drive_path), "%c:\\", p[0]);
         type = GetDriveType(s->drive_path);
         switch (type) {
-        case DRIVE_REMOVABLE:
-        case DRIVE_FIXED:
-            return FTYPE_HARDDISK;
-        case DRIVE_CDROM:
-            return FTYPE_CD;
-        default:
-            return FTYPE_FILE;
+            case DRIVE_REMOVABLE:
+            case DRIVE_FIXED    : return FTYPE_HARDDISK;
+            case DRIVE_CDROM    : return FTYPE_CD;
+            default             : return FTYPE_FILE;
         }
-    } else {
+    }
+    else {
         return FTYPE_FILE;
     }
 }
 
-static int hdev_probe_device(const char *filename)
+static int hdev_probe_device(const char* filename)
 {
-    if (strstart(filename, "/dev/cdrom", NULL))
-        return 100;
-    if (is_windows_drive(filename))
-        return 100;
+    if (strstart(filename, "/dev/cdrom", NULL)) { return 100; }
+    if (is_windows_drive(filename)) { return 100; }
     return 0;
 }
 
-static void hdev_parse_filename(const char *filename, QDict *options,
-                                Error **errp)
-{
-    bdrv_parse_filename_strip_prefix(filename, "host_device:", options);
-}
+static void hdev_parse_filename(const char* filename, QDict* options, Error** errp)
+{ bdrv_parse_filename_strip_prefix(filename, "host_device:", options); }
 
-static void hdev_refresh_limits(BlockDriverState *bs, Error **errp)
+static void hdev_refresh_limits(BlockDriverState* bs, Error** errp)
 {
     /* XXX Does Windows support AIO on less than 512-byte alignment? */
-    bs->bl.request_alignment = 512;
+    bs->bl.request_alignment   = 512;
     bs->bl.has_variable_length = true;
 }
 
-static int hdev_open(BlockDriverState *bs, QDict *options, int flags,
-                     Error **errp)
+static int hdev_open(BlockDriverState* bs, QDict* options, int flags, Error** errp)
 {
-    BDRVRawState *s = bs->opaque;
-    int access_flags, create_flags;
-    int ret = 0;
-    DWORD overlapped;
-    char device_name[64];
+    BDRVRawState* s = bs->opaque;
+    int           access_flags, create_flags;
+    int           ret = 0;
+    DWORD         overlapped;
+    char          device_name[64];
 
-    Error *local_err = NULL;
-    const char *filename;
-    bool use_aio;
+    Error*      local_err = NULL;
+    const char* filename;
+    bool        use_aio;
 
-    QemuOpts *opts = qemu_opts_create(&raw_runtime_opts, NULL, 0,
-                                      &error_abort);
+    QemuOpts* opts = qemu_opts_create(&raw_runtime_opts, NULL, 0, &error_abort);
     if (!qemu_opts_absorb_qdict(opts, options, errp)) {
         ret = -EINVAL;
         goto done;
@@ -862,9 +760,7 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags,
     filename = qemu_opt_get(opts, "filename");
 
     use_aio = get_aio_option(opts, flags, &local_err);
-    if (!local_err && use_aio) {
-        error_setg(&local_err, "AIO is not supported on Windows host devices");
-    }
+    if (!local_err && use_aio) { error_setg(&local_err, "AIO is not supported on Windows host devices"); }
     if (local_err) {
         error_propagate(errp, local_err);
         ret = -EINVAL;
@@ -878,11 +774,12 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags,
             goto done;
         }
         filename = device_name;
-    } else {
+    }
+    else {
         /* transform drive letters into device name */
-        if (((filename[0] >= 'a' && filename[0] <= 'z') ||
-             (filename[0] >= 'A' && filename[0] <= 'Z')) &&
-            filename[1] == ':' && filename[2] == '\0') {
+        if (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z'))
+            && filename[1] == ':' && filename[2] == '\0')
+        {
             snprintf(device_name, sizeof(device_name), "\\\\.\\%c:", filename[0]);
             filename = device_name;
         }
@@ -893,15 +790,12 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags,
 
     create_flags = OPEN_EXISTING;
 
-    s->hfile = CreateFile(filename, access_flags,
-                          FILE_SHARE_READ, NULL,
-                          create_flags, overlapped, NULL);
+    s->hfile = CreateFile(filename, access_flags, FILE_SHARE_READ, NULL, create_flags, overlapped, NULL);
     if (s->hfile == INVALID_HANDLE_VALUE) {
         int err = GetLastError();
 
-        if (err == ERROR_ACCESS_DENIED) {
-            ret = -EACCES;
-        } else {
+        if (err == ERROR_ACCESS_DENIED) { ret = -EACCES; }
+        else {
             ret = -EINVAL;
         }
         error_setg_errno(errp, -ret, "Could not open device");
@@ -914,25 +808,25 @@ done:
 }
 
 static BlockDriver bdrv_host_device = {
-    .format_name	= "host_device",
-    .protocol_name	= "host_device",
-    .instance_size	= sizeof(BDRVRawState),
+    .format_name         = "host_device",
+    .protocol_name       = "host_device",
+    .instance_size       = sizeof(BDRVRawState),
     .bdrv_needs_filename = true,
     .bdrv_parse_filename = hdev_parse_filename,
-    .bdrv_probe_device	= hdev_probe_device,
-    .bdrv_open     	= hdev_open,
-    .bdrv_close		= raw_close,
+    .bdrv_probe_device   = hdev_probe_device,
+    .bdrv_open           = hdev_open,
+    .bdrv_close          = raw_close,
     .bdrv_refresh_limits = hdev_refresh_limits,
 
-    .bdrv_aio_preadv    = raw_aio_preadv,
-    .bdrv_aio_pwritev   = raw_aio_pwritev,
-    .bdrv_aio_flush     = raw_aio_flush,
+    .bdrv_aio_preadv  = raw_aio_preadv,
+    .bdrv_aio_pwritev = raw_aio_pwritev,
+    .bdrv_aio_flush   = raw_aio_flush,
 
     .bdrv_detach_aio_context = raw_detach_aio_context,
     .bdrv_attach_aio_context = raw_attach_aio_context,
 
-    .bdrv_co_getlength                = raw_co_getlength,
-    .bdrv_co_get_allocated_file_size  = raw_co_get_allocated_file_size,
+    .bdrv_co_getlength               = raw_co_getlength,
+    .bdrv_co_get_allocated_file_size = raw_co_get_allocated_file_size,
 };
 
 static void bdrv_file_init(void)

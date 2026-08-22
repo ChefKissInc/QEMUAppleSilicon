@@ -57,7 +57,7 @@ static QLIST_HEAD(, Job) jobs = QLIST_HEAD_INITIALIZER(jobs);
 
 /* Job State Transition Table */
 bool JobSTT[JOB_STATUS__MAX][JOB_STATUS__MAX] = {
-                                    /* U, C, R, P, Y, S, W, D, X, E, N */
+    /* U, C, R, P, Y, S, W, D, X, E, N */
     /* U: */ [JOB_STATUS_UNDEFINED] = {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     /* C: */ [JOB_STATUS_CREATED]   = {0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1},
     /* R: */ [JOB_STATUS_RUNNING]   = {0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0},
@@ -72,18 +72,16 @@ bool JobSTT[JOB_STATUS__MAX][JOB_STATUS__MAX] = {
 };
 
 bool JobVerbTable[JOB_VERB__MAX][JOB_STATUS__MAX] = {
-                                    /* U, C, R, P, Y, S, W, D, X, E, N */
-    [JOB_VERB_CANCEL]               = {0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0},
-    [JOB_VERB_PAUSE]                = {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0},
-    [JOB_VERB_RESUME]               = {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0},
-    [JOB_VERB_COMPLETE]             = {0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
-    [JOB_VERB_FINALIZE]             = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-    [JOB_VERB_DISMISS]              = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-    [JOB_VERB_CHANGE]               = {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0},
+    /* U, C, R, P, Y, S, W, D, X, E, N */
+    [JOB_VERB_CANCEL] = {0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0},   [JOB_VERB_PAUSE] = {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0},
+    [JOB_VERB_RESUME] = {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0},   [JOB_VERB_COMPLETE] = {0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
+    [JOB_VERB_FINALIZE] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0}, [JOB_VERB_DISMISS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+    [JOB_VERB_CHANGE] = {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0},
 };
 
 /* Transactional group of jobs */
-struct JobTxn {
+struct JobTxn
+{
 
     /* Is this txn being cancelled? */
     bool aborting;
@@ -95,43 +93,29 @@ struct JobTxn {
     int refcnt;
 };
 
-void job_lock(void)
-{
-    qemu_mutex_lock(&job_mutex);
-}
+void job_lock(void) { qemu_mutex_lock(&job_mutex); }
 
-void job_unlock(void)
-{
-    qemu_mutex_unlock(&job_mutex);
-}
+void job_unlock(void) { qemu_mutex_unlock(&job_mutex); }
 
-static void __attribute__((__constructor__)) job_init(void)
-{
-    qemu_mutex_init(&job_mutex);
-}
+static void __attribute__((__constructor__)) job_init(void) { qemu_mutex_init(&job_mutex); }
 
-JobTxn *job_txn_new(void)
+JobTxn* job_txn_new(void)
 {
-    JobTxn *txn = g_new0(JobTxn, 1);
+    JobTxn* txn = g_new0(JobTxn, 1);
     QLIST_INIT(&txn->jobs);
     txn->refcnt = 1;
     return txn;
 }
 
 /* Called with job_mutex held. */
-static void job_txn_ref_locked(JobTxn *txn)
+static void job_txn_ref_locked(JobTxn* txn) { txn->refcnt++; }
+
+void job_txn_unref_locked(JobTxn* txn)
 {
-    txn->refcnt++;
+    if (txn && --txn->refcnt == 0) { g_free(txn); }
 }
 
-void job_txn_unref_locked(JobTxn *txn)
-{
-    if (txn && --txn->refcnt == 0) {
-        g_free(txn);
-    }
-}
-
-void job_txn_unref(JobTxn *txn)
+void job_txn_unref(JobTxn* txn)
 {
     JOB_LOCK_GUARD();
     job_txn_unref_locked(txn);
@@ -149,11 +133,9 @@ void job_txn_unref(JobTxn *txn)
  *
  * Called with job_mutex held.
  */
-static void job_txn_add_job_locked(JobTxn *txn, Job *job)
+static void job_txn_add_job_locked(JobTxn* txn, Job* job)
 {
-    if (!txn) {
-        return;
-    }
+    if (!txn) { return; }
 
     assert(!job->txn);
     job->txn = txn;
@@ -163,7 +145,7 @@ static void job_txn_add_job_locked(JobTxn *txn, Job *job)
 }
 
 /* Called with job_mutex held. */
-static void job_txn_del_job_locked(Job *job)
+static void job_txn_del_job_locked(Job* job)
 {
     if (job->txn) {
         QLIST_REMOVE(job, txn_list);
@@ -173,11 +155,11 @@ static void job_txn_del_job_locked(Job *job)
 }
 
 /* Called with job_mutex held, but releases it temporarily. */
-static int job_txn_apply_locked(Job *job, int fn(Job *))
+static int job_txn_apply_locked(Job* job, int fn(Job*))
 {
-    Job *other_job, *next;
-    JobTxn *txn = job->txn;
-    int rc = 0;
+    Job *   other_job, *next;
+    JobTxn* txn = job->txn;
+    int     rc  = 0;
 
     /*
      * Similar to job_completed_txn_abort, we take each job's lock before
@@ -187,188 +169,152 @@ static int job_txn_apply_locked(Job *job, int fn(Job *))
      */
     job_ref_locked(job);
 
-    QLIST_FOREACH_SAFE(other_job, &txn->jobs, txn_list, next) {
+    QLIST_FOREACH_SAFE (other_job, &txn->jobs, txn_list, next) {
         rc = fn(other_job);
-        if (rc) {
-            break;
-        }
+        if (rc) { break; }
     }
 
     job_unref_locked(job);
     return rc;
 }
 
-bool job_is_internal(Job *job)
-{
-    return (job->id == NULL);
-}
+bool job_is_internal(Job* job) { return (job->id == NULL); }
 
 /* Called with job_mutex held. */
-static void job_state_transition_locked(Job *job, JobStatus s1)
+static void job_state_transition_locked(Job* job, JobStatus s1)
 {
     JobStatus s0 = job->status;
     assert(s1 >= 0 && s1 < JOB_STATUS__MAX);
-    trace_job_state_transition(job, job->ret,
-                               JobSTT[s0][s1] ? "allowed" : "disallowed",
-                               JobStatus_str(s0), JobStatus_str(s1));
+    trace_job_state_transition(job, job->ret, JobSTT[s0][s1] ? "allowed" : "disallowed", JobStatus_str(s0),
+                               JobStatus_str(s1));
     assert(JobSTT[s0][s1]);
     job->status = s1;
 
-    if (!job_is_internal(job) && s1 != s0) {
-        qapi_event_send_job_status_change(job->id, job->status);
-    }
+    if (!job_is_internal(job) && s1 != s0) { qapi_event_send_job_status_change(job->id, job->status); }
 }
 
-int job_apply_verb_locked(Job *job, JobVerb verb, Error **errp)
+int job_apply_verb_locked(Job* job, JobVerb verb, Error** errp)
 {
     JobStatus s0 = job->status;
     assert(verb >= 0 && verb < JOB_VERB__MAX);
-    trace_job_apply_verb(job, JobStatus_str(s0), JobVerb_str(verb),
-                         JobVerbTable[verb][s0] ? "allowed" : "prohibited");
-    if (JobVerbTable[verb][s0]) {
-        return 0;
-    }
-    error_setg(errp, "Job '%s' in state '%s' cannot accept command verb '%s'",
-               job->id, JobStatus_str(s0), JobVerb_str(verb));
+    trace_job_apply_verb(job, JobStatus_str(s0), JobVerb_str(verb), JobVerbTable[verb][s0] ? "allowed" : "prohibited");
+    if (JobVerbTable[verb][s0]) { return 0; }
+    error_setg(errp, "Job '%s' in state '%s' cannot accept command verb '%s'", job->id, JobStatus_str(s0),
+               JobVerb_str(verb));
     return -EPERM;
 }
 
-JobType job_type(const Job *job)
-{
-    return job->driver->job_type;
-}
+JobType job_type(const Job* job) { return job->driver->job_type; }
 
-const char *job_type_str(const Job *job)
-{
-    return JobType_str(job_type(job));
-}
+const char* job_type_str(const Job* job) { return JobType_str(job_type(job)); }
 
-bool job_is_cancelled_locked(Job *job)
+bool job_is_cancelled_locked(Job* job)
 {
     /* force_cancel may be true only if cancelled is true, too */
     assert(job->cancelled || !job->force_cancel);
     return job->force_cancel;
 }
 
-bool job_is_paused(Job *job)
+bool job_is_paused(Job* job)
 {
     JOB_LOCK_GUARD();
     return job->paused;
 }
 
-bool job_is_cancelled(Job *job)
+bool job_is_cancelled(Job* job)
 {
     JOB_LOCK_GUARD();
     return job_is_cancelled_locked(job);
 }
 
 /* Called with job_mutex held. */
-static bool job_cancel_requested_locked(Job *job)
-{
-    return job->cancelled;
-}
+static bool job_cancel_requested_locked(Job* job) { return job->cancelled; }
 
-bool job_cancel_requested(Job *job)
+bool job_cancel_requested(Job* job)
 {
     JOB_LOCK_GUARD();
     return job_cancel_requested_locked(job);
 }
 
-bool job_is_ready_locked(Job *job)
+bool job_is_ready_locked(Job* job)
 {
     switch (job->status) {
-    case JOB_STATUS_UNDEFINED:
-    case JOB_STATUS_CREATED:
-    case JOB_STATUS_RUNNING:
-    case JOB_STATUS_PAUSED:
-    case JOB_STATUS_WAITING:
-    case JOB_STATUS_PENDING:
-    case JOB_STATUS_ABORTING:
-    case JOB_STATUS_CONCLUDED:
-    case JOB_STATUS_NULL:
-        return false;
-    case JOB_STATUS_READY:
-    case JOB_STATUS_STANDBY:
-        return true;
-    default:
-        assert_not_reached();
+        case JOB_STATUS_UNDEFINED:
+        case JOB_STATUS_CREATED:
+        case JOB_STATUS_RUNNING:
+        case JOB_STATUS_PAUSED:
+        case JOB_STATUS_WAITING:
+        case JOB_STATUS_PENDING:
+        case JOB_STATUS_ABORTING:
+        case JOB_STATUS_CONCLUDED:
+        case JOB_STATUS_NULL     : return false;
+        case JOB_STATUS_READY    :
+        case JOB_STATUS_STANDBY  : return true;
+        default                  : assert_not_reached();
     }
     return false;
 }
 
-bool job_is_ready(Job *job)
+bool job_is_ready(Job* job)
 {
     JOB_LOCK_GUARD();
     return job_is_ready_locked(job);
 }
 
-bool job_is_completed_locked(Job *job)
+bool job_is_completed_locked(Job* job)
 {
     switch (job->status) {
-    case JOB_STATUS_UNDEFINED:
-    case JOB_STATUS_CREATED:
-    case JOB_STATUS_RUNNING:
-    case JOB_STATUS_PAUSED:
-    case JOB_STATUS_READY:
-    case JOB_STATUS_STANDBY:
-        return false;
-    case JOB_STATUS_WAITING:
-    case JOB_STATUS_PENDING:
-    case JOB_STATUS_ABORTING:
-    case JOB_STATUS_CONCLUDED:
-    case JOB_STATUS_NULL:
-        return true;
-    default:
-        assert_not_reached();
+        case JOB_STATUS_UNDEFINED:
+        case JOB_STATUS_CREATED:
+        case JOB_STATUS_RUNNING:
+        case JOB_STATUS_PAUSED:
+        case JOB_STATUS_READY:
+        case JOB_STATUS_STANDBY  : return false;
+        case JOB_STATUS_WAITING  :
+        case JOB_STATUS_PENDING  :
+        case JOB_STATUS_ABORTING :
+        case JOB_STATUS_CONCLUDED:
+        case JOB_STATUS_NULL     : return true;
+        default                  : assert_not_reached();
     }
     return false;
 }
 
-static bool job_is_completed(Job *job)
+static bool job_is_completed(Job* job)
 {
     JOB_LOCK_GUARD();
     return job_is_completed_locked(job);
 }
 
-static bool job_started_locked(Job *job)
-{
-    return job->co;
-}
+static bool job_started_locked(Job* job) { return job->co; }
 
 /* Called with job_mutex held. */
-static bool job_should_pause_locked(Job *job)
-{
-    return job->pause_count > 0;
-}
+static bool job_should_pause_locked(Job* job) { return job->pause_count > 0; }
 
-Job *job_next_locked(Job *job)
+Job* job_next_locked(Job* job)
 {
-    if (!job) {
-        return QLIST_FIRST(&jobs);
-    }
+    if (!job) { return QLIST_FIRST(&jobs); }
     return QLIST_NEXT(job, job_list);
 }
 
-Job *job_next(Job *job)
+Job* job_next(Job* job)
 {
     JOB_LOCK_GUARD();
     return job_next_locked(job);
 }
 
-Job *job_get_locked(const char *id)
+Job* job_get_locked(const char* id)
 {
-    Job *job;
+    Job* job;
 
-    QLIST_FOREACH(job, &jobs, job_list) {
-        if (job->id && !strcmp(id, job->id)) {
-            return job;
-        }
+    QLIST_FOREACH (job, &jobs, job_list) {
+        if (job->id && !strcmp(id, job->id)) { return job; }
     }
 
     return NULL;
 }
 
-void job_set_aio_context(Job *job, AioContext *ctx)
+void job_set_aio_context(Job* job, AioContext* ctx)
 {
     /* protect against read in job_finish_sync_locked and job_start */
     GLOBAL_STATE_CODE();
@@ -380,18 +326,17 @@ void job_set_aio_context(Job *job, AioContext *ctx)
 }
 
 /* Called with job_mutex *not* held. */
-static void job_sleep_timer_cb(void *opaque)
+static void job_sleep_timer_cb(void* opaque)
 {
-    Job *job = opaque;
+    Job* job = opaque;
 
     job_enter(job);
 }
 
-void *job_create(const char *job_id, const JobDriver *driver, JobTxn *txn,
-                 AioContext *ctx, int flags, BlockCompletionFunc *cb,
-                 void *opaque, Error **errp)
+void* job_create(const char* job_id, const JobDriver* driver, JobTxn* txn, AioContext* ctx, int flags,
+                 BlockCompletionFunc* cb, void* opaque, Error** errp)
 {
-    Job *job;
+    Job* job;
 
     JOB_LOCK_GUARD();
 
@@ -408,12 +353,13 @@ void *job_create(const char *job_id, const JobDriver *driver, JobTxn *txn,
             error_setg(errp, "Job ID '%s' already in use", job_id);
             return NULL;
         }
-    } else if (!(flags & JOB_INTERNAL)) {
+    }
+    else if (!(flags & JOB_INTERNAL)) {
         error_setg(errp, "An explicit job ID is required");
         return NULL;
     }
 
-    job = g_malloc0(driver->instance_size);
+    job                = g_malloc0(driver->instance_size);
     job->driver        = driver;
     job->id            = g_strdup(job_id);
     job->refcnt        = 1;
@@ -435,9 +381,7 @@ void *job_create(const char *job_id, const JobDriver *driver, JobTxn *txn,
     notifier_list_init(&job->on_idle);
 
     job_state_transition_locked(job, JOB_STATUS_CREATED);
-    aio_timer_init(qemu_get_aio_context(), &job->sleep_timer,
-                   QEMU_CLOCK_REALTIME, SCALE_NS,
-                   job_sleep_timer_cb, job);
+    aio_timer_init(qemu_get_aio_context(), &job->sleep_timer, QEMU_CLOCK_REALTIME, SCALE_NS, job_sleep_timer_cb, job);
 
     QLIST_INSERT_HEAD(&jobs, job, job_list);
 
@@ -447,19 +391,17 @@ void *job_create(const char *job_id, const JobDriver *driver, JobTxn *txn,
         txn = job_txn_new();
         job_txn_add_job_locked(txn, job);
         job_txn_unref_locked(txn);
-    } else {
+    }
+    else {
         job_txn_add_job_locked(txn, job);
     }
 
     return job;
 }
 
-void job_ref_locked(Job *job)
-{
-    ++job->refcnt;
-}
+void job_ref_locked(Job* job) { ++job->refcnt; }
 
-void job_unref_locked(Job *job)
+void job_unref_locked(Job* job)
 {
     GLOBAL_STATE_CODE();
 
@@ -483,73 +425,41 @@ void job_unref_locked(Job *job)
     }
 }
 
-void job_progress_update(Job *job, uint64_t done)
-{
-    progress_work_done(&job->progress, done);
-}
+void job_progress_update(Job* job, uint64_t done) { progress_work_done(&job->progress, done); }
 
-void job_progress_set_remaining(Job *job, uint64_t remaining)
-{
-    progress_set_remaining(&job->progress, remaining);
-}
+void job_progress_set_remaining(Job* job, uint64_t remaining) { progress_set_remaining(&job->progress, remaining); }
 
-void job_progress_increase_remaining(Job *job, uint64_t delta)
-{
-    progress_increase_remaining(&job->progress, delta);
-}
+void job_progress_increase_remaining(Job* job, uint64_t delta) { progress_increase_remaining(&job->progress, delta); }
 
 /**
  * To be called when a cancelled job is finalised.
  * Called with job_mutex held.
  */
-static void job_event_cancelled_locked(Job *job)
-{
-    notifier_list_notify(&job->on_finalize_cancelled, job);
-}
+static void job_event_cancelled_locked(Job* job) { notifier_list_notify(&job->on_finalize_cancelled, job); }
 
 /**
  * To be called when a successfully completed job is finalised.
  * Called with job_mutex held.
  */
-static void job_event_completed_locked(Job *job)
-{
-    notifier_list_notify(&job->on_finalize_completed, job);
-}
+static void job_event_completed_locked(Job* job) { notifier_list_notify(&job->on_finalize_completed, job); }
 
 /* Called with job_mutex held. */
-static void job_event_pending_locked(Job *job)
-{
-    notifier_list_notify(&job->on_pending, job);
-}
+static void job_event_pending_locked(Job* job) { notifier_list_notify(&job->on_pending, job); }
 
 /* Called with job_mutex held. */
-static void job_event_ready_locked(Job *job)
-{
-    notifier_list_notify(&job->on_ready, job);
-}
+static void job_event_ready_locked(Job* job) { notifier_list_notify(&job->on_ready, job); }
 
 /* Called with job_mutex held. */
-static void job_event_idle_locked(Job *job)
+static void job_event_idle_locked(Job* job) { notifier_list_notify(&job->on_idle, job); }
+
+void job_enter_cond_locked(Job* job, bool (*fn)(Job* job))
 {
-    notifier_list_notify(&job->on_idle, job);
-}
+    if (!job_started_locked(job)) { return; }
+    if (job->deferred_to_main_loop) { return; }
 
-void job_enter_cond_locked(Job *job, bool(*fn)(Job *job))
-{
-    if (!job_started_locked(job)) {
-        return;
-    }
-    if (job->deferred_to_main_loop) {
-        return;
-    }
+    if (job->busy) { return; }
 
-    if (job->busy) {
-        return;
-    }
-
-    if (fn && !fn(job)) {
-        return;
-    }
+    if (fn && !fn(job)) { return; }
 
     assert(!job->deferred_to_main_loop);
     timer_del(&job->sleep_timer);
@@ -559,7 +469,7 @@ void job_enter_cond_locked(Job *job, bool(*fn)(Job *job))
     job_lock();
 }
 
-void job_enter(Job *job)
+void job_enter(Job* job)
 {
     JOB_LOCK_GUARD();
     job_enter_cond_locked(job, NULL);
@@ -574,13 +484,11 @@ void job_enter(Job *job)
  *
  * Called with job_mutex held, but releases it temporarily.
  */
-static void coroutine_fn job_do_yield_locked(Job *job, uint64_t ns)
+static void coroutine_fn job_do_yield_locked(Job* job, uint64_t ns)
 {
-    AioContext *next_aio_context;
+    AioContext* next_aio_context;
 
-    if (ns != -1) {
-        timer_mod(&job->sleep_timer, ns);
-    }
+    if (ns != -1) { timer_mod(&job->sleep_timer, ns); }
     job->busy = false;
     job_event_idle_locked(job);
     job_unlock();
@@ -605,16 +513,12 @@ static void coroutine_fn job_do_yield_locked(Job *job, uint64_t ns)
 }
 
 /* Called with job_mutex held, but releases it temporarily. */
-static void coroutine_fn job_pause_point_locked(Job *job)
+static void coroutine_fn job_pause_point_locked(Job* job)
 {
     assert(job && job_started_locked(job));
 
-    if (!job_should_pause_locked(job)) {
-        return;
-    }
-    if (job_is_cancelled_locked(job)) {
-        return;
-    }
+    if (!job_should_pause_locked(job)) { return; }
+    if (job_is_cancelled_locked(job)) { return; }
 
     if (job->driver->pause) {
         job_unlock();
@@ -624,9 +528,7 @@ static void coroutine_fn job_pause_point_locked(Job *job)
 
     if (job_should_pause_locked(job) && !job_is_cancelled_locked(job)) {
         JobStatus status = job->status;
-        job_state_transition_locked(job, status == JOB_STATUS_READY
-                                    ? JOB_STATUS_STANDBY
-                                    : JOB_STATUS_PAUSED);
+        job_state_transition_locked(job, status == JOB_STATUS_READY ? JOB_STATUS_STANDBY : JOB_STATUS_PAUSED);
         job->paused = true;
         job_do_yield_locked(job, -1);
         job->paused = false;
@@ -640,89 +542,72 @@ static void coroutine_fn job_pause_point_locked(Job *job)
     }
 }
 
-void coroutine_fn job_pause_point(Job *job)
+void coroutine_fn job_pause_point(Job* job)
 {
     JOB_LOCK_GUARD();
     job_pause_point_locked(job);
 }
 
-void coroutine_fn job_yield(Job *job)
+void coroutine_fn job_yield(Job* job)
 {
     JOB_LOCK_GUARD();
     assert(job->busy);
 
     /* Check cancellation *before* setting busy = false, too!  */
-    if (job_is_cancelled_locked(job)) {
-        return;
-    }
+    if (job_is_cancelled_locked(job)) { return; }
 
-    if (!job_should_pause_locked(job)) {
-        job_do_yield_locked(job, -1);
-    }
+    if (!job_should_pause_locked(job)) { job_do_yield_locked(job, -1); }
 
     job_pause_point_locked(job);
 }
 
-void coroutine_fn job_sleep_ns(Job *job, int64_t ns)
+void coroutine_fn job_sleep_ns(Job* job, int64_t ns)
 {
     JOB_LOCK_GUARD();
     assert(job->busy);
 
     /* Check cancellation *before* setting busy = false, too!  */
-    if (job_is_cancelled_locked(job)) {
-        return;
-    }
+    if (job_is_cancelled_locked(job)) { return; }
 
-    if (!job_should_pause_locked(job)) {
-        job_do_yield_locked(job, qemu_clock_get_ns(QEMU_CLOCK_REALTIME) + ns);
-    }
+    if (!job_should_pause_locked(job)) { job_do_yield_locked(job, qemu_clock_get_ns(QEMU_CLOCK_REALTIME) + ns); }
 
     job_pause_point_locked(job);
 }
 
 /* Assumes the job_mutex is held */
-static bool job_timer_not_pending_locked(Job *job)
-{
-    return !timer_pending(&job->sleep_timer);
-}
+static bool job_timer_not_pending_locked(Job* job) { return !timer_pending(&job->sleep_timer); }
 
-void job_pause_locked(Job *job)
+void job_pause_locked(Job* job)
 {
     job->pause_count++;
-    if (!job->paused) {
-        job_enter_cond_locked(job, NULL);
-    }
+    if (!job->paused) { job_enter_cond_locked(job, NULL); }
 }
 
-void job_pause(Job *job)
+void job_pause(Job* job)
 {
     JOB_LOCK_GUARD();
     job_pause_locked(job);
 }
 
-void job_resume_locked(Job *job)
+void job_resume_locked(Job* job)
 {
     assert(job->pause_count > 0);
     job->pause_count--;
-    if (job->pause_count) {
-        return;
-    }
+    if (job->pause_count) { return; }
 
     /* kick only if no timer is pending */
     job_enter_cond_locked(job, job_timer_not_pending_locked);
 }
 
-void job_resume(Job *job)
+void job_resume(Job* job)
 {
     JOB_LOCK_GUARD();
     job_resume_locked(job);
 }
 
-void job_user_pause_locked(Job *job, Error **errp)
+void job_user_pause_locked(Job* job, Error** errp)
 {
-    if (job_apply_verb_locked(job, JOB_VERB_PAUSE, errp)) {
-        return;
-    }
+    if (job_apply_verb_locked(job, JOB_VERB_PAUSE, errp)) { return; }
     if (job->user_paused) {
         error_setg(errp, "Job is already paused");
         return;
@@ -731,12 +616,9 @@ void job_user_pause_locked(Job *job, Error **errp)
     job_pause_locked(job);
 }
 
-bool job_user_paused_locked(Job *job)
-{
-    return job->user_paused;
-}
+bool job_user_paused_locked(Job* job) { return job->user_paused; }
 
-void job_user_resume_locked(Job *job, Error **errp)
+void job_user_resume_locked(Job* job, Error** errp)
 {
     assert(job);
     GLOBAL_STATE_CODE();
@@ -744,9 +626,7 @@ void job_user_resume_locked(Job *job, Error **errp)
         error_setg(errp, "Can't resume a job that was not paused");
         return;
     }
-    if (job_apply_verb_locked(job, JOB_VERB_RESUME, errp)) {
-        return;
-    }
+    if (job_apply_verb_locked(job, JOB_VERB_RESUME, errp)) { return; }
     if (job->driver->user_resume) {
         job_unlock();
         job->driver->user_resume(job);
@@ -757,11 +637,11 @@ void job_user_resume_locked(Job *job, Error **errp)
 }
 
 /* Called with job_mutex held, but releases it temporarily. */
-static void job_do_dismiss_locked(Job *job)
+static void job_do_dismiss_locked(Job* job)
 {
     assert(job);
-    job->busy = false;
-    job->paused = false;
+    job->busy                  = false;
+    job->paused                = false;
     job->deferred_to_main_loop = true;
 
     job_txn_del_job_locked(job);
@@ -770,20 +650,18 @@ static void job_do_dismiss_locked(Job *job)
     job_unref_locked(job);
 }
 
-void job_dismiss_locked(Job **jobptr, Error **errp)
+void job_dismiss_locked(Job** jobptr, Error** errp)
 {
-    Job *job = *jobptr;
+    Job* job = *jobptr;
     /* similarly to _complete, this is QMP-interface only. */
     assert(job->id);
-    if (job_apply_verb_locked(job, JOB_VERB_DISMISS, errp)) {
-        return;
-    }
+    if (job_apply_verb_locked(job, JOB_VERB_DISMISS, errp)) { return; }
 
     job_do_dismiss_locked(job);
     *jobptr = NULL;
 }
 
-void job_early_fail(Job *job)
+void job_early_fail(Job* job)
 {
     JOB_LOCK_GUARD();
     assert(job->status == JOB_STATUS_CREATED);
@@ -791,58 +669,46 @@ void job_early_fail(Job *job)
 }
 
 /* Called with job_mutex held. */
-static void job_conclude_locked(Job *job)
+static void job_conclude_locked(Job* job)
 {
     job_state_transition_locked(job, JOB_STATUS_CONCLUDED);
-    if (job->auto_dismiss || !job_started_locked(job)) {
-        job_do_dismiss_locked(job);
-    }
+    if (job->auto_dismiss || !job_started_locked(job)) { job_do_dismiss_locked(job); }
 }
 
 /* Called with job_mutex held. */
-static void job_update_rc_locked(Job *job)
+static void job_update_rc_locked(Job* job)
 {
-    if (!job->ret && job_is_cancelled_locked(job)) {
-        job->ret = -ECANCELED;
-    }
+    if (!job->ret && job_is_cancelled_locked(job)) { job->ret = -ECANCELED; }
     if (job->ret) {
-        if (!job->err) {
-            error_setg(&job->err, "%s", strerror(-job->ret));
-        }
+        if (!job->err) { error_setg(&job->err, "%s", strerror(-job->ret)); }
         job_state_transition_locked(job, JOB_STATUS_ABORTING);
     }
 }
 
-static void job_commit(Job *job)
+static void job_commit(Job* job)
 {
     assert(!job->ret);
     GLOBAL_STATE_CODE();
-    if (job->driver->commit) {
-        job->driver->commit(job);
-    }
+    if (job->driver->commit) { job->driver->commit(job); }
 }
 
-static void job_abort(Job *job)
+static void job_abort(Job* job)
 {
     assert(job->ret);
     GLOBAL_STATE_CODE();
-    if (job->driver->abort) {
-        job->driver->abort(job);
-    }
+    if (job->driver->abort) { job->driver->abort(job); }
 }
 
-static void job_clean(Job *job)
+static void job_clean(Job* job)
 {
     GLOBAL_STATE_CODE();
-    if (job->driver->clean) {
-        job->driver->clean(job);
-    }
+    if (job->driver->clean) { job->driver->clean(job); }
 }
 
 /*
  * Called with job_mutex held, but releases it temporarily.
  */
-static int job_finalize_single_locked(Job *job)
+static int job_finalize_single_locked(Job* job)
 {
     int job_ret;
 
@@ -854,24 +720,20 @@ static int job_finalize_single_locked(Job *job)
     job_ret = job->ret;
     job_unlock();
 
-    if (!job_ret) {
-        job_commit(job);
-    } else {
+    if (!job_ret) { job_commit(job); }
+    else {
         job_abort(job);
     }
     job_clean(job);
 
-    if (job->cb) {
-        job->cb(job->opaque, job_ret);
-    }
+    if (job->cb) { job->cb(job->opaque, job_ret); }
 
     job_lock();
 
     /* Emit events only if we actually started */
     if (job_started_locked(job)) {
-        if (job_is_cancelled_locked(job)) {
-            job_event_cancelled_locked(job);
-        } else {
+        if (job_is_cancelled_locked(job)) { job_event_cancelled_locked(job); }
+        else {
             job_event_completed_locked(job);
         }
     }
@@ -884,14 +746,15 @@ static int job_finalize_single_locked(Job *job)
 /*
  * Called with job_mutex held, but releases it temporarily.
  */
-static void job_cancel_async_locked(Job *job, bool force)
+static void job_cancel_async_locked(Job* job, bool force)
 {
     GLOBAL_STATE_CODE();
     if (job->driver->cancel) {
         job_unlock();
         force = job->driver->cancel(job, force);
         job_lock();
-    } else {
+    }
+    else {
         /* No .cancel() means the job will behave as if force-cancelled */
         force = true;
     }
@@ -925,10 +788,10 @@ static void job_cancel_async_locked(Job *job, bool force)
 /*
  * Called with job_mutex held, but releases it temporarily.
  */
-static void job_completed_txn_abort_locked(Job *job)
+static void job_completed_txn_abort_locked(Job* job)
 {
-    JobTxn *txn = job->txn;
-    Job *other_job;
+    JobTxn* txn = job->txn;
+    Job*    other_job;
 
     if (txn->aborting) {
         /*
@@ -944,7 +807,7 @@ static void job_completed_txn_abort_locked(Job *job)
     /* Other jobs are effectively cancelled by us, set the status for
      * them; this job, however, may or may not be cancelled, depending
      * on the caller, so leave it. */
-    QLIST_FOREACH(other_job, &txn->jobs, txn_list) {
+    QLIST_FOREACH (other_job, &txn->jobs, txn_list) {
         if (other_job != job) {
             /*
              * This is a transaction: If one job failed, no result will matter.
@@ -968,7 +831,7 @@ static void job_completed_txn_abort_locked(Job *job)
 }
 
 /* Called with job_mutex held, but releases it temporarily */
-static int job_prepare_locked(Job *job)
+static int job_prepare_locked(Job* job)
 {
     int ret;
 
@@ -986,46 +849,38 @@ static int job_prepare_locked(Job *job)
 }
 
 /* Called with job_mutex held */
-static int job_needs_finalize_locked(Job *job)
-{
-    return !job->auto_finalize;
-}
+static int job_needs_finalize_locked(Job* job) { return !job->auto_finalize; }
 
 /* Called with job_mutex held */
-static void job_do_finalize_locked(Job *job)
+static void job_do_finalize_locked(Job* job)
 {
     int rc;
     assert(job && job->txn);
 
     /* prepare the transaction to complete */
     rc = job_txn_apply_locked(job, job_prepare_locked);
-    if (rc) {
-        job_completed_txn_abort_locked(job);
-    } else {
+    if (rc) { job_completed_txn_abort_locked(job); }
+    else {
         job_txn_apply_locked(job, job_finalize_single_locked);
     }
 }
 
-void job_finalize_locked(Job *job, Error **errp)
+void job_finalize_locked(Job* job, Error** errp)
 {
     assert(job && job->id);
-    if (job_apply_verb_locked(job, JOB_VERB_FINALIZE, errp)) {
-        return;
-    }
+    if (job_apply_verb_locked(job, JOB_VERB_FINALIZE, errp)) { return; }
     job_do_finalize_locked(job);
 }
 
 /* Called with job_mutex held. */
-static int job_transition_to_pending_locked(Job *job)
+static int job_transition_to_pending_locked(Job* job)
 {
     job_state_transition_locked(job, JOB_STATUS_PENDING);
-    if (!job->auto_finalize) {
-        job_event_pending_locked(job);
-    }
+    if (!job->auto_finalize) { job_event_pending_locked(job); }
     return 0;
 }
 
-void job_transition_to_ready(Job *job)
+void job_transition_to_ready(Job* job)
 {
     JOB_LOCK_GUARD();
     job_state_transition_locked(job, JOB_STATUS_READY);
@@ -1033,10 +888,10 @@ void job_transition_to_ready(Job *job)
 }
 
 /* Called with job_mutex held. */
-static void job_completed_txn_success_locked(Job *job)
+static void job_completed_txn_success_locked(Job* job)
 {
-    JobTxn *txn = job->txn;
-    Job *other_job;
+    JobTxn* txn = job->txn;
+    Job*    other_job;
 
     job_state_transition_locked(job, JOB_STATUS_WAITING);
 
@@ -1044,31 +899,26 @@ static void job_completed_txn_success_locked(Job *job)
      * Successful completion, see if there are other running jobs in this
      * txn.
      */
-    QLIST_FOREACH(other_job, &txn->jobs, txn_list) {
-        if (!job_is_completed_locked(other_job)) {
-            return;
-        }
+    QLIST_FOREACH (other_job, &txn->jobs, txn_list) {
+        if (!job_is_completed_locked(other_job)) { return; }
         assert(other_job->ret == 0);
     }
 
     job_txn_apply_locked(job, job_transition_to_pending_locked);
 
     /* If no jobs need manual finalization, automatically do so */
-    if (job_txn_apply_locked(job, job_needs_finalize_locked) == 0) {
-        job_do_finalize_locked(job);
-    }
+    if (job_txn_apply_locked(job, job_needs_finalize_locked) == 0) { job_do_finalize_locked(job); }
 }
 
 /* Called with job_mutex held. */
-static void job_completed_locked(Job *job)
+static void job_completed_locked(Job* job)
 {
     assert(job && job->txn && !job_is_completed_locked(job));
 
     job_update_rc_locked(job);
     trace_job_completed(job, job->ret);
-    if (job->ret) {
-        job_completed_txn_abort_locked(job);
-    } else {
+    if (job->ret) { job_completed_txn_abort_locked(job); }
+    else {
         job_completed_txn_success_locked(job);
     }
 }
@@ -1077,9 +927,9 @@ static void job_completed_locked(Job *job)
  * Useful only as a type shim for aio_bh_schedule_oneshot.
  * Called with job_mutex *not* held.
  */
-static void job_exit(void *opaque)
+static void job_exit(void* opaque)
 {
-    Job *job = (Job *)opaque;
+    Job* job = (Job*)opaque;
     JOB_LOCK_GUARD();
     job_ref_locked(job);
 
@@ -1098,51 +948,52 @@ static void job_exit(void *opaque)
  * All jobs must allow a pause point before entering their job proper. This
  * ensures that jobs can be paused prior to being started, then resumed later.
  */
-static void coroutine_fn job_co_entry(void *opaque)
+static void coroutine_fn job_co_entry(void* opaque)
 {
-    Job *job = opaque;
-    int ret;
+    Job* job = opaque;
+    int  ret;
 
     assert(job && job->driver && job->driver->run);
-    WITH_JOB_LOCK_GUARD() {
+    WITH_JOB_LOCK_GUARD()
+    {
         assert(job->aio_context == qemu_get_current_aio_context());
         job_pause_point_locked(job);
     }
     ret = job->driver->run(job, &job->err);
-    WITH_JOB_LOCK_GUARD() {
-        job->ret = ret;
+    WITH_JOB_LOCK_GUARD()
+    {
+        job->ret                   = ret;
         job->deferred_to_main_loop = true;
-        job->busy = true;
+        job->busy                  = true;
     }
     aio_bh_schedule_oneshot(qemu_get_aio_context(), job_exit, job);
 }
 
-void job_start(Job *job)
+void job_start(Job* job)
 {
     assert(qemu_in_main_thread());
 
-    WITH_JOB_LOCK_GUARD() {
-        assert(job && !job_started_locked(job) && job->paused &&
-            job->driver && job->driver->run);
+    WITH_JOB_LOCK_GUARD()
+    {
+        assert(job && !job_started_locked(job) && job->paused && job->driver && job->driver->run);
         job->co = qemu_coroutine_create(job_co_entry, job);
         job->pause_count--;
-        job->busy = true;
+        job->busy   = true;
         job->paused = false;
         job_state_transition_locked(job, JOB_STATUS_RUNNING);
     }
     aio_co_enter(job->aio_context, job->co);
 }
 
-void job_cancel_locked(Job *job, bool force)
+void job_cancel_locked(Job* job, bool force)
 {
     if (job->status == JOB_STATUS_CONCLUDED) {
         job_do_dismiss_locked(job);
         return;
     }
     job_cancel_async_locked(job, force);
-    if (!job_started_locked(job)) {
-        job_completed_locked(job);
-    } else if (job->deferred_to_main_loop) {
+    if (!job_started_locked(job)) { job_completed_locked(job); }
+    else if (job->deferred_to_main_loop) {
         /*
          * job_cancel_async() ignores soft-cancel requests for jobs
          * that are already done (i.e. deferred to the main loop).  We
@@ -1153,19 +1004,16 @@ void job_cancel_locked(Job *job, bool force)
          * choose to call job_is_cancelled() to show that we invoke
          * job_completed_txn_abort() only for force-cancelled jobs.)
          */
-        if (job_is_cancelled_locked(job)) {
-            job_completed_txn_abort_locked(job);
-        }
-    } else {
+        if (job_is_cancelled_locked(job)) { job_completed_txn_abort_locked(job); }
+    }
+    else {
         job_enter_cond_locked(job, NULL);
     }
 }
 
-void job_user_cancel_locked(Job *job, bool force, Error **errp)
+void job_user_cancel_locked(Job* job, bool force, Error** errp)
 {
-    if (job_apply_verb_locked(job, JOB_VERB_CANCEL, errp)) {
-        return;
-    }
+    if (job_apply_verb_locked(job, JOB_VERB_CANCEL, errp)) { return; }
     job_cancel_locked(job, force);
 }
 
@@ -1175,30 +1023,23 @@ void job_user_cancel_locked(Job *job, bool force, Error **errp)
  *
  * Called with job_mutex held.
  */
-static void job_cancel_err_locked(Job *job, Error **errp)
-{
-    job_cancel_locked(job, false);
-}
+static void job_cancel_err_locked(Job* job, Error** errp) { job_cancel_locked(job, false); }
 
 /**
  * Same as job_cancel_err(), but force-cancel.
  * Called with job_mutex held.
  */
-static void job_force_cancel_err_locked(Job *job, Error **errp)
-{
-    job_cancel_locked(job, true);
-}
+static void job_force_cancel_err_locked(Job* job, Error** errp) { job_cancel_locked(job, true); }
 
-int job_cancel_sync_locked(Job *job, bool force)
+int job_cancel_sync_locked(Job* job, bool force)
 {
-    if (force) {
-        return job_finish_sync_locked(job, &job_force_cancel_err_locked, NULL);
-    } else {
+    if (force) { return job_finish_sync_locked(job, &job_force_cancel_err_locked, NULL); }
+    else {
         return job_finish_sync_locked(job, &job_cancel_err_locked, NULL);
     }
 }
 
-int job_cancel_sync(Job *job, bool force)
+int job_cancel_sync(Job* job, bool force)
 {
     JOB_LOCK_GUARD();
     return job_cancel_sync_locked(job, force);
@@ -1206,30 +1047,22 @@ int job_cancel_sync(Job *job, bool force)
 
 void job_cancel_sync_all(void)
 {
-    Job *job;
+    Job* job;
     JOB_LOCK_GUARD();
 
-    while ((job = job_next_locked(NULL))) {
-        job_cancel_sync_locked(job, true);
-    }
+    while ((job = job_next_locked(NULL))) { job_cancel_sync_locked(job, true); }
 }
 
-int job_complete_sync_locked(Job *job, Error **errp)
-{
-    return job_finish_sync_locked(job, job_complete_locked, errp);
-}
+int job_complete_sync_locked(Job* job, Error** errp) { return job_finish_sync_locked(job, job_complete_locked, errp); }
 
-void job_complete_locked(Job *job, Error **errp)
+void job_complete_locked(Job* job, Error** errp)
 {
     /* Should not be reachable via external interface for internal jobs */
     assert(job->id);
     GLOBAL_STATE_CODE();
-    if (job_apply_verb_locked(job, JOB_VERB_COMPLETE, errp)) {
-        return;
-    }
+    if (job_apply_verb_locked(job, JOB_VERB_COMPLETE, errp)) { return; }
     if (job_cancel_requested_locked(job) || !job->driver->complete) {
-        error_setg(errp, "The active block job '%s' cannot be completed",
-                   job->id);
+        error_setg(errp, "The active block job '%s' cannot be completed", job->id);
         return;
     }
 
@@ -1238,19 +1071,15 @@ void job_complete_locked(Job *job, Error **errp)
     job_lock();
 }
 
-int job_finish_sync_locked(Job *job,
-                           void (*finish)(Job *, Error **errp),
-                           Error **errp)
+int job_finish_sync_locked(Job* job, void (*finish)(Job*, Error** errp), Error** errp)
 {
-    Error *local_err = NULL;
-    int ret;
+    Error* local_err = NULL;
+    int    ret;
     GLOBAL_STATE_CODE();
 
     job_ref_locked(job);
 
-    if (finish) {
-        finish(job, &local_err);
-    }
+    if (finish) { finish(job, &local_err); }
     if (local_err) {
         error_propagate(errp, local_err);
         job_unref_locked(job);
@@ -1258,12 +1087,10 @@ int job_finish_sync_locked(Job *job,
     }
 
     job_unlock();
-    AIO_WAIT_WHILE_UNLOCKED(job->aio_context,
-                            (job_enter(job), !job_is_completed(job)));
+    AIO_WAIT_WHILE_UNLOCKED(job->aio_context, (job_enter(job), !job_is_completed(job)));
     job_lock();
 
-    ret = (job_is_cancelled_locked(job) && job->ret == 0)
-          ? -ECANCELED : job->ret;
+    ret = (job_is_cancelled_locked(job) && job->ret == 0) ? -ECANCELED : job->ret;
     job_unref_locked(job);
     return ret;
 }

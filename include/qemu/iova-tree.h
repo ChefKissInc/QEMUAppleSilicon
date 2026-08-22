@@ -25,19 +25,20 @@
 #include "system/memory.h"
 #include "exec/hwaddr.h"
 
-#define  IOVA_OK           (0)
-#define  IOVA_ERR_INVALID  (-1) /* Invalid parameters */
-#define  IOVA_ERR_OVERLAP  (-2) /* IOVA range overlapped */
-#define  IOVA_ERR_NOMEM    (-3) /* Cannot allocate */
+#define IOVA_OK          (0)
+#define IOVA_ERR_INVALID (-1) /* Invalid parameters */
+#define IOVA_ERR_OVERLAP (-2) /* IOVA range overlapped */
+#define IOVA_ERR_NOMEM   (-3) /* Cannot allocate */
 
 typedef struct IOVATree IOVATree;
-typedef struct DMAMap {
-    hwaddr iova;
-    hwaddr translated_addr;
-    hwaddr size;                /* Inclusive */
+typedef struct DMAMap
+{
+    hwaddr           iova;
+    hwaddr           translated_addr;
+    hwaddr           size; /* Inclusive */
     IOMMUAccessFlags perm;
-} QEMU_PACKED DMAMap;
-typedef gboolean (*iova_tree_iterator)(DMAMap *map);
+} QEMU_PACKED    DMAMap;
+typedef gboolean (*iova_tree_iterator)(DMAMap* map);
 
 /**
  * gpa_tree_new:
@@ -46,7 +47,7 @@ typedef gboolean (*iova_tree_iterator)(DMAMap *map);
  *
  * Returns: the tree point on success, or NULL otherwise.
  */
-IOVATree *gpa_tree_new(void);
+IOVATree* gpa_tree_new(void);
 
 /**
  * gpa_tree_insert:
@@ -59,7 +60,7 @@ IOVATree *gpa_tree_new(void);
  *
  * Return: 0 if successful, < 0 otherwise.
  */
-int gpa_tree_insert(IOVATree *tree, const DMAMap *map);
+int gpa_tree_insert(IOVATree* tree, const DMAMap* map);
 
 /**
  * iova_tree_new:
@@ -68,7 +69,7 @@ int gpa_tree_insert(IOVATree *tree, const DMAMap *map);
  *
  * Returns: the tree pointer when succeeded, or NULL if error.
  */
-IOVATree *iova_tree_new(void);
+IOVATree* iova_tree_new(void);
 
 /**
  * iova_tree_insert:
@@ -81,7 +82,7 @@ IOVATree *iova_tree_new(void);
  *
  * Return: 0 if succeeded, or <0 if error.
  */
-int iova_tree_insert(IOVATree *tree, const DMAMap *map);
+int iova_tree_insert(IOVATree* tree, const DMAMap* map);
 
 /**
  * iova_tree_remove:
@@ -94,7 +95,7 @@ int iova_tree_insert(IOVATree *tree, const DMAMap *map);
  * all the mappings that are included in the provided range will be
  * removed from the tree.  Here map->translated_addr is meaningless.
  */
-void iova_tree_remove(IOVATree *tree, DMAMap map);
+void iova_tree_remove(IOVATree* tree, DMAMap map);
 
 /**
  * iova_tree_find:
@@ -112,7 +113,7 @@ void iova_tree_remove(IOVATree *tree, DMAMap map);
  * user is responsible to make sure the pointer is valid (say, no
  * concurrent deletion in progress).
  */
-const DMAMap *iova_tree_find(const IOVATree *tree, const DMAMap *map);
+const DMAMap* iova_tree_find(const IOVATree* tree, const DMAMap* map);
 
 /**
  * iova_tree_find_iova:
@@ -130,7 +131,7 @@ const DMAMap *iova_tree_find(const IOVATree *tree, const DMAMap *map);
  * user is responsible to make sure the pointer is valid (say, no
  * concurrent deletion in progress).
  */
-const DMAMap *iova_tree_find_iova(const IOVATree *tree, const DMAMap *map);
+const DMAMap* iova_tree_find_iova(const IOVATree* tree, const DMAMap* map);
 
 /**
  * iova_tree_alloc_map:
@@ -146,8 +147,7 @@ const DMAMap *iova_tree_find_iova(const IOVATree *tree, const DMAMap *map);
  * iova tree is out of free contiguous range. The caller gets the assigned iova
  * in map->iova.
  */
-int iova_tree_alloc_map(IOVATree *tree, DMAMap *map, hwaddr iova_begin,
-                        hwaddr iova_end);
+int iova_tree_alloc_map(IOVATree* tree, DMAMap* map, hwaddr iova_begin, hwaddr iova_end);
 
 /**
  * iova_tree_destroy:
@@ -158,4 +158,4 @@ int iova_tree_alloc_map(IOVATree *tree, DMAMap *map, hwaddr iova_begin,
  *
  * Return: None.
  */
-void iova_tree_destroy(IOVATree *tree);
+void iova_tree_destroy(IOVATree* tree);

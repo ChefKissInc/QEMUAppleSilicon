@@ -37,28 +37,22 @@
 #include "system/runstate.h"
 #include "qemu/cutils.h"
 
-void os_setup_post(void){}
-void os_set_line_buffering(void)
-{
-    setvbuf(stdout, NULL, _IOLBF, 0);
-}
+void os_setup_post(void) { }
+void os_set_line_buffering(void) { setvbuf(stdout, NULL, _IOLBF, 0); }
 void os_setup_early_signal_handling(void)
 {
     struct sigaction act;
     sigfillset(&act.sa_mask);
-    act.sa_flags = 0;
+    act.sa_flags   = 0;
     act.sa_handler = SIG_IGN;
     sigaction(SIGPIPE, &act, NULL);
 }
-void os_set_proc_name(const char *s)
+void os_set_proc_name(const char* s)
 {
     error_report("Change of process name not supported by your OS");
     exit(1);
 }
-static void termsig_handler(int signal, siginfo_t *info, void *c)
-{
-    qemu_system_killed(info->si_signo, info->si_pid);
-}
+static void termsig_handler(int signal, siginfo_t* info, void* c) { qemu_system_killed(info->si_signo, info->si_pid); }
 
 void os_setup_signal_handling(void)
 {
@@ -66,9 +60,9 @@ void os_setup_signal_handling(void)
 
     memset(&act, 0, sizeof(act));
     act.sa_sigaction = termsig_handler;
-    act.sa_flags = SA_SIGINFO;
-    sigaction(SIGINT,  &act, NULL);
-    sigaction(SIGHUP,  &act, NULL);
+    act.sa_flags     = SA_SIGINFO;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGHUP, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
 }
 void os_setup_limits(void)
@@ -80,9 +74,7 @@ void os_setup_limits(void)
         return;
     }
 
-    if (nofile.rlim_cur == nofile.rlim_max) {
-        return;
-    }
+    if (nofile.rlim_cur == nofile.rlim_max) { return; }
 
     nofile.rlim_cur = nofile.rlim_max;
 
@@ -94,22 +86,20 @@ void os_setup_limits(void)
 int os_mlock(bool on_fault)
 {
 #ifdef HAVE_MLOCKALL
-    int ret = 0;
+    int ret   = 0;
     int flags = MCL_CURRENT | MCL_FUTURE;
 
     if (on_fault) {
-#ifdef HAVE_MLOCK_ONFAULT
+    #ifdef HAVE_MLOCK_ONFAULT
         flags |= MCL_ONFAULT;
-#else
+    #else
         error_report("mlockall: on_fault not supported");
         return -EINVAL;
-#endif
+    #endif
     }
 
     ret = mlockall(flags);
-    if (ret < 0) {
-        error_report("mlockall: %s", strerror(errno));
-    }
+    if (ret < 0) { error_report("mlockall: %s", strerror(errno)); }
 
     return ret;
 #else

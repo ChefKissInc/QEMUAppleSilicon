@@ -27,18 +27,18 @@
 #include "chardev/char.h"
 #include "qom/object.h"
 
-struct FDChardev {
+struct FDChardev
+{
     Chardev parent;
 
     QIOChannel *ioc_in, *ioc_out;
-    int max_size;
+    int         max_size;
 };
 typedef struct FDChardev FDChardev;
 
 #define TYPE_CHARDEV_FD "chardev-fd"
 
-DECLARE_INSTANCE_CHECKER(FDChardev, FD_CHARDEV,
-                         TYPE_CHARDEV_FD)
+DECLARE_INSTANCE_CHECKER(FDChardev, FD_CHARDEV, TYPE_CHARDEV_FD)
 
-bool qemu_chr_open_fd(Chardev *chr, int fd_in, int fd_out, Error **errp);
-int qmp_chardev_open_file_source(char *src, int flags, Error **errp);
+bool qemu_chr_open_fd(Chardev* chr, int fd_in, int fd_out, Error** errp);
+int  qmp_chardev_open_file_source(char* src, int flags, Error** errp);

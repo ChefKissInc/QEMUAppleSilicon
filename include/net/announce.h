@@ -11,31 +11,29 @@
 #include "qapi/qapi-types-net.h"
 #include "qemu/timer.h"
 
-typedef struct AnnounceTimer {
-    QEMUTimer *tm;
+typedef struct AnnounceTimer
+{
+    QEMUTimer*         tm;
     AnnounceParameters params;
-    QEMUClockType type;
-    int round;
+    QEMUClockType      type;
+    int                round;
 } AnnounceTimer;
 
 /* Returns: update the timer to the next time point */
-int64_t qemu_announce_timer_step(AnnounceTimer *timer);
+int64_t qemu_announce_timer_step(AnnounceTimer* timer);
 
 /*
  * Delete the underlying timer and other data
  * If 'free_named' true and the timer is a named timer, then remove
  * it from the list of named timers and free the AnnounceTimer itself.
  */
-void qemu_announce_timer_del(AnnounceTimer *timer, bool free_named);
+void qemu_announce_timer_del(AnnounceTimer* timer, bool free_named);
 
 /*
  * Under BQL/main thread
  * Reset the timer to the given parameters/type/notifier.
  */
-void qemu_announce_timer_reset(AnnounceTimer *timer,
-                               AnnounceParameters *params,
-                               QEMUClockType type,
-                               QEMUTimerCB *cb,
-                               void *opaque);
+void qemu_announce_timer_reset(AnnounceTimer* timer, AnnounceParameters* params, QEMUClockType type, QEMUTimerCB* cb,
+                               void* opaque);
 
-void qemu_announce_self(AnnounceTimer *timer, AnnounceParameters *params);
+void qemu_announce_self(AnnounceTimer* timer, AnnounceParameters* params);

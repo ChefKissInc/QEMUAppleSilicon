@@ -44,10 +44,9 @@ static int get_allocation_granularity(void)
     return system_info.dwAllocationGranularity;
 }
 
-void *qemu_anon_ram_alloc(size_t size, uint64_t *align, bool shared,
-                          bool noreserve)
+void* qemu_anon_ram_alloc(size_t size, uint64_t* align, bool shared, bool noreserve)
 {
-    void *ptr;
+    void* ptr;
 
     if (noreserve) {
         /*
@@ -61,41 +60,37 @@ void *qemu_anon_ram_alloc(size_t size, uint64_t *align, bool shared,
     ptr = VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_READWRITE);
     trace_qemu_anon_ram_alloc(size, ptr);
 
-    if (ptr && align) {
-        *align = MAX(get_allocation_granularity(), getpagesize());
-    }
+    if (ptr && align) { *align = MAX(get_allocation_granularity(), getpagesize()); }
     return ptr;
 }
 
-void qemu_anon_ram_free(void *ptr, size_t size)
+void qemu_anon_ram_free(void* ptr, size_t size)
 {
     trace_qemu_anon_ram_free(ptr, size);
-    if (ptr) {
-        VirtualFree(ptr, 0, MEM_RELEASE);
-    }
+    if (ptr) { VirtualFree(ptr, 0, MEM_RELEASE); }
 }
 
 #ifndef _POSIX_THREAD_SAFE_FUNCTIONS
 /* FIXME: add proper locking */
-struct tm *gmtime_r(const time_t *timep, struct tm *result)
+struct tm* gmtime_r(const time_t* timep, struct tm* result)
 {
-    struct tm *p = gmtime(timep);
+    struct tm* p = gmtime(timep);
     memset(result, 0, sizeof(*result));
     if (p) {
         *result = *p;
-        p = result;
+        p       = result;
     }
     return p;
 }
 
 /* FIXME: add proper locking */
-struct tm *localtime_r(const time_t *timep, struct tm *result)
+struct tm* localtime_r(const time_t* timep, struct tm* result)
 {
-    struct tm *p = localtime(timep);
+    struct tm* p = localtime(timep);
     memset(result, 0, sizeof(*result));
     if (p) {
         *result = *p;
-        p = result;
+        p       = result;
     }
     return p;
 }
@@ -104,90 +99,54 @@ struct tm *localtime_r(const time_t *timep, struct tm *result)
 static int socket_error(void)
 {
     switch (WSAGetLastError()) {
-    case 0:
-        return 0;
-    case WSAEINTR:
-        return EINTR;
-    case WSAEINVAL:
-        return EINVAL;
-    case WSA_INVALID_HANDLE:
-        return EBADF;
-    case WSA_NOT_ENOUGH_MEMORY:
-        return ENOMEM;
-    case WSA_INVALID_PARAMETER:
-        return EINVAL;
-    case WSAENAMETOOLONG:
-        return ENAMETOOLONG;
-    case WSAENOTEMPTY:
-        return ENOTEMPTY;
-    case WSAEWOULDBLOCK:
-         /* not using EWOULDBLOCK as we don't want code to have
-          * to check both EWOULDBLOCK and EAGAIN */
-        return EAGAIN;
-    case WSAEINPROGRESS:
-        return EINPROGRESS;
-    case WSAEALREADY:
-        return EALREADY;
-    case WSAENOTSOCK:
-        return ENOTSOCK;
-    case WSAEDESTADDRREQ:
-        return EDESTADDRREQ;
-    case WSAEMSGSIZE:
-        return EMSGSIZE;
-    case WSAEPROTOTYPE:
-        return EPROTOTYPE;
-    case WSAENOPROTOOPT:
-        return ENOPROTOOPT;
-    case WSAEPROTONOSUPPORT:
-        return EPROTONOSUPPORT;
-    case WSAEOPNOTSUPP:
-        return EOPNOTSUPP;
-    case WSAEAFNOSUPPORT:
-        return EAFNOSUPPORT;
-    case WSAEADDRINUSE:
-        return EADDRINUSE;
-    case WSAEADDRNOTAVAIL:
-        return EADDRNOTAVAIL;
-    case WSAENETDOWN:
-        return ENETDOWN;
-    case WSAENETUNREACH:
-        return ENETUNREACH;
-    case WSAENETRESET:
-        return ENETRESET;
-    case WSAECONNABORTED:
-        return ECONNABORTED;
-    case WSAECONNRESET:
-        return ECONNRESET;
-    case WSAENOBUFS:
-        return ENOBUFS;
-    case WSAEISCONN:
-        return EISCONN;
-    case WSAENOTCONN:
-        return ENOTCONN;
-    case WSAETIMEDOUT:
-        return ETIMEDOUT;
-    case WSAECONNREFUSED:
-        return ECONNREFUSED;
-    case WSAELOOP:
-        return ELOOP;
-    case WSAEHOSTUNREACH:
-        return EHOSTUNREACH;
-    default:
-        return EIO;
+        case 0                    : return 0;
+        case WSAEINTR             : return EINTR;
+        case WSAEINVAL            : return EINVAL;
+        case WSA_INVALID_HANDLE   : return EBADF;
+        case WSA_NOT_ENOUGH_MEMORY: return ENOMEM;
+        case WSA_INVALID_PARAMETER: return EINVAL;
+        case WSAENAMETOOLONG      : return ENAMETOOLONG;
+        case WSAENOTEMPTY         : return ENOTEMPTY;
+        case WSAEWOULDBLOCK:
+            /* not using EWOULDBLOCK as we don't want code to have
+             * to check both EWOULDBLOCK and EAGAIN */
+            return EAGAIN;
+        case WSAEINPROGRESS    : return EINPROGRESS;
+        case WSAEALREADY       : return EALREADY;
+        case WSAENOTSOCK       : return ENOTSOCK;
+        case WSAEDESTADDRREQ   : return EDESTADDRREQ;
+        case WSAEMSGSIZE       : return EMSGSIZE;
+        case WSAEPROTOTYPE     : return EPROTOTYPE;
+        case WSAENOPROTOOPT    : return ENOPROTOOPT;
+        case WSAEPROTONOSUPPORT: return EPROTONOSUPPORT;
+        case WSAEOPNOTSUPP     : return EOPNOTSUPP;
+        case WSAEAFNOSUPPORT   : return EAFNOSUPPORT;
+        case WSAEADDRINUSE     : return EADDRINUSE;
+        case WSAEADDRNOTAVAIL  : return EADDRNOTAVAIL;
+        case WSAENETDOWN       : return ENETDOWN;
+        case WSAENETUNREACH    : return ENETUNREACH;
+        case WSAENETRESET      : return ENETRESET;
+        case WSAECONNABORTED   : return ECONNABORTED;
+        case WSAECONNRESET     : return ECONNRESET;
+        case WSAENOBUFS        : return ENOBUFS;
+        case WSAEISCONN        : return EISCONN;
+        case WSAENOTCONN       : return ENOTCONN;
+        case WSAETIMEDOUT      : return ETIMEDOUT;
+        case WSAECONNREFUSED   : return ECONNREFUSED;
+        case WSAELOOP          : return ELOOP;
+        case WSAEHOSTUNREACH   : return EHOSTUNREACH;
+        default                : return EIO;
     }
 }
 
-bool qemu_set_blocking(int fd, bool block, Error **errp)
+bool qemu_set_blocking(int fd, bool block, Error** errp)
 {
     unsigned long opt = block ? 0 : 1;
 
-    if (block) {
-        qemu_socket_unselect(fd, NULL);
-    }
+    if (block) { qemu_socket_unselect(fd, NULL); }
 
     if (ioctlsocket(fd, FIONBIO, &opt) != NO_ERROR) {
-        error_setg_errno(errp, socket_error(),
-                         "Can't set file descriptor %d %s", fd,
+        error_setg_errno(errp, socket_error(), "Can't set file descriptor %d %s", fd,
                          block ? "blocking" : "non-blocking");
         return false;
     }
@@ -205,29 +164,21 @@ int socket_set_fast_reuse(int fd)
     return 0;
 }
 
-int inet_aton(const char *cp, struct in_addr *ia)
+int inet_aton(const char* cp, struct in_addr* ia)
 {
     uint32_t addr = inet_addr(cp);
-    if (addr == 0xffffffff) {
-        return 0;
-    }
+    if (addr == 0xffffffff) { return 0; }
     ia->s_addr = addr;
     return 1;
 }
 
-void qemu_set_cloexec(int fd)
-{
-}
+void qemu_set_cloexec(int fd) { }
 
-int qemu_get_thread_id(void)
-{
-    return GetCurrentThreadId();
-}
+int qemu_get_thread_id(void) { return GetCurrentThreadId(); }
 
-char *
-qemu_get_local_state_dir(void)
+char* qemu_get_local_state_dir(void)
 {
-    const char * const *data_dirs = g_get_system_data_dirs();
+    const char* const* data_dirs = g_get_system_data_dirs();
 
     assert(data_dirs && data_dirs[0]);
 
@@ -237,19 +188,15 @@ qemu_get_local_state_dir(void)
 void qemu_set_tty_echo(int fd, bool echo)
 {
     HANDLE handle = (HANDLE)_get_osfhandle(fd);
-    DWORD dwMode = 0;
+    DWORD  dwMode = 0;
 
-    if (handle == INVALID_HANDLE_VALUE) {
-        return;
-    }
+    if (handle == INVALID_HANDLE_VALUE) { return; }
 
     GetConsoleMode(handle, &dwMode);
 
-    if (echo) {
-        SetConsoleMode(handle, dwMode | ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT);
-    } else {
-        SetConsoleMode(handle,
-                       dwMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT));
+    if (echo) { SetConsoleMode(handle, dwMode | ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT); }
+    else {
+        SetConsoleMode(handle, dwMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT));
     }
 }
 
@@ -261,41 +208,34 @@ int getpagesize(void)
     return system_info.dwPageSize;
 }
 
-bool qemu_prealloc_mem(int fd, char *area, size_t sz, int max_threads,
-                       ThreadContext *tc, bool async, Error **errp)
+bool qemu_prealloc_mem(int fd, char* area, size_t sz, int max_threads, ThreadContext* tc, bool async, Error** errp)
 {
-    int i;
+    int    i;
     size_t pagesize = qemu_real_host_page_size();
 
     sz = (sz + pagesize - 1) & -pagesize;
-    for (i = 0; i < sz / pagesize; i++) {
-        memset(area + pagesize * i, 0, 1);
-    }
+    for (i = 0; i < sz / pagesize; i++) { memset(area + pagesize * i, 0, 1); }
 
     return true;
 }
 
-bool qemu_finish_async_prealloc_mem(Error **errp)
+bool qemu_finish_async_prealloc_mem(Error** errp)
 {
     /* async prealloc not supported, there is nothing to finish */
     return true;
 }
 
-char *qemu_get_pid_name(pid_t pid)
+char* qemu_get_pid_name(pid_t pid)
 {
     /* XXX Implement me */
     abort();
 }
 
-
-bool qemu_socket_select(int sockfd, WSAEVENT hEventObject,
-                        long lNetworkEvents, Error **errp)
+bool qemu_socket_select(int sockfd, WSAEVENT hEventObject, long lNetworkEvents, Error** errp)
 {
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (errp == NULL) {
-        errp = &error_warn;
-    }
+    if (errp == NULL) { errp = &error_warn; }
 
     if (s == INVALID_SOCKET) {
         error_setg(errp, "invalid socket fd=%d", sockfd);
@@ -310,29 +250,26 @@ bool qemu_socket_select(int sockfd, WSAEVENT hEventObject,
     return true;
 }
 
-bool qemu_socket_unselect(int sockfd, Error **errp)
-{
-    return qemu_socket_select(sockfd, NULL, 0, errp);
-}
+bool qemu_socket_unselect(int sockfd, Error** errp) { return qemu_socket_select(sockfd, NULL, 0, errp); }
 
 int qemu_socketpair(int domain, int type, int protocol, int sv[2])
 {
     struct sockaddr_un addr = {
         0,
     };
-    socklen_t socklen;
-    int listener = -1;
-    int client = -1;
-    int server = -1;
-    g_autofree char *path = NULL;
-    int tmpfd;
-    u_long arg;
-    int ret = -1;
+    socklen_t        socklen;
+    int              listener = -1;
+    int              client   = -1;
+    int              server   = -1;
+    g_autofree char* path     = NULL;
+    int              tmpfd;
+    u_long           arg;
+    int              ret = -1;
 
     g_return_val_if_fail(sv != NULL, -1);
 
     addr.sun_family = AF_UNIX;
-    socklen = sizeof(addr);
+    socklen         = sizeof(addr);
 
     tmpfd = g_file_open_tmp(NULL, &path, NULL);
     if (tmpfd == -1 || !path) {
@@ -350,9 +287,7 @@ int qemu_socketpair(int domain, int type, int protocol, int sv[2])
     strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
 
     listener = socket(domain, type, protocol);
-    if (listener == -1) {
-        goto out;
-    }
+    if (listener == -1) { goto out; }
 
     if (DeleteFile(path) == 0 && GetLastError() != ERROR_FILE_NOT_FOUND) {
         errno = EACCES;
@@ -360,143 +295,100 @@ int qemu_socketpair(int domain, int type, int protocol, int sv[2])
     }
     g_clear_pointer(&path, g_free);
 
-    if (bind(listener, (struct sockaddr *)&addr, socklen) == -1) {
-        goto out;
-    }
+    if (bind(listener, (struct sockaddr*)&addr, socklen) == -1) { goto out; }
 
-    if (listen(listener, 1) == -1) {
-        goto out;
-    }
+    if (listen(listener, 1) == -1) { goto out; }
 
     client = socket(domain, type, protocol);
-    if (client == -1) {
-        goto out;
-    }
+    if (client == -1) { goto out; }
 
     arg = 1;
-    if (ioctlsocket(client, FIONBIO, &arg) != NO_ERROR) {
-        goto out;
-    }
+    if (ioctlsocket(client, FIONBIO, &arg) != NO_ERROR) { goto out; }
 
-    if (connect(client, (struct sockaddr *)&addr, socklen) == -1 &&
-        WSAGetLastError() != WSAEWOULDBLOCK) {
-        goto out;
-    }
+    if (connect(client, (struct sockaddr*)&addr, socklen) == -1 && WSAGetLastError() != WSAEWOULDBLOCK) { goto out; }
 
     server = accept(listener, NULL, NULL);
-    if (server == -1) {
-        goto out;
-    }
+    if (server == -1) { goto out; }
 
     arg = 0;
-    if (ioctlsocket(client, FIONBIO, &arg) != NO_ERROR) {
-        goto out;
-    }
+    if (ioctlsocket(client, FIONBIO, &arg) != NO_ERROR) { goto out; }
 
     arg = 0;
-    if (ioctlsocket(client, SIO_AF_UNIX_GETPEERPID, &arg) != NO_ERROR) {
-        goto out;
-    }
+    if (ioctlsocket(client, SIO_AF_UNIX_GETPEERPID, &arg) != NO_ERROR) { goto out; }
 
     if (arg != GetCurrentProcessId()) {
         errno = EPERM;
         goto out;
     }
 
-    sv[0] = server;
+    sv[0]  = server;
     server = -1;
-    sv[1] = client;
+    sv[1]  = client;
     client = -1;
-    ret = 0;
+    ret    = 0;
 
 out:
-    if (listener != -1) {
-        close(listener);
-    }
-    if (client != -1) {
-        close(client);
-    }
-    if (server != -1) {
-        close(server);
-    }
-    if (path) {
-        DeleteFile(path);
-    }
+    if (listener != -1) { close(listener); }
+    if (client != -1) { close(client); }
+    if (server != -1) { close(server); }
+    if (path) { DeleteFile(path); }
     return ret;
 }
 
 #undef connect
-int qemu_connect_wrap(int sockfd, const struct sockaddr *addr,
-                      socklen_t addrlen)
+int qemu_connect_wrap(int sockfd, const struct sockaddr* addr, socklen_t addrlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = connect(s, addr, addrlen);
     if (ret < 0) {
-        if (WSAGetLastError() == WSAEWOULDBLOCK) {
-            errno = EINPROGRESS;
-        } else {
+        if (WSAGetLastError() == WSAEWOULDBLOCK) { errno = EINPROGRESS; }
+        else {
             errno = socket_error();
         }
     }
     return ret;
 }
 
-
 #undef listen
 int qemu_listen_wrap(int sockfd, int backlog)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = listen(s, backlog);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef bind
-int qemu_bind_wrap(int sockfd, const struct sockaddr *addr,
-                   socklen_t addrlen)
+int qemu_bind_wrap(int sockfd, const struct sockaddr* addr, socklen_t addrlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = bind(s, addr, addrlen);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
 
-QEMU_USED EXCEPTION_DISPOSITION
-win32_close_exception_handler(struct _EXCEPTION_RECORD *exception_record,
-                              void *registration, struct _CONTEXT *context,
-                              void *dispatcher)
-{
-    return EXCEPTION_EXECUTE_HANDLER;
-}
+QEMU_USED EXCEPTION_DISPOSITION win32_close_exception_handler(struct _EXCEPTION_RECORD* exception_record,
+                                                              void* registration, struct _CONTEXT* context,
+                                                              void* dispatcher)
+{ return EXCEPTION_EXECUTE_HANDLER; }
 
 #undef close
 int qemu_close_socket_osfhandle(int fd)
 {
-    SOCKET s = _get_osfhandle(fd);
-    DWORD flags = 0;
+    SOCKET s     = _get_osfhandle(fd);
+    DWORD  flags = 0;
 
     /*
      * If we were to just call _close on the descriptor, it would close the
@@ -517,17 +409,15 @@ int qemu_close_socket_osfhandle(int fd)
         return -1;
     }
 
-    __try1(win32_close_exception_handler) {
+    __try1(win32_close_exception_handler)
+    {
         /*
          * close() returns EBADF since we PROTECT_FROM_CLOSE the underlying
          * handle, but the FD is actually freed
          */
-        if (close(fd) < 0 && errno != EBADF) {
-            return -1;
-        }
+        if (close(fd) < 0 && errno != EBADF) { return -1; }
     }
-    __except1 {
-    }
+    __except1 { }
 
     if (!SetHandleInformation((HANDLE)s, flags, flags)) {
         errno = EACCES;
@@ -539,30 +429,25 @@ int qemu_close_socket_osfhandle(int fd)
 
 int qemu_close_wrap(int fd)
 {
-    SOCKET s = INVALID_SOCKET;
-    int ret = -1;
+    SOCKET s   = INVALID_SOCKET;
+    int    ret = -1;
 
-    if (!fd_is_socket(fd)) {
-        return close(fd);
-    }
+    if (!fd_is_socket(fd)) { return close(fd); }
 
     s = _get_osfhandle(fd);
     qemu_close_socket_osfhandle(fd);
 
     ret = closesocket(s);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
 
     return ret;
 }
-
 
 #undef socket
 int qemu_socket_wrap(int domain, int type, int protocol)
 {
     SOCKET s;
-    int fd;
+    int    fd;
 
     s = socket(domain, type, protocol);
     if (s == -1) {
@@ -580,17 +465,13 @@ int qemu_socket_wrap(int domain, int type, int protocol)
     return fd;
 }
 
-
 #undef accept
-int qemu_accept_wrap(int sockfd, struct sockaddr *addr,
-                     socklen_t *addrlen)
+int qemu_accept_wrap(int sockfd, struct sockaddr* addr, socklen_t* addrlen)
 {
-    int fd;
+    int    fd;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     s = accept(s, addr, addrlen);
     if (s == -1) {
@@ -608,211 +489,154 @@ int qemu_accept_wrap(int sockfd, struct sockaddr *addr,
     return fd;
 }
 
-
 #undef shutdown
 int qemu_shutdown_wrap(int sockfd, int how)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = shutdown(s, how);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef ioctlsocket
-int qemu_ioctlsocket_wrap(int fd, int req, void *val)
+int qemu_ioctlsocket_wrap(int fd, int req, void* val)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(fd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = ioctlsocket(s, req, val);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef getsockopt
-int qemu_getsockopt_wrap(int sockfd, int level, int optname,
-                         void *optval, socklen_t *optlen)
+int qemu_getsockopt_wrap(int sockfd, int level, int optname, void* optval, socklen_t* optlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = getsockopt(s, level, optname, optval, optlen);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef setsockopt
-int qemu_setsockopt_wrap(int sockfd, int level, int optname,
-                         const void *optval, socklen_t optlen)
+int qemu_setsockopt_wrap(int sockfd, int level, int optname, const void* optval, socklen_t optlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = setsockopt(s, level, optname, optval, optlen);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef getpeername
-int qemu_getpeername_wrap(int sockfd, struct sockaddr *addr,
-                          socklen_t *addrlen)
+int qemu_getpeername_wrap(int sockfd, struct sockaddr* addr, socklen_t* addrlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = getpeername(s, addr, addrlen);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef getsockname
-int qemu_getsockname_wrap(int sockfd, struct sockaddr *addr,
-                          socklen_t *addrlen)
+int qemu_getsockname_wrap(int sockfd, struct sockaddr* addr, socklen_t* addrlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = getsockname(s, addr, addrlen);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef send
-ssize_t qemu_send_wrap(int sockfd, const void *buf, size_t len, int flags)
+ssize_t qemu_send_wrap(int sockfd, const void* buf, size_t len, int flags)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = send(s, buf, len, flags);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef sendto
-ssize_t qemu_sendto_wrap(int sockfd, const void *buf, size_t len, int flags,
-                         const struct sockaddr *addr, socklen_t addrlen)
+ssize_t qemu_sendto_wrap(int sockfd, const void* buf, size_t len, int flags, const struct sockaddr* addr,
+                         socklen_t addrlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = sendto(s, buf, len, flags, addr, addrlen);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef recv
-ssize_t qemu_recv_wrap(int sockfd, void *buf, size_t len, int flags)
+ssize_t qemu_recv_wrap(int sockfd, void* buf, size_t len, int flags)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = recv(s, buf, len, flags);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
-
 
 #undef recvfrom
-ssize_t qemu_recvfrom_wrap(int sockfd, void *buf, size_t len, int flags,
-                           struct sockaddr *addr, socklen_t *addrlen)
+ssize_t qemu_recvfrom_wrap(int sockfd, void* buf, size_t len, int flags, struct sockaddr* addr, socklen_t* addrlen)
 {
-    int ret;
+    int    ret;
     SOCKET s = _get_osfhandle(sockfd);
 
-    if (s == INVALID_SOCKET) {
-        return -1;
-    }
+    if (s == INVALID_SOCKET) { return -1; }
 
     ret = recvfrom(s, buf, len, flags, addr, addrlen);
-    if (ret < 0) {
-        errno = socket_error();
-    }
+    if (ret < 0) { errno = socket_error(); }
     return ret;
 }
 
-bool qemu_write_pidfile(const char *filename, Error **errp)
+bool qemu_write_pidfile(const char* filename, Error** errp)
 {
-    char buffer[128];
-    int len;
-    HANDLE file;
+    char       buffer[128];
+    int        len;
+    HANDLE     file;
     OVERLAPPED overlap;
-    BOOL ret;
+    BOOL       ret;
     memset(&overlap, 0, sizeof(overlap));
 
-    file = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-                      OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    file = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (file == INVALID_HANDLE_VALUE) {
         error_setg(errp, "Failed to create PID file");
         return false;
     }
     len = snprintf(buffer, sizeof(buffer), FMT_pid "\n", (pid_t)getpid());
-    ret = WriteFile(file, (LPCVOID)buffer, (DWORD)len,
-                    NULL, &overlap);
+    ret = WriteFile(file, (LPCVOID)buffer, (DWORD)len, NULL, &overlap);
     CloseHandle(file);
     if (ret == 0) {
         error_setg(errp, "Failed to write PID file");
@@ -826,13 +650,11 @@ size_t qemu_get_host_physmem(void)
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof(statex);
 
-    if (GlobalMemoryStatusEx(&statex)) {
-        return statex.ullTotalPhys;
-    }
+    if (GlobalMemoryStatusEx(&statex)) { return statex.ullTotalPhys; }
     return 0;
 }
 
-int qemu_msync(void *addr, size_t length, int fd)
+int qemu_msync(void* addr, size_t length, int fd)
 {
     /**
      * Perform the sync based on the file descriptor
@@ -842,14 +664,13 @@ int qemu_msync(void *addr, size_t length, int fd)
     return qemu_fdatasync(fd);
 }
 
-void *qemu_win32_map_alloc(size_t size, HANDLE *h, Error **errp)
+void* qemu_win32_map_alloc(size_t size, HANDLE* h, Error** errp)
 {
-    void *bits;
+    void* bits;
 
     trace_win32_map_alloc(size);
 
-    *h = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
-                          size, NULL);
+    *h = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, size, NULL);
     if (*h == NULL) {
         error_setg_win32(errp, GetLastError(), "Failed to CreateFileMapping");
         return NULL;
@@ -865,17 +686,15 @@ void *qemu_win32_map_alloc(size_t size, HANDLE *h, Error **errp)
     return bits;
 }
 
-void qemu_win32_map_free(void *ptr, HANDLE h, Error **errp)
+void qemu_win32_map_free(void* ptr, HANDLE h, Error** errp)
 {
     trace_win32_map_free(ptr, h);
 
-    if (UnmapViewOfFile(ptr) == 0) {
-        error_setg_win32(errp, GetLastError(), "Failed to UnmapViewOfFile");
-    }
+    if (UnmapViewOfFile(ptr) == 0) { error_setg_win32(errp, GetLastError(), "Failed to UnmapViewOfFile"); }
     CloseHandle(h);
 }
 
-int qemu_shm_alloc(size_t size, Error **errp)
+int qemu_shm_alloc(size_t size, Error** errp)
 {
     error_setg(errp, "Shared memory is not supported.");
     return -1;

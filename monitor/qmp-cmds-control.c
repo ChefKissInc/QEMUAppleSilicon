@@ -39,21 +39,18 @@
  * On success, set mon->qmp.capab[], and return true.
  * On error, set @errp, and return false.
  */
-static bool qmp_caps_accept(MonitorQMP *mon, QMPCapabilityList *list,
-                            Error **errp)
+static bool qmp_caps_accept(MonitorQMP* mon, QMPCapabilityList* list, Error** errp)
 {
-    GString *unavailable = NULL;
-    bool capab[QMP_CAPABILITY__MAX];
+    GString* unavailable = NULL;
+    bool     capab[QMP_CAPABILITY__MAX];
 
     memset(capab, 0, sizeof(capab));
 
     for (; list; list = list->next) {
         if (!mon->capab_offered[list->value]) {
-            if (!unavailable) {
-                unavailable = g_string_new(QMPCapability_str(list->value));
-            } else {
-                g_string_append_printf(unavailable, ", %s",
-                                      QMPCapability_str(list->value));
+            if (!unavailable) { unavailable = g_string_new(QMPCapability_str(list->value)); }
+            else {
+                g_string_append_printf(unavailable, ", %s", QMPCapability_str(list->value));
             }
         }
         capab[list->value] = true;
@@ -69,11 +66,10 @@ static bool qmp_caps_accept(MonitorQMP *mon, QMPCapabilityList *list,
     return true;
 }
 
-void qmp_qmp_capabilities(bool has_enable, QMPCapabilityList *enable,
-                          Error **errp)
+void qmp_qmp_capabilities(bool has_enable, QMPCapabilityList* enable, Error** errp)
 {
-    Monitor *cur_mon = monitor_cur();
-    MonitorQMP *mon;
+    Monitor*    cur_mon = monitor_cur();
+    MonitorQMP* mon;
 
     assert(monitor_is_qmp(cur_mon));
     mon = container_of(cur_mon, MonitorQMP, common);
@@ -85,45 +81,41 @@ void qmp_qmp_capabilities(bool has_enable, QMPCapabilityList *enable,
         return;
     }
 
-    if (!qmp_caps_accept(mon, enable, errp)) {
-        return;
-    }
+    if (!qmp_caps_accept(mon, enable, errp)) { return; }
 
     mon->commands = &qmp_commands;
 }
 
-VersionInfo *qmp_query_version(Error **errp)
+VersionInfo* qmp_query_version(Error** errp)
 {
-    VersionInfo *info = g_new0(VersionInfo, 1);
+    VersionInfo* info = g_new0(VersionInfo, 1);
 
-    info->qemu = g_new0(VersionTriple, 1);
+    info->qemu        = g_new0(VersionTriple, 1);
     info->qemu->major = QEMU_VERSION_MAJOR;
     info->qemu->minor = QEMU_VERSION_MINOR;
     info->qemu->micro = QEMU_VERSION_MICRO;
-    info->package = g_strdup(QEMU_PKGVERSION);
+    info->package     = g_strdup(QEMU_PKGVERSION);
 
     return info;
 }
 
-static void query_commands_cb(const QmpCommand *cmd, void *opaque)
+static void query_commands_cb(const QmpCommand* cmd, void* opaque)
 {
-    CommandInfo *info;
-    CommandInfoList **list = opaque;
+    CommandInfo*      info;
+    CommandInfoList** list = opaque;
 
-    if (!cmd->enabled) {
-        return;
-    }
+    if (!cmd->enabled) { return; }
 
-    info = g_malloc0(sizeof(*info));
+    info       = g_malloc0(sizeof(*info));
     info->name = g_strdup(cmd->name);
     QAPI_LIST_PREPEND(*list, info);
 }
 
-CommandInfoList *qmp_query_commands(Error **errp)
+CommandInfoList* qmp_query_commands(Error** errp)
 {
-    CommandInfoList *list = NULL;
-    Monitor *cur_mon = monitor_cur();
-    MonitorQMP *mon;
+    CommandInfoList* list    = NULL;
+    Monitor*         cur_mon = monitor_cur();
+    MonitorQMP*      mon;
 
     assert(monitor_is_qmp(cur_mon));
     mon = container_of(cur_mon, MonitorQMP, common);
@@ -133,57 +125,48 @@ CommandInfoList *qmp_query_commands(Error **errp)
     return list;
 }
 
-static void *split_off_generic_list(void *list,
-                                    bool (*splitp)(void *elt),
-                                    void **part)
+static void* split_off_generic_list(void* list, bool (*splitp)(void* elt), void** part)
 {
     GenericList *keep = NULL, **keep_tailp = &keep;
     GenericList *split = NULL, **split_tailp = &split;
-    GenericList *tail;
+    GenericList* tail;
 
     for (tail = list; tail; tail = tail->next) {
         if (splitp(tail)) {
             *split_tailp = tail;
-            split_tailp = &tail->next;
-        } else {
+            split_tailp  = &tail->next;
+        }
+        else {
             *keep_tailp = tail;
-            keep_tailp = &tail->next;
+            keep_tailp  = &tail->next;
         }
     }
 
     *keep_tailp = *split_tailp = NULL;
-    *part = split;
+    *part                      = split;
     return keep;
 }
 
-static bool is_in(const char *s, strList *list)
+static bool is_in(const char* s, strList* list)
 {
-    strList *tail;
+    strList* tail;
 
     for (tail = list; tail; tail = tail->next) {
-        if (!strcmp(tail->value, s)) {
-            return true;
-        }
+        if (!strcmp(tail->value, s)) { return true; }
     }
     return false;
 }
 
-static bool is_entity_deprecated(void *link)
-{
-    return is_in("deprecated", ((SchemaInfoList *)link)->value->features);
-}
+static bool is_entity_deprecated(void* link) { return is_in("deprecated", ((SchemaInfoList*)link)->value->features); }
 
-static bool is_member_deprecated(void *link)
-{
-    return is_in("deprecated",
-                 ((SchemaInfoObjectMemberList *)link)->value->features);
-}
+static bool is_member_deprecated(void* link)
+{ return is_in("deprecated", ((SchemaInfoObjectMemberList*)link)->value->features); }
 
-static SchemaInfoList *zap_deprecated(SchemaInfoList *schema)
+static SchemaInfoList* zap_deprecated(SchemaInfoList* schema)
 {
-    void *to_zap;
-    SchemaInfoList *tail;
-    SchemaInfo *ent;
+    void*           to_zap;
+    SchemaInfoList* tail;
+    SchemaInfo*     ent;
 
     schema = split_off_generic_list(schema, is_entity_deprecated, &to_zap);
     qapi_free_SchemaInfoList(to_zap);
@@ -191,9 +174,7 @@ static SchemaInfoList *zap_deprecated(SchemaInfoList *schema)
     for (tail = schema; tail; tail = tail->next) {
         ent = tail->value;
         if (ent->meta_type == SCHEMA_META_TYPE_OBJECT) {
-            ent->u.object.members
-                = split_off_generic_list(ent->u.object.members,
-                                         is_member_deprecated, &to_zap);
+            ent->u.object.members = split_off_generic_list(ent->u.object.members, is_member_deprecated, &to_zap);
             qapi_free_SchemaInfoObjectMemberList(to_zap);
         }
     }
@@ -201,11 +182,11 @@ static SchemaInfoList *zap_deprecated(SchemaInfoList *schema)
     return schema;
 }
 
-SchemaInfoList *qmp_query_qmp_schema(Error **errp)
+SchemaInfoList* qmp_query_qmp_schema(Error** errp)
 {
-    QObject *obj = qobject_from_qlit(&qmp_schema_qlit);
-    Visitor *v = qobject_input_visitor_new(obj);
-    SchemaInfoList *schema = NULL;
+    QObject*        obj    = qobject_from_qlit(&qmp_schema_qlit);
+    Visitor*        v      = qobject_input_visitor_new(obj);
+    SchemaInfoList* schema = NULL;
 
     /* test_visitor_in_qmp_introspect() ensures this can't fail */
     visit_type_SchemaInfoList(v, NULL, &schema, &error_abort);
@@ -214,8 +195,6 @@ SchemaInfoList *qmp_query_qmp_schema(Error **errp)
     qobject_unref(obj);
     visit_free(v);
 
-    if (compat_policy.deprecated_output == COMPAT_POLICY_OUTPUT_HIDE) {
-        return zap_deprecated(schema);
-    }
+    if (compat_policy.deprecated_output == COMPAT_POLICY_OUTPUT_HIDE) { return zap_deprecated(schema); }
     return schema;
 }

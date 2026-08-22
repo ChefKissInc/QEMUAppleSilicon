@@ -16,8 +16,6 @@
  * add new ones!
  */
 
-#define QERR_INVALID_PARAMETER_VALUE \
-    "Parameter '%s' expects %s"
+#define QERR_INVALID_PARAMETER_VALUE "Parameter '%s' expects %s"
 
-#define QERR_MISSING_PARAMETER \
-    "Parameter '%s' is missing"
+#define QERR_MISSING_PARAMETER "Parameter '%s' is missing"

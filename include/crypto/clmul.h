@@ -72,9 +72,8 @@ Int128 clmul_64_gen(uint64_t, uint64_t);
 
 static inline Int128 clmul_64(uint64_t a, uint64_t b)
 {
-    if (HAVE_CLMUL_ACCEL) {
-        return clmul_64_accel(a, b);
-    } else {
+    if (HAVE_CLMUL_ACCEL) { return clmul_64_accel(a, b); }
+    else {
         return clmul_64_gen(a, b);
     }
 }

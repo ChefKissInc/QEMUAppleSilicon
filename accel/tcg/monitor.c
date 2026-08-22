@@ -15,7 +15,7 @@
 #include "tcg/tcg.h"
 #include "internal-common.h"
 
-HumanReadableText *qmp_x_query_jit(Error **errp)
+HumanReadableText* qmp_x_query_jit(Error** errp)
 {
     g_autoptr(GString) buf = g_string_new("");
 
@@ -29,9 +29,6 @@ HumanReadableText *qmp_x_query_jit(Error **errp)
     return human_readable_text_from_str(buf);
 }
 
-static void hmp_tcg_register(void)
-{
-    monitor_register_hmp_info_hrt("jit", qmp_x_query_jit);
-}
+static void hmp_tcg_register(void) { monitor_register_hmp_info_hrt("jit", qmp_x_query_jit); }
 
 type_init(hmp_tcg_register);

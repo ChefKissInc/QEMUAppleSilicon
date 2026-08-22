@@ -21,50 +21,43 @@
  */
 
 #ifdef CONFIG_TSAN
-/*
- * Informs TSan of a happens before/after relationship.
- */
-#define QEMU_TSAN_ANNOTATE_HAPPENS_BEFORE(addr) \
-    AnnotateHappensBefore(__FILE__, __LINE__, (void *)(addr))
-#define QEMU_TSAN_ANNOTATE_HAPPENS_AFTER(addr) \
-    AnnotateHappensAfter(__FILE__, __LINE__, (void *)(addr))
-/*
- * Gives TSan more information about thread names it can report the
- * name of the thread in the warning report.
- */
-#define QEMU_TSAN_ANNOTATE_THREAD_NAME(name) \
-    AnnotateThreadName(__FILE__, __LINE__, (void *)(name))
-/*
- * Allows defining a region of code on which TSan will not record memory READS.
- * This has the effect of disabling race detection for this section of code.
- */
-#define QEMU_TSAN_ANNOTATE_IGNORE_READS_BEGIN() \
-    AnnotateIgnoreReadsBegin(__FILE__, __LINE__)
-#define QEMU_TSAN_ANNOTATE_IGNORE_READS_END() \
-    AnnotateIgnoreReadsEnd(__FILE__, __LINE__)
-/*
- * Allows defining a region of code on which TSan will not record memory
- * WRITES.  This has the effect of disabling race detection for this
- * section of code.
- */
-#define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_BEGIN() \
-    AnnotateIgnoreWritesBegin(__FILE__, __LINE__)
-#define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_END() \
-    AnnotateIgnoreWritesEnd(__FILE__, __LINE__)
+    /*
+     * Informs TSan of a happens before/after relationship.
+     */
+    #define QEMU_TSAN_ANNOTATE_HAPPENS_BEFORE(addr) AnnotateHappensBefore(__FILE__, __LINE__, (void*)(addr))
+    #define QEMU_TSAN_ANNOTATE_HAPPENS_AFTER(addr)  AnnotateHappensAfter(__FILE__, __LINE__, (void*)(addr))
+    /*
+     * Gives TSan more information about thread names it can report the
+     * name of the thread in the warning report.
+     */
+    #define QEMU_TSAN_ANNOTATE_THREAD_NAME(name) AnnotateThreadName(__FILE__, __LINE__, (void*)(name))
+    /*
+     * Allows defining a region of code on which TSan will not record memory READS.
+     * This has the effect of disabling race detection for this section of code.
+     */
+    #define QEMU_TSAN_ANNOTATE_IGNORE_READS_BEGIN() AnnotateIgnoreReadsBegin(__FILE__, __LINE__)
+    #define QEMU_TSAN_ANNOTATE_IGNORE_READS_END()   AnnotateIgnoreReadsEnd(__FILE__, __LINE__)
+    /*
+     * Allows defining a region of code on which TSan will not record memory
+     * WRITES.  This has the effect of disabling race detection for this
+     * section of code.
+     */
+    #define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_BEGIN() AnnotateIgnoreWritesBegin(__FILE__, __LINE__)
+    #define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_END()   AnnotateIgnoreWritesEnd(__FILE__, __LINE__)
 #else
-#define QEMU_TSAN_ANNOTATE_HAPPENS_BEFORE(addr)
-#define QEMU_TSAN_ANNOTATE_HAPPENS_AFTER(addr)
-#define QEMU_TSAN_ANNOTATE_THREAD_NAME(name)
-#define QEMU_TSAN_ANNOTATE_IGNORE_READS_BEGIN()
-#define QEMU_TSAN_ANNOTATE_IGNORE_READS_END()
-#define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_BEGIN()
-#define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_END()
+    #define QEMU_TSAN_ANNOTATE_HAPPENS_BEFORE(addr)
+    #define QEMU_TSAN_ANNOTATE_HAPPENS_AFTER(addr)
+    #define QEMU_TSAN_ANNOTATE_THREAD_NAME(name)
+    #define QEMU_TSAN_ANNOTATE_IGNORE_READS_BEGIN()
+    #define QEMU_TSAN_ANNOTATE_IGNORE_READS_END()
+    #define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_BEGIN()
+    #define QEMU_TSAN_ANNOTATE_IGNORE_WRITES_END()
 #endif
 
-void AnnotateHappensBefore(const char *f, int l, void *addr);
-void AnnotateHappensAfter(const char *f, int l, void *addr);
-void AnnotateThreadName(const char *f, int l, char *name);
-void AnnotateIgnoreReadsBegin(const char *f, int l);
-void AnnotateIgnoreReadsEnd(const char *f, int l);
-void AnnotateIgnoreWritesBegin(const char *f, int l);
-void AnnotateIgnoreWritesEnd(const char *f, int l);
+void AnnotateHappensBefore(const char* f, int l, void* addr);
+void AnnotateHappensAfter(const char* f, int l, void* addr);
+void AnnotateThreadName(const char* f, int l, char* name);
+void AnnotateIgnoreReadsBegin(const char* f, int l);
+void AnnotateIgnoreReadsEnd(const char* f, int l);
+void AnnotateIgnoreWritesBegin(const char* f, int l);
+void AnnotateIgnoreWritesEnd(const char* f, int l);

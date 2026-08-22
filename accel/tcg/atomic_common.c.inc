@@ -19,9 +19,8 @@
  * using the host return address from GETPC().
  */
 
-#define CMPXCHG_HELPER(OP, TYPE) \
-    TYPE HELPER(atomic_##OP)(CPUArchState *env, uint64_t addr,      \
-                             TYPE oldv, TYPE newv, uint32_t oi)     \
+#define CMPXCHG_HELPER(OP, TYPE)                                                                   \
+    TYPE HELPER(atomic_##OP)(CPUArchState * env, uint64_t addr, TYPE oldv, TYPE newv, uint32_t oi) \
     { return cpu_atomic_##OP##_mmu(env, addr, oldv, newv, oi, GETPC()); }
 
 CMPXCHG_HELPER(cmpxchgb, uint32_t)
@@ -42,17 +41,15 @@ CMPXCHG_HELPER(cmpxchgo_le, Int128)
 
 #undef CMPXCHG_HELPER
 
-Int128 HELPER(nonatomic_cmpxchgo)(CPUArchState *env, uint64_t addr,
-                                  Int128 cmpv, Int128 newv, uint32_t oi)
+Int128 HELPER(nonatomic_cmpxchgo)(CPUArchState* env, uint64_t addr, Int128 cmpv, Int128 newv, uint32_t oi)
 {
 #if TCG_TARGET_REG_BITS == 32
     uintptr_t ra = GETPC();
-    Int128 oldv;
+    Int128    oldv;
 
     oldv = cpu_ld16_mmu(env, addr, oi, ra);
-    if (int128_eq(oldv, cmpv)) {
-        cpu_st16_mmu(env, addr, newv, oi, ra);
-    } else {
+    if (int128_eq(oldv, cmpv)) { cpu_st16_mmu(env, addr, newv, oi, ra); }
+    else {
         /* Even with comparison failure, still need a write cycle. */
         probe_write(env, addr, 16, get_mmuidx(oi), ra);
     }
@@ -62,27 +59,26 @@ Int128 HELPER(nonatomic_cmpxchgo)(CPUArchState *env, uint64_t addr,
 #endif
 }
 
-#define ATOMIC_HELPER(OP, TYPE) \
-    TYPE HELPER(glue(atomic_,OP))(CPUArchState *env, uint64_t addr,  \
-                                  TYPE val, uint32_t oi)                 \
-    { return glue(glue(cpu_atomic_,OP),_mmu)(env, addr, val, oi, GETPC()); }
+#define ATOMIC_HELPER(OP, TYPE)                                                              \
+    TYPE HELPER(glue(atomic_, OP))(CPUArchState * env, uint64_t addr, TYPE val, uint32_t oi) \
+    { return glue(glue(cpu_atomic_, OP), _mmu)(env, addr, val, oi, GETPC()); }
 
 #ifdef CONFIG_ATOMIC64
-#define GEN_ATOMIC_HELPERS(OP)              \
-    ATOMIC_HELPER(glue(OP,b), uint32_t)     \
-    ATOMIC_HELPER(glue(OP,w_be), uint32_t)  \
-    ATOMIC_HELPER(glue(OP,w_le), uint32_t)  \
-    ATOMIC_HELPER(glue(OP,l_be), uint32_t)  \
-    ATOMIC_HELPER(glue(OP,l_le), uint32_t)  \
-    ATOMIC_HELPER(glue(OP,q_be), uint64_t)  \
-    ATOMIC_HELPER(glue(OP,q_le), uint64_t)
+    #define GEN_ATOMIC_HELPERS(OP)              \
+        ATOMIC_HELPER(glue(OP, b), uint32_t)    \
+        ATOMIC_HELPER(glue(OP, w_be), uint32_t) \
+        ATOMIC_HELPER(glue(OP, w_le), uint32_t) \
+        ATOMIC_HELPER(glue(OP, l_be), uint32_t) \
+        ATOMIC_HELPER(glue(OP, l_le), uint32_t) \
+        ATOMIC_HELPER(glue(OP, q_be), uint64_t) \
+        ATOMIC_HELPER(glue(OP, q_le), uint64_t)
 #else
-#define GEN_ATOMIC_HELPERS(OP)              \
-    ATOMIC_HELPER(glue(OP,b), uint32_t)     \
-    ATOMIC_HELPER(glue(OP,w_be), uint32_t)  \
-    ATOMIC_HELPER(glue(OP,w_le), uint32_t)  \
-    ATOMIC_HELPER(glue(OP,l_be), uint32_t)  \
-    ATOMIC_HELPER(glue(OP,l_le), uint32_t)
+    #define GEN_ATOMIC_HELPERS(OP)              \
+        ATOMIC_HELPER(glue(OP, b), uint32_t)    \
+        ATOMIC_HELPER(glue(OP, w_be), uint32_t) \
+        ATOMIC_HELPER(glue(OP, w_le), uint32_t) \
+        ATOMIC_HELPER(glue(OP, l_be), uint32_t) \
+        ATOMIC_HELPER(glue(OP, l_le), uint32_t)
 #endif
 
 GEN_ATOMIC_HELPERS(fetch_add)

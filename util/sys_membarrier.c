@@ -11,14 +11,10 @@
 #include "qemu/error-report.h"
 
 #ifdef CONFIG_LINUX
-#include <linux/membarrier.h>
-#include <sys/syscall.h>
+    #include <linux/membarrier.h>
+    #include <sys/syscall.h>
 
-static int
-membarrier(int cmd, int flags)
-{
-    return syscall(__NR_membarrier, cmd, flags);
-}
+static int membarrier(int cmd, int flags) { return syscall(__NR_membarrier, cmd, flags); }
 #endif
 
 void smp_mb_global(void)
@@ -28,7 +24,7 @@ void smp_mb_global(void)
 #elif defined CONFIG_LINUX
     membarrier(MEMBARRIER_CMD_SHARED, 0);
 #else
-#error --enable-membarrier is not supported on this operating system.
+    #error --enable-membarrier is not supported on this operating system.
 #endif
 }
 

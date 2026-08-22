@@ -27,37 +27,36 @@
 
 #include <sys/inotify.h>
 
-struct QFileMonitor {
-    int fd;
-    QemuMutex lock; /* protects dirs & idmap */
-    GHashTable *dirs; /* dirname => QFileMonitorDir */
-    GHashTable *idmap; /* inotify ID => dirname */
+struct QFileMonitor
+{
+    int         fd;
+    QemuMutex   lock;  /* protects dirs & idmap */
+    GHashTable* dirs;  /* dirname => QFileMonitorDir */
+    GHashTable* idmap; /* inotify ID => dirname */
 };
 
-
-typedef struct {
-    int64_t id; /* watch ID */
-    char *filename; /* optional filter */
+typedef struct
+{
+    int64_t             id;       /* watch ID */
+    char*               filename; /* optional filter */
     QFileMonitorHandler cb;
-    void *opaque;
+    void*               opaque;
 } QFileMonitorWatch;
 
-
-typedef struct {
-    char *path;
-    int inotify_id; /* inotify ID */
-    int next_file_id; /* file ID counter */
-    GArray *watches; /* QFileMonitorWatch elements */
+typedef struct
+{
+    char*   path;
+    int     inotify_id;   /* inotify ID */
+    int     next_file_id; /* file ID counter */
+    GArray* watches;      /* QFileMonitorWatch elements */
 } QFileMonitorDir;
 
-
-static void qemu_file_monitor_watch(void *arg)
+static void qemu_file_monitor_watch(void* arg)
 {
-    QFileMonitor *mon = arg;
-    char buf[4096]
-        __attribute__ ((aligned(__alignof__(struct inotify_event))));
-    int used = 0;
-    int len;
+    QFileMonitor* mon = arg;
+    char          buf[4096] __attribute__((aligned(__alignof__(struct inotify_event))));
+    int           used = 0;
+    int           len;
 
     qemu_mutex_lock(&mon->lock);
 
@@ -71,7 +70,8 @@ static void qemu_file_monitor_watch(void *arg)
     if (len < 0) {
         if (errno != EAGAIN) {
             error_report("Failure monitoring inotify FD '%s',"
-                         "disabling events", strerror(errno));
+                         "disabling events",
+                         strerror(errno));
             goto cleanup;
         }
 
@@ -81,12 +81,12 @@ static void qemu_file_monitor_watch(void *arg)
 
     /* Loop over all events in the buffer */
     while (used < len) {
-        const char *name;
-        QFileMonitorDir *dir;
-        uint32_t iev;
-        int qev;
-        gsize i;
-        struct inotify_event *ev = (struct inotify_event *)(buf + used);
+        const char*           name;
+        QFileMonitorDir*      dir;
+        uint32_t              iev;
+        int                   qev;
+        gsize                 i;
+        struct inotify_event* ev = (struct inotify_event*)(buf + used);
 
         /*
          * We trust the kernel to provide valid buffer with complete event
@@ -96,16 +96,12 @@ static void qemu_file_monitor_watch(void *arg)
         assert(len - used - sizeof(struct inotify_event) >= ev->len);
 
         name = ev->len ? ev->name : "";
-        dir = g_hash_table_lookup(mon->idmap, GINT_TO_POINTER(ev->wd));
-        iev = ev->mask &
-            (IN_CREATE | IN_MODIFY | IN_DELETE | IN_IGNORED |
-             IN_MOVED_TO | IN_MOVED_FROM | IN_ATTRIB);
+        dir  = g_hash_table_lookup(mon->idmap, GINT_TO_POINTER(ev->wd));
+        iev  = ev->mask & (IN_CREATE | IN_MODIFY | IN_DELETE | IN_IGNORED | IN_MOVED_TO | IN_MOVED_FROM | IN_ATTRIB);
 
         used += sizeof(struct inotify_event) + ev->len;
 
-        if (!dir) {
-            continue;
-        }
+        if (!dir) { continue; }
 
         /*
          * During a rename operation, the old name gets
@@ -114,58 +110,38 @@ static void qemu_file_monitor_watch(void *arg)
          * DELETED and CREATED events
          */
         switch (iev) {
-        case IN_CREATE:
-        case IN_MOVED_TO:
-            qev = QFILE_MONITOR_EVENT_CREATED;
-            break;
-        case IN_MODIFY:
-            qev = QFILE_MONITOR_EVENT_MODIFIED;
-            break;
-        case IN_DELETE:
-        case IN_MOVED_FROM:
-            qev = QFILE_MONITOR_EVENT_DELETED;
-            break;
-        case IN_ATTRIB:
-            qev = QFILE_MONITOR_EVENT_ATTRIBUTES;
-            break;
-        case IN_IGNORED:
-            qev = QFILE_MONITOR_EVENT_IGNORED;
-            break;
-        default:
-            assert_not_reached();
+            case IN_CREATE:
+            case IN_MOVED_TO  : qev = QFILE_MONITOR_EVENT_CREATED; break;
+            case IN_MODIFY    : qev = QFILE_MONITOR_EVENT_MODIFIED; break;
+            case IN_DELETE    :
+            case IN_MOVED_FROM: qev = QFILE_MONITOR_EVENT_DELETED; break;
+            case IN_ATTRIB    : qev = QFILE_MONITOR_EVENT_ATTRIBUTES; break;
+            case IN_IGNORED   : qev = QFILE_MONITOR_EVENT_IGNORED; break;
+            default           : assert_not_reached();
         }
 
-        trace_qemu_file_monitor_event(mon, dir->path, name, ev->mask,
-                                      dir->inotify_id);
+        trace_qemu_file_monitor_event(mon, dir->path, name, ev->mask, dir->inotify_id);
         for (i = 0; i < dir->watches->len; i++) {
-            QFileMonitorWatch *watch = &g_array_index(dir->watches,
-                                                      QFileMonitorWatch,
-                                                      i);
+            QFileMonitorWatch* watch = &g_array_index(dir->watches, QFileMonitorWatch, i);
 
-            if (watch->filename == NULL ||
-                (name && g_str_equal(watch->filename, name))) {
-                trace_qemu_file_monitor_dispatch(mon, dir->path, name,
-                                                 qev, watch->cb,
-                                                 watch->opaque, watch->id);
+            if (watch->filename == NULL || (name && g_str_equal(watch->filename, name))) {
+                trace_qemu_file_monitor_dispatch(mon, dir->path, name, qev, watch->cb, watch->opaque, watch->id);
                 watch->cb(watch->id, qev, name, watch->opaque);
             }
         }
     }
 
- cleanup:
+cleanup:
     qemu_mutex_unlock(&mon->lock);
 }
 
-
-static void
-qemu_file_monitor_dir_free(void *data)
+static void qemu_file_monitor_dir_free(void* data)
 {
-    QFileMonitorDir *dir = data;
-    gsize i;
+    QFileMonitorDir* dir = data;
+    gsize            i;
 
     for (i = 0; i < dir->watches->len; i++) {
-        QFileMonitorWatch *watch = &g_array_index(dir->watches,
-                                                  QFileMonitorWatch, i);
+        QFileMonitorWatch* watch = &g_array_index(dir->watches, QFileMonitorWatch, i);
         g_free(watch->filename);
     }
     g_array_unref(dir->watches);
@@ -173,17 +149,14 @@ qemu_file_monitor_dir_free(void *data)
     g_free(dir);
 }
 
-
-QFileMonitor *
-qemu_file_monitor_new(Error **errp)
+QFileMonitor* qemu_file_monitor_new(Error** errp)
 {
-    int fd;
-    QFileMonitor *mon;
+    int           fd;
+    QFileMonitor* mon;
 
     fd = inotify_init1(IN_NONBLOCK);
     if (fd < 0) {
-        error_setg_errno(errp, errno,
-                         "Unable to initialize inotify");
+        error_setg_errno(errp, errno, "Unable to initialize inotify");
         return NULL;
     }
 
@@ -191,8 +164,7 @@ qemu_file_monitor_new(Error **errp)
     qemu_mutex_init(&mon->lock);
     mon->fd = fd;
 
-    mon->dirs = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
-                                      qemu_file_monitor_dir_free);
+    mon->dirs  = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, qemu_file_monitor_dir_free);
     mon->idmap = g_hash_table_new(NULL, NULL);
 
     trace_qemu_file_monitor_new(mon, mon->fd);
@@ -200,14 +172,11 @@ qemu_file_monitor_new(Error **errp)
     return mon;
 }
 
-static gboolean
-qemu_file_monitor_free_idle(void *opaque)
+static gboolean qemu_file_monitor_free_idle(void* opaque)
 {
-    QFileMonitor *mon = opaque;
+    QFileMonitor* mon = opaque;
 
-    if (!mon) {
-        return G_SOURCE_REMOVE;
-    }
+    if (!mon) { return G_SOURCE_REMOVE; }
 
     qemu_mutex_lock(&mon->lock);
 
@@ -222,12 +191,9 @@ qemu_file_monitor_free_idle(void *opaque)
     return G_SOURCE_REMOVE;
 }
 
-void
-qemu_file_monitor_free(QFileMonitor *mon)
+void qemu_file_monitor_free(QFileMonitor* mon)
 {
-    if (!mon) {
-        return;
-    }
+    if (!mon) { return; }
 
     qemu_mutex_lock(&mon->lock);
     if (mon->fd != -1) {
@@ -247,24 +213,18 @@ qemu_file_monitor_free(QFileMonitor *mon)
     g_idle_add((GSourceFunc)qemu_file_monitor_free_idle, mon);
 }
 
-int64_t
-qemu_file_monitor_add_watch(QFileMonitor *mon,
-                            const char *dirpath,
-                            const char *filename,
-                            QFileMonitorHandler cb,
-                            void *opaque,
-                            Error **errp)
+int64_t qemu_file_monitor_add_watch(QFileMonitor* mon, const char* dirpath, const char* filename,
+                                    QFileMonitorHandler cb, void* opaque, Error** errp)
 {
-    QFileMonitorDir *dir;
+    QFileMonitorDir*  dir;
     QFileMonitorWatch watch;
-    int64_t ret = -1;
+    int64_t           ret = -1;
 
     qemu_mutex_lock(&mon->lock);
     dir = g_hash_table_lookup(mon->dirs, dirpath);
     if (!dir) {
         int rv = inotify_add_watch(mon->fd, dirpath,
-                                   IN_CREATE | IN_DELETE | IN_MODIFY |
-                                   IN_MOVED_TO | IN_MOVED_FROM | IN_ATTRIB);
+                                   IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_TO | IN_MOVED_FROM | IN_ATTRIB);
 
         if (rv < 0) {
             error_setg_errno(errp, errno, "Unable to watch '%s'", dirpath);
@@ -273,57 +233,47 @@ qemu_file_monitor_add_watch(QFileMonitor *mon,
 
         trace_qemu_file_monitor_enable_watch(mon, dirpath, rv);
 
-        dir = g_new0(QFileMonitorDir, 1);
-        dir->path = g_strdup(dirpath);
+        dir             = g_new0(QFileMonitorDir, 1);
+        dir->path       = g_strdup(dirpath);
         dir->inotify_id = rv;
-        dir->watches = g_array_new(FALSE, TRUE, sizeof(QFileMonitorWatch));
+        dir->watches    = g_array_new(FALSE, TRUE, sizeof(QFileMonitorWatch));
 
         g_hash_table_insert(mon->dirs, dir->path, dir);
         g_hash_table_insert(mon->idmap, GINT_TO_POINTER(rv), dir);
 
-        if (g_hash_table_size(mon->dirs) == 1) {
-            qemu_set_fd_handler(mon->fd, qemu_file_monitor_watch, NULL, mon);
-        }
+        if (g_hash_table_size(mon->dirs) == 1) { qemu_set_fd_handler(mon->fd, qemu_file_monitor_watch, NULL, mon); }
     }
 
-    watch.id = (((int64_t)dir->inotify_id) << 32) | dir->next_file_id++;
+    watch.id       = (((int64_t)dir->inotify_id) << 32) | dir->next_file_id++;
     watch.filename = g_strdup(filename);
-    watch.cb = cb;
-    watch.opaque = opaque;
+    watch.cb       = cb;
+    watch.opaque   = opaque;
 
     g_array_append_val(dir->watches, watch);
 
-    trace_qemu_file_monitor_add_watch(mon, dirpath,
-                                      filename ? filename : "<none>",
-                                      cb, opaque, watch.id);
+    trace_qemu_file_monitor_add_watch(mon, dirpath, filename ? filename : "<none>", cb, opaque, watch.id);
 
     ret = watch.id;
 
- cleanup:
+cleanup:
     qemu_mutex_unlock(&mon->lock);
     return ret;
 }
 
-
-void qemu_file_monitor_remove_watch(QFileMonitor *mon,
-                                    const char *dirpath,
-                                    int64_t id)
+void qemu_file_monitor_remove_watch(QFileMonitor* mon, const char* dirpath, int64_t id)
 {
-    QFileMonitorDir *dir;
-    gsize i;
+    QFileMonitorDir* dir;
+    gsize            i;
 
     qemu_mutex_lock(&mon->lock);
 
     trace_qemu_file_monitor_remove_watch(mon, dirpath, id);
 
     dir = g_hash_table_lookup(mon->dirs, dirpath);
-    if (!dir) {
-        goto cleanup;
-    }
+    if (!dir) { goto cleanup; }
 
     for (i = 0; i < dir->watches->len; i++) {
-        QFileMonitorWatch *watch = &g_array_index(dir->watches,
-                                                  QFileMonitorWatch, i);
+        QFileMonitorWatch* watch = &g_array_index(dir->watches, QFileMonitorWatch, i);
         if (watch->id == id) {
             g_free(watch->filename);
             g_array_remove_index(dir->watches, i);
@@ -338,11 +288,9 @@ void qemu_file_monitor_remove_watch(QFileMonitor *mon,
         g_hash_table_remove(mon->idmap, GINT_TO_POINTER(dir->inotify_id));
         g_hash_table_remove(mon->dirs, dir->path);
 
-        if (g_hash_table_size(mon->dirs) == 0) {
-            qemu_set_fd_handler(mon->fd, NULL, NULL, NULL);
-        }
+        if (g_hash_table_size(mon->dirs) == 0) { qemu_set_fd_handler(mon->fd, NULL, NULL, NULL); }
     }
 
- cleanup:
+cleanup:
     qemu_mutex_unlock(&mon->lock);
 }

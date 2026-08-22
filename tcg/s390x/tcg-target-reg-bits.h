@@ -8,7 +8,7 @@
 
 /* We only support generating code for 64-bit mode.  */
 #if UINTPTR_MAX == UINT64_MAX
-# define TCG_TARGET_REG_BITS 64
+    #define TCG_TARGET_REG_BITS 64
 #else
-# error "unsupported code generation mode"
+    #error "unsupported code generation mode"
 #endif

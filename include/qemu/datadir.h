@@ -1,6 +1,7 @@
 #pragma once
 
-typedef enum {
+typedef enum
+{
     QEMU_FILE_TYPE_BIOS,
     QEMU_FILE_TYPE_DTB,
     QEMU_FILE_TYPE_KEYMAP,
@@ -24,7 +25,7 @@ typedef enum {
  *
  * Returns: a path that can access @name, or NULL if no matching file exists.
  */
-char *qemu_find_file(QemuFileType type, const char *name);
-void qemu_add_default_firmwarepath(void);
-void qemu_add_data_dir(char *path);
-void qemu_list_data_dirs(void);
+char* qemu_find_file(QemuFileType type, const char* name);
+void  qemu_add_default_firmwarepath(void);
+void  qemu_add_data_dir(char* path);
+void  qemu_list_data_dirs(void);

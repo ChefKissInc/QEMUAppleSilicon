@@ -15,16 +15,11 @@
 
 static bool is_valid_codepoint(int codepoint)
 {
-    if (codepoint > 0x10FFFFu) {
-        return false;            /* beyond Unicode range */
+    if (codepoint > 0x10FFFFu) { return false; /* beyond Unicode range */ }
+    if ((codepoint >= 0xFDD0 && codepoint <= 0xFDEF) || (codepoint & 0xFFFE) == 0xFFFE) {
+        return false; /* noncharacter */
     }
-    if ((codepoint >= 0xFDD0 && codepoint <= 0xFDEF)
-        || (codepoint & 0xFFFE) == 0xFFFE) {
-        return false;            /* noncharacter */
-    }
-    if (codepoint >= 0xD800 && codepoint <= 0xDFFF) {
-        return false;            /* surrogate code point */
-    }
+    if (codepoint >= 0xD800 && codepoint <= 0xDFFF) { return false; /* surrogate code point */ }
     return true;
 }
 
@@ -59,54 +54,52 @@ static bool is_valid_codepoint(int codepoint)
  *
  * Returns: the Unicode codepoint on success, -1 on failure.
  */
-int mod_utf8_codepoint(const char *s, size_t n, char **end)
+int mod_utf8_codepoint(const char* s, size_t n, char** end)
 {
-    static int min_cp[5] = { 0x80, 0x800, 0x10000, 0x200000, 0x4000000 };
-    const unsigned char *p;
-    unsigned byte, mask, len, i;
-    int cp;
+    static int           min_cp[5] = {0x80, 0x800, 0x10000, 0x200000, 0x4000000};
+    const unsigned char* p;
+    unsigned             byte, mask, len, i;
+    int                  cp;
 
     if (n == 0 || *s == 0) {
         /* empty sequence */
-        *end = (char *)s;
+        *end = (char*)s;
         return -1;
     }
 
-    p = (const unsigned char *)s;
+    p    = (const unsigned char*)s;
     byte = *p++;
-    if (byte < 0x80) {
-        cp = byte;              /* one byte sequence */
-    } else if (byte >= 0xFE) {
-        cp = -1;                /* impossible bytes 0xFE, 0xFF */
-    } else if ((byte & 0x40) == 0) {
-        cp = -1;                /* unexpected continuation byte */
-    } else {
+    if (byte < 0x80) { cp = byte; /* one byte sequence */ }
+    else if (byte >= 0xFE) {
+        cp = -1; /* impossible bytes 0xFE, 0xFF */
+    }
+    else if ((byte & 0x40) == 0) {
+        cp = -1; /* unexpected continuation byte */
+    }
+    else {
         /* multi-byte sequence */
         len = 0;
-        for (mask = 0x80; byte & mask; mask >>= 1) {
-            len++;
-        }
+        for (mask = 0x80; byte & mask; mask >>= 1) { len++; }
         assert(len > 1 && len < 7);
         cp = byte & (mask - 1);
         for (i = 1; i < len; i++) {
             byte = i < n ? *p : 0;
             if ((byte & 0xC0) != 0x80) {
-                cp = -1;        /* continuation byte missing */
+                cp = -1; /* continuation byte missing */
                 goto out;
             }
             p++;
             cp <<= 6;
-            cp |= byte & 0x3F;
+            cp  |= byte & 0x3F;
         }
-        if (!is_valid_codepoint(cp)) {
-            cp = -1;
-        } else if (cp < min_cp[len - 2] && !(cp == 0 && len == 2)) {
-            cp = -1;            /* overlong, not \xC0\x80 */
+        if (!is_valid_codepoint(cp)) { cp = -1; }
+        else if (cp < min_cp[len - 2] && !(cp == 0 && len == 2)) {
+            cp = -1; /* overlong, not \xC0\x80 */
         }
     }
 
 out:
-    *end = (char *)p;
+    *end = (char*)p;
     return cp;
 }
 
@@ -125,9 +118,7 @@ ssize_t mod_utf8_encode(char buf[], size_t bufsz, int codepoint)
 {
     assert(bufsz >= 5);
 
-    if (!is_valid_codepoint(codepoint)) {
-        return -1;
-    }
+    if (!is_valid_codepoint(codepoint)) { return -1; }
 
     if (codepoint > 0 && codepoint <= 0x7F) {
         buf[0] = codepoint & 0x7F;

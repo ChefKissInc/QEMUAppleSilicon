@@ -18,13 +18,12 @@
 #include "qobject/qdict.h"
 #include "qobject/qjson.h"
 
-static void timestamp_put(QDict *qdict)
+static void timestamp_put(QDict* qdict)
 {
-    QDict *ts;
+    QDict*  ts;
     int64_t rt = g_get_real_time();
 
-    ts = qdict_from_jsonf_nofail("{ 'seconds': %lld, 'microseconds': %lld }",
-                                 (long long)rt / G_USEC_PER_SEC,
+    ts = qdict_from_jsonf_nofail("{ 'seconds': %lld, 'microseconds': %lld }", (long long)rt / G_USEC_PER_SEC,
                                  (long long)rt % G_USEC_PER_SEC);
     qdict_put(qdict, "timestamp", ts);
 }
@@ -33,9 +32,9 @@ static void timestamp_put(QDict *qdict)
  * Build a QDict, then fill event name and time stamp, caller should free the
  * QDict after usage.
  */
-QDict *qmp_event_build_dict(const char *event_name)
+QDict* qmp_event_build_dict(const char* event_name)
 {
-    QDict *dict = qdict_new();
+    QDict* dict = qdict_new();
     qdict_put_str(dict, "event", event_name);
     timestamp_put(dict);
     return dict;

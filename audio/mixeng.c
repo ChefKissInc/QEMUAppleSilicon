@@ -35,8 +35,8 @@
 #define ENDIAN_CONVERT(v) (v)
 
 /* Signed 8 bit */
-#define BSIZE 8
-#define ITYPE int
+#define BSIZE  8
+#define ITYPE  int
 #define IN_MIN SCHAR_MIN
 #define IN_MAX SCHAR_MAX
 #define SIGNED
@@ -50,11 +50,11 @@
 #undef SHIFT
 
 /* Unsigned 8 bit */
-#define BSIZE 8
-#define ITYPE uint
+#define BSIZE  8
+#define ITYPE  uint
 #define IN_MIN 0
 #define IN_MAX UCHAR_MAX
-#define SHIFT 8
+#define SHIFT  8
 #include "mixeng_template.h"
 #undef IN_MAX
 #undef IN_MIN
@@ -66,19 +66,19 @@
 #undef ENDIAN_CONVERSION
 
 /* Signed 16 bit */
-#define BSIZE 16
-#define ITYPE int
+#define BSIZE  16
+#define ITYPE  int
 #define IN_MIN SHRT_MIN
 #define IN_MAX SHRT_MAX
 #define SIGNED
-#define SHIFT 16
+#define SHIFT             16
 #define ENDIAN_CONVERSION natural
 #define ENDIAN_CONVERT(v) (v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
 #define ENDIAN_CONVERSION swap
-#define ENDIAN_CONVERT(v) bswap16 (v)
+#define ENDIAN_CONVERT(v) bswap16(v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
@@ -90,18 +90,18 @@
 #undef SHIFT
 
 /* Unsigned 16 bit */
-#define BSIZE 16
-#define ITYPE uint
-#define IN_MIN 0
-#define IN_MAX USHRT_MAX
-#define SHIFT 16
+#define BSIZE             16
+#define ITYPE             uint
+#define IN_MIN            0
+#define IN_MAX            USHRT_MAX
+#define SHIFT             16
 #define ENDIAN_CONVERSION natural
 #define ENDIAN_CONVERT(v) (v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
 #define ENDIAN_CONVERSION swap
-#define ENDIAN_CONVERT(v) bswap16 (v)
+#define ENDIAN_CONVERT(v) bswap16(v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
@@ -112,19 +112,19 @@
 #undef SHIFT
 
 /* Signed 32 bit */
-#define BSIZE 32
-#define ITYPE int
+#define BSIZE  32
+#define ITYPE  int
 #define IN_MIN INT32_MIN
 #define IN_MAX INT32_MAX
 #define SIGNED
-#define SHIFT 32
+#define SHIFT             32
 #define ENDIAN_CONVERSION natural
 #define ENDIAN_CONVERT(v) (v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
 #define ENDIAN_CONVERSION swap
-#define ENDIAN_CONVERT(v) bswap32 (v)
+#define ENDIAN_CONVERT(v) bswap32(v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
@@ -136,18 +136,18 @@
 #undef SHIFT
 
 /* Unsigned 32 bit */
-#define BSIZE 32
-#define ITYPE uint
-#define IN_MIN 0
-#define IN_MAX UINT32_MAX
-#define SHIFT 32
+#define BSIZE             32
+#define ITYPE             uint
+#define IN_MIN            0
+#define IN_MAX            UINT32_MAX
+#define SHIFT             32
 #define ENDIAN_CONVERSION natural
 #define ENDIAN_CONVERT(v) (v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
 #define ENDIAN_CONVERSION swap
-#define ENDIAN_CONVERT(v) bswap32 (v)
+#define ENDIAN_CONVERT(v) bswap32(v)
 #include "mixeng_template.h"
 #undef ENDIAN_CONVERT
 #undef ENDIAN_CONVERSION
@@ -157,141 +157,66 @@
 #undef ITYPE
 #undef SHIFT
 
-t_sample *mixeng_conv[2][2][2][3] = {
-    {
-        {
-            {
-                conv_natural_uint8_t_to_mono,
-                conv_natural_uint16_t_to_mono,
-                conv_natural_uint32_t_to_mono
-            },
-            {
-                conv_natural_uint8_t_to_mono,
-                conv_swap_uint16_t_to_mono,
-                conv_swap_uint32_t_to_mono,
-            }
-        },
-        {
-            {
-                conv_natural_int8_t_to_mono,
-                conv_natural_int16_t_to_mono,
-                conv_natural_int32_t_to_mono
-            },
-            {
-                conv_natural_int8_t_to_mono,
-                conv_swap_int16_t_to_mono,
-                conv_swap_int32_t_to_mono
-            }
-        }
-    },
-    {
-        {
-            {
-                conv_natural_uint8_t_to_stereo,
-                conv_natural_uint16_t_to_stereo,
-                conv_natural_uint32_t_to_stereo
-            },
-            {
-                conv_natural_uint8_t_to_stereo,
-                conv_swap_uint16_t_to_stereo,
-                conv_swap_uint32_t_to_stereo
-            }
-        },
-        {
-            {
-                conv_natural_int8_t_to_stereo,
-                conv_natural_int16_t_to_stereo,
-                conv_natural_int32_t_to_stereo
-            },
-            {
-                conv_natural_int8_t_to_stereo,
-                conv_swap_int16_t_to_stereo,
-                conv_swap_int32_t_to_stereo,
-            }
-        }
-    }
-};
+t_sample* mixeng_conv[2][2][2][3] = {
+    {{{conv_natural_uint8_t_to_mono, conv_natural_uint16_t_to_mono, conv_natural_uint32_t_to_mono},
+      {
+          conv_natural_uint8_t_to_mono,
+          conv_swap_uint16_t_to_mono,
+          conv_swap_uint32_t_to_mono,
+      }},
+     {{conv_natural_int8_t_to_mono, conv_natural_int16_t_to_mono, conv_natural_int32_t_to_mono},
+      {conv_natural_int8_t_to_mono, conv_swap_int16_t_to_mono, conv_swap_int32_t_to_mono}}},
+    {{{conv_natural_uint8_t_to_stereo, conv_natural_uint16_t_to_stereo, conv_natural_uint32_t_to_stereo},
+      {conv_natural_uint8_t_to_stereo, conv_swap_uint16_t_to_stereo, conv_swap_uint32_t_to_stereo}},
+     {{conv_natural_int8_t_to_stereo, conv_natural_int16_t_to_stereo, conv_natural_int32_t_to_stereo},
+      {
+          conv_natural_int8_t_to_stereo,
+          conv_swap_int16_t_to_stereo,
+          conv_swap_int32_t_to_stereo,
+      }}}};
 
-f_sample *mixeng_clip[2][2][2][3] = {
-    {
-        {
-            {
-                clip_natural_uint8_t_from_mono,
-                clip_natural_uint16_t_from_mono,
-                clip_natural_uint32_t_from_mono
-            },
-            {
-                clip_natural_uint8_t_from_mono,
-                clip_swap_uint16_t_from_mono,
-                clip_swap_uint32_t_from_mono
-            }
-        },
-        {
-            {
-                clip_natural_int8_t_from_mono,
-                clip_natural_int16_t_from_mono,
-                clip_natural_int32_t_from_mono
-            },
-            {
-                clip_natural_int8_t_from_mono,
-                clip_swap_int16_t_from_mono,
-                clip_swap_int32_t_from_mono
-            }
-        }
-    },
-    {
-        {
-            {
-                clip_natural_uint8_t_from_stereo,
-                clip_natural_uint16_t_from_stereo,
-                clip_natural_uint32_t_from_stereo
-            },
-            {
-                clip_natural_uint8_t_from_stereo,
-                clip_swap_uint16_t_from_stereo,
-                clip_swap_uint32_t_from_stereo
-            }
-        },
-        {
-            {
-                clip_natural_int8_t_from_stereo,
-                clip_natural_int16_t_from_stereo,
-                clip_natural_int32_t_from_stereo
-            },
-            {
-                clip_natural_int8_t_from_stereo,
-                clip_swap_int16_t_from_stereo,
-                clip_swap_int32_t_from_stereo
-            }
-        }
-    }
-};
+f_sample* mixeng_clip[2][2][2][3] = {
+    {{{clip_natural_uint8_t_from_mono, clip_natural_uint16_t_from_mono, clip_natural_uint32_t_from_mono},
+      {clip_natural_uint8_t_from_mono, clip_swap_uint16_t_from_mono, clip_swap_uint32_t_from_mono}},
+     {{clip_natural_int8_t_from_mono, clip_natural_int16_t_from_mono, clip_natural_int32_t_from_mono},
+      {clip_natural_int8_t_from_mono, clip_swap_int16_t_from_mono, clip_swap_int32_t_from_mono}}},
+    {{{clip_natural_uint8_t_from_stereo, clip_natural_uint16_t_from_stereo, clip_natural_uint32_t_from_stereo},
+      {clip_natural_uint8_t_from_stereo, clip_swap_uint16_t_from_stereo, clip_swap_uint32_t_from_stereo}},
+     {{clip_natural_int8_t_from_stereo, clip_natural_int16_t_from_stereo, clip_natural_int32_t_from_stereo},
+      {clip_natural_int8_t_from_stereo, clip_swap_int16_t_from_stereo, clip_swap_int32_t_from_stereo}}}};
 
 #ifdef FLOAT_MIXENG
-#define CONV_NATURAL_FLOAT(x) (x)
-#define CLIP_NATURAL_FLOAT(x) (x)
+    #define CONV_NATURAL_FLOAT(x) (x)
+    #define CLIP_NATURAL_FLOAT(x) (x)
 #else
 /* macros to map [-1.f, 1.f] <-> [INT32_MIN, INT32_MAX + 1] */
 static const float float_scale = (int64_t)INT32_MAX + 1;
-#define CONV_NATURAL_FLOAT(x) ((x) * float_scale)
+    #define CONV_NATURAL_FLOAT(x) ((x) * float_scale)
 
-#ifdef RECIPROCAL
+    #ifdef RECIPROCAL
 static const float float_scale_reciprocal = 1.f / ((int64_t)INT32_MAX + 1);
-#define CLIP_NATURAL_FLOAT(x) ((x) * float_scale_reciprocal)
-#else
-#define CLIP_NATURAL_FLOAT(x) ((x) / float_scale)
-#endif
+        #define CLIP_NATURAL_FLOAT(x) ((x) * float_scale_reciprocal)
+    #else
+        #define CLIP_NATURAL_FLOAT(x) ((x) / float_scale)
+    #endif
 #endif
 
-#define F32_TO_F32S(v) \
-    bswap32((union { uint32_t i; float f; }){ .f = (v) }.i)
-#define F32S_TO_F32(v) \
-    ((union { uint32_t i; float f; }){ .i = bswap32(v) }.f)
+#define F32_TO_F32S(v)      \
+    bswap32((union {        \
+                uint32_t i; \
+                float    f; \
+            }){.f = (v)}    \
+                .i)
+#define F32S_TO_F32(v)   \
+    ((union {            \
+         uint32_t i;     \
+         float    f;     \
+     }){.i = bswap32(v)} \
+         .f)
 
-static void conv_natural_float_to_mono(struct st_sample *dst, const void *src,
-                                       int samples)
+static void conv_natural_float_to_mono(struct st_sample* dst, const void* src, int samples)
 {
-    const float *in = src;
+    const float* in = src;
 
     while (samples--) {
         dst->r = dst->l = CONV_NATURAL_FLOAT(*in++);
@@ -299,10 +224,9 @@ static void conv_natural_float_to_mono(struct st_sample *dst, const void *src,
     }
 }
 
-static void conv_swap_float_to_mono(struct st_sample *dst, const void *src,
-                                    int samples)
+static void conv_swap_float_to_mono(struct st_sample* dst, const void* src, int samples)
 {
-    const uint32_t *in_f32s = src;
+    const uint32_t* in_f32s = src;
 
     while (samples--) {
         dst->r = dst->l = CONV_NATURAL_FLOAT(F32S_TO_F32(*in_f32s++));
@@ -310,10 +234,9 @@ static void conv_swap_float_to_mono(struct st_sample *dst, const void *src,
     }
 }
 
-static void conv_natural_float_to_stereo(struct st_sample *dst, const void *src,
-                                         int samples)
+static void conv_natural_float_to_stereo(struct st_sample* dst, const void* src, int samples)
 {
-    const float *in = src;
+    const float* in = src;
 
     while (samples--) {
         dst->l = CONV_NATURAL_FLOAT(*in++);
@@ -322,10 +245,9 @@ static void conv_natural_float_to_stereo(struct st_sample *dst, const void *src,
     }
 }
 
-static void conv_swap_float_to_stereo(struct st_sample *dst, const void *src,
-                                      int samples)
+static void conv_swap_float_to_stereo(struct st_sample* dst, const void* src, int samples)
 {
-    const uint32_t *in_f32s = src;
+    const uint32_t* in_f32s = src;
 
     while (samples--) {
         dst->l = CONV_NATURAL_FLOAT(F32S_TO_F32(*in_f32s++));
@@ -334,21 +256,18 @@ static void conv_swap_float_to_stereo(struct st_sample *dst, const void *src,
     }
 }
 
-t_sample *mixeng_conv_float[2][2] = {
-    {
-        conv_natural_float_to_mono,
-        conv_swap_float_to_mono,
-    },
-    {
-        conv_natural_float_to_stereo,
-        conv_swap_float_to_stereo,
-    }
-};
+t_sample* mixeng_conv_float[2][2] = {{
+                                         conv_natural_float_to_mono,
+                                         conv_swap_float_to_mono,
+                                     },
+                                     {
+                                         conv_natural_float_to_stereo,
+                                         conv_swap_float_to_stereo,
+                                     }};
 
-static void clip_natural_float_from_mono(void *dst, const struct st_sample *src,
-                                         int samples)
+static void clip_natural_float_from_mono(void* dst, const struct st_sample* src, int samples)
 {
-    float *out = dst;
+    float* out = dst;
 
     while (samples--) {
         *out++ = CLIP_NATURAL_FLOAT(src->l + src->r);
@@ -356,10 +275,9 @@ static void clip_natural_float_from_mono(void *dst, const struct st_sample *src,
     }
 }
 
-static void clip_swap_float_from_mono(void *dst, const struct st_sample *src,
-                                      int samples)
+static void clip_swap_float_from_mono(void* dst, const struct st_sample* src, int samples)
 {
-    uint32_t *out_f32s = dst;
+    uint32_t* out_f32s = dst;
 
     while (samples--) {
         *out_f32s++ = F32_TO_F32S(CLIP_NATURAL_FLOAT(src->l + src->r));
@@ -367,10 +285,9 @@ static void clip_swap_float_from_mono(void *dst, const struct st_sample *src,
     }
 }
 
-static void clip_natural_float_from_stereo(
-    void *dst, const struct st_sample *src, int samples)
+static void clip_natural_float_from_stereo(void* dst, const struct st_sample* src, int samples)
 {
-    float *out = dst;
+    float* out = dst;
 
     while (samples--) {
         *out++ = CLIP_NATURAL_FLOAT(src->l);
@@ -379,10 +296,9 @@ static void clip_natural_float_from_stereo(
     }
 }
 
-static void clip_swap_float_from_stereo(
-    void *dst, const struct st_sample *src, int samples)
+static void clip_swap_float_from_stereo(void* dst, const struct st_sample* src, int samples)
 {
-    uint32_t *out_f32s = dst;
+    uint32_t* out_f32s = dst;
 
     while (samples--) {
         *out_f32s++ = F32_TO_F32S(CLIP_NATURAL_FLOAT(src->l));
@@ -391,44 +307,38 @@ static void clip_swap_float_from_stereo(
     }
 }
 
-f_sample *mixeng_clip_float[2][2] = {
-    {
-        clip_natural_float_from_mono,
-        clip_swap_float_from_mono,
-    },
-    {
-        clip_natural_float_from_stereo,
-        clip_swap_float_from_stereo,
-    }
-};
+f_sample* mixeng_clip_float[2][2] = {{
+                                         clip_natural_float_from_mono,
+                                         clip_swap_float_from_mono,
+                                     },
+                                     {
+                                         clip_natural_float_from_stereo,
+                                         clip_swap_float_from_stereo,
+                                     }};
 
-void audio_sample_to_uint64(const void *samples, int pos,
-                            uint64_t *left, uint64_t *right)
+void audio_sample_to_uint64(const void* samples, int pos, uint64_t* left, uint64_t* right)
 {
 #ifdef FLOAT_MIXENG
-    error_report(
-        "Coreaudio and floating point samples are not supported by replay yet");
+    error_report("Coreaudio and floating point samples are not supported by replay yet");
     abort();
 #else
-    const struct st_sample *sample = samples;
-    sample += pos;
-    *left = sample->l;
-    *right = sample->r;
+    const struct st_sample* sample  = samples;
+    sample                         += pos;
+    *left                           = sample->l;
+    *right                          = sample->r;
 #endif
 }
 
-void audio_sample_from_uint64(void *samples, int pos,
-                            uint64_t left, uint64_t right)
+void audio_sample_from_uint64(void* samples, int pos, uint64_t left, uint64_t right)
 {
 #ifdef FLOAT_MIXENG
-    error_report(
-        "Coreaudio and floating point samples are not supported by replay yet");
+    error_report("Coreaudio and floating point samples are not supported by replay yet");
     abort();
 #else
-    struct st_sample *sample = samples;
-    sample += pos;
-    sample->l = left;
-    sample->r = right;
+    struct st_sample* sample  = samples;
+    sample                   += pos;
+    sample->l                 = left;
+    sample->r                 = right;
 #endif
 }
 
@@ -465,43 +375,41 @@ void audio_sample_from_uint64(void *samples, int pos,
  */
 
 /* Private data */
-struct rate {
-    uint64_t opos;
-    uint64_t opos_inc;
-    uint32_t ipos;              /* position in the input stream (integer) */
-    struct st_sample ilast;          /* last sample in the input stream */
+struct rate
+{
+    uint64_t         opos;
+    uint64_t         opos_inc;
+    uint32_t         ipos;  /* position in the input stream (integer) */
+    struct st_sample ilast; /* last sample in the input stream */
 };
 
 /*
  * Prepare processing.
  */
-void *st_rate_start (int inrate, int outrate)
+void* st_rate_start(int inrate, int outrate)
 {
-    struct rate *rate = g_new0(struct rate, 1);
+    struct rate* rate = g_new0(struct rate, 1);
 
     rate->opos = 0;
 
     /* increment */
-    rate->opos_inc = ((uint64_t) inrate << 32) / outrate;
+    rate->opos_inc = ((uint64_t)inrate << 32) / outrate;
 
-    rate->ipos = 0;
+    rate->ipos    = 0;
     rate->ilast.l = 0;
     rate->ilast.r = 0;
     return rate;
 }
 
-#define NAME st_rate_flow_mix
+#define NAME     st_rate_flow_mix
 #define OP(a, b) a += b
 #include "rate_template.h"
 
-#define NAME st_rate_flow
+#define NAME     st_rate_flow
 #define OP(a, b) a = b
 #include "rate_template.h"
 
-void st_rate_stop (void *opaque)
-{
-    g_free (opaque);
-}
+void st_rate_stop(void* opaque) { g_free(opaque); }
 
 /**
  * st_rate_frames_out() - returns the number of frames the resampling code
@@ -514,30 +422,24 @@ void st_rate_stop (void *opaque)
  * the function returns the maximum number of output frames the resampling
  * code can generate.
  */
-uint32_t st_rate_frames_out(void *opaque, uint32_t frames_in)
+uint32_t st_rate_frames_out(void* opaque, uint32_t frames_in)
 {
-    struct rate *rate = opaque;
-    uint64_t opos_end, opos_delta;
-    uint32_t ipos_end;
-    uint32_t frames_out;
+    struct rate* rate = opaque;
+    uint64_t     opos_end, opos_delta;
+    uint32_t     ipos_end;
+    uint32_t     frames_out;
 
-    if (rate->opos_inc == 1ULL << 32) {
-        return frames_in;
-    }
+    if (rate->opos_inc == 1ULL << 32) { return frames_in; }
 
     /* no output frame without at least one input frame */
-    if (!frames_in) {
-        return 0;
-    }
+    if (!frames_in) { return 0; }
 
     /* last frame read was at rate->ipos - 1 */
     ipos_end = rate->ipos - 1 + frames_in;
     opos_end = (uint64_t)ipos_end << 32;
 
     /* last frame written was at rate->opos - rate->opos_inc */
-    if (opos_end + rate->opos_inc <= rate->opos) {
-        return 0;
-    }
+    if (opos_end + rate->opos_inc <= rate->opos) { return 0; }
     opos_delta = opos_end - rate->opos + rate->opos_inc;
     frames_out = opos_delta / rate->opos_inc;
 
@@ -554,24 +456,23 @@ uint32_t st_rate_frames_out(void *opaque, uint32_t frames_in)
  * When downsampling, there may be more than one correct result. In this
  * case, the function returns the maximum number of input frames needed.
  */
-uint32_t st_rate_frames_in(void *opaque, uint32_t frames_out)
+uint32_t st_rate_frames_in(void* opaque, uint32_t frames_out)
 {
-    struct rate *rate = opaque;
-    uint64_t opos_start, opos_end;
-    uint32_t ipos_start, ipos_end;
+    struct rate* rate = opaque;
+    uint64_t     opos_start, opos_end;
+    uint32_t     ipos_start, ipos_end;
 
-    if (rate->opos_inc == 1ULL << 32) {
-        return frames_out;
-    }
+    if (rate->opos_inc == 1ULL << 32) { return frames_out; }
 
     if (frames_out) {
         opos_start = rate->opos;
         ipos_start = rate->ipos;
-    } else {
+    }
+    else {
         uint64_t offset;
 
         /* add offset = ceil(opos_inc) to opos and ipos to avoid an underflow */
-        offset = (rate->opos_inc + (1ULL << 32) - 1) & ~((1ULL << 32) - 1);
+        offset     = (rate->opos_inc + (1ULL << 32) - 1) & ~((1ULL << 32) - 1);
         opos_start = rate->opos + offset;
         ipos_start = rate->ipos + (offset >> 32);
     }
@@ -583,15 +484,12 @@ uint32_t st_rate_frames_in(void *opaque, uint32_t frames_out)
     return ipos_end + 1 > ipos_start ? ipos_end + 1 - ipos_start : 0;
 }
 
-void mixeng_clear (struct st_sample *buf, int len)
-{
-    memset (buf, 0, len * sizeof (struct st_sample));
-}
+void mixeng_clear(struct st_sample* buf, int len) { memset(buf, 0, len * sizeof(struct st_sample)); }
 
-void mixeng_volume (struct st_sample *buf, int len, struct mixeng_volume *vol)
+void mixeng_volume(struct st_sample* buf, int len, struct mixeng_volume* vol)
 {
     if (vol->mute) {
-        mixeng_clear (buf, len);
+        mixeng_clear(buf, len);
         return;
     }
 

@@ -30,10 +30,11 @@
 
 #define SIG_IPI SIGUSR1
 
-#define TYPE_MAIN_LOOP  "main-loop"
+#define TYPE_MAIN_LOOP "main-loop"
 OBJECT_DECLARE_TYPE(MainLoop, MainLoopClass, MAIN_LOOP)
 
-struct MainLoop {
+struct MainLoop
+{
     EventLoopBase parent_obj;
 };
 typedef struct MainLoop MainLoop;
@@ -51,7 +52,7 @@ typedef struct MainLoop MainLoop;
  *
  * In the case of QEMU tools, this will also start/initialize timers.
  */
-int qemu_init_main_loop(Error **errp);
+int qemu_init_main_loop(Error** errp);
 
 /**
  * main_loop_wait: Run one iteration of the main loop.
@@ -93,7 +94,7 @@ void main_loop_wait(int nonblocking);
 /**
  * qemu_get_aio_context: Return the main loop's AioContext
  */
-AioContext *qemu_get_aio_context(void);
+AioContext* qemu_get_aio_context(void);
 
 /**
  * qemu_notify_event: Force processing of pending events.
@@ -111,7 +112,7 @@ void qemu_notify_event(void);
 
 #ifdef _WIN32
 /* return TRUE if no sleep should be done afterwards */
-typedef int PollingFunc(void *opaque);
+typedef int PollingFunc(void* opaque);
 
 /**
  * qemu_add_polling_cb: Register a Windows-specific polling callback
@@ -131,7 +132,7 @@ typedef int PollingFunc(void *opaque);
  * immediate completion of main_loop_wait.
  * @opaque: A pointer-size value that is passed to @func.
  */
-int qemu_add_polling_cb(PollingFunc *func, void *opaque);
+int qemu_add_polling_cb(PollingFunc* func, void* opaque);
 
 /**
  * qemu_del_polling_cb: Unregister a Windows-specific polling callback
@@ -142,10 +143,10 @@ int qemu_add_polling_cb(PollingFunc *func, void *opaque);
  * @func: The function that was passed to qemu_add_polling_cb.
  * @opaque: A pointer-size value that was passed to qemu_add_polling_cb.
  */
-void qemu_del_polling_cb(PollingFunc *func, void *opaque);
+void qemu_del_polling_cb(PollingFunc* func, void* opaque);
 
 /* Wait objects handling */
-typedef void WaitObjectFunc(void *opaque);
+typedef void WaitObjectFunc(void* opaque);
 
 /**
  * qemu_add_wait_object: Register a callback for a Windows handle
@@ -162,7 +163,7 @@ typedef void WaitObjectFunc(void *opaque);
  * @func: A function to be called when @handle is in a signaled state.
  * @opaque: A pointer-size value that is passed to @func.
  */
-int qemu_add_wait_object(HANDLE handle, WaitObjectFunc *func, void *opaque);
+int qemu_add_wait_object(HANDLE handle, WaitObjectFunc* func, void* opaque);
 
 /**
  * qemu_del_wait_object: Unregister a callback for a Windows handle
@@ -173,12 +174,12 @@ int qemu_add_wait_object(HANDLE handle, WaitObjectFunc *func, void *opaque);
  * @func: The function that was passed to qemu_add_wait_object.
  * @opaque: A pointer-size value that was passed to qemu_add_wait_object.
  */
-void qemu_del_wait_object(HANDLE handle, WaitObjectFunc *func, void *opaque);
+void qemu_del_wait_object(HANDLE handle, WaitObjectFunc* func, void* opaque);
 #endif
 
 /* async I/O support */
 
-typedef void IOReadHandler(void *opaque, const uint8_t *buf, int size);
+typedef void IOReadHandler(void* opaque, const uint8_t* buf, int size);
 
 /**
  * IOCanReadHandler: Return the number of bytes that #IOReadHandler can accept
@@ -193,7 +194,7 @@ typedef void IOReadHandler(void *opaque, const uint8_t *buf, int size);
  * is called again.  aio_notify() or qemu_notify_event() can be used to kick
  * the event loop.
  */
-typedef int IOCanReadHandler(void *opaque);
+typedef int IOCanReadHandler(void* opaque);
 
 /**
  * qemu_set_fd_handler: Register a file descriptor with the main loop
@@ -223,11 +224,7 @@ typedef int IOCanReadHandler(void *opaque);
  *
  * @opaque: A pointer-sized value that is passed to @fd_read and @fd_write.
  */
-void qemu_set_fd_handler(int fd,
-                         IOHandler *fd_read,
-                         IOHandler *fd_write,
-                         void *opaque);
-
+void qemu_set_fd_handler(int fd, IOHandler* fd_read, IOHandler* fd_write, void* opaque);
 
 /**
  * event_notifier_set_handler: Register an EventNotifier with the main loop
@@ -240,11 +237,10 @@ void qemu_set_fd_handler(int fd,
  * @handler: A level-triggered callback that is fired when @e
  * has been set.  @e is passed to it as a parameter.
  */
-void event_notifier_set_handler(EventNotifier *e,
-                                EventNotifierHandler *handler);
+void event_notifier_set_handler(EventNotifier* e, EventNotifierHandler* handler);
 
-GSource *iohandler_get_g_source(void);
-AioContext *iohandler_get_aio_context(void);
+GSource*    iohandler_get_g_source(void);
+AioContext* iohandler_get_aio_context(void);
 
 /**
  * bql_locked: Return lock status of the Big QEMU Lock (BQL)
@@ -300,30 +296,33 @@ bool qemu_in_main_thread(void);
  * Please refer to include/block/block-global-state.h for more
  * information about GS API.
  */
-#define GLOBAL_STATE_CODE()                                         \
-    do {                                                            \
-        assert(qemu_in_main_thread());                              \
-    } while (0)
+#define GLOBAL_STATE_CODE()            \
+    do {                               \
+        assert(qemu_in_main_thread()); \
+    }                                  \
+    while (0)
 
 /*
  * Mark and check that the function is part of the I/O API.
  * Please refer to include/block/block-io.h for more
  * information about IO API.
  */
-#define IO_CODE()                                                   \
-    do {                                                            \
-        /* nop */                                                   \
-    } while (0)
+#define IO_CODE() \
+    do {          \
+        /* nop */ \
+    }             \
+    while (0)
 
 /*
  * Mark and check that the function is part of the "I/O OR GS" API.
  * Please refer to include/block/block-io.h for more
  * information about "IO or GS" API.
  */
-#define IO_OR_GS_CODE()                                             \
-    do {                                                            \
-        /* nop */                                                   \
-    } while (0)
+#define IO_OR_GS_CODE() \
+    do {                \
+        /* nop */       \
+    }                   \
+    while (0)
 
 /**
  * bql_lock: Lock the Big QEMU Lock (BQL).
@@ -339,7 +338,7 @@ bool qemu_in_main_thread(void);
  * is a no-op there.
  */
 #define bql_lock() bql_lock_impl(__FILE__, __LINE__)
-void bql_lock_impl(const char *file, int line);
+void bql_lock_impl(const char* file, int line);
 
 /**
  * bql_unlock: Unlock the Big QEMU Lock (BQL).
@@ -363,26 +362,20 @@ void bql_unlock(void);
  */
 typedef struct BQLLockAuto BQLLockAuto;
 
-static inline BQLLockAuto *bql_auto_lock(const char *file, int line)
+static inline BQLLockAuto* bql_auto_lock(const char* file, int line)
 {
-    if (bql_locked()) {
-        return NULL;
-    }
+    if (bql_locked()) { return NULL; }
     bql_lock_impl(file, line);
     /* Anything non-NULL causes the cleanup function to be called */
-    return (BQLLockAuto *)(uintptr_t)1;
+    return (BQLLockAuto*)(uintptr_t)1;
 }
 
-static inline void bql_auto_unlock(BQLLockAuto *l)
-{
-    bql_unlock();
-}
+static inline void bql_auto_unlock(BQLLockAuto* l) { bql_unlock(); }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(BQLLockAuto, bql_auto_unlock)
 
-#define BQL_LOCK_GUARD() \
-    g_autoptr(BQLLockAuto) _bql_lock_auto __attribute__((unused)) \
-        = bql_auto_lock(__FILE__, __LINE__)
+#define BQL_LOCK_GUARD()                                                                              \
+    g_autoptr(BQLLockAuto) _bql_lock_auto __attribute__((unused)) = bql_auto_lock(__FILE__, __LINE__)
 
 /*
  * qemu_cond_wait_bql: Wait on condition for the Big QEMU Lock (BQL)
@@ -390,34 +383,33 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(BQLLockAuto, bql_auto_unlock)
  * This function atomically releases the Big QEMU Lock (BQL) and causes
  * the calling thread to block on the condition.
  */
-void qemu_cond_wait_bql(QemuCond *cond);
+void qemu_cond_wait_bql(QemuCond* cond);
 
 /*
  * qemu_cond_timedwait_bql: like the previous, but with timeout
  */
-void qemu_cond_timedwait_bql(QemuCond *cond, int ms);
+void qemu_cond_timedwait_bql(QemuCond* cond, int ms);
 
 /* internal interfaces */
 
-#define qemu_bh_new_guarded(cb, opaque, guard) \
-    qemu_bh_new_full((cb), (opaque), (stringify(cb)), guard)
-#define qemu_bh_new(cb, opaque) \
-    qemu_bh_new_full((cb), (opaque), (stringify(cb)), NULL)
-QEMUBH *qemu_bh_new_full(QEMUBHFunc *cb, void *opaque, const char *name,
-                         MemReentrancyGuard *reentrancy_guard);
-void qemu_bh_schedule_idle(QEMUBH *bh);
+#define qemu_bh_new_guarded(cb, opaque, guard) qemu_bh_new_full((cb), (opaque), (stringify(cb)), guard)
+#define qemu_bh_new(cb, opaque)                qemu_bh_new_full((cb), (opaque), (stringify(cb)), NULL)
+QEMUBH* qemu_bh_new_full(QEMUBHFunc* cb, void* opaque, const char* name, MemReentrancyGuard* reentrancy_guard);
+void    qemu_bh_schedule_idle(QEMUBH* bh);
 
-enum {
+enum
+{
     MAIN_LOOP_POLL_FILL,
     MAIN_LOOP_POLL_ERR,
     MAIN_LOOP_POLL_OK,
 };
 
-typedef struct MainLoopPoll {
-    int state;
+typedef struct MainLoopPoll
+{
+    int      state;
     uint32_t timeout;
-    GArray *pollfds;
+    GArray*  pollfds;
 } MainLoopPoll;
 
-void main_loop_poll_add_notifier(Notifier *notify);
-void main_loop_poll_remove_notifier(Notifier *notify);
+void main_loop_poll_add_notifier(Notifier* notify);
+void main_loop_poll_remove_notifier(Notifier* notify);

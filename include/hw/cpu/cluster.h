@@ -69,7 +69,8 @@ OBJECT_DECLARE_SIMPLE_TYPE(CPUClusterState, CPU_CLUSTER)
  *
  * State of a CPU cluster.
  */
-struct CPUClusterState {
+struct CPUClusterState
+{
     /*< private >*/
     DeviceState parent_obj;
 

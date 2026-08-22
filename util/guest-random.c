@@ -15,15 +15,13 @@
 #include "qemu/guest-random.h"
 #include "crypto/random.h"
 
+static __thread GRand* thread_rand;
+static bool            deterministic;
 
-static __thread GRand *thread_rand;
-static bool deterministic;
-
-
-static int glib_random_bytes(void *buf, size_t len)
+static int glib_random_bytes(void* buf, size_t len)
 {
-    GRand *rand = thread_rand;
-    size_t i;
+    GRand*   rand = thread_rand;
+    size_t   i;
     uint32_t x;
 
     if (unlikely(rand == NULL)) {
@@ -42,23 +40,21 @@ static int glib_random_bytes(void *buf, size_t len)
     return 0;
 }
 
-int qemu_guest_getrandom(void *buf, size_t len, Error **errp)
+int qemu_guest_getrandom(void* buf, size_t len, Error** errp)
 {
     int ret;
     if (unlikely(deterministic)) {
         /* Deterministic implementation using Glib's Mersenne Twister.  */
         ret = glib_random_bytes(buf, len);
-    } else {
+    }
+    else {
         /* Non-deterministic implementation using crypto routines.  */
         ret = qcrypto_random_bytes(buf, len, errp);
     }
     return ret;
 }
 
-void qemu_guest_getrandom_nofail(void *buf, size_t len)
-{
-    (void)qemu_guest_getrandom(buf, len, &error_fatal);
-}
+void qemu_guest_getrandom_nofail(void* buf, size_t len) { (void)qemu_guest_getrandom(buf, len, &error_fatal); }
 
 uint64_t qemu_guest_random_seed_thread_part1(void)
 {
@@ -74,19 +70,18 @@ void qemu_guest_random_seed_thread_part2(uint64_t seed)
 {
     assert(thread_rand == NULL);
     if (deterministic) {
-        thread_rand =
-            g_rand_new_with_seed_array((const guint32 *)&seed,
-                                       sizeof(seed) / sizeof(guint32));
+        thread_rand = g_rand_new_with_seed_array((const guint32*)&seed, sizeof(seed) / sizeof(guint32));
     }
 }
 
-int qemu_guest_random_seed_main(const char *seedstr, Error **errp)
+int qemu_guest_random_seed_main(const char* seedstr, Error** errp)
 {
     uint64_t seed;
     if (parse_uint_full(seedstr, 0, &seed)) {
         error_setg(errp, "Invalid seed number: %s", seedstr);
         return -1;
-    } else {
+    }
+    else {
         deterministic = true;
         qemu_guest_random_seed_thread_part2(seed);
         return 0;

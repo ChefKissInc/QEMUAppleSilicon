@@ -26,10 +26,9 @@
 #include "qemu/log.h"
 #include "net/slirp.h"
 
-
 #if defined(CONFIG_SMBD_COMMAND)
-#include <pwd.h>
-#include <sys/wait.h>
+    #include <pwd.h>
+    #include <sys/wait.h>
 #endif
 #include "net/eth.h"
 #include "net/net.h"
@@ -46,19 +45,17 @@
 #include "qobject/qdict.h"
 #include "util.h"
 
-static int get_str_sep(char *buf, int buf_size, const char **pp, int sep)
+static int get_str_sep(char* buf, int buf_size, const char** pp, int sep)
 {
     const char *p, *p1;
-    int len;
-    p = *pp;
+    int         len;
+    p  = *pp;
     p1 = strchr(p, sep);
-    if (!p1)
-        return -1;
+    if (!p1) { return -1; }
     len = p1 - p;
     p1++;
     if (buf_size > 0) {
-        if (len > buf_size - 1)
-            len = buf_size - 1;
+        if (len > buf_size - 1) { len = buf_size - 1; }
         memcpy(buf, p, len);
         buf[len] = '\0';
     }
@@ -70,56 +67,56 @@ static int get_str_sep(char *buf, int buf_size, const char **pp, int sep)
 
 #define SLIRP_CFG_HOSTFWD 1
 
-struct slirp_config_str {
-    struct slirp_config_str *next;
-    int flags;
-    char str[1024];
+struct slirp_config_str
+{
+    struct slirp_config_str* next;
+    int                      flags;
+    char                     str[1024];
 };
 
-struct GuestFwd {
-    CharBackend hd;
+struct GuestFwd
+{
+    CharBackend    hd;
     struct in_addr server;
-    int port;
-    Slirp *slirp;
+    int            port;
+    Slirp*         slirp;
 };
 
-typedef struct SlirpState {
+typedef struct SlirpState
+{
     NetClientState nc;
     QTAILQ_ENTRY(SlirpState) entry;
-    Slirp *slirp;
+    Slirp*   slirp;
     Notifier poll_notifier;
     Notifier exit_notifier;
 #if defined(CONFIG_SMBD_COMMAND)
-    gchar *smb_dir;
+    gchar* smb_dir;
 #endif
-    GSList *fwd;
+    GSList* fwd;
 } SlirpState;
 
-static struct slirp_config_str *slirp_configs;
-static QTAILQ_HEAD(, SlirpState) slirp_stacks =
-    QTAILQ_HEAD_INITIALIZER(slirp_stacks);
+static struct slirp_config_str* slirp_configs;
+static QTAILQ_HEAD(, SlirpState) slirp_stacks = QTAILQ_HEAD_INITIALIZER(slirp_stacks);
 
-static int slirp_hostfwd(SlirpState *s, const char *redir_str, Error **errp);
-static int slirp_guestfwd(SlirpState *s, const char *config_str, Error **errp);
+static int slirp_hostfwd(SlirpState* s, const char* redir_str, Error** errp);
+static int slirp_guestfwd(SlirpState* s, const char* config_str, Error** errp);
 
 #if defined(CONFIG_SMBD_COMMAND)
-static int slirp_smb(SlirpState *s, const char *exported_dir,
-                     struct in_addr vserver_addr, Error **errp);
-static void slirp_smb_cleanup(SlirpState *s);
+static int  slirp_smb(SlirpState* s, const char* exported_dir, struct in_addr vserver_addr, Error** errp);
+static void slirp_smb_cleanup(SlirpState* s);
 #else
-static inline void slirp_smb_cleanup(SlirpState *s) { }
+static inline void slirp_smb_cleanup(SlirpState* s) { }
 #endif
 
-static ssize_t net_slirp_send_packet(const void *pkt, size_t pkt_len,
-                                     void *opaque)
+static ssize_t net_slirp_send_packet(const void* pkt, size_t pkt_len, void* opaque)
 {
-    SlirpState *s = opaque;
-    uint8_t min_pkt[ETH_ZLEN];
-    size_t min_pktsz = sizeof(min_pkt);
+    SlirpState* s = opaque;
+    uint8_t     min_pkt[ETH_ZLEN];
+    size_t      min_pktsz = sizeof(min_pkt);
 
     if (net_peer_needs_padding(&s->nc)) {
         if (eth_pad_short_frame(min_pkt, &min_pktsz, pkt, pkt_len)) {
-            pkt = min_pkt;
+            pkt     = min_pkt;
             pkt_len = min_pktsz;
         }
     }
@@ -127,143 +124,130 @@ static ssize_t net_slirp_send_packet(const void *pkt, size_t pkt_len,
     return qemu_send_packet(&s->nc, pkt, pkt_len);
 }
 
-static ssize_t net_slirp_receive(NetClientState *nc, const uint8_t *buf, size_t size)
+static ssize_t net_slirp_receive(NetClientState* nc, const uint8_t* buf, size_t size)
 {
-    SlirpState *s = DO_UPCAST(SlirpState, nc, nc);
+    SlirpState* s = DO_UPCAST(SlirpState, nc, nc);
 
     slirp_input(s->slirp, buf, size);
 
     return size;
 }
 
-static void slirp_smb_exit(Notifier *n, void *data)
+static void slirp_smb_exit(Notifier* n, void* data)
 {
-    SlirpState *s = container_of(n, SlirpState, exit_notifier);
+    SlirpState* s = container_of(n, SlirpState, exit_notifier);
     slirp_smb_cleanup(s);
 }
 
 static void slirp_free_fwd(gpointer data)
 {
-    struct GuestFwd *fwd = data;
+    struct GuestFwd* fwd = data;
 
     qemu_chr_fe_deinit(&fwd->hd, true);
     g_free(data);
 }
 
-static void net_slirp_cleanup(NetClientState *nc)
+static void net_slirp_cleanup(NetClientState* nc)
 {
-    SlirpState *s = DO_UPCAST(SlirpState, nc, nc);
+    SlirpState* s = DO_UPCAST(SlirpState, nc, nc);
 
     g_slist_free_full(s->fwd, slirp_free_fwd);
     main_loop_poll_remove_notifier(&s->poll_notifier);
     slirp_cleanup(s->slirp);
-    if (s->exit_notifier.notify) {
-        qemu_remove_exit_notifier(&s->exit_notifier);
-    }
+    if (s->exit_notifier.notify) { qemu_remove_exit_notifier(&s->exit_notifier); }
     slirp_smb_cleanup(s);
     QTAILQ_REMOVE(&slirp_stacks, s, entry);
 }
 
 static NetClientInfo net_slirp_info = {
-    .type = NET_CLIENT_DRIVER_USER,
-    .size = sizeof(SlirpState),
+    .type    = NET_CLIENT_DRIVER_USER,
+    .size    = sizeof(SlirpState),
     .receive = net_slirp_receive,
     .cleanup = net_slirp_cleanup,
 };
 
-static void net_slirp_guest_error(const char *msg, void *opaque)
-{
-    qemu_log_mask(LOG_GUEST_ERROR, "%s", msg);
-}
+static void net_slirp_guest_error(const char* msg, void* opaque) { qemu_log_mask(LOG_GUEST_ERROR, "%s", msg); }
 
-static int64_t net_slirp_clock_get_ns(void *opaque)
-{
-    return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
-}
+static int64_t net_slirp_clock_get_ns(void* opaque) { return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL); }
 
 typedef struct SlirpTimer SlirpTimer;
-struct SlirpTimer {
+struct SlirpTimer
+{
     QEMUTimer timer;
-#if SLIRP_CHECK_VERSION(4,7,0)
-    Slirp *slirp;
+#if SLIRP_CHECK_VERSION(4, 7, 0)
+    Slirp*       slirp;
     SlirpTimerId id;
-    void *cb_opaque;
+    void*        cb_opaque;
 #endif
 };
 
-#if SLIRP_CHECK_VERSION(4,7,0)
-static void net_slirp_init_completed(Slirp *slirp, void *opaque)
+#if SLIRP_CHECK_VERSION(4, 7, 0)
+static void net_slirp_init_completed(Slirp* slirp, void* opaque)
 {
-    SlirpState *s = opaque;
-    s->slirp = slirp;
+    SlirpState* s = opaque;
+    s->slirp      = slirp;
 }
 
-static void net_slirp_timer_cb(void *opaque)
+static void net_slirp_timer_cb(void* opaque)
 {
-    SlirpTimer *t = opaque;
+    SlirpTimer* t = opaque;
     slirp_handle_timer(t->slirp, t->id, t->cb_opaque);
 }
 
-static void *net_slirp_timer_new_opaque(SlirpTimerId id,
-                                        void *cb_opaque, void *opaque)
+static void* net_slirp_timer_new_opaque(SlirpTimerId id, void* cb_opaque, void* opaque)
 {
-    SlirpState *s = opaque;
-    SlirpTimer *t = g_new(SlirpTimer, 1);
-    t->slirp = s->slirp;
-    t->id = id;
-    t->cb_opaque = cb_opaque;
-    timer_init_full(&t->timer, NULL, QEMU_CLOCK_VIRTUAL,
-                    SCALE_MS, QEMU_TIMER_ATTR_EXTERNAL,
-                    net_slirp_timer_cb, t);
+    SlirpState* s = opaque;
+    SlirpTimer* t = g_new(SlirpTimer, 1);
+    t->slirp      = s->slirp;
+    t->id         = id;
+    t->cb_opaque  = cb_opaque;
+    timer_init_full(&t->timer, NULL, QEMU_CLOCK_VIRTUAL, SCALE_MS, QEMU_TIMER_ATTR_EXTERNAL, net_slirp_timer_cb, t);
     return t;
 }
 #else
-static void *net_slirp_timer_new(SlirpTimerCb cb,
-                                 void *cb_opaque, void *opaque)
+static void* net_slirp_timer_new(SlirpTimerCb cb, void* cb_opaque, void* opaque)
 {
-    SlirpTimer *t = g_new(SlirpTimer, 1);
-    timer_init_full(&t->timer, NULL, QEMU_CLOCK_VIRTUAL,
-                    SCALE_MS, QEMU_TIMER_ATTR_EXTERNAL,
-                    cb, cb_opaque);
+    SlirpTimer* t = g_new(SlirpTimer, 1);
+    timer_init_full(&t->timer, NULL, QEMU_CLOCK_VIRTUAL, SCALE_MS, QEMU_TIMER_ATTR_EXTERNAL, cb, cb_opaque);
     return t;
 }
 #endif
 
-static void net_slirp_timer_free(void *timer, void *opaque)
+static void net_slirp_timer_free(void* timer, void* opaque)
 {
-    SlirpTimer *t = timer;
+    SlirpTimer* t = timer;
     timer_del(&t->timer);
     g_free(t);
 }
 
-static void net_slirp_timer_mod(void *timer, int64_t expire_timer,
-                                void *opaque)
+static void net_slirp_timer_mod(void* timer, int64_t expire_timer, void* opaque)
 {
-    SlirpTimer *t = timer;
+    SlirpTimer* t = timer;
     timer_mod(&t->timer, expire_timer);
 }
 
 #if !SLIRP_CHECK_VERSION(4, 9, 0)
-# define slirp_os_socket int
-# define slirp_pollfds_fill_socket slirp_pollfds_fill
-# define register_poll_socket register_poll_fd
-# define unregister_poll_socket unregister_poll_fd
+    #define slirp_os_socket           int
+    #define slirp_pollfds_fill_socket slirp_pollfds_fill
+    #define register_poll_socket      register_poll_fd
+    #define unregister_poll_socket    unregister_poll_fd
 #endif
 
-static void net_slirp_register_poll_sock(slirp_os_socket fd, void *opaque)
+static void net_slirp_register_poll_sock(slirp_os_socket fd, void* opaque)
 {
 #ifdef WIN32
-    AioContext *ctxt = qemu_get_aio_context();
+    AioContext* ctxt = qemu_get_aio_context();
 
     if (WSAEventSelect(fd, event_notifier_get_handle(&ctxt->notifier),
-                       FD_READ | FD_ACCEPT | FD_CLOSE |
-                       FD_CONNECT | FD_WRITE | FD_OOB) != 0) {
+                       FD_READ | FD_ACCEPT | FD_CLOSE | FD_CONNECT | FD_WRITE | FD_OOB)
+        != 0)
+    {
         error_setg_win32(&error_warn, WSAGetLastError(), "failed to WSAEventSelect()");
     }
 #endif
 }
 
-static void net_slirp_unregister_poll_sock(slirp_os_socket fd, void *opaque)
+static void net_slirp_unregister_poll_sock(slirp_os_socket fd, void* opaque)
 {
 #ifdef WIN32
     if (WSAEventSelect(fd, NULL, 0) != 0) {
@@ -272,56 +256,43 @@ static void net_slirp_unregister_poll_sock(slirp_os_socket fd, void *opaque)
 #endif
 }
 
-static void net_slirp_notify(void *opaque)
-{
-    qemu_notify_event();
-}
+static void net_slirp_notify(void* opaque) { qemu_notify_event(); }
 
 static const SlirpCb slirp_cb = {
-    .send_packet = net_slirp_send_packet,
-    .guest_error = net_slirp_guest_error,
+    .send_packet  = net_slirp_send_packet,
+    .guest_error  = net_slirp_guest_error,
     .clock_get_ns = net_slirp_clock_get_ns,
-#if SLIRP_CHECK_VERSION(4,7,0)
-    .init_completed = net_slirp_init_completed,
+#if SLIRP_CHECK_VERSION(4, 7, 0)
+    .init_completed   = net_slirp_init_completed,
     .timer_new_opaque = net_slirp_timer_new_opaque,
 #else
     .timer_new = net_slirp_timer_new,
 #endif
-    .timer_free = net_slirp_timer_free,
-    .timer_mod = net_slirp_timer_mod,
-    .register_poll_socket = net_slirp_register_poll_sock,
+    .timer_free             = net_slirp_timer_free,
+    .timer_mod              = net_slirp_timer_mod,
+    .register_poll_socket   = net_slirp_register_poll_sock,
     .unregister_poll_socket = net_slirp_unregister_poll_sock,
-    .notify = net_slirp_notify,
+    .notify                 = net_slirp_notify,
 };
 
 static int slirp_poll_to_gio(int events)
 {
     int ret = 0;
 
-    if (events & SLIRP_POLL_IN) {
-        ret |= G_IO_IN;
-    }
-    if (events & SLIRP_POLL_OUT) {
-        ret |= G_IO_OUT;
-    }
-    if (events & SLIRP_POLL_PRI) {
-        ret |= G_IO_PRI;
-    }
-    if (events & SLIRP_POLL_ERR) {
-        ret |= G_IO_ERR;
-    }
-    if (events & SLIRP_POLL_HUP) {
-        ret |= G_IO_HUP;
-    }
+    if (events & SLIRP_POLL_IN) { ret |= G_IO_IN; }
+    if (events & SLIRP_POLL_OUT) { ret |= G_IO_OUT; }
+    if (events & SLIRP_POLL_PRI) { ret |= G_IO_PRI; }
+    if (events & SLIRP_POLL_ERR) { ret |= G_IO_ERR; }
+    if (events & SLIRP_POLL_HUP) { ret |= G_IO_HUP; }
 
     return ret;
 }
 
-static int net_slirp_add_poll(slirp_os_socket fd, int events, void *opaque)
+static int net_slirp_add_poll(slirp_os_socket fd, int events, void* opaque)
 {
-    GArray *pollfds = opaque;
-    GPollFD pfd = {
-        .fd = fd,
+    GArray* pollfds = opaque;
+    GPollFD pfd     = {
+        .fd     = fd,
         .events = slirp_poll_to_gio(events),
     };
     int idx = pollfds->len;
@@ -333,85 +304,66 @@ static int slirp_gio_to_poll(int events)
 {
     int ret = 0;
 
-    if (events & G_IO_IN) {
-        ret |= SLIRP_POLL_IN;
-    }
-    if (events & G_IO_OUT) {
-        ret |= SLIRP_POLL_OUT;
-    }
-    if (events & G_IO_PRI) {
-        ret |= SLIRP_POLL_PRI;
-    }
-    if (events & G_IO_ERR) {
-        ret |= SLIRP_POLL_ERR;
-    }
-    if (events & G_IO_HUP) {
-        ret |= SLIRP_POLL_HUP;
-    }
+    if (events & G_IO_IN) { ret |= SLIRP_POLL_IN; }
+    if (events & G_IO_OUT) { ret |= SLIRP_POLL_OUT; }
+    if (events & G_IO_PRI) { ret |= SLIRP_POLL_PRI; }
+    if (events & G_IO_ERR) { ret |= SLIRP_POLL_ERR; }
+    if (events & G_IO_HUP) { ret |= SLIRP_POLL_HUP; }
 
     return ret;
 }
 
-static int net_slirp_get_revents(int idx, void *opaque)
+static int net_slirp_get_revents(int idx, void* opaque)
 {
-    GArray *pollfds = opaque;
+    GArray* pollfds = opaque;
 
     return slirp_gio_to_poll(g_array_index(pollfds, GPollFD, idx).revents);
 }
 
-static void net_slirp_poll_notify(Notifier *notifier, void *data)
+static void net_slirp_poll_notify(Notifier* notifier, void* data)
 {
-    MainLoopPoll *poll = data;
-    SlirpState *s = container_of(notifier, SlirpState, poll_notifier);
+    MainLoopPoll* poll = data;
+    SlirpState*   s    = container_of(notifier, SlirpState, poll_notifier);
 
     switch (poll->state) {
-    case MAIN_LOOP_POLL_FILL:
-        slirp_pollfds_fill_socket(s->slirp, &poll->timeout,
-                                  net_slirp_add_poll, poll->pollfds);
-        break;
-    case MAIN_LOOP_POLL_OK:
-    case MAIN_LOOP_POLL_ERR:
-        slirp_pollfds_poll(s->slirp, poll->state == MAIN_LOOP_POLL_ERR,
-                           net_slirp_get_revents, poll->pollfds);
-        break;
-    default:
-        assert_not_reached();
+        case MAIN_LOOP_POLL_FILL:
+            slirp_pollfds_fill_socket(s->slirp, &poll->timeout, net_slirp_add_poll, poll->pollfds);
+            break;
+        case MAIN_LOOP_POLL_OK:
+        case MAIN_LOOP_POLL_ERR:
+            slirp_pollfds_poll(s->slirp, poll->state == MAIN_LOOP_POLL_ERR, net_slirp_get_revents, poll->pollfds);
+            break;
+        default: assert_not_reached();
     }
 }
 
-static int net_slirp_init(NetClientState *peer, const char *model,
-                          const char *name, int restricted,
-                          bool ipv4, const char *vnetwork, const char *vhost,
-                          bool ipv6, const char *vprefix6, int vprefix6_len,
-                          const char *vhost6,
-                          const char *vhostname, const char *tftp_export,
-                          const char *bootfile, const char *vdhcp_start,
-                          const char *vnameserver, const char *vnameserver6,
-                          const char *smb_export, const char *vsmbserver,
-                          const char **dnssearch, const char *vdomainname,
-                          const char *tftp_server_name,
-                          Error **errp)
+static int net_slirp_init(NetClientState* peer, const char* model, const char* name, int restricted, bool ipv4,
+                          const char* vnetwork, const char* vhost, bool ipv6, const char* vprefix6, int vprefix6_len,
+                          const char* vhost6, const char* vhostname, const char* tftp_export, const char* bootfile,
+                          const char* vdhcp_start, const char* vnameserver, const char* vnameserver6,
+                          const char* smb_export, const char* vsmbserver, const char** dnssearch,
+                          const char* vdomainname, const char* tftp_server_name, Error** errp)
 {
     /* default settings according to historic slirp */
-    struct in_addr net  = { .s_addr = htonl(0x0a000200) }; /* 10.0.2.0 */
-    struct in_addr mask = { .s_addr = htonl(0xffffff00) }; /* 255.255.255.0 */
-    struct in_addr host = { .s_addr = htonl(0x0a000202) }; /* 10.0.2.2 */
-    struct in_addr dhcp = { .s_addr = htonl(0x0a00020f) }; /* 10.0.2.15 */
-    struct in_addr dns  = { .s_addr = htonl(0x0a000203) }; /* 10.0.2.3 */
+    struct in_addr  net  = {.s_addr = htonl(0x0a000200)}; /* 10.0.2.0 */
+    struct in_addr  mask = {.s_addr = htonl(0xffffff00)}; /* 255.255.255.0 */
+    struct in_addr  host = {.s_addr = htonl(0x0a000202)}; /* 10.0.2.2 */
+    struct in_addr  dhcp = {.s_addr = htonl(0x0a00020f)}; /* 10.0.2.15 */
+    struct in_addr  dns  = {.s_addr = htonl(0x0a000203)}; /* 10.0.2.3 */
     struct in6_addr ip6_prefix;
     struct in6_addr ip6_host;
     struct in6_addr ip6_dns;
 #if defined(CONFIG_SMBD_COMMAND)
-    struct in_addr smbsrv = { .s_addr = 0 };
+    struct in_addr smbsrv = {.s_addr = 0};
 #endif
-    SlirpConfig cfg = { 0 };
-    NetClientState *nc;
-    SlirpState *s;
-    char buf[20];
-    uint32_t addr;
-    int shift;
-    char *end;
-    struct slirp_config_str *config;
+    SlirpConfig              cfg = {0};
+    NetClientState*          nc;
+    SlirpState*              s;
+    char                     buf[20];
+    uint32_t                 addr;
+    int                      shift;
+    char*                    end;
+    struct slirp_config_str* config;
 
     if (!ipv4 && (vnetwork || vhost || vnameserver)) {
         error_setg(errp, "IPv4 disabled but netmask/host/dns provided");
@@ -436,22 +388,27 @@ static int net_slirp_init(NetClientState *peer, const char *model,
                 return -1;
             }
             addr = ntohl(net.s_addr);
-            if (!(addr & 0x80000000)) {
-                mask.s_addr = htonl(0xff000000); /* class A */
-            } else if ((addr & 0xfff00000) == 0xac100000) {
+            if (!(addr & 0x80000000)) { mask.s_addr = htonl(0xff000000); /* class A */ }
+            else if ((addr & 0xfff00000) == 0xac100000) {
                 mask.s_addr = htonl(0xfff00000); /* priv. 172.16.0.0/12 */
-            } else if ((addr & 0xc0000000) == 0x80000000) {
+            }
+            else if ((addr & 0xc0000000) == 0x80000000) {
                 mask.s_addr = htonl(0xffff0000); /* class B */
-            } else if ((addr & 0xffff0000) == 0xc0a80000) {
+            }
+            else if ((addr & 0xffff0000) == 0xc0a80000) {
                 mask.s_addr = htonl(0xffff0000); /* priv. 192.168.0.0/16 */
-            } else if ((addr & 0xffff0000) == 0xc6120000) {
+            }
+            else if ((addr & 0xffff0000) == 0xc6120000) {
                 mask.s_addr = htonl(0xfffe0000); /* tests 198.18.0.0/15 */
-            } else if ((addr & 0xe0000000) == 0xe0000000) {
+            }
+            else if ((addr & 0xe0000000) == 0xe0000000) {
                 mask.s_addr = htonl(0xffffff00); /* class C */
-            } else {
+            }
+            else {
                 mask.s_addr = htonl(0xfffffff0); /* multicast/reserved */
             }
-        } else {
+        }
+        else {
             if (!inet_aton(buf, &net)) {
                 error_setg(errp, "Failed to parse netmask");
                 return -1;
@@ -459,22 +416,22 @@ static int net_slirp_init(NetClientState *peer, const char *model,
             shift = strtol(vnetwork, &end, 10);
             if (*end != '\0') {
                 if (!inet_aton(vnetwork, &mask)) {
-                    error_setg(errp,
-                               "Failed to parse netmask (trailing chars)");
+                    error_setg(errp, "Failed to parse netmask (trailing chars)");
                     return -1;
                 }
-            } else if (shift < 4 || shift > 32) {
-                error_setg(errp,
-                           "Invalid netmask provided (must be in range 4-32)");
+            }
+            else if (shift < 4 || shift > 32) {
+                error_setg(errp, "Invalid netmask provided (must be in range 4-32)");
                 return -1;
-            } else {
+            }
+            else {
                 mask.s_addr = htonl(0xffffffff << (32 - shift));
             }
         }
-        net.s_addr &= mask.s_addr;
-        host.s_addr = net.s_addr | (htonl(0x0202) & ~mask.s_addr);
-        dhcp.s_addr = net.s_addr | (htonl(0x020f) & ~mask.s_addr);
-        dns.s_addr  = net.s_addr | (htonl(0x0203) & ~mask.s_addr);
+        net.s_addr  &= mask.s_addr;
+        host.s_addr  = net.s_addr | (htonl(0x0202) & ~mask.s_addr);
+        dhcp.s_addr  = net.s_addr | (htonl(0x020f) & ~mask.s_addr);
+        dns.s_addr   = net.s_addr | (htonl(0x0203) & ~mask.s_addr);
     }
 
     if (vhost && !inet_aton(vhost, &host)) {
@@ -519,21 +476,16 @@ static int net_slirp_init(NetClientState *peer, const char *model,
     }
 #endif
 
-    if (!vprefix6) {
-        vprefix6 = "fec0::";
-    }
+    if (!vprefix6) { vprefix6 = "fec0::"; }
     if (!inet_pton(AF_INET6, vprefix6, &ip6_prefix)) {
         error_setg(errp, "Failed to parse IPv6 prefix");
         return -1;
     }
 
-    if (!vprefix6_len) {
-        vprefix6_len = 64;
-    }
+    if (!vprefix6_len) { vprefix6_len = 64; }
     if (vprefix6_len < 0 || vprefix6_len > 126) {
-        error_setg(errp,
-                   "Invalid IPv6 prefix provided "
-                   "(IPv6 prefix length must be between 0 and 126)");
+        error_setg(errp, "Invalid IPv6 prefix provided "
+                         "(IPv6 prefix length must be between 0 and 126)");
         return -1;
     }
 
@@ -546,8 +498,9 @@ static int net_slirp_init(NetClientState *peer, const char *model,
             error_setg(errp, "IPv6 Host doesn't belong to network");
             return -1;
         }
-    } else {
-        ip6_host = ip6_prefix;
+    }
+    else {
+        ip6_host              = ip6_prefix;
         ip6_host.s6_addr[15] |= 2;
     }
 
@@ -560,8 +513,9 @@ static int net_slirp_init(NetClientState *peer, const char *model,
             error_setg(errp, "IPv6 DNS doesn't belong to network");
             return -1;
         }
-    } else {
-        ip6_dns = ip6_prefix;
+    }
+    else {
+        ip6_dns              = ip6_prefix;
         ip6_dns.s6_addr[15] |= 3;
     }
 
@@ -587,33 +541,30 @@ static int net_slirp_init(NetClientState *peer, const char *model,
 
     nc = qemu_new_net_client(&net_slirp_info, peer, model, name);
 
-    qemu_set_info_str(nc, "net=%s,restrict=%s", inet_ntoa(net),
-                      restricted ? "on" : "off");
+    qemu_set_info_str(nc, "net=%s,restrict=%s", inet_ntoa(net), restricted ? "on" : "off");
 
     s = DO_UPCAST(SlirpState, nc, nc);
 
-    cfg.version =
-         SLIRP_CHECK_VERSION(4, 9, 0) ? 6 :
-         SLIRP_CHECK_VERSION(4, 7, 0) ? 4 : 1;
-    cfg.restricted = restricted;
-    cfg.in_enabled = ipv4;
-    cfg.vnetwork = net;
-    cfg.vnetmask = mask;
-    cfg.vhost = host;
-    cfg.in6_enabled = ipv6;
-    cfg.vprefix_addr6 = ip6_prefix;
-    cfg.vprefix_len = vprefix6_len;
-    cfg.vhost6 = ip6_host;
-    cfg.vhostname = vhostname;
+    cfg.version          = SLIRP_CHECK_VERSION(4, 9, 0) ? 6 : SLIRP_CHECK_VERSION(4, 7, 0) ? 4 : 1;
+    cfg.restricted       = restricted;
+    cfg.in_enabled       = ipv4;
+    cfg.vnetwork         = net;
+    cfg.vnetmask         = mask;
+    cfg.vhost            = host;
+    cfg.in6_enabled      = ipv6;
+    cfg.vprefix_addr6    = ip6_prefix;
+    cfg.vprefix_len      = vprefix6_len;
+    cfg.vhost6           = ip6_host;
+    cfg.vhostname        = vhostname;
     cfg.tftp_server_name = tftp_server_name;
-    cfg.tftp_path = tftp_export;
-    cfg.bootfile = bootfile;
-    cfg.vdhcp_start = dhcp;
-    cfg.vnameserver = dns;
-    cfg.vnameserver6 = ip6_dns;
-    cfg.vdnssearch = dnssearch;
-    cfg.vdomainname = vdomainname;
-    s->slirp = slirp_new(&cfg, &slirp_cb, s);
+    cfg.tftp_path        = tftp_export;
+    cfg.bootfile         = bootfile;
+    cfg.vdhcp_start      = dhcp;
+    cfg.vnameserver      = dns;
+    cfg.vnameserver6     = ip6_dns;
+    cfg.vdnssearch       = dnssearch;
+    cfg.vdomainname      = vdomainname;
+    s->slirp             = slirp_new(&cfg, &slirp_cb, s);
     QTAILQ_INSERT_TAIL(&slirp_stacks, s, entry);
 
     s->poll_notifier.notify = net_slirp_poll_notify;
@@ -621,20 +572,15 @@ static int net_slirp_init(NetClientState *peer, const char *model,
 
     for (config = slirp_configs; config; config = config->next) {
         if (config->flags & SLIRP_CFG_HOSTFWD) {
-            if (slirp_hostfwd(s, config->str, errp) < 0) {
-                goto error;
-            }
-        } else {
-            if (slirp_guestfwd(s, config->str, errp) < 0) {
-                goto error;
-            }
+            if (slirp_hostfwd(s, config->str, errp) < 0) { goto error; }
+        }
+        else {
+            if (slirp_guestfwd(s, config->str, errp) < 0) { goto error; }
         }
     }
 #if defined(CONFIG_SMBD_COMMAND)
     if (smb_export) {
-        if (slirp_smb(s, smb_export, smbsrv, errp) < 0) {
-            goto error;
-        }
+        if (slirp_smb(s, smb_export, smbsrv, errp) < 0) { goto error; }
     }
 #endif
 
@@ -647,10 +593,10 @@ error:
     return -1;
 }
 
-static SlirpState *slirp_lookup(Monitor *mon, const char *id)
+static SlirpState* slirp_lookup(Monitor* mon, const char* id)
 {
     if (id) {
-        NetClientState *nc = qemu_find_netdev(id);
+        NetClientState* nc = qemu_find_netdev(id);
         if (!nc) {
             monitor_printf(mon, "unrecognized netdev id '%s'\n", id);
             return NULL;
@@ -660,7 +606,8 @@ static SlirpState *slirp_lookup(Monitor *mon, const char *id)
             return NULL;
         }
         return DO_UPCAST(SlirpState, nc, nc);
-    } else {
+    }
+    else {
         if (QTAILQ_EMPTY(&slirp_stacks)) {
             monitor_printf(mon, "user mode network stack not in use\n");
             return NULL;
@@ -669,106 +616,99 @@ static SlirpState *slirp_lookup(Monitor *mon, const char *id)
     }
 }
 
-void hmp_hostfwd_remove(Monitor *mon, const QDict *qdict)
+void hmp_hostfwd_remove(Monitor* mon, const QDict* qdict)
 {
     struct sockaddr_in host_addr = {
         .sin_family = AF_INET,
-        .sin_addr = {
-            .s_addr = INADDR_ANY,
-        },
+        .sin_addr =
+            {
+                .s_addr = INADDR_ANY,
+            },
     };
-    int host_port;
-    char buf[256];
+    int         host_port;
+    char        buf[256];
     const char *src_str, *p;
-    SlirpState *s;
-    int is_udp = 0;
-    int err;
-    const char *arg1 = qdict_get_str(qdict, "arg1");
-    const char *arg2 = qdict_get_try_str(qdict, "arg2");
+    SlirpState* s;
+    int         is_udp = 0;
+    int         err;
+    const char* arg1 = qdict_get_str(qdict, "arg1");
+    const char* arg2 = qdict_get_try_str(qdict, "arg2");
 
     if (arg2) {
-        s = slirp_lookup(mon, arg1);
+        s       = slirp_lookup(mon, arg1);
         src_str = arg2;
-    } else {
-        s = slirp_lookup(mon, NULL);
+    }
+    else {
+        s       = slirp_lookup(mon, NULL);
         src_str = arg1;
     }
-    if (!s) {
-        return;
-    }
+    if (!s) { return; }
 
     p = src_str;
-    if (!p || get_str_sep(buf, sizeof(buf), &p, ':') < 0) {
-        goto fail_syntax;
-    }
+    if (!p || get_str_sep(buf, sizeof(buf), &p, ':') < 0) { goto fail_syntax; }
 
-    if (!strcmp(buf, "tcp") || buf[0] == '\0') {
-        is_udp = 0;
-    } else if (!strcmp(buf, "udp")) {
+    if (!strcmp(buf, "tcp") || buf[0] == '\0') { is_udp = 0; }
+    else if (!strcmp(buf, "udp")) {
         is_udp = 1;
-    } else {
+    }
+    else {
         goto fail_syntax;
     }
 
-    if (get_str_sep(buf, sizeof(buf), &p, ':') < 0) {
-        goto fail_syntax;
-    }
-    if (buf[0] != '\0' && !inet_aton(buf, &host_addr.sin_addr)) {
-        goto fail_syntax;
-    }
+    if (get_str_sep(buf, sizeof(buf), &p, ':') < 0) { goto fail_syntax; }
+    if (buf[0] != '\0' && !inet_aton(buf, &host_addr.sin_addr)) { goto fail_syntax; }
 
-    if (qemu_strtoi(p, NULL, 10, &host_port)) {
-        goto fail_syntax;
-    }
+    if (qemu_strtoi(p, NULL, 10, &host_port)) { goto fail_syntax; }
     host_addr.sin_port = htons(host_port);
 
 #if SLIRP_CHECK_VERSION(4, 5, 0)
-    err = slirp_remove_hostxfwd(s->slirp, (struct sockaddr *) &host_addr,
-            sizeof(host_addr), is_udp ? SLIRP_HOSTFWD_UDP : 0);
+    err = slirp_remove_hostxfwd(s->slirp, (struct sockaddr*)&host_addr, sizeof(host_addr),
+                                is_udp ? SLIRP_HOSTFWD_UDP : 0);
 #else
     err = slirp_remove_hostfwd(s->slirp, is_udp, host_addr.sin_addr, host_port);
 #endif
 
-    monitor_printf(mon, "host forwarding rule for %s %s\n", src_str,
-                   err ? "not found" : "removed");
+    monitor_printf(mon, "host forwarding rule for %s %s\n", src_str, err ? "not found" : "removed");
     return;
 
- fail_syntax:
+fail_syntax:
     monitor_printf(mon, "invalid format\n");
 }
 
-static int slirp_hostfwd(SlirpState *s, const char *redir_str, Error **errp)
+static int slirp_hostfwd(SlirpState* s, const char* redir_str, Error** errp)
 {
     struct sockaddr_in host_addr = {
         .sin_family = AF_INET,
-        .sin_addr = {
-            .s_addr = INADDR_ANY,
-        },
+        .sin_addr =
+            {
+                .s_addr = INADDR_ANY,
+            },
     };
     struct sockaddr_in guest_addr = {
         .sin_family = AF_INET,
-        .sin_addr = {
-            .s_addr = 0,
-        },
+        .sin_addr =
+            {
+                .s_addr = 0,
+            },
     };
-    int err;
-    int host_port, guest_port;
-    const char *p;
-    char buf[256];
-    int is_udp;
-    const char *end;
-    const char *fail_reason = "Unknown reason";
+    int         err;
+    int         host_port, guest_port;
+    const char* p;
+    char        buf[256];
+    int         is_udp;
+    const char* end;
+    const char* fail_reason = "Unknown reason";
 
     p = redir_str;
     if (!p || get_str_sep(buf, sizeof(buf), &p, ':') < 0) {
         fail_reason = "No : separators";
         goto fail_syntax;
     }
-    if (!strcmp(buf, "tcp") || buf[0] == '\0') {
-        is_udp = 0;
-    } else if (!strcmp(buf, "udp")) {
+    if (!strcmp(buf, "tcp") || buf[0] == '\0') { is_udp = 0; }
+    else if (!strcmp(buf, "udp")) {
         is_udp = 1;
-    } else {
+    }
+    else {
         fail_reason = "Bad protocol name";
         goto fail_syntax;
     }
@@ -810,67 +750,57 @@ static int slirp_hostfwd(SlirpState *s, const char *redir_str, Error **errp)
     guest_addr.sin_port = htons(guest_port);
 
 #if SLIRP_CHECK_VERSION(4, 5, 0)
-    err = slirp_add_hostxfwd(s->slirp,
-            (struct sockaddr *) &host_addr, sizeof(host_addr),
-            (struct sockaddr *) &guest_addr, sizeof(guest_addr),
-            is_udp ? SLIRP_HOSTFWD_UDP : 0);
+    err = slirp_add_hostxfwd(s->slirp, (struct sockaddr*)&host_addr, sizeof(host_addr), (struct sockaddr*)&guest_addr,
+                             sizeof(guest_addr), is_udp ? SLIRP_HOSTFWD_UDP : 0);
 #else
-    err = slirp_add_hostfwd(s->slirp, is_udp,
-            host_addr.sin_addr, host_port,
-            guest_addr.sin_addr, guest_port);
+    err = slirp_add_hostfwd(s->slirp, is_udp, host_addr.sin_addr, host_port, guest_addr.sin_addr, guest_port);
 #endif
 
     if (err < 0) {
-        error_setg(errp, "Could not set up host forwarding rule '%s'",
-                   redir_str);
+        error_setg(errp, "Could not set up host forwarding rule '%s'", redir_str);
         return -1;
     }
     return 0;
 
- fail_syntax:
-    error_setg(errp, "Invalid host forwarding rule '%s' (%s)", redir_str,
-               fail_reason);
+fail_syntax:
+    error_setg(errp, "Invalid host forwarding rule '%s' (%s)", redir_str, fail_reason);
     return -1;
 }
 
-void hmp_hostfwd_add(Monitor *mon, const QDict *qdict)
+void hmp_hostfwd_add(Monitor* mon, const QDict* qdict)
 {
-    const char *redir_str;
-    SlirpState *s;
-    const char *arg1 = qdict_get_str(qdict, "arg1");
-    const char *arg2 = qdict_get_try_str(qdict, "arg2");
+    const char* redir_str;
+    SlirpState* s;
+    const char* arg1 = qdict_get_str(qdict, "arg1");
+    const char* arg2 = qdict_get_try_str(qdict, "arg2");
 
     if (arg2) {
-        s = slirp_lookup(mon, arg1);
+        s         = slirp_lookup(mon, arg1);
         redir_str = arg2;
-    } else {
-        s = slirp_lookup(mon, NULL);
+    }
+    else {
+        s         = slirp_lookup(mon, NULL);
         redir_str = arg1;
     }
     if (s) {
-        Error *err = NULL;
-        if (slirp_hostfwd(s, redir_str, &err) < 0) {
-            error_report_err(err);
-        }
+        Error* err = NULL;
+        if (slirp_hostfwd(s, redir_str, &err) < 0) { error_report_err(err); }
     }
-
 }
 
 #if defined(CONFIG_SMBD_COMMAND)
 
 /* automatic user mode samba server configuration */
-static void slirp_smb_cleanup(SlirpState *s)
+static void slirp_smb_cleanup(SlirpState* s)
 {
     int ret;
 
     if (s->smb_dir) {
-        gchar *cmd = g_strdup_printf("rm -rf %s", s->smb_dir);
-        ret = system(cmd);
-        if (ret == -1 || !WIFEXITED(ret)) {
-            error_report("'%s' failed.", cmd);
-        } else if (WEXITSTATUS(ret)) {
-            error_report("'%s' failed. Error code: %d",
-                         cmd, WEXITSTATUS(ret));
+        gchar* cmd = g_strdup_printf("rm -rf %s", s->smb_dir);
+        ret        = system(cmd);
+        if (ret == -1 || !WIFEXITED(ret)) { error_report("'%s' failed.", cmd); }
+        else if (WEXITSTATUS(ret)) {
+            error_report("'%s' failed. Error code: %d", cmd, WEXITSTATUS(ret));
         }
         g_free(cmd);
         g_free(s->smb_dir);
@@ -878,13 +808,12 @@ static void slirp_smb_cleanup(SlirpState *s)
     }
 }
 
-static int slirp_smb(SlirpState* s, const char *exported_dir,
-                     struct in_addr vserver_addr, Error **errp)
+static int slirp_smb(SlirpState* s, const char* exported_dir, struct in_addr vserver_addr, Error** errp)
 {
-    char *smb_conf;
-    char *smb_cmdline;
-    struct passwd *passwd;
-    FILE *f;
+    char*          smb_conf;
+    char*          smb_cmdline;
+    struct passwd* passwd;
+    FILE*          f;
 
     passwd = getpwuid(geteuid());
     if (!passwd) {
@@ -893,14 +822,12 @@ static int slirp_smb(SlirpState* s, const char *exported_dir,
     }
 
     if (access(CONFIG_SMBD_COMMAND, F_OK)) {
-        error_setg(errp, "Could not find '%s', please install it",
-                   CONFIG_SMBD_COMMAND);
+        error_setg(errp, "Could not find '%s', please install it", CONFIG_SMBD_COMMAND);
         return -1;
     }
 
     if (access(exported_dir, R_OK | X_OK)) {
-        error_setg(errp, "Error accessing shared directory '%s': %s",
-                   exported_dir, strerror(errno));
+        error_setg(errp, "Error accessing shared directory '%s': %s", exported_dir, strerror(errno));
         return -1;
     }
 
@@ -914,9 +841,7 @@ static int slirp_smb(SlirpState* s, const char *exported_dir,
     f = fopen(smb_conf, "w");
     if (!f) {
         slirp_smb_cleanup(s);
-        error_setg(errp,
-                   "Could not create samba server configuration file '%s'",
-                    smb_conf);
+        error_setg(errp, "Could not create samba server configuration file '%s'", smb_conf);
         g_free(smb_conf);
         return -1;
     }
@@ -943,25 +868,16 @@ static int slirp_smb(SlirpState* s, const char *exported_dir,
             "read only=no\n"
             "guest ok=yes\n"
             "force user=%s\n",
-            s->smb_dir,
-            s->smb_dir,
-            s->smb_dir,
-            s->smb_dir,
-            s->smb_dir,
-            s->smb_dir,
-            s->smb_dir,
-            s->smb_dir,
-            exported_dir,
-            passwd->pw_name
-            );
+            s->smb_dir, s->smb_dir, s->smb_dir, s->smb_dir, s->smb_dir, s->smb_dir, s->smb_dir, s->smb_dir,
+            exported_dir, passwd->pw_name);
     fclose(f);
 
-    smb_cmdline = g_strdup_printf("%s -l %s -s %s",
-             CONFIG_SMBD_COMMAND, s->smb_dir, smb_conf);
+    smb_cmdline = g_strdup_printf("%s -l %s -s %s", CONFIG_SMBD_COMMAND, s->smb_dir, smb_conf);
     g_free(smb_conf);
 
-    if (slirp_add_exec(s->slirp, smb_cmdline, &vserver_addr, 139) < 0 ||
-        slirp_add_exec(s->slirp, smb_cmdline, &vserver_addr, 445) < 0) {
+    if (slirp_add_exec(s->slirp, smb_cmdline, &vserver_addr, 139) < 0
+        || slirp_add_exec(s->slirp, smb_cmdline, &vserver_addr, 445) < 0)
+    {
         slirp_smb_cleanup(s);
         g_free(smb_cmdline);
         error_setg(errp, "Conflicting/invalid smbserver address");
@@ -973,73 +889,60 @@ static int slirp_smb(SlirpState* s, const char *exported_dir,
 
 #endif /* defined(CONFIG_SMBD_COMMAND) */
 
-static int guestfwd_can_read(void *opaque)
+static int guestfwd_can_read(void* opaque)
 {
-    struct GuestFwd *fwd = opaque;
+    struct GuestFwd* fwd = opaque;
     return slirp_socket_can_recv(fwd->slirp, fwd->server, fwd->port);
 }
 
-static void guestfwd_read(void *opaque, const uint8_t *buf, int size)
+static void guestfwd_read(void* opaque, const uint8_t* buf, int size)
 {
-    struct GuestFwd *fwd = opaque;
+    struct GuestFwd* fwd = opaque;
     slirp_socket_recv(fwd->slirp, fwd->server, fwd->port, buf, size);
 }
 
-static ssize_t guestfwd_write(const void *buf, size_t len, void *chr)
-{
-    return qemu_chr_fe_write_all(chr, buf, len);
-}
+static ssize_t guestfwd_write(const void* buf, size_t len, void* chr) { return qemu_chr_fe_write_all(chr, buf, len); }
 
-static int slirp_guestfwd(SlirpState *s, const char *config_str, Error **errp)
+static int slirp_guestfwd(SlirpState* s, const char* config_str, Error** errp)
 {
     /* TODO: IPv6 */
-    struct in_addr server = { .s_addr = 0 };
-    struct GuestFwd *fwd;
-    const char *p;
-    char buf[128];
-    char *end;
-    int port;
+    struct in_addr   server = {.s_addr = 0};
+    struct GuestFwd* fwd;
+    const char*      p;
+    char             buf[128];
+    char*            end;
+    int              port;
 
     p = config_str;
-    if (get_str_sep(buf, sizeof(buf), &p, ':') < 0) {
-        goto fail_syntax;
-    }
-    if (strcmp(buf, "tcp") && buf[0] != '\0') {
-        goto fail_syntax;
-    }
-    if (get_str_sep(buf, sizeof(buf), &p, ':') < 0) {
-        goto fail_syntax;
-    }
-    if (buf[0] != '\0' && !inet_aton(buf, &server)) {
-        goto fail_syntax;
-    }
-    if (get_str_sep(buf, sizeof(buf), &p, '-') < 0) {
-        goto fail_syntax;
-    }
+    if (get_str_sep(buf, sizeof(buf), &p, ':') < 0) { goto fail_syntax; }
+    if (strcmp(buf, "tcp") && buf[0] != '\0') { goto fail_syntax; }
+    if (get_str_sep(buf, sizeof(buf), &p, ':') < 0) { goto fail_syntax; }
+    if (buf[0] != '\0' && !inet_aton(buf, &server)) { goto fail_syntax; }
+    if (get_str_sep(buf, sizeof(buf), &p, '-') < 0) { goto fail_syntax; }
     port = strtol(buf, &end, 10);
-    if (*end != '\0' || port < 1 || port > 65535) {
-        goto fail_syntax;
-    }
+    if (*end != '\0' || port < 1 || port > 65535) { goto fail_syntax; }
 
     snprintf(buf, sizeof(buf), "guestfwd.tcp.%d", port);
 
     if (g_str_has_prefix(p, "cmd:")) {
         if (slirp_add_exec(s->slirp, &p[4], &server, port) < 0) {
-            error_setg(errp, "Conflicting/invalid host:port in guest "
-                       "forwarding rule '%s'", config_str);
+            error_setg(errp,
+                       "Conflicting/invalid host:port in guest "
+                       "forwarding rule '%s'",
+                       config_str);
             return -1;
         }
-    } else {
-        Error *err = NULL;
+    }
+    else {
+        Error* err = NULL;
         /*
          * FIXME: sure we want to support implicit
          * muxed monitors here?
          */
-        Chardev *chr = qemu_chr_new_mux_mon(buf, p, NULL);
+        Chardev* chr = qemu_chr_new_mux_mon(buf, p, NULL);
 
         if (!chr) {
-            error_setg(errp, "Could not open guest forwarding device '%s'",
-                       buf);
+            error_setg(errp, "Could not open guest forwarding device '%s'", buf);
             return -1;
         }
 
@@ -1052,110 +955,96 @@ static int slirp_guestfwd(SlirpState *s, const char *config_str, Error **errp)
             return -1;
         }
 
-        if (slirp_add_guestfwd(s->slirp, guestfwd_write, &fwd->hd,
-                               &server, port) < 0) {
-            error_setg(errp, "Conflicting/invalid host:port in guest "
-                       "forwarding rule '%s'", config_str);
+        if (slirp_add_guestfwd(s->slirp, guestfwd_write, &fwd->hd, &server, port) < 0) {
+            error_setg(errp,
+                       "Conflicting/invalid host:port in guest "
+                       "forwarding rule '%s'",
+                       config_str);
             qemu_chr_fe_deinit(&fwd->hd, true);
             g_free(fwd);
             return -1;
         }
         fwd->server = server;
-        fwd->port = port;
-        fwd->slirp = s->slirp;
+        fwd->port   = port;
+        fwd->slirp  = s->slirp;
 
-        qemu_chr_fe_set_handlers(&fwd->hd, guestfwd_can_read, guestfwd_read,
-                                 NULL, NULL, fwd, NULL, true);
+        qemu_chr_fe_set_handlers(&fwd->hd, guestfwd_can_read, guestfwd_read, NULL, NULL, fwd, NULL, true);
         s->fwd = g_slist_append(s->fwd, fwd);
     }
     return 0;
 
- fail_syntax:
+fail_syntax:
     error_setg(errp, "Invalid guest forwarding rule '%s'", config_str);
     return -1;
 }
 
-void hmp_info_usernet(Monitor *mon, const QDict *qdict)
+void hmp_info_usernet(Monitor* mon, const QDict* qdict)
 {
-    SlirpState *s;
+    SlirpState* s;
 
-    QTAILQ_FOREACH(s, &slirp_stacks, entry) {
-        int id;
-        bool got_hub_id = net_hub_id_for_client(&s->nc, &id) == 0;
-        char *info = slirp_connection_info(s->slirp);
-        monitor_printf(mon, "Hub %d (%s):\n%s",
-                       got_hub_id ? id : -1,
-                       s->nc.name, info);
+    QTAILQ_FOREACH (s, &slirp_stacks, entry) {
+        int   id;
+        bool  got_hub_id = net_hub_id_for_client(&s->nc, &id) == 0;
+        char* info       = slirp_connection_info(s->slirp);
+        monitor_printf(mon, "Hub %d (%s):\n%s", got_hub_id ? id : -1, s->nc.name, info);
         g_free(info);
     }
 }
 
-static void
-net_init_slirp_configs(const StringList *fwd, int flags)
+static void net_init_slirp_configs(const StringList* fwd, int flags)
 {
     while (fwd) {
-        struct slirp_config_str *config;
+        struct slirp_config_str* config;
 
         config = g_malloc0(sizeof(*config));
         pstrcpy(config->str, sizeof(config->str), fwd->value->str);
         config->flags = flags;
-        config->next = slirp_configs;
+        config->next  = slirp_configs;
         slirp_configs = config;
 
         fwd = fwd->next;
     }
 }
 
-static const char **slirp_dnssearch(const StringList *dnsname)
+static const char** slirp_dnssearch(const StringList* dnsname)
 {
-    const StringList *c = dnsname;
-    size_t i = 0, num_opts = 0;
-    const char **ret;
+    const StringList* c = dnsname;
+    size_t            i = 0, num_opts = 0;
+    const char**      ret;
 
     while (c) {
         num_opts++;
         c = c->next;
     }
 
-    if (num_opts == 0) {
-        return NULL;
-    }
+    if (num_opts == 0) { return NULL; }
 
     ret = g_malloc((num_opts + 1) * sizeof(*ret));
-    c = dnsname;
+    c   = dnsname;
     while (c) {
         ret[i++] = c->value->str;
-        c = c->next;
+        c        = c->next;
     }
     ret[i] = NULL;
     return ret;
 }
 
-int net_init_slirp(const Netdev *netdev, const char *name,
-                   NetClientState *peer, Error **errp)
+int net_init_slirp(const Netdev* netdev, const char* name, NetClientState* peer, Error** errp)
 {
-    struct slirp_config_str *config;
-    char *vnet;
-    int ret;
-    const NetdevUserOptions *user;
-    const char **dnssearch;
-    bool ipv4 = true, ipv6 = true;
+    struct slirp_config_str* config;
+    char*                    vnet;
+    int                      ret;
+    const NetdevUserOptions* user;
+    const char**             dnssearch;
+    bool                     ipv4 = true, ipv6 = true;
 
     assert(netdev->type == NET_CLIENT_DRIVER_USER);
     user = &netdev->u.user;
 
-    if ((user->has_ipv6 && user->ipv6 && !user->has_ipv4) ||
-        (user->has_ipv4 && !user->ipv4)) {
-        ipv4 = 0;
-    }
-    if ((user->has_ipv4 && user->ipv4 && !user->has_ipv6) ||
-        (user->has_ipv6 && !user->ipv6)) {
-        ipv6 = 0;
-    }
+    if ((user->has_ipv6 && user->ipv6 && !user->has_ipv4) || (user->has_ipv4 && !user->ipv4)) { ipv4 = 0; }
+    if ((user->has_ipv4 && user->ipv4 && !user->has_ipv6) || (user->has_ipv6 && !user->ipv6)) { ipv6 = 0; }
 
-    vnet = user->net ? g_strdup(user->net) :
-           user->ip  ? g_strdup_printf("%s/24", user->ip) :
-           NULL;
+    vnet = user->net ? g_strdup(user->net) : user->ip ? g_strdup_printf("%s/24", user->ip) : NULL;
 
     dnssearch = slirp_dnssearch(user->dnssearch);
 
@@ -1164,17 +1053,13 @@ int net_init_slirp(const Netdev *netdev, const char *name,
     net_init_slirp_configs(user->hostfwd, SLIRP_CFG_HOSTFWD);
     net_init_slirp_configs(user->guestfwd, 0);
 
-    ret = net_slirp_init(peer, "user", name, user->q_restrict,
-                         ipv4, vnet, user->host,
-                         ipv6, user->ipv6_prefix, user->ipv6_prefixlen,
-                         user->ipv6_host, user->hostname, user->tftp,
-                         user->bootfile, user->dhcpstart,
-                         user->dns, user->ipv6_dns, user->smb,
-                         user->smbserver, dnssearch, user->domainname,
-                         user->tftp_server_name, errp);
+    ret = net_slirp_init(peer, "user", name, user->q_restrict, ipv4, vnet, user->host, ipv6, user->ipv6_prefix,
+                         user->ipv6_prefixlen, user->ipv6_host, user->hostname, user->tftp, user->bootfile,
+                         user->dhcpstart, user->dns, user->ipv6_dns, user->smb, user->smbserver, dnssearch,
+                         user->domainname, user->tftp_server_name, errp);
 
     while (slirp_configs) {
-        config = slirp_configs;
+        config        = slirp_configs;
         slirp_configs = config->next;
         g_free(config);
     }

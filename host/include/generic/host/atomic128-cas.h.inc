@@ -11,10 +11,9 @@
 #pragma once
 
 #if defined(CONFIG_ATOMIC128)
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_cmpxchg(Int128* ptr, Int128 cmp, Int128 new)
 {
-    __int128_t *ptr_align = __builtin_assume_aligned(ptr, 16);
+    __int128_t* ptr_align = __builtin_assume_aligned(ptr, 16);
     Int128Alias r, c, n;
 
     c.s = cmp;
@@ -29,51 +28,38 @@ atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new)
  * within the atomic operation itself; otherwise the weak parameter is
  * ignored.
  */
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_xchg(Int128 *ptr, Int128 new)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_xchg(Int128* ptr, Int128 new)
 {
-    __int128_t *ptr_align = __builtin_assume_aligned(ptr, 16);
-    Int128 old = *ptr_align;
+    __int128_t* ptr_align = __builtin_assume_aligned(ptr, 16);
+    Int128      old       = *ptr_align;
 
-    while (!__atomic_compare_exchange_n(ptr_align, &old, new, true,
-                                        __ATOMIC_SEQ_CST, 0)) {
-        continue;
-    }
+    while (!__atomic_compare_exchange_n(ptr_align, &old, new, true, __ATOMIC_SEQ_CST, 0)) { continue; }
     return old;
 }
 
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_fetch_and(Int128 *ptr, Int128 val)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_fetch_and(Int128* ptr, Int128 val)
 {
-    __int128_t *ptr_align = __builtin_assume_aligned(ptr, 16);
-    Int128 old = *ptr_align;
+    __int128_t* ptr_align = __builtin_assume_aligned(ptr, 16);
+    Int128      old       = *ptr_align;
 
-    while (!__atomic_compare_exchange_n(ptr_align, &old, old & val, true,
-                                        __ATOMIC_SEQ_CST, 0)) {
-        continue;
-    }
+    while (!__atomic_compare_exchange_n(ptr_align, &old, old & val, true, __ATOMIC_SEQ_CST, 0)) { continue; }
     return old;
 }
 
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_fetch_or(Int128 *ptr, Int128 val)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_fetch_or(Int128* ptr, Int128 val)
 {
-    __int128_t *ptr_align = __builtin_assume_aligned(ptr, 16);
-    Int128 old = *ptr_align;
+    __int128_t* ptr_align = __builtin_assume_aligned(ptr, 16);
+    Int128      old       = *ptr_align;
 
-    while (!__atomic_compare_exchange_n(ptr_align, &old, old | val, true,
-                                        __ATOMIC_SEQ_CST, 0)) {
-        continue;
-    }
+    while (!__atomic_compare_exchange_n(ptr_align, &old, old | val, true, __ATOMIC_SEQ_CST, 0)) { continue; }
     return old;
 }
-# define HAVE_CMPXCHG128 1
+    #define HAVE_CMPXCHG128 1
 #elif defined(CONFIG_CMPXCHG128)
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_cmpxchg(Int128* ptr, Int128 cmp, Int128 new)
 {
-    Int128Aligned *ptr_align = __builtin_assume_aligned(ptr, 16);
-    Int128Alias r, c, n;
+    Int128Aligned* ptr_align = __builtin_assume_aligned(ptr, 16);
+    Int128Alias    r, c, n;
 
     c.s = cmp;
     n.s = new;
@@ -81,60 +67,50 @@ atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new)
     return r.s;
 }
 
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_xchg(Int128 *ptr, Int128 new)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_xchg(Int128* ptr, Int128 new)
 {
-    Int128Aligned *ptr_align = __builtin_assume_aligned(ptr, 16);
-    Int128Alias o, n;
+    Int128Aligned* ptr_align = __builtin_assume_aligned(ptr, 16);
+    Int128Alias    o, n;
 
     n.s = new;
     o.s = *ptr_align;
     while (1) {
         __int128 c = __sync_val_compare_and_swap_16(ptr_align, o.i, n.i);
-        if (c == o.i) {
-            return o.s;
-        }
+        if (c == o.i) { return o.s; }
         o.i = c;
     }
 }
 
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_fetch_and(Int128 *ptr, Int128 val)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_fetch_and(Int128* ptr, Int128 val)
 {
-    Int128Aligned *ptr_align = __builtin_assume_aligned(ptr, 16);
-    Int128Alias o, v;
+    Int128Aligned* ptr_align = __builtin_assume_aligned(ptr, 16);
+    Int128Alias    o, v;
 
     v.s = val;
     o.s = *ptr_align;
     while (1) {
         __int128 c = __sync_val_compare_and_swap_16(ptr_align, o.i, o.i & v.i);
-        if (c == o.i) {
-            return o.s;
-        }
+        if (c == o.i) { return o.s; }
         o.i = c;
     }
 }
 
-static inline Int128 ATTRIBUTE_ATOMIC128_OPT
-atomic16_fetch_or(Int128 *ptr, Int128 val)
+static inline Int128 ATTRIBUTE_ATOMIC128_OPT atomic16_fetch_or(Int128* ptr, Int128 val)
 {
-    Int128Aligned *ptr_align = __builtin_assume_aligned(ptr, 16);
-    Int128Alias o, v;
+    Int128Aligned* ptr_align = __builtin_assume_aligned(ptr, 16);
+    Int128Alias    o, v;
 
     v.s = val;
     o.s = *ptr_align;
     while (1) {
         __int128 c = __sync_val_compare_and_swap_16(ptr_align, o.i, o.i | v.i);
-        if (c == o.i) {
-            return o.s;
-        }
+        if (c == o.i) { return o.s; }
         o.i = c;
     }
 }
-# define HAVE_CMPXCHG128 1
+    #define HAVE_CMPXCHG128 1
 #else
 /* Fallback definition that must be optimized away, or error.  */
-Int128 QEMU_ERROR("unsupported atomic")
-    atomic16_cmpxchg(Int128 *ptr, Int128 cmp, Int128 new);
-# define HAVE_CMPXCHG128 0
+Int128 QEMU_ERROR("unsupported atomic") atomic16_cmpxchg(Int128* ptr, Int128 cmp, Int128 new);
+    #define HAVE_CMPXCHG128 0
 #endif

@@ -20,7 +20,7 @@
  * The memory allocated through this function must be freed via
  * qemu_vfree() (and not via free()).
  */
-void *qemu_try_memalign(size_t alignment, size_t size);
+void* qemu_try_memalign(size_t alignment, size_t size);
 /**
  * qemu_memalign: Allocate aligned memory, without failing
  * @alignment: required alignment, in bytes
@@ -32,7 +32,7 @@ void *qemu_try_memalign(size_t alignment, size_t size);
  * The memory allocated through this function must be freed via
  * qemu_vfree() (and not via free()).
  */
-void *qemu_memalign(size_t alignment, size_t size);
+void* qemu_memalign(size_t alignment, size_t size);
 /**
  * qemu_vfree: Free memory allocated through qemu_memalign
  * @ptr: memory to free
@@ -41,15 +41,15 @@ void *qemu_memalign(size_t alignment, size_t size);
  * or qemu_try_memalign(). (Using the wrong free function will cause
  * subtle bugs on Windows hosts.)
  */
-void qemu_vfree(void *ptr);
+void qemu_vfree(void* ptr);
 /*
  * It's an analog of GLIB's g_autoptr_cleanup_generic_gfree(), used to define
  * g_autofree macro.
  */
-static inline void qemu_cleanup_generic_vfree(void *p)
+static inline void qemu_cleanup_generic_vfree(void* p)
 {
-  void **pp = (void **)p;
-  qemu_vfree(*pp);
+    void** pp = (void**)p;
+    qemu_vfree(*pp);
 }
 
 /*

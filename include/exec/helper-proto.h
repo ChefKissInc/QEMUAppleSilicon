@@ -10,4 +10,4 @@
 
 #define HELPER_H "helper.h"
 #include "exec/helper-proto.h.inc"
-#undef  HELPER_H
+#undef HELPER_H

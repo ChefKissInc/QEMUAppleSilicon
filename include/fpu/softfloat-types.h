@@ -88,30 +88,32 @@ this code that are retained.
 typedef uint16_t float16;
 typedef uint32_t float32;
 typedef uint64_t float64;
-#define float16_val(x) (x)
-#define float32_val(x) (x)
-#define float64_val(x) (x)
-#define make_float16(x) (x)
-#define make_float32(x) (x)
-#define make_float64(x) (x)
+#define float16_val(x)   (x)
+#define float32_val(x)   (x)
+#define float64_val(x)   (x)
+#define make_float16(x)  (x)
+#define make_float32(x)  (x)
+#define make_float64(x)  (x)
 #define const_float16(x) (x)
 #define const_float32(x) (x)
 #define const_float64(x) (x)
-typedef struct {
+typedef struct
+{
     uint64_t low;
     uint16_t high;
 } floatx80;
-#define make_floatx80(exp, mant) ((floatx80) { mant, exp })
-#define make_floatx80_init(exp, mant) { .low = mant, .high = exp }
-typedef struct {
+#define make_floatx80(exp, mant)      ((floatx80){mant, exp})
+#define make_floatx80_init(exp, mant) {.low = mant, .high = exp}
+typedef struct
+{
 #if HOST_BIG_ENDIAN
     uint64_t high, low;
 #else
     uint64_t low, high;
 #endif
 } float128;
-#define make_float128(high_, low_) ((float128) { .high = high_, .low = low_ })
-#define make_float128_init(high_, low_) { .high = high_, .low = low_ }
+#define make_float128(high_, low_)      ((float128){.high = high_, .low = low_})
+#define make_float128_init(high_, low_) {.high = high_, .low = low_}
 
 /*
  * Software neural-network floating-point types.
@@ -136,16 +138,17 @@ typedef uint8_t float8_e5m2;
  *Software IEC/IEEE floating-point rounding mode.
  */
 
-typedef enum __attribute__((__packed__)) {
+typedef enum __attribute__((__packed__))
+{
     float_round_nearest_even = 0,
     float_round_down         = 1,
     float_round_up           = 2,
     float_round_to_zero      = 3,
     float_round_ties_away    = 4,
     /* Not an IEEE rounding mode: round to closest odd, overflow to max */
-    float_round_to_odd       = 5,
+    float_round_to_odd = 5,
     /* Not an IEEE rounding mode: round to closest odd, overflow to inf */
-    float_round_to_odd_inf   = 6,
+    float_round_to_odd_inf = 6,
     /* Not an IEEE rounding mode: round to nearest even, overflow to max */
     float_round_nearest_even_max = 7,
 } FloatRoundMode;
@@ -154,23 +157,24 @@ typedef enum __attribute__((__packed__)) {
  * Software IEC/IEEE floating-point exception flags.
  */
 
-enum {
-    float_flag_invalid         = 0x0001,
-    float_flag_divbyzero       = 0x0002,
-    float_flag_overflow        = 0x0004,
-    float_flag_underflow       = 0x0008,
-    float_flag_inexact         = 0x0010,
+enum
+{
+    float_flag_invalid   = 0x0001,
+    float_flag_divbyzero = 0x0002,
+    float_flag_overflow  = 0x0004,
+    float_flag_underflow = 0x0008,
+    float_flag_inexact   = 0x0010,
     /* We flushed an input denormal to 0 (because of flush_inputs_to_zero) */
     float_flag_input_denormal_flushed = 0x0020,
     /* We flushed an output denormal to 0 (because of flush_to_zero) */
     float_flag_output_denormal_flushed = 0x0040,
-    float_flag_invalid_isi     = 0x0080,  /* inf - inf */
-    float_flag_invalid_imz     = 0x0100,  /* inf * 0 */
-    float_flag_invalid_idi     = 0x0200,  /* inf / inf */
-    float_flag_invalid_zdz     = 0x0400,  /* 0 / 0 */
-    float_flag_invalid_sqrt    = 0x0800,  /* sqrt(-x) */
-    float_flag_invalid_cvti    = 0x1000,  /* non-nan to integer */
-    float_flag_invalid_snan    = 0x2000,  /* any operand was snan */
+    float_flag_invalid_isi             = 0x0080, /* inf - inf */
+    float_flag_invalid_imz             = 0x0100, /* inf * 0 */
+    float_flag_invalid_idi             = 0x0200, /* inf / inf */
+    float_flag_invalid_zdz             = 0x0400, /* 0 / 0 */
+    float_flag_invalid_sqrt            = 0x0800, /* sqrt(-x) */
+    float_flag_invalid_cvti            = 0x1000, /* non-nan to integer */
+    float_flag_invalid_snan            = 0x2000, /* any operand was snan */
     /*
      * An input was denormal and we used it (without flushing it to zero).
      * Not set if we do not actually use the denormal input (e.g.
@@ -183,7 +187,8 @@ enum {
 /*
  * Rounding precision for floatx80.
  */
-typedef enum __attribute__((__packed__)) {
+typedef enum __attribute__((__packed__))
+{
     floatx80_precision_x,
     floatx80_precision_d,
     floatx80_precision_s,
@@ -201,7 +206,8 @@ typedef enum __attribute__((__packed__)) {
  * not to set the rule in float_status, and we will assert if
  * we need to handle an input NaN and no rule was selected.
  */
-typedef enum __attribute__((__packed__)) {
+typedef enum __attribute__((__packed__))
+{
     /* No propagation rule specified */
     float_2nan_prop_none = 0,
     /* Prefer SNaN over QNaN, then operand A over B */
@@ -252,22 +258,22 @@ typedef enum __attribute__((__packed__)) {
  * We set the Float3NaNPropRule enum values up so we can select the
  * right value in pickNaNMulAdd in a data driven way.
  */
-REG_FIELD(3NAN, 1ST, 0, 2)   /* which operand is most preferred ? */
-REG_FIELD(3NAN, 2ND, 2, 2)   /* which operand is next most preferred ? */
-REG_FIELD(3NAN, 3RD, 4, 2)   /* which operand is least preferred ? */
-REG_FIELD(3NAN, SNAN, 6, 1)  /* do we prefer SNaN over QNaN ? */
+REG_FIELD(3NAN, 1ST, 0, 2)  /* which operand is most preferred ? */
+REG_FIELD(3NAN, 2ND, 2, 2)  /* which operand is next most preferred ? */
+REG_FIELD(3NAN, 3RD, 4, 2)  /* which operand is least preferred ? */
+REG_FIELD(3NAN, SNAN, 6, 1) /* do we prefer SNaN over QNaN ? */
 
-#define PROPRULE(X, Y, Z) \
-    ((X << R_3NAN_1ST_SHIFT) | (Y << R_3NAN_2ND_SHIFT) | (Z << R_3NAN_3RD_SHIFT))
+#define PROPRULE(X, Y, Z) ((X << R_3NAN_1ST_SHIFT) | (Y << R_3NAN_2ND_SHIFT) | (Z << R_3NAN_3RD_SHIFT))
 
-typedef enum __attribute__((__packed__)) {
-    float_3nan_prop_none = 0,     /* No propagation rule specified */
-    float_3nan_prop_abc = PROPRULE(0, 1, 2),
-    float_3nan_prop_acb = PROPRULE(0, 2, 1),
-    float_3nan_prop_bac = PROPRULE(1, 0, 2),
-    float_3nan_prop_bca = PROPRULE(1, 2, 0),
-    float_3nan_prop_cab = PROPRULE(2, 0, 1),
-    float_3nan_prop_cba = PROPRULE(2, 1, 0),
+typedef enum __attribute__((__packed__))
+{
+    float_3nan_prop_none  = 0, /* No propagation rule specified */
+    float_3nan_prop_abc   = PROPRULE(0, 1, 2),
+    float_3nan_prop_acb   = PROPRULE(0, 2, 1),
+    float_3nan_prop_bac   = PROPRULE(1, 0, 2),
+    float_3nan_prop_bca   = PROPRULE(1, 2, 0),
+    float_3nan_prop_cab   = PROPRULE(2, 0, 1),
+    float_3nan_prop_cba   = PROPRULE(2, 1, 0),
     float_3nan_prop_s_abc = float_3nan_prop_abc | R_3NAN_SNAN_MASK,
     float_3nan_prop_s_acb = float_3nan_prop_acb | R_3NAN_SNAN_MASK,
     float_3nan_prop_s_bac = float_3nan_prop_bac | R_3NAN_SNAN_MASK,
@@ -289,7 +295,8 @@ typedef enum __attribute__((__packed__)) {
  * will assert if we need to handle an input NaN and no rule was
  * selected.
  */
-typedef enum __attribute__((__packed__)) {
+typedef enum __attribute__((__packed__))
+{
     /* No propagation rule specified */
     float_infzeronan_none = 0,
     /* Result is never the default NaN (so always the input NaN) */
@@ -321,8 +328,9 @@ typedef enum __attribute__((__packed__)) {
  * configure it matches the default for tininess_before_rounding
  * (i.e. "after rounding").
  */
-typedef enum __attribute__((__packed__)) {
-    float_ftz_after_rounding = 0,
+typedef enum __attribute__((__packed__))
+{
+    float_ftz_after_rounding  = 0,
     float_ftz_before_rounding = 1,
 } FloatFTZDetection;
 
@@ -333,7 +341,8 @@ typedef enum __attribute__((__packed__)) {
  * These flag values allow specification of the target's requirements
  * and can be ORed together to set floatx80_behaviour.
  */
-typedef enum __attribute__((__packed__)) {
+typedef enum __attribute__((__packed__))
+{
     /* In the default Infinity value, is the Integer bit 0 ? */
     floatx80_default_inf_int_bit_is_zero = 1,
     /*
@@ -383,15 +392,16 @@ typedef enum __attribute__((__packed__)) {
  * most of the softfloat functions.
  */
 
-typedef struct float_status {
-    uint16_t float_exception_flags;
-    FloatRoundMode float_rounding_mode;
-    FloatX80RoundPrec floatx80_rounding_precision;
-    FloatX80Behaviour floatx80_behaviour;
-    Float2NaNPropRule float_2nan_prop_rule;
-    Float3NaNPropRule float_3nan_prop_rule;
+typedef struct float_status
+{
+    uint16_t            float_exception_flags;
+    FloatRoundMode      float_rounding_mode;
+    FloatX80RoundPrec   floatx80_rounding_precision;
+    FloatX80Behaviour   floatx80_behaviour;
+    Float2NaNPropRule   float_2nan_prop_rule;
+    Float3NaNPropRule   float_3nan_prop_rule;
     FloatInfZeroNaNRule float_infzeronan_rule;
-    bool tininess_before_rounding;
+    bool                tininess_before_rounding;
     /* should denormalised results go to zero and set output_denormal_flushed? */
     bool flush_to_zero;
     /* do we detect and flush denormal results before or after rounding? */

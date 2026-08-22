@@ -22,4 +22,4 @@
 #include "hw/arm/apple-silicon/dt.h"
 #include "hw/sysbus.h"
 
-SysBusDevice *apple_buttons_create(AppleDTNode *node);
+SysBusDevice* apple_buttons_create(AppleDTNode* node);

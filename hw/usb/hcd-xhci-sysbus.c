@@ -14,56 +14,52 @@
 #include "hcd-xhci-sysbus.h"
 #include "hw/irq.h"
 
-static bool xhci_sysbus_intr_raise(XHCIState *xhci, int n, bool level)
+static bool xhci_sysbus_intr_raise(XHCIState* xhci, int n, bool level)
 {
-    XHCISysbusState *s = container_of(xhci, XHCISysbusState, xhci);
+    XHCISysbusState* s = container_of(xhci, XHCISysbusState, xhci);
 
     qemu_set_irq(s->irq[n], level);
 
     return false;
 }
 
-void xhci_sysbus_reset(DeviceState *dev)
+void xhci_sysbus_reset(DeviceState* dev)
 {
-    XHCISysbusState *s = XHCI_SYSBUS(dev);
+    XHCISysbusState* s = XHCI_SYSBUS(dev);
 
     device_cold_reset(DEVICE(&s->xhci));
 }
 
-static void xhci_sysbus_realize(DeviceState *dev, Error **errp)
+static void xhci_sysbus_realize(DeviceState* dev, Error** errp)
 {
-    XHCISysbusState *s = XHCI_SYSBUS(dev);
+    XHCISysbusState* s = XHCI_SYSBUS(dev);
 
     object_property_set_link(OBJECT(&s->xhci), "host", OBJECT(s), NULL);
-    if (!qdev_realize(DEVICE(&s->xhci), NULL, errp)) {
-        return;
-    }
+    if (!qdev_realize(DEVICE(&s->xhci), NULL, errp)) { return; }
     s->irq = g_new0(qemu_irq, s->xhci.numintrs);
-    qdev_init_gpio_out_named(dev, s->irq, SYSBUS_DEVICE_GPIO_IRQ,
-                             s->xhci.numintrs);
+    qdev_init_gpio_out_named(dev, s->irq, SYSBUS_DEVICE_GPIO_IRQ, s->xhci.numintrs);
     if (s->xhci.dma_mr) {
-        s->xhci.as =  g_malloc0(sizeof(AddressSpace));
+        s->xhci.as = g_malloc0(sizeof(AddressSpace));
         address_space_init(s->xhci.as, s->xhci.dma_mr, NULL);
-    } else {
+    }
+    else {
         s->xhci.as = &address_space_memory;
     }
 
     sysbus_init_mmio(SYS_BUS_DEVICE(dev), &s->xhci.mem);
 }
 
-static void xhci_sysbus_instance_init(Object *obj)
+static void xhci_sysbus_instance_init(Object* obj)
 {
-    XHCISysbusState *s = XHCI_SYSBUS(obj);
+    XHCISysbusState* s = XHCI_SYSBUS(obj);
 
     object_initialize_child(obj, "xhci-core", &s->xhci, TYPE_XHCI);
     qdev_alias_all_properties(DEVICE(&s->xhci), obj);
 
-    object_property_add_link(obj, "dma", TYPE_MEMORY_REGION,
-                             (Object **)&s->xhci.dma_mr,
-                             qdev_prop_allow_set_link_before_realize,
-                             OBJ_PROP_LINK_STRONG);
+    object_property_add_link(obj, "dma", TYPE_MEMORY_REGION, (Object**)&s->xhci.dma_mr,
+                             qdev_prop_allow_set_link_before_realize, OBJ_PROP_LINK_STRONG);
     s->xhci.intr_update = NULL;
-    s->xhci.intr_raise = xhci_sysbus_intr_raise;
+    s->xhci.intr_raise  = xhci_sysbus_intr_raise;
 }
 
 static const Property xhci_sysbus_props[] = {
@@ -71,26 +67,21 @@ static const Property xhci_sysbus_props[] = {
     DEFINE_PROP_UINT32("slots", XHCISysbusState, xhci.numslots, XHCI_MAXSLOTS),
 };
 
-static void xhci_sysbus_class_init(ObjectClass *klass, const void *data)
+static void xhci_sysbus_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
+    DeviceClass* dc = DEVICE_CLASS(klass);
 
     device_class_set_legacy_reset(dc, xhci_sysbus_reset);
     dc->realize = xhci_sysbus_realize;
     device_class_set_props(dc, xhci_sysbus_props);
 }
 
-static const TypeInfo xhci_sysbus_info = {
-    .name          = TYPE_XHCI_SYSBUS,
-    .parent        = TYPE_SYS_BUS_DEVICE,
-    .instance_size = sizeof(XHCISysbusState),
-    .class_init    = xhci_sysbus_class_init,
-    .instance_init = xhci_sysbus_instance_init
-};
+static const TypeInfo xhci_sysbus_info = {.name          = TYPE_XHCI_SYSBUS,
+                                          .parent        = TYPE_SYS_BUS_DEVICE,
+                                          .instance_size = sizeof(XHCISysbusState),
+                                          .class_init    = xhci_sysbus_class_init,
+                                          .instance_init = xhci_sysbus_instance_init};
 
-static void xhci_sysbus_register_types(void)
-{
-    type_register_static(&xhci_sysbus_info);
-}
+static void xhci_sysbus_register_types(void) { type_register_static(&xhci_sysbus_info); }
 
 type_init(xhci_sysbus_register_types);

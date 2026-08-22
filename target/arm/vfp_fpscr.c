@@ -22,32 +22,25 @@
 #include "internals.h"
 #include "cpu-features.h"
 
-uint32_t vfp_get_fpcr(CPUARMState *env)
-{
-    return env->vfp.fpcr
-        | (env->vfp.vec_len << 16)
-        | (env->vfp.vec_stride << 20);
-}
+uint32_t vfp_get_fpcr(CPUARMState* env)
+{ return env->vfp.fpcr | (env->vfp.vec_len << 16) | (env->vfp.vec_stride << 20); }
 
-uint32_t vfp_get_fpsr(CPUARMState *env)
+uint32_t vfp_get_fpsr(CPUARMState* env)
 {
     uint32_t fpsr = env->vfp.fpsr;
     uint32_t i;
 
     fpsr |= vfp_get_fpsr_from_host(env);
 
-    i = env->vfp.qc[0] | env->vfp.qc[1] | env->vfp.qc[2] | env->vfp.qc[3];
+    i     = env->vfp.qc[0] | env->vfp.qc[1] | env->vfp.qc[2] | env->vfp.qc[3];
     fpsr |= i ? FPSR_QC : 0;
     return fpsr;
 }
 
-uint32_t vfp_get_fpscr(CPUARMState *env)
-{
-    return (vfp_get_fpcr(env) & FPSCR_FPCR_MASK) |
-        (vfp_get_fpsr(env) & FPSCR_FPSR_MASK);
-}
+uint32_t vfp_get_fpscr(CPUARMState* env)
+{ return (vfp_get_fpcr(env) & FPSCR_FPCR_MASK) | (vfp_get_fpsr(env) & FPSCR_FPSR_MASK); }
 
-void vfp_set_fpsr(CPUARMState *env, uint32_t val)
+void vfp_set_fpsr(CPUARMState* env, uint32_t val)
 {
     if (arm_feature(env, ARM_FEATURE_NEON)) {
         /*
@@ -70,31 +63,25 @@ void vfp_set_fpsr(CPUARMState *env, uint32_t val)
      * anything else. We also need to clear out the float_status exception
      * information so that the next vfp_get_fpsr does not fold in stale data.
      */
-    val &= FPSR_NZCV_MASK | FPSR_CEXC_MASK;
-    env->vfp.fpsr = val;
+    val           &= FPSR_NZCV_MASK | FPSR_CEXC_MASK;
+    env->vfp.fpsr  = val;
     vfp_clear_float_status_exc_flags(env);
 }
 
-static void vfp_set_fpcr_masked(CPUARMState *env, uint32_t val, uint32_t mask)
+static void vfp_set_fpcr_masked(CPUARMState* env, uint32_t val, uint32_t mask)
 {
     /*
      * We only set FPCR bits defined by mask, and leave the others alone.
      * We assume the mask is sensible (e.g. doesn't try to set only
      * part of a field)
      */
-    ARMCPU *cpu = env_archcpu(env);
+    ARMCPU* cpu = env_archcpu(env);
 
     /* When ARMv8.2-FP16 is not supported, FZ16 is RES0.  */
-    if (!cpu_isar_feature(any_fp16, cpu)) {
-        val &= ~FPCR_FZ16;
-    }
-    if (!cpu_isar_feature(aa64_afp, cpu)) {
-        val &= ~(FPCR_FIZ | FPCR_AH | FPCR_NEP);
-    }
+    if (!cpu_isar_feature(any_fp16, cpu)) { val &= ~FPCR_FZ16; }
+    if (!cpu_isar_feature(aa64_afp, cpu)) { val &= ~(FPCR_FIZ | FPCR_AH | FPCR_NEP); }
 
-    if (!cpu_isar_feature(aa64_ebf16, cpu)) {
-        val &= ~FPCR_EBF;
-    }
+    if (!cpu_isar_feature(aa64_ebf16, cpu)) { val &= ~FPCR_EBF; }
 
     vfp_set_fpcr_to_host(env, val, mask);
 
@@ -107,7 +94,7 @@ static void vfp_set_fpcr_masked(CPUARMState *env, uint32_t val, uint32_t mask)
          * allow Stride/Len to be written with the only effect that
          * some insns are required to UNDEF if the guest sets them.
          */
-        env->vfp.vec_len = extract32(val, 16, 3);
+        env->vfp.vec_len    = extract32(val, 16, 3);
         env->vfp.vec_stride = extract32(val, 20, 2);
     }
 
@@ -121,18 +108,14 @@ static void vfp_set_fpcr_masked(CPUARMState *env, uint32_t val, uint32_t mask)
      * there, and zero any of the other FPCR bits and the RES0 and RAZ/WI
      * bits.
      */
-    val &= FPCR_AHP | FPCR_DN | FPCR_FZ | FPCR_RMODE_MASK | FPCR_FZ16 |
-        FPCR_EBF | FPCR_FIZ | FPCR_AH | FPCR_NEP;
+    val &= FPCR_AHP | FPCR_DN | FPCR_FZ | FPCR_RMODE_MASK | FPCR_FZ16 | FPCR_EBF | FPCR_FIZ | FPCR_AH | FPCR_NEP;
     env->vfp.fpcr &= ~mask;
     env->vfp.fpcr |= val;
 }
 
-void vfp_set_fpcr(CPUARMState *env, uint32_t val)
-{
-    vfp_set_fpcr_masked(env, val, MAKE_64BIT_MASK(0, 32));
-}
+void vfp_set_fpcr(CPUARMState* env, uint32_t val) { vfp_set_fpcr_masked(env, val, MAKE_64BIT_MASK(0, 32)); }
 
-void vfp_set_fpscr(CPUARMState *env, uint32_t val)
+void vfp_set_fpscr(CPUARMState* env, uint32_t val)
 {
     vfp_set_fpcr_masked(env, val, FPSCR_FPCR_MASK);
     vfp_set_fpsr(env, val & FPSCR_FPSR_MASK);

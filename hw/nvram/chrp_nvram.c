@@ -25,16 +25,13 @@
 #include "hw/nvram/chrp_nvram.h"
 #include "system/system.h"
 
-static int chrp_nvram_set_var(uint8_t *nvram, int addr, const char *str,
-                              int max_len)
+static int chrp_nvram_set_var(uint8_t* nvram, int addr, const char* str, int max_len)
 {
     int len;
 
     len = strlen(str) + 1;
 
-    if (max_len < len) {
-        return -1;
-    }
+    if (max_len < len) { return -1; }
 
     memcpy(&nvram[addr], str, len);
 
@@ -45,26 +42,22 @@ static int chrp_nvram_set_var(uint8_t *nvram, int addr, const char *str,
  * Create a "system partition", used for the Open Firmware
  * environment variables.
  */
-int chrp_nvram_create_system_partition(uint8_t *data, int min_len, int max_len)
+int chrp_nvram_create_system_partition(uint8_t* data, int min_len, int max_len)
 {
-    ChrpNvramPartHdr *part_header;
-    unsigned int i;
-    int end;
+    ChrpNvramPartHdr* part_header;
+    unsigned int      i;
+    int               end;
 
-    if (max_len < sizeof(*part_header)) {
-        goto fail;
-    }
+    if (max_len < sizeof(*part_header)) { goto fail; }
 
-    part_header = (ChrpNvramPartHdr *)data;
+    part_header            = (ChrpNvramPartHdr*)data;
     part_header->signature = CHRP_NVPART_SYSTEM;
     pstrcpy(part_header->name, sizeof(part_header->name), "system");
 
     end = sizeof(ChrpNvramPartHdr);
     for (i = 0; i < nb_prom_envs; i++) {
         end = chrp_nvram_set_var(data, end, prom_envs[i], max_len - end);
-        if (end == -1) {
-            goto fail;
-        }
+        if (end == -1) { goto fail; }
     }
 
     /* End marker */
@@ -73,9 +66,7 @@ int chrp_nvram_create_system_partition(uint8_t *data, int min_len, int max_len)
     end = (end + 15) & ~15;
     /* XXX: OpenBIOS is not able to grow up a partition. Leave some space for
        new variables. */
-    if (end < min_len) {
-        end = min_len;
-    }
+    if (end < min_len) { end = min_len; }
     chrp_nvram_finish_partition(part_header, end);
 
     return end;
@@ -88,11 +79,11 @@ fail:
 /**
  * Create a "free space" partition
  */
-int chrp_nvram_create_free_partition(uint8_t *data, int len)
+int chrp_nvram_create_free_partition(uint8_t* data, int len)
 {
-    ChrpNvramPartHdr *part_header;
+    ChrpNvramPartHdr* part_header;
 
-    part_header = (ChrpNvramPartHdr *)data;
+    part_header            = (ChrpNvramPartHdr*)data;
     part_header->signature = CHRP_NVPART_FREE;
     pstrcpy(part_header->name, sizeof(part_header->name), "free");
 

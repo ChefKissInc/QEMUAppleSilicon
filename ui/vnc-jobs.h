@@ -30,36 +30,21 @@
 #pragma once
 
 /* Jobs */
-VncJob *vnc_job_new(VncState *vs);
-int vnc_job_add_rect(VncJob *job, int x, int y, int w, int h);
-void vnc_job_push(VncJob *job);
-void vnc_jobs_join(VncState *vs);
+VncJob* vnc_job_new(VncState* vs);
+int     vnc_job_add_rect(VncJob* job, int x, int y, int w, int h);
+void    vnc_job_push(VncJob* job);
+void    vnc_jobs_join(VncState* vs);
 
-void vnc_jobs_consume_buffer(VncState *vs);
+void vnc_jobs_consume_buffer(VncState* vs);
 void vnc_start_worker_thread(void);
 
 /* Locks */
-static inline int vnc_trylock_display(VncDisplay *vd)
-{
-    return qemu_mutex_trylock(&vd->mutex);
-}
+static inline int vnc_trylock_display(VncDisplay* vd) { return qemu_mutex_trylock(&vd->mutex); }
 
-static inline void vnc_lock_display(VncDisplay *vd)
-{
-    qemu_mutex_lock(&vd->mutex);
-}
+static inline void vnc_lock_display(VncDisplay* vd) { qemu_mutex_lock(&vd->mutex); }
 
-static inline void vnc_unlock_display(VncDisplay *vd)
-{
-    qemu_mutex_unlock(&vd->mutex);
-}
+static inline void vnc_unlock_display(VncDisplay* vd) { qemu_mutex_unlock(&vd->mutex); }
 
-static inline void vnc_lock_output(VncState *vs)
-{
-    qemu_mutex_lock(&vs->output_mutex);
-}
+static inline void vnc_lock_output(VncState* vs) { qemu_mutex_lock(&vs->output_mutex); }
 
-static inline void vnc_unlock_output(VncState *vs)
-{
-    qemu_mutex_unlock(&vs->output_mutex);
-}
+static inline void vnc_unlock_output(VncState* vs) { qemu_mutex_unlock(&vs->output_mutex); }

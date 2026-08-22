@@ -51,64 +51,66 @@
 #include "hw/core/cpu.h"
 
 #ifndef MAC_OS_VERSION_14_0
-#define MAC_OS_VERSION_14_0 140000
+    #define MAC_OS_VERSION_14_0 140000
 #endif
 
-//#define COCOA_DO_DEBUG
+// #define COCOA_DO_DEBUG
 
 #ifdef COCOA_DO_DEBUG
-#define COCOA_DEBUG(...)  { (void) fprintf (stdout, __VA_ARGS__); }
+    #define COCOA_DEBUG(...)                    \
+        {                                       \
+            (void)fprintf(stdout, __VA_ARGS__); \
+        }
 #else
-#define COCOA_DEBUG(...)  ((void) 0)
+    #define COCOA_DEBUG(...) ((void)0)
 #endif
 
-#define cgrect(nsrect) (*(CGRect *)&(nsrect))
+#define cgrect(nsrect) (*(CGRect*)&(nsrect))
 
 #define UC_CTRL_KEY "\xe2\x8c\x83"
-#define UC_ALT_KEY "\xe2\x8c\xa5"
+#define UC_ALT_KEY  "\xe2\x8c\xa5"
 
-typedef struct {
+typedef struct
+{
     int width;
     int height;
 } QEMUScreen;
 
 @class QemuCocoaPasteboardTypeOwner;
 
-static void cocoa_update(DisplayChangeListener *dcl,
-                         int x, int y, int w, int h);
+static void cocoa_update(DisplayChangeListener* dcl, int x, int y, int w, int h);
 
-static void cocoa_switch(DisplayChangeListener *dcl,
-                         DisplaySurface *surface);
+static void cocoa_switch(DisplayChangeListener* dcl, DisplaySurface* surface);
 
-static void cocoa_refresh(DisplayChangeListener *dcl);
-static void cocoa_mouse_set(DisplayChangeListener *dcl, int x, int y, bool on);
-static void cocoa_cursor_define(DisplayChangeListener *dcl, QEMUCursor *cursor);
+static void cocoa_refresh(DisplayChangeListener* dcl);
+static void cocoa_mouse_set(DisplayChangeListener* dcl, int x, int y, bool on);
+static void cocoa_cursor_define(DisplayChangeListener* dcl, QEMUCursor* cursor);
 
 static const DisplayChangeListenerOps dcl_ops = {
     .dpy_name          = "cocoa",
-    .dpy_gfx_update = cocoa_update,
-    .dpy_gfx_switch = cocoa_switch,
-    .dpy_refresh = cocoa_refresh,
-    .dpy_mouse_set = cocoa_mouse_set,
+    .dpy_gfx_update    = cocoa_update,
+    .dpy_gfx_switch    = cocoa_switch,
+    .dpy_refresh       = cocoa_refresh,
+    .dpy_mouse_set     = cocoa_mouse_set,
     .dpy_cursor_define = cocoa_cursor_define,
 };
 static DisplayChangeListener dcl = {
     .ops = &dcl_ops,
 };
-static QKbdState *kbd;
-static int cursor_hide = 1;
-static int left_command_key_enabled = 1;
-static bool swap_opt_cmd;
+static QKbdState* kbd;
+static int        cursor_hide              = 1;
+static int        left_command_key_enabled = 1;
+static bool       swap_opt_cmd;
 
 static CGInterpolationQuality zoom_interpolation = kCGInterpolationNone;
-static NSTextField *pauseLabel;
+static NSTextField*           pauseLabel;
 
 static bool allow_events;
 
-static NSInteger cbchangecount = -1;
-static QemuClipboardInfo *cbinfo;
-static QemuEvent cbevent;
-static QemuCocoaPasteboardTypeOwner *cbowner;
+static NSInteger                     cbchangecount = -1;
+static QemuClipboardInfo*            cbinfo;
+static QemuEvent                     cbevent;
+static QemuCocoaPasteboardTypeOwner* cbowner;
 
 // Utility functions to run specified code block with the BQL held
 typedef void (^CodeBlock)(void);
@@ -117,13 +119,9 @@ typedef bool (^BoolCodeBlock)(void);
 static void with_bql(CodeBlock block)
 {
     bool locked = bql_locked();
-    if (!locked) {
-        bql_lock();
-    }
+    if (!locked) { bql_lock(); }
     block();
-    if (!locked) {
-        bql_unlock();
-    }
+    if (!locked) { bql_unlock(); }
 }
 
 static bool bool_with_bql(BoolCodeBlock block)
@@ -131,13 +129,9 @@ static bool bool_with_bql(BoolCodeBlock block)
     bool locked = bql_locked();
     bool val;
 
-    if (!locked) {
-        bql_lock();
-    }
+    if (!locked) { bql_lock(); }
     val = block();
-    if (!locked) {
-        bql_unlock();
-    }
+    if (!locked) { bql_unlock(); }
     return val;
 }
 
@@ -181,52 +175,52 @@ static const int mac_to_qkeycode_map[] = {
     [kVK_ANSI_8] = Q_KEY_CODE_8,
     [kVK_ANSI_9] = Q_KEY_CODE_9,
 
-    [kVK_ANSI_Grave] = Q_KEY_CODE_GRAVE_ACCENT,
-    [kVK_ANSI_Minus] = Q_KEY_CODE_MINUS,
-    [kVK_ANSI_Equal] = Q_KEY_CODE_EQUAL,
-    [kVK_Delete] = Q_KEY_CODE_BACKSPACE,
-    [kVK_CapsLock] = Q_KEY_CODE_CAPS_LOCK,
-    [kVK_Tab] = Q_KEY_CODE_TAB,
-    [kVK_Return] = Q_KEY_CODE_RET,
-    [kVK_ANSI_LeftBracket] = Q_KEY_CODE_BRACKET_LEFT,
+    [kVK_ANSI_Grave]        = Q_KEY_CODE_GRAVE_ACCENT,
+    [kVK_ANSI_Minus]        = Q_KEY_CODE_MINUS,
+    [kVK_ANSI_Equal]        = Q_KEY_CODE_EQUAL,
+    [kVK_Delete]            = Q_KEY_CODE_BACKSPACE,
+    [kVK_CapsLock]          = Q_KEY_CODE_CAPS_LOCK,
+    [kVK_Tab]               = Q_KEY_CODE_TAB,
+    [kVK_Return]            = Q_KEY_CODE_RET,
+    [kVK_ANSI_LeftBracket]  = Q_KEY_CODE_BRACKET_LEFT,
     [kVK_ANSI_RightBracket] = Q_KEY_CODE_BRACKET_RIGHT,
-    [kVK_ANSI_Backslash] = Q_KEY_CODE_BACKSLASH,
-    [kVK_ANSI_Semicolon] = Q_KEY_CODE_SEMICOLON,
-    [kVK_ANSI_Quote] = Q_KEY_CODE_APOSTROPHE,
-    [kVK_ANSI_Comma] = Q_KEY_CODE_COMMA,
-    [kVK_ANSI_Period] = Q_KEY_CODE_DOT,
-    [kVK_ANSI_Slash] = Q_KEY_CODE_SLASH,
-    [kVK_Space] = Q_KEY_CODE_SPC,
+    [kVK_ANSI_Backslash]    = Q_KEY_CODE_BACKSLASH,
+    [kVK_ANSI_Semicolon]    = Q_KEY_CODE_SEMICOLON,
+    [kVK_ANSI_Quote]        = Q_KEY_CODE_APOSTROPHE,
+    [kVK_ANSI_Comma]        = Q_KEY_CODE_COMMA,
+    [kVK_ANSI_Period]       = Q_KEY_CODE_DOT,
+    [kVK_ANSI_Slash]        = Q_KEY_CODE_SLASH,
+    [kVK_Space]             = Q_KEY_CODE_SPC,
 
-    [kVK_ANSI_Keypad0] = Q_KEY_CODE_KP_0,
-    [kVK_ANSI_Keypad1] = Q_KEY_CODE_KP_1,
-    [kVK_ANSI_Keypad2] = Q_KEY_CODE_KP_2,
-    [kVK_ANSI_Keypad3] = Q_KEY_CODE_KP_3,
-    [kVK_ANSI_Keypad4] = Q_KEY_CODE_KP_4,
-    [kVK_ANSI_Keypad5] = Q_KEY_CODE_KP_5,
-    [kVK_ANSI_Keypad6] = Q_KEY_CODE_KP_6,
-    [kVK_ANSI_Keypad7] = Q_KEY_CODE_KP_7,
-    [kVK_ANSI_Keypad8] = Q_KEY_CODE_KP_8,
-    [kVK_ANSI_Keypad9] = Q_KEY_CODE_KP_9,
-    [kVK_ANSI_KeypadDecimal] = Q_KEY_CODE_KP_DECIMAL,
-    [kVK_ANSI_KeypadEnter] = Q_KEY_CODE_KP_ENTER,
-    [kVK_ANSI_KeypadPlus] = Q_KEY_CODE_KP_ADD,
-    [kVK_ANSI_KeypadMinus] = Q_KEY_CODE_KP_SUBTRACT,
+    [kVK_ANSI_Keypad0]        = Q_KEY_CODE_KP_0,
+    [kVK_ANSI_Keypad1]        = Q_KEY_CODE_KP_1,
+    [kVK_ANSI_Keypad2]        = Q_KEY_CODE_KP_2,
+    [kVK_ANSI_Keypad3]        = Q_KEY_CODE_KP_3,
+    [kVK_ANSI_Keypad4]        = Q_KEY_CODE_KP_4,
+    [kVK_ANSI_Keypad5]        = Q_KEY_CODE_KP_5,
+    [kVK_ANSI_Keypad6]        = Q_KEY_CODE_KP_6,
+    [kVK_ANSI_Keypad7]        = Q_KEY_CODE_KP_7,
+    [kVK_ANSI_Keypad8]        = Q_KEY_CODE_KP_8,
+    [kVK_ANSI_Keypad9]        = Q_KEY_CODE_KP_9,
+    [kVK_ANSI_KeypadDecimal]  = Q_KEY_CODE_KP_DECIMAL,
+    [kVK_ANSI_KeypadEnter]    = Q_KEY_CODE_KP_ENTER,
+    [kVK_ANSI_KeypadPlus]     = Q_KEY_CODE_KP_ADD,
+    [kVK_ANSI_KeypadMinus]    = Q_KEY_CODE_KP_SUBTRACT,
     [kVK_ANSI_KeypadMultiply] = Q_KEY_CODE_KP_MULTIPLY,
-    [kVK_ANSI_KeypadDivide] = Q_KEY_CODE_KP_DIVIDE,
-    [kVK_ANSI_KeypadEquals] = Q_KEY_CODE_KP_EQUALS,
-    [kVK_ANSI_KeypadClear] = Q_KEY_CODE_NUM_LOCK,
+    [kVK_ANSI_KeypadDivide]   = Q_KEY_CODE_KP_DIVIDE,
+    [kVK_ANSI_KeypadEquals]   = Q_KEY_CODE_KP_EQUALS,
+    [kVK_ANSI_KeypadClear]    = Q_KEY_CODE_NUM_LOCK,
 
-    [kVK_UpArrow] = Q_KEY_CODE_UP,
-    [kVK_DownArrow] = Q_KEY_CODE_DOWN,
-    [kVK_LeftArrow] = Q_KEY_CODE_LEFT,
+    [kVK_UpArrow]    = Q_KEY_CODE_UP,
+    [kVK_DownArrow]  = Q_KEY_CODE_DOWN,
+    [kVK_LeftArrow]  = Q_KEY_CODE_LEFT,
     [kVK_RightArrow] = Q_KEY_CODE_RIGHT,
 
-    [kVK_Help] = Q_KEY_CODE_INSERT,
-    [kVK_Home] = Q_KEY_CODE_HOME,
-    [kVK_PageUp] = Q_KEY_CODE_PGUP,
-    [kVK_PageDown] = Q_KEY_CODE_PGDN,
-    [kVK_End] = Q_KEY_CODE_END,
+    [kVK_Help]          = Q_KEY_CODE_INSERT,
+    [kVK_Home]          = Q_KEY_CODE_HOME,
+    [kVK_PageUp]        = Q_KEY_CODE_PGUP,
+    [kVK_PageDown]      = Q_KEY_CODE_PGDN,
+    [kVK_End]           = Q_KEY_CODE_END,
     [kVK_ForwardDelete] = Q_KEY_CODE_DELETE,
 
     [kVK_Escape] = Q_KEY_CODE_ESC,
@@ -237,15 +231,15 @@ static const int mac_to_qkeycode_map[] = {
      */
     /* [kVK_F1] = Q_KEY_CODE_POWER, */
 
-    [kVK_F1] = Q_KEY_CODE_F1,
-    [kVK_F2] = Q_KEY_CODE_F2,
-    [kVK_F3] = Q_KEY_CODE_F3,
-    [kVK_F4] = Q_KEY_CODE_F4,
-    [kVK_F5] = Q_KEY_CODE_F5,
-    [kVK_F6] = Q_KEY_CODE_F6,
-    [kVK_F7] = Q_KEY_CODE_F7,
-    [kVK_F8] = Q_KEY_CODE_F8,
-    [kVK_F9] = Q_KEY_CODE_F9,
+    [kVK_F1]  = Q_KEY_CODE_F1,
+    [kVK_F2]  = Q_KEY_CODE_F2,
+    [kVK_F3]  = Q_KEY_CODE_F3,
+    [kVK_F4]  = Q_KEY_CODE_F4,
+    [kVK_F5]  = Q_KEY_CODE_F5,
+    [kVK_F6]  = Q_KEY_CODE_F6,
+    [kVK_F7]  = Q_KEY_CODE_F7,
+    [kVK_F8]  = Q_KEY_CODE_F8,
+    [kVK_F9]  = Q_KEY_CODE_F9,
     [kVK_F10] = Q_KEY_CODE_F10,
     [kVK_F11] = Q_KEY_CODE_F11,
     [kVK_F12] = Q_KEY_CODE_F12,
@@ -254,11 +248,11 @@ static const int mac_to_qkeycode_map[] = {
     [kVK_F15] = Q_KEY_CODE_PAUSE,
 
     // JIS keyboards only
-    [kVK_JIS_Yen] = Q_KEY_CODE_YEN,
-    [kVK_JIS_Underscore] = Q_KEY_CODE_RO,
+    [kVK_JIS_Yen]         = Q_KEY_CODE_YEN,
+    [kVK_JIS_Underscore]  = Q_KEY_CODE_RO,
     [kVK_JIS_KeypadComma] = Q_KEY_CODE_KP_COMMA,
-    [kVK_JIS_Eisu] = Q_KEY_CODE_MUHENKAN,
-    [kVK_JIS_Kana] = Q_KEY_CODE_HENKAN,
+    [kVK_JIS_Eisu]        = Q_KEY_CODE_MUHENKAN,
+    [kVK_JIS_Kana]        = Q_KEY_CODE_HENKAN,
 
     /*
      * The eject and volume keys can't be used here because they are handled at
@@ -276,20 +270,19 @@ static int cocoa_keycode_to_qemu(int keycode)
 }
 
 /* Displays an alert dialog box with the specified message */
-static void QEMU_Alert(NSString *message)
+static void QEMU_Alert(NSString* message)
 {
-    NSAlert *alert;
+    NSAlert* alert;
     alert = [NSAlert new];
-    [alert setMessageText: message];
+    [alert setMessageText:message];
     [alert runModal];
 }
 
 /* Handles any errors that happen with a device transaction */
-static void handleAnyDeviceErrors(Error * err)
+static void handleAnyDeviceErrors(Error* err)
 {
     if (err) {
-        QEMU_Alert([NSString stringWithCString: error_get_pretty(err)
-                                      encoding: NSASCIIStringEncoding]);
+        QEMU_Alert([NSString stringWithCString:error_get_pretty(err) encoding:NSASCIIStringEncoding]);
         error_free(err);
     }
 }
@@ -301,8 +294,8 @@ static void handleAnyDeviceErrors(Error * err)
 */
 @interface QemuCocoaView : NSView
 {
-    QEMUScreen screen;
-    pixman_image_t *pixman_image;
+    QEMUScreen      screen;
+    pixman_image_t* pixman_image;
     /* The state surrounding mouse grabbing is potentially confusing.
      * isAbsoluteEnabled tracks qemu_input_is_absolute() [ie "is the emulated
      *   pointing device an absolute-position one?"], but is only updated on
@@ -311,35 +304,35 @@ static void handleAnyDeviceErrors(Error * err)
      *   it controls whether special keys like Cmd get sent to the guest,
      *   and whether we capture the mouse when in non-absolute mode.
      */
-    BOOL isMouseGrabbed;
-    BOOL isAbsoluteEnabled;
-    CFMachPortRef eventsTap;
+    BOOL            isMouseGrabbed;
+    BOOL            isAbsoluteEnabled;
+    CFMachPortRef   eventsTap;
     CGColorSpaceRef colorspace;
-    CALayer *cursorLayer;
-    QEMUCursor *cursor;
-    int mouseX;
-    int mouseY;
-    bool mouseOn;
+    CALayer*        cursorLayer;
+    QEMUCursor*     cursor;
+    int             mouseX;
+    int             mouseY;
+    bool            mouseOn;
 }
-- (void) switchSurface:(pixman_image_t *)image;
-- (void) grabMouse;
-- (void) ungrabMouse;
-- (void) setFullGrab:(id)sender;
-- (void) handleMonitorInput:(NSEvent *)event;
-- (bool) handleEvent:(NSEvent *)event;
-- (bool) handleEventLocked:(NSEvent *)event;
-- (void) notifyMouseModeChange;
-- (BOOL) isMouseGrabbed;
-- (QEMUScreen) gscreen;
-- (void) raiseAllKeys;
+- (void)switchSurface:(pixman_image_t*)image;
+- (void)grabMouse;
+- (void)ungrabMouse;
+- (void)setFullGrab:(id)sender;
+- (void)handleMonitorInput:(NSEvent*)event;
+- (bool)handleEvent:(NSEvent*)event;
+- (bool)handleEventLocked:(NSEvent*)event;
+- (void)notifyMouseModeChange;
+- (BOOL)isMouseGrabbed;
+- (QEMUScreen)gscreen;
+- (void)raiseAllKeys;
 @end
 
-QemuCocoaView *cocoaView;
+QemuCocoaView* cocoaView;
 
-static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEventRef cgEvent, void *userInfo)
+static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEventRef cgEvent, void* userInfo)
 {
-    QemuCocoaView *view = userInfo;
-    NSEvent *event = [NSEvent eventWithCGEvent:cgEvent];
+    QemuCocoaView* view  = userInfo;
+    NSEvent*       event = [NSEvent eventWithCGEvent:cgEvent];
     if ([view isMouseGrabbed] && [view handleEvent:event]) {
         COCOA_DEBUG("Global events tap: qemu handled the event, capturing!\n");
         return NULL;
@@ -357,47 +350,38 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     self = [super initWithFrame:frameRect];
     if (self) {
 
-        NSTrackingAreaOptions options = NSTrackingActiveInKeyWindow |
-                                        NSTrackingMouseEnteredAndExited |
-                                        NSTrackingMouseMoved |
-                                        NSTrackingInVisibleRect;
+        NSTrackingAreaOptions options = NSTrackingActiveInKeyWindow | NSTrackingMouseEnteredAndExited
+                                        | NSTrackingMouseMoved | NSTrackingInVisibleRect;
 
-        NSTrackingArea *trackingArea =
-            [[NSTrackingArea alloc] initWithRect:CGRectZero
-                                         options:options
-                                           owner:self
-                                        userInfo:nil];
+        NSTrackingArea* trackingArea = [[NSTrackingArea alloc] initWithRect:CGRectZero
+                                                                    options:options
+                                                                      owner:self
+                                                                   userInfo:nil];
 
         [self addTrackingArea:trackingArea];
         [trackingArea release];
-        screen.width = frameRect.size.width;
+        screen.width  = frameRect.size.width;
         screen.height = frameRect.size.height;
-        colorspace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        colorspace    = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_14_0
         [self setClipsToBounds:YES];
 #endif
         [self setWantsLayer:YES];
         cursorLayer = [[CALayer alloc] init];
         [cursorLayer setAnchorPoint:CGPointMake(0, 1)];
-        [cursorLayer setAutoresizingMask:kCALayerMaxXMargin |
-                                         kCALayerMinYMargin];
+        [cursorLayer setAutoresizingMask:kCALayerMaxXMargin | kCALayerMinYMargin];
         [[self layer] addSublayer:cursorLayer];
-
     }
     return self;
 }
 
-- (void) dealloc
+- (void)dealloc
 {
     COCOA_DEBUG("QemuCocoaView: dealloc\n");
 
-    if (pixman_image) {
-        pixman_image_unref(pixman_image);
-    }
+    if (pixman_image) { pixman_image_unref(pixman_image); }
 
-    if (eventsTap) {
-        CFRelease(eventsTap);
-    }
+    if (eventsTap) { CFRelease(eventsTap); }
 
     CGColorSpaceRelease(colorspace);
     [cursorLayer release];
@@ -405,22 +389,20 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     [super dealloc];
 }
 
-- (BOOL) isOpaque
+- (BOOL)isOpaque
 {
     return YES;
 }
 
-- (void) viewDidMoveToWindow
+- (void)viewDidMoveToWindow
 {
     [self resizeWindow];
 }
 
-- (void) selectConsoleLocked:(unsigned int)index
+- (void)selectConsoleLocked:(unsigned int)index
 {
-    QemuConsole *con = qemu_console_lookup_by_index(index);
-    if (!con) {
-        return;
-    }
+    QemuConsole* con = qemu_console_lookup_by_index(index);
+    if (!con) { return; }
 
     unregister_displaychangelistener(&dcl);
     qkbd_state_switch_console(kbd, con);
@@ -430,19 +412,15 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     [self updateUIInfo];
 }
 
-- (void) hideCursor
+- (void)hideCursor
 {
-    if (!cursor_hide) {
-        return;
-    }
+    if (!cursor_hide) { return; }
     [NSCursor hide];
 }
 
-- (void) unhideCursor
+- (void)unhideCursor
 {
-    if (!cursor_hide) {
-        return;
-    }
+    if (!cursor_hide) { return; }
     [NSCursor unhide];
 }
 
@@ -450,8 +428,8 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 {
     CGPoint position;
 
-    mouseX = x;
-    mouseY = y;
+    mouseX  = x;
+    mouseY  = y;
     mouseOn = on;
 
     position.x = mouseX;
@@ -464,43 +442,35 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     [CATransaction commit];
 }
 
-- (void)setCursor:(QEMUCursor *)given_cursor
+- (void)setCursor:(QEMUCursor*)given_cursor
 {
     CGDataProviderRef provider;
-    CGImageRef image;
-    CGRect bounds = CGRectZero;
+    CGImageRef        image;
+    CGRect            bounds = CGRectZero;
 
     cursor_unref(cursor);
     cursor = given_cursor;
 
-    if (!cursor) {
-        return;
-    }
+    if (!cursor) { return; }
 
     cursor_ref(cursor);
 
-    bounds.size.width = cursor->width;
+    bounds.size.width  = cursor->width;
     bounds.size.height = cursor->height;
 
-    provider = CGDataProviderCreateWithData(
-        NULL,
-        cursor->data,
-        cursor->width * cursor->height * 4,
-        NULL
-    );
+    provider = CGDataProviderCreateWithData(NULL, cursor->data, cursor->width * cursor->height * 4, NULL);
 
-    image = CGImageCreate(
-        cursor->width, //width
-        cursor->height, //height
-        8, //bitsPerComponent
-        32, //bitsPerPixel
-        cursor->width * 4, //bytesPerRow
-        colorspace, //colorspace
-        kCGBitmapByteOrder32Little | kCGImageAlphaFirst, //bitmapInfo
-        provider, //provider
-        NULL, //decode
-        0, //interpolate
-        kCGRenderingIntentDefault //intent
+    image = CGImageCreate(cursor->width,                                      // width
+                          cursor->height,                                     // height
+                          8,                                                  // bitsPerComponent
+                          32,                                                 // bitsPerPixel
+                          cursor->width * 4,                                  // bytesPerRow
+                          colorspace,                                         // colorspace
+                          kCGBitmapByteOrder32Little | kCGImageAlphaFirst,    // bitmapInfo
+                          provider,                                           // provider
+                          NULL,                                               // decode
+                          0,                                                  // interpolate
+                          kCGRenderingIntentDefault                           // intent
     );
 
     CGDataProviderRelease(provider);
@@ -512,15 +482,15 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     CGImageRelease(image);
 }
 
-- (void) drawRect:(NSRect) rect
+- (void)drawRect:(NSRect)rect
 {
     COCOA_DEBUG("QemuCocoaView: drawRect\n");
 
     // get CoreGraphic context
     CGContextRef viewContextRef = [[NSGraphicsContext currentContext] CGContext];
 
-    CGContextSetInterpolationQuality (viewContextRef, zoom_interpolation);
-    CGContextSetShouldAntialias (viewContextRef, NO);
+    CGContextSetInterpolationQuality(viewContextRef, zoom_interpolation);
+    CGContextSetShouldAntialias(viewContextRef, NO);
 
     // draw screen bitmap directly to Core Graphics context
     if (!pixman_image) {
@@ -528,49 +498,42 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
         // just draw an opaque black rectangle
         CGContextSetRGBFillColor(viewContextRef, 0, 0, 0, 1.0);
         CGContextFillRect(viewContextRef, NSRectToCGRect(rect));
-    } else {
-        int w = pixman_image_get_width(pixman_image);
-        int h = pixman_image_get_height(pixman_image);
-        int bitsPerPixel = PIXMAN_FORMAT_BPP(pixman_image_get_format(pixman_image));
-        int stride = pixman_image_get_stride(pixman_image);
-        CGDataProviderRef dataProviderRef = CGDataProviderCreateWithData(
-            NULL,
-            pixman_image_get_data(pixman_image),
-            stride * h,
-            NULL
-        );
-        CGImageRef imageRef = CGImageCreate(
-            w, //width
-            h, //height
-            DIV_ROUND_UP(bitsPerPixel, 8) * 2, //bitsPerComponent
-            bitsPerPixel, //bitsPerPixel
-            stride, //bytesPerRow
-            colorspace, //colorspace
-            kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst, //bitmapInfo
-            dataProviderRef, //provider
-            NULL, //decode
-            0, //interpolate
-            kCGRenderingIntentDefault //intent
+    }
+    else {
+        int               w            = pixman_image_get_width(pixman_image);
+        int               h            = pixman_image_get_height(pixman_image);
+        int               bitsPerPixel = PIXMAN_FORMAT_BPP(pixman_image_get_format(pixman_image));
+        int               stride       = pixman_image_get_stride(pixman_image);
+        CGDataProviderRef dataProviderRef =
+            CGDataProviderCreateWithData(NULL, pixman_image_get_data(pixman_image), stride * h, NULL);
+        CGImageRef imageRef = CGImageCreate(w,                                    // width
+                                            h,                                    // height
+                                            DIV_ROUND_UP(bitsPerPixel, 8) * 2,    // bitsPerComponent
+                                            bitsPerPixel,                         // bitsPerPixel
+                                            stride,                               // bytesPerRow
+                                            colorspace,                           // colorspace
+                                            kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst,    // bitmapInfo
+                                            dataProviderRef,                                            // provider
+                                            NULL,                                                       // decode
+                                            0,                                                          // interpolate
+                                            kCGRenderingIntentDefault                                   // intent
         );
         // selective drawing code (draws only dirty rectangles) (OS X >= 10.4)
-        const NSRect *rectList;
-        NSInteger rectCount;
-        int i;
-        CGImageRef clipImageRef;
-        CGRect clipRect;
+        const NSRect* rectList;
+        NSInteger     rectCount;
+        int           i;
+        CGImageRef    clipImageRef;
+        CGRect        clipRect;
 
         [self getRectsBeingDrawn:&rectList count:&rectCount];
         for (i = 0; i < rectCount; i++) {
-            clipRect = rectList[i];
+            clipRect          = rectList[i];
             clipRect.origin.y = (float)h - (clipRect.origin.y + clipRect.size.height);
-            clipImageRef = CGImageCreateWithImageInRect(
-                                                        imageRef,
-                                                        clipRect
-                                                        );
-            CGContextDrawImage (viewContextRef, cgrect(rectList[i]), clipImageRef);
-            CGImageRelease (clipImageRef);
+            clipImageRef      = CGImageCreateWithImageInRect(imageRef, clipRect);
+            CGContextDrawImage(viewContextRef, cgrect(rectList[i]), clipImageRef);
+            CGImageRelease(clipImageRef);
         }
-        CGImageRelease (imageRef);
+        CGImageRelease(imageRef);
         CGDataProviderRelease(dataProviderRef);
     }
 }
@@ -580,7 +543,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     NSSize scaled;
     NSSize fixed;
 
-    scaled.width = screen.width * max.height;
+    scaled.width  = screen.width * max.height;
     scaled.height = screen.height * max.width;
 
     /*
@@ -602,41 +565,44 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
      * two scale factors multiplied by (screen.height * screen.width).
      */
     if (scaled.width < scaled.height) {
-        fixed.width = scaled.width / screen.height;
+        fixed.width  = scaled.width / screen.height;
         fixed.height = max.height;
-    } else {
-        fixed.width = max.width;
+    }
+    else {
+        fixed.width  = max.width;
         fixed.height = scaled.height / screen.width;
     }
 
     return fixed;
 }
 
-- (NSSize) screenSafeAreaSize
+- (NSSize)screenSafeAreaSize
 {
-    NSSize size = [[[self window] screen] frame].size;
-    NSEdgeInsets insets = [[[self window] screen] safeAreaInsets];
-    size.width -= insets.left + insets.right;
-    size.height -= insets.top + insets.bottom;
+    NSSize       size    = [[[self window] screen] frame].size;
+    NSEdgeInsets insets  = [[[self window] screen] safeAreaInsets];
+    size.width          -= insets.left + insets.right;
+    size.height         -= insets.top + insets.bottom;
     return size;
 }
 
-- (void) resizeWindow
+- (void)resizeWindow
 {
     [[self window] setContentAspectRatio:NSMakeSize(screen.width, screen.height)];
 
     if (!([[self window] styleMask] & NSWindowStyleMaskResizable)) {
         [[self window] setContentSize:NSMakeSize(screen.width, screen.height)];
         [[self window] center];
-    } else if ([[self window] styleMask] & NSWindowStyleMaskFullScreen) {
+    }
+    else if ([[self window] styleMask] & NSWindowStyleMaskFullScreen) {
         [[self window] setContentSize:[self fixAspectRatio:[self screenSafeAreaSize]]];
         [[self window] center];
-    } else {
+    }
+    else {
         [[self window] setContentSize:[self fixAspectRatio:[self frame].size]];
     }
 }
 
-- (void) updateBounds
+- (void)updateBounds
 {
     [self setBoundsSize:NSMakeSize(screen.width, screen.height)];
 }
@@ -644,23 +610,21 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
-- (void) updateUIInfoLocked
+- (void)updateUIInfoLocked
 {
     /* Must be called with the BQL, i.e. via updateUIInfo */
-    NSSize frameSize;
+    NSSize     frameSize;
     QemuUIInfo info;
 
-    if (!qemu_console_is_graphic(dcl.con)) {
-        return;
-    }
+    if (!qemu_console_is_graphic(dcl.con)) { return; }
 
     if ([self window]) {
-        NSDictionary *description = [[[self window] screen] deviceDescription];
-        CGDirectDisplayID display = [[description objectForKey:@"NSScreenNumber"] unsignedIntValue];
-        NSSize screenSize = [[[self window] screen] frame].size;
-        CGSize screenPhysicalSize = CGDisplayScreenSize(display);
-        bool isFullscreen = ([[self window] styleMask] & NSWindowStyleMaskFullScreen) != 0;
-        CVDisplayLinkRef displayLink;
+        NSDictionary*     description        = [[[self window] screen] deviceDescription];
+        CGDirectDisplayID display            = [[description objectForKey:@"NSScreenNumber"] unsignedIntValue];
+        NSSize            screenSize         = [[[self window] screen] frame].size;
+        CGSize            screenPhysicalSize = CGDisplayScreenSize(display);
+        bool              isFullscreen       = ([[self window] styleMask] & NSWindowStyleMaskFullScreen) != 0;
+        CVDisplayLinkRef  displayLink;
 
         frameSize = isFullscreen ? [self screenSafeAreaSize] : [self frame].size;
 
@@ -668,23 +632,23 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
             CVTime period = CVDisplayLinkGetNominalOutputVideoRefreshPeriod(displayLink);
             CVDisplayLinkRelease(displayLink);
             if (!(period.flags & kCVTimeIsIndefinite)) {
-                update_displaychangelistener(&dcl,
-                                             1000 * period.timeValue / period.timeScale);
+                update_displaychangelistener(&dcl, 1000 * period.timeValue / period.timeScale);
                 info.refresh_rate = (int64_t)1000 * period.timeScale / period.timeValue;
             }
         }
 
-        info.width_mm = frameSize.width / screenSize.width * screenPhysicalSize.width;
+        info.width_mm  = frameSize.width / screenSize.width * screenPhysicalSize.width;
         info.height_mm = frameSize.height / screenSize.height * screenPhysicalSize.height;
-    } else {
-        frameSize = [self frame].size;
-        info.width_mm = 0;
+    }
+    else {
+        frameSize      = [self frame].size;
+        info.width_mm  = 0;
         info.height_mm = 0;
     }
 
-    info.xoff = 0;
-    info.yoff = 0;
-    info.width = frameSize.width;
+    info.xoff   = 0;
+    info.yoff   = 0;
+    info.width  = frameSize.width;
     info.height = frameSize.height;
 
     dpy_set_ui_info(dcl.con, &info, TRUE);
@@ -692,7 +656,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
 #pragma clang diagnostic pop
 
-- (void) updateUIInfo
+- (void)updateUIInfo
 {
     if (!allow_events) {
         /*
@@ -706,12 +670,10 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
         return;
     }
 
-    with_bql(^{
-        [self updateUIInfoLocked];
-    });
+    with_bql(^{ [self updateUIInfoLocked]; });
 }
 
-- (void) switchSurface:(pixman_image_t *)image
+- (void)switchSurface:(pixman_image_t*)image
 {
     COCOA_DEBUG("QemuCocoaView: switchSurface\n");
 
@@ -721,31 +683,31 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     if (w != screen.width || h != screen.height) {
         // Resize before we trigger the redraw, or we'll redraw at the wrong size
         COCOA_DEBUG("switchSurface: new size %d x %d\n", w, h);
-        screen.width = w;
+        screen.width  = w;
         screen.height = h;
         [self resizeWindow];
         [self updateBounds];
     }
 
     // update screenBuffer
-    if (pixman_image) {
-        pixman_image_unref(pixman_image);
-    }
+    if (pixman_image) { pixman_image_unref(pixman_image); }
 
     pixman_image = image;
 }
 
-- (void) setFullGrab:(id)sender
+- (void)setFullGrab:(id)sender
 {
     COCOA_DEBUG("QemuCocoaView: setFullGrab\n");
 
-    CGEventMask mask = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
-    eventsTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault,
-                                 mask, handleTapEvent, self);
+    CGEventMask mask =
+        CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
+    eventsTap =
+        CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault, mask, handleTapEvent, self);
     if (!eventsTap) {
         warn_report("Could not create event tap, system key combos will not be captured.\n");
         return;
-    } else {
+    }
+    else {
         COCOA_DEBUG("Global events tap created! Will capture system key combos.\n");
     }
 
@@ -756,7 +718,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     }
 
     CFRunLoopSourceRef tapEventsSrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventsTap, 0);
-    if (!tapEventsSrc ) {
+    if (!tapEventsSrc) {
         warn_report("Could not obtain current CF RunLoop, system key combos will not be captured.\n");
         return;
     }
@@ -765,25 +727,24 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     CFRelease(tapEventsSrc);
 }
 
-- (void) toggleKey: (int)keycode {
+- (void)toggleKey:(int)keycode
+{
     qkbd_state_key_event(kbd, keycode, !qkbd_state_key_get(kbd, keycode));
 }
 
 // Does the work of sending input to the monitor
-- (void) handleMonitorInput:(NSEvent *)event
+- (void)handleMonitorInput:(NSEvent*)event
 {
-    int keysym = 0;
+    int keysym      = 0;
     int control_key = 0;
 
     // if the control key is down
-    if ([event modifierFlags] & NSEventModifierFlagControl) {
-        control_key = 1;
-    }
+    if ([event modifierFlags] & NSEventModifierFlagControl) { control_key = 1; }
 
     /* translates Macintosh keycodes to QEMU's keysym */
 
     static const int without_control_translation[] = {
-        [0 ... 0xff] = 0,   // invalid key
+        [0 ... 0xff] = 0,    // invalid key
 
         [kVK_UpArrow]       = QEMU_KEY_UP,
         [kVK_DownArrow]     = QEMU_KEY_DOWN,
@@ -798,23 +759,24 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     };
 
     static const int with_control_translation[] = {
-        [0 ... 0xff] = 0,   // invalid key
+        [0 ... 0xff] = 0,    // invalid key
 
-        [kVK_UpArrow]       = QEMU_KEY_CTRL_UP,
-        [kVK_DownArrow]     = QEMU_KEY_CTRL_DOWN,
-        [kVK_RightArrow]    = QEMU_KEY_CTRL_RIGHT,
-        [kVK_LeftArrow]     = QEMU_KEY_CTRL_LEFT,
-        [kVK_Home]          = QEMU_KEY_CTRL_HOME,
-        [kVK_End]           = QEMU_KEY_CTRL_END,
-        [kVK_PageUp]        = QEMU_KEY_CTRL_PAGEUP,
-        [kVK_PageDown]      = QEMU_KEY_CTRL_PAGEDOWN,
+        [kVK_UpArrow]    = QEMU_KEY_CTRL_UP,
+        [kVK_DownArrow]  = QEMU_KEY_CTRL_DOWN,
+        [kVK_RightArrow] = QEMU_KEY_CTRL_RIGHT,
+        [kVK_LeftArrow]  = QEMU_KEY_CTRL_LEFT,
+        [kVK_Home]       = QEMU_KEY_CTRL_HOME,
+        [kVK_End]        = QEMU_KEY_CTRL_END,
+        [kVK_PageUp]     = QEMU_KEY_CTRL_PAGEUP,
+        [kVK_PageDown]   = QEMU_KEY_CTRL_PAGEDOWN,
     };
 
     if (control_key != 0) { /* If the control key is being used */
         if ([event keyCode] < ARRAY_SIZE(with_control_translation)) {
             keysym = with_control_translation[[event keyCode]];
         }
-    } else {
+    }
+    else {
         if ([event keyCode] < ARRAY_SIZE(without_control_translation)) {
             keysym = without_control_translation[[event keyCode]];
         }
@@ -822,32 +784,28 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
     // if not a key that needs translating
     if (keysym == 0) {
-        NSString *ks = [event characters];
-        if ([ks length] > 0) {
-            keysym = [ks characterAtIndex:0];
-        }
+        NSString* ks = [event characters];
+        if ([ks length] > 0) { keysym = [ks characterAtIndex:0]; }
     }
 
     if (keysym) {
-        QemuTextConsole *con = QEMU_TEXT_CONSOLE(dcl.con);
+        QemuTextConsole* con = QEMU_TEXT_CONSOLE(dcl.con);
         qemu_text_console_put_keysym(con, keysym);
     }
 }
 
-- (bool) handleEvent:(NSEvent *)event
+- (bool)handleEvent:(NSEvent*)event
 {
-    return bool_with_bql(^{
-        return [self handleEventLocked:event];
-    });
+    return bool_with_bql(^{ return [self handleEventLocked:event]; });
 }
 
-- (bool) handleEventLocked:(NSEvent *)event
+- (bool)handleEventLocked:(NSEvent*)event
 {
     /* Return true if we handled the event, false if it should be given to OSX */
     COCOA_DEBUG("QemuCocoaView: handleEvent\n");
     InputButton button;
-    int keycode = 0;
-    NSUInteger modifiers = [event modifierFlags];
+    int         keycode   = 0;
+    NSUInteger  modifiers = [event modifierFlags];
 
     /*
      * Check -[NSEvent modifierFlags] here.
@@ -886,8 +844,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
      *   completely leaving your hands from the keyboard, which hopefully makes
      *   this implementation usable enough.
      */
-    if (!!(modifiers & NSEventModifierFlagCapsLock) !=
-        qkbd_state_modifier_get(kbd, QKBD_MOD_CAPSLOCK)) {
+    if (!!(modifiers & NSEventModifierFlagCapsLock) != qkbd_state_modifier_get(kbd, QKBD_MOD_CAPSLOCK)) {
         qkbd_state_key_event(kbd, Q_KEY_CODE_CAPS_LOCK, true);
         qkbd_state_key_event(kbd, Q_KEY_CODE_CAPS_LOCK, false);
     }
@@ -904,7 +861,8 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
         if (swap_opt_cmd) {
             qkbd_state_key_event(kbd, Q_KEY_CODE_META_L, false);
             qkbd_state_key_event(kbd, Q_KEY_CODE_META_R, false);
-        } else {
+        }
+        else {
             qkbd_state_key_event(kbd, Q_KEY_CODE_ALT, false);
             qkbd_state_key_event(kbd, Q_KEY_CODE_ALT_R, false);
         }
@@ -913,7 +871,8 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
         if (swap_opt_cmd) {
             qkbd_state_key_event(kbd, Q_KEY_CODE_ALT, false);
             qkbd_state_key_event(kbd, Q_KEY_CODE_ALT_R, false);
-        } else {
+        }
+        else {
             qkbd_state_key_event(kbd, Q_KEY_CODE_META_L, false);
             qkbd_state_key_event(kbd, Q_KEY_CODE_META_R, false);
         }
@@ -923,34 +882,25 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
         case NSEventTypeFlagsChanged:
             switch ([event keyCode]) {
                 case kVK_Shift:
-                    if (!!(modifiers & NSEventModifierFlagShift)) {
-                        [self toggleKey:Q_KEY_CODE_SHIFT];
-                    }
+                    if (!!(modifiers & NSEventModifierFlagShift)) { [self toggleKey:Q_KEY_CODE_SHIFT]; }
                     break;
 
                 case kVK_RightShift:
-                    if (!!(modifiers & NSEventModifierFlagShift)) {
-                        [self toggleKey:Q_KEY_CODE_SHIFT_R];
-                    }
+                    if (!!(modifiers & NSEventModifierFlagShift)) { [self toggleKey:Q_KEY_CODE_SHIFT_R]; }
                     break;
 
                 case kVK_Control:
-                    if (!!(modifiers & NSEventModifierFlagControl)) {
-                        [self toggleKey:Q_KEY_CODE_CTRL];
-                    }
+                    if (!!(modifiers & NSEventModifierFlagControl)) { [self toggleKey:Q_KEY_CODE_CTRL]; }
                     break;
 
                 case kVK_RightControl:
-                    if (!!(modifiers & NSEventModifierFlagControl)) {
-                        [self toggleKey:Q_KEY_CODE_CTRL_R];
-                    }
+                    if (!!(modifiers & NSEventModifierFlagControl)) { [self toggleKey:Q_KEY_CODE_CTRL_R]; }
                     break;
 
                 case kVK_Option:
                     if (!!(modifiers & NSEventModifierFlagOption)) {
-                        if (swap_opt_cmd) {
-                            [self toggleKey:Q_KEY_CODE_META_L];
-                        } else {
+                        if (swap_opt_cmd) { [self toggleKey:Q_KEY_CODE_META_L]; }
+                        else {
                             [self toggleKey:Q_KEY_CODE_ALT];
                         }
                     }
@@ -958,9 +908,8 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
                 case kVK_RightOption:
                     if (!!(modifiers & NSEventModifierFlagOption)) {
-                        if (swap_opt_cmd) {
-                            [self toggleKey:Q_KEY_CODE_META_R];
-                        } else {
+                        if (swap_opt_cmd) { [self toggleKey:Q_KEY_CODE_META_R]; }
+                        else {
                             [self toggleKey:Q_KEY_CODE_ALT_R];
                         }
                     }
@@ -968,23 +917,18 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
                 /* Don't pass command key changes to guest unless mouse is grabbed */
                 case kVK_Command:
-                    if (isMouseGrabbed &&
-                        !!(modifiers & NSEventModifierFlagCommand) &&
-                        left_command_key_enabled) {
-                        if (swap_opt_cmd) {
-                            [self toggleKey:Q_KEY_CODE_ALT];
-                        } else {
+                    if (isMouseGrabbed && !!(modifiers & NSEventModifierFlagCommand) && left_command_key_enabled) {
+                        if (swap_opt_cmd) { [self toggleKey:Q_KEY_CODE_ALT]; }
+                        else {
                             [self toggleKey:Q_KEY_CODE_META_L];
                         }
                     }
                     break;
 
                 case kVK_RightCommand:
-                    if (isMouseGrabbed &&
-                        !!(modifiers & NSEventModifierFlagCommand)) {
-                        if (swap_opt_cmd) {
-                            [self toggleKey:Q_KEY_CODE_ALT_R];
-                        } else {
+                    if (isMouseGrabbed && !!(modifiers & NSEventModifierFlagCommand)) {
+                        if (swap_opt_cmd) { [self toggleKey:Q_KEY_CODE_ALT_R]; }
+                        else {
                             [self toggleKey:Q_KEY_CODE_META_R];
                         }
                     }
@@ -995,15 +939,15 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
             keycode = cocoa_keycode_to_qemu([event keyCode]);
 
             // forward command key combos to the host UI unless the mouse is grabbed
-            if (!isMouseGrabbed && ([event modifierFlags] & NSEventModifierFlagCommand)) {
-                return false;
-            }
+            if (!isMouseGrabbed && ([event modifierFlags] & NSEventModifierFlagCommand)) { return false; }
 
             // default
 
             // handle control + alt Key Combos (ctrl+alt+[1..9,g] is reserved for QEMU)
-            if (([event modifierFlags] & NSEventModifierFlagControl) && ([event modifierFlags] & NSEventModifierFlagOption)) {
-                NSString *keychar = [event charactersIgnoringModifiers];
+            if (([event modifierFlags] & NSEventModifierFlagControl)
+                && ([event modifierFlags] & NSEventModifierFlagOption))
+            {
+                NSString* keychar = [event charactersIgnoringModifiers];
                 if ([keychar length] == 1) {
                     char key = [keychar characterAtIndex:0];
                     switch (key) {
@@ -1014,17 +958,14 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
                             return true;
 
                         // release the mouse grab
-                        case 'g':
-                            [self ungrabMouse];
-                            return true;
+                        case 'g': [self ungrabMouse]; return true;
                     }
                 }
             }
 
-            if (qemu_console_is_graphic(dcl.con)) {
-                qkbd_state_key_event(kbd, keycode, true);
-            } else {
-                [self handleMonitorInput: event];
+            if (qemu_console_is_graphic(dcl.con)) { qkbd_state_key_event(kbd, keycode, true); }
+            else {
+                [self handleMonitorInput:event];
             }
             return true;
         case NSEventTypeKeyUp:
@@ -1032,13 +973,9 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
             // don't pass the guest a spurious key-up if we treated this
             // command-key combo as a host UI action
-            if (!isMouseGrabbed && ([event modifierFlags] & NSEventModifierFlagCommand)) {
-                return true;
-            }
+            if (!isMouseGrabbed && ([event modifierFlags] & NSEventModifierFlagCommand)) { return true; }
 
-            if (qemu_console_is_graphic(dcl.con)) {
-                qkbd_state_key_event(kbd, keycode, false);
-            }
+            if (qemu_console_is_graphic(dcl.con)) { qkbd_state_key_event(kbd, keycode, false); }
             return true;
         case NSEventTypeScrollWheel:
             /*
@@ -1048,12 +985,12 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
             /* Determine if this is a scroll up or scroll down event */
             if ([event deltaY] != 0) {
-                button = ([event deltaY] > 0) ?
-                    INPUT_BUTTON_WHEEL_UP : INPUT_BUTTON_WHEEL_DOWN;
-            } else if ([event deltaX] != 0) {
-                button = ([event deltaX] > 0) ?
-                    INPUT_BUTTON_WHEEL_LEFT : INPUT_BUTTON_WHEEL_RIGHT;
-            } else {
+                button = ([event deltaY] > 0) ? INPUT_BUTTON_WHEEL_UP : INPUT_BUTTON_WHEEL_DOWN;
+            }
+            else if ([event deltaX] != 0) {
+                button = ([event deltaX] > 0) ? INPUT_BUTTON_WHEEL_LEFT : INPUT_BUTTON_WHEEL_RIGHT;
+            }
+            else {
                 /*
                  * We shouldn't have got a scroll event when deltaY and delta Y
                  * are zero, hence no harm in dropping the event
@@ -1067,200 +1004,188 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
             qemu_input_event_sync();
 
             return true;
-        default:
-            return false;
+        default: return false;
     }
 }
 
-- (void) handleMouseEvent:(NSEvent *)event button:(InputButton)button down:(bool)down
+- (void)handleMouseEvent:(NSEvent*)event button:(InputButton)button down:(bool)down
 {
-    if (!isMouseGrabbed) {
-        return;
-    }
+    if (!isMouseGrabbed) { return; }
 
-    with_bql(^{
-        qemu_input_queue_btn(dcl.con, button, down);
-    });
+    with_bql(^{ qemu_input_queue_btn(dcl.con, button, down); });
 
     [self handleMouseEvent:event];
 }
 
-- (void) handleMouseEvent:(NSEvent *)event
+- (void)handleMouseEvent:(NSEvent*)event
 {
-    if (!isMouseGrabbed) {
-        return;
-    }
+    if (!isMouseGrabbed) { return; }
 
     with_bql(^{
-        if (isAbsoluteEnabled) {
-            CGFloat d = (CGFloat)screen.height / [self frame].size.height;
-            NSPoint p = [event locationInWindow];
+      if (isAbsoluteEnabled) {
+          CGFloat d = (CGFloat)screen.height / [self frame].size.height;
+          NSPoint p = [event locationInWindow];
 
-            /* Note that the origin for Cocoa mouse coords is bottom left, not top left. */
-            qemu_input_queue_abs(dcl.con, INPUT_AXIS_X, p.x * d, 0, screen.width);
-            qemu_input_queue_abs(dcl.con, INPUT_AXIS_Y, screen.height - p.y * d, 0, screen.height);
-        } else {
-            qemu_input_queue_rel(dcl.con, INPUT_AXIS_X, [event deltaX]);
-            qemu_input_queue_rel(dcl.con, INPUT_AXIS_Y, [event deltaY]);
-        }
+          /* Note that the origin for Cocoa mouse coords is bottom left, not top left. */
+          qemu_input_queue_abs(dcl.con, INPUT_AXIS_X, p.x * d, 0, screen.width);
+          qemu_input_queue_abs(dcl.con, INPUT_AXIS_Y, screen.height - p.y * d, 0, screen.height);
+      }
+      else {
+          qemu_input_queue_rel(dcl.con, INPUT_AXIS_X, [event deltaX]);
+          qemu_input_queue_rel(dcl.con, INPUT_AXIS_Y, [event deltaY]);
+      }
 
-        qemu_input_event_sync();
+      qemu_input_event_sync();
     });
 }
 
-- (void) mouseExited:(NSEvent *)event
+- (void)mouseExited:(NSEvent*)event
 {
-    if (isAbsoluteEnabled && isMouseGrabbed) {
-        [self ungrabMouse];
-    }
+    if (isAbsoluteEnabled && isMouseGrabbed) { [self ungrabMouse]; }
 }
 
-- (void) mouseEntered:(NSEvent *)event
+- (void)mouseEntered:(NSEvent*)event
 {
-    if (isAbsoluteEnabled && !isMouseGrabbed) {
-        [self grabMouse];
-    }
+    if (isAbsoluteEnabled && !isMouseGrabbed) { [self grabMouse]; }
 }
 
-- (void) mouseMoved:(NSEvent *)event
+- (void)mouseMoved:(NSEvent*)event
 {
     [self handleMouseEvent:event];
 }
 
-- (void) mouseDown:(NSEvent *)event
+- (void)mouseDown:(NSEvent*)event
 {
     [self handleMouseEvent:event button:INPUT_BUTTON_LEFT down:true];
 }
 
-- (void) rightMouseDown:(NSEvent *)event
+- (void)rightMouseDown:(NSEvent*)event
 {
     [self handleMouseEvent:event button:INPUT_BUTTON_RIGHT down:true];
 }
 
-- (void) otherMouseDown:(NSEvent *)event
+- (void)otherMouseDown:(NSEvent*)event
 {
     [self handleMouseEvent:event button:INPUT_BUTTON_MIDDLE down:true];
 }
 
-- (void) mouseDragged:(NSEvent *)event
+- (void)mouseDragged:(NSEvent*)event
 {
     [self handleMouseEvent:event];
 }
 
-- (void) rightMouseDragged:(NSEvent *)event
+- (void)rightMouseDragged:(NSEvent*)event
 {
     [self handleMouseEvent:event];
 }
 
-- (void) otherMouseDragged:(NSEvent *)event
+- (void)otherMouseDragged:(NSEvent*)event
 {
     [self handleMouseEvent:event];
 }
 
-- (void) mouseUp:(NSEvent *)event
+- (void)mouseUp:(NSEvent*)event
 {
-    if (!isMouseGrabbed) {
-        [self grabMouse];
-    }
+    if (!isMouseGrabbed) { [self grabMouse]; }
 
     [self handleMouseEvent:event button:INPUT_BUTTON_LEFT down:false];
 }
 
-- (void) rightMouseUp:(NSEvent *)event
+- (void)rightMouseUp:(NSEvent*)event
 {
     [self handleMouseEvent:event button:INPUT_BUTTON_RIGHT down:false];
 }
 
-- (void) otherMouseUp:(NSEvent *)event
+- (void)otherMouseUp:(NSEvent*)event
 {
     [self handleMouseEvent:event button:INPUT_BUTTON_MIDDLE down:false];
 }
 
-- (void) grabMouse
+- (void)grabMouse
 {
     COCOA_DEBUG("QemuCocoaView: grabMouse\n");
 
-    if (qemu_name)
-        [[self window] setTitle:[NSString stringWithFormat:@"ChefKiss Inferno %s - (Press  " UC_CTRL_KEY " " UC_ALT_KEY " G  to release Mouse)", qemu_name]];
-    else
+    if (qemu_name) {
+        [[self window] setTitle:[NSString stringWithFormat:@"ChefKiss Inferno %s - (Press  " UC_CTRL_KEY " " UC_ALT_KEY
+                                                            " G  to release Mouse)",
+                                                           qemu_name]];
+    }
+    else {
         [[self window] setTitle:@"ChefKiss Inferno - (Press  " UC_CTRL_KEY " " UC_ALT_KEY " G  to release Mouse)"];
+    }
     [self hideCursor];
     CGAssociateMouseAndMouseCursorPosition(isAbsoluteEnabled);
-    isMouseGrabbed = TRUE; // while isMouseGrabbed = TRUE, QemuCocoaApp sends all events to [cocoaView handleEvent:]
+    isMouseGrabbed = TRUE;    // while isMouseGrabbed = TRUE, QemuCocoaApp sends all events to [cocoaView handleEvent:]
 }
 
-- (void) ungrabMouse
+- (void)ungrabMouse
 {
     COCOA_DEBUG("QemuCocoaView: ungrabMouse\n");
 
-    if (qemu_name)
-        [[self window] setTitle:[NSString stringWithFormat:@"ChefKiss Inferno %s", qemu_name]];
-    else
+    if (qemu_name) { [[self window] setTitle:[NSString stringWithFormat:@"ChefKiss Inferno %s", qemu_name]]; }
+    else {
         [[self window] setTitle:@"ChefKiss Inferno"];
+    }
     [self unhideCursor];
     CGAssociateMouseAndMouseCursorPosition(TRUE);
     isMouseGrabbed = FALSE;
     [self raiseAllButtons];
 }
 
-- (void) notifyMouseModeChange {
-    bool tIsAbsoluteEnabled = bool_with_bql(^{
-        return qemu_input_is_absolute(dcl.con);
-    });
+- (void)notifyMouseModeChange
+{
+    bool tIsAbsoluteEnabled = bool_with_bql(^{ return qemu_input_is_absolute(dcl.con); });
 
-    if (tIsAbsoluteEnabled == isAbsoluteEnabled) {
-        return;
-    }
+    if (tIsAbsoluteEnabled == isAbsoluteEnabled) { return; }
 
     isAbsoluteEnabled = tIsAbsoluteEnabled;
 
     if (isMouseGrabbed) {
-        if (isAbsoluteEnabled) {
-            [self ungrabMouse];
-        } else {
+        if (isAbsoluteEnabled) { [self ungrabMouse]; }
+        else {
             CGAssociateMouseAndMouseCursorPosition(isAbsoluteEnabled);
         }
     }
 }
-- (BOOL) isMouseGrabbed {return isMouseGrabbed;}
-- (QEMUScreen) gscreen {return screen;}
+- (BOOL)isMouseGrabbed
+{
+    return isMouseGrabbed;
+}
+- (QEMUScreen)gscreen
+{
+    return screen;
+}
 
 /*
  * Makes the target think all down keys are being released.
  * This prevents a stuck key problem, since we will not see
  * key up events for those keys after we have lost focus.
  */
-- (void) raiseAllKeys
+- (void)raiseAllKeys
 {
-    with_bql(^{
-        qkbd_state_lift_all_keys(kbd);
-    });
+    with_bql(^{ qkbd_state_lift_all_keys(kbd); });
 }
 
-- (void) raiseAllButtons
+- (void)raiseAllButtons
 {
     with_bql(^{
-        qemu_input_queue_btn(dcl.con, INPUT_BUTTON_LEFT, false);
-        qemu_input_queue_btn(dcl.con, INPUT_BUTTON_RIGHT, false);
-        qemu_input_queue_btn(dcl.con, INPUT_BUTTON_MIDDLE, false);
+      qemu_input_queue_btn(dcl.con, INPUT_BUTTON_LEFT, false);
+      qemu_input_queue_btn(dcl.con, INPUT_BUTTON_RIGHT, false);
+      qemu_input_queue_btn(dcl.con, INPUT_BUTTON_MIDDLE, false);
     });
 }
 @end
-
-
 
 /*
  ------------------------------------------------------
     QemuCocoaAppController
  ------------------------------------------------------
 */
-@interface QemuCocoaAppController : NSObject
-                                       <NSWindowDelegate, NSApplicationDelegate>
-{
-}
+@interface QemuCocoaAppController : NSObject <NSWindowDelegate, NSApplicationDelegate>
+{ }
 - (void)doToggleFullScreen:(id)sender;
 - (void)showQEMUDoc:(id)sender;
-- (void)zoomToFit:(id) sender;
+- (void)zoomToFit:(id)sender;
 - (void)displayConsole:(id)sender;
 - (void)pauseQEMU:(id)sender;
 - (void)resumeQEMU:(id)sender;
@@ -1271,14 +1196,14 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 - (void)ejectDeviceMedia:(id)sender;
 - (void)changeDeviceMedia:(id)sender;
 - (BOOL)verifyQuit;
-- (void)openDocumentation:(NSString *)filename;
-- (IBAction) do_about_menu_item: (id) sender;
+- (void)openDocumentation:(NSString*)filename;
+- (IBAction)do_about_menu_item:(id)sender;
 @end
 
 @implementation QemuCocoaAppController
-- (id) init
+- (id)init
 {
-    NSWindow *window;
+    NSWindow* window;
 
     COCOA_DEBUG("QemuCocoaAppController: init\n");
 
@@ -1287,43 +1212,46 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 
         // create a view and add it to the window
         cocoaView = [[QemuCocoaView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 640.0, 480.0)];
-        if(!cocoaView) {
+        if (!cocoaView) {
             error_report("(cocoa) can't create a view");
             exit(1);
         }
 
         // create a window
-        window = [[NSWindow alloc] initWithContentRect:[cocoaView frame]
-            styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskClosable
-            backing:NSBackingStoreBuffered defer:NO];
-        if(!window) {
+        window = [[NSWindow alloc]
+            initWithContentRect:[cocoaView frame]
+                      styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskClosable
+                        backing:NSBackingStoreBuffered
+                          defer:NO];
+        if (!window) {
             error_report("(cocoa) can't create window");
             exit(1);
         }
         [window setAcceptsMouseMovedEvents:YES];
         [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
-        [window setTitle:qemu_name ? [NSString stringWithFormat:@"ChefKiss Inferno %s", qemu_name] : @"ChefKiss Inferno"];
+        [window
+            setTitle:qemu_name ? [NSString stringWithFormat:@"ChefKiss Inferno %s", qemu_name] : @"ChefKiss Inferno"];
         [window setContentView:cocoaView];
         [window makeKeyAndOrderFront:self];
         [window center];
-        [window setDelegate: self];
+        [window setDelegate:self];
 
         /* Used for displaying pause on the screen */
         pauseLabel = [NSTextField new];
         [pauseLabel setBezeled:YES];
         [pauseLabel setDrawsBackground:YES];
-        [pauseLabel setBackgroundColor: [NSColor whiteColor]];
+        [pauseLabel setBackgroundColor:[NSColor whiteColor]];
         [pauseLabel setEditable:NO];
         [pauseLabel setSelectable:NO];
-        [pauseLabel setStringValue: @"Paused"];
-        [pauseLabel setFont: [NSFont fontWithName: @"Helvetica" size: 90]];
-        [pauseLabel setTextColor: [NSColor blackColor]];
+        [pauseLabel setStringValue:@"Paused"];
+        [pauseLabel setFont:[NSFont fontWithName:@"Helvetica" size:90]];
+        [pauseLabel setTextColor:[NSColor blackColor]];
         [pauseLabel sizeToFit];
     }
     return self;
 }
 
-- (void) dealloc
+- (void)dealloc
 {
     COCOA_DEBUG("QemuCocoaAppController: dealloc\n");
 
@@ -1334,19 +1262,19 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     [super dealloc];
 }
 
-- (void)applicationDidFinishLaunching: (NSNotification *) note
+- (void)applicationDidFinishLaunching:(NSNotification*)note
 {
     COCOA_DEBUG("QemuCocoaAppController: applicationDidFinishLaunching\n");
     allow_events = true;
 }
 
-- (void)applicationWillTerminate:(NSNotification *)aNotification
+- (void)applicationWillTerminate:(NSNotification*)aNotification
 {
     COCOA_DEBUG("QemuCocoaAppController: applicationWillTerminate\n");
 
     with_bql(^{
-        shutdown_action = SHUTDOWN_ACTION_POWEROFF;
-        qemu_system_shutdown_request(SHUTDOWN_CAUSE_HOST_UI);
+      shutdown_action = SHUTDOWN_ACTION_POWEROFF;
+      qemu_system_shutdown_request(SHUTDOWN_CAUSE_HOST_UI);
     });
 
     /*
@@ -1357,35 +1285,34 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     [NSThread sleepForTimeInterval:INFINITY];
 }
 
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)theApplication
 {
     return YES;
 }
 
-- (NSApplicationTerminateReply)applicationShouldTerminate:
-                                                         (NSApplication *)sender
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender
 {
     COCOA_DEBUG("QemuCocoaAppController: applicationShouldTerminate\n");
     return [self verifyQuit];
 }
 
-- (void)windowDidChangeScreen:(NSNotification *)notification
+- (void)windowDidChangeScreen:(NSNotification*)notification
 {
     [cocoaView updateUIInfo];
 }
 
-- (void)windowDidEnterFullScreen:(NSNotification *)notification
+- (void)windowDidEnterFullScreen:(NSNotification*)notification
 {
     [cocoaView grabMouse];
 }
 
-- (void)windowDidExitFullScreen:(NSNotification *)notification
+- (void)windowDidExitFullScreen:(NSNotification*)notification
 {
     [cocoaView resizeWindow];
     [cocoaView ungrabMouse];
 }
 
-- (void)windowDidResize:(NSNotification *)notification
+- (void)windowDidResize:(NSNotification*)notification
 {
     [cocoaView updateBounds];
     [cocoaView updateUIInfo];
@@ -1395,7 +1322,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 - (BOOL)windowShouldClose:(id)sender
 {
     COCOA_DEBUG("QemuCocoaAppController: windowShouldClose\n");
-    [NSApp terminate: sender];
+    [NSApp terminate:sender];
     /* If the user allows the application to quit then the call to
      * NSApp terminate will never return. If we get here then the user
      * cancelled the quit, so we should return NO to not permit the
@@ -1404,12 +1331,12 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     return NO;
 }
 
-- (NSApplicationPresentationOptions) window:(NSWindow *)window
-                                     willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions;
+- (NSApplicationPresentationOptions)window:(NSWindow*)window
+      willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions;
 
 {
-    return (proposedOptions & ~(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)) |
-           NSApplicationPresentationHideDock | NSApplicationPresentationHideMenuBar;
+    return (proposedOptions & ~(NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar))
+           | NSApplicationPresentationHideDock | NSApplicationPresentationHideMenuBar;
 }
 
 /*
@@ -1418,7 +1345,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
  * [-NSApplicationDelegate applicationWillResignActive:] because it cannot
  * detect that the window loses focus when the deck is clicked on macOS 13.2.1.
  */
-- (void) windowDidResignKey: (NSNotification *)aNotification
+- (void)windowDidResignKey:(NSNotification*)aNotification
 {
     COCOA_DEBUG("%s\n", __func__);
     [cocoaView ungrabMouse];
@@ -1429,12 +1356,12 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
  * because Mac OS 10.7 and higher disables it. This is because of the
  * menu item's old selector's name toggleFullScreen:
  */
-- (void) doToggleFullScreen:(id)sender
+- (void)doToggleFullScreen:(id)sender
 {
     [[cocoaView window] toggleFullScreen:sender];
 }
 
-- (void) setFullGrab:(id)sender
+- (void)setFullGrab:(id)sender
 {
     COCOA_DEBUG("QemuCocoaAppController: setFullGrab\n");
 
@@ -1442,25 +1369,21 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 }
 
 /* Tries to find then open the specified filename */
-- (void) openDocumentation: (NSString *) filename
+- (void)openDocumentation:(NSString*)filename
 {
     /* Where to look for local files */
-    NSString *path_array[] = {@"../share/doc/qemu/", @"../doc/qemu/", @"docs/"};
-    NSString *full_file_path;
-    NSURL *full_file_url;
+    NSString* path_array[] = {@"../share/doc/qemu/", @"../doc/qemu/", @"docs/"};
+    NSString* full_file_path;
+    NSURL*    full_file_url;
 
     /* iterate thru the possible paths until the file is found */
     int index;
     for (index = 0; index < ARRAY_SIZE(path_array); index++) {
         full_file_path = [[NSBundle mainBundle] executablePath];
         full_file_path = [full_file_path stringByDeletingLastPathComponent];
-        full_file_path = [NSString stringWithFormat: @"%@/%@%@", full_file_path,
-                          path_array[index], filename];
-        full_file_url = [NSURL fileURLWithPath: full_file_path
-                                   isDirectory: false];
-        if ([[NSWorkspace sharedWorkspace] openURL: full_file_url] == YES) {
-            return;
-        }
+        full_file_path = [NSString stringWithFormat:@"%@/%@%@", full_file_path, path_array[index], filename];
+        full_file_url  = [NSURL fileURLWithPath:full_file_path isDirectory:false];
+        if ([[NSWorkspace sharedWorkspace] openURL:full_file_url] == YES) { return; }
     }
 
     /* If none of the paths opened a file */
@@ -1472,11 +1395,11 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 {
     COCOA_DEBUG("QemuCocoaAppController: showQEMUDoc\n");
 
-    [self openDocumentation: @"index.html"];
+    [self openDocumentation:@"index.html"];
 }
 
 /* Stretches video to fit host monitor size */
-- (void)zoomToFit:(id) sender
+- (void)zoomToFit:(id)sender
 {
     NSWindowStyleMask styleMask = [[cocoaView window] styleMask] ^ NSWindowStyleMaskResizable;
 
@@ -1485,44 +1408,39 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     [cocoaView resizeWindow];
 }
 
-- (void)toggleZoomInterpolation:(id) sender
+- (void)toggleZoomInterpolation:(id)sender
 {
     if (zoom_interpolation == kCGInterpolationNone) {
         zoom_interpolation = kCGInterpolationLow;
-        [sender setState: NSControlStateValueOn];
-    } else {
+        [sender setState:NSControlStateValueOn];
+    }
+    else {
         zoom_interpolation = kCGInterpolationNone;
-        [sender setState: NSControlStateValueOff];
+        [sender setState:NSControlStateValueOff];
     }
 }
 
 /* Displays the console on the screen */
 - (void)displayConsole:(id)sender
 {
-    with_bql(^{
-        [cocoaView selectConsoleLocked:[sender tag]];
-    });
+    with_bql(^{ [cocoaView selectConsoleLocked:[sender tag]]; });
 }
 
 /* Pause the guest */
 - (void)pauseQEMU:(id)sender
 {
-    with_bql(^{
-        qmp_stop(NULL);
-    });
-    [sender setEnabled: NO];
-    [[[sender menu] itemWithTitle: @"Resume"] setEnabled: YES];
+    with_bql(^{ qmp_stop(NULL); });
+    [sender setEnabled:NO];
+    [[[sender menu] itemWithTitle:@"Resume"] setEnabled:YES];
     [self displayPause];
 }
 
 /* Resume running the guest operating system */
-- (void)resumeQEMU:(id) sender
+- (void)resumeQEMU:(id)sender
 {
-    with_bql(^{
-        qmp_cont(NULL);
-    });
-    [sender setEnabled: NO];
-    [[[sender menu] itemWithTitle: @"Pause"] setEnabled: YES];
+    with_bql(^{ qmp_cont(NULL); });
+    [sender setEnabled:NO];
+    [[[sender menu] itemWithTitle:@"Pause"] setEnabled:YES];
     [self removePause];
 }
 
@@ -1531,12 +1449,12 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 {
     /* Coordinates have to be calculated each time because the window can change its size */
     int xCoord, yCoord, width, height;
-    xCoord = ([cocoaView frame].size.width - [pauseLabel frame].size.width)/2;
+    xCoord = ([cocoaView frame].size.width - [pauseLabel frame].size.width) / 2;
     yCoord = [cocoaView frame].size.height - [pauseLabel frame].size.height - ([pauseLabel frame].size.height * .5);
-    width = [pauseLabel frame].size.width;
+    width  = [pauseLabel frame].size.width;
     height = [pauseLabel frame].size.height;
-    [pauseLabel setFrame: NSMakeRect(xCoord, yCoord, width, height)];
-    [cocoaView addSubview: pauseLabel];
+    [pauseLabel setFrame:NSMakeRect(xCoord, yCoord, width, height)];
+    [cocoaView addSubview:pauseLabel];
 }
 
 /* Removes the word pause from the screen */
@@ -1548,17 +1466,13 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 /* Restarts QEMU */
 - (void)restartQEMU:(id)sender
 {
-    with_bql(^{
-        qmp_system_reset(NULL);
-    });
+    with_bql(^{ qmp_system_reset(NULL); });
 }
 
 /* Powers down QEMU */
 - (void)powerDownQEMU:(id)sender
 {
-    with_bql(^{
-        qmp_system_powerdown(NULL);
-    });
+    with_bql(^{ qmp_system_powerdown(NULL); });
 }
 
 /* Ejects the media.
@@ -1566,19 +1480,16 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
  */
 - (void)ejectDeviceMedia:(id)sender
 {
-    NSString * drive;
+    NSString* drive;
     drive = [sender representedObject];
-    if(drive == nil) {
+    if (drive == nil) {
         NSBeep();
         QEMU_Alert(@"Failed to find drive to eject!");
         return;
     }
 
-    __block Error *err = NULL;
-    with_bql(^{
-        qmp_eject([drive cStringUsingEncoding: NSASCIIStringEncoding],
-                  NULL, false, false, &err);
-    });
+    __block Error* err = NULL;
+    with_bql(^{ qmp_eject([drive cStringUsingEncoding:NSASCIIStringEncoding], NULL, false, false, &err); });
     handleAnyDeviceErrors(err);
 }
 
@@ -1588,38 +1499,32 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 - (void)changeDeviceMedia:(id)sender
 {
     /* Find the drive name */
-    NSString * drive;
+    NSString* drive;
     drive = [sender representedObject];
-    if(drive == nil) {
+    if (drive == nil) {
         NSBeep();
         QEMU_Alert(@"Could not find drive!");
         return;
     }
 
     /* Display the file open dialog */
-    NSOpenPanel * openPanel;
+    NSOpenPanel* openPanel;
     openPanel = [NSOpenPanel openPanel];
-    [openPanel setCanChooseFiles: YES];
-    [openPanel setAllowsMultipleSelection: NO];
-    if([openPanel runModal] == NSModalResponseOK) {
-        NSString * file = [[[openPanel URLs] objectAtIndex: 0] path];
-        if(file == nil) {
+    [openPanel setCanChooseFiles:YES];
+    [openPanel setAllowsMultipleSelection:NO];
+    if ([openPanel runModal] == NSModalResponseOK) {
+        NSString* file = [[[openPanel URLs] objectAtIndex:0] path];
+        if (file == nil) {
             NSBeep();
             QEMU_Alert(@"Failed to convert URL to file path!");
             return;
         }
 
-        __block Error *err = NULL;
+        __block Error* err = NULL;
         with_bql(^{
-            qmp_blockdev_change_medium([drive cStringUsingEncoding:
-                                                  NSASCIIStringEncoding],
-                                       NULL,
-                                       [file cStringUsingEncoding:
-                                                 NSASCIIStringEncoding],
-                                       "raw",
-                                       true, false,
-                                       false, 0,
-                                       &err);
+          qmp_blockdev_change_medium([drive cStringUsingEncoding:NSASCIIStringEncoding], NULL,
+                                     [file cStringUsingEncoding:NSASCIIStringEncoding], "raw", true, false, false, 0,
+                                     &err);
         });
         handleAnyDeviceErrors(err);
     }
@@ -1628,29 +1533,29 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 /* Verifies if the user really wants to quit */
 - (BOOL)verifyQuit
 {
-    NSAlert *alert = [NSAlert new];
+    NSAlert* alert = [NSAlert new];
     [alert autorelease];
-    [alert setMessageText: @"Are you sure you want to quit QEMU?"];
-    [alert addButtonWithTitle: @"Cancel"];
-    [alert addButtonWithTitle: @"Quit"];
-    if([alert runModal] == NSAlertSecondButtonReturn) {
-        return YES;
-    } else {
+    [alert setMessageText:@"Are you sure you want to quit QEMU?"];
+    [alert addButtonWithTitle:@"Cancel"];
+    [alert addButtonWithTitle:@"Quit"];
+    if ([alert runModal] == NSAlertSecondButtonReturn) { return YES; }
+    else {
         return NO;
     }
 }
 
 /* The action method for the About menu item */
-- (IBAction) do_about_menu_item: (id) sender
+- (IBAction)do_about_menu_item:(id)sender
 {
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    char *icon_path_c = get_relocated_path(CONFIG_QEMU_ICONDIR "/hicolor/512x512/apps/qemu.png");
-    NSString *icon_path = [NSString stringWithUTF8String:icon_path_c];
+    NSAutoreleasePool* pool        = [[NSAutoreleasePool alloc] init];
+    char*              icon_path_c = get_relocated_path(CONFIG_QEMU_ICONDIR "/hicolor/512x512/apps/qemu.png");
+    NSString*          icon_path   = [NSString stringWithUTF8String:icon_path_c];
     g_free(icon_path_c);
-    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:icon_path];
-    NSString *version = @"ChefKiss Inferno emulator version " QEMU_FULL_VERSION;
-    NSString *copyright = @QEMU_COPYRIGHT "\n\nChefKiss Inferno\nCopyright (c) 2023-2026 Visual Ehrmanntraut and Inferno team\n\n";
-    NSDictionary *options;
+    NSImage*  icon    = [[NSImage alloc] initWithContentsOfFile:icon_path];
+    NSString* version = @"ChefKiss Inferno emulator version " QEMU_FULL_VERSION;
+    NSString* copyright =
+        @QEMU_COPYRIGHT "\n\nChefKiss Inferno\nCopyright (c) 2023-2026 Visual Ehrmanntraut and Inferno team\n\n";
+    NSDictionary* options;
     if (icon) {
         options = @{
             NSAboutPanelOptionApplicationIcon : icon,
@@ -1658,7 +1563,8 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
             @"Copyright" : copyright,
         };
         [icon release];
-    } else {
+    }
+    else {
         options = @{
             NSAboutPanelOptionApplicationVersion : version,
             @"Copyright" : copyright,
@@ -1674,72 +1580,85 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 @end
 
 @implementation QemuApplication
-- (void)sendEvent:(NSEvent *)event
+- (void)sendEvent:(NSEvent*)event
 {
     COCOA_DEBUG("QemuApplication: sendEvent\n");
-    if (![cocoaView handleEvent:event]) {
-        [super sendEvent: event];
-    }
+    if (![cocoaView handleEvent:event]) { [super sendEvent:event]; }
 }
 @end
 
 static void create_initial_menus(void)
 {
     // Add menus
-    NSMenu      *menu;
-    NSMenuItem  *menuItem;
+    NSMenu*     menu;
+    NSMenuItem* menuItem;
 
     [NSApp setMainMenu:[[NSMenu alloc] init]];
     [NSApp setServicesMenu:[[NSMenu alloc] initWithTitle:@"Services"]];
 
     // Application menu
     menu = [[NSMenu alloc] initWithTitle:@""];
-    [menu addItemWithTitle:@"About QEMU" action:@selector(do_about_menu_item:) keyEquivalent:@""]; // About QEMU
-    [menu addItem:[NSMenuItem separatorItem]]; //Separator
+    [menu addItemWithTitle:@"About QEMU" action:@selector(do_about_menu_item:) keyEquivalent:@""];    // About QEMU
+    [menu addItem:[NSMenuItem separatorItem]];                                                        // Separator
     menuItem = [menu addItemWithTitle:@"Services" action:nil keyEquivalent:@""];
     [menuItem setSubmenu:[NSApp servicesMenu]];
     [menu addItem:[NSMenuItem separatorItem]];
-    [menu addItemWithTitle:@"Hide QEMU" action:@selector(hide:) keyEquivalent:@"h"]; //Hide QEMU
-    menuItem = (NSMenuItem *)[menu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"]; // Hide Others
-    [menuItem setKeyEquivalentModifierMask:(NSEventModifierFlagOption|NSEventModifierFlagCommand)];
-    [menu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""]; // Show All
-    [menu addItem:[NSMenuItem separatorItem]]; //Separator
+    [menu addItemWithTitle:@"Hide QEMU" action:@selector(hide:) keyEquivalent:@"h"];    // Hide QEMU
+    menuItem = (NSMenuItem*)[menu addItemWithTitle:@"Hide Others"
+                                            action:@selector(hideOtherApplications:)
+                                     keyEquivalent:@"h"];    // Hide Others
+    [menuItem setKeyEquivalentModifierMask:(NSEventModifierFlagOption | NSEventModifierFlagCommand)];
+    [menu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];    // Show All
+    [menu addItem:[NSMenuItem separatorItem]];                                                         // Separator
     [menu addItemWithTitle:@"Quit QEMU" action:@selector(terminate:) keyEquivalent:@"q"];
     menuItem = [[NSMenuItem alloc] initWithTitle:@"Apple" action:nil keyEquivalent:@""];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
-    [NSApp performSelector:@selector(setAppleMenu:) withObject:menu]; // Workaround (this method is private since 10.4+)
+    [NSApp performSelector:@selector(setAppleMenu:)
+                withObject:menu];    // Workaround (this method is private since 10.4+)
 
     // Machine menu
-    menu = [[NSMenu alloc] initWithTitle: @"Machine"];
-    [menu setAutoenablesItems: NO];
-    [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Pause" action: @selector(pauseQEMU:) keyEquivalent: @""] autorelease]];
-    menuItem = [[[NSMenuItem alloc] initWithTitle: @"Resume" action: @selector(resumeQEMU:) keyEquivalent: @""] autorelease];
-    [menu addItem: menuItem];
-    [menuItem setEnabled: NO];
-    [menu addItem: [NSMenuItem separatorItem]];
-    [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Reset" action: @selector(restartQEMU:) keyEquivalent: @""] autorelease]];
-    [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Power Down" action: @selector(powerDownQEMU:) keyEquivalent: @""] autorelease]];
-    menuItem = [[[NSMenuItem alloc] initWithTitle: @"Machine" action:nil keyEquivalent:@""] autorelease];
+    menu = [[NSMenu alloc] initWithTitle:@"Machine"];
+    [menu setAutoenablesItems:NO];
+    [menu addItem:[[[NSMenuItem alloc] initWithTitle:@"Pause" action:@selector(pauseQEMU:)
+                                       keyEquivalent:@""] autorelease]];
+    menuItem = [[[NSMenuItem alloc] initWithTitle:@"Resume" action:@selector(resumeQEMU:)
+                                    keyEquivalent:@""] autorelease];
+    [menu addItem:menuItem];
+    [menuItem setEnabled:NO];
+    [menu addItem:[NSMenuItem separatorItem]];
+    [menu addItem:[[[NSMenuItem alloc] initWithTitle:@"Reset" action:@selector(restartQEMU:)
+                                       keyEquivalent:@""] autorelease]];
+    [menu addItem:[[[NSMenuItem alloc] initWithTitle:@"Power Down" action:@selector(powerDownQEMU:)
+                                       keyEquivalent:@""] autorelease]];
+    menuItem = [[[NSMenuItem alloc] initWithTitle:@"Machine" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
 
     // View menu
     menu = [[NSMenu alloc] initWithTitle:@"View"];
-    [menu addItem: [[[NSMenuItem alloc] initWithTitle:@"Enter Fullscreen" action:@selector(doToggleFullScreen:) keyEquivalent:@"f"] autorelease]]; // Fullscreen
-    menuItem = [[[NSMenuItem alloc] initWithTitle:@"Zoom To Fit" action:@selector(zoomToFit:) keyEquivalent:@""] autorelease];
-    [menuItem setState: [[cocoaView window] styleMask] & NSWindowStyleMaskResizable ? NSControlStateValueOn : NSControlStateValueOff];
-    [menu addItem: menuItem];
-    menuItem = [[[NSMenuItem alloc] initWithTitle:@"Zoom Interpolation" action:@selector(toggleZoomInterpolation:) keyEquivalent:@""] autorelease];
-    [menuItem setState: zoom_interpolation == kCGInterpolationLow ? NSControlStateValueOn : NSControlStateValueOff];
-    [menu addItem: menuItem];
+    [menu addItem:[[[NSMenuItem alloc] initWithTitle:@"Enter Fullscreen"
+                                              action:@selector(doToggleFullScreen:)
+                                       keyEquivalent:@"f"] autorelease]];    // Fullscreen
+    menuItem = [[[NSMenuItem alloc] initWithTitle:@"Zoom To Fit" action:@selector(zoomToFit:)
+                                    keyEquivalent:@""] autorelease];
+    [menuItem setState:[[cocoaView window] styleMask] & NSWindowStyleMaskResizable ? NSControlStateValueOn :
+                                                                                     NSControlStateValueOff];
+    [menu addItem:menuItem];
+    menuItem = [[[NSMenuItem alloc] initWithTitle:@"Zoom Interpolation"
+                                           action:@selector(toggleZoomInterpolation:)
+                                    keyEquivalent:@""] autorelease];
+    [menuItem setState:zoom_interpolation == kCGInterpolationLow ? NSControlStateValueOn : NSControlStateValueOff];
+    [menu addItem:menuItem];
     menuItem = [[[NSMenuItem alloc] initWithTitle:@"View" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
 
     // Window menu
     menu = [[NSMenu alloc] initWithTitle:@"Window"];
-    [menu addItem: [[[NSMenuItem alloc] initWithTitle:@"Minimize" action:@selector(performMiniaturize:) keyEquivalent:@"m"] autorelease]]; // Miniaturize
+    [menu addItem:[[[NSMenuItem alloc] initWithTitle:@"Minimize"
+                                              action:@selector(performMiniaturize:)
+                                       keyEquivalent:@"m"] autorelease]];    // Miniaturize
     menuItem = [[[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
@@ -1747,16 +1666,18 @@ static void create_initial_menus(void)
 
     // Help menu
     menu = [[NSMenu alloc] initWithTitle:@"Help"];
-    [menu addItem: [[[NSMenuItem alloc] initWithTitle:@"QEMU Documentation" action:@selector(showQEMUDoc:) keyEquivalent:@"?"] autorelease]]; // QEMU Help
+    [menu addItem:[[[NSMenuItem alloc] initWithTitle:@"QEMU Documentation"
+                                              action:@selector(showQEMUDoc:)
+                                       keyEquivalent:@"?"] autorelease]];    // QEMU Help
     menuItem = [[[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];
     [[NSApp mainMenu] addItem:menuItem];
 }
 
 /* Returns a name for a given console */
-static NSString * getConsoleName(QemuConsole * console)
+static NSString* getConsoleName(QemuConsole* console)
 {
-    g_autofree char *label = qemu_console_get_label(console);
+    g_autofree char* label = qemu_console_get_label(console);
 
     return [NSString stringWithUTF8String:label];
 }
@@ -1764,19 +1685,20 @@ static NSString * getConsoleName(QemuConsole * console)
 /* Add an entry to the View menu for each console */
 static void add_console_menu_entries(void)
 {
-    NSMenu *menu;
-    NSMenuItem *menuItem;
-    int index = 0;
+    NSMenu*     menu;
+    NSMenuItem* menuItem;
+    int         index = 0;
 
     menu = [[[NSApp mainMenu] itemWithTitle:@"View"] submenu];
 
     [menu addItem:[NSMenuItem separatorItem]];
 
     while (qemu_console_lookup_by_index(index) != NULL) {
-        menuItem = [[[NSMenuItem alloc] initWithTitle: getConsoleName(qemu_console_lookup_by_index(index))
-                                               action: @selector(displayConsole:) keyEquivalent: @""] autorelease];
-        [menuItem setTag: index];
-        [menu addItem: menuItem];
+        menuItem = [[[NSMenuItem alloc] initWithTitle:getConsoleName(qemu_console_lookup_by_index(index))
+                                               action:@selector(displayConsole:)
+                                        keyEquivalent:@""] autorelease];
+        [menuItem setTag:index];
+        [menu addItem:menuItem];
         index++;
     }
 }
@@ -1786,10 +1708,10 @@ static void add_console_menu_entries(void)
  */
 static void addRemovableDevicesMenuItems(void)
 {
-    NSMenu *menu;
-    NSMenuItem *menuItem;
+    NSMenu*        menu;
+    NSMenuItem*    menuItem;
     BlockInfoList *currentDevice, *pointerToFree;
-    NSString *deviceName;
+    NSString*      deviceName;
 
     currentDevice = qmp_query_block(NULL);
     pointerToFree = currentDevice;
@@ -1800,41 +1722,42 @@ static void addRemovableDevicesMenuItems(void)
     [menu addItem:[NSMenuItem separatorItem]];
 
     // Set the attributes to the "Removable Media" menu item
-    NSString *titleString = @"Removable Media";
-    NSMutableAttributedString *attString=[[NSMutableAttributedString alloc] initWithString:titleString];
-    NSColor *newColor = [NSColor blackColor];
-    NSFontManager *fontManager = [NSFontManager sharedFontManager];
-    NSFont *font = [fontManager fontWithFamily:@"Helvetica"
-                                          traits:NSBoldFontMask|NSItalicFontMask
-                                          weight:0
-                                            size:14];
+    NSString*                  titleString = @"Removable Media";
+    NSMutableAttributedString* attString   = [[NSMutableAttributedString alloc] initWithString:titleString];
+    NSColor*                   newColor    = [NSColor blackColor];
+    NSFontManager*             fontManager = [NSFontManager sharedFontManager];
+    NSFont* font = [fontManager fontWithFamily:@"Helvetica" traits:NSBoldFontMask | NSItalicFontMask weight:0 size:14];
     [attString addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [titleString length])];
     [attString addAttribute:NSForegroundColorAttributeName value:newColor range:NSMakeRange(0, [titleString length])];
-    [attString addAttribute:NSUnderlineStyleAttributeName value:[NSNumber numberWithInt: 1] range:NSMakeRange(0, [titleString length])];
+    [attString addAttribute:NSUnderlineStyleAttributeName
+                      value:[NSNumber numberWithInt:1]
+                      range:NSMakeRange(0, [titleString length])];
 
     // Add the "Removable Media" menu item
     menuItem = [NSMenuItem new];
-    [menuItem setAttributedTitle: attString];
-    [menuItem setEnabled: NO];
-    [menu addItem: menuItem];
+    [menuItem setAttributedTitle:attString];
+    [menuItem setEnabled:NO];
+    [menu addItem:menuItem];
 
     /* Loop through all the block devices in the emulator */
     while (currentDevice) {
-        deviceName = [[NSString stringWithFormat: @"%s", currentDevice->value->device] retain];
+        deviceName = [[NSString stringWithFormat:@"%s", currentDevice->value->device] retain];
 
-        if(currentDevice->value->removable) {
-            menuItem = [[NSMenuItem alloc] initWithTitle: [NSString stringWithFormat: @"Change %s...", currentDevice->value->device]
-                                                  action: @selector(changeDeviceMedia:)
-                                           keyEquivalent: @""];
-            [menu addItem: menuItem];
-            [menuItem setRepresentedObject: deviceName];
+        if (currentDevice->value->removable) {
+            menuItem = [[NSMenuItem alloc]
+                initWithTitle:[NSString stringWithFormat:@"Change %s...", currentDevice->value->device]
+                       action:@selector(changeDeviceMedia:)
+                keyEquivalent:@""];
+            [menu addItem:menuItem];
+            [menuItem setRepresentedObject:deviceName];
             [menuItem autorelease];
 
-            menuItem = [[NSMenuItem alloc] initWithTitle: [NSString stringWithFormat: @"Eject %s", currentDevice->value->device]
-                                                  action: @selector(ejectDeviceMedia:)
-                                           keyEquivalent: @""];
-            [menu addItem: menuItem];
-            [menuItem setRepresentedObject: deviceName];
+            menuItem =
+                [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"Eject %s", currentDevice->value->device]
+                                           action:@selector(ejectDeviceMedia:)
+                                    keyEquivalent:@""];
+            [menu addItem:menuItem];
+            [menuItem setRepresentedObject:deviceName];
             [menuItem autorelease];
         }
         currentDevice = currentDevice->next;
@@ -1842,113 +1765,95 @@ static void addRemovableDevicesMenuItems(void)
     qapi_free_BlockInfoList(pointerToFree);
 }
 
-static void cocoa_mouse_mode_change_notify(Notifier *notifier, void *data)
+static void cocoa_mouse_mode_change_notify(Notifier* notifier, void* data)
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [cocoaView notifyMouseModeChange];
-    });
+    dispatch_async(dispatch_get_main_queue(), ^{ [cocoaView notifyMouseModeChange]; });
 }
 
-static Notifier mouse_mode_change_notifier = {
-    .notify = cocoa_mouse_mode_change_notify
-};
+static Notifier mouse_mode_change_notifier = {.notify = cocoa_mouse_mode_change_notify};
 
-@interface QemuCocoaPasteboardTypeOwner : NSObject<NSPasteboardTypeOwner>
+@interface QemuCocoaPasteboardTypeOwner : NSObject <NSPasteboardTypeOwner>
 @end
 
 @implementation QemuCocoaPasteboardTypeOwner
 
-- (void)pasteboard:(NSPasteboard *)sender provideDataForType:(NSPasteboardType)type
+- (void)pasteboard:(NSPasteboard*)sender provideDataForType:(NSPasteboardType)type
 {
-    if (type != NSPasteboardTypeString) {
-        return;
-    }
+    if (type != NSPasteboardTypeString) { return; }
 
     with_bql(^{
-        QemuClipboardInfo *info = qemu_clipboard_info_ref(cbinfo);
-        qemu_event_reset(&cbevent);
-        qemu_clipboard_request(info, QEMU_CLIPBOARD_TYPE_TEXT);
+      QemuClipboardInfo* info = qemu_clipboard_info_ref(cbinfo);
+      qemu_event_reset(&cbevent);
+      qemu_clipboard_request(info, QEMU_CLIPBOARD_TYPE_TEXT);
 
-        while (info == cbinfo &&
-               info->types[QEMU_CLIPBOARD_TYPE_TEXT].available &&
-               info->types[QEMU_CLIPBOARD_TYPE_TEXT].data == NULL) {
-            bql_unlock();
-            qemu_event_wait(&cbevent);
-            bql_lock();
-        }
+      while (info == cbinfo && info->types[QEMU_CLIPBOARD_TYPE_TEXT].available
+             && info->types[QEMU_CLIPBOARD_TYPE_TEXT].data == NULL)
+      {
+          bql_unlock();
+          qemu_event_wait(&cbevent);
+          bql_lock();
+      }
 
-        if (info == cbinfo) {
-            NSData *data = [[NSData alloc] initWithBytes:info->types[QEMU_CLIPBOARD_TYPE_TEXT].data
-                                           length:info->types[QEMU_CLIPBOARD_TYPE_TEXT].size];
-            [sender setData:data forType:NSPasteboardTypeString];
-            [data release];
-        }
+      if (info == cbinfo) {
+          NSData* data = [[NSData alloc] initWithBytes:info->types[QEMU_CLIPBOARD_TYPE_TEXT].data
+                                                length:info->types[QEMU_CLIPBOARD_TYPE_TEXT].size];
+          [sender setData:data forType:NSPasteboardTypeString];
+          [data release];
+      }
 
-        qemu_clipboard_info_unref(info);
+      qemu_clipboard_info_unref(info);
     });
 }
 
 @end
 
-static void cocoa_clipboard_notify(Notifier *notifier, void *data);
-static void cocoa_clipboard_request(QemuClipboardInfo *info,
-                                    QemuClipboardType type);
+static void cocoa_clipboard_notify(Notifier* notifier, void* data);
+static void cocoa_clipboard_request(QemuClipboardInfo* info, QemuClipboardType type);
 
-static QemuClipboardPeer cbpeer = {
-    .name = "cocoa",
-    .notifier = { .notify = cocoa_clipboard_notify },
-    .request = cocoa_clipboard_request
-};
+static QemuClipboardPeer cbpeer = {.name     = "cocoa",
+                                   .notifier = {.notify = cocoa_clipboard_notify},
+                                   .request  = cocoa_clipboard_request};
 
-static void cocoa_clipboard_update_info(QemuClipboardInfo *info)
+static void cocoa_clipboard_update_info(QemuClipboardInfo* info)
 {
-    if (info->owner == &cbpeer || info->selection != QEMU_CLIPBOARD_SELECTION_CLIPBOARD) {
-        return;
-    }
+    if (info->owner == &cbpeer || info->selection != QEMU_CLIPBOARD_SELECTION_CLIPBOARD) { return; }
 
     if (info != cbinfo) {
-        NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+        NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
         qemu_clipboard_info_unref(cbinfo);
-        cbinfo = qemu_clipboard_info_ref(info);
-        cbchangecount = [[NSPasteboard generalPasteboard] declareTypes:@[NSPasteboardTypeString] owner:cbowner];
+        cbinfo        = qemu_clipboard_info_ref(info);
+        cbchangecount = [[NSPasteboard generalPasteboard] declareTypes:@[ NSPasteboardTypeString ] owner:cbowner];
         [pool release];
     }
 
     qemu_event_set(&cbevent);
 }
 
-static void cocoa_clipboard_notify(Notifier *notifier, void *data)
+static void cocoa_clipboard_notify(Notifier* notifier, void* data)
 {
-    QemuClipboardNotify *notify = data;
+    QemuClipboardNotify* notify = data;
 
     switch (notify->type) {
-    case QEMU_CLIPBOARD_UPDATE_INFO:
-        cocoa_clipboard_update_info(notify->info);
-        return;
-    case QEMU_CLIPBOARD_RESET_SERIAL:
-        /* ignore */
-        return;
+        case QEMU_CLIPBOARD_UPDATE_INFO: cocoa_clipboard_update_info(notify->info); return;
+        case QEMU_CLIPBOARD_RESET_SERIAL:
+            /* ignore */
+            return;
     }
 }
 
-static void cocoa_clipboard_request(QemuClipboardInfo *info,
-                                    QemuClipboardType type)
+static void cocoa_clipboard_request(QemuClipboardInfo* info, QemuClipboardType type)
 {
-    NSAutoreleasePool *pool;
-    NSData *text;
+    NSAutoreleasePool* pool;
+    NSData*            text;
 
     switch (type) {
-    case QEMU_CLIPBOARD_TYPE_TEXT:
-        pool = [[NSAutoreleasePool alloc] init];
-        text = [[NSPasteboard generalPasteboard] dataForType:NSPasteboardTypeString];
-        if (text) {
-            qemu_clipboard_set_data(&cbpeer, info, type,
-                                    [text length], [text bytes], true);
-        }
-        [pool release];
-        break;
-    default:
-        break;
+        case QEMU_CLIPBOARD_TYPE_TEXT:
+            pool = [[NSAutoreleasePool alloc] init];
+            text = [[NSPasteboard generalPasteboard] dataForType:NSPasteboardTypeString];
+            if (text) { qemu_clipboard_set_data(&cbpeer, info, type, [text length], [text bytes], true); }
+            [pool release];
+            break;
+        default: break;
     }
 }
 
@@ -1961,24 +1866,20 @@ static int cocoa_main(void)
     abort();
 }
 
-
-
 #pragma mark qemu
-static void cocoa_update(DisplayChangeListener *dcl,
-                         int x, int y, int w, int h)
+static void cocoa_update(DisplayChangeListener* dcl, int x, int y, int w, int h)
 {
     COCOA_DEBUG("qemu_cocoa: cocoa_update\n");
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        NSRect rect = NSMakeRect(x, [cocoaView gscreen].height - y - h, w, h);
-        [cocoaView setNeedsDisplayInRect:rect];
+      NSRect rect = NSMakeRect(x, [cocoaView gscreen].height - y - h, w, h);
+      [cocoaView setNeedsDisplayInRect:rect];
     });
 }
 
-static void cocoa_switch(DisplayChangeListener *dcl,
-                         DisplaySurface *surface)
+static void cocoa_switch(DisplayChangeListener* dcl, DisplaySurface* surface)
 {
-    pixman_image_t *image = surface->image;
+    pixman_image_t* image = surface->image;
 
     COCOA_DEBUG("qemu_cocoa: cocoa_switch\n");
 
@@ -1988,14 +1889,12 @@ static void cocoa_switch(DisplayChangeListener *dcl,
     // deref the old image when it is done with it.
     pixman_image_ref(image);
 
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [cocoaView switchSurface:image];
-    });
+    dispatch_async(dispatch_get_main_queue(), ^{ [cocoaView switchSurface:image]; });
 }
 
-static void cocoa_refresh(DisplayChangeListener *dcl)
+static void cocoa_refresh(DisplayChangeListener* dcl)
 {
-    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
     COCOA_DEBUG("qemu_cocoa: cocoa_refresh\n");
     graphic_hw_update(dcl->con);
@@ -2003,7 +1902,7 @@ static void cocoa_refresh(DisplayChangeListener *dcl)
     if (cbchangecount != [[NSPasteboard generalPasteboard] changeCount]) {
         qemu_clipboard_info_unref(cbinfo);
         cbinfo = qemu_clipboard_info_new(&cbpeer, QEMU_CLIPBOARD_SELECTION_CLIPBOARD);
-        if ([[NSPasteboard generalPasteboard] availableTypeFromArray:@[NSPasteboardTypeString]]) {
+        if ([[NSPasteboard generalPasteboard] availableTypeFromArray:@[ NSPasteboardTypeString ]]) {
             cbinfo->types[QEMU_CLIPBOARD_TYPE_TEXT].available = true;
         }
         qemu_clipboard_update(cbinfo);
@@ -2014,56 +1913,44 @@ static void cocoa_refresh(DisplayChangeListener *dcl)
     [pool release];
 }
 
-static void cocoa_mouse_set(DisplayChangeListener *dcl, int x, int y, bool on)
+static void cocoa_mouse_set(DisplayChangeListener* dcl, int x, int y, bool on)
+{
+    dispatch_async(dispatch_get_main_queue(), ^{ [cocoaView setMouseX:x y:y on:on]; });
+}
+
+static void cocoa_cursor_define(DisplayChangeListener* dcl, QEMUCursor* cursor)
 {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [cocoaView setMouseX:x y:y on:on];
+      BQL_LOCK_GUARD();
+      [cocoaView setCursor:qemu_console_get_cursor(dcl->con)];
     });
 }
 
-static void cocoa_cursor_define(DisplayChangeListener *dcl, QEMUCursor *cursor)
+static void cocoa_display_init(DisplayState* ds, DisplayOptions* opts)
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        BQL_LOCK_GUARD();
-        [cocoaView setCursor:qemu_console_get_cursor(dcl->con)];
-    });
-}
-
-static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
-{
-    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
     COCOA_DEBUG("qemu_cocoa: cocoa_display_init\n");
 
     // Pull this console process up to being a fully-fledged graphical
     // app with a menubar and Dock icon
-    ProcessSerialNumber psn = { 0, kCurrentProcess };
+    ProcessSerialNumber psn = {0, kCurrentProcess};
     TransformProcessType(&psn, kProcessTransformToForegroundApplication);
 
     [QemuApplication sharedApplication];
 
     // Create an Application controller
-    QemuCocoaAppController *controller = [[QemuCocoaAppController alloc] init];
+    QemuCocoaAppController* controller = [[QemuCocoaAppController alloc] init];
     [NSApp setDelegate:controller];
 
     /* if fullscreen mode is to be used */
-    if (opts->has_full_screen && opts->full_screen) {
-        [[cocoaView window] toggleFullScreen: nil];
-    }
-    if (opts->u.cocoa.has_full_grab && opts->u.cocoa.full_grab) {
-        [controller setFullGrab: nil];
-    }
+    if (opts->has_full_screen && opts->full_screen) { [[cocoaView window] toggleFullScreen:nil]; }
+    if (opts->u.cocoa.has_full_grab && opts->u.cocoa.full_grab) { [controller setFullGrab:nil]; }
 
-    if (opts->has_show_cursor && opts->show_cursor) {
-        cursor_hide = 0;
-    }
-    if (opts->u.cocoa.has_swap_opt_cmd) {
-        swap_opt_cmd = opts->u.cocoa.swap_opt_cmd;
-    }
+    if (opts->has_show_cursor && opts->show_cursor) { cursor_hide = 0; }
+    if (opts->u.cocoa.has_swap_opt_cmd) { swap_opt_cmd = opts->u.cocoa.swap_opt_cmd; }
 
-    if (opts->u.cocoa.has_left_command_key && !opts->u.cocoa.left_command_key) {
-        left_command_key_enabled = 0;
-    }
+    if (opts->u.cocoa.has_left_command_key && !opts->u.cocoa.left_command_key) { left_command_key_enabled = 0; }
 
     if (opts->u.cocoa.has_zoom_to_fit && opts->u.cocoa.zoom_to_fit) {
         [cocoaView window].styleMask |= NSWindowStyleMaskResizable;
@@ -2085,7 +1972,7 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
     addRemovableDevicesMenuItems();
 
     dcl.con = qemu_console_lookup_default();
-    kbd = qkbd_state_init(dcl.con);
+    kbd     = qkbd_state_init(dcl.con);
 
     // register vga output callbacks
     register_displaychangelistener(&dcl);
@@ -2107,13 +1994,10 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
 }
 
 static QemuDisplay qemu_display_cocoa = {
-    .type       = DISPLAY_TYPE_COCOA,
-    .init       = cocoa_display_init,
+    .type = DISPLAY_TYPE_COCOA,
+    .init = cocoa_display_init,
 };
 
-static void register_cocoa(void)
-{
-    qemu_display_register(&qemu_display_cocoa);
-}
+static void register_cocoa(void) { qemu_display_register(&qemu_display_cocoa); }
 
 type_init(register_cocoa);

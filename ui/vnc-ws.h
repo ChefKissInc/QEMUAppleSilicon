@@ -20,9 +20,5 @@
 
 #pragma once
 
-gboolean vncws_tls_handshake_io(QIOChannel *ioc,
-                                GIOCondition condition,
-                                void *opaque);
-gboolean vncws_handshake_io(QIOChannel *ioc,
-                            GIOCondition condition,
-                            void *opaque);
+gboolean vncws_tls_handshake_io(QIOChannel* ioc, GIOCondition condition, void* opaque);
+gboolean vncws_handshake_io(QIOChannel* ioc, GIOCondition condition, void* opaque);

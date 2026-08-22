@@ -36,22 +36,19 @@ int64_t clock_freq;
 static void __attribute__((constructor)) init_get_clock(void)
 {
     LARGE_INTEGER freq;
-    int ret;
+    int           ret;
     ret = QueryPerformanceFrequency(&freq);
     if (ret == 0) {
         fprintf(stderr, "Could not calibrate ticks\n");
         exit(1);
     }
-    clock_freq = freq.QuadPart;
+    clock_freq  = freq.QuadPart;
     clock_start = get_clock();
 }
 
 #elif defined(__APPLE__)
 
-static void __attribute__((constructor)) init_get_clock(void)
-{
-    clock_start = get_clock();
-}
+static void __attribute__((constructor)) init_get_clock(void) { clock_start = get_clock(); }
 
 #else
 
@@ -62,9 +59,7 @@ static void __attribute__((constructor)) init_get_clock(void)
     struct timespec ts;
 
     use_rt_clock = 0;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        use_rt_clock = 1;
-    }
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) { use_rt_clock = 1; }
     clock_start = get_clock();
 }
 

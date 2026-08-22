@@ -26,8 +26,7 @@
 #define TYPE_APPLE_DISPLAY_PIPE_V4 "apple-display-pipe-v4"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleDisplayPipeV4State, APPLE_DISPLAY_PIPE_V4);
 
-SysBusDevice *adp_v4_from_node(AppleDTNode *node, MemoryRegion *dma_mr);
+SysBusDevice* adp_v4_from_node(AppleDTNode* node, MemoryRegion* dma_mr);
 
-void adp_v4_update_vram_mapping(AppleDisplayPipeV4State *s, MemoryRegion *mr,
-                                hwaddr off, uint64_t size);
-uint64_t adp_v4_get_fb_off(AppleDisplayPipeV4State *s);
+void     adp_v4_update_vram_mapping(AppleDisplayPipeV4State* s, MemoryRegion* mr, hwaddr off, uint64_t size);
+uint64_t adp_v4_get_fb_off(AppleDisplayPipeV4State* s);

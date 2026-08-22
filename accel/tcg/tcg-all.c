@@ -42,31 +42,30 @@
 #include "accel/tcg/cpu-ops.h"
 #include "internal-common.h"
 
-
-struct TCGState {
+struct TCGState
+{
     AccelState parent_obj;
 
-    OnOffAuto mttcg_enabled;
-    bool one_insn_per_tb;
-    int splitwx_enabled;
+    OnOffAuto     mttcg_enabled;
+    bool          one_insn_per_tb;
+    int           splitwx_enabled;
     unsigned long tb_size;
 };
 typedef struct TCGState TCGState;
 
 #define TYPE_TCG_ACCEL ACCEL_CLASS_NAME("tcg")
 
-DECLARE_INSTANCE_CHECKER(TCGState, TCG_STATE,
-                         TYPE_TCG_ACCEL)
+DECLARE_INSTANCE_CHECKER(TCGState, TCG_STATE, TYPE_TCG_ACCEL)
 
 bool qemu_tcg_mttcg_enabled(void)
 {
-    TCGState *s = TCG_STATE(current_accel());
+    TCGState* s = TCG_STATE(current_accel());
     return s->mttcg_enabled == ON_OFF_AUTO_ON;
 }
 
-static void tcg_accel_instance_init(Object *obj)
+static void tcg_accel_instance_init(Object* obj)
 {
-    TCGState *s = TCG_STATE(obj);
+    TCGState* s = TCG_STATE(obj);
 
     /* If debugging enabled, default "auto on", otherwise off. */
 #ifdef CONFIG_DEBUG_TCG
@@ -78,46 +77,45 @@ static void tcg_accel_instance_init(Object *obj)
 
 bool one_insn_per_tb;
 
-static int tcg_init_machine(AccelState *as, MachineState *ms)
+static int tcg_init_machine(AccelState* as, MachineState* ms)
 {
-    TCGState *s = TCG_STATE(as);
-    unsigned max_threads = 1;
+    TCGState* s           = TCG_STATE(as);
+    unsigned  max_threads = 1;
 
-    CPUClass *cc = CPU_CLASS(object_class_by_name(target_cpu_type()));
-    bool mttcg_supported = cc->tcg_ops->mttcg_supported;
+    CPUClass* cc              = CPU_CLASS(object_class_by_name(target_cpu_type()));
+    bool      mttcg_supported = cc->tcg_ops->mttcg_supported;
 
     switch (s->mttcg_enabled) {
-    case ON_OFF_AUTO_AUTO:
-        /*
-         * We default to false if we know other options have been enabled
-         * which are currently incompatible with MTTCG. Otherwise when each
-         * guest (target) has been updated to support:
-         *   - atomic instructions
-         *   - memory ordering primitives (barriers)
-         * they can set the appropriate CONFIG flags in ${target}-softmmu.mak
-         *
-         * Once a guest architecture has been converted to the new primitives
-         * there is one remaining limitation to check:
-         *   - The guest can't be oversized (e.g. 64 bit guest on 32 bit host)
-         */
-        if (mttcg_supported) {
-            s->mttcg_enabled = ON_OFF_AUTO_ON;
+        case ON_OFF_AUTO_AUTO:
+            /*
+             * We default to false if we know other options have been enabled
+             * which are currently incompatible with MTTCG. Otherwise when each
+             * guest (target) has been updated to support:
+             *   - atomic instructions
+             *   - memory ordering primitives (barriers)
+             * they can set the appropriate CONFIG flags in ${target}-softmmu.mak
+             *
+             * Once a guest architecture has been converted to the new primitives
+             * there is one remaining limitation to check:
+             *   - The guest can't be oversized (e.g. 64 bit guest on 32 bit host)
+             */
+            if (mttcg_supported) {
+                s->mttcg_enabled = ON_OFF_AUTO_ON;
+                max_threads      = ms->smp.max_cpus;
+            }
+            else {
+                s->mttcg_enabled = ON_OFF_AUTO_OFF;
+            }
+            break;
+        case ON_OFF_AUTO_ON:
+            if (!mttcg_supported) {
+                warn_report("Guest not yet converted to MTTCG - "
+                            "you may get unexpected results");
+            }
             max_threads = ms->smp.max_cpus;
-        } else {
-            s->mttcg_enabled = ON_OFF_AUTO_OFF;
-        }
-        break;
-    case ON_OFF_AUTO_ON:
-        if (!mttcg_supported) {
-            warn_report("Guest not yet converted to MTTCG - "
-                        "you may get unexpected results");
-        }
-        max_threads = ms->smp.max_cpus;
-        break;
-    case ON_OFF_AUTO_OFF:
-        break;
-    default:
-        assert_not_reached();
+            break;
+        case ON_OFF_AUTO_OFF: break;
+        default             : assert_not_reached();
     }
 
     tcg_allowed = true;
@@ -137,126 +135,104 @@ static int tcg_init_machine(AccelState *as, MachineState *ms)
     return 0;
 }
 
-static char *tcg_get_thread(Object *obj, Error **errp)
+static char* tcg_get_thread(Object* obj, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
+    TCGState* s = TCG_STATE(obj);
 
     return g_strdup(s->mttcg_enabled == ON_OFF_AUTO_ON ? "multi" : "single");
 }
 
-static void tcg_set_thread(Object *obj, const char *value, Error **errp)
+static void tcg_set_thread(Object* obj, const char* value, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
+    TCGState* s = TCG_STATE(obj);
 
-    if (strcmp(value, "multi") == 0) {
-        s->mttcg_enabled = ON_OFF_AUTO_ON;
-    } else if (strcmp(value, "single") == 0) {
+    if (strcmp(value, "multi") == 0) { s->mttcg_enabled = ON_OFF_AUTO_ON; }
+    else if (strcmp(value, "single") == 0) {
         s->mttcg_enabled = ON_OFF_AUTO_OFF;
-    } else {
+    }
+    else {
         error_setg(errp, "Invalid 'thread' setting %s", value);
     }
 }
 
-static void tcg_get_tb_size(Object *obj, Visitor *v,
-                            const char *name, void *opaque,
-                            Error **errp)
+static void tcg_get_tb_size(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
-    uint32_t value = s->tb_size;
+    TCGState* s     = TCG_STATE(obj);
+    uint32_t  value = s->tb_size;
 
     visit_type_uint32(v, name, &value, errp);
 }
 
-static void tcg_set_tb_size(Object *obj, Visitor *v,
-                            const char *name, void *opaque,
-                            Error **errp)
+static void tcg_set_tb_size(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
-    uint32_t value;
+    TCGState* s = TCG_STATE(obj);
+    uint32_t  value;
 
-    if (!visit_type_uint32(v, name, &value, errp)) {
-        return;
-    }
+    if (!visit_type_uint32(v, name, &value, errp)) { return; }
 
     s->tb_size = value;
 }
 
-static bool tcg_get_splitwx(Object *obj, Error **errp)
+static bool tcg_get_splitwx(Object* obj, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
+    TCGState* s = TCG_STATE(obj);
     return s->splitwx_enabled;
 }
 
-static void tcg_set_splitwx(Object *obj, bool value, Error **errp)
+static void tcg_set_splitwx(Object* obj, bool value, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
+    TCGState* s        = TCG_STATE(obj);
     s->splitwx_enabled = value;
 }
 
-static bool tcg_get_one_insn_per_tb(Object *obj, Error **errp)
+static bool tcg_get_one_insn_per_tb(Object* obj, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
+    TCGState* s = TCG_STATE(obj);
     return s->one_insn_per_tb;
 }
 
-static void tcg_set_one_insn_per_tb(Object *obj, bool value, Error **errp)
+static void tcg_set_one_insn_per_tb(Object* obj, bool value, Error** errp)
 {
-    TCGState *s = TCG_STATE(obj);
+    TCGState* s        = TCG_STATE(obj);
     s->one_insn_per_tb = value;
     /* Set the global also: this changes the behaviour */
     qatomic_set(&one_insn_per_tb, value);
 }
 
-static int tcg_gdbstub_supported_sstep_flags(AccelState *as)
-{
-    return SSTEP_ENABLE | SSTEP_NOIRQ | SSTEP_NOTIMER;
-}
+static int tcg_gdbstub_supported_sstep_flags(AccelState* as) { return SSTEP_ENABLE | SSTEP_NOIRQ | SSTEP_NOTIMER; }
 
-static void tcg_accel_class_init(ObjectClass *oc, const void *data)
+static void tcg_accel_class_init(ObjectClass* oc, const void* data)
 {
-    AccelClass *ac = ACCEL_CLASS(oc);
-    ac->name = "tcg";
-    ac->init_machine = tcg_init_machine;
-    ac->cpu_common_realize = tcg_exec_realizefn;
-    ac->cpu_common_unrealize = tcg_exec_unrealizefn;
-    ac->get_stats = tcg_get_stats;
-    ac->allowed = &tcg_allowed;
+    AccelClass* ac                    = ACCEL_CLASS(oc);
+    ac->name                          = "tcg";
+    ac->init_machine                  = tcg_init_machine;
+    ac->cpu_common_realize            = tcg_exec_realizefn;
+    ac->cpu_common_unrealize          = tcg_exec_unrealizefn;
+    ac->get_stats                     = tcg_get_stats;
+    ac->allowed                       = &tcg_allowed;
     ac->gdbstub_supported_sstep_flags = tcg_gdbstub_supported_sstep_flags;
 
-    object_class_property_add_str(oc, "thread",
-                                  tcg_get_thread,
-                                  tcg_set_thread);
+    object_class_property_add_str(oc, "thread", tcg_get_thread, tcg_set_thread);
 
-    object_class_property_add(oc, "tb-size", "int",
-        tcg_get_tb_size, tcg_set_tb_size,
-        NULL, NULL);
-    object_class_property_set_description(oc, "tb-size",
-        "TCG translation block cache size");
+    object_class_property_add(oc, "tb-size", "int", tcg_get_tb_size, tcg_set_tb_size, NULL, NULL);
+    object_class_property_set_description(oc, "tb-size", "TCG translation block cache size");
 
-    object_class_property_add_bool(oc, "split-wx",
-        tcg_get_splitwx, tcg_set_splitwx);
-    object_class_property_set_description(oc, "split-wx",
-        "Map jit pages into separate RW and RX regions");
+    object_class_property_add_bool(oc, "split-wx", tcg_get_splitwx, tcg_set_splitwx);
+    object_class_property_set_description(oc, "split-wx", "Map jit pages into separate RW and RX regions");
 
-    object_class_property_add_bool(oc, "one-insn-per-tb",
-                                   tcg_get_one_insn_per_tb,
-                                   tcg_set_one_insn_per_tb);
-    object_class_property_set_description(oc, "one-insn-per-tb",
-        "Only put one guest insn in each translation block");
+    object_class_property_add_bool(oc, "one-insn-per-tb", tcg_get_one_insn_per_tb, tcg_set_one_insn_per_tb);
+    object_class_property_set_description(oc, "one-insn-per-tb", "Only put one guest insn in each translation block");
 }
 
 static const TypeInfo tcg_accel_type = {
-    .name = TYPE_TCG_ACCEL,
-    .parent = TYPE_ACCEL,
+    .name          = TYPE_TCG_ACCEL,
+    .parent        = TYPE_ACCEL,
     .instance_init = tcg_accel_instance_init,
-    .class_init = tcg_accel_class_init,
+    .class_init    = tcg_accel_class_init,
     .instance_size = sizeof(TCGState),
 };
 module_obj(TYPE_TCG_ACCEL);
 
-static void register_accel_types(void)
-{
-    type_register_static(&tcg_accel_type);
-}
+static void register_accel_types(void) { type_register_static(&tcg_accel_type); }
 
 type_init(register_accel_types);

@@ -29,21 +29,23 @@
 
 #ifdef CONFIG_SAFESTACK
 /* Pointer to the unsafe stack, defined by the compiler */
-extern __thread void *__safestack_unsafe_stack_ptr;
+extern __thread void* __safestack_unsafe_stack_ptr;
 #endif
 
 #define COROUTINE_STACK_SIZE (1 << 20)
 
-typedef enum {
-    COROUTINE_YIELD = 1,
+typedef enum
+{
+    COROUTINE_YIELD     = 1,
     COROUTINE_TERMINATE = 2,
-    COROUTINE_ENTER = 3,
+    COROUTINE_ENTER     = 3,
 } CoroutineAction;
 
-struct Coroutine {
-    CoroutineEntry *entry;
-    void *entry_arg;
-    Coroutine *caller;
+struct Coroutine
+{
+    CoroutineEntry* entry;
+    void*           entry_arg;
+    Coroutine*      caller;
 
     /* Only used when the coroutine has terminated.  */
     QSLIST_ENTRY(Coroutine) pool_next;
@@ -51,12 +53,12 @@ struct Coroutine {
     size_t locks_held;
 
     /* Only used when the coroutine has yielded.  */
-    AioContext *ctx;
+    AioContext* ctx;
 
     /* Used to catch and abort on illegal co-routine entry.
      * Will contain the name of the function that had first
      * scheduled the coroutine. */
-    const char *scheduled;
+    const char* scheduled;
 
     QSIMPLEQ_ENTRY(Coroutine) co_queue_next;
 
@@ -68,7 +70,6 @@ struct Coroutine {
     QSLIST_ENTRY(Coroutine) co_scheduled_next;
 };
 
-Coroutine *qemu_coroutine_new(void);
-void qemu_coroutine_delete(Coroutine *co);
-CoroutineAction qemu_coroutine_switch(Coroutine *from, Coroutine *to,
-                                      CoroutineAction action);
+Coroutine*      qemu_coroutine_new(void);
+void            qemu_coroutine_delete(Coroutine* co);
+CoroutineAction qemu_coroutine_switch(Coroutine* from, Coroutine* to, CoroutineAction action);

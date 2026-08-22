@@ -33,71 +33,63 @@
 
 /* Ring buffer chardev */
 
-struct RingBufChardev {
-    Chardev parent;
-    size_t size;
-    size_t prod;
-    size_t cons;
-    uint8_t *cbuf;
+struct RingBufChardev
+{
+    Chardev  parent;
+    size_t   size;
+    size_t   prod;
+    size_t   cons;
+    uint8_t* cbuf;
 };
 typedef struct RingBufChardev RingBufChardev;
 
-DECLARE_INSTANCE_CHECKER(RingBufChardev, RINGBUF_CHARDEV,
-                         TYPE_CHARDEV_RINGBUF)
+DECLARE_INSTANCE_CHECKER(RingBufChardev, RINGBUF_CHARDEV, TYPE_CHARDEV_RINGBUF)
 
-static size_t ringbuf_count(const Chardev *chr)
+static size_t ringbuf_count(const Chardev* chr)
 {
-    const RingBufChardev *d = RINGBUF_CHARDEV(chr);
+    const RingBufChardev* d = RINGBUF_CHARDEV(chr);
 
     return d->prod - d->cons;
 }
 
-static int ringbuf_chr_write(Chardev *chr, const uint8_t *buf, int len)
+static int ringbuf_chr_write(Chardev* chr, const uint8_t* buf, int len)
 {
-    RingBufChardev *d = RINGBUF_CHARDEV(chr);
-    int i;
+    RingBufChardev* d = RINGBUF_CHARDEV(chr);
+    int             i;
 
-    if (!buf || (len < 0)) {
-        return -1;
-    }
+    if (!buf || (len < 0)) { return -1; }
 
     for (i = 0; i < len; i++) {
         d->cbuf[d->prod++ & (d->size - 1)] = buf[i];
-        if (d->prod - d->cons > d->size) {
-            d->cons = d->prod - d->size;
-        }
+        if (d->prod - d->cons > d->size) { d->cons = d->prod - d->size; }
     }
 
     return len;
 }
 
-static int ringbuf_chr_read(Chardev *chr, uint8_t *buf, int len)
+static int ringbuf_chr_read(Chardev* chr, uint8_t* buf, int len)
 {
-    RingBufChardev *d = RINGBUF_CHARDEV(chr);
-    int i;
+    RingBufChardev* d = RINGBUF_CHARDEV(chr);
+    int             i;
 
     qemu_mutex_lock(&chr->chr_write_lock);
-    for (i = 0; i < len && d->cons != d->prod; i++) {
-        buf[i] = d->cbuf[d->cons++ & (d->size - 1)];
-    }
+    for (i = 0; i < len && d->cons != d->prod; i++) { buf[i] = d->cbuf[d->cons++ & (d->size - 1)]; }
     qemu_mutex_unlock(&chr->chr_write_lock);
 
     return i;
 }
 
-static void char_ringbuf_finalize(Object *obj)
+static void char_ringbuf_finalize(Object* obj)
 {
-    RingBufChardev *d = RINGBUF_CHARDEV(obj);
+    RingBufChardev* d = RINGBUF_CHARDEV(obj);
 
     g_free(d->cbuf);
 }
 
-static bool ringbuf_chr_open(Chardev *chr,
-                             ChardevBackend *backend,
-                             Error **errp)
+static bool ringbuf_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevRingbuf *opts = backend->u.ringbuf.data;
-    RingBufChardev *d = RINGBUF_CHARDEV(chr);
+    ChardevRingbuf* opts = backend->u.ringbuf.data;
+    RingBufChardev* d    = RINGBUF_CHARDEV(chr);
 
     d->size = opts->has_size ? opts->size : 65536;
 
@@ -115,14 +107,12 @@ static bool ringbuf_chr_open(Chardev *chr,
     return true;
 }
 
-void qmp_ringbuf_write(const char *device, const char *data,
-                       bool has_format, enum DataFormat format,
-                       Error **errp)
+void qmp_ringbuf_write(const char* device, const char* data, bool has_format, enum DataFormat format, Error** errp)
 {
-    Chardev *chr;
-    const uint8_t *write_data;
-    int ret;
-    gsize write_count;
+    Chardev*       chr;
+    const uint8_t* write_data;
+    int            ret;
+    gsize          write_count;
 
     chr = qemu_chr_find(device);
     if (!chr) {
@@ -136,22 +126,17 @@ void qmp_ringbuf_write(const char *device, const char *data,
     }
 
     if (has_format && (format == DATA_FORMAT_BASE64)) {
-        write_data = qbase64_decode(data, -1,
-                                    &write_count,
-                                    errp);
-        if (!write_data) {
-            return;
-        }
-    } else {
-        write_data = (uint8_t *)data;
+        write_data = qbase64_decode(data, -1, &write_count, errp);
+        if (!write_data) { return; }
+    }
+    else {
+        write_data  = (uint8_t*)data;
         write_count = strlen(data);
     }
 
     ret = ringbuf_chr_write(chr, write_data, write_count);
 
-    if (write_data != (uint8_t *)data) {
-        g_free((void *)write_data);
-    }
+    if (write_data != (uint8_t*)data) { g_free((void*)write_data); }
 
     if (ret < 0) {
         error_setg(errp, "Failed to write to device %s", device);
@@ -159,14 +144,12 @@ void qmp_ringbuf_write(const char *device, const char *data,
     }
 }
 
-char *qmp_ringbuf_read(const char *device, int64_t size,
-                       bool has_format, enum DataFormat format,
-                       Error **errp)
+char* qmp_ringbuf_read(const char* device, int64_t size, bool has_format, enum DataFormat format, Error** errp)
 {
-    Chardev *chr;
-    uint8_t *read_data;
-    size_t count;
-    char *data;
+    Chardev* chr;
+    uint8_t* read_data;
+    size_t   count;
+    char*    data;
 
     chr = qemu_chr_find(device);
     if (!chr) {
@@ -184,8 +167,8 @@ char *qmp_ringbuf_read(const char *device, int64_t size,
         return NULL;
     }
 
-    count = ringbuf_count(chr);
-    size = size > count ? count : size;
+    count     = ringbuf_count(chr);
+    size      = size > count ? count : size;
     read_data = g_malloc(size + 1);
 
     ringbuf_chr_read(chr, read_data, size);
@@ -193,7 +176,8 @@ char *qmp_ringbuf_read(const char *device, int64_t size,
     if (has_format && (format == DATA_FORMAT_BASE64)) {
         data = g_base64_encode(read_data, size);
         g_free(read_data);
-    } else {
+    }
+    else {
         /*
          * FIXME should read only complete, valid UTF-8 characters up
          * to @size bytes.  Invalid sequences should be replaced by a
@@ -202,17 +186,16 @@ char *qmp_ringbuf_read(const char *device, int64_t size,
          * continuation characters should be dropped.
          */
         read_data[size] = 0;
-        data = (char *)read_data;
+        data            = (char*)read_data;
     }
 
     return data;
 }
 
-static void ringbuf_chr_parse(QemuOpts *opts, ChardevBackend *backend,
-                              Error **errp)
+static void ringbuf_chr_parse(QemuOpts* opts, ChardevBackend* backend, Error** errp)
 {
-    int val;
-    ChardevRingbuf *ringbuf;
+    int             val;
+    ChardevRingbuf* ringbuf;
 
     backend->type = CHARDEV_BACKEND_KIND_RINGBUF;
     ringbuf = backend->u.ringbuf.data = g_new0(ChardevRingbuf, 1);
@@ -221,30 +204,30 @@ static void ringbuf_chr_parse(QemuOpts *opts, ChardevBackend *backend,
     val = qemu_opt_get_size(opts, "size", 0);
     if (val != 0) {
         ringbuf->has_size = true;
-        ringbuf->size = val;
+        ringbuf->size     = val;
     }
 }
 
-static void char_ringbuf_class_init(ObjectClass *oc, const void *data)
+static void char_ringbuf_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
     cc->chr_parse = ringbuf_chr_parse;
-    cc->chr_open = ringbuf_chr_open;
+    cc->chr_open  = ringbuf_chr_open;
     cc->chr_write = ringbuf_chr_write;
 }
 
 static const TypeInfo char_ringbuf_type_info = {
-    .name = TYPE_CHARDEV_RINGBUF,
-    .parent = TYPE_CHARDEV,
-    .class_init = char_ringbuf_class_init,
-    .instance_size = sizeof(RingBufChardev),
+    .name              = TYPE_CHARDEV_RINGBUF,
+    .parent            = TYPE_CHARDEV,
+    .class_init        = char_ringbuf_class_init,
+    .instance_size     = sizeof(RingBufChardev),
     .instance_finalize = char_ringbuf_finalize,
 };
 
 /* Bug-compatibility: */
 static const TypeInfo char_memory_type_info = {
-    .name = TYPE_CHARDEV_MEMORY,
+    .name   = TYPE_CHARDEV_MEMORY,
     .parent = TYPE_CHARDEV_RINGBUF,
 };
 

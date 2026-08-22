@@ -11,7 +11,7 @@
 
 #include "qapi/qapi-types-common.h"
 
-HumanReadableText *human_readable_text_from_str(GString *str);
+HumanReadableText* human_readable_text_from_str(GString* str);
 
 /*
  * Produce and return a NULL-terminated array of strings from @list.
@@ -19,4 +19,4 @@ HumanReadableText *human_readable_text_from_str(GString *str);
  * can be freed with g_strfreev(), or by g_auto(GStrv) automatic
  * cleanup.
  */
-char **strv_from_str_list(const strList *list);
+char** strv_from_str_list(const strList* list);

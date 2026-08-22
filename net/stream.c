@@ -35,29 +35,27 @@
 
 #include "stream_data.h"
 
-typedef struct NetStreamState {
-    NetStreamData data;
-    uint32_t reconnect_ms;
-    guint timer_tag;
-    SocketAddress *addr;
+typedef struct NetStreamState
+{
+    NetStreamData  data;
+    uint32_t       reconnect_ms;
+    guint          timer_tag;
+    SocketAddress* addr;
 } NetStreamState;
 
-static void net_stream_arm_reconnect(NetStreamState *s);
+static void net_stream_arm_reconnect(NetStreamState* s);
 
-static ssize_t net_stream_receive(NetClientState *nc, const uint8_t *buf,
-                                  size_t size)
+static ssize_t net_stream_receive(NetClientState* nc, const uint8_t* buf, size_t size)
 {
-    NetStreamData *d = DO_UPCAST(NetStreamData, nc, nc);
+    NetStreamData* d = DO_UPCAST(NetStreamData, nc, nc);
 
     return net_stream_data_receive(d, buf, size);
 }
 
-static gboolean net_stream_send(QIOChannel *ioc,
-                                GIOCondition condition,
-                                gpointer data)
+static gboolean net_stream_send(QIOChannel* ioc, GIOCondition condition, gpointer data)
 {
     if (net_stream_data_send(ioc, condition, data) == G_SOURCE_REMOVE) {
-        NetStreamState *s = DO_UPCAST(NetStreamState, data, data);
+        NetStreamState* s = DO_UPCAST(NetStreamState, data, data);
 
         qapi_event_send_netdev_stream_disconnected(s->data.nc.name);
         net_stream_arm_reconnect(s);
@@ -68,9 +66,9 @@ static gboolean net_stream_send(QIOChannel *ioc,
     return G_SOURCE_CONTINUE;
 }
 
-static void net_stream_cleanup(NetClientState *nc)
+static void net_stream_cleanup(NetClientState* nc)
 {
-    NetStreamState *s = DO_UPCAST(NetStreamState, data.nc, nc);
+    NetStreamState* s = DO_UPCAST(NetStreamState, data.nc, nc);
     if (s->timer_tag) {
         g_source_remove(s->timer_tag);
         s->timer_tag = 0;
@@ -105,24 +103,22 @@ static void net_stream_cleanup(NetClientState *nc)
 }
 
 static NetClientInfo net_stream_info = {
-    .type = NET_CLIENT_DRIVER_STREAM,
-    .size = sizeof(NetStreamState),
+    .type    = NET_CLIENT_DRIVER_STREAM,
+    .size    = sizeof(NetStreamState),
     .receive = net_stream_receive,
     .cleanup = net_stream_cleanup,
 };
 
-static void net_stream_listen(QIONetListener *listener,
-                                  QIOChannelSocket *cioc, gpointer data)
+static void net_stream_listen(QIONetListener* listener, QIOChannelSocket* cioc, gpointer data)
 {
-    NetStreamData *d = data;
-    SocketAddress *addr;
-    char *uri;
+    NetStreamData* d = data;
+    SocketAddress* addr;
+    char*          uri;
 
     net_stream_data_listen(listener, cioc, data);
 
-    if (cioc->localAddr.ss_family == AF_UNIX) {
-        addr = qio_channel_socket_get_local_address(cioc, NULL);
-    } else {
+    if (cioc->localAddr.ss_family == AF_UNIX) { addr = qio_channel_socket_get_local_address(cioc, NULL); }
+    else {
         addr = qio_channel_socket_get_remote_address(cioc, NULL);
     }
     assert(addr != NULL);
@@ -133,12 +129,12 @@ static void net_stream_listen(QIONetListener *listener,
     qapi_free_SocketAddress(addr);
 }
 
-static void net_stream_server_listening(QIOTask *task, gpointer opaque)
+static void net_stream_server_listening(QIOTask* task, gpointer opaque)
 {
-    NetStreamData *d = opaque;
-    QIOChannelSocket *listen_sioc = QIO_CHANNEL_SOCKET(d->listen_ioc);
-    SocketAddress *addr;
-    Error *err = NULL;
+    NetStreamData*    d           = opaque;
+    QIOChannelSocket* listen_sioc = QIO_CHANNEL_SOCKET(d->listen_ioc);
+    SocketAddress*    addr;
+    Error*            err = NULL;
 
     if (qio_task_propagate_error(task, &err)) {
         qemu_set_info_str(&d->nc, "error: %s", error_get_pretty(err));
@@ -156,46 +152,40 @@ static void net_stream_server_listening(QIOTask *task, gpointer opaque)
     qapi_free_SocketAddress(addr);
 
     d->nc.link_down = true;
-    d->listener = qio_net_listener_new();
+    d->listener     = qio_net_listener_new();
 
     qemu_set_info_str(&d->nc, "listening");
     net_socket_rs_init(&d->rs, net_stream_data_rs_finalize, false);
-    qio_net_listener_set_client_func(d->listener, d->listen, d,
-                                     NULL);
+    qio_net_listener_set_client_func(d->listener, d->listen, d, NULL);
     qio_net_listener_add(d->listener, listen_sioc);
 }
 
-static int net_stream_server_init(NetClientState *peer,
-                                  const char *model,
-                                  const char *name,
-                                  SocketAddress *addr,
-                                  Error **errp)
+static int net_stream_server_init(NetClientState* peer, const char* model, const char* name, SocketAddress* addr,
+                                  Error** errp)
 {
-    NetClientState *nc;
-    NetStreamData *d;
-    QIOChannelSocket *listen_sioc = qio_channel_socket_new();
+    NetClientState*   nc;
+    NetStreamData*    d;
+    QIOChannelSocket* listen_sioc = qio_channel_socket_new();
 
-    nc = qemu_new_net_client(&net_stream_info, peer, model, name);
-    d = DO_UPCAST(NetStreamData, nc, nc);
-    d->send = net_stream_send;
+    nc        = qemu_new_net_client(&net_stream_info, peer, model, name);
+    d         = DO_UPCAST(NetStreamData, nc, nc);
+    d->send   = net_stream_send;
     d->listen = net_stream_listen;
     qemu_set_info_str(&d->nc, "initializing");
 
     d->listen_ioc = QIO_CHANNEL(listen_sioc);
-    qio_channel_socket_listen_async(listen_sioc, addr, 0,
-                                    net_stream_server_listening, d,
-                                    NULL, NULL);
+    qio_channel_socket_listen_async(listen_sioc, addr, 0, net_stream_server_listening, d, NULL, NULL);
 
     return 0;
 }
 
-static void net_stream_client_connected(QIOTask *task, gpointer opaque)
+static void net_stream_client_connected(QIOTask* task, gpointer opaque)
 {
-    NetStreamState *s = opaque;
-    NetStreamData *d = &s->data;
-    QIOChannelSocket *sioc = QIO_CHANNEL_SOCKET(d->ioc);
-    SocketAddress *addr;
-    gchar *uri;
+    NetStreamState*   s    = opaque;
+    NetStreamData*    d    = &s->data;
+    QIOChannelSocket* sioc = QIO_CHANNEL_SOCKET(d->ioc);
+    SocketAddress*    addr;
+    gchar*            uri;
 
     if (net_stream_data_client_connected(task, d) == -1) {
         net_stream_arm_reconnect(s);
@@ -213,20 +203,18 @@ static void net_stream_client_connected(QIOTask *task, gpointer opaque)
 
 static gboolean net_stream_reconnect(gpointer data)
 {
-    NetStreamState *s = data;
-    QIOChannelSocket *sioc;
+    NetStreamState*   s = data;
+    QIOChannelSocket* sioc;
 
     s->timer_tag = 0;
 
-    sioc = qio_channel_socket_new();
+    sioc        = qio_channel_socket_new();
     s->data.ioc = QIO_CHANNEL(sioc);
-    qio_channel_socket_connect_async(sioc, s->addr,
-                                     net_stream_client_connected, s,
-                                     NULL, NULL);
+    qio_channel_socket_connect_async(sioc, s->addr, net_stream_client_connected, s, NULL, NULL);
     return G_SOURCE_REMOVE;
 }
 
-static void net_stream_arm_reconnect(NetStreamState *s)
+static void net_stream_arm_reconnect(NetStreamState* s)
 {
     if (s->reconnect_ms && s->timer_tag == 0) {
         qemu_set_info_str(&s->data.nc, "connecting");
@@ -234,41 +222,32 @@ static void net_stream_arm_reconnect(NetStreamState *s)
     }
 }
 
-static int net_stream_client_init(NetClientState *peer,
-                                  const char *model,
-                                  const char *name,
-                                  SocketAddress *addr,
-                                  uint32_t reconnect_ms,
-                                  Error **errp)
+static int net_stream_client_init(NetClientState* peer, const char* model, const char* name, SocketAddress* addr,
+                                  uint32_t reconnect_ms, Error** errp)
 {
-    NetStreamState *s;
-    NetClientState *nc;
-    QIOChannelSocket *sioc = qio_channel_socket_new();
+    NetStreamState*   s;
+    NetClientState*   nc;
+    QIOChannelSocket* sioc = qio_channel_socket_new();
 
     nc = qemu_new_net_client(&net_stream_info, peer, model, name);
-    s = DO_UPCAST(NetStreamState, data.nc, nc);
+    s  = DO_UPCAST(NetStreamState, data.nc, nc);
     qemu_set_info_str(&s->data.nc, "connecting");
 
-    s->data.ioc = QIO_CHANNEL(sioc);
+    s->data.ioc          = QIO_CHANNEL(sioc);
     s->data.nc.link_down = true;
-    s->data.send = net_stream_send;
-    s->data.listen = net_stream_listen;
+    s->data.send         = net_stream_send;
+    s->data.listen       = net_stream_listen;
 
     s->reconnect_ms = reconnect_ms;
-    if (reconnect_ms) {
-        s->addr = QAPI_CLONE(SocketAddress, addr);
-    }
-    qio_channel_socket_connect_async(sioc, addr,
-                                     net_stream_client_connected, s,
-                                     NULL, NULL);
+    if (reconnect_ms) { s->addr = QAPI_CLONE(SocketAddress, addr); }
+    qio_channel_socket_connect_async(sioc, addr, net_stream_client_connected, s, NULL, NULL);
 
     return 0;
 }
 
-int net_init_stream(const Netdev *netdev, const char *name,
-                    NetClientState *peer, Error **errp)
+int net_init_stream(const Netdev* netdev, const char* name, NetClientState* peer, Error** errp)
 {
-    const NetdevStreamOptions *sock;
+    const NetdevStreamOptions* sock;
 
     assert(netdev->type == NET_CLIENT_DRIVER_STREAM);
     sock = &netdev->u.stream;
@@ -280,14 +259,15 @@ int net_init_stream(const Netdev *netdev, const char *name,
             error_setg(errp, "'reconnect' and 'reconnect-ms' are mutually "
                              "exclusive");
             return -1;
-        } else if (sock->has_reconnect_ms) {
+        }
+        else if (sock->has_reconnect_ms) {
             reconnect_ms = sock->reconnect_ms;
-        } else if (sock->has_reconnect) {
+        }
+        else if (sock->has_reconnect) {
             reconnect_ms = sock->reconnect * 1000u;
         }
 
-        return net_stream_client_init(peer, "stream", name, sock->addr,
-                                      reconnect_ms, errp);
+        return net_stream_client_init(peer, "stream", name, sock->addr, reconnect_ms, errp);
     }
     if (sock->has_reconnect || sock->has_reconnect_ms) {
         error_setg(errp, "'reconnect' and 'reconnect-ms' options are "

@@ -11,7 +11,7 @@
 
 #include "qapi/qapi-types-yank.h"
 
-typedef void (YankFn)(void *opaque);
+typedef void(YankFn)(void* opaque);
 
 /**
  * yank_register_instance: Register a new instance.
@@ -26,7 +26,7 @@ typedef void (YankFn)(void *opaque);
  *
  * Returns true on success or false if an error occurred.
  */
-bool yank_register_instance(const YankInstance *instance, Error **errp);
+bool yank_register_instance(const YankInstance* instance, Error** errp);
 
 /**
  * yank_unregister_instance: Unregister a instance.
@@ -38,7 +38,7 @@ bool yank_register_instance(const YankInstance *instance, Error **errp);
  *
  * @instance: The instance.
  */
-void yank_unregister_instance(const YankInstance *instance);
+void yank_unregister_instance(const YankInstance* instance);
 
 /**
  * yank_register_function: Register a yank function
@@ -53,9 +53,7 @@ void yank_unregister_instance(const YankInstance *instance);
  * @func: The yank function.
  * @opaque: Will be passed to the yank function.
  */
-void yank_register_function(const YankInstance *instance,
-                            YankFn *func,
-                            void *opaque);
+void yank_register_function(const YankInstance* instance, YankFn* func, void* opaque);
 
 /**
  * yank_unregister_function: Unregister a yank function
@@ -68,17 +66,11 @@ void yank_register_function(const YankInstance *instance,
  * @func: func that was passed to yank_register_function.
  * @opaque: opaque that was passed to yank_register_function.
  */
-void yank_unregister_function(const YankInstance *instance,
-                              YankFn *func,
-                              void *opaque);
+void yank_unregister_function(const YankInstance* instance, YankFn* func, void* opaque);
 
-#define BLOCKDEV_YANK_INSTANCE(the_node_name) (&(YankInstance) { \
-        .type = YANK_INSTANCE_TYPE_BLOCK_NODE, \
-        .u.block_node.node_name = (the_node_name) })
+#define BLOCKDEV_YANK_INSTANCE(the_node_name)                                                           \
+    (&(YankInstance){.type = YANK_INSTANCE_TYPE_BLOCK_NODE, .u.block_node.node_name = (the_node_name)})
 
-#define CHARDEV_YANK_INSTANCE(the_id) (&(YankInstance) { \
-        .type = YANK_INSTANCE_TYPE_CHARDEV, \
-        .u.chardev.id = (the_id) })
+#define CHARDEV_YANK_INSTANCE(the_id) (&(YankInstance){.type = YANK_INSTANCE_TYPE_CHARDEV, .u.chardev.id = (the_id)})
 
-#define MIGRATION_YANK_INSTANCE (&(YankInstance) { \
-        .type = YANK_INSTANCE_TYPE_MIGRATION })
+#define MIGRATION_YANK_INSTANCE (&(YankInstance){.type = YANK_INSTANCE_TYPE_MIGRATION})

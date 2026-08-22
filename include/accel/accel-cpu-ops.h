@@ -13,8 +13,8 @@
 #include "exec/vaddr.h"
 #include "qom/object.h"
 
-#define ACCEL_OPS_SUFFIX "-ops"
-#define TYPE_ACCEL_OPS "accel" ACCEL_OPS_SUFFIX
+#define ACCEL_OPS_SUFFIX     "-ops"
+#define TYPE_ACCEL_OPS       "accel" ACCEL_OPS_SUFFIX
 #define ACCEL_OPS_NAME(name) (name "-" TYPE_ACCEL_OPS)
 
 DECLARE_CLASS_CHECKERS(AccelOpsClass, ACCEL_OPS, TYPE_ACCEL_OPS)
@@ -25,21 +25,22 @@ DECLARE_CLASS_CHECKERS(AccelOpsClass, ACCEL_OPS, TYPE_ACCEL_OPS)
  * This structure is used to abstract accelerator differences from the
  * core CPU code. Not all have to be implemented.
  */
-struct AccelOpsClass {
+struct AccelOpsClass
+{
     /*< private >*/
     ObjectClass parent_class;
     /*< public >*/
 
     /* initialization function called when accel is chosen */
-    void (*ops_init)(AccelClass *ac);
+    void (*ops_init)(AccelClass* ac);
 
-    bool (*cpu_target_realize)(CPUState *cpu, Error **errp);
+    bool (*cpu_target_realize)(CPUState* cpu, Error** errp);
     bool (*cpus_are_resettable)(void);
-    void (*cpu_reset_hold)(CPUState *cpu);
+    void (*cpu_reset_hold)(CPUState* cpu);
 
-    void (*create_vcpu_thread)(CPUState *cpu); /* MANDATORY NON-NULL */
-    void (*kick_vcpu_thread)(CPUState *cpu);
-    bool (*cpu_thread_is_idle)(CPUState *cpu);
+    void (*create_vcpu_thread)(CPUState* cpu); /* MANDATORY NON-NULL */
+    void (*kick_vcpu_thread)(CPUState* cpu);
+    bool (*cpu_thread_is_idle)(CPUState* cpu);
 
     /**
      * synchronize_post_reset:
@@ -49,8 +50,8 @@ struct AccelOpsClass {
      * Request to synchronize QEMU vCPU registers to the hardware accelerator
      * (QEMU is the reference).
      */
-    void (*synchronize_post_reset)(CPUState *cpu);
-    void (*synchronize_post_init)(CPUState *cpu);
+    void (*synchronize_post_reset)(CPUState* cpu);
+    void (*synchronize_post_init)(CPUState* cpu);
     /**
      * synchronize_state:
      * synchronize_pre_loadvm:
@@ -59,14 +60,14 @@ struct AccelOpsClass {
      * Request to synchronize QEMU vCPU registers from the hardware accelerator
      * (the hardware accelerator is the reference).
      */
-    void (*synchronize_state)(CPUState *cpu);
-    void (*synchronize_pre_loadvm)(CPUState *cpu);
+    void (*synchronize_state)(CPUState* cpu);
+    void (*synchronize_pre_loadvm)(CPUState* cpu);
 
     /* handle_interrupt is mandatory. */
-    void (*handle_interrupt)(CPUState *cpu, int mask);
+    void (*handle_interrupt)(CPUState* cpu, int mask);
 
     /* get_vcpu_stats: Append statistics of this @cpu to @buf */
-    void (*get_vcpu_stats)(CPUState *cpu, GString *buf);
+    void (*get_vcpu_stats)(CPUState* cpu, GString* buf);
 
     /**
      * @get_virtual_clock: fetch virtual clock
@@ -78,16 +79,16 @@ struct AccelOpsClass {
      * various timer events.
      */
     int64_t (*get_virtual_clock)(void);
-    void (*set_virtual_clock)(int64_t time);
+    void    (*set_virtual_clock)(int64_t time);
 
     int64_t (*get_elapsed_ticks)(void);
 
     /* gdbstub hooks */
     bool (*supports_guest_debug)(void);
-    int (*update_guest_debug)(CPUState *cpu);
-    int (*insert_breakpoint)(CPUState *cpu, int type, vaddr addr, vaddr len);
-    int (*remove_breakpoint)(CPUState *cpu, int type, vaddr addr, vaddr len);
-    void (*remove_all_breakpoints)(CPUState *cpu);
+    int  (*update_guest_debug)(CPUState* cpu);
+    int  (*insert_breakpoint)(CPUState* cpu, int type, vaddr addr, vaddr len);
+    int  (*remove_breakpoint)(CPUState* cpu, int type, vaddr addr, vaddr len);
+    void (*remove_all_breakpoints)(CPUState* cpu);
 };
 
-void generic_handle_interrupt(CPUState *cpu, int mask);
+void generic_handle_interrupt(CPUState* cpu, int mask);

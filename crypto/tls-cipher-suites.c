@@ -16,7 +16,8 @@
 #include "tlscredspriv.h"
 #include "trace.h"
 
-struct QCryptoTLSCipherSuites {
+struct QCryptoTLSCipherSuites
+{
     /* <private> */
     QCryptoTLSCreds parent_obj;
     /* <public> */
@@ -26,56 +27,46 @@ struct QCryptoTLSCipherSuites {
  * IANA registered TLS ciphers:
  * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-4
  */
-typedef struct {
+typedef struct
+{
     uint8_t data[2];
 } QEMU_PACKED IANA_TLS_CIPHER;
 
-GByteArray *qcrypto_tls_cipher_suites_get_data(QCryptoTLSCipherSuites *obj,
-                                               Error **errp)
+GByteArray* qcrypto_tls_cipher_suites_get_data(QCryptoTLSCipherSuites* obj, Error** errp)
 {
-    QCryptoTLSCreds *creds = QCRYPTO_TLS_CREDS(obj);
+    QCryptoTLSCreds*  creds = QCRYPTO_TLS_CREDS(obj);
     gnutls_priority_t pcache;
-    GByteArray *byte_array;
-    const char *err;
-    size_t i;
-    int ret;
+    GByteArray*       byte_array;
+    const char*       err;
+    size_t            i;
+    int               ret;
 
     trace_qcrypto_tls_cipher_suite_priority(creds->priority);
     ret = gnutls_priority_init(&pcache, creds->priority, &err);
     if (ret < 0) {
-        error_setg(errp, "Syntax error using priority '%s': %s",
-                   creds->priority, gnutls_strerror(ret));
+        error_setg(errp, "Syntax error using priority '%s': %s", creds->priority, gnutls_strerror(ret));
         return NULL;
     }
 
     byte_array = g_byte_array_new();
 
     for (i = 0;; i++) {
-        unsigned idx;
-        const char *name;
-        IANA_TLS_CIPHER cipher;
+        unsigned          idx;
+        const char*       name;
+        IANA_TLS_CIPHER   cipher;
         gnutls_protocol_t protocol;
-        const char *version;
+        const char*       version;
 
         ret = gnutls_priority_get_cipher_suite_index(pcache, i, &idx);
-        if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
-            break;
-        }
-        if (ret == GNUTLS_E_UNKNOWN_CIPHER_SUITE) {
-            continue;
-        }
+        if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) { break; }
+        if (ret == GNUTLS_E_UNKNOWN_CIPHER_SUITE) { continue; }
 
-        name = gnutls_cipher_suite_info(idx, (unsigned char *)&cipher,
-                                        NULL, NULL, NULL, &protocol);
-        if (name == NULL) {
-            continue;
-        }
+        name = gnutls_cipher_suite_info(idx, (unsigned char*)&cipher, NULL, NULL, NULL, &protocol);
+        if (name == NULL) { continue; }
 
         version = gnutls_protocol_get_name(protocol);
         g_byte_array_append(byte_array, cipher.data, 2);
-        trace_qcrypto_tls_cipher_suite_info(cipher.data[0],
-                                            cipher.data[1],
-                                            version, name);
+        trace_qcrypto_tls_cipher_suite_info(cipher.data[0], cipher.data[1], version, name);
     }
     trace_qcrypto_tls_cipher_suite_count(byte_array->len);
     gnutls_priority_deinit(pcache);
@@ -83,10 +74,9 @@ GByteArray *qcrypto_tls_cipher_suites_get_data(QCryptoTLSCipherSuites *obj,
     return byte_array;
 }
 
-static void qcrypto_tls_cipher_suites_complete(UserCreatable *uc,
-                                               Error **errp)
+static void qcrypto_tls_cipher_suites_complete(UserCreatable* uc, Error** errp)
 {
-    QCryptoTLSCreds *creds = QCRYPTO_TLS_CREDS(uc);
+    QCryptoTLSCreds* creds = QCRYPTO_TLS_CREDS(uc);
 
     if (!creds->priority) {
         error_setg(errp, "'priority' property is not set");
@@ -94,29 +84,21 @@ static void qcrypto_tls_cipher_suites_complete(UserCreatable *uc,
     }
 }
 
-static void qcrypto_tls_cipher_suites_class_init(ObjectClass *oc,
-                                                 const void *data)
+static void qcrypto_tls_cipher_suites_class_init(ObjectClass* oc, const void* data)
 {
-    UserCreatableClass *ucc = USER_CREATABLE_CLASS(oc);
+    UserCreatableClass* ucc = USER_CREATABLE_CLASS(oc);
 
     ucc->complete = qcrypto_tls_cipher_suites_complete;
 }
 
-static const TypeInfo qcrypto_tls_cipher_suites_info = {
-    .parent = TYPE_QCRYPTO_TLS_CREDS,
-    .name = TYPE_QCRYPTO_TLS_CIPHER_SUITES,
-    .instance_size = sizeof(QCryptoTLSCipherSuites),
-    .class_size = sizeof(QCryptoTLSCredsClass),
-    .class_init = qcrypto_tls_cipher_suites_class_init,
-    .interfaces = (const InterfaceInfo[]) {
-        { TYPE_USER_CREATABLE },
-        { }
-    }
-};
+static const TypeInfo qcrypto_tls_cipher_suites_info = {.parent        = TYPE_QCRYPTO_TLS_CREDS,
+                                                        .name          = TYPE_QCRYPTO_TLS_CIPHER_SUITES,
+                                                        .instance_size = sizeof(QCryptoTLSCipherSuites),
+                                                        .class_size    = sizeof(QCryptoTLSCredsClass),
+                                                        .class_init    = qcrypto_tls_cipher_suites_class_init,
+                                                        .interfaces =
+                                                            (const InterfaceInfo[]){{TYPE_USER_CREATABLE}, {}}};
 
-static void qcrypto_tls_cipher_suites_register_types(void)
-{
-    type_register_static(&qcrypto_tls_cipher_suites_info);
-}
+static void qcrypto_tls_cipher_suites_register_types(void) { type_register_static(&qcrypto_tls_cipher_suites_info); }
 
 type_init(qcrypto_tls_cipher_suites_register_types);

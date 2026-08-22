@@ -30,9 +30,9 @@
 
 #include <glib.h>
 #if defined(G_OS_UNIX)
-#include <glib-unix.h>
-#include <sys/types.h>
-#include <pwd.h>
+    #include <glib-unix.h>
+    #include <sys/types.h>
+    #include <pwd.h>
 #endif
 
 /*
@@ -102,7 +102,8 @@ static inline gpointer g_memdup2_qemu(gconstpointer mem, gsize byte_size)
     if (mem && byte_size != 0) {
         new_mem = g_malloc(byte_size);
         memcpy(new_mem, mem, byte_size);
-    } else {
+    }
+    else {
         new_mem = NULL;
     }
 
@@ -114,5 +115,5 @@ static inline gpointer g_memdup2_qemu(gconstpointer mem, gsize byte_size)
 #pragma GCC diagnostic pop
 
 #ifndef G_NORETURN
-#define G_NORETURN G_GNUC_NORETURN
+    #define G_NORETURN G_GNUC_NORETURN
 #endif

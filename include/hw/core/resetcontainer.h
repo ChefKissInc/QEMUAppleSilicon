@@ -32,7 +32,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(ResettableContainer, RESETTABLE_CONTAINER)
  * When @rc is reset, it will reset every object that has been added
  * to it, in the order they were added.
  */
-void resettable_container_add(ResettableContainer *rc, Object *obj);
+void resettable_container_add(ResettableContainer* rc, Object* obj);
 
 /**
  * resettable_container_remove: Remove an object from the container
@@ -42,4 +42,4 @@ void resettable_container_add(ResettableContainer *rc, Object *obj);
  * Remove @obj from the ResettableContainer @rc. @obj must have been
  * previously added to this container.
  */
-void resettable_container_remove(ResettableContainer *rc, Object *obj);
+void resettable_container_remove(ResettableContainer* rc, Object* obj);

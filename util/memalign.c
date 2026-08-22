@@ -29,13 +29,12 @@
 #include "qemu/memalign.h"
 #include "trace.h"
 
-void *qemu_try_memalign(size_t alignment, size_t size)
+void* qemu_try_memalign(size_t alignment, size_t size)
 {
-    void *ptr;
+    void* ptr;
 
-    if (alignment < sizeof(void*)) {
-        alignment = sizeof(void*);
-    } else {
+    if (alignment < sizeof(void*)) { alignment = sizeof(void*); }
+    else {
         assert(is_power_of_2(alignment));
     }
 
@@ -45,15 +44,13 @@ void *qemu_try_memalign(size_t alignment, size_t size)
      * fail) -- ensure that we always return a valid non-NULL
      * pointer that can be freed by qemu_vfree().
      */
-    if (size == 0) {
-        size++;
-    }
+    if (size == 0) { size++; }
 #if defined(CONFIG_POSIX_MEMALIGN)
     int ret;
     ret = posix_memalign(&ptr, alignment, size);
     if (ret != 0) {
         errno = ret;
-        ptr = NULL;
+        ptr   = NULL;
     }
 #elif defined(CONFIG_ALIGNED_MALLOC)
     ptr = _aligned_malloc(size, alignment);
@@ -68,19 +65,16 @@ void *qemu_try_memalign(size_t alignment, size_t size)
     return ptr;
 }
 
-void *qemu_memalign(size_t alignment, size_t size)
+void* qemu_memalign(size_t alignment, size_t size)
 {
-    void *p = qemu_try_memalign(alignment, size);
-    if (p) {
-        return p;
-    }
-    fprintf(stderr,
-            "qemu_memalign: failed to allocate %zu bytes at alignment %zu: %s\n",
-            size, alignment, strerror(errno));
+    void* p = qemu_try_memalign(alignment, size);
+    if (p) { return p; }
+    fprintf(stderr, "qemu_memalign: failed to allocate %zu bytes at alignment %zu: %s\n", size, alignment,
+            strerror(errno));
     abort();
 }
 
-void qemu_vfree(void *ptr)
+void qemu_vfree(void* ptr)
 {
     trace_qemu_vfree(ptr);
 #if !defined(CONFIG_POSIX_MEMALIGN) && defined(CONFIG_ALIGNED_MALLOC)

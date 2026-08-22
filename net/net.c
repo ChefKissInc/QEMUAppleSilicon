@@ -58,14 +58,15 @@
 
 /* Net bridge is currently not supported for W32. */
 #if !defined(_WIN32)
-# define CONFIG_NET_BRIDGE
+    #define CONFIG_NET_BRIDGE
 #endif
 
-static VMChangeStateEntry *net_change_state_entry;
-NetClientStateList net_clients;
+static VMChangeStateEntry* net_change_state_entry;
+NetClientStateList         net_clients;
 
-typedef struct NetdevQueueEntry {
-    Netdev *nd;
+typedef struct NetdevQueueEntry
+{
+    Netdev*  nd;
     Location loc;
     QSIMPLEQ_ENTRY(NetdevQueueEntry) entry;
 } NetdevQueueEntry;
@@ -74,40 +75,41 @@ typedef QSIMPLEQ_HEAD(, NetdevQueueEntry) NetdevQueue;
 
 static NetdevQueue nd_queue = QSIMPLEQ_HEAD_INITIALIZER(nd_queue);
 
-static GHashTable *nic_model_help;
+static GHashTable* nic_model_help;
 
-static int nb_nics;
+static int     nb_nics;
 static NICInfo nd_table[MAX_NICS];
 
 /***********************************************************/
 /* network device redirectors */
 
-int convert_host_port(struct sockaddr_in *saddr, const char *host,
-                      const char *port, Error **errp)
+int convert_host_port(struct sockaddr_in* saddr, const char* host, const char* port, Error** errp)
 {
-    struct hostent *he;
-    const char *r;
-    long p;
+    struct hostent* he;
+    const char*     r;
+    long            p;
 
     memset(saddr, 0, sizeof(*saddr));
 
     saddr->sin_family = AF_INET;
-    if (host[0] == '\0') {
-        saddr->sin_addr.s_addr = 0;
-    } else {
+    if (host[0] == '\0') { saddr->sin_addr.s_addr = 0; }
+    else {
         if (qemu_isdigit(host[0])) {
             if (!inet_aton(host, &saddr->sin_addr)) {
-                error_setg(errp, "host address '%s' is not a valid "
-                           "IPv4 address", host);
+                error_setg(errp,
+                           "host address '%s' is not a valid "
+                           "IPv4 address",
+                           host);
                 return -1;
             }
-        } else {
+        }
+        else {
             he = gethostbyname(host);
             if (he == NULL) {
                 error_setg(errp, "can't resolve host address '%s'", host);
                 return -1;
             }
-            saddr->sin_addr = *(struct in_addr *)he->h_addr;
+            saddr->sin_addr = *(struct in_addr*)he->h_addr;
         }
     }
     if (qemu_strtol(port, &r, 0, &p) != 0) {
@@ -118,16 +120,17 @@ int convert_host_port(struct sockaddr_in *saddr, const char *host,
     return 0;
 }
 
-int parse_host_port(struct sockaddr_in *saddr, const char *str,
-                    Error **errp)
+int parse_host_port(struct sockaddr_in* saddr, const char* str, Error** errp)
 {
-    gchar **substrings;
-    int ret;
+    gchar** substrings;
+    int     ret;
 
     substrings = g_strsplit(str, ":", 2);
     if (!substrings || !substrings[0] || !substrings[1]) {
-        error_setg(errp, "host address '%s' doesn't contain ':' "
-                   "separating host from port", str);
+        error_setg(errp,
+                   "host address '%s' doesn't contain ':' "
+                   "separating host from port",
+                   str);
         ret = -1;
         goto out;
     }
@@ -139,14 +142,13 @@ out:
     return ret;
 }
 
-char *qemu_mac_strdup_printf(const uint8_t *macaddr)
+char* qemu_mac_strdup_printf(const uint8_t* macaddr)
 {
-    return g_strdup_printf("%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
-                           macaddr[0], macaddr[1], macaddr[2],
-                           macaddr[3], macaddr[4], macaddr[5]);
+    return g_strdup_printf("%.2x:%.2x:%.2x:%.2x:%.2x:%.2x", macaddr[0], macaddr[1], macaddr[2], macaddr[3], macaddr[4],
+                           macaddr[5]);
 }
 
-void qemu_set_info_str(NetClientState *nc, const char *fmt, ...)
+void qemu_set_info_str(NetClientState* nc, const char* fmt, ...)
 {
     va_list ap;
 
@@ -155,38 +157,31 @@ void qemu_set_info_str(NetClientState *nc, const char *fmt, ...)
     va_end(ap);
 }
 
-void qemu_format_nic_info_str(NetClientState *nc, uint8_t macaddr[6])
+void qemu_format_nic_info_str(NetClientState* nc, uint8_t macaddr[6])
 {
-    qemu_set_info_str(nc, "model=%s,macaddr=%02x:%02x:%02x:%02x:%02x:%02x",
-                      nc->model, macaddr[0], macaddr[1], macaddr[2],
-                      macaddr[3], macaddr[4], macaddr[5]);
+    qemu_set_info_str(nc, "model=%s,macaddr=%02x:%02x:%02x:%02x:%02x:%02x", nc->model, macaddr[0], macaddr[1],
+                      macaddr[2], macaddr[3], macaddr[4], macaddr[5]);
 }
 
 static int mac_table[256] = {0};
 
-static void qemu_macaddr_set_used(MACAddr *macaddr)
+static void qemu_macaddr_set_used(MACAddr* macaddr)
 {
     int index;
 
     for (index = 0x56; index < 0xFF; index++) {
-        if (macaddr->a[5] == index) {
-            mac_table[index]++;
-        }
+        if (macaddr->a[5] == index) { mac_table[index]++; }
     }
 }
 
-static void qemu_macaddr_set_free(MACAddr *macaddr)
+static void qemu_macaddr_set_free(MACAddr* macaddr)
 {
-    int index;
-    static const MACAddr base = { .a = { 0x52, 0x54, 0x00, 0x12, 0x34, 0 } };
+    int                  index;
+    static const MACAddr base = {.a = {0x52, 0x54, 0x00, 0x12, 0x34, 0}};
 
-    if (memcmp(macaddr->a, &base.a, (sizeof(base.a) - 1)) != 0) {
-        return;
-    }
+    if (memcmp(macaddr->a, &base.a, (sizeof(base.a) - 1)) != 0) { return; }
     for (index = 0x56; index < 0xFF; index++) {
-        if (macaddr->a[5] == index) {
-            mac_table[index]--;
-        }
+        if (macaddr->a[5] == index) { mac_table[index]--; }
     }
 }
 
@@ -195,23 +190,20 @@ static int qemu_macaddr_get_free(void)
     int index;
 
     for (index = 0x56; index < 0xFF; index++) {
-        if (mac_table[index] == 0) {
-            return index;
-        }
+        if (mac_table[index] == 0) { return index; }
     }
 
     return -1;
 }
 
-void qemu_macaddr_default_if_unset(MACAddr *macaddr)
+void qemu_macaddr_default_if_unset(MACAddr* macaddr)
 {
-    static const MACAddr zero = { .a = { 0,0,0,0,0,0 } };
-    static const MACAddr base = { .a = { 0x52, 0x54, 0x00, 0x12, 0x34, 0 } };
+    static const MACAddr zero = {.a = {0, 0, 0, 0, 0, 0}};
+    static const MACAddr base = {.a = {0x52, 0x54, 0x00, 0x12, 0x34, 0}};
 
     if (memcmp(macaddr, &zero, sizeof(zero)) != 0) {
-        if (memcmp(macaddr->a, &base.a, (sizeof(base.a) - 1)) != 0) {
-            return;
-        } else {
+        if (memcmp(macaddr->a, &base.a, (sizeof(base.a) - 1)) != 0) { return; }
+        else {
             qemu_macaddr_set_used(macaddr);
             return;
         }
@@ -231,193 +223,145 @@ void qemu_macaddr_default_if_unset(MACAddr *macaddr)
  *
  * Only net clients created with the legacy -net option and NICs need this.
  */
-static char *assign_name(NetClientState *nc1, const char *model)
+static char* assign_name(NetClientState* nc1, const char* model)
 {
-    NetClientState *nc;
-    int id = 0;
+    NetClientState* nc;
+    int             id = 0;
 
-    QTAILQ_FOREACH(nc, &net_clients, next) {
-        if (nc == nc1) {
-            continue;
-        }
-        if (strcmp(nc->model, model) == 0) {
-            id++;
-        }
+    QTAILQ_FOREACH (nc, &net_clients, next) {
+        if (nc == nc1) { continue; }
+        if (strcmp(nc->model, model) == 0) { id++; }
     }
 
     return g_strdup_printf("%s.%d", model, id);
 }
 
-static void qemu_net_client_destructor(NetClientState *nc)
-{
-    g_free(nc);
-}
-static ssize_t qemu_deliver_packet_iov(NetClientState *sender,
-                                       unsigned flags,
-                                       const struct iovec *iov,
-                                       int iovcnt,
-                                       void *opaque);
+static void    qemu_net_client_destructor(NetClientState* nc) { g_free(nc); }
+static ssize_t qemu_deliver_packet_iov(NetClientState* sender, unsigned flags, const struct iovec* iov, int iovcnt,
+                                       void* opaque);
 
-static void qemu_net_client_setup(NetClientState *nc,
-                                  NetClientInfo *info,
-                                  NetClientState *peer,
-                                  const char *model,
-                                  const char *name,
-                                  NetClientDestructor *destructor,
-                                  bool is_datapath)
+static void qemu_net_client_setup(NetClientState* nc, NetClientInfo* info, NetClientState* peer, const char* model,
+                                  const char* name, NetClientDestructor* destructor, bool is_datapath)
 {
-    nc->info = info;
+    nc->info  = info;
     nc->model = g_strdup(model);
-    if (name) {
-        nc->name = g_strdup(name);
-    } else {
+    if (name) { nc->name = g_strdup(name); }
+    else {
         nc->name = assign_name(nc, model);
     }
 
     if (peer) {
         assert(!peer->peer);
-        nc->peer = peer;
+        nc->peer   = peer;
         peer->peer = nc;
     }
     QTAILQ_INSERT_TAIL(&net_clients, nc, next);
 
     nc->incoming_queue = qemu_new_net_queue(qemu_deliver_packet_iov, nc);
-    nc->destructor = destructor;
-    nc->is_datapath = is_datapath;
+    nc->destructor     = destructor;
+    nc->is_datapath    = is_datapath;
 }
 
-NetClientState *qemu_new_net_client(NetClientInfo *info,
-                                    NetClientState *peer,
-                                    const char *model,
-                                    const char *name)
+NetClientState* qemu_new_net_client(NetClientInfo* info, NetClientState* peer, const char* model, const char* name)
 {
-    NetClientState *nc;
+    NetClientState* nc;
 
     assert(info->size >= sizeof(NetClientState));
 
     nc = g_malloc0(info->size);
-    qemu_net_client_setup(nc, info, peer, model, name,
-                          qemu_net_client_destructor, true);
+    qemu_net_client_setup(nc, info, peer, model, name, qemu_net_client_destructor, true);
 
     return nc;
 }
 
-NetClientState *qemu_new_net_control_client(NetClientInfo *info,
-                                            NetClientState *peer,
-                                            const char *model,
-                                            const char *name)
+NetClientState* qemu_new_net_control_client(NetClientInfo* info, NetClientState* peer, const char* model,
+                                            const char* name)
 {
-    NetClientState *nc;
+    NetClientState* nc;
 
     assert(info->size >= sizeof(NetClientState));
 
     nc = g_malloc0(info->size);
-    qemu_net_client_setup(nc, info, peer, model, name,
-                          qemu_net_client_destructor, false);
+    qemu_net_client_setup(nc, info, peer, model, name, qemu_net_client_destructor, false);
 
     return nc;
 }
 
-NICState *qemu_new_nic(NetClientInfo *info,
-                       NICConf *conf,
-                       const char *model,
-                       const char *name,
-                       MemReentrancyGuard *reentrancy_guard,
-                       void *opaque)
+NICState* qemu_new_nic(NetClientInfo* info, NICConf* conf, const char* model, const char* name,
+                       MemReentrancyGuard* reentrancy_guard, void* opaque)
 {
-    NetClientState **peers = conf->peers.ncs;
-    NICState *nic;
-    int i, queues = MAX(1, conf->peers.queues);
+    NetClientState** peers = conf->peers.ncs;
+    NICState*        nic;
+    int              i, queues = MAX(1, conf->peers.queues);
 
     assert(info->type == NET_CLIENT_DRIVER_NIC);
     assert(info->size >= sizeof(NICState));
 
-    nic = g_malloc0(info->size + sizeof(NetClientState) * queues);
-    nic->ncs = (void *)nic + info->size;
-    nic->conf = conf;
-    nic->reentrancy_guard = reentrancy_guard,
-    nic->opaque = opaque;
+    nic                   = g_malloc0(info->size + sizeof(NetClientState) * queues);
+    nic->ncs              = (void*)nic + info->size;
+    nic->conf             = conf;
+    nic->reentrancy_guard = reentrancy_guard, nic->opaque = opaque;
 
     for (i = 0; i < queues; i++) {
-        qemu_net_client_setup(&nic->ncs[i], info, peers[i], model, name,
-                              NULL, true);
+        qemu_net_client_setup(&nic->ncs[i], info, peers[i], model, name, NULL, true);
         nic->ncs[i].queue_index = i;
     }
 
     return nic;
 }
 
-NetClientState *qemu_get_subqueue(NICState *nic, int queue_index)
+NetClientState* qemu_get_subqueue(NICState* nic, int queue_index) { return nic->ncs + queue_index; }
+
+NetClientState* qemu_get_queue(NICState* nic) { return qemu_get_subqueue(nic, 0); }
+
+NICState* qemu_get_nic(NetClientState* nc)
 {
-    return nic->ncs + queue_index;
+    NetClientState* nc0 = nc - nc->queue_index;
+
+    return (NICState*)((void*)nc0 - nc->info->size);
 }
 
-NetClientState *qemu_get_queue(NICState *nic)
+void* qemu_get_nic_opaque(NetClientState* nc)
 {
-    return qemu_get_subqueue(nic, 0);
-}
-
-NICState *qemu_get_nic(NetClientState *nc)
-{
-    NetClientState *nc0 = nc - nc->queue_index;
-
-    return (NICState *)((void *)nc0 - nc->info->size);
-}
-
-void *qemu_get_nic_opaque(NetClientState *nc)
-{
-    NICState *nic = qemu_get_nic(nc);
+    NICState* nic = qemu_get_nic(nc);
 
     return nic->opaque;
 }
 
-NetClientState *qemu_get_peer(NetClientState *nc, int queue_index)
+NetClientState* qemu_get_peer(NetClientState* nc, int queue_index)
 {
     assert(nc != NULL);
-    NetClientState *ncs = nc + queue_index;
+    NetClientState* ncs = nc + queue_index;
     return ncs->peer;
 }
 
-static void qemu_cleanup_net_client(NetClientState *nc,
-                                    bool remove_from_net_clients)
+static void qemu_cleanup_net_client(NetClientState* nc, bool remove_from_net_clients)
 {
-    if (remove_from_net_clients) {
-        QTAILQ_REMOVE(&net_clients, nc, next);
-    }
+    if (remove_from_net_clients) { QTAILQ_REMOVE(&net_clients, nc, next); }
 
-    if (nc->info->cleanup) {
-        nc->info->cleanup(nc);
-    }
+    if (nc->info->cleanup) { nc->info->cleanup(nc); }
 }
 
-static void qemu_free_net_client(NetClientState *nc)
+static void qemu_free_net_client(NetClientState* nc)
 {
-    if (nc->incoming_queue) {
-        qemu_del_net_queue(nc->incoming_queue);
-    }
-    if (nc->peer) {
-        nc->peer->peer = NULL;
-    }
+    if (nc->incoming_queue) { qemu_del_net_queue(nc->incoming_queue); }
+    if (nc->peer) { nc->peer->peer = NULL; }
     g_free(nc->name);
     g_free(nc->model);
-    if (nc->destructor) {
-        nc->destructor(nc);
-    }
+    if (nc->destructor) { nc->destructor(nc); }
 }
 
-void qemu_del_net_client(NetClientState *nc)
+void qemu_del_net_client(NetClientState* nc)
 {
-    NetClientState *ncs[MAX_QUEUE_NUM];
-    int queues, i;
+    NetClientState* ncs[MAX_QUEUE_NUM];
+    int             queues, i;
 
     assert(nc->info->type != NET_CLIENT_DRIVER_NIC);
 
     /* If the NetClientState belongs to a multiqueue backend, we will change all
      * other NetClientStates also.
      */
-    queues = qemu_find_net_clients_except(nc->name, ncs,
-                                          NET_CLIENT_DRIVER_NIC,
-                                          MAX_QUEUE_NUM);
+    queues = qemu_find_net_clients_except(nc->name, ncs, NET_CLIENT_DRIVER_NIC, MAX_QUEUE_NUM);
     assert(queues != 0);
 
     /*
@@ -428,10 +372,8 @@ void qemu_del_net_client(NetClientState *nc)
      * The cleanup and free will be done when the NIC is free.
      */
     if (nc->peer && nc->peer->info->type == NET_CLIENT_DRIVER_NIC) {
-        NICState *nic = qemu_get_nic(nc->peer);
-        if (nic->peer_deleted) {
-            return;
-        }
+        NICState* nic = qemu_get_nic(nc->peer);
+        if (nic->peer_deleted) { return; }
         nic->peer_deleted = true;
 
         for (i = 0; i < queues; i++) {
@@ -439,9 +381,7 @@ void qemu_del_net_client(NetClientState *nc)
             QTAILQ_REMOVE(&net_clients, ncs[i], next);
         }
 
-        if (nc->peer->info->link_status_changed) {
-            nc->peer->info->link_status_changed(nc->peer);
-        }
+        if (nc->peer->info->link_status_changed) { nc->peer->info->link_status_changed(nc->peer); }
 
         return;
     }
@@ -452,14 +392,14 @@ void qemu_del_net_client(NetClientState *nc)
     }
 }
 
-void qemu_del_nic(NICState *nic)
+void qemu_del_nic(NICState* nic)
 {
     int i, queues = MAX(nic->conf->peers.queues, 1);
 
     qemu_macaddr_set_free(&nic->conf->macaddr);
 
     for (i = 0; i < queues; i++) {
-        NetClientState *nc = qemu_get_subqueue(nic, i);
+        NetClientState* nc = qemu_get_subqueue(nic, i);
         /*
          * If this is a peer NIC and peer has already been deleted, clean it up
          * and free it now.
@@ -467,14 +407,15 @@ void qemu_del_nic(NICState *nic)
         if (nic->peer_deleted) {
             qemu_cleanup_net_client(nc->peer, false);
             qemu_free_net_client(nc->peer);
-        } else if (nc->peer) {
+        }
+        else if (nc->peer) {
             /* if there are RX packets pending, complete them */
             qemu_purge_queued_packets(nc->peer);
         }
     }
 
     for (i = queues - 1; i >= 0; i--) {
-        NetClientState *nc = qemu_get_subqueue(nic, i);
+        NetClientState* nc = qemu_get_subqueue(nic, i);
 
         qemu_cleanup_net_client(nc, true);
         qemu_free_net_client(nc);
@@ -483,103 +424,81 @@ void qemu_del_nic(NICState *nic)
     g_free(nic);
 }
 
-void qemu_foreach_nic(qemu_nic_foreach func, void *opaque)
+void qemu_foreach_nic(qemu_nic_foreach func, void* opaque)
 {
-    NetClientState *nc;
+    NetClientState* nc;
 
-    QTAILQ_FOREACH(nc, &net_clients, next) {
+    QTAILQ_FOREACH (nc, &net_clients, next) {
         if (nc->info->type == NET_CLIENT_DRIVER_NIC) {
-            if (nc->queue_index == 0) {
-                func(qemu_get_nic(nc), opaque);
-            }
+            if (nc->queue_index == 0) { func(qemu_get_nic(nc), opaque); }
         }
     }
 }
 
-bool qemu_has_ufo(NetClientState *nc)
+bool qemu_has_ufo(NetClientState* nc)
 {
-    if (!nc || !nc->info->has_ufo) {
-        return false;
-    }
+    if (!nc || !nc->info->has_ufo) { return false; }
 
     return nc->info->has_ufo(nc);
 }
 
-bool qemu_has_uso(NetClientState *nc)
+bool qemu_has_uso(NetClientState* nc)
 {
-    if (!nc || !nc->info->has_uso) {
-        return false;
-    }
+    if (!nc || !nc->info->has_uso) { return false; }
 
     return nc->info->has_uso(nc);
 }
 
-bool qemu_has_vnet_hdr(NetClientState *nc)
+bool qemu_has_vnet_hdr(NetClientState* nc)
 {
-    if (!nc || !nc->info->has_vnet_hdr) {
-        return false;
-    }
+    if (!nc || !nc->info->has_vnet_hdr) { return false; }
 
     return nc->info->has_vnet_hdr(nc);
 }
 
-bool qemu_has_vnet_hdr_len(NetClientState *nc, int len)
+bool qemu_has_vnet_hdr_len(NetClientState* nc, int len)
 {
-    if (!nc || !nc->info->has_vnet_hdr_len) {
-        return false;
-    }
+    if (!nc || !nc->info->has_vnet_hdr_len) { return false; }
 
     return nc->info->has_vnet_hdr_len(nc, len);
 }
 
-void qemu_set_offload(NetClientState *nc, int csum, int tso4, int tso6,
-                          int ecn, int ufo, int uso4, int uso6)
+void qemu_set_offload(NetClientState* nc, int csum, int tso4, int tso6, int ecn, int ufo, int uso4, int uso6)
 {
-    if (!nc || !nc->info->set_offload) {
-        return;
-    }
+    if (!nc || !nc->info->set_offload) { return; }
 
     nc->info->set_offload(nc, csum, tso4, tso6, ecn, ufo, uso4, uso6);
 }
 
-int qemu_get_vnet_hdr_len(NetClientState *nc)
+int qemu_get_vnet_hdr_len(NetClientState* nc)
 {
-    if (!nc) {
-        return 0;
-    }
+    if (!nc) { return 0; }
 
     return nc->vnet_hdr_len;
 }
 
-void qemu_set_vnet_hdr_len(NetClientState *nc, int len)
+void qemu_set_vnet_hdr_len(NetClientState* nc, int len)
 {
-    if (!nc || !nc->info->set_vnet_hdr_len) {
-        return;
-    }
+    if (!nc || !nc->info->set_vnet_hdr_len) { return; }
 
-    assert(len == sizeof(struct virtio_net_hdr_mrg_rxbuf) ||
-           len == sizeof(struct virtio_net_hdr) ||
-           len == sizeof(struct virtio_net_hdr_v1_hash));
+    assert(len == sizeof(struct virtio_net_hdr_mrg_rxbuf) || len == sizeof(struct virtio_net_hdr)
+           || len == sizeof(struct virtio_net_hdr_v1_hash));
 
     nc->vnet_hdr_len = len;
     nc->info->set_vnet_hdr_len(nc, len);
 }
 
-bool qemu_get_vnet_hash_supported_types(NetClientState *nc, uint32_t *types)
+bool qemu_get_vnet_hash_supported_types(NetClientState* nc, uint32_t* types)
 {
-    if (!nc || !nc->info->get_vnet_hash_supported_types) {
-        return false;
-    }
+    if (!nc || !nc->info->get_vnet_hash_supported_types) { return false; }
 
     return nc->info->get_vnet_hash_supported_types(nc, types);
 }
 
-int qemu_set_vnet_le(NetClientState *nc, bool is_le)
+int qemu_set_vnet_le(NetClientState* nc, bool is_le)
 {
 #if HOST_BIG_ENDIAN
-    if (!nc || !nc->info->set_vnet_le) {
-        return -ENOSYS;
-    }
+    if (!nc || !nc->info->set_vnet_le) { return -ENOSYS; }
 
     return nc->info->set_vnet_le(nc, is_le);
 #else
@@ -587,126 +506,99 @@ int qemu_set_vnet_le(NetClientState *nc, bool is_le)
 #endif
 }
 
-int qemu_set_vnet_be(NetClientState *nc, bool is_be)
+int qemu_set_vnet_be(NetClientState* nc, bool is_be)
 {
 #if HOST_BIG_ENDIAN
     return 0;
 #else
-    if (!nc || !nc->info->set_vnet_be) {
-        return -ENOSYS;
-    }
+    if (!nc || !nc->info->set_vnet_be) { return -ENOSYS; }
 
     return nc->info->set_vnet_be(nc, is_be);
 #endif
 }
 
-int qemu_can_receive_packet(NetClientState *nc)
+int qemu_can_receive_packet(NetClientState* nc)
 {
-    if (nc->receive_disabled) {
-        return 0;
-    } else if (nc->info->can_receive &&
-               !nc->info->can_receive(nc)) {
+    if (nc->receive_disabled) { return 0; }
+    else if (nc->info->can_receive && !nc->info->can_receive(nc)) {
         return 0;
     }
     return 1;
 }
 
-int qemu_can_send_packet(NetClientState *sender)
+int qemu_can_send_packet(NetClientState* sender)
 {
     int vm_running = runstate_is_running();
 
-    if (!vm_running) {
-        return 0;
-    }
+    if (!vm_running) { return 0; }
 
-    if (!sender->peer) {
-        return 1;
-    }
+    if (!sender->peer) { return 1; }
 
     return qemu_can_receive_packet(sender->peer);
 }
 
-void qemu_purge_queued_packets(NetClientState *nc)
+void qemu_purge_queued_packets(NetClientState* nc)
 {
-    if (!nc->peer) {
-        return;
-    }
+    if (!nc->peer) { return; }
 
     qemu_net_queue_purge(nc->peer->incoming_queue, nc);
 }
 
-void qemu_flush_or_purge_queued_packets(NetClientState *nc, bool purge)
+void qemu_flush_or_purge_queued_packets(NetClientState* nc, bool purge)
 {
     nc->receive_disabled = 0;
 
     if (nc->peer && nc->peer->info->type == NET_CLIENT_DRIVER_HUBPORT) {
-        if (net_hub_flush(nc->peer)) {
-            qemu_notify_event();
-        }
+        if (net_hub_flush(nc->peer)) { qemu_notify_event(); }
     }
     if (qemu_net_queue_flush(nc->incoming_queue)) {
         /* We emptied the queue successfully, signal to the IO thread to repoll
          * the file descriptor (for tap, for example).
          */
         qemu_notify_event();
-    } else if (purge) {
+    }
+    else if (purge) {
         /* Unable to empty the queue, purge remaining packets */
         qemu_net_queue_purge(nc->incoming_queue, nc->peer);
     }
 }
 
-void qemu_flush_queued_packets(NetClientState *nc)
-{
-    qemu_flush_or_purge_queued_packets(nc, false);
-}
+void qemu_flush_queued_packets(NetClientState* nc) { qemu_flush_or_purge_queued_packets(nc, false); }
 
-static ssize_t qemu_send_packet_async_with_flags(NetClientState *sender,
-                                                 unsigned flags,
-                                                 const uint8_t *buf, int size,
-                                                 NetPacketSent *sent_cb)
+static ssize_t qemu_send_packet_async_with_flags(NetClientState* sender, unsigned flags, const uint8_t* buf, int size,
+                                                 NetPacketSent* sent_cb)
 {
-    NetQueue *queue;
-    int ret;
+    NetQueue* queue;
+    int       ret;
 
 #ifdef DEBUG_NET
     printf("qemu_send_packet_async:\n");
     qemu_hexdump(stdout, "net", buf, size);
 #endif
 
-    if (sender->link_down || !sender->peer) {
-        return size;
-    }
+    if (sender->link_down || !sender->peer) { return size; }
 
     queue = sender->peer->incoming_queue;
 
     return qemu_net_queue_send(queue, sender, flags, buf, size, sent_cb);
 }
 
-ssize_t qemu_send_packet_async(NetClientState *sender,
-                               const uint8_t *buf, int size,
-                               NetPacketSent *sent_cb)
-{
-    return qemu_send_packet_async_with_flags(sender, QEMU_NET_PACKET_FLAG_NONE,
-                                             buf, size, sent_cb);
-}
+ssize_t qemu_send_packet_async(NetClientState* sender, const uint8_t* buf, int size, NetPacketSent* sent_cb)
+{ return qemu_send_packet_async_with_flags(sender, QEMU_NET_PACKET_FLAG_NONE, buf, size, sent_cb); }
 
-ssize_t qemu_send_packet(NetClientState *nc, const uint8_t *buf, int size)
-{
-    return qemu_send_packet_async(nc, buf, size, NULL);
-}
+ssize_t qemu_send_packet(NetClientState* nc, const uint8_t* buf, int size)
+{ return qemu_send_packet_async(nc, buf, size, NULL); }
 
-ssize_t qemu_receive_packet(NetClientState *nc, const uint8_t *buf, int size)
+ssize_t qemu_receive_packet(NetClientState* nc, const uint8_t* buf, int size)
 {
     uint8_t min_pkt[ETH_ZLEN];
-    size_t min_pktsz = sizeof(min_pkt);
+    size_t  min_pktsz = sizeof(min_pkt);
 
-    if (!qemu_can_receive_packet(nc)) {
-        return 0;
-    }
+    if (!qemu_can_receive_packet(nc)) { return 0; }
 
     if (net_peer_needs_padding(nc)) {
         if (eth_pad_short_frame(min_pkt, &min_pktsz, buf, size)) {
-            buf = min_pkt;
+            buf  = min_pkt;
             size = min_pktsz;
         }
     }
@@ -714,29 +606,24 @@ ssize_t qemu_receive_packet(NetClientState *nc, const uint8_t *buf, int size)
     return qemu_net_queue_receive(nc->incoming_queue, buf, size);
 }
 
-ssize_t qemu_send_packet_raw(NetClientState *nc, const uint8_t *buf, int size)
-{
-    return qemu_send_packet_async_with_flags(nc, QEMU_NET_PACKET_FLAG_RAW,
-                                             buf, size, NULL);
-}
+ssize_t qemu_send_packet_raw(NetClientState* nc, const uint8_t* buf, int size)
+{ return qemu_send_packet_async_with_flags(nc, QEMU_NET_PACKET_FLAG_RAW, buf, size, NULL); }
 
-static ssize_t nc_sendv_compat(NetClientState *nc, const struct iovec *iov,
-                               int iovcnt, unsigned flags)
+static ssize_t nc_sendv_compat(NetClientState* nc, const struct iovec* iov, int iovcnt, unsigned flags)
 {
-    uint8_t *buf = NULL;
-    uint8_t *buffer;
-    size_t offset;
-    ssize_t ret;
+    uint8_t* buf = NULL;
+    uint8_t* buffer;
+    size_t   offset;
+    ssize_t  ret;
 
     if (iovcnt == 1) {
         buffer = iov[0].iov_base;
         offset = iov[0].iov_len;
-    } else {
+    }
+    else {
         offset = iov_size(iov, iovcnt);
-        if (offset > NET_BUFSIZE) {
-            return -1;
-        }
-        buf = g_malloc(offset);
+        if (offset > NET_BUFSIZE) { return -1; }
+        buf    = g_malloc(offset);
         buffer = buf;
         offset = iov_to_buf(iov, iovcnt, 0, buf, offset);
     }
@@ -747,119 +634,87 @@ static ssize_t nc_sendv_compat(NetClientState *nc, const struct iovec *iov,
     return ret;
 }
 
-static ssize_t qemu_deliver_packet_iov(NetClientState *sender,
-                                       unsigned flags,
-                                       const struct iovec *iov,
-                                       int iovcnt,
-                                       void *opaque)
+static ssize_t qemu_deliver_packet_iov(NetClientState* sender, unsigned flags, const struct iovec* iov, int iovcnt,
+                                       void* opaque)
 {
-    MemReentrancyGuard *owned_reentrancy_guard;
-    NetClientState *nc = opaque;
-    int ret;
-    struct virtio_net_hdr_v1_hash vnet_hdr = { };
-    g_autofree struct iovec *iov_copy = NULL;
+    MemReentrancyGuard*           owned_reentrancy_guard;
+    NetClientState*               nc = opaque;
+    int                           ret;
+    struct virtio_net_hdr_v1_hash vnet_hdr = {};
+    g_autofree struct iovec*      iov_copy = NULL;
 
+    if (nc->link_down) { return iov_size(iov, iovcnt); }
 
-    if (nc->link_down) {
-        return iov_size(iov, iovcnt);
-    }
+    if (nc->receive_disabled) { return 0; }
 
-    if (nc->receive_disabled) {
-        return 0;
-    }
-
-    if (nc->info->type != NET_CLIENT_DRIVER_NIC ||
-        qemu_get_nic(nc)->reentrancy_guard->engaged_in_io) {
+    if (nc->info->type != NET_CLIENT_DRIVER_NIC || qemu_get_nic(nc)->reentrancy_guard->engaged_in_io) {
         owned_reentrancy_guard = NULL;
-    } else {
-        owned_reentrancy_guard = qemu_get_nic(nc)->reentrancy_guard;
+    }
+    else {
+        owned_reentrancy_guard                = qemu_get_nic(nc)->reentrancy_guard;
         owned_reentrancy_guard->engaged_in_io = true;
     }
 
     if ((flags & QEMU_NET_PACKET_FLAG_RAW) && nc->vnet_hdr_len) {
-        iov_copy = g_new(struct iovec, iovcnt + 1);
+        iov_copy             = g_new(struct iovec, iovcnt + 1);
         iov_copy[0].iov_base = &vnet_hdr;
-        iov_copy[0].iov_len =  nc->vnet_hdr_len;
+        iov_copy[0].iov_len  = nc->vnet_hdr_len;
         memcpy(&iov_copy[1], iov, iovcnt * sizeof(*iov));
         iov = iov_copy;
         iovcnt++;
     }
 
-    if (nc->info->receive_iov) {
-        ret = nc->info->receive_iov(nc, iov, iovcnt);
-    } else {
+    if (nc->info->receive_iov) { ret = nc->info->receive_iov(nc, iov, iovcnt); }
+    else {
         ret = nc_sendv_compat(nc, iov, iovcnt, flags);
     }
 
-    if (owned_reentrancy_guard) {
-        owned_reentrancy_guard->engaged_in_io = false;
-    }
+    if (owned_reentrancy_guard) { owned_reentrancy_guard->engaged_in_io = false; }
 
-    if (ret == 0) {
-        nc->receive_disabled = 1;
-    }
+    if (ret == 0) { nc->receive_disabled = 1; }
 
     return ret;
 }
 
-ssize_t qemu_sendv_packet_async(NetClientState *sender,
-                                const struct iovec *iov, int iovcnt,
-                                NetPacketSent *sent_cb)
+ssize_t qemu_sendv_packet_async(NetClientState* sender, const struct iovec* iov, int iovcnt, NetPacketSent* sent_cb)
 {
-    NetQueue *queue;
-    size_t size = iov_size(iov, iovcnt);
-    int ret;
+    NetQueue* queue;
+    size_t    size = iov_size(iov, iovcnt);
+    int       ret;
 
-    if (size > NET_BUFSIZE) {
-        return size;
-    }
+    if (size > NET_BUFSIZE) { return size; }
 
-    if (sender->link_down || !sender->peer) {
-        return size;
-    }
+    if (sender->link_down || !sender->peer) { return size; }
 
     queue = sender->peer->incoming_queue;
 
-    return qemu_net_queue_send_iov(queue, sender,
-                                   QEMU_NET_PACKET_FLAG_NONE,
-                                   iov, iovcnt, sent_cb);
+    return qemu_net_queue_send_iov(queue, sender, QEMU_NET_PACKET_FLAG_NONE, iov, iovcnt, sent_cb);
 }
 
-ssize_t
-qemu_sendv_packet(NetClientState *nc, const struct iovec *iov, int iovcnt)
-{
-    return qemu_sendv_packet_async(nc, iov, iovcnt, NULL);
-}
+ssize_t qemu_sendv_packet(NetClientState* nc, const struct iovec* iov, int iovcnt)
+{ return qemu_sendv_packet_async(nc, iov, iovcnt, NULL); }
 
-NetClientState *qemu_find_netdev(const char *id)
+NetClientState* qemu_find_netdev(const char* id)
 {
-    NetClientState *nc;
+    NetClientState* nc;
 
-    QTAILQ_FOREACH(nc, &net_clients, next) {
-        if (nc->info->type == NET_CLIENT_DRIVER_NIC)
-            continue;
-        if (!strcmp(nc->name, id)) {
-            return nc;
-        }
+    QTAILQ_FOREACH (nc, &net_clients, next) {
+        if (nc->info->type == NET_CLIENT_DRIVER_NIC) { continue; }
+        if (!strcmp(nc->name, id)) { return nc; }
     }
 
     return NULL;
 }
 
-int qemu_find_net_clients_except(const char *id, NetClientState **ncs,
-                                 NetClientDriver type, int max)
+int qemu_find_net_clients_except(const char* id, NetClientState** ncs, NetClientDriver type, int max)
 {
-    NetClientState *nc;
-    int ret = 0;
+    NetClientState* nc;
+    int             ret = 0;
 
-    QTAILQ_FOREACH(nc, &net_clients, next) {
-        if (nc->info->type == type) {
-            continue;
-        }
+    QTAILQ_FOREACH (nc, &net_clients, next) {
+        if (nc->info->type == type) { continue; }
         if (!id || !strcmp(nc->name, id)) {
-            if (ret < max) {
-                ncs[ret] = nc;
-            }
+            if (ret < max) { ncs[ret] = nc; }
             ret++;
         }
     }
@@ -871,24 +726,22 @@ static int nic_get_free_idx(void)
 {
     int index;
 
-    for (index = 0; index < MAX_NICS; index++)
-        if (!nd_table[index].used)
-            return index;
+    for (index = 0; index < MAX_NICS; index++) {
+        if (!nd_table[index].used) { return index; }
+    }
     return -1;
 }
 
-GPtrArray *qemu_get_nic_models(const char *device_type)
+GPtrArray* qemu_get_nic_models(const char* device_type)
 {
-    GPtrArray *nic_models = g_ptr_array_new();
-    GSList *list = object_class_get_list_sorted(device_type, false);
+    GPtrArray* nic_models = g_ptr_array_new();
+    GSList*    list       = object_class_get_list_sorted(device_type, false);
 
     while (list) {
-        DeviceClass *dc = OBJECT_CLASS_CHECK(DeviceClass, list->data,
-                                             DEVICE, TYPE_DEVICE);
-        GSList *next;
-        if (test_bit(DEVICE_CATEGORY_NETWORK, dc->categories) &&
-            dc->user_creatable) {
-            const char *name = object_class_get_name(list->data);
+        DeviceClass* dc = OBJECT_CLASS_CHECK(DeviceClass, list->data, DEVICE, TYPE_DEVICE);
+        GSList*      next;
+        if (test_bit(DEVICE_CATEGORY_NETWORK, dc->categories) && dc->user_creatable) {
+            const char* name = object_class_get_name(list->data);
             /*
              * A network device might also be something else than a NIC, see
              * e.g. the "rocker" device. Thus we have to look for the "netdev"
@@ -896,10 +749,8 @@ GPtrArray *qemu_get_nic_models(const char *device_type)
              * create this property during instance_init, so we have to create
              * a temporary instance here to be able to check it.
              */
-            Object *obj = object_new_with_class(OBJECT_CLASS(dc));
-            if (object_property_find(obj, "netdev")) {
-                g_ptr_array_add(nic_models, (gpointer)name);
-            }
+            Object* obj = object_new_with_class(OBJECT_CLASS(dc));
+            if (object_property_find(obj, "netdev")) { g_ptr_array_add(nic_models, (gpointer)name); }
             object_unref(obj);
         }
         next = list->next;
@@ -911,12 +762,11 @@ GPtrArray *qemu_get_nic_models(const char *device_type)
     return nic_models;
 }
 
-static int net_init_nic(const Netdev *netdev, const char *name,
-                        NetClientState *peer, Error **errp)
+static int net_init_nic(const Netdev* netdev, const char* name, NetClientState* peer, Error** errp)
 {
-    int idx;
-    NICInfo *nd;
-    const NetLegacyNicOptions *nic;
+    int                        idx;
+    NICInfo*                   nd;
+    const NetLegacyNicOptions* nic;
 
     assert(netdev->type == NET_CLIENT_DRIVER_NIC);
     nic = &netdev->u.nic;
@@ -937,38 +787,33 @@ static int net_init_nic(const Netdev *netdev, const char *name,
             error_setg(errp, "netdev '%s' not found", nic->netdev);
             return -1;
         }
-    } else {
+    }
+    else {
         assert(peer);
         nd->netdev = peer;
     }
     nd->name = g_strdup(name);
-    if (nic->model) {
-        nd->model = g_strdup(nic->model);
-    }
-    if (nic->addr) {
-        nd->devaddr = g_strdup(nic->addr);
-    }
+    if (nic->model) { nd->model = g_strdup(nic->model); }
+    if (nic->addr) { nd->devaddr = g_strdup(nic->addr); }
 
-    if (nic->macaddr &&
-        net_parse_macaddr(nd->macaddr.a, nic->macaddr) < 0) {
+    if (nic->macaddr && net_parse_macaddr(nd->macaddr.a, nic->macaddr) < 0) {
         error_setg(errp, "invalid syntax for ethernet address");
         return -1;
     }
-    if (nic->macaddr &&
-        is_multicast_ether_addr(nd->macaddr.a)) {
-        error_setg(errp,
-                   "NIC cannot have multicast MAC address (odd 1st byte)");
+    if (nic->macaddr && is_multicast_ether_addr(nd->macaddr.a)) {
+        error_setg(errp, "NIC cannot have multicast MAC address (odd 1st byte)");
         return -1;
     }
     qemu_macaddr_default_if_unset(&nd->macaddr);
 
     if (nic->has_vectors) {
         if (nic->vectors > 0x7ffffff) {
-            error_setg(errp, "invalid # of vectors: %"PRIu32, nic->vectors);
+            error_setg(errp, "invalid # of vectors: %" PRIu32, nic->vectors);
             return -1;
         }
         nd->nvectors = nic->vectors;
-    } else {
+    }
+    else {
         nd->nvectors = DEV_NVECTORS_UNSPECIFIED;
     }
 
@@ -980,22 +825,19 @@ static int net_init_nic(const Netdev *netdev, const char *name,
 
 static gboolean add_nic_result(gpointer key, gpointer value, gpointer user_data)
 {
-    GPtrArray *results = user_data;
-    GPtrArray *alias_list = value;
-    const char *model = key;
-    char *result;
+    GPtrArray*  results    = user_data;
+    GPtrArray*  alias_list = value;
+    const char* model      = key;
+    char*       result;
 
-    if (!alias_list) {
-        result = g_strdup(model);
-    } else {
-        GString *result_str = g_string_new(model);
-        int i;
+    if (!alias_list) { result = g_strdup(model); }
+    else {
+        GString* result_str = g_string_new(model);
+        int      i;
 
         g_string_append(result_str, " (aka ");
         for (i = 0; i < alias_list->len; i++) {
-            if (i) {
-                g_string_append(result_str, ", ");
-            }
+            if (i) { g_string_append(result_str, ", "); }
             g_string_append(result_str, alias_list->pdata[i]);
         }
         g_string_append(result_str, ")");
@@ -1007,41 +849,32 @@ static gboolean add_nic_result(gpointer key, gpointer value, gpointer user_data)
     return true;
 }
 
-static int model_cmp(char **a, char **b)
-{
-    return strcmp(*a, *b);
-}
+static int model_cmp(char** a, char** b) { return strcmp(*a, *b); }
 
 static void show_nic_models(void)
 {
-    GPtrArray *results = g_ptr_array_new();
-    int i;
+    GPtrArray* results = g_ptr_array_new();
+    int        i;
 
     g_hash_table_foreach_remove(nic_model_help, add_nic_result, results);
     g_ptr_array_sort(results, (GCompareFunc)model_cmp);
 
     printf("Available NIC models for this configuration:\n");
-    for (i = 0 ; i < results->len; i++) {
-        printf("%s\n", (char *)results->pdata[i]);
-    }
+    for (i = 0; i < results->len; i++) { printf("%s\n", (char*)results->pdata[i]); }
     g_hash_table_unref(nic_model_help);
     nic_model_help = NULL;
 }
 
-static void add_nic_model_help(const char *model, const char *alias)
+static void add_nic_model_help(const char* model, const char* alias)
 {
-    GPtrArray *alias_list = NULL;
+    GPtrArray* alias_list = NULL;
 
-    if (g_hash_table_lookup_extended(nic_model_help, model, NULL,
-                                     (gpointer *)&alias_list)) {
+    if (g_hash_table_lookup_extended(nic_model_help, model, NULL, (gpointer*)&alias_list)) {
         /* Already exists, no alias to add: return */
-        if (!alias) {
-            return;
-        }
+        if (!alias) { return; }
         if (alias_list) {
             /* Check if this alias is already in the list. Add if not. */
-            if (!g_ptr_array_find_with_equal_func(alias_list, alias,
-                                                  g_str_equal, NULL)) {
+            if (!g_ptr_array_find_with_equal_func(alias_list, alias, g_str_equal, NULL)) {
                 g_ptr_array_add(alias_list, g_strdup(alias));
             }
             return;
@@ -1056,53 +889,43 @@ static void add_nic_model_help(const char *model, const char *alias)
     g_hash_table_replace(nic_model_help, g_strdup(model), alias_list);
 }
 
-NICInfo *qemu_find_nic_info(const char *typename, bool match_default,
-                            const char *alias)
+NICInfo* qemu_find_nic_info(const char* typename, bool match_default, const char* alias)
 {
-    NICInfo *nd;
-    int i;
+    NICInfo* nd;
+    int      i;
 
-    if (nic_model_help) {
-        add_nic_model_help(typename, alias);
-    }
+    if (nic_model_help) { add_nic_model_help(typename, alias); }
 
     for (i = 0; i < nb_nics; i++) {
         nd = &nd_table[i];
 
-        if (!nd->used || nd->instantiated) {
-            continue;
-        }
+        if (!nd->used || nd->instantiated) { continue; }
 
-        if ((match_default && !nd->model) || !g_strcmp0(nd->model, typename)
-            || (alias && !g_strcmp0(nd->model, alias))) {
+        if ((match_default && !nd->model) || !g_strcmp0(nd->model, typename) || (alias && !g_strcmp0(nd->model, alias)))
+        {
             return nd;
         }
     }
     return NULL;
 }
 
-static bool is_nic_model_help_option(const char *model)
+static bool is_nic_model_help_option(const char* model)
 {
     if (model && is_help_option(model)) {
         /*
          * Trigger the help output by instantiating the hash table which
          * will gather tha available models as they get registered.
          */
-        if (!nic_model_help) {
-            nic_model_help = g_hash_table_new_full(g_str_hash, g_str_equal,
-                                                   g_free, NULL);
-        }
+        if (!nic_model_help) { nic_model_help = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL); }
         return true;
     }
     return false;
 }
 
 /* "I have created a device. Please configure it if you can" */
-bool qemu_configure_nic_device(DeviceState *dev, bool match_default,
-                               const char *alias)
+bool qemu_configure_nic_device(DeviceState* dev, bool match_default, const char* alias)
 {
-    NICInfo *nd = qemu_find_nic_info(object_get_typename(OBJECT(dev)),
-                                     match_default, alias);
+    NICInfo* nd = qemu_find_nic_info(object_get_typename(OBJECT(dev)), match_default, alias);
 
     if (nd) {
         qdev_set_nic_properties(dev, nd);
@@ -1112,38 +935,30 @@ bool qemu_configure_nic_device(DeviceState *dev, bool match_default,
 }
 
 /* "Please create a device, if you have a configuration for it" */
-DeviceState *qemu_create_nic_device(const char *typename, bool match_default,
-                                    const char *alias)
+DeviceState* qemu_create_nic_device(const char* typename, bool match_default, const char* alias)
 {
-    NICInfo *nd = qemu_find_nic_info(typename, match_default, alias);
-    DeviceState *dev;
+    NICInfo*     nd = qemu_find_nic_info(typename, match_default, alias);
+    DeviceState* dev;
 
-    if (!nd) {
-        return NULL;
-    }
+    if (!nd) { return NULL; }
 
     dev = qdev_new(typename);
     qdev_set_nic_properties(dev, nd);
     return dev;
 }
 
-void qemu_create_nic_bus_devices(BusState *bus, const char *parent_type,
-                                 const char *default_model,
-                                 const char *alias, const char *alias_target)
+void qemu_create_nic_bus_devices(BusState* bus, const char* parent_type, const char* default_model, const char* alias,
+                                 const char* alias_target)
 {
-    GPtrArray *nic_models = qemu_get_nic_models(parent_type);
-    const char *model;
-    DeviceState *dev;
-    NICInfo *nd;
-    int i;
+    GPtrArray*   nic_models = qemu_get_nic_models(parent_type);
+    const char*  model;
+    DeviceState* dev;
+    NICInfo*     nd;
+    int          i;
 
     if (nic_model_help) {
-        if (alias_target) {
-            add_nic_model_help(alias_target, alias);
-        }
-        for (i = 0; i < nic_models->len - 1; i++) {
-            add_nic_model_help(nic_models->pdata[i], NULL);
-        }
+        if (alias_target) { add_nic_model_help(alias_target, alias); }
+        for (i = 0; i < nic_models->len - 1; i++) { add_nic_model_help(nic_models->pdata[i], NULL); }
     }
 
     /* Drop the NULL terminator which would make g_str_equal() unhappy */
@@ -1152,22 +967,15 @@ void qemu_create_nic_bus_devices(BusState *bus, const char *parent_type,
     for (i = 0; i < nb_nics; i++) {
         nd = &nd_table[i];
 
-        if (!nd->used || nd->instantiated) {
-            continue;
-        }
+        if (!nd->used || nd->instantiated) { continue; }
 
         model = nd->model ? nd->model : default_model;
-        if (!model) {
-            continue;
-        }
+        if (!model) { continue; }
 
         /* Each bus type is allowed *one* substitution */
-        if (g_str_equal(model, alias)) {
-            model = alias_target;
-        }
+        if (g_str_equal(model, alias)) { model = alias_target; }
 
-        if (!g_ptr_array_find_with_equal_func(nic_models, model,
-                                              g_str_equal, NULL)) {
+        if (!g_ptr_array_find_with_equal_func(nic_models, model, g_str_equal, NULL)) {
             /* This NIC does not live on this bus. */
             continue;
         }
@@ -1180,55 +988,50 @@ void qemu_create_nic_bus_devices(BusState *bus, const char *parent_type,
     g_ptr_array_free(nic_models, true);
 }
 
-static int (* const net_client_init_fun[NET_CLIENT_DRIVER__MAX])(
-    const Netdev *netdev,
-    const char *name,
-    NetClientState *peer, Error **errp) = {
-        [NET_CLIENT_DRIVER_NIC]       = net_init_nic,
+static int (*const net_client_init_fun[NET_CLIENT_DRIVER__MAX])(const Netdev* netdev, const char* name,
+                                                                NetClientState* peer, Error** errp) = {
+    [NET_CLIENT_DRIVER_NIC] = net_init_nic,
 #ifdef CONFIG_SLIRP
-        [NET_CLIENT_DRIVER_USER]      = net_init_slirp,
+    [NET_CLIENT_DRIVER_USER] = net_init_slirp,
 #endif
-        [NET_CLIENT_DRIVER_TAP]       = net_init_tap,
-        [NET_CLIENT_DRIVER_SOCKET]    = net_init_socket,
-        [NET_CLIENT_DRIVER_STREAM]    = net_init_stream,
-        [NET_CLIENT_DRIVER_DGRAM]     = net_init_dgram,
+    [NET_CLIENT_DRIVER_TAP]    = net_init_tap,
+    [NET_CLIENT_DRIVER_SOCKET] = net_init_socket,
+    [NET_CLIENT_DRIVER_STREAM] = net_init_stream,
+    [NET_CLIENT_DRIVER_DGRAM]  = net_init_dgram,
 #ifdef CONFIG_VDE
-        [NET_CLIENT_DRIVER_VDE]       = net_init_vde,
+    [NET_CLIENT_DRIVER_VDE] = net_init_vde,
 #endif
 #ifdef CONFIG_NETMAP
-        [NET_CLIENT_DRIVER_NETMAP]    = net_init_netmap,
+    [NET_CLIENT_DRIVER_NETMAP] = net_init_netmap,
 #endif
 #ifdef CONFIG_NET_BRIDGE
-        [NET_CLIENT_DRIVER_BRIDGE]    = net_init_bridge,
+    [NET_CLIENT_DRIVER_BRIDGE] = net_init_bridge,
 #endif
-        [NET_CLIENT_DRIVER_HUBPORT]   = net_init_hubport,
+    [NET_CLIENT_DRIVER_HUBPORT] = net_init_hubport,
 #ifdef CONFIG_L2TPV3
-        [NET_CLIENT_DRIVER_L2TPV3]    = net_init_l2tpv3,
+    [NET_CLIENT_DRIVER_L2TPV3] = net_init_l2tpv3,
 #endif
 #ifdef CONFIG_VMNET
-        [NET_CLIENT_DRIVER_VMNET_HOST] = net_init_vmnet_host,
-        [NET_CLIENT_DRIVER_VMNET_SHARED] = net_init_vmnet_shared,
-        [NET_CLIENT_DRIVER_VMNET_BRIDGED] = net_init_vmnet_bridged,
+    [NET_CLIENT_DRIVER_VMNET_HOST]    = net_init_vmnet_host,
+    [NET_CLIENT_DRIVER_VMNET_SHARED]  = net_init_vmnet_shared,
+    [NET_CLIENT_DRIVER_VMNET_BRIDGED] = net_init_vmnet_bridged,
 #endif /* CONFIG_VMNET */
 };
 
-
-static int net_client_init1(const Netdev *netdev, bool is_netdev, Error **errp)
+static int net_client_init1(const Netdev* netdev, bool is_netdev, Error** errp)
 {
-    NetClientState *peer = NULL;
-    NetClientState *nc;
+    NetClientState* peer = NULL;
+    NetClientState* nc;
 
     if (is_netdev) {
-        if (netdev->type == NET_CLIENT_DRIVER_NIC ||
-            !net_client_init_fun[netdev->type]) {
+        if (netdev->type == NET_CLIENT_DRIVER_NIC || !net_client_init_fun[netdev->type]) {
             error_setg(errp, "network backend '%s' is not compiled into this binary",
                        NetClientDriver_str(netdev->type));
             return -1;
         }
-    } else {
-        if (netdev->type == NET_CLIENT_DRIVER_NONE) {
-            return 0; /* nothing to do */
-        }
+    }
+    else {
+        if (netdev->type == NET_CLIENT_DRIVER_NONE) { return 0; /* nothing to do */ }
         if (netdev->type == NET_CLIENT_DRIVER_HUBPORT) {
             error_setg(errp, "network backend '%s' is only supported with -netdev/-nic",
                        NetClientDriver_str(netdev->type));
@@ -1242,10 +1045,7 @@ static int net_client_init1(const Netdev *netdev, bool is_netdev, Error **errp)
         }
 
         /* Do not add to a hub if it's a nic with a netdev= parameter. */
-        if (netdev->type != NET_CLIENT_DRIVER_NIC ||
-            !netdev->u.nic.netdev) {
-            peer = net_hub_add_port(0, NULL, NULL);
-        }
+        if (netdev->type != NET_CLIENT_DRIVER_NIC || !netdev->u.nic.netdev) { peer = net_hub_add_port(0, NULL, NULL); }
     }
 
     nc = qemu_find_netdev(netdev->id);
@@ -1257,8 +1057,7 @@ static int net_client_init1(const Netdev *netdev, bool is_netdev, Error **errp)
     if (net_client_init_fun[netdev->type](netdev, netdev->id, peer, errp) < 0) {
         /* FIXME drop when all init functions store an Error */
         if (errp && !*errp) {
-            error_setg(errp, "Device '%s' could not be initialized",
-                       NetClientDriver_str(netdev->type));
+            error_setg(errp, "Device '%s' could not be initialized", NetClientDriver_str(netdev->type));
         }
         return -1;
     }
@@ -1274,13 +1073,9 @@ static int net_client_init1(const Netdev *netdev, bool is_netdev, Error **errp)
 
 void show_netdevs(void)
 {
-    int idx;
-    const char *available_netdevs[] = {
-        "socket",
-        "stream",
-        "dgram",
-        "hubport",
-        "tap",
+    int         idx;
+    const char* available_netdevs[] = {
+        "socket",     "stream",       "dgram",         "hubport", "tap",
 #ifdef CONFIG_SLIRP
         "user",
 #endif
@@ -1297,64 +1092,51 @@ void show_netdevs(void)
         "netmap",
 #endif
 #ifdef CONFIG_VMNET
-        "vmnet-host",
-        "vmnet-shared",
-        "vmnet-bridged",
+        "vmnet-host", "vmnet-shared", "vmnet-bridged",
 #endif
     };
 
     qemu_printf("Available netdev backend types:\n");
-    for (idx = 0; idx < ARRAY_SIZE(available_netdevs); idx++) {
-        qemu_printf("%s\n", available_netdevs[idx]);
-    }
+    for (idx = 0; idx < ARRAY_SIZE(available_netdevs); idx++) { qemu_printf("%s\n", available_netdevs[idx]); }
 }
 
-static int net_client_init(QemuOpts *opts, bool is_netdev, Error **errp)
+static int net_client_init(QemuOpts* opts, bool is_netdev, Error** errp)
 {
-    gchar **substrings = NULL;
-    Netdev *object = NULL;
-    int ret = -1;
-    Visitor *v = opts_visitor_new(opts);
+    gchar**  substrings = NULL;
+    Netdev*  object     = NULL;
+    int      ret        = -1;
+    Visitor* v          = opts_visitor_new(opts);
 
     /* Parse convenience option format ipv6-net=fec0::0[/64] */
-    const char *ip6_net = qemu_opt_get(opts, "ipv6-net");
+    const char* ip6_net = qemu_opt_get(opts, "ipv6-net");
 
     if (ip6_net) {
-        char *prefix_addr;
+        char*         prefix_addr;
         unsigned long prefix_len = 64; /* Default 64bit prefix length. */
 
         substrings = g_strsplit(ip6_net, "/", 2);
         if (!substrings || !substrings[0]) {
-            error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "ipv6-net",
-                       "a valid IPv6 prefix");
+            error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "ipv6-net", "a valid IPv6 prefix");
             goto out;
         }
 
         prefix_addr = substrings[0];
 
         /* Handle user-specified prefix length. */
-        if (substrings[1] &&
-            qemu_strtoul(substrings[1], NULL, 10, &prefix_len))
-        {
-            error_setg(errp,
-                       "parameter 'ipv6-net' expects a number after '/'");
+        if (substrings[1] && qemu_strtoul(substrings[1], NULL, 10, &prefix_len)) {
+            error_setg(errp, "parameter 'ipv6-net' expects a number after '/'");
             goto out;
         }
 
         qemu_opt_set(opts, "ipv6-prefix", prefix_addr, &error_abort);
-        qemu_opt_set_number(opts, "ipv6-prefixlen", prefix_len,
-                            &error_abort);
+        qemu_opt_set_number(opts, "ipv6-prefixlen", prefix_len, &error_abort);
         qemu_opt_unset(opts, "ipv6-net");
     }
 
     /* Create an ID for -net if the user did not specify one */
-    if (!is_netdev && !qemu_opts_id(opts)) {
-        qemu_opts_set_id(opts, id_generate(ID_NET));
-    }
+    if (!is_netdev && !qemu_opts_id(opts)) { qemu_opts_set_id(opts, id_generate(ID_NET)); }
 
-    if (visit_type_Netdev(v, NULL, &object, errp)) {
-        ret = net_client_init1(object, is_netdev, errp);
-    }
+    if (visit_type_Netdev(v, NULL, &object, errp)) { ret = net_client_init1(object, is_netdev, errp); }
 
     qapi_free_Netdev(object);
 
@@ -1364,12 +1146,9 @@ out:
     return ret;
 }
 
-void netdev_add(QemuOpts *opts, Error **errp)
-{
-    net_client_init(opts, true, errp);
-}
+void netdev_add(QemuOpts* opts, Error** errp) { net_client_init(opts, true, errp); }
 
-void qmp_netdev_add(Netdev *netdev, Error **errp)
+void qmp_netdev_add(Netdev* netdev, Error** errp)
 {
     if (!id_wellformed(netdev->id)) {
         error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "id", "an identifier");
@@ -1379,15 +1158,14 @@ void qmp_netdev_add(Netdev *netdev, Error **errp)
     net_client_init1(netdev, true, errp);
 }
 
-void qmp_netdev_del(const char *id, Error **errp)
+void qmp_netdev_del(const char* id, Error** errp)
 {
-    NetClientState *nc;
-    QemuOpts *opts;
+    NetClientState* nc;
+    QemuOpts*       opts;
 
     nc = qemu_find_netdev(id);
     if (!nc) {
-        error_set(errp, ERROR_CLASS_DEVICE_NOT_FOUND,
-                  "Device '%s' not found", id);
+        error_set(errp, ERROR_CLASS_DEVICE_NOT_FOUND, "Device '%s' not found", id);
         return;
     }
 
@@ -1404,33 +1182,25 @@ void qmp_netdev_del(const char *id, Error **errp)
      * HMP netdev_add.
      */
     opts = qemu_opts_find(qemu_find_opts("netdev"), id);
-    if (opts) {
-        qemu_opts_del(opts);
-    }
+    if (opts) { qemu_opts_del(opts); }
 }
 
-void print_net_client(Monitor *mon, NetClientState *nc)
+void print_net_client(Monitor* mon, NetClientState* nc)
 {
-    monitor_printf(mon, "%s: index=%d,type=%s,%s\n", nc->name,
-                   nc->queue_index,
-                   NetClientDriver_str(nc->info->type),
+    monitor_printf(mon, "%s: index=%d,type=%s,%s\n", nc->name, nc->queue_index, NetClientDriver_str(nc->info->type),
                    nc->info_str);
 }
 
-void net_client_set_link(NetClientState **ncs, int queues, bool up)
+void net_client_set_link(NetClientState** ncs, int queues, bool up)
 {
-    NetClientState *nc;
-    int i;
+    NetClientState* nc;
+    int             i;
 
     nc = ncs[0];
 
-    for (i = 0; i < queues; i++) {
-        ncs[i]->link_down = !up;
-    }
+    for (i = 0; i < queues; i++) { ncs[i]->link_down = !up; }
 
-    if (nc->info->link_status_changed) {
-        nc->info->link_status_changed(nc);
-    }
+    if (nc->info->link_status_changed) { nc->info->link_status_changed(nc); }
 
     if (nc->peer) {
         /* Change peer link only if the peer is NIC and then notify peer.
@@ -1442,47 +1212,38 @@ void net_client_set_link(NetClientState **ncs, int queues, bool up)
          * disconnected mode. For now maintain this compatibility.
          */
         if (nc->peer->info->type == NET_CLIENT_DRIVER_NIC) {
-            for (i = 0; i < queues; i++) {
-                ncs[i]->peer->link_down = !up;
-            }
+            for (i = 0; i < queues; i++) { ncs[i]->peer->link_down = !up; }
         }
-        if (nc->peer->info->link_status_changed) {
-            nc->peer->info->link_status_changed(nc->peer);
-        }
+        if (nc->peer->info->link_status_changed) { nc->peer->info->link_status_changed(nc->peer); }
     }
 }
 
-void qmp_set_link(const char *name, bool up, Error **errp)
+void qmp_set_link(const char* name, bool up, Error** errp)
 {
-    NetClientState *ncs[MAX_QUEUE_NUM];
-    int queues;
+    NetClientState* ncs[MAX_QUEUE_NUM];
+    int             queues;
 
-    queues = qemu_find_net_clients_except(name, ncs,
-                                          NET_CLIENT_DRIVER__MAX,
-                                          MAX_QUEUE_NUM);
+    queues = qemu_find_net_clients_except(name, ncs, NET_CLIENT_DRIVER__MAX, MAX_QUEUE_NUM);
 
     if (queues == 0) {
-        error_set(errp, ERROR_CLASS_DEVICE_NOT_FOUND,
-                  "Device '%s' not found", name);
+        error_set(errp, ERROR_CLASS_DEVICE_NOT_FOUND, "Device '%s' not found", name);
         return;
     }
 
     net_client_set_link(ncs, queues, up);
 }
 
-static void net_vm_change_state_handler(void *opaque, bool running,
-                                        RunState state)
+static void net_vm_change_state_handler(void* opaque, bool running, RunState state)
 {
-    NetClientState *nc;
-    NetClientState *tmp;
+    NetClientState* nc;
+    NetClientState* tmp;
 
-    QTAILQ_FOREACH_SAFE(nc, &net_clients, next, tmp) {
+    QTAILQ_FOREACH_SAFE (nc, &net_clients, next, tmp) {
         if (running) {
             /* Flush queued packets and wake up backends. */
-            if (nc->peer && qemu_can_send_packet(nc)) {
-                qemu_flush_queued_packets(nc->peer);
-            }
-        } else {
+            if (nc->peer && qemu_can_send_packet(nc)) { qemu_flush_queued_packets(nc->peer); }
+        }
+        else {
             /* Complete all queued packets, to guarantee we don't modify
              * state later when VM is not running.
              */
@@ -1519,7 +1280,7 @@ void net_cleanup(void)
     while (*p) {
         nc = *p;
         if (nc->info->type == NET_CLIENT_DRIVER_NIC) {
-            NICState *nic = qemu_get_nic(nc);
+            NICState* nic = qemu_get_nic(nc);
 
             if (nic->peer_deleted) {
                 int queues = MAX(nic->conf->peers.queues, 1);
@@ -1532,7 +1293,8 @@ void net_cleanup(void)
 
             /* Skip NET_CLIENT_DRIVER_NIC entries */
             p = &QTAILQ_NEXT(nc, next);
-        } else {
+        }
+        else {
             qemu_del_net_client(nc);
         }
     }
@@ -1542,8 +1304,8 @@ void net_cleanup(void)
 
 void net_check_clients(void)
 {
-    NetClientState *nc;
-    int i;
+    NetClientState* nc;
+    int             i;
 
     if (nic_model_help) {
         show_nic_models();
@@ -1551,12 +1313,9 @@ void net_check_clients(void)
     }
     net_hub_check_clients();
 
-    QTAILQ_FOREACH(nc, &net_clients, next) {
+    QTAILQ_FOREACH (nc, &net_clients, next) {
         if (!nc->peer) {
-            warn_report("%s %s has no peer",
-                        nc->info->type == NET_CLIENT_DRIVER_NIC
-                        ? "nic" : "netdev",
-                        nc->name);
+            warn_report("%s %s has no peer", nc->info->type == NET_CLIENT_DRIVER_NIC ? "nic" : "netdev", nc->name);
         }
     }
 
@@ -1565,30 +1324,27 @@ void net_check_clients(void)
      * they are always instantiated.
      */
     for (i = 0; i < MAX_NICS; i++) {
-        NICInfo *nd = &nd_table[i];
+        NICInfo* nd = &nd_table[i];
         if (nd->used && !nd->instantiated) {
             warn_report("requested NIC (%s, model %s) "
                         "was not created (not supported by this machine?)",
-                        nd->name ? nd->name : "anonymous",
-                        nd->model ? nd->model : "unspecified");
+                        nd->name ? nd->name : "anonymous", nd->model ? nd->model : "unspecified");
         }
     }
 }
 
-static int net_init_client(void *dummy, QemuOpts *opts, Error **errp)
+static int net_init_client(void* dummy, QemuOpts* opts, Error** errp)
 {
-    const char *model = qemu_opt_get(opts, "model");
+    const char* model = qemu_opt_get(opts, "model");
 
-    if (is_nic_model_help_option(model)) {
-        return 0;
-    }
+    if (is_nic_model_help_option(model)) { return 0; }
 
     return net_client_init(opts, false, errp);
 }
 
-static int net_init_netdev(void *dummy, QemuOpts *opts, Error **errp)
+static int net_init_netdev(void* dummy, QemuOpts* opts, Error** errp)
 {
-    const char *type = qemu_opt_get(opts, "type");
+    const char* type = qemu_opt_get(opts, "type");
 
     if (type && is_help_option(type)) {
         show_netdevs();
@@ -1598,28 +1354,24 @@ static int net_init_netdev(void *dummy, QemuOpts *opts, Error **errp)
 }
 
 /* For the convenience "--nic" parameter */
-static int net_param_nic(void *dummy, QemuOpts *opts, Error **errp)
+static int net_param_nic(void* dummy, QemuOpts* opts, Error** errp)
 {
-    char *mac, *nd_id;
-    int idx, ret;
-    NICInfo *ni;
-    const char *type;
+    char *      mac, *nd_id;
+    int         idx, ret;
+    NICInfo*    ni;
+    const char* type;
 
     type = qemu_opt_get(opts, "type");
     if (type) {
-        if (g_str_equal(type, "none")) {
-            return 0;    /* Nothing to do, default_net is cleared in vl.c */
-        }
+        if (g_str_equal(type, "none")) { return 0; /* Nothing to do, default_net is cleared in vl.c */ }
         if (is_help_option(type)) {
-            GPtrArray *nic_models = qemu_get_nic_models(TYPE_DEVICE);
-            int i;
+            GPtrArray* nic_models = qemu_get_nic_models(TYPE_DEVICE);
+            int        i;
             show_netdevs();
             printf("\n");
             printf("Available NIC models "
                    "(use -nic model=help for a filtered list):\n");
-            for (i = 0 ; nic_models->pdata[i]; i++) {
-                printf("%s\n", (char *)nic_models->pdata[i]);
-            }
+            for (i = 0; nic_models->pdata[i]; i++) { printf("%s\n", (char*)nic_models->pdata[i]); }
             g_ptr_array_free(nic_models, true);
             exit(0);
         }
@@ -1631,17 +1383,13 @@ static int net_param_nic(void *dummy, QemuOpts *opts, Error **errp)
         return -1;
     }
 
-    if (!type) {
-        qemu_opt_set(opts, "type", "user", &error_abort);
-    }
+    if (!type) { qemu_opt_set(opts, "type", "user", &error_abort); }
 
     ni = &nd_table[idx];
     memset(ni, 0, sizeof(*ni));
     ni->model = qemu_opt_get_del(opts, "model");
 
-    if (is_nic_model_help_option(ni->model)) {
-        return 0;
-    }
+    if (is_nic_model_help_option(ni->model)) { return 0; }
 
     /* Create an ID if the user did not specify one */
     nd_id = g_strdup(qemu_opts_id(opts));
@@ -1670,7 +1418,7 @@ static int net_param_nic(void *dummy, QemuOpts *opts, Error **errp)
     ret = net_client_init(opts, true, errp);
     if (ret == 0) {
         ni->netdev = qemu_find_netdev(nd_id);
-        ni->used = true;
+        ni->used   = true;
         nb_nics++;
     }
 
@@ -1682,7 +1430,7 @@ out:
 static void netdev_init_modern(void)
 {
     while (!QSIMPLEQ_EMPTY(&nd_queue)) {
-        NetdevQueueEntry *nd = QSIMPLEQ_FIRST(&nd_queue);
+        NetdevQueueEntry* nd = QSIMPLEQ_FIRST(&nd_queue);
 
         QSIMPLEQ_REMOVE_HEAD(&nd_queue, entry);
         loc_push_restore(&nd->loc);
@@ -1695,21 +1443,17 @@ static void netdev_init_modern(void)
 
 void net_init_clients(void)
 {
-    net_change_state_entry =
-        qemu_add_vm_change_state_handler(net_vm_change_state_handler, NULL);
+    net_change_state_entry = qemu_add_vm_change_state_handler(net_vm_change_state_handler, NULL);
 
     QTAILQ_INIT(&net_clients);
 
     netdev_init_modern();
 
-    qemu_opts_foreach(qemu_find_opts("netdev"), net_init_netdev, NULL,
-                      &error_fatal);
+    qemu_opts_foreach(qemu_find_opts("netdev"), net_init_netdev, NULL, &error_fatal);
 
-    qemu_opts_foreach(qemu_find_opts("nic"), net_param_nic, NULL,
-                      &error_fatal);
+    qemu_opts_foreach(qemu_find_opts("nic"), net_param_nic, NULL, &error_fatal);
 
-    qemu_opts_foreach(qemu_find_opts("net"), net_init_client, NULL,
-                      &error_fatal);
+    qemu_opts_foreach(qemu_find_opts("net"), net_init_client, NULL, &error_fatal);
 }
 
 /*
@@ -1717,16 +1461,16 @@ void net_init_clients(void)
  * Modern syntax is to be parsed with netdev_parse_modern().
  * Traditional syntax is to be parsed with net_client_parse().
  */
-bool netdev_is_modern(const char *optstr)
+bool netdev_is_modern(const char* optstr)
 {
-    QemuOpts *opts;
-    bool is_modern;
-    const char *type;
+    QemuOpts*           opts;
+    bool                is_modern;
+    const char*         type;
     static QemuOptsList dummy_opts = {
-        .name = "netdev",
+        .name             = "netdev",
         .implied_opt_name = "type",
-        .head = QTAILQ_HEAD_INITIALIZER(dummy_opts.head),
-        .desc = { { } },
+        .head             = QTAILQ_HEAD_INITIALIZER(dummy_opts.head),
+        .desc             = {{}},
     };
 
     if (optstr[0] == '{') {
@@ -1735,9 +1479,8 @@ bool netdev_is_modern(const char *optstr)
     }
 
     opts = qemu_opts_create(&dummy_opts, NULL, false, &error_abort);
-    qemu_opts_do_parse(opts, optstr, dummy_opts.implied_opt_name,
-                       &error_abort);
-    type = qemu_opt_get(opts, "type");
+    qemu_opts_do_parse(opts, optstr, dummy_opts.implied_opt_name, &error_abort);
+    type      = qemu_opt_get(opts, "type");
     is_modern = !g_strcmp0(type, "stream") || !g_strcmp0(type, "dgram");
 
     qemu_opts_reset(&dummy_opts);
@@ -1751,12 +1494,12 @@ bool netdev_is_modern(const char *optstr)
  * netdev_parse_modern() appends to @nd_queue, whereas net_client_parse()
  * appends to @qemu_netdev_opts.
  */
-void netdev_parse_modern(const char *optstr)
+void netdev_parse_modern(const char* optstr)
 {
-    Visitor *v;
-    NetdevQueueEntry *nd;
+    Visitor*          v;
+    NetdevQueueEntry* nd;
 
-    v = qobject_input_visitor_new_str(optstr, "type", &error_fatal);
+    v  = qobject_input_visitor_new_str(optstr, "type", &error_fatal);
     nd = g_new(NetdevQueueEntry, 1);
     visit_type_Netdev(v, NULL, &nd->nd, &error_fatal);
     visit_free(v);
@@ -1765,53 +1508,47 @@ void netdev_parse_modern(const char *optstr)
     QSIMPLEQ_INSERT_TAIL(&nd_queue, nd, entry);
 }
 
-void net_client_parse(QemuOptsList *opts_list, const char *optstr)
+void net_client_parse(QemuOptsList* opts_list, const char* optstr)
 {
-    if (!qemu_opts_parse_noisily(opts_list, optstr, true)) {
-        exit(1);
-    }
+    if (!qemu_opts_parse_noisily(opts_list, optstr, true)) { exit(1); }
 }
 
 /* From FreeBSD */
 /* XXX: optimize */
-uint32_t net_crc32(const uint8_t *p, int len)
+uint32_t net_crc32(const uint8_t* p, int len)
 {
     uint32_t crc;
-    int carry, i, j;
-    uint8_t b;
+    int      carry, i, j;
+    uint8_t  b;
 
     crc = 0xffffffff;
     for (i = 0; i < len; i++) {
         b = *p++;
         for (j = 0; j < 8; j++) {
-            carry = ((crc & 0x80000000L) ? 1 : 0) ^ (b & 0x01);
-            crc <<= 1;
-            b >>= 1;
-            if (carry) {
-                crc = ((crc ^ POLYNOMIAL_BE) | carry);
-            }
+            carry   = ((crc & 0x80000000L) ? 1 : 0) ^ (b & 0x01);
+            crc   <<= 1;
+            b     >>= 1;
+            if (carry) { crc = ((crc ^ POLYNOMIAL_BE) | carry); }
         }
     }
 
     return crc;
 }
 
-uint32_t net_crc32_le(const uint8_t *p, int len)
+uint32_t net_crc32_le(const uint8_t* p, int len)
 {
     uint32_t crc;
-    int carry, i, j;
-    uint8_t b;
+    int      carry, i, j;
+    uint8_t  b;
 
     crc = 0xffffffff;
     for (i = 0; i < len; i++) {
         b = *p++;
         for (j = 0; j < 8; j++) {
-            carry = (crc & 0x1) ^ (b & 0x01);
-            crc >>= 1;
-            b >>= 1;
-            if (carry) {
-                crc ^= POLYNOMIAL_LE;
-            }
+            carry   = (crc & 0x1) ^ (b & 0x01);
+            crc   >>= 1;
+            b     >>= 1;
+            if (carry) { crc ^= POLYNOMIAL_LE; }
         }
     }
 
@@ -1819,52 +1556,47 @@ uint32_t net_crc32_le(const uint8_t *p, int len)
 }
 
 QemuOptsList qemu_netdev_opts = {
-    .name = "netdev",
+    .name             = "netdev",
     .implied_opt_name = "type",
-    .head = QTAILQ_HEAD_INITIALIZER(qemu_netdev_opts.head),
-    .desc = {
-        /*
-         * no elements => accept any params
-         * validation will happen later
-         */
-        { /* end of list */ }
-    },
+    .head             = QTAILQ_HEAD_INITIALIZER(qemu_netdev_opts.head),
+    .desc =
+        {/*
+          * no elements => accept any params
+          * validation will happen later
+          */
+         {/* end of list */}},
 };
 
 QemuOptsList qemu_nic_opts = {
-    .name = "nic",
+    .name             = "nic",
     .implied_opt_name = "type",
-    .head = QTAILQ_HEAD_INITIALIZER(qemu_nic_opts.head),
-    .desc = {
-        /*
-         * no elements => accept any params
-         * validation will happen later
-         */
-        { /* end of list */ }
-    },
+    .head             = QTAILQ_HEAD_INITIALIZER(qemu_nic_opts.head),
+    .desc =
+        {/*
+          * no elements => accept any params
+          * validation will happen later
+          */
+         {/* end of list */}},
 };
 
 QemuOptsList qemu_net_opts = {
-    .name = "net",
+    .name             = "net",
     .implied_opt_name = "type",
-    .head = QTAILQ_HEAD_INITIALIZER(qemu_net_opts.head),
-    .desc = {
-        /*
-         * no elements => accept any params
-         * validation will happen later
-         */
-        { /* end of list */ }
-    },
+    .head             = QTAILQ_HEAD_INITIALIZER(qemu_net_opts.head),
+    .desc =
+        {/*
+          * no elements => accept any params
+          * validation will happen later
+          */
+         {/* end of list */}},
 };
 
-void net_socket_rs_init(SocketReadState *rs,
-                        SocketReadStateFinalize *finalize,
-                        bool vnet_hdr)
+void net_socket_rs_init(SocketReadState* rs, SocketReadStateFinalize* finalize, bool vnet_hdr)
 {
-    rs->state = 0;
-    rs->vnet_hdr = vnet_hdr;
-    rs->index = 0;
-    rs->packet_len = 0;
+    rs->state        = 0;
+    rs->vnet_hdr     = vnet_hdr;
+    rs->index        = 0;
+    rs->packet_len   = 0;
     rs->vnet_hdr_len = 0;
     memset(rs->buf, 0, sizeof(rs->buf));
     rs->finalize = finalize;
@@ -1875,7 +1607,7 @@ void net_socket_rs_init(SocketReadState *rs,
  * 0: success
  * -1: error occurs
  */
-int net_fill_rstate(SocketReadState *rs, const uint8_t *buf, int size)
+int net_fill_rstate(SocketReadState* rs, const uint8_t* buf, int size)
 {
     unsigned int l;
 
@@ -1886,67 +1618,59 @@ int net_fill_rstate(SocketReadState *rs, const uint8_t *buf, int size)
          * 2 = getting data.
          */
         switch (rs->state) {
-        case 0:
-            l = 4 - rs->index;
-            if (l > size) {
-                l = size;
-            }
-            memcpy(rs->buf + rs->index, buf, l);
-            buf += l;
-            size -= l;
-            rs->index += l;
-            if (rs->index == 4) {
-                /* got length */
-                rs->packet_len = ntohl(*(uint32_t *)rs->buf);
-                rs->index = 0;
-                if (rs->vnet_hdr) {
-                    rs->state = 1;
-                } else {
-                    rs->state = 2;
-                    rs->vnet_hdr_len = 0;
-                }
-            }
-            break;
-        case 1:
-            l = 4 - rs->index;
-            if (l > size) {
-                l = size;
-            }
-            memcpy(rs->buf + rs->index, buf, l);
-            buf += l;
-            size -= l;
-            rs->index += l;
-            if (rs->index == 4) {
-                /* got vnet header length */
-                rs->vnet_hdr_len = ntohl(*(uint32_t *)rs->buf);
-                rs->index = 0;
-                rs->state = 2;
-            }
-            break;
-        case 2:
-            l = rs->packet_len - rs->index;
-            if (l > size) {
-                l = size;
-            }
-            if (rs->index + l <= sizeof(rs->buf)) {
+            case 0:
+                l = 4 - rs->index;
+                if (l > size) { l = size; }
                 memcpy(rs->buf + rs->index, buf, l);
-            } else {
-                fprintf(stderr, "serious error: oversized packet received,"
-                    "connection terminated.\n");
-                rs->index = rs->state = 0;
-                return -1;
-            }
+                buf       += l;
+                size      -= l;
+                rs->index += l;
+                if (rs->index == 4) {
+                    /* got length */
+                    rs->packet_len = ntohl(*(uint32_t*)rs->buf);
+                    rs->index      = 0;
+                    if (rs->vnet_hdr) { rs->state = 1; }
+                    else {
+                        rs->state        = 2;
+                        rs->vnet_hdr_len = 0;
+                    }
+                }
+                break;
+            case 1:
+                l = 4 - rs->index;
+                if (l > size) { l = size; }
+                memcpy(rs->buf + rs->index, buf, l);
+                buf       += l;
+                size      -= l;
+                rs->index += l;
+                if (rs->index == 4) {
+                    /* got vnet header length */
+                    rs->vnet_hdr_len = ntohl(*(uint32_t*)rs->buf);
+                    rs->index        = 0;
+                    rs->state        = 2;
+                }
+                break;
+            case 2:
+                l = rs->packet_len - rs->index;
+                if (l > size) { l = size; }
+                if (rs->index + l <= sizeof(rs->buf)) { memcpy(rs->buf + rs->index, buf, l); }
+                else {
+                    fprintf(stderr, "serious error: oversized packet received,"
+                                    "connection terminated.\n");
+                    rs->index = rs->state = 0;
+                    return -1;
+                }
 
-            rs->index += l;
-            buf += l;
-            size -= l;
-            if (rs->index >= rs->packet_len) {
-                rs->index = 0;
-                rs->state = 0;
-                assert(rs->finalize);
-                rs->finalize(rs);
-            }
-            break;
+                rs->index += l;
+                buf       += l;
+                size      -= l;
+                if (rs->index >= rs->packet_len) {
+                    rs->index = 0;
+                    rs->state = 0;
+                    assert(rs->finalize);
+                    rs->finalize(rs);
+                }
+                break;
         }
     }
 

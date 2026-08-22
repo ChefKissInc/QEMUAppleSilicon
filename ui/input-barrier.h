@@ -11,7 +11,8 @@
 #define BARRIER_VERSION_MAJOR 1
 #define BARRIER_VERSION_MINOR 6
 
-enum barrierCmd {
+enum barrierCmd
+{
     barrierCmdCNoop,
     barrierCmdCClose,
     barrierCmdCEnter,
@@ -44,42 +45,49 @@ enum barrierCmd {
     barrierCmdHelloBack,
 };
 
-enum {
-   barrierButtonNone,
-   barrierButtonLeft,
-   barrierButtonMiddle,
-   barrierButtonRight,
-   barrierButtonExtra0
+enum
+{
+    barrierButtonNone,
+    barrierButtonLeft,
+    barrierButtonMiddle,
+    barrierButtonRight,
+    barrierButtonExtra0
 };
 
-struct barrierVersion {
+struct barrierVersion
+{
     int16_t major;
     int16_t minor;
 };
 
-struct barrierMouseButton {
+struct barrierMouseButton
+{
     int8_t buttonid;
 };
 
-struct barrierEnter {
+struct barrierEnter
+{
     int16_t x;
     int16_t y;
     int32_t seqn;
     int16_t modifier;
 };
 
-struct barrierMousePos {
+struct barrierMousePos
+{
     int16_t x;
     int16_t y;
 };
 
-struct barrierKey {
+struct barrierKey
+{
     int16_t keyid;
     int16_t modifier;
     int16_t button;
 };
 
-struct barrierRepeat {
+struct barrierRepeat
+{
     int16_t keyid;
     int16_t modifier;
     int16_t repeat;
@@ -87,24 +95,28 @@ struct barrierRepeat {
 };
 
 #define BARRIER_MAX_OPTIONS 32
-struct barrierSet {
+struct barrierSet
+{
     int nb;
-    struct {
-        int id;
+    struct
+    {
+        int  id;
         char nul;
-        int value;
+        int  value;
     } option[BARRIER_MAX_OPTIONS];
 };
 
-struct barrierMsg {
+struct barrierMsg
+{
     enum barrierCmd cmd;
-    union {
-        struct barrierVersion version;
+    union
+    {
+        struct barrierVersion     version;
         struct barrierMouseButton mousebutton;
-        struct barrierMousePos mousepos;
-        struct barrierEnter enter;
-        struct barrierKey key;
-        struct barrierRepeat repeat;
-        struct barrierSet set;
+        struct barrierMousePos    mousepos;
+        struct barrierEnter       enter;
+        struct barrierKey         key;
+        struct barrierRepeat      repeat;
+        struct barrierSet         set;
     };
 };

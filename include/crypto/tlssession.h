@@ -147,11 +147,8 @@ typedef struct QCryptoTLSSession QCryptoTLSSession;
  *
  * Returns: a TLS session object, or NULL on error.
  */
-QCryptoTLSSession *qcrypto_tls_session_new(QCryptoTLSCreds *creds,
-                                           const char *hostname,
-                                           const char *aclname,
-                                           QCryptoTLSCredsEndpoint endpoint,
-                                           Error **errp);
+QCryptoTLSSession* qcrypto_tls_session_new(QCryptoTLSCreds* creds, const char* hostname, const char* aclname,
+                                           QCryptoTLSCredsEndpoint endpoint, Error** errp);
 
 /**
  * qcrypto_tls_session_free:
@@ -160,7 +157,7 @@ QCryptoTLSSession *qcrypto_tls_session_new(QCryptoTLSCreds *creds,
  * Release all memory associated with the TLS session
  * object previously allocated by qcrypto_tls_session_new()
  */
-void qcrypto_tls_session_free(QCryptoTLSSession *sess);
+void qcrypto_tls_session_free(QCryptoTLSSession* sess);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoTLSSession, qcrypto_tls_session_free)
 
@@ -176,7 +173,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(QCryptoTLSSession, qcrypto_tls_session_free)
  * safety issues, where appropriate for the negotiated
  * TLS session parameters.
  */
-void qcrypto_tls_session_require_thread_safety(QCryptoTLSSession *sess);
+void qcrypto_tls_session_require_thread_safety(QCryptoTLSSession* sess);
 
 /**
  * qcrypto_tls_session_check_credentials:
@@ -190,21 +187,14 @@ void qcrypto_tls_session_require_thread_safety(QCryptoTLSSession *sess);
  *
  * Returns 0 if the credentials validated, -1 on error
  */
-int qcrypto_tls_session_check_credentials(QCryptoTLSSession *sess,
-                                          Error **errp);
+int qcrypto_tls_session_check_credentials(QCryptoTLSSession* sess, Error** errp);
 
 /*
  * These must return QCRYPTO_TLS_SESSION_ERR_BLOCK if the I/O
  * would block, but on other errors, must fill 'errp'
  */
-typedef ssize_t (*QCryptoTLSSessionWriteFunc)(const char *buf,
-                                              size_t len,
-                                              void *opaque,
-                                              Error **errp);
-typedef ssize_t (*QCryptoTLSSessionReadFunc)(char *buf,
-                                             size_t len,
-                                             void *opaque,
-                                             Error **errp);
+typedef ssize_t (*QCryptoTLSSessionWriteFunc)(const char* buf, size_t len, void* opaque, Error** errp);
+typedef ssize_t (*QCryptoTLSSessionReadFunc)(char* buf, size_t len, void* opaque, Error** errp);
 
 /**
  * qcrypto_tls_session_set_callbacks:
@@ -224,10 +214,8 @@ typedef ssize_t (*QCryptoTLSSessionReadFunc)(char *buf,
  * The @readFunc callback will be passed a pointer to fill
  * with encrypted data received from the remote peer
  */
-void qcrypto_tls_session_set_callbacks(QCryptoTLSSession *sess,
-                                       QCryptoTLSSessionWriteFunc writeFunc,
-                                       QCryptoTLSSessionReadFunc readFunc,
-                                       void *opaque);
+void qcrypto_tls_session_set_callbacks(QCryptoTLSSession* sess, QCryptoTLSSessionWriteFunc writeFunc,
+                                       QCryptoTLSSessionReadFunc readFunc, void* opaque);
 
 /**
  * qcrypto_tls_session_write:
@@ -248,10 +236,7 @@ void qcrypto_tls_session_set_callbacks(QCryptoTLSSession *sess,
  * or QCRYPTO_TLS_SESSION_ERR_BLOCK if the write would block,
  * or -1 on error.
  */
-ssize_t qcrypto_tls_session_write(QCryptoTLSSession *sess,
-                                  const char *buf,
-                                  size_t len,
-                                  Error **errp);
+ssize_t qcrypto_tls_session_write(QCryptoTLSSession* sess, const char* buf, size_t len, Error** errp);
 
 /**
  * qcrypto_tls_session_read:
@@ -278,11 +263,8 @@ ssize_t qcrypto_tls_session_write(QCryptoTLSSession *sess,
  * or QCRYPTO_TLS_SESSION_ERR_BLOCK if the receive would block,
  * or -1 on error.
  */
-ssize_t qcrypto_tls_session_read(QCryptoTLSSession *sess,
-                                 char *buf,
-                                 size_t len,
-                                 bool gracefulTermination,
-                                 Error **errp);
+ssize_t qcrypto_tls_session_read(QCryptoTLSSession* sess, char* buf, size_t len, bool gracefulTermination,
+                                 Error** errp);
 
 /**
  * qcrypto_tls_session_check_pending:
@@ -293,7 +275,7 @@ ssize_t qcrypto_tls_session_read(QCryptoTLSSession *sess,
  *
  * Returns: the number of bytes available or zero
  */
-size_t qcrypto_tls_session_check_pending(QCryptoTLSSession *sess);
+size_t qcrypto_tls_session_check_pending(QCryptoTLSSession* sess);
 
 /**
  * qcrypto_tls_session_handshake:
@@ -311,16 +293,17 @@ size_t qcrypto_tls_session_check_pending(QCryptoTLSSession *sess);
  * once the underlying data channel is ready to read
  * or write again
  */
-int qcrypto_tls_session_handshake(QCryptoTLSSession *sess,
-                                  Error **errp);
+int qcrypto_tls_session_handshake(QCryptoTLSSession* sess, Error** errp);
 
-typedef enum {
+typedef enum
+{
     QCRYPTO_TLS_HANDSHAKE_COMPLETE,
     QCRYPTO_TLS_HANDSHAKE_SENDING,
     QCRYPTO_TLS_HANDSHAKE_RECVING,
 } QCryptoTLSSessionHandshakeStatus;
 
-typedef enum {
+typedef enum
+{
     QCRYPTO_TLS_BYE_COMPLETE,
     QCRYPTO_TLS_BYE_SENDING,
     QCRYPTO_TLS_BYE_RECVING,
@@ -339,8 +322,7 @@ typedef enum {
  * loop watch and call this method again once the underlying data
  * channel is ready to read or write again.
  */
-int
-qcrypto_tls_session_bye(QCryptoTLSSession *session, Error **errp);
+int qcrypto_tls_session_bye(QCryptoTLSSession* session, Error** errp);
 
 /**
  * qcrypto_tls_session_get_key_size:
@@ -352,8 +334,7 @@ qcrypto_tls_session_bye(QCryptoTLSSession *session, Error **errp);
  * Returns: the length in bytes of the encryption key
  * or -1 on error
  */
-int qcrypto_tls_session_get_key_size(QCryptoTLSSession *sess,
-                                     Error **errp);
+int qcrypto_tls_session_get_key_size(QCryptoTLSSession* sess, Error** errp);
 
 /**
  * qcrypto_tls_session_get_peer_name:
@@ -370,4 +351,4 @@ int qcrypto_tls_session_get_key_size(QCryptoTLSSession *sess,
  *
  * Returns: the peer's name or NULL.
  */
-char *qcrypto_tls_session_get_peer_name(QCryptoTLSSession *sess);
+char* qcrypto_tls_session_get_peer_name(QCryptoTLSSession* sess);

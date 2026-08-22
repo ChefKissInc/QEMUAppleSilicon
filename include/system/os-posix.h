@@ -34,64 +34,59 @@
 #include <sys/un.h>
 
 #ifdef CONFIG_SYSMACROS
-#include <sys/sysmacros.h>
+    #include <sys/sysmacros.h>
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void os_set_line_buffering(void);
-void os_setup_early_signal_handling(void);
-void os_set_proc_name(const char *s);
-void os_setup_signal_handling(void);
-int os_set_daemonize(bool d);
-bool is_daemonized(void);
-void os_daemonize(void);
-bool os_set_runas(const char *user_id);
-void os_set_chroot(const char *path);
-void os_setup_limits(void);
-void os_setup_post(void);
-int os_mlock(bool on_fault);
+    void os_set_line_buffering(void);
+    void os_setup_early_signal_handling(void);
+    void os_set_proc_name(const char* s);
+    void os_setup_signal_handling(void);
+    int  os_set_daemonize(bool d);
+    bool is_daemonized(void);
+    void os_daemonize(void);
+    bool os_set_runas(const char* user_id);
+    void os_set_chroot(const char* path);
+    void os_setup_limits(void);
+    void os_setup_post(void);
+    int  os_mlock(bool on_fault);
 
-/**
- * qemu_alloc_stack:
- * @sz: pointer to a size_t holding the requested usable stack size
- *
- * Allocate memory that can be used as a stack, for instance for
- * coroutines. If the memory cannot be allocated, this function
- * will abort (like g_malloc()). This function also inserts an
- * additional guard page to catch a potential stack overflow.
- * Note that the memory required for the guard page and alignment
- * and minimal stack size restrictions will increase the value of sz.
- *
- * The allocated stack must be freed with qemu_free_stack().
- *
- * Returns: pointer to (the lowest address of) the stack memory.
- */
-void *qemu_alloc_stack(size_t *sz);
+    /**
+     * qemu_alloc_stack:
+     * @sz: pointer to a size_t holding the requested usable stack size
+     *
+     * Allocate memory that can be used as a stack, for instance for
+     * coroutines. If the memory cannot be allocated, this function
+     * will abort (like g_malloc()). This function also inserts an
+     * additional guard page to catch a potential stack overflow.
+     * Note that the memory required for the guard page and alignment
+     * and minimal stack size restrictions will increase the value of sz.
+     *
+     * The allocated stack must be freed with qemu_free_stack().
+     *
+     * Returns: pointer to (the lowest address of) the stack memory.
+     */
+    void* qemu_alloc_stack(size_t* sz);
 
-/**
- * qemu_free_stack:
- * @stack: stack to free
- * @sz: size of stack in bytes
- *
- * Free a stack allocated via qemu_alloc_stack(). Note that sz must
- * be exactly the adjusted stack size returned by qemu_alloc_stack.
- */
-void qemu_free_stack(void *stack, size_t sz);
+    /**
+     * qemu_free_stack:
+     * @stack: stack to free
+     * @sz: size of stack in bytes
+     *
+     * Free a stack allocated via qemu_alloc_stack(). Note that sz must
+     * be exactly the adjusted stack size returned by qemu_alloc_stack.
+     */
+    void qemu_free_stack(void* stack, size_t sz);
 
-/* POSIX and Mingw32 differ in the name of the stdio lock functions.  */
+    /* POSIX and Mingw32 differ in the name of the stdio lock functions.  */
 
-static inline void qemu_flockfile(FILE *f)
-{
-    flockfile(f);
-}
+    static inline void qemu_flockfile(FILE* f) { flockfile(f); }
 
-static inline void qemu_funlockfile(FILE *f)
-{
-    funlockfile(f);
-}
+    static inline void qemu_funlockfile(FILE* f) { funlockfile(f); }
 
 #ifdef __cplusplus
 }

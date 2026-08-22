@@ -39,7 +39,7 @@
 
 #pragma once
 
-#define TCG_TARGET_INTERPRETER 1
+#define TCG_TARGET_INTERPRETER    1
 #define TCG_TARGET_INSN_UNIT_SIZE 4
 #define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
 
@@ -47,7 +47,8 @@
 #define TCG_TARGET_NB_REGS 16
 
 /* List of registers which are used by TCG. */
-typedef enum {
+typedef enum
+{
     TCG_REG_R0 = 0,
     TCG_REG_R1,
     TCG_REG_R2,
@@ -65,8 +66,8 @@ typedef enum {
     TCG_REG_R14,
     TCG_REG_R15,
 
-    TCG_REG_TMP = TCG_REG_R13,
-    TCG_AREG0 = TCG_REG_R14,
+    TCG_REG_TMP        = TCG_REG_R13,
+    TCG_AREG0          = TCG_REG_R14,
     TCG_REG_CALL_STACK = TCG_REG_R15,
 } TCGReg;
 

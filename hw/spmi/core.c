@@ -19,30 +19,24 @@ static const Property spmi_props[] = {
 };
 
 static const TypeInfo spmi_bus_info = {
-    .name = TYPE_SPMI_BUS,
-    .parent = TYPE_BUS,
+    .name          = TYPE_SPMI_BUS,
+    .parent        = TYPE_BUS,
     .instance_size = sizeof(SPMIBus),
 };
 
 /* Create a new SPMI bus.  */
-SPMIBus *spmi_init_bus(DeviceState *parent, const char *name)
+SPMIBus* spmi_init_bus(DeviceState* parent, const char* name)
 {
-    SPMIBus *bus;
+    SPMIBus* bus;
 
     bus = SPMI_BUS(qbus_new(TYPE_SPMI_BUS, parent, name));
     return bus;
 }
 
-void spmi_set_slave_sid(SPMISlave *dev, uint8_t sid)
-{
-    dev->sid = sid;
-}
+void spmi_set_slave_sid(SPMISlave* dev, uint8_t sid) { dev->sid = sid; }
 
 /* Return nonzero if bus is busy.  */
-int spmi_bus_busy(SPMIBus *bus)
-{
-    return bus->current_dev != NULL;
-}
+int spmi_bus_busy(SPMIBus* bus) { return bus->current_dev != NULL; }
 
 /* TODO: Make this handle multiple masters.  */
 /*
@@ -53,12 +47,11 @@ int spmi_bus_busy(SPMIBus *bus)
  * intervening spmi_end_transfer(), and it returns an error, the
  * transaction will not be terminated.  The caller must do it.
  */
-int spmi_start_transfer(SPMIBus *bus, uint8_t sid, uint8_t opcode,
-                        uint16_t address)
+int spmi_start_transfer(SPMIBus* bus, uint8_t sid, uint8_t opcode, uint16_t address)
 {
-    BusChild *kid;
-    SPMISlaveClass *sc;
-    bool bus_scanned = false;
+    BusChild*       kid;
+    SPMISlaveClass* sc;
+    bool            bus_scanned = false;
 
     /*
      * If there are already devices in the list, that means we are in
@@ -66,21 +59,17 @@ int spmi_start_transfer(SPMIBus *bus, uint8_t sid, uint8_t opcode,
      */
     if (!bus->current_dev) {
         QTAILQ_FOREACH (kid, &bus->qbus.children, sibling) {
-            DeviceState *qdev = kid->child;
-            SPMISlave *candidate = SPMI_SLAVE(qdev);
-            if (candidate->sid == sid) {
-                bus->current_dev = candidate;
-            }
+            DeviceState* qdev      = kid->child;
+            SPMISlave*   candidate = SPMI_SLAVE(qdev);
+            if (candidate->sid == sid) { bus->current_dev = candidate; }
         }
         bus_scanned = true;
     }
 
-    if (!bus->current_dev) {
-        return 1;
-    }
+    if (!bus->current_dev) { return 1; }
 
-    SPMISlave *s = bus->current_dev;
-    int rv;
+    SPMISlave* s = bus->current_dev;
+    int        rv;
 
     sc = SPMI_SLAVE_GET_CLASS(s);
     /*
@@ -102,12 +91,12 @@ int spmi_start_transfer(SPMIBus *bus, uint8_t sid, uint8_t opcode,
     return 0;
 }
 
-void spmi_end_transfer(SPMIBus *bus)
+void spmi_end_transfer(SPMIBus* bus)
 {
-    SPMISlaveClass *sc;
+    SPMISlaveClass* sc;
     if (bus->current_dev) {
-        SPMISlave *s = bus->current_dev;
-        sc = SPMI_SLAVE_GET_CLASS(s);
+        SPMISlave* s = bus->current_dev;
+        sc           = SPMI_SLAVE_GET_CLASS(s);
         if (sc->finish) {
             trace_spmi_finish(s->sid);
             sc->finish(s);
@@ -115,31 +104,34 @@ void spmi_end_transfer(SPMIBus *bus)
     }
 }
 
-int spmi_send_recv(SPMIBus *bus, uint8_t *data, uint8_t len, bool send)
+int spmi_send_recv(SPMIBus* bus, uint8_t* data, uint8_t len, bool send)
 {
-    SPMISlaveClass *sc;
-    SPMISlave *s;
-    int ret = 0;
+    SPMISlaveClass* sc;
+    SPMISlave*      s;
+    int             ret = 0;
 
     if (send) {
         if (bus->current_dev) {
-            s = bus->current_dev;
+            s  = bus->current_dev;
             sc = SPMI_SLAVE_GET_CLASS(s);
             if (sc->send) {
                 ret = sc->send(s, data, len);
                 trace_spmi_send(s->sid, len);
-            } else {
+            }
+            else {
                 ret = -1;
             }
         }
-    } else {
+    }
+    else {
         if (bus->current_dev) {
-            s = bus->current_dev;
+            s  = bus->current_dev;
             sc = SPMI_SLAVE_GET_CLASS(s);
             if (sc->recv) {
                 ret = sc->recv(s, data, len);
                 trace_spmi_recv(s->sid, len);
-            } else {
+            }
+            else {
                 ret = -1;
             }
         }
@@ -147,54 +139,46 @@ int spmi_send_recv(SPMIBus *bus, uint8_t *data, uint8_t len, bool send)
     return ret;
 }
 
-int spmi_send(SPMIBus *bus, uint8_t *data, uint8_t len)
-{
-    return spmi_send_recv(bus, data, len, true);
-}
+int spmi_send(SPMIBus* bus, uint8_t* data, uint8_t len) { return spmi_send_recv(bus, data, len, true); }
 
-int spmi_recv(SPMIBus *bus, uint8_t *data, uint8_t len)
-{
-    return spmi_send_recv(bus, data, len, false);
-}
+int spmi_recv(SPMIBus* bus, uint8_t* data, uint8_t len) { return spmi_send_recv(bus, data, len, false); }
 
-SPMISlave *spmi_slave_new(const char *name, uint8_t sid)
+SPMISlave* spmi_slave_new(const char* name, uint8_t sid)
 {
-    DeviceState *dev;
+    DeviceState* dev;
 
     dev = qdev_new(name);
     qdev_prop_set_uint8(dev, "sid", sid);
     return SPMI_SLAVE(dev);
 }
 
-bool spmi_slave_realize_and_unref(SPMISlave *dev, SPMIBus *bus, Error **errp)
-{
-    return qdev_realize_and_unref(&dev->qdev, &bus->qbus, errp);
-}
+bool spmi_slave_realize_and_unref(SPMISlave* dev, SPMIBus* bus, Error** errp)
+{ return qdev_realize_and_unref(&dev->qdev, &bus->qbus, errp); }
 
-SPMISlave *spmi_slave_create_simple(SPMIBus *bus, const char *name, uint8_t sid)
+SPMISlave* spmi_slave_create_simple(SPMIBus* bus, const char* name, uint8_t sid)
 {
-    SPMISlave *dev = spmi_slave_new(name, sid);
+    SPMISlave* dev = spmi_slave_new(name, sid);
 
     spmi_slave_realize_and_unref(dev, bus, &error_abort);
 
     return dev;
 }
 
-static void spmi_slave_class_init(ObjectClass *klass, const void *data)
+static void spmi_slave_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *k = DEVICE_CLASS(klass);
+    DeviceClass* k = DEVICE_CLASS(klass);
     set_bit(DEVICE_CATEGORY_MISC, k->categories);
     k->bus_type = TYPE_SPMI_BUS;
     device_class_set_props(k, spmi_props);
 }
 
 static const TypeInfo spmi_slave_type_info = {
-    .name = TYPE_SPMI_SLAVE,
-    .parent = TYPE_DEVICE,
+    .name          = TYPE_SPMI_SLAVE,
+    .parent        = TYPE_DEVICE,
     .instance_size = sizeof(SPMISlave),
-    .abstract = true,
-    .class_size = sizeof(SPMISlaveClass),
-    .class_init = spmi_slave_class_init,
+    .abstract      = true,
+    .class_size    = sizeof(SPMISlaveClass),
+    .class_init    = spmi_slave_class_init,
 };
 
 static void spmi_slave_register_types(void)

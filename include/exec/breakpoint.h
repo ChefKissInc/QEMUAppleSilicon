@@ -11,17 +11,19 @@
 #include "exec/vaddr.h"
 #include "exec/memattrs.h"
 
-typedef struct CPUBreakpoint {
+typedef struct CPUBreakpoint
+{
     vaddr pc;
-    int flags; /* BP_* */
+    int   flags; /* BP_* */
     QTAILQ_ENTRY(CPUBreakpoint) entry;
 } CPUBreakpoint;
 
-typedef struct CPUWatchpoint {
-    vaddr vaddr;
-    vaddr len;
-    vaddr hitaddr;
+typedef struct CPUWatchpoint
+{
+    vaddr      vaddr;
+    vaddr      len;
+    vaddr      hitaddr;
     MemTxAttrs hitattrs;
-    int flags; /* BP_* */
+    int        flags; /* BP_* */
     QTAILQ_ENTRY(CPUWatchpoint) entry;
 } CPUWatchpoint;

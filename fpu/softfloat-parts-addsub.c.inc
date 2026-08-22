@@ -15,13 +15,12 @@
  * indicated otherwise.
  */
 
-static void partsN(add_normal)(FloatPartsN *a, FloatPartsN *b)
+static void partsN(add_normal)(FloatPartsN* a, FloatPartsN* b)
 {
     int exp_diff = a->exp - b->exp;
 
-    if (exp_diff > 0) {
-        frac_shrjam(b, exp_diff);
-    } else if (exp_diff < 0) {
+    if (exp_diff > 0) { frac_shrjam(b, exp_diff); }
+    else if (exp_diff < 0) {
         frac_shrjam(a, -exp_diff);
         a->exp = b->exp;
     }
@@ -29,11 +28,11 @@ static void partsN(add_normal)(FloatPartsN *a, FloatPartsN *b)
     if (frac_add(a, a, b)) {
         frac_shrjam(a, 1);
         a->frac_hi |= DECOMPOSED_IMPLICIT_BIT;
-        a->exp += 1;
+        a->exp     += 1;
     }
 }
 
-static bool partsN(sub_normal)(FloatPartsN *a, FloatPartsN *b)
+static bool partsN(sub_normal)(FloatPartsN* a, FloatPartsN* b)
 {
     int exp_diff = a->exp - b->exp;
     int shift;
@@ -41,12 +40,14 @@ static bool partsN(sub_normal)(FloatPartsN *a, FloatPartsN *b)
     if (exp_diff > 0) {
         frac_shrjam(b, exp_diff);
         frac_sub(a, a, b);
-    } else if (exp_diff < 0) {
-        a->exp = b->exp;
+    }
+    else if (exp_diff < 0) {
+        a->exp   = b->exp;
         a->sign ^= 1;
         frac_shrjam(a, -exp_diff);
         frac_sub(a, b, a);
-    } else if (frac_sub(a, a, b)) {
+    }
+    else if (frac_sub(a, a, b)) {
         /* Overflow means that A was less than B. */
         frac_neg(a);
         a->sign ^= 1;
@@ -55,7 +56,7 @@ static bool partsN(sub_normal)(FloatPartsN *a, FloatPartsN *b)
     shift = frac_normalize(a);
     if (likely(shift < N)) {
         a->exp -= shift;
-	return true;
+        return true;
     }
     a->cls = float_class_zero;
     return false;

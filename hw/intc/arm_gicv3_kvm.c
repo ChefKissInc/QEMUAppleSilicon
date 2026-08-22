@@ -33,94 +33,73 @@
 #include "qom/object.h"
 #include "target/arm/cpregs.h"
 
-
 #ifdef DEBUG_GICV3_KVM
-#define DPRINTF(fmt, ...) \
-    do { fprintf(stderr, "kvm_gicv3: " fmt, ## __VA_ARGS__); } while (0)
+    #define DPRINTF(fmt, ...)                                  \
+        do {                                                   \
+            fprintf(stderr, "kvm_gicv3: " fmt, ##__VA_ARGS__); \
+        }                                                      \
+        while (0)
 #else
-#define DPRINTF(fmt, ...) \
-    do { } while (0)
+    #define DPRINTF(fmt, ...) \
+        do { }                \
+        while (0)
 #endif
 
 #define TYPE_KVM_ARM_GICV3 "kvm-arm-gicv3"
 typedef struct KVMARMGICv3Class KVMARMGICv3Class;
 /* This is reusing the GICv3State typedef from ARM_GICV3_ITS_COMMON */
-DECLARE_OBJ_CHECKERS(GICv3State, KVMARMGICv3Class,
-                     KVM_ARM_GICV3, TYPE_KVM_ARM_GICV3)
+DECLARE_OBJ_CHECKERS(GICv3State, KVMARMGICv3Class, KVM_ARM_GICV3, TYPE_KVM_ARM_GICV3)
 
-#define   KVM_DEV_ARM_VGIC_SYSREG(op0, op1, crn, crm, op2)         \
-                             (ARM64_SYS_REG_SHIFT_MASK(op0, OP0) | \
-                              ARM64_SYS_REG_SHIFT_MASK(op1, OP1) | \
-                              ARM64_SYS_REG_SHIFT_MASK(crn, CRN) | \
-                              ARM64_SYS_REG_SHIFT_MASK(crm, CRM) | \
-                              ARM64_SYS_REG_SHIFT_MASK(op2, OP2))
+#define KVM_DEV_ARM_VGIC_SYSREG(op0, op1, crn, crm, op2)                                                          \
+    (ARM64_SYS_REG_SHIFT_MASK(op0, OP0) | ARM64_SYS_REG_SHIFT_MASK(op1, OP1) | ARM64_SYS_REG_SHIFT_MASK(crn, CRN) \
+     | ARM64_SYS_REG_SHIFT_MASK(crm, CRM) | ARM64_SYS_REG_SHIFT_MASK(op2, OP2))
 
-#define ICC_PMR_EL1     \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 4, 6, 0)
-#define ICC_BPR0_EL1    \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 8, 3)
-#define ICC_AP0R_EL1(n) \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 8, 4 | n)
-#define ICC_AP1R_EL1(n) \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 9, n)
-#define ICC_BPR1_EL1    \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 3)
-#define ICC_CTLR_EL1    \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 4)
-#define ICC_SRE_EL1 \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 5)
-#define ICC_IGRPEN0_EL1 \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 6)
-#define ICC_IGRPEN1_EL1 \
-    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 7)
+#define ICC_PMR_EL1     KVM_DEV_ARM_VGIC_SYSREG(3, 0, 4, 6, 0)
+#define ICC_BPR0_EL1    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 8, 3)
+#define ICC_AP0R_EL1(n) KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 8, 4 | n)
+#define ICC_AP1R_EL1(n) KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 9, n)
+#define ICC_BPR1_EL1    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 3)
+#define ICC_CTLR_EL1    KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 4)
+#define ICC_SRE_EL1     KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 5)
+#define ICC_IGRPEN0_EL1 KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 6)
+#define ICC_IGRPEN1_EL1 KVM_DEV_ARM_VGIC_SYSREG(3, 0, 12, 12, 7)
 
-struct KVMARMGICv3Class {
+struct KVMARMGICv3Class
+{
     ARMGICv3CommonClass parent_class;
-    DeviceRealize parent_realize;
-    ResettablePhases parent_phases;
+    DeviceRealize       parent_realize;
+    ResettablePhases    parent_phases;
 };
 
-static void kvm_arm_gicv3_set_irq(void *opaque, int irq, int level)
+static void kvm_arm_gicv3_set_irq(void* opaque, int irq, int level)
 {
-    GICv3State *s = (GICv3State *)opaque;
+    GICv3State* s = (GICv3State*)opaque;
 
     kvm_arm_gic_set_irq(s->num_irq, irq, level);
 }
 
-#define KVM_VGIC_ATTR(reg, typer) \
-    ((typer & KVM_DEV_ARM_VGIC_V3_MPIDR_MASK) | (reg))
+#define KVM_VGIC_ATTR(reg, typer) ((typer & KVM_DEV_ARM_VGIC_V3_MPIDR_MASK) | (reg))
 
-static inline void kvm_gicd_access(GICv3State *s, int offset,
-                                   uint32_t *val, bool write)
+static inline void kvm_gicd_access(GICv3State* s, int offset, uint32_t* val, bool write)
+{ kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_DIST_REGS, KVM_VGIC_ATTR(offset, 0), val, write, &error_abort); }
+
+static inline void kvm_gicr_access(GICv3State* s, int offset, int cpu, uint32_t* val, bool write)
 {
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_DIST_REGS,
-                      KVM_VGIC_ATTR(offset, 0),
-                      val, write, &error_abort);
+    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_REDIST_REGS, KVM_VGIC_ATTR(offset, s->cpu[cpu].gicr_typer), val,
+                      write, &error_abort);
 }
 
-static inline void kvm_gicr_access(GICv3State *s, int offset, int cpu,
-                                   uint32_t *val, bool write)
+static inline void kvm_gicc_access(GICv3State* s, uint64_t reg, int cpu, uint64_t* val, bool write)
 {
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_REDIST_REGS,
-                      KVM_VGIC_ATTR(offset, s->cpu[cpu].gicr_typer),
-                      val, write, &error_abort);
+    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CPU_SYSREGS, KVM_VGIC_ATTR(reg, s->cpu[cpu].gicr_typer), val,
+                      write, &error_abort);
 }
 
-static inline void kvm_gicc_access(GICv3State *s, uint64_t reg, int cpu,
-                                   uint64_t *val, bool write)
-{
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CPU_SYSREGS,
-                      KVM_VGIC_ATTR(reg, s->cpu[cpu].gicr_typer),
-                      val, write, &error_abort);
-}
-
-static inline void kvm_gic_line_level_access(GICv3State *s, int irq, int cpu,
-                                             uint32_t *val, bool write)
+static inline void kvm_gic_line_level_access(GICv3State* s, int irq, int cpu, uint32_t* val, bool write)
 {
     kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_LEVEL_INFO,
-                      KVM_VGIC_ATTR(irq, s->cpu[cpu].gicr_typer) |
-                      (VGIC_LEVEL_INFO_LINE_LEVEL <<
-                       KVM_DEV_ARM_VGIC_LINE_LEVEL_INFO_SHIFT),
+                      KVM_VGIC_ATTR(irq, s->cpu[cpu].gicr_typer)
+                          | (VGIC_LEVEL_INFO_LINE_LEVEL << KVM_DEV_ARM_VGIC_LINE_LEVEL_INFO_SHIFT),
                       val, write, &error_abort);
 }
 
@@ -128,13 +107,13 @@ static inline void kvm_gic_line_level_access(GICv3State *s, int irq, int cpu,
  * corresponding to SPIs and PPIs are RAZ/WI when affinity routing
  * is enabled, we skip those.
  */
-#define for_each_dist_irq_reg(_irq, _max, _field_width) \
+#define for_each_dist_irq_reg(_irq, _max, _field_width)                 \
     for (_irq = GIC_INTERNAL; _irq < _max; _irq += (32 / _field_width))
 
-static void kvm_dist_get_priority(GICv3State *s, uint32_t offset, uint8_t *bmp)
+static void kvm_dist_get_priority(GICv3State* s, uint32_t offset, uint8_t* bmp)
 {
     uint32_t reg, *field;
-    int irq;
+    int      irq;
 
     /* For the KVM GICv3, affinity routing is always enabled, and the first 8
      * GICD_IPRIORITYR<n> registers are always RAZ/WI. The corresponding
@@ -142,20 +121,21 @@ static void kvm_dist_get_priority(GICv3State *s, uint32_t offset, uint8_t *bmp)
      * sync them. So it needs to skip the field of GIC_INTERNAL irqs in bmp and
      * offset.
      */
-    field = (uint32_t *)(bmp + GIC_INTERNAL);
+    field   = (uint32_t*)(bmp + GIC_INTERNAL);
     offset += (GIC_INTERNAL * 8) / 8;
-    for_each_dist_irq_reg(irq, s->num_irq, 8) {
+    for_each_dist_irq_reg(irq, s->num_irq, 8)
+    {
         kvm_gicd_access(s, offset, &reg, false);
-        *field = reg;
+        *field  = reg;
         offset += 4;
         field++;
     }
 }
 
-static void kvm_dist_put_priority(GICv3State *s, uint32_t offset, uint8_t *bmp)
+static void kvm_dist_put_priority(GICv3State* s, uint32_t offset, uint8_t* bmp)
 {
     uint32_t reg, *field;
-    int irq;
+    int      irq;
 
     /* For the KVM GICv3, affinity routing is always enabled, and the first 8
      * GICD_IPRIORITYR<n> registers are always RAZ/WI. The corresponding
@@ -163,9 +143,10 @@ static void kvm_dist_put_priority(GICv3State *s, uint32_t offset, uint8_t *bmp)
      * sync them. So it needs to skip the field of GIC_INTERNAL irqs in bmp and
      * offset.
      */
-    field = (uint32_t *)(bmp + GIC_INTERNAL);
+    field   = (uint32_t*)(bmp + GIC_INTERNAL);
     offset += (GIC_INTERNAL * 8) / 8;
-    for_each_dist_irq_reg(irq, s->num_irq, 8) {
+    for_each_dist_irq_reg(irq, s->num_irq, 8)
+    {
         reg = *field;
         kvm_gicd_access(s, offset, &reg, true);
         offset += 4;
@@ -173,11 +154,10 @@ static void kvm_dist_put_priority(GICv3State *s, uint32_t offset, uint8_t *bmp)
     }
 }
 
-static void kvm_dist_get_edge_trigger(GICv3State *s, uint32_t offset,
-                                      uint32_t *bmp)
+static void kvm_dist_get_edge_trigger(GICv3State* s, uint32_t offset, uint32_t* bmp)
 {
     uint32_t reg;
-    int irq;
+    int      irq;
 
     /* For the KVM GICv3, affinity routing is always enabled, and the first 2
      * GICD_ICFGR<n> registers are always RAZ/WI. The corresponding
@@ -187,22 +167,20 @@ static void kvm_dist_get_edge_trigger(GICv3State *s, uint32_t offset,
      * first GIC_INTERNAL irqs.
      */
     offset += (GIC_INTERNAL * 2) / 8;
-    for_each_dist_irq_reg(irq, s->num_irq, 2) {
+    for_each_dist_irq_reg(irq, s->num_irq, 2)
+    {
         kvm_gicd_access(s, offset, &reg, false);
         reg = half_unshuffle32(reg >> 1);
-        if (irq % 32 != 0) {
-            reg = (reg << 16);
-        }
-        *gic_bmp_ptr32(bmp, irq) |=  reg;
-        offset += 4;
+        if (irq % 32 != 0) { reg = (reg << 16); }
+        *gic_bmp_ptr32(bmp, irq) |= reg;
+        offset                   += 4;
     }
 }
 
-static void kvm_dist_put_edge_trigger(GICv3State *s, uint32_t offset,
-                                      uint32_t *bmp)
+static void kvm_dist_put_edge_trigger(GICv3State* s, uint32_t offset, uint32_t* bmp)
 {
     uint32_t reg;
-    int irq;
+    int      irq;
 
     /* For the KVM GICv3, affinity routing is always enabled, and the first 2
      * GICD_ICFGR<n> registers are always RAZ/WI. The corresponding
@@ -212,11 +190,11 @@ static void kvm_dist_put_edge_trigger(GICv3State *s, uint32_t offset,
      * first GIC_INTERNAL irqs.
      */
     offset += (GIC_INTERNAL * 2) / 8;
-    for_each_dist_irq_reg(irq, s->num_irq, 2) {
+    for_each_dist_irq_reg(irq, s->num_irq, 2)
+    {
         reg = *gic_bmp_ptr32(bmp, irq);
-        if (irq % 32 != 0) {
-            reg = (reg & 0xffff0000) >> 16;
-        } else {
+        if (irq % 32 != 0) { reg = (reg & 0xffff0000) >> 16; }
+        else {
             reg = reg & 0xffff;
         }
         reg = half_shuffle32(reg) << 1;
@@ -225,33 +203,35 @@ static void kvm_dist_put_edge_trigger(GICv3State *s, uint32_t offset,
     }
 }
 
-static void kvm_gic_get_line_level_bmp(GICv3State *s, uint32_t *bmp)
+static void kvm_gic_get_line_level_bmp(GICv3State* s, uint32_t* bmp)
 {
     uint32_t reg;
-    int irq;
+    int      irq;
 
-    for_each_dist_irq_reg(irq, s->num_irq, 1) {
+    for_each_dist_irq_reg(irq, s->num_irq, 1)
+    {
         kvm_gic_line_level_access(s, irq, 0, &reg, false);
         *gic_bmp_ptr32(bmp, irq) = reg;
     }
 }
 
-static void kvm_gic_put_line_level_bmp(GICv3State *s, uint32_t *bmp)
+static void kvm_gic_put_line_level_bmp(GICv3State* s, uint32_t* bmp)
 {
     uint32_t reg;
-    int irq;
+    int      irq;
 
-    for_each_dist_irq_reg(irq, s->num_irq, 1) {
+    for_each_dist_irq_reg(irq, s->num_irq, 1)
+    {
         reg = *gic_bmp_ptr32(bmp, irq);
         kvm_gic_line_level_access(s, irq, 0, &reg, true);
     }
 }
 
 /* Read a bitmap register group from the kernel VGIC. */
-static void kvm_dist_getbmp(GICv3State *s, uint32_t offset, uint32_t *bmp)
+static void kvm_dist_getbmp(GICv3State* s, uint32_t offset, uint32_t* bmp)
 {
     uint32_t reg;
-    int irq;
+    int      irq;
 
     /* For the KVM GICv3, affinity routing is always enabled, and the
      * GICD_IGROUPR0/GICD_IGRPMODR0/GICD_ISENABLER0/GICD_ISPENDR0/
@@ -262,18 +242,18 @@ static void kvm_dist_getbmp(GICv3State *s, uint32_t offset, uint32_t *bmp)
      * first GIC_INTERNAL irqs.
      */
     offset += (GIC_INTERNAL * 1) / 8;
-    for_each_dist_irq_reg(irq, s->num_irq, 1) {
+    for_each_dist_irq_reg(irq, s->num_irq, 1)
+    {
         kvm_gicd_access(s, offset, &reg, false);
-        *gic_bmp_ptr32(bmp, irq) = reg;
-        offset += 4;
+        *gic_bmp_ptr32(bmp, irq)  = reg;
+        offset                   += 4;
     }
 }
 
-static void kvm_dist_putbmp(GICv3State *s, uint32_t offset,
-                            uint32_t clroffset, uint32_t *bmp)
+static void kvm_dist_putbmp(GICv3State* s, uint32_t offset, uint32_t clroffset, uint32_t* bmp)
 {
     uint32_t reg;
-    int irq;
+    int      irq;
 
     /* For the KVM GICv3, affinity routing is always enabled, and the
      * GICD_IGROUPR0/GICD_IGRPMODR0/GICD_ISENABLER0/GICD_ISPENDR0/
@@ -284,11 +264,10 @@ static void kvm_dist_putbmp(GICv3State *s, uint32_t offset,
      * first GIC_INTERNAL irqs.
      */
     offset += (GIC_INTERNAL * 1) / 8;
-    if (clroffset != 0) {
-        clroffset += (GIC_INTERNAL * 1) / 8;
-    }
+    if (clroffset != 0) { clroffset += (GIC_INTERNAL * 1) / 8; }
 
-    for_each_dist_irq_reg(irq, s->num_irq, 1) {
+    for_each_dist_irq_reg(irq, s->num_irq, 1)
+    {
         /* If this bitmap is a set/clear register pair, first write to the
          * clear-reg to clear all bits before using the set-reg to write
          * the 1 bits.
@@ -304,7 +283,7 @@ static void kvm_dist_putbmp(GICv3State *s, uint32_t offset,
     }
 }
 
-static void kvm_arm_gicv3_check(GICv3State *s)
+static void kvm_arm_gicv3_check(GICv3State* s)
 {
     uint32_t reg;
     uint32_t num_irq;
@@ -314,17 +293,16 @@ static void kvm_arm_gicv3_check(GICv3State *s)
     num_irq = ((reg & 0x1f) + 1) * 32;
 
     if (num_irq < s->num_irq) {
-        error_report("Model requests %u IRQs, but kernel supports max %u",
-                     s->num_irq, num_irq);
+        error_report("Model requests %u IRQs, but kernel supports max %u", s->num_irq, num_irq);
         abort();
     }
 }
 
-static void kvm_arm_gicv3_put(GICv3State *s)
+static void kvm_arm_gicv3_put(GICv3State* s)
 {
     uint32_t regl, regh, reg;
     uint64_t reg64, redist_typer;
-    int ncpu, i;
+    int      ncpu, i;
 
     kvm_arm_gicv3_check(s);
 
@@ -341,16 +319,16 @@ static void kvm_arm_gicv3_put(GICv3State *s)
          * GICR_CTLR write
          */
         for (ncpu = 0; ncpu < s->num_cpu; ncpu++) {
-            GICv3CPUState *c = &s->cpu[ncpu];
+            GICv3CPUState* c = &s->cpu[ncpu];
 
             reg64 = c->gicr_propbaser;
-            regl = (uint32_t)reg64;
+            regl  = (uint32_t)reg64;
             kvm_gicr_access(s, GICR_PROPBASER, ncpu, &regl, true);
             regh = (uint32_t)(reg64 >> 32);
             kvm_gicr_access(s, GICR_PROPBASER + 4, ncpu, &regh, true);
 
             reg64 = c->gicr_pendbaser;
-            regl = (uint32_t)reg64;
+            regl  = (uint32_t)reg64;
             kvm_gicr_access(s, GICR_PENDBASER, ncpu, &regl, true);
             regh = (uint32_t)(reg64 >> 32);
             kvm_gicr_access(s, GICR_PENDBASER + 4, ncpu, &regh, true);
@@ -360,7 +338,7 @@ static void kvm_arm_gicv3_put(GICv3State *s)
     /* Redistributor state (one per CPU) */
 
     for (ncpu = 0; ncpu < s->num_cpu; ncpu++) {
-        GICv3CPUState *c = &s->cpu[ncpu];
+        GICv3CPUState* c = &s->cpu[ncpu];
 
         reg = c->gicr_ctlr;
         kvm_gicr_access(s, GICR_CTLR, ncpu, &reg, true);
@@ -395,10 +373,8 @@ static void kvm_arm_gicv3_put(GICv3State *s)
         kvm_gicr_access(s, GICR_ISACTIVER0, ncpu, &reg, true);
 
         for (i = 0; i < GIC_INTERNAL; i += 4) {
-            reg = c->gicr_ipriorityr[i] |
-                (c->gicr_ipriorityr[i + 1] << 8) |
-                (c->gicr_ipriorityr[i + 2] << 16) |
-                (c->gicr_ipriorityr[i + 3] << 24);
+            reg = c->gicr_ipriorityr[i] | (c->gicr_ipriorityr[i + 1] << 8) | (c->gicr_ipriorityr[i + 2] << 16)
+                  | (c->gicr_ipriorityr[i + 3] << 24);
             kvm_gicr_access(s, GICR_IPRIORITYR + i, ncpu, &reg, true);
         }
     }
@@ -424,11 +400,11 @@ static void kvm_arm_gicv3_put(GICv3State *s)
         uint32_t offset;
 
         offset = GICD_IROUTER + (sizeof(uint32_t) * i);
-        reg = (uint32_t)s->gicd_irouter[i];
+        reg    = (uint32_t)s->gicd_irouter[i];
         kvm_gicd_access(s, offset, &reg, true);
 
         offset = GICD_IROUTER + (sizeof(uint32_t) * i) + 4;
-        reg = (uint32_t)(s->gicd_irouter[i] >> 32);
+        reg    = (uint32_t)(s->gicd_irouter[i] >> 32);
         kvm_gicd_access(s, offset, &reg, true);
     }
 
@@ -453,63 +429,54 @@ static void kvm_arm_gicv3_put(GICv3State *s)
     /* CPU Interface state (one per CPU) */
 
     for (ncpu = 0; ncpu < s->num_cpu; ncpu++) {
-        GICv3CPUState *c = &s->cpu[ncpu];
-        int num_pri_bits;
+        GICv3CPUState* c = &s->cpu[ncpu];
+        int            num_pri_bits;
 
         kvm_gicc_access(s, ICC_SRE_EL1, ncpu, &c->icc_sre_el1, true);
-        kvm_gicc_access(s, ICC_CTLR_EL1, ncpu,
-                        &c->icc_ctlr_el1[GICV3_NS], true);
-        kvm_gicc_access(s, ICC_IGRPEN0_EL1, ncpu,
-                        &c->icc_igrpen[GICV3_G0], true);
-        kvm_gicc_access(s, ICC_IGRPEN1_EL1, ncpu,
-                        &c->icc_igrpen[GICV3_G1NS], true);
+        kvm_gicc_access(s, ICC_CTLR_EL1, ncpu, &c->icc_ctlr_el1[GICV3_NS], true);
+        kvm_gicc_access(s, ICC_IGRPEN0_EL1, ncpu, &c->icc_igrpen[GICV3_G0], true);
+        kvm_gicc_access(s, ICC_IGRPEN1_EL1, ncpu, &c->icc_igrpen[GICV3_G1NS], true);
         kvm_gicc_access(s, ICC_PMR_EL1, ncpu, &c->icc_pmr_el1, true);
         kvm_gicc_access(s, ICC_BPR0_EL1, ncpu, &c->icc_bpr[GICV3_G0], true);
         kvm_gicc_access(s, ICC_BPR1_EL1, ncpu, &c->icc_bpr[GICV3_G1NS], true);
 
-        num_pri_bits = ((c->icc_ctlr_el1[GICV3_NS] &
-                        ICC_CTLR_EL1_PRIBITS_MASK) >>
-                        ICC_CTLR_EL1_PRIBITS_SHIFT) + 1;
+        num_pri_bits = ((c->icc_ctlr_el1[GICV3_NS] & ICC_CTLR_EL1_PRIBITS_MASK) >> ICC_CTLR_EL1_PRIBITS_SHIFT) + 1;
 
         switch (num_pri_bits) {
-        case 7:
-            reg64 = c->icc_apr[GICV3_G0][3];
-            kvm_gicc_access(s, ICC_AP0R_EL1(3), ncpu, &reg64, true);
-            reg64 = c->icc_apr[GICV3_G0][2];
-            kvm_gicc_access(s, ICC_AP0R_EL1(2), ncpu, &reg64, true);
-            /* fall through */
-        case 6:
-            reg64 = c->icc_apr[GICV3_G0][1];
-            kvm_gicc_access(s, ICC_AP0R_EL1(1), ncpu, &reg64, true);
-            /* fall through */
-        default:
-            reg64 = c->icc_apr[GICV3_G0][0];
-            kvm_gicc_access(s, ICC_AP0R_EL1(0), ncpu, &reg64, true);
+            case 7:
+                reg64 = c->icc_apr[GICV3_G0][3];
+                kvm_gicc_access(s, ICC_AP0R_EL1(3), ncpu, &reg64, true);
+                reg64 = c->icc_apr[GICV3_G0][2];
+                kvm_gicc_access(s, ICC_AP0R_EL1(2), ncpu, &reg64, true);
+                /* fall through */
+            case 6:
+                reg64 = c->icc_apr[GICV3_G0][1];
+                kvm_gicc_access(s, ICC_AP0R_EL1(1), ncpu, &reg64, true);
+                /* fall through */
+            default: reg64 = c->icc_apr[GICV3_G0][0]; kvm_gicc_access(s, ICC_AP0R_EL1(0), ncpu, &reg64, true);
         }
 
         switch (num_pri_bits) {
-        case 7:
-            reg64 = c->icc_apr[GICV3_G1NS][3];
-            kvm_gicc_access(s, ICC_AP1R_EL1(3), ncpu, &reg64, true);
-            reg64 = c->icc_apr[GICV3_G1NS][2];
-            kvm_gicc_access(s, ICC_AP1R_EL1(2), ncpu, &reg64, true);
-            /* fall through */
-        case 6:
-            reg64 = c->icc_apr[GICV3_G1NS][1];
-            kvm_gicc_access(s, ICC_AP1R_EL1(1), ncpu, &reg64, true);
-            /* fall through */
-        default:
-            reg64 = c->icc_apr[GICV3_G1NS][0];
-            kvm_gicc_access(s, ICC_AP1R_EL1(0), ncpu, &reg64, true);
+            case 7:
+                reg64 = c->icc_apr[GICV3_G1NS][3];
+                kvm_gicc_access(s, ICC_AP1R_EL1(3), ncpu, &reg64, true);
+                reg64 = c->icc_apr[GICV3_G1NS][2];
+                kvm_gicc_access(s, ICC_AP1R_EL1(2), ncpu, &reg64, true);
+                /* fall through */
+            case 6:
+                reg64 = c->icc_apr[GICV3_G1NS][1];
+                kvm_gicc_access(s, ICC_AP1R_EL1(1), ncpu, &reg64, true);
+                /* fall through */
+            default: reg64 = c->icc_apr[GICV3_G1NS][0]; kvm_gicc_access(s, ICC_AP1R_EL1(0), ncpu, &reg64, true);
         }
     }
 }
 
-static void kvm_arm_gicv3_get(GICv3State *s)
+static void kvm_arm_gicv3_get(GICv3State* s)
 {
     uint32_t regl, regh, reg;
     uint64_t reg64, redist_typer;
-    int ncpu, i;
+    int      ncpu, i;
 
     kvm_arm_gicv3_check(s);
 
@@ -523,7 +490,7 @@ static void kvm_arm_gicv3_get(GICv3State *s)
     /* Redistributor state (one per CPU) */
 
     for (ncpu = 0; ncpu < s->num_cpu; ncpu++) {
-        GICv3CPUState *c = &s->cpu[ncpu];
+        GICv3CPUState* c = &s->cpu[ncpu];
 
         kvm_gicr_access(s, GICR_CTLR, ncpu, &reg, false);
         c->gicr_ctlr = reg;
@@ -549,7 +516,7 @@ static void kvm_arm_gicv3_get(GICv3State *s)
 
         for (i = 0; i < GIC_INTERNAL; i += 4) {
             kvm_gicr_access(s, GICR_IPRIORITYR + i, ncpu, &reg, false);
-            c->gicr_ipriorityr[i] = extract32(reg, 0, 8);
+            c->gicr_ipriorityr[i]     = extract32(reg, 0, 8);
             c->gicr_ipriorityr[i + 1] = extract32(reg, 8, 8);
             c->gicr_ipriorityr[i + 2] = extract32(reg, 16, 8);
             c->gicr_ipriorityr[i + 3] = extract32(reg, 24, 8);
@@ -558,7 +525,7 @@ static void kvm_arm_gicv3_get(GICv3State *s)
 
     if (redist_typer & GICR_TYPER_PLPIS) {
         for (ncpu = 0; ncpu < s->num_cpu; ncpu++) {
-            GICv3CPUState *c = &s->cpu[ncpu];
+            GICv3CPUState* c = &s->cpu[ncpu];
 
             kvm_gicr_access(s, GICR_PROPBASER, ncpu, &regl, false);
             kvm_gicr_access(s, GICR_PROPBASER + 4, ncpu, &regh, false);
@@ -611,63 +578,54 @@ static void kvm_arm_gicv3_get(GICv3State *s)
      */
 
     for (ncpu = 0; ncpu < s->num_cpu; ncpu++) {
-        GICv3CPUState *c = &s->cpu[ncpu];
-        int num_pri_bits;
+        GICv3CPUState* c = &s->cpu[ncpu];
+        int            num_pri_bits;
 
         kvm_gicc_access(s, ICC_SRE_EL1, ncpu, &c->icc_sre_el1, false);
-        kvm_gicc_access(s, ICC_CTLR_EL1, ncpu,
-                        &c->icc_ctlr_el1[GICV3_NS], false);
-        kvm_gicc_access(s, ICC_IGRPEN0_EL1, ncpu,
-                        &c->icc_igrpen[GICV3_G0], false);
-        kvm_gicc_access(s, ICC_IGRPEN1_EL1, ncpu,
-                        &c->icc_igrpen[GICV3_G1NS], false);
+        kvm_gicc_access(s, ICC_CTLR_EL1, ncpu, &c->icc_ctlr_el1[GICV3_NS], false);
+        kvm_gicc_access(s, ICC_IGRPEN0_EL1, ncpu, &c->icc_igrpen[GICV3_G0], false);
+        kvm_gicc_access(s, ICC_IGRPEN1_EL1, ncpu, &c->icc_igrpen[GICV3_G1NS], false);
         kvm_gicc_access(s, ICC_PMR_EL1, ncpu, &c->icc_pmr_el1, false);
         kvm_gicc_access(s, ICC_BPR0_EL1, ncpu, &c->icc_bpr[GICV3_G0], false);
         kvm_gicc_access(s, ICC_BPR1_EL1, ncpu, &c->icc_bpr[GICV3_G1NS], false);
-        num_pri_bits = ((c->icc_ctlr_el1[GICV3_NS] &
-                        ICC_CTLR_EL1_PRIBITS_MASK) >>
-                        ICC_CTLR_EL1_PRIBITS_SHIFT) + 1;
+        num_pri_bits = ((c->icc_ctlr_el1[GICV3_NS] & ICC_CTLR_EL1_PRIBITS_MASK) >> ICC_CTLR_EL1_PRIBITS_SHIFT) + 1;
 
         switch (num_pri_bits) {
-        case 7:
-            kvm_gicc_access(s, ICC_AP0R_EL1(3), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G0][3] = reg64;
-            kvm_gicc_access(s, ICC_AP0R_EL1(2), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G0][2] = reg64;
-            /* fall through */
-        case 6:
-            kvm_gicc_access(s, ICC_AP0R_EL1(1), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G0][1] = reg64;
-            /* fall through */
-        default:
-            kvm_gicc_access(s, ICC_AP0R_EL1(0), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G0][0] = reg64;
+            case 7:
+                kvm_gicc_access(s, ICC_AP0R_EL1(3), ncpu, &reg64, false);
+                c->icc_apr[GICV3_G0][3] = reg64;
+                kvm_gicc_access(s, ICC_AP0R_EL1(2), ncpu, &reg64, false);
+                c->icc_apr[GICV3_G0][2] = reg64;
+                /* fall through */
+            case 6:
+                kvm_gicc_access(s, ICC_AP0R_EL1(1), ncpu, &reg64, false);
+                c->icc_apr[GICV3_G0][1] = reg64;
+                /* fall through */
+            default: kvm_gicc_access(s, ICC_AP0R_EL1(0), ncpu, &reg64, false); c->icc_apr[GICV3_G0][0] = reg64;
         }
 
         switch (num_pri_bits) {
-        case 7:
-            kvm_gicc_access(s, ICC_AP1R_EL1(3), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G1NS][3] = reg64;
-            kvm_gicc_access(s, ICC_AP1R_EL1(2), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G1NS][2] = reg64;
-            /* fall through */
-        case 6:
-            kvm_gicc_access(s, ICC_AP1R_EL1(1), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G1NS][1] = reg64;
-            /* fall through */
-        default:
-            kvm_gicc_access(s, ICC_AP1R_EL1(0), ncpu, &reg64, false);
-            c->icc_apr[GICV3_G1NS][0] = reg64;
+            case 7:
+                kvm_gicc_access(s, ICC_AP1R_EL1(3), ncpu, &reg64, false);
+                c->icc_apr[GICV3_G1NS][3] = reg64;
+                kvm_gicc_access(s, ICC_AP1R_EL1(2), ncpu, &reg64, false);
+                c->icc_apr[GICV3_G1NS][2] = reg64;
+                /* fall through */
+            case 6:
+                kvm_gicc_access(s, ICC_AP1R_EL1(1), ncpu, &reg64, false);
+                c->icc_apr[GICV3_G1NS][1] = reg64;
+                /* fall through */
+            default: kvm_gicc_access(s, ICC_AP1R_EL1(0), ncpu, &reg64, false); c->icc_apr[GICV3_G1NS][0] = reg64;
         }
     }
 }
 
-static void arm_gicv3_icc_reset(CPUARMState *env, const ARMCPRegInfo *ri)
+static void arm_gicv3_icc_reset(CPUARMState* env, const ARMCPRegInfo* ri)
 {
-    GICv3State *s;
-    GICv3CPUState *c;
+    GICv3State*    s;
+    GICv3CPUState* c;
 
-    c = (GICv3CPUState *)env->gicv3state;
+    c = (GICv3CPUState*)env->gicv3state;
     s = c->gic;
 
     c->icc_pmr_el1 = 0;
@@ -681,8 +639,8 @@ static void arm_gicv3_icc_reset(CPUARMState *env, const ARMCPRegInfo *ri)
      * them effectively resetting to the correct minimum value
      * for the host GIC.
      */
-    c->icc_bpr[GICV3_G0] = 0;
-    c->icc_bpr[GICV3_G1] = 0;
+    c->icc_bpr[GICV3_G0]   = 0;
+    c->icc_bpr[GICV3_G1]   = 0;
     c->icc_bpr[GICV3_G1NS] = 0;
 
     c->icc_sre_el1 = 0x7;
@@ -690,23 +648,20 @@ static void arm_gicv3_icc_reset(CPUARMState *env, const ARMCPRegInfo *ri)
     memset(c->icc_igrpen, 0, sizeof(c->icc_igrpen));
 
     /* Initialize to actual HW supported configuration */
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CPU_SYSREGS,
-                      KVM_VGIC_ATTR(ICC_CTLR_EL1, c->gicr_typer),
+    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CPU_SYSREGS, KVM_VGIC_ATTR(ICC_CTLR_EL1, c->gicr_typer),
                       &c->icc_ctlr_el1[GICV3_NS], false, &error_abort);
 
     c->icc_ctlr_el1[GICV3_S] = c->icc_ctlr_el1[GICV3_NS];
 }
 
-static void kvm_arm_gicv3_reset_hold(Object *obj, ResetType type)
+static void kvm_arm_gicv3_reset_hold(Object* obj, ResetType type)
 {
-    GICv3State *s = ARM_GICV3_COMMON(obj);
-    KVMARMGICv3Class *kgc = KVM_ARM_GICV3_GET_CLASS(s);
+    GICv3State*       s   = ARM_GICV3_COMMON(obj);
+    KVMARMGICv3Class* kgc = KVM_ARM_GICV3_GET_CLASS(s);
 
     DPRINTF("Reset\n");
 
-    if (kgc->parent_phases.hold) {
-        kgc->parent_phases.hold(obj, type);
-    }
+    if (kgc->parent_phases.hold) { kgc->parent_phases.hold(obj, type); }
 
     kvm_arm_gicv3_put(s);
 }
@@ -719,22 +674,28 @@ static void kvm_arm_gicv3_reset_hold(Object *obj, ResetType type)
  * of defining all the registers.
  */
 static const ARMCPRegInfo gicv3_cpuif_reginfo[] = {
-    { .name = "ICC_CTLR_EL1", .state = ARM_CP_STATE_BOTH,
-      .opc0 = 3, .opc1 = 0, .crn = 12, .crm = 12, .opc2 = 4,
-      /*
-       * If ARM_CP_NOP is used, resetfn is not called,
-       * So ARM_CP_NO_RAW is appropriate type.
-       */
-      .type = ARM_CP_NO_RAW,
-      .access = PL1_RW,
-      .readfn = arm_cp_read_zero,
-      .writefn = arm_cp_write_ignore,
-      /*
-       * We hang the whole cpu interface reset routine off here
-       * rather than parcelling it out into one little function
-       * per register
-       */
-      .resetfn = arm_gicv3_icc_reset,
+    {
+        .name  = "ICC_CTLR_EL1",
+        .state = ARM_CP_STATE_BOTH,
+        .opc0  = 3,
+        .opc1  = 0,
+        .crn   = 12,
+        .crm   = 12,
+        .opc2  = 4,
+        /*
+         * If ARM_CP_NOP is used, resetfn is not called,
+         * So ARM_CP_NO_RAW is appropriate type.
+         */
+        .type    = ARM_CP_NO_RAW,
+        .access  = PL1_RW,
+        .readfn  = arm_cp_read_zero,
+        .writefn = arm_cp_write_ignore,
+        /*
+         * We hang the whole cpu interface reset routine off here
+         * rather than parcelling it out into one little function
+         * per register
+         */
+        .resetfn = arm_gicv3_icc_reset,
     },
 };
 
@@ -744,47 +705,37 @@ static const ARMCPRegInfo gicv3_cpuif_reginfo[] = {
  *
  * The tables get flushed to guest RAM whenever the VM gets stopped.
  */
-static void vm_change_state_handler(void *opaque, bool running,
-                                    RunState state)
+static void vm_change_state_handler(void* opaque, bool running, RunState state)
 {
-    GICv3State *s = (GICv3State *)opaque;
-    Error *err = NULL;
-    int ret;
+    GICv3State* s   = (GICv3State*)opaque;
+    Error*      err = NULL;
+    int         ret;
 
-    if (running) {
-        return;
-    }
+    if (running) { return; }
 
-    ret = kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
-                           KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES,
-                           NULL, true, &err);
-    if (err) {
-        error_report_err(err);
-    }
-    if (ret < 0 && ret != -EFAULT) {
-        abort();
-    }
+    ret =
+        kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL, KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES, NULL, true, &err);
+    if (err) { error_report_err(err); }
+    if (ret < 0 && ret != -EFAULT) { abort(); }
 }
 
-static int kvm_arm_gicv3_notifier(NotifierWithReturn *notifier,
-                                  MigrationEvent *e, Error **errp)
+static int kvm_arm_gicv3_notifier(NotifierWithReturn* notifier, MigrationEvent* e, Error** errp)
 {
     if (e->type == MIG_EVENT_PRECOPY_DONE) {
-        GICv3State *s = container_of(notifier, GICv3State, cpr_notifier);
-        return kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
-                                 KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES,
-                                 NULL, true, errp);
+        GICv3State* s = container_of(notifier, GICv3State, cpr_notifier);
+        return kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL, KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES, NULL, true,
+                                 errp);
     }
     return 0;
 }
 
-static void kvm_arm_gicv3_realize(DeviceState *dev, Error **errp)
+static void kvm_arm_gicv3_realize(DeviceState* dev, Error** errp)
 {
-    GICv3State *s = KVM_ARM_GICV3(dev);
-    KVMARMGICv3Class *kgc = KVM_ARM_GICV3_GET_CLASS(s);
-    bool multiple_redist_region_allowed;
-    Error *local_err = NULL;
-    int i;
+    GICv3State*       s   = KVM_ARM_GICV3(dev);
+    KVMARMGICv3Class* kgc = KVM_ARM_GICV3_GET_CLASS(s);
+    bool              multiple_redist_region_allowed;
+    Error*            local_err = NULL;
+    int               i;
 
     DPRINTF("kvm_arm_gicv3_realize\n");
 
@@ -794,14 +745,11 @@ static void kvm_arm_gicv3_realize(DeviceState *dev, Error **errp)
         return;
     }
 
-    if (s->revision != 3) {
-        error_setg(errp, "unsupported GIC revision %d for in-kernel GIC",
-                   s->revision);
-    }
+    if (s->revision != 3) { error_setg(errp, "unsupported GIC revision %d for in-kernel GIC", s->revision); }
 
     if (s->security_extn) {
         error_setg(errp, "the in-kernel VGICv3 does not implement the "
-                   "security extensions");
+                         "security extensions");
         return;
     }
 
@@ -813,7 +761,7 @@ static void kvm_arm_gicv3_realize(DeviceState *dev, Error **errp)
     gicv3_init_irqs_and_mmio(s, kvm_arm_gicv3_set_irq, NULL);
 
     for (i = 0; i < s->num_cpu; i++) {
-        ARMCPU *cpu = ARM_CPU(qemu_get_cpu(i));
+        ARMCPU* cpu = ARM_CPU(qemu_get_cpu(i));
 
         define_arm_cp_regs(cpu, gicv3_cpuif_reginfo);
     }
@@ -828,8 +776,7 @@ static void kvm_arm_gicv3_realize(DeviceState *dev, Error **errp)
     if (s->maint_irq) {
         int ret;
 
-        ret = kvm_device_check_attr(s->dev_fd,
-                                    KVM_DEV_ARM_VGIC_GRP_MAINT_IRQ, 0);
+        ret = kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_MAINT_IRQ, 0);
         if (!ret) {
             error_setg_errno(errp, errno,
                              "VGICv3 setting maintenance IRQ is not "
@@ -837,98 +784,81 @@ static void kvm_arm_gicv3_realize(DeviceState *dev, Error **errp)
             return;
         }
 
-        ret = kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_MAINT_IRQ, 0,
-                                &s->maint_irq, true, errp);
+        ret = kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_MAINT_IRQ, 0, &s->maint_irq, true, errp);
         if (ret) {
             error_setg_errno(errp, errno, "Failed to set VGIC maintenance IRQ");
             return;
-       }
+        }
     }
 
     multiple_redist_region_allowed =
-        kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ADDR,
-                              KVM_VGIC_V3_ADDR_TYPE_REDIST_REGION);
+        kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_ADDR, KVM_VGIC_V3_ADDR_TYPE_REDIST_REGION);
 
     if (!multiple_redist_region_allowed && s->nb_redist_regions > 1) {
         error_setg(errp, "Multiple VGICv3 redistributor regions are not "
-                   "supported by this host kernel");
-        error_append_hint(errp, "A maximum of %d VCPUs can be used",
-                          s->redist_region_count[0]);
+                         "supported by this host kernel");
+        error_append_hint(errp, "A maximum of %d VCPUs can be used", s->redist_region_count[0]);
         return;
     }
 
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_NR_IRQS,
-                      0, &s->num_irq, true, &error_abort);
+    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_NR_IRQS, 0, &s->num_irq, true, &error_abort);
 
     /* Tell the kernel to complete VGIC initialization now */
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
-                      KVM_DEV_ARM_VGIC_CTRL_INIT, NULL, true, &error_abort);
+    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL, KVM_DEV_ARM_VGIC_CTRL_INIT, NULL, true, &error_abort);
 
-    kvm_arm_register_device(&s->iomem_dist, -1, KVM_DEV_ARM_VGIC_GRP_ADDR,
-                            KVM_VGIC_V3_ADDR_TYPE_DIST, s->dev_fd, 0);
+    kvm_arm_register_device(&s->iomem_dist, -1, KVM_DEV_ARM_VGIC_GRP_ADDR, KVM_VGIC_V3_ADDR_TYPE_DIST, s->dev_fd, 0);
 
     if (!multiple_redist_region_allowed) {
-        kvm_arm_register_device(&s->redist_regions[0].iomem, -1,
-                                KVM_DEV_ARM_VGIC_GRP_ADDR,
+        kvm_arm_register_device(&s->redist_regions[0].iomem, -1, KVM_DEV_ARM_VGIC_GRP_ADDR,
                                 KVM_VGIC_V3_ADDR_TYPE_REDIST, s->dev_fd, 0);
-    } else {
+    }
+    else {
         /* we register regions in reverse order as "devices" are inserted at
          * the head of a QSLIST and the list is then popped from the head
          * onwards by kvm_arm_machine_init_done()
          */
         for (i = s->nb_redist_regions - 1; i >= 0; i--) {
             /* Address mask made of the rdist region index and count */
-            uint64_t addr_ormask =
-                        i | ((uint64_t)s->redist_region_count[i] << 52);
+            uint64_t addr_ormask = i | ((uint64_t)s->redist_region_count[i] << 52);
 
-            kvm_arm_register_device(&s->redist_regions[i].iomem, -1,
-                                    KVM_DEV_ARM_VGIC_GRP_ADDR,
-                                    KVM_VGIC_V3_ADDR_TYPE_REDIST_REGION,
-                                    s->dev_fd, addr_ormask);
+            kvm_arm_register_device(&s->redist_regions[i].iomem, -1, KVM_DEV_ARM_VGIC_GRP_ADDR,
+                                    KVM_VGIC_V3_ADDR_TYPE_REDIST_REGION, s->dev_fd, addr_ormask);
         }
     }
 
     if (kvm_has_gsi_routing()) {
         /* set up irq routing */
-        for (i = 0; i < s->num_irq - GIC_INTERNAL; ++i) {
-            kvm_irqchip_add_irq_route(kvm_state, i, 0, i);
-        }
+        for (i = 0; i < s->num_irq - GIC_INTERNAL; ++i) { kvm_irqchip_add_irq_route(kvm_state, i, 0, i); }
 
         kvm_gsi_routing_allowed = true;
 
         kvm_irqchip_commit_routes(kvm_state);
     }
 
-    if (kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
-                              KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES)) {
+    if (kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL, KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES)) {
         qemu_add_vm_change_state_handler(vm_change_state_handler, s);
     }
 }
 
-static void kvm_arm_gicv3_class_init(ObjectClass *klass, const void *data)
+static void kvm_arm_gicv3_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
-    ResettableClass *rc = RESETTABLE_CLASS(klass);
-    ARMGICv3CommonClass *agcc = ARM_GICV3_COMMON_CLASS(klass);
-    KVMARMGICv3Class *kgc = KVM_ARM_GICV3_CLASS(klass);
+    DeviceClass*         dc   = DEVICE_CLASS(klass);
+    ResettableClass*     rc   = RESETTABLE_CLASS(klass);
+    ARMGICv3CommonClass* agcc = ARM_GICV3_COMMON_CLASS(klass);
+    KVMARMGICv3Class*    kgc  = KVM_ARM_GICV3_CLASS(klass);
 
-    device_class_set_parent_realize(dc, kvm_arm_gicv3_realize,
-                                    &kgc->parent_realize);
-    resettable_class_set_parent_phases(rc, NULL, kvm_arm_gicv3_reset_hold, NULL,
-                                       &kgc->parent_phases);
+    device_class_set_parent_realize(dc, kvm_arm_gicv3_realize, &kgc->parent_realize);
+    resettable_class_set_parent_phases(rc, NULL, kvm_arm_gicv3_reset_hold, NULL, &kgc->parent_phases);
 }
 
 static const TypeInfo kvm_arm_gicv3_info = {
-    .name = TYPE_KVM_ARM_GICV3,
-    .parent = TYPE_ARM_GICV3_COMMON,
+    .name          = TYPE_KVM_ARM_GICV3,
+    .parent        = TYPE_ARM_GICV3_COMMON,
     .instance_size = sizeof(GICv3State),
-    .class_init = kvm_arm_gicv3_class_init,
-    .class_size = sizeof(KVMARMGICv3Class),
+    .class_init    = kvm_arm_gicv3_class_init,
+    .class_size    = sizeof(KVMARMGICv3Class),
 };
 
-static void kvm_arm_gicv3_register_types(void)
-{
-    type_register_static(&kvm_arm_gicv3_info);
-}
+static void kvm_arm_gicv3_register_types(void) { type_register_static(&kvm_arm_gicv3_info); }
 
 type_init(kvm_arm_gicv3_register_types)

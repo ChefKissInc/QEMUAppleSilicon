@@ -37,20 +37,19 @@
 
 #define PATH_NET_TUN "/dev/net/tun"
 
-int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
-             int vnet_hdr_required, int mq_required, Error **errp)
+int tap_open(char* ifname, int ifname_size, int* vnet_hdr, int vnet_hdr_required, int mq_required, Error** errp)
 {
     struct ifreq ifr;
-    int fd, ret;
-    int len = sizeof(struct virtio_net_hdr);
+    int          fd, ret;
+    int          len = sizeof(struct virtio_net_hdr);
     unsigned int features;
-
 
     ret = if_nametoindex(ifname);
     if (ret) {
-        g_autofree char *file = g_strdup_printf("/dev/tap%d", ret);
-        fd = open(file, O_RDWR);
-    } else {
+        g_autofree char* file = g_strdup_printf("/dev/tap%d", ret);
+        fd                    = open(file, O_RDWR);
+    }
+    else {
         fd = -1;
     }
 
@@ -69,21 +68,20 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
         features = 0;
     }
 
-    if (features & IFF_ONE_QUEUE) {
-        ifr.ifr_flags |= IFF_ONE_QUEUE;
-    }
+    if (features & IFF_ONE_QUEUE) { ifr.ifr_flags |= IFF_ONE_QUEUE; }
 
     if (*vnet_hdr) {
         if (features & IFF_VNET_HDR) {
-            *vnet_hdr = 1;
+            *vnet_hdr      = 1;
             ifr.ifr_flags |= IFF_VNET_HDR;
-        } else {
+        }
+        else {
             *vnet_hdr = 0;
         }
 
         if (vnet_hdr_required && !*vnet_hdr) {
             error_setg(errp, "vnet_hdr=1 requested, but no kernel "
-                       "support for IFF_VNET_HDR available");
+                             "support for IFF_VNET_HDR available");
             close(fd);
             return -1;
         }
@@ -99,26 +97,26 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
     if (mq_required) {
         if (!(features & IFF_MULTI_QUEUE)) {
             error_setg(errp, "multiqueue required, but no kernel "
-                       "support for IFF_MULTI_QUEUE available");
+                             "support for IFF_MULTI_QUEUE available");
             close(fd);
             return -1;
-        } else {
+        }
+        else {
             ifr.ifr_flags |= IFF_MULTI_QUEUE;
         }
     }
 
-    if (ifname[0] != '\0')
-        pstrcpy(ifr.ifr_name, IFNAMSIZ, ifname);
-    else
+    if (ifname[0] != '\0') { pstrcpy(ifr.ifr_name, IFNAMSIZ, ifname); }
+    else {
         pstrcpy(ifr.ifr_name, IFNAMSIZ, "tap%d");
-    ret = ioctl(fd, TUNSETIFF, (void *) &ifr);
+    }
+    ret = ioctl(fd, TUNSETIFF, (void*)&ifr);
     if (ret != 0) {
         if (ifname[0] != '\0') {
-            error_setg_errno(errp, errno, "could not configure %s (%s)",
-                             PATH_NET_TUN, ifr.ifr_name);
-        } else {
-            error_setg_errno(errp, errno, "could not configure %s",
-                             PATH_NET_TUN);
+            error_setg_errno(errp, errno, "could not configure %s (%s)", PATH_NET_TUN, ifr.ifr_name);
+        }
+        else {
+            error_setg_errno(errp, errno, "could not configure %s", PATH_NET_TUN);
         }
         close(fd);
         return -1;
@@ -145,32 +143,27 @@ int tap_open(char *ifname, int ifname_size, int *vnet_hdr,
  */
 #define TAP_DEFAULT_SNDBUF 0
 
-void tap_set_sndbuf(int fd, const NetdevTapOptions *tap, Error **errp)
+void tap_set_sndbuf(int fd, const NetdevTapOptions* tap, Error** errp)
 {
     int sndbuf;
 
-    sndbuf = !tap->has_sndbuf       ? TAP_DEFAULT_SNDBUF :
-             tap->sndbuf > INT_MAX  ? INT_MAX :
-             tap->sndbuf;
+    sndbuf = !tap->has_sndbuf ? TAP_DEFAULT_SNDBUF : tap->sndbuf > INT_MAX ? INT_MAX : tap->sndbuf;
 
-    if (!sndbuf) {
-        sndbuf = INT_MAX;
-    }
+    if (!sndbuf) { sndbuf = INT_MAX; }
 
     if (ioctl(fd, TUNSETSNDBUF, &sndbuf) == -1 && tap->has_sndbuf) {
         error_setg_errno(errp, errno, "TUNSETSNDBUF ioctl failed");
     }
 }
 
-int tap_probe_vnet_hdr(int fd, Error **errp)
+int tap_probe_vnet_hdr(int fd, Error** errp)
 {
     struct ifreq ifr;
     memset(&ifr, 0, sizeof(ifr));
 
     if (ioctl(fd, TUNGETIFF, &ifr) != 0) {
         /* TUNGETIFF is available since kernel v2.6.27 */
-        error_setg_errno(errp, errno,
-                         "Unable to query TUNGETIFF on FD %d", fd);
+        error_setg_errno(errp, errno, "Unable to query TUNGETIFF on FD %d", fd);
         return -1;
     }
 
@@ -183,8 +176,7 @@ int tap_probe_has_ufo(int fd)
 
     offload = TUN_F_CSUM | TUN_F_UFO;
 
-    if (ioctl(fd, TUNSETOFFLOAD, offload) < 0)
-        return 0;
+    if (ioctl(fd, TUNSETOFFLOAD, offload) < 0) { return 0; }
 
     return 1;
 }
@@ -195,17 +187,14 @@ int tap_probe_has_uso(int fd)
 
     offload = TUN_F_CSUM | TUN_F_USO4 | TUN_F_USO6;
 
-    if (ioctl(fd, TUNSETOFFLOAD, offload) < 0) {
-        return 0;
-    }
+    if (ioctl(fd, TUNSETOFFLOAD, offload) < 0) { return 0; }
     return 1;
 }
 
 void tap_fd_set_vnet_hdr_len(int fd, int len)
 {
     if (ioctl(fd, TUNSETVNETHDRSZ, &len) == -1) {
-        fprintf(stderr, "TUNSETVNETHDRSZ ioctl() failed: %s. Exiting.\n",
-                strerror(errno));
+        fprintf(stderr, "TUNSETVNETHDRSZ ioctl() failed: %s. Exiting.\n", strerror(errno));
         abort();
     }
 }
@@ -214,14 +203,10 @@ int tap_fd_set_vnet_le(int fd, int is_le)
 {
     int arg = is_le ? 1 : 0;
 
-    if (!ioctl(fd, TUNSETVNETLE, &arg)) {
-        return 0;
-    }
+    if (!ioctl(fd, TUNSETVNETLE, &arg)) { return 0; }
 
     /* Check if our kernel supports TUNSETVNETLE */
-    if (errno == EINVAL) {
-        return -errno;
-    }
+    if (errno == EINVAL) { return -errno; }
 
     error_report("TUNSETVNETLE ioctl() failed: %s.", strerror(errno));
     abort();
@@ -231,45 +216,30 @@ int tap_fd_set_vnet_be(int fd, int is_be)
 {
     int arg = is_be ? 1 : 0;
 
-    if (!ioctl(fd, TUNSETVNETBE, &arg)) {
-        return 0;
-    }
+    if (!ioctl(fd, TUNSETVNETBE, &arg)) { return 0; }
 
     /* Check if our kernel supports TUNSETVNETBE */
-    if (errno == EINVAL) {
-        return -errno;
-    }
+    if (errno == EINVAL) { return -errno; }
 
     error_report("TUNSETVNETBE ioctl() failed: %s.", strerror(errno));
     abort();
 }
 
-void tap_fd_set_offload(int fd, int csum, int tso4,
-                        int tso6, int ecn, int ufo, int uso4, int uso6)
+void tap_fd_set_offload(int fd, int csum, int tso4, int tso6, int ecn, int ufo, int uso4, int uso6)
 {
     unsigned int offload = 0;
 
     /* Check if our kernel supports TUNSETOFFLOAD */
-    if (ioctl(fd, TUNSETOFFLOAD, 0) != 0 && errno == EINVAL) {
-        return;
-    }
+    if (ioctl(fd, TUNSETOFFLOAD, 0) != 0 && errno == EINVAL) { return; }
 
     if (csum) {
         offload |= TUN_F_CSUM;
-        if (tso4)
-            offload |= TUN_F_TSO4;
-        if (tso6)
-            offload |= TUN_F_TSO6;
-        if ((tso4 || tso6) && ecn)
-            offload |= TUN_F_TSO_ECN;
-        if (ufo)
-            offload |= TUN_F_UFO;
-        if (uso4) {
-            offload |= TUN_F_USO4;
-        }
-        if (uso6) {
-            offload |= TUN_F_USO6;
-        }
+        if (tso4) { offload |= TUN_F_TSO4; }
+        if (tso6) { offload |= TUN_F_TSO6; }
+        if ((tso4 || tso6) && ecn) { offload |= TUN_F_TSO_ECN; }
+        if (ufo) { offload |= TUN_F_UFO; }
+        if (uso4) { offload |= TUN_F_USO4; }
+        if (uso6) { offload |= TUN_F_USO6; }
     }
 
     if (ioctl(fd, TUNSETOFFLOAD, offload) != 0) {
@@ -277,8 +247,7 @@ void tap_fd_set_offload(int fd, int csum, int tso4,
         if (ioctl(fd, TUNSETOFFLOAD, offload) != 0) {
             offload &= ~TUN_F_UFO;
             if (ioctl(fd, TUNSETOFFLOAD, offload) != 0) {
-                fprintf(stderr, "TUNSETOFFLOAD ioctl() failed: %s\n",
-                    strerror(errno));
+                fprintf(stderr, "TUNSETOFFLOAD ioctl() failed: %s\n", strerror(errno));
             }
         }
     }
@@ -288,16 +257,14 @@ void tap_fd_set_offload(int fd, int csum, int tso4,
 int tap_fd_enable(int fd)
 {
     struct ifreq ifr;
-    int ret;
+    int          ret;
 
     memset(&ifr, 0, sizeof(ifr));
 
     ifr.ifr_flags = IFF_ATTACH_QUEUE;
-    ret = ioctl(fd, TUNSETQUEUE, (void *) &ifr);
+    ret           = ioctl(fd, TUNSETQUEUE, (void*)&ifr);
 
-    if (ret != 0) {
-        error_report("could not enable queue");
-    }
+    if (ret != 0) { error_report("could not enable queue"); }
 
     return ret;
 }
@@ -306,27 +273,24 @@ int tap_fd_enable(int fd)
 int tap_fd_disable(int fd)
 {
     struct ifreq ifr;
-    int ret;
+    int          ret;
 
     memset(&ifr, 0, sizeof(ifr));
 
     ifr.ifr_flags = IFF_DETACH_QUEUE;
-    ret = ioctl(fd, TUNSETQUEUE, (void *) &ifr);
+    ret           = ioctl(fd, TUNSETQUEUE, (void*)&ifr);
 
-    if (ret != 0) {
-        error_report("could not disable queue");
-    }
+    if (ret != 0) { error_report("could not disable queue"); }
 
     return ret;
 }
 
-int tap_fd_get_ifname(int fd, char *ifname)
+int tap_fd_get_ifname(int fd, char* ifname)
 {
     struct ifreq ifr;
 
     if (ioctl(fd, TUNGETIFF, &ifr) != 0) {
-        error_report("TUNGETIFF ioctl() failed: %s",
-                     strerror(errno));
+        error_report("TUNGETIFF ioctl() failed: %s", strerror(errno));
         return -1;
     }
 
@@ -336,12 +300,12 @@ int tap_fd_get_ifname(int fd, char *ifname)
 
 int tap_fd_set_steering_ebpf(int fd, int prog_fd)
 {
-    if (ioctl(fd, TUNSETSTEERINGEBPF, (void *) &prog_fd) != 0) {
+    if (ioctl(fd, TUNSETSTEERINGEBPF, (void*)&prog_fd) != 0) {
         error_report("Issue while setting TUNSETSTEERINGEBPF:"
-                    " %s with fd: %d, prog_fd: %d",
-                    strerror(errno), fd, prog_fd);
+                     " %s with fd: %d, prog_fd: %d",
+                     strerror(errno), fd, prog_fd);
 
-       return -1;
+        return -1;
     }
 
     return 0;

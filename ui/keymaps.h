@@ -26,9 +26,10 @@
 
 #include "ui/kbd-state.h"
 
-typedef struct {
+typedef struct
+{
     const char* name;
-    int keysym;
+    int         keysym;
 } name2keysym_t;
 
 /* scancode without modifiers */
@@ -37,23 +38,21 @@ typedef struct {
 #define SCANCODE_KEYCODEMASK 0x7f
 
 /* "grey" keys will usually need a 0xe0 prefix */
-#define SCANCODE_GREY   0x80
-#define SCANCODE_EMUL0  0xE0
-#define SCANCODE_EMUL1  0xE1
+#define SCANCODE_GREY  0x80
+#define SCANCODE_EMUL0 0xE0
+#define SCANCODE_EMUL1 0xE1
 /* "up" flag */
-#define SCANCODE_UP     0x80
+#define SCANCODE_UP 0x80
 
 /* Additional modifiers to use if not caught another way. */
-#define SCANCODE_SHIFT  0x100
-#define SCANCODE_CTRL   0x200
-#define SCANCODE_ALT    0x400
-#define SCANCODE_ALTGR  0x800
+#define SCANCODE_SHIFT 0x100
+#define SCANCODE_CTRL  0x200
+#define SCANCODE_ALT   0x400
+#define SCANCODE_ALTGR 0x800
 
 typedef struct kbd_layout_t kbd_layout_t;
 
-kbd_layout_t *init_keyboard_layout(const name2keysym_t *table,
-                                   const char *language, Error **errp);
-int keysym2scancode(kbd_layout_t *k, int keysym,
-                    QKbdState *kbd, bool down);
-int keycode_is_keypad(kbd_layout_t *k, int keycode);
-int keysym_is_numlock(kbd_layout_t *k, int keysym);
+kbd_layout_t* init_keyboard_layout(const name2keysym_t* table, const char* language, Error** errp);
+int           keysym2scancode(kbd_layout_t* k, int keysym, QKbdState* kbd, bool down);
+int           keycode_is_keypad(kbd_layout_t* k, int keycode);
+int           keysym_is_numlock(kbd_layout_t* k, int keysym);

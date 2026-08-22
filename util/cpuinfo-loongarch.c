@@ -7,9 +7,9 @@
 #include "host/cpuinfo.h"
 
 #ifdef CONFIG_GETAUXVAL
-# include <sys/auxv.h>
+    #include <sys/auxv.h>
 #else
-# include "elf.h"
+    #include "elf.h"
 #endif
 #include <asm/hwcap.h>
 
@@ -18,16 +18,14 @@ unsigned cpuinfo;
 /* Called both as constructor and (possibly) via other constructors. */
 unsigned __attribute__((constructor)) cpuinfo_init(void)
 {
-    unsigned info = cpuinfo;
+    unsigned      info = cpuinfo;
     unsigned long hwcap;
 
-    if (info) {
-        return info;
-    }
+    if (info) { return info; }
 
     hwcap = qemu_getauxval(AT_HWCAP);
 
-    info = CPUINFO_ALWAYS;
+    info  = CPUINFO_ALWAYS;
     info |= (hwcap & HWCAP_LOONGARCH_LSX ? CPUINFO_LSX : 0);
     info |= (hwcap & HWCAP_LOONGARCH_LASX ? CPUINFO_LASX : 0);
 

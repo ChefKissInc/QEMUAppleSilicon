@@ -5,5 +5,4 @@
 #include "hw/pci/pci.h"
 #include "hw/sysbus.h"
 
-SysBusDevice *apple_ans_from_node(AppleDTNode *node, AppleA7IOPVersion version,
-                                  PCIBus *pci_bus);
+SysBusDevice* apple_ans_from_node(AppleDTNode* node, AppleA7IOPVersion version, PCIBus* pci_bus);

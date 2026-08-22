@@ -28,47 +28,50 @@
 #include "chardev/char-fe.h"
 #include "qom/object.h"
 
-#define MAX_HUB 4
-#define MAX_MUX 4
+#define MAX_HUB         4
+#define MAX_MUX         4
 #define MUX_BUFFER_SIZE 32 /* Must be a power of 2.  */
 #define MUX_BUFFER_MASK (MUX_BUFFER_SIZE - 1)
 
-struct MuxChardev {
+struct MuxChardev
+{
     Chardev parent;
     /* Linked frontends */
-    CharBackend *backends[MAX_MUX];
+    CharBackend* backends[MAX_MUX];
     /* Linked backend */
-    CharBackend chr;
+    CharBackend   chr;
     unsigned long mux_bitset;
-    int focus;
-    bool term_got_escape;
+    int           focus;
+    bool          term_got_escape;
     /* Intermediate input buffer catches escape sequences even if the
        currently active device is not accepting any input - but only until it
        is full as well. */
     unsigned char buffer[MAX_MUX][MUX_BUFFER_SIZE];
-    unsigned int prod[MAX_MUX];
-    unsigned int cons[MAX_MUX];
-    int timestamps;
+    unsigned int  prod[MAX_MUX];
+    unsigned int  cons[MAX_MUX];
+    int           timestamps;
 
     /* Protected by the Chardev chr_write_lock.  */
-    bool linestart;
+    bool    linestart;
     int64_t timestamps_start;
 };
-typedef struct MuxChardev MuxChardev;
-typedef struct HubChardev HubChardev;
+typedef struct MuxChardev     MuxChardev;
+typedef struct HubChardev     HubChardev;
 typedef struct HubCharBackend HubCharBackend;
 
 /*
  * Back-pointer on a hub, actual backend and its index in
  * `hub->backends` array
  */
-struct HubCharBackend {
-    HubChardev   *hub;
+struct HubCharBackend
+{
+    HubChardev*  hub;
     CharBackend  be;
     unsigned int be_ind;
 };
 
-struct HubChardev {
+struct HubChardev
+{
     Chardev parent;
     /* Linked backends */
     HubCharBackend backends[MAX_HUB];
@@ -97,20 +100,15 @@ struct HubChardev {
 };
 typedef struct HubChardev HubChardev;
 
-DECLARE_INSTANCE_CHECKER(MuxChardev, MUX_CHARDEV,
-                         TYPE_CHARDEV_MUX)
-DECLARE_INSTANCE_CHECKER(HubChardev, HUB_CHARDEV,
-                         TYPE_CHARDEV_HUB)
+DECLARE_INSTANCE_CHECKER(MuxChardev, MUX_CHARDEV, TYPE_CHARDEV_MUX)
+DECLARE_INSTANCE_CHECKER(HubChardev, HUB_CHARDEV, TYPE_CHARDEV_HUB)
 
-#define CHARDEV_IS_MUX(chr)                                \
-    object_dynamic_cast(OBJECT(chr), TYPE_CHARDEV_MUX)
-#define CHARDEV_IS_HUB(chr)                                \
-    object_dynamic_cast(OBJECT(chr), TYPE_CHARDEV_HUB)
+#define CHARDEV_IS_MUX(chr) object_dynamic_cast(OBJECT(chr), TYPE_CHARDEV_MUX)
+#define CHARDEV_IS_HUB(chr) object_dynamic_cast(OBJECT(chr), TYPE_CHARDEV_HUB)
 
-bool mux_chr_attach_frontend(MuxChardev *d, CharBackend *b,
-                             unsigned int *tag, Error **errp);
-bool mux_chr_detach_frontend(MuxChardev *d, unsigned int tag);
-void mux_set_focus(Chardev *chr, unsigned int focus);
-void mux_chr_send_all_event(Chardev *chr, QEMUChrEvent event);
+bool mux_chr_attach_frontend(MuxChardev* d, CharBackend* b, unsigned int* tag, Error** errp);
+bool mux_chr_detach_frontend(MuxChardev* d, unsigned int tag);
+void mux_set_focus(Chardev* chr, unsigned int focus);
+void mux_chr_send_all_event(Chardev* chr, QEMUChrEvent event);
 
-Object *get_chardevs_root(void);
+Object* get_chardevs_root(void);

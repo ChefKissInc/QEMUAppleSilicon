@@ -18,21 +18,14 @@
 #include "qapi/qapi-commands-block-core.h"
 #include "qapi/qapi-events-block-core.h"
 
-uint64_t bdrv_write_threshold_get(const BlockDriverState *bs)
-{
-    return bs->write_threshold_offset;
-}
+uint64_t bdrv_write_threshold_get(const BlockDriverState* bs) { return bs->write_threshold_offset; }
 
-void bdrv_write_threshold_set(BlockDriverState *bs, uint64_t threshold_bytes)
-{
-    bs->write_threshold_offset = threshold_bytes;
-}
+void bdrv_write_threshold_set(BlockDriverState* bs, uint64_t threshold_bytes)
+{ bs->write_threshold_offset = threshold_bytes; }
 
-void qmp_block_set_write_threshold(const char *node_name,
-                                   uint64_t threshold_bytes,
-                                   Error **errp)
+void qmp_block_set_write_threshold(const char* node_name, uint64_t threshold_bytes, Error** errp)
 {
-    BlockDriverState *bs;
+    BlockDriverState* bs;
 
     bs = bdrv_find_node(node_name);
     if (!bs) {
@@ -43,10 +36,9 @@ void qmp_block_set_write_threshold(const char *node_name,
     bdrv_write_threshold_set(bs, threshold_bytes);
 }
 
-void bdrv_write_threshold_check_write(BlockDriverState *bs, int64_t offset,
-                                      int64_t bytes)
+void bdrv_write_threshold_check_write(BlockDriverState* bs, int64_t offset, int64_t bytes)
 {
-    int64_t end = offset + bytes;
+    int64_t  end = offset + bytes;
     uint64_t wtr = bs->write_threshold_offset;
 
     if (wtr > 0 && end > wtr) {

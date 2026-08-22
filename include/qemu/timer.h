@@ -43,10 +43,11 @@
  * while the CPUs are sleeping and thus not executing instructions.
  */
 
-typedef enum {
-    QEMU_CLOCK_REALTIME = 0,
-    QEMU_CLOCK_VIRTUAL = 1,
-    QEMU_CLOCK_HOST = 2,
+typedef enum
+{
+    QEMU_CLOCK_REALTIME   = 0,
+    QEMU_CLOCK_VIRTUAL    = 1,
+    QEMU_CLOCK_HOST       = 2,
     QEMU_CLOCK_VIRTUAL_RT = 3,
     QEMU_CLOCK_MAX
 } QEMUClockType;
@@ -73,21 +74,23 @@ typedef enum {
 
 typedef struct QEMUTimerList QEMUTimerList;
 
-struct QEMUTimerListGroup {
-    QEMUTimerList *tl[QEMU_CLOCK_MAX];
+struct QEMUTimerListGroup
+{
+    QEMUTimerList* tl[QEMU_CLOCK_MAX];
 };
 
-typedef void QEMUTimerCB(void *opaque);
-typedef void QEMUTimerListNotifyCB(void *opaque, QEMUClockType type);
+typedef void QEMUTimerCB(void* opaque);
+typedef void QEMUTimerListNotifyCB(void* opaque, QEMUClockType type);
 
-struct QEMUTimer {
-    int64_t expire_time;        /* in nanoseconds */
-    QEMUTimerList *timer_list;
-    QEMUTimerCB *cb;
-    void *opaque;
-    QEMUTimer *next;
-    int attributes;
-    int scale;
+struct QEMUTimer
+{
+    int64_t        expire_time; /* in nanoseconds */
+    QEMUTimerList* timer_list;
+    QEMUTimerCB*   cb;
+    void*          opaque;
+    QEMUTimer*     next;
+    int            attributes;
+    int            scale;
 };
 
 extern QEMUTimerListGroup main_loop_tlg;
@@ -112,10 +115,7 @@ int64_t qemu_clock_get_ns(QEMUClockType type);
  *
  * Returns: the clock value in milliseconds
  */
-static inline int64_t qemu_clock_get_ms(QEMUClockType type)
-{
-    return qemu_clock_get_ns(type) / SCALE_MS;
-}
+static inline int64_t qemu_clock_get_ms(QEMUClockType type) { return qemu_clock_get_ns(type) / SCALE_MS; }
 
 /**
  * qemu_clock_get_us;
@@ -126,10 +126,7 @@ static inline int64_t qemu_clock_get_ms(QEMUClockType type)
  *
  * Returns: the clock value in microseconds
  */
-static inline int64_t qemu_clock_get_us(QEMUClockType type)
-{
-    return qemu_clock_get_ns(type) / SCALE_US;
-}
+static inline int64_t qemu_clock_get_us(QEMUClockType type) { return qemu_clock_get_ns(type) / SCALE_US; }
 
 /**
  * qemu_clock_has_timers:
@@ -249,8 +246,7 @@ int64_t qemu_clock_advance_virtual_time(int64_t target_ns);
  *
  * Returns: a pointer to the QEMUTimerList created
  */
-QEMUTimerList *timerlist_new(QEMUClockType type,
-                             QEMUTimerListNotifyCB *cb, void *opaque);
+QEMUTimerList* timerlist_new(QEMUClockType type, QEMUTimerListNotifyCB* cb, void* opaque);
 
 /**
  * timerlist_free:
@@ -258,7 +254,7 @@ QEMUTimerList *timerlist_new(QEMUClockType type,
  *
  * Frees a timer_list. It must have no active timers.
  */
-void timerlist_free(QEMUTimerList *timer_list);
+void timerlist_free(QEMUTimerList* timer_list);
 
 /**
  * timerlist_has_timers:
@@ -272,7 +268,7 @@ void timerlist_free(QEMUTimerList *timer_list);
  *
  * Returns: true if the timer list has timers.
  */
-bool timerlist_has_timers(QEMUTimerList *timer_list);
+bool timerlist_has_timers(QEMUTimerList* timer_list);
 
 /**
  * timerlist_expired:
@@ -284,7 +280,7 @@ bool timerlist_has_timers(QEMUTimerList *timer_list);
  * Returns: true if the timer list has timers which
  * have expired.
  */
-bool timerlist_expired(QEMUTimerList *timer_list);
+bool timerlist_expired(QEMUTimerList* timer_list);
 
 /**
  * timerlist_deadline_ns:
@@ -297,7 +293,7 @@ bool timerlist_expired(QEMUTimerList *timer_list);
  * Returns: the number of nanoseconds until the earliest
  * timer expires -1 if none
  */
-int64_t timerlist_deadline_ns(QEMUTimerList *timer_list);
+int64_t timerlist_deadline_ns(QEMUTimerList* timer_list);
 
 /**
  * timerlist_run_timers:
@@ -307,7 +303,7 @@ int64_t timerlist_deadline_ns(QEMUTimerList *timer_list);
  *
  * Returns: true if any timer expired
  */
-bool timerlist_run_timers(QEMUTimerList *timer_list);
+bool timerlist_run_timers(QEMUTimerList* timer_list);
 
 /**
  * timerlist_notify:
@@ -315,7 +311,7 @@ bool timerlist_run_timers(QEMUTimerList *timer_list);
  *
  * call the notifier callback associated with the timer list.
  */
-void timerlist_notify(QEMUTimerList *timer_list);
+void timerlist_notify(QEMUTimerList* timer_list);
 
 /*
  * QEMUTimerListGroup
@@ -334,8 +330,7 @@ void timerlist_notify(QEMUTimerList *timer_list);
  * list is modified. If @cb is specified as null, qemu_notify()
  * is used instead.
  */
-void timerlistgroup_init(QEMUTimerListGroup *tlg,
-                         QEMUTimerListNotifyCB *cb, void *opaque);
+void timerlistgroup_init(QEMUTimerListGroup* tlg, QEMUTimerListNotifyCB* cb, void* opaque);
 
 /**
  * timerlistgroup_deinit:
@@ -344,7 +339,7 @@ void timerlistgroup_init(QEMUTimerListGroup *tlg,
  * Deinitialise a timer list group. This must already be
  * initialised. Note the memory is not freed.
  */
-void timerlistgroup_deinit(QEMUTimerListGroup *tlg);
+void timerlistgroup_deinit(QEMUTimerListGroup* tlg);
 
 /**
  * timerlistgroup_run_timers:
@@ -355,7 +350,7 @@ void timerlistgroup_deinit(QEMUTimerListGroup *tlg);
  *
  * Returns: true if any timer callback ran
  */
-bool timerlistgroup_run_timers(QEMUTimerListGroup *tlg);
+bool timerlistgroup_run_timers(QEMUTimerListGroup* tlg);
 
 /**
  * timerlistgroup_deadline_ns:
@@ -369,7 +364,7 @@ bool timerlistgroup_run_timers(QEMUTimerListGroup *tlg);
  * Returns: the deadline in nanoseconds or -1 if no
  * timers are to expire.
  */
-int64_t timerlistgroup_deadline_ns(QEMUTimerListGroup *tlg);
+int64_t timerlistgroup_deadline_ns(QEMUTimerListGroup* tlg);
 
 /*
  * QEMUTimer
@@ -393,10 +388,8 @@ int64_t timerlistgroup_deadline_ns(QEMUTimerListGroup *tlg);
  * You need not call an explicit deinit call. Simply make
  * sure it is not on a list with timer_del.
  */
-void timer_init_full(QEMUTimer *ts,
-                     QEMUTimerListGroup *timer_list_group, QEMUClockType type,
-                     int scale, int attributes,
-                     QEMUTimerCB *cb, void *opaque);
+void timer_init_full(QEMUTimer* ts, QEMUTimerListGroup* timer_list_group, QEMUClockType type, int scale, int attributes,
+                     QEMUTimerCB* cb, void* opaque);
 
 /**
  * timer_init:
@@ -410,11 +403,8 @@ void timer_init_full(QEMUTimer *ts,
  * associated with the clock.
  * See timer_init_full for details.
  */
-static inline void timer_init(QEMUTimer *ts, QEMUClockType type, int scale,
-                              QEMUTimerCB *cb, void *opaque)
-{
-    timer_init_full(ts, NULL, type, scale, 0, cb, opaque);
-}
+static inline void timer_init(QEMUTimer* ts, QEMUClockType type, int scale, QEMUTimerCB* cb, void* opaque)
+{ timer_init_full(ts, NULL, type, scale, 0, cb, opaque); }
 
 /**
  * timer_init_ns:
@@ -427,11 +417,8 @@ static inline void timer_init(QEMUTimer *ts, QEMUClockType type, int scale,
  * associated with the clock.
  * See timer_init_full for details.
  */
-static inline void timer_init_ns(QEMUTimer *ts, QEMUClockType type,
-                                 QEMUTimerCB *cb, void *opaque)
-{
-    timer_init(ts, type, SCALE_NS, cb, opaque);
-}
+static inline void timer_init_ns(QEMUTimer* ts, QEMUClockType type, QEMUTimerCB* cb, void* opaque)
+{ timer_init(ts, type, SCALE_NS, cb, opaque); }
 
 /**
  * timer_init_us:
@@ -444,11 +431,8 @@ static inline void timer_init_ns(QEMUTimer *ts, QEMUClockType type,
  * associated with the clock.
  * See timer_init_full for details.
  */
-static inline void timer_init_us(QEMUTimer *ts, QEMUClockType type,
-                                 QEMUTimerCB *cb, void *opaque)
-{
-    timer_init(ts, type, SCALE_US, cb, opaque);
-}
+static inline void timer_init_us(QEMUTimer* ts, QEMUClockType type, QEMUTimerCB* cb, void* opaque)
+{ timer_init(ts, type, SCALE_US, cb, opaque); }
 
 /**
  * timer_init_ms:
@@ -461,11 +445,8 @@ static inline void timer_init_us(QEMUTimer *ts, QEMUClockType type,
  * associated with the clock.
  * See timer_init_full for details.
  */
-static inline void timer_init_ms(QEMUTimer *ts, QEMUClockType type,
-                                 QEMUTimerCB *cb, void *opaque)
-{
-    timer_init(ts, type, SCALE_MS, cb, opaque);
-}
+static inline void timer_init_ms(QEMUTimer* ts, QEMUClockType type, QEMUTimerCB* cb, void* opaque)
+{ timer_init(ts, type, SCALE_MS, cb, opaque); }
 
 /**
  * timer_new_full:
@@ -494,12 +475,10 @@ static inline void timer_init_ms(QEMUTimer *ts, QEMUClockType type,
  *
  * Returns: a pointer to the timer
  */
-static inline QEMUTimer *timer_new_full(QEMUTimerListGroup *timer_list_group,
-                                        QEMUClockType type,
-                                        int scale, int attributes,
-                                        QEMUTimerCB *cb, void *opaque)
+static inline QEMUTimer* timer_new_full(QEMUTimerListGroup* timer_list_group, QEMUClockType type, int scale,
+                                        int attributes, QEMUTimerCB* cb, void* opaque)
 {
-    QEMUTimer *ts = g_new0(QEMUTimer, 1);
+    QEMUTimer* ts = g_new0(QEMUTimer, 1);
     timer_init_full(ts, timer_list_group, type, scale, attributes, cb, opaque);
     return ts;
 }
@@ -519,11 +498,8 @@ static inline QEMUTimer *timer_new_full(QEMUTimerListGroup *timer_list_group,
  *
  * Returns: a pointer to the timer
  */
-static inline QEMUTimer *timer_new(QEMUClockType type, int scale,
-                                   QEMUTimerCB *cb, void *opaque)
-{
-    return timer_new_full(NULL, type, scale, 0, cb, opaque);
-}
+static inline QEMUTimer* timer_new(QEMUClockType type, int scale, QEMUTimerCB* cb, void* opaque)
+{ return timer_new_full(NULL, type, scale, 0, cb, opaque); }
 
 /**
  * timer_new_ns:
@@ -539,11 +515,8 @@ static inline QEMUTimer *timer_new(QEMUClockType type, int scale,
  *
  * Returns: a pointer to the newly created timer
  */
-static inline QEMUTimer *timer_new_ns(QEMUClockType type, QEMUTimerCB *cb,
-                                      void *opaque)
-{
-    return timer_new(type, SCALE_NS, cb, opaque);
-}
+static inline QEMUTimer* timer_new_ns(QEMUClockType type, QEMUTimerCB* cb, void* opaque)
+{ return timer_new(type, SCALE_NS, cb, opaque); }
 
 /**
  * timer_new_us:
@@ -559,11 +532,8 @@ static inline QEMUTimer *timer_new_ns(QEMUClockType type, QEMUTimerCB *cb,
  *
  * Returns: a pointer to the newly created timer
  */
-static inline QEMUTimer *timer_new_us(QEMUClockType type, QEMUTimerCB *cb,
-                                      void *opaque)
-{
-    return timer_new(type, SCALE_US, cb, opaque);
-}
+static inline QEMUTimer* timer_new_us(QEMUClockType type, QEMUTimerCB* cb, void* opaque)
+{ return timer_new(type, SCALE_US, cb, opaque); }
 
 /**
  * timer_new_ms:
@@ -579,11 +549,8 @@ static inline QEMUTimer *timer_new_us(QEMUClockType type, QEMUTimerCB *cb,
  *
  * Returns: a pointer to the newly created timer
  */
-static inline QEMUTimer *timer_new_ms(QEMUClockType type, QEMUTimerCB *cb,
-                                      void *opaque)
-{
-    return timer_new(type, SCALE_MS, cb, opaque);
-}
+static inline QEMUTimer* timer_new_ms(QEMUClockType type, QEMUTimerCB* cb, void* opaque)
+{ return timer_new(type, SCALE_MS, cb, opaque); }
 
 /**
  * timer_deinit:
@@ -594,7 +561,7 @@ static inline QEMUTimer *timer_new_ms(QEMUClockType type, QEMUTimerCB *cb,
  * timer_del call cannot cause dangling pointer accesses
  * even if the previously used timerlist is freed.
  */
-void timer_deinit(QEMUTimer *ts);
+void timer_deinit(QEMUTimer* ts);
 
 /**
  * timer_del:
@@ -605,7 +572,7 @@ void timer_deinit(QEMUTimer *ts);
  * This function is thread-safe but the timer and its timer list must not be
  * freed while this function is running.
  */
-void timer_del(QEMUTimer *ts);
+void timer_del(QEMUTimer* ts);
 
 /**
  * timer_free:
@@ -614,7 +581,7 @@ void timer_del(QEMUTimer *ts);
  * Free a timer. This will call timer_del() for you to remove
  * the timer from the active list if it was still active.
  */
-static inline void timer_free(QEMUTimer *ts)
+static inline void timer_free(QEMUTimer* ts)
 {
     if (ts) {
         timer_del(ts);
@@ -632,7 +599,7 @@ static inline void timer_free(QEMUTimer *ts)
  * This function is thread-safe but the timer and its timer list must not be
  * freed while this function is running.
  */
-void timer_mod_ns(QEMUTimer *ts, int64_t expire_time);
+void timer_mod_ns(QEMUTimer* ts, int64_t expire_time);
 
 /**
  * timer_mod_anticipate_ns:
@@ -645,7 +612,7 @@ void timer_mod_ns(QEMUTimer *ts, int64_t expire_time);
  * This function is thread-safe but the timer and its timer list must not be
  * freed while this function is running.
  */
-void timer_mod_anticipate_ns(QEMUTimer *ts, int64_t expire_time);
+void timer_mod_anticipate_ns(QEMUTimer* ts, int64_t expire_time);
 
 /**
  * timer_mod:
@@ -658,7 +625,7 @@ void timer_mod_anticipate_ns(QEMUTimer *ts, int64_t expire_time);
  * This function is thread-safe but the timer and its timer list must not be
  * freed while this function is running.
  */
-void timer_mod(QEMUTimer *ts, int64_t expire_timer);
+void timer_mod(QEMUTimer* ts, int64_t expire_timer);
 
 /**
  * timer_mod_anticipate:
@@ -671,7 +638,7 @@ void timer_mod(QEMUTimer *ts, int64_t expire_timer);
  * This function is thread-safe but the timer and its timer list must not be
  * freed while this function is running.
  */
-void timer_mod_anticipate(QEMUTimer *ts, int64_t expire_time);
+void timer_mod_anticipate(QEMUTimer* ts, int64_t expire_time);
 
 /**
  * timer_pending:
@@ -682,7 +649,7 @@ void timer_mod_anticipate(QEMUTimer *ts, int64_t expire_time);
  *
  * Returns: true if the timer is pending
  */
-bool timer_pending(QEMUTimer *ts);
+bool timer_pending(QEMUTimer* ts);
 
 /**
  * timer_expired:
@@ -693,7 +660,7 @@ bool timer_pending(QEMUTimer *ts);
  *
  * Returns: true if the timer has expired
  */
-bool timer_expired(QEMUTimer *timer_head, int64_t current_time);
+bool timer_expired(QEMUTimer* timer_head, int64_t current_time);
 
 /**
  * timer_expire_time_ns:
@@ -703,7 +670,7 @@ bool timer_expired(QEMUTimer *timer_head, int64_t current_time);
  *
  * Returns: the expiry time in nanoseconds
  */
-uint64_t timer_expire_time_ns(QEMUTimer *ts);
+uint64_t timer_expire_time_ns(QEMUTimer* ts);
 
 /**
  * timer_get:
@@ -712,14 +679,14 @@ uint64_t timer_expire_time_ns(QEMUTimer *ts);
  *
  * Read a timer @ts from a file @f
  */
-void timer_get(QEMUFile *f, QEMUTimer *ts);
+void timer_get(QEMUFile* f, QEMUTimer* ts);
 
 /**
  * timer_put:
  * @f: the file
  * @ts: the timer
  */
-void timer_put(QEMUFile *f, QEMUTimer *ts);
+void timer_put(QEMUFile* f, QEMUTimer* ts);
 
 /*
  * General utility functions
@@ -747,7 +714,7 @@ int qemu_timeout_ns_to_ms(int64_t ns);
  *
  * Returns: number of fds ready
  */
-int qemu_poll_ns(GPollFD *fds, guint nfds, int64_t timeout);
+int qemu_poll_ns(GPollFD* fds, guint nfds, int64_t timeout);
 
 /**
  * qemu_soonest_timeout:
@@ -765,7 +732,7 @@ static inline int64_t qemu_soonest_timeout(int64_t timeout1, int64_t timeout2)
      * value when cast to unsigned. As this is disgusting, it's kept in
      * one inline function.
      */
-    return ((uint64_t) timeout1 < (uint64_t) timeout2) ? timeout1 : timeout2;
+    return ((uint64_t)timeout1 < (uint64_t)timeout2) ? timeout1 : timeout2;
 }
 
 /**
@@ -773,7 +740,7 @@ static inline int64_t qemu_soonest_timeout(int64_t timeout1, int64_t timeout2)
  *
  * Initialise the clock & timer infrastructure
  */
-void init_clocks(QEMUTimerListNotifyCB *notify_cb);
+void init_clocks(QEMUTimerListNotifyCB* notify_cb);
 
 static inline int64_t get_max_clock_jump(void)
 {
@@ -830,7 +797,8 @@ static inline int64_t get_clock(void)
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC, &ts);
         return ts.tv_sec * 1000000000LL + ts.tv_nsec;
-    } else {
+    }
+    else {
         /* XXX: using gettimeofday leads to problems if the date
            changes, so it should be avoided. */
         return get_clock_realtime();
@@ -846,24 +814,24 @@ static inline int64_t get_clock(void)
 static inline int64_t cpu_get_host_ticks(void)
 {
     int64_t retval;
-#ifdef _ARCH_PPC64
+    #ifdef _ARCH_PPC64
     /* This reads timebase in one 64bit go and includes Cell workaround from:
        http://ozlabs.org/pipermail/linuxppc-dev/2006-October/027052.html
     */
-    __asm__ __volatile__ ("mftb    %0\n\t"
-                          "cmpwi   %0,0\n\t"
-                          "beq-    $-8"
-                          : "=r" (retval));
-#else
+    __asm__ __volatile__("mftb    %0\n\t"
+                         "cmpwi   %0,0\n\t"
+                         "beq-    $-8"
+                         : "=r"(retval));
+    #else
     /* http://ozlabs.org/pipermail/linuxppc-dev/1999-October/003889.html */
     unsigned long junk;
-    __asm__ __volatile__ ("mfspr   %1,269\n\t"  /* mftbu */
-                          "mfspr   %L0,268\n\t" /* mftb */
-                          "mfspr   %0,269\n\t"  /* mftbu */
-                          "cmpw    %0,%1\n\t"
-                          "bne     $-16"
-                          : "=r" (retval), "=r" (junk));
-#endif
+    __asm__ __volatile__("mfspr   %1,269\n\t"  /* mftbu */
+                         "mfspr   %L0,268\n\t" /* mftb */
+                         "mfspr   %0,269\n\t"  /* mftbu */
+                         "cmpw    %0,%1\n\t"
+                         "bne     $-16"
+                         : "=r"(retval), "=r"(junk));
+    #endif
     return retval;
 }
 
@@ -872,7 +840,7 @@ static inline int64_t cpu_get_host_ticks(void)
 static inline int64_t cpu_get_host_ticks(void)
 {
     int64_t val;
-    asm volatile ("rdtsc" : "=A" (val));
+    asm volatile("rdtsc" : "=A"(val));
     return val;
 }
 
@@ -880,12 +848,12 @@ static inline int64_t cpu_get_host_ticks(void)
 
 static inline int64_t cpu_get_host_ticks(void)
 {
-    uint32_t low,high;
-    int64_t val;
-    asm volatile("rdtsc" : "=a" (low), "=d" (high));
-    val = high;
+    uint32_t low, high;
+    int64_t  val;
+    asm volatile("rdtsc" : "=a"(low), "=d"(high));
+    val   = high;
     val <<= 32;
-    val |= low;
+    val  |= low;
     return val;
 }
 
@@ -894,7 +862,7 @@ static inline int64_t cpu_get_host_ticks(void)
 static inline int64_t cpu_get_host_ticks(void)
 {
     int val;
-    asm volatile ("mfctl %%cr16, %0" : "=r"(val));
+    asm volatile("mfctl %%cr16, %0" : "=r"(val));
     return val;
 }
 
@@ -903,59 +871,58 @@ static inline int64_t cpu_get_host_ticks(void)
 static inline int64_t cpu_get_host_ticks(void)
 {
     int64_t val;
-    asm volatile("stck 0(%1)" : "=m" (val) : "a" (&val) : "cc");
+    asm volatile("stck 0(%1)" : "=m"(val) : "a"(&val) : "cc");
     return val;
 }
 
 #elif defined(__sparc__)
 
-static inline int64_t cpu_get_host_ticks (void)
+static inline int64_t cpu_get_host_ticks(void)
 {
-#if defined(_LP64)
-    uint64_t        rval;
+    #if defined(_LP64)
+    uint64_t rval;
     asm volatile("rd %%tick,%0" : "=r"(rval));
     return rval;
-#else
+    #else
     /* We need an %o or %g register for this.  For recent enough gcc
        there is an "h" constraint for that.  Don't bother with that.  */
-    union {
+    union
+    {
         uint64_t i64;
-        struct {
+        struct
+        {
             uint32_t high;
             uint32_t low;
-        }       i32;
+        } i32;
     } rval;
-    asm volatile("rd %%tick,%%g1; srlx %%g1,32,%0; mov %%g1,%1"
-                 : "=r"(rval.i32.high), "=r"(rval.i32.low) : : "g1");
+    asm volatile("rd %%tick,%%g1; srlx %%g1,32,%0; mov %%g1,%1" : "=r"(rval.i32.high), "=r"(rval.i32.low) : : "g1");
     return rval.i64;
-#endif
+    #endif
 }
 
-#elif defined(__mips__) && \
-    ((defined(__mips_isa_rev) && __mips_isa_rev >= 2) || defined(__linux__))
-/*
- * binutils wants to use rdhwr only on mips32r2
- * but as linux kernel emulate it, it's fine
- * to use it.
- *
- */
-#define MIPS_RDHWR(rd, value) {                         \
-        __asm__ __volatile__ (".set   push\n\t"         \
-                              ".set mips32r2\n\t"       \
-                              "rdhwr  %0, "rd"\n\t"     \
-                              ".set   pop"              \
-                              : "=r" (value));          \
-    }
+#elif defined(__mips__) && ((defined(__mips_isa_rev) && __mips_isa_rev >= 2) || defined(__linux__))
+    /*
+     * binutils wants to use rdhwr only on mips32r2
+     * but as linux kernel emulate it, it's fine
+     * to use it.
+     *
+     */
+    #define MIPS_RDHWR(rd, value)                        \
+        {                                                \
+            __asm__ __volatile__(".set   push\n\t"       \
+                                 ".set mips32r2\n\t"     \
+                                 "rdhwr  %0, " rd "\n\t" \
+                                 ".set   pop"            \
+                                 : "=r"(value));         \
+        }
 
 static inline int64_t cpu_get_host_ticks(void)
 {
     /* On kernels >= 2.6.25 rdhwr <reg>, $2 and $3 are emulated */
-    uint32_t count;
+    uint32_t        count;
     static uint32_t cyc_per_count = 0;
 
-    if (!cyc_per_count) {
-        MIPS_RDHWR("$3", cyc_per_count);
-    }
+    if (!cyc_per_count) { MIPS_RDHWR("$3", cyc_per_count); }
 
     MIPS_RDHWR("$2", count);
     return (int64_t)(count * cyc_per_count);
@@ -983,7 +950,8 @@ static inline int64_t cpu_get_host_ticks(void)
                      "RDTIME %1\n\t"
                      "RDTIMEH %2"
                      : "=r"(hi), "=r"(lo), "=r"(tmph));
-    } while (unlikely(tmph != hi));
+    }
+    while (unlikely(tmph != hi));
     return lo | (uint64_t)hi << 32;
 }
 
@@ -1018,8 +986,5 @@ static inline int64_t cpu_get_host_ticks(void)
 /* The host CPU doesn't have an easily accessible cycle counter.
    Just return a monotonically increasing value.  This will be
    totally wrong, but hopefully better than nothing.  */
-static inline int64_t cpu_get_host_ticks(void)
-{
-    return get_clock();
-}
+static inline int64_t cpu_get_host_ticks(void) { return get_clock(); }
 #endif

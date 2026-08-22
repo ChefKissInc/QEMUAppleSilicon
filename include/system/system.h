@@ -8,34 +8,35 @@
 
 /* vl.c */
 
-extern const char *qemu_name;
-extern QemuUUID qemu_uuid;
-extern bool qemu_uuid_set;
+extern const char* qemu_name;
+extern QemuUUID    qemu_uuid;
+extern bool        qemu_uuid_set;
 
-const char *qemu_get_vm_name(void);
+const char* qemu_get_vm_name(void);
 
 /* Exit notifiers will run with BQL held. */
-void qemu_add_exit_notifier(Notifier *notify);
-void qemu_remove_exit_notifier(Notifier *notify);
+void qemu_add_exit_notifier(Notifier* notify);
+void qemu_remove_exit_notifier(Notifier* notify);
 
-void qemu_add_machine_init_done_notifier(Notifier *notify);
-void qemu_remove_machine_init_done_notifier(Notifier *notify);
+void qemu_add_machine_init_done_notifier(Notifier* notify);
+void qemu_remove_machine_init_done_notifier(Notifier* notify);
 
-void configure_rtc(QemuOpts *opts);
+void configure_rtc(QemuOpts* opts);
 
 void qemu_init_subsystems(void);
 
 extern int autostart;
 
-extern int graphic_width;
-extern int graphic_height;
-extern int graphic_depth;
-extern const char *keyboard_layout;
-extern uint8_t *boot_splash_filedata;
-extern bool enable_cpu_pm;
+extern int           graphic_width;
+extern int           graphic_height;
+extern int           graphic_depth;
+extern const char*   keyboard_layout;
+extern uint8_t*      boot_splash_filedata;
+extern bool          enable_cpu_pm;
 extern QEMUClockType rtc_clock;
 
-typedef enum {
+typedef enum
+{
     MLOCK_OFF = 0,
     MLOCK_ON,
     MLOCK_ON_FAULT,
@@ -47,55 +48,52 @@ bool is_mlock_on_fault(MlockState);
 extern MlockState mlock_state;
 
 #define MAX_OPTION_ROMS 16
-typedef struct QEMUOptionRom {
-    const char *name;
-    int32_t bootindex;
+typedef struct QEMUOptionRom
+{
+    const char* name;
+    int32_t     bootindex;
 } QEMUOptionRom;
 extern QEMUOptionRom option_rom[MAX_OPTION_ROMS];
-extern int nb_option_roms;
+extern int           nb_option_roms;
 
 #define MAX_PROM_ENVS 128
-extern const char *prom_envs[MAX_PROM_ENVS];
+extern const char*  prom_envs[MAX_PROM_ENVS];
 extern unsigned int nb_prom_envs;
 
 /* serial ports */
 
 /* Return the Chardev for serial port i, or NULL if none */
-Chardev *serial_hd(int i);
+Chardev* serial_hd(int i);
 
 /* parallel ports */
 
 #define MAX_PARALLEL_PORTS 3
 
-extern Chardev *parallel_hds[MAX_PARALLEL_PORTS];
+extern Chardev* parallel_hds[MAX_PARALLEL_PORTS];
 
-void add_boot_device_path(int32_t bootindex, DeviceState *dev,
-                          const char *suffix);
-char *get_boot_devices_list(size_t *size);
+void  add_boot_device_path(int32_t bootindex, DeviceState* dev, const char* suffix);
+char* get_boot_devices_list(size_t* size);
 
-DeviceState *get_boot_device(uint32_t position);
-void check_boot_index(int32_t bootindex, Error **errp);
-void del_boot_device_path(DeviceState *dev, const char *suffix);
-void device_add_bootindex_property(Object *obj, int32_t *bootindex,
-                                   const char *name, const char *suffix,
-                                   DeviceState *dev);
-void restore_boot_order(void *opaque);
-void validate_bootdevices(const char *devices, Error **errp);
-void add_boot_device_lchs(DeviceState *dev, const char *suffix,
-                          uint32_t lcyls, uint32_t lheads, uint32_t lsecs);
-void del_boot_device_lchs(DeviceState *dev, const char *suffix);
-char *get_boot_devices_lchs_list(size_t *size);
+DeviceState* get_boot_device(uint32_t position);
+void         check_boot_index(int32_t bootindex, Error** errp);
+void         del_boot_device_path(DeviceState* dev, const char* suffix);
+void         device_add_bootindex_property(Object* obj, int32_t* bootindex, const char* name, const char* suffix,
+                                           DeviceState* dev);
+void         restore_boot_order(void* opaque);
+void         validate_bootdevices(const char* devices, Error** errp);
+void  add_boot_device_lchs(DeviceState* dev, const char* suffix, uint32_t lcyls, uint32_t lheads, uint32_t lsecs);
+void  del_boot_device_lchs(DeviceState* dev, const char* suffix);
+char* get_boot_devices_lchs_list(size_t* size);
 
 /* handler to set the boot_device order for a specific type of MachineClass */
-typedef void QEMUBootSetHandler(void *opaque, const char *boot_order,
-                                Error **errp);
-void qemu_register_boot_set(QEMUBootSetHandler *func, void *opaque);
-void qemu_boot_set(const char *boot_order, Error **errp);
+typedef void QEMUBootSetHandler(void* opaque, const char* boot_order, Error** errp);
+void         qemu_register_boot_set(QEMUBootSetHandler* func, void* opaque);
+void         qemu_boot_set(const char* boot_order, Error** errp);
 
 bool defaults_enabled(void);
 
-void qemu_init(int argc, char **argv);
-int qemu_main_loop(void);
+void qemu_init(int argc, char** argv);
+int  qemu_main_loop(void);
 void qemu_cleanup(int);
 
 extern QemuOptsList qemu_legacy_drive_opts;

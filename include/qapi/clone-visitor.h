@@ -20,8 +20,8 @@
  */
 typedef struct QapiCloneVisitor QapiCloneVisitor;
 
-Visitor *qapi_clone_visitor_new(void);
-Visitor *qapi_clone_members_visitor_new(void);
+Visitor* qapi_clone_visitor_new(void);
+Visitor* qapi_clone_members_visitor_new(void);
 
 /*
  * Deep-clone QAPI object @src of the given @type, and return the result.
@@ -29,17 +29,17 @@ Visitor *qapi_clone_members_visitor_new(void);
  * Not usable on QAPI scalars (integers, strings, enums), nor on a
  * QAPI object that references the 'any' type.  Safe when @src is NULL.
  */
-#define QAPI_CLONE(type, src)                                   \
-    ({                                                          \
-        Visitor *v_;                                            \
-        type *dst_ = (type *) (src); /* Cast away const */      \
-                                                                \
-        if (dst_) {                                             \
-            v_ = qapi_clone_visitor_new();                      \
-            visit_type_ ## type(v_, NULL, &dst_, &error_abort); \
-            visit_free(v_);                                     \
-        }                                                       \
-        dst_;                                                   \
+#define QAPI_CLONE(type, src)                                 \
+    ({                                                        \
+        Visitor* v_;                                          \
+        type*    dst_ = (type*)(src); /* Cast away const */   \
+                                                              \
+        if (dst_) {                                           \
+            v_ = qapi_clone_visitor_new();                    \
+            visit_type_##type(v_, NULL, &dst_, &error_abort); \
+            visit_free(v_);                                   \
+        }                                                     \
+        dst_;                                                 \
     })
 
 /*
@@ -48,12 +48,12 @@ Visitor *qapi_clone_members_visitor_new(void);
  * Not usable on QAPI scalars (integers, strings, enums), nor on a
  * QAPI object that references the 'any' type.
  */
-#define QAPI_CLONE_MEMBERS(type, dst, src)                                \
-    ({                                                                    \
-        Visitor *v_;                                                      \
-                                                                          \
-        v_ = qapi_clone_members_visitor_new();                            \
-        *(type *)(dst) = *(src);                                          \
-        visit_type_ ## type ## _members(v_, (type *)(dst), &error_abort); \
-        visit_free(v_);                                                   \
+#define QAPI_CLONE_MEMBERS(type, dst, src)                           \
+    ({                                                               \
+        Visitor* v_;                                                 \
+                                                                     \
+        v_            = qapi_clone_members_visitor_new();            \
+        *(type*)(dst) = *(src);                                      \
+        visit_type_##type##_members(v_, (type*)(dst), &error_abort); \
+        visit_free(v_);                                              \
     })

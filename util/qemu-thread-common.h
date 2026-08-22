@@ -15,7 +15,7 @@
 #include "qemu/thread.h"
 #include "trace.h"
 
-static inline void qemu_mutex_post_init(QemuMutex *mutex)
+static inline void qemu_mutex_post_init(QemuMutex* mutex)
 {
 #ifdef CONFIG_DEBUG_MUTEX
     mutex->file = NULL;
@@ -24,16 +24,14 @@ static inline void qemu_mutex_post_init(QemuMutex *mutex)
     mutex->initialized = true;
 }
 
-static inline void qemu_mutex_pre_lock(QemuMutex *mutex,
-                                       const char *file, int line)
+static inline void qemu_mutex_pre_lock(QemuMutex* mutex, const char* file, int line)
 {
 #ifdef CONFIG_DEBUG_MUTEX
     trace_qemu_mutex_lock(mutex, file, line);
 #endif
 }
 
-static inline void qemu_mutex_post_lock(QemuMutex *mutex,
-                                        const char *file, int line)
+static inline void qemu_mutex_post_lock(QemuMutex* mutex, const char* file, int line)
 {
 #ifdef CONFIG_DEBUG_MUTEX
     mutex->file = file;
@@ -42,8 +40,7 @@ static inline void qemu_mutex_post_lock(QemuMutex *mutex,
 #endif
 }
 
-static inline void qemu_mutex_pre_unlock(QemuMutex *mutex,
-                                         const char *file, int line)
+static inline void qemu_mutex_pre_unlock(QemuMutex* mutex, const char* file, int line)
 {
 #ifdef CONFIG_DEBUG_MUTEX
     mutex->file = NULL;

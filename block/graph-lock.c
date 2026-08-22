@@ -58,7 +58,8 @@ static uint32_t orphaned_reader_count;
 /* Queue of readers waiting for the writer to finish */
 static CoQueue reader_queue;
 
-struct BdrvGraphRWlock {
+struct BdrvGraphRWlock
+{
     /* How many readers are currently reading the graph. */
     uint32_t reader_count;
 
@@ -74,8 +75,7 @@ struct BdrvGraphRWlock {
  * can safely modify only its own counter, avoid reading/writing
  * others and thus improving performances by avoiding cacheline bounces.
  */
-static QTAILQ_HEAD(, BdrvGraphRWlock) aio_context_list =
-    QTAILQ_HEAD_INITIALIZER(aio_context_list);
+static QTAILQ_HEAD(, BdrvGraphRWlock) aio_context_list = QTAILQ_HEAD_INITIALIZER(aio_context_list);
 
 static void __attribute__((__constructor__)) bdrv_init_graph_lock(void)
 {
@@ -83,7 +83,7 @@ static void __attribute__((__constructor__)) bdrv_init_graph_lock(void)
     qemu_co_queue_init(&reader_queue);
 }
 
-void register_aiocontext(AioContext *ctx)
+void register_aiocontext(AioContext* ctx)
 {
     ctx->bdrv_graph = g_new0(BdrvGraphRWlock, 1);
     QEMU_LOCK_GUARD(&aio_context_list_lock);
@@ -91,7 +91,7 @@ void register_aiocontext(AioContext *ctx)
     QTAILQ_INSERT_TAIL(&aio_context_list, ctx->bdrv_graph, next_aio);
 }
 
-void unregister_aiocontext(AioContext *ctx)
+void unregister_aiocontext(AioContext* ctx)
 {
     QEMU_LOCK_GUARD(&aio_context_list_lock);
     orphaned_reader_count += ctx->bdrv_graph->reader_count;
@@ -101,16 +101,14 @@ void unregister_aiocontext(AioContext *ctx)
 
 static uint32_t reader_count(void)
 {
-    BdrvGraphRWlock *brdv_graph;
-    uint32_t rd;
+    BdrvGraphRWlock* brdv_graph;
+    uint32_t         rd;
 
     QEMU_LOCK_GUARD(&aio_context_list_lock);
 
     /* rd can temporarily be negative, but the total will *always* be >= 0 */
     rd = orphaned_reader_count;
-    QTAILQ_FOREACH(brdv_graph, &aio_context_list, next_aio) {
-        rd += qatomic_read(&brdv_graph->reader_count);
-    }
+    QTAILQ_FOREACH (brdv_graph, &aio_context_list, next_aio) { rd += qatomic_read(&brdv_graph->reader_count); }
 
     /* shouldn't overflow unless there are 2^31 readers */
     assert((int32_t)rd >= 0);
@@ -154,11 +152,10 @@ void no_coroutine_fn bdrv_graph_wrlock(void)
          * determined reader_count() == 0.
          */
         smp_mb();
-    } while (reader_count() >= 1);
-
-    if (need_drain) {
-        bdrv_drain_all_end();
     }
+    while (reader_count() >= 1);
+
+    if (need_drain) { bdrv_drain_all_end(); }
 }
 
 void no_coroutine_fn bdrv_graph_wrlock_drained(void)
@@ -175,7 +172,8 @@ void no_coroutine_fn bdrv_graph_wrunlock(void)
     GLOBAL_STATE_CODE();
     assert(qatomic_read(&has_writer));
 
-    WITH_QEMU_LOCK_GUARD(&aio_context_list_lock) {
+    WITH_QEMU_LOCK_GUARD(&aio_context_list_lock)
+    {
         /*
          * No need for memory barriers, this works in pair with
          * the slow path of rdlock() and both take the lock.
@@ -201,17 +199,15 @@ void no_coroutine_fn bdrv_graph_wrunlock(void)
         bdrv_drain_all_end();
         wrlock_quiesced_counter--;
     }
-
 }
 
 void coroutine_fn bdrv_graph_co_rdlock(void)
 {
-    BdrvGraphRWlock *bdrv_graph;
+    BdrvGraphRWlock* bdrv_graph;
     bdrv_graph = qemu_get_current_aio_context()->bdrv_graph;
 
     for (;;) {
-        qatomic_set(&bdrv_graph->reader_count,
-                    bdrv_graph->reader_count + 1);
+        qatomic_set(&bdrv_graph->reader_count, bdrv_graph->reader_count + 1);
         /* make sure writer sees reader_count before we check has_writer */
         smp_mb();
 
@@ -221,9 +217,7 @@ void coroutine_fn bdrv_graph_co_rdlock(void)
          *                  or > 0, but we need to wait anyways because
          *                  it will write.
          */
-        if (!qatomic_read(&has_writer)) {
-            break;
-        }
+        if (!qatomic_read(&has_writer)) { break; }
 
         /*
          * Synchronize access with reader_count() in bdrv_graph_wrlock().
@@ -239,7 +233,8 @@ void coroutine_fn bdrv_graph_co_rdlock(void)
          * It will wait in AIO_WAIT_WHILE(), but once it releases the lock
          * we will enter this critical section and call aio_wait_kick().
          */
-        WITH_QEMU_LOCK_GUARD(&aio_context_list_lock) {
+        WITH_QEMU_LOCK_GUARD(&aio_context_list_lock)
+        {
             /*
              * Additional check when we use the above lock to synchronize
              * with bdrv_graph_wrunlock().
@@ -255,9 +250,7 @@ void coroutine_fn bdrv_graph_co_rdlock(void)
              * again for has_writer, otherwise we sleep without any writer
              * actually running.
              */
-            if (!qatomic_read(&has_writer)) {
-                return;
-            }
+            if (!qatomic_read(&has_writer)) { return; }
 
             /* slow path where reader sleeps */
             bdrv_graph->reader_count--;
@@ -269,11 +262,10 @@ void coroutine_fn bdrv_graph_co_rdlock(void)
 
 void coroutine_fn bdrv_graph_co_rdunlock(void)
 {
-    BdrvGraphRWlock *bdrv_graph;
+    BdrvGraphRWlock* bdrv_graph;
     bdrv_graph = qemu_get_current_aio_context()->bdrv_graph;
 
-    qatomic_store_release(&bdrv_graph->reader_count,
-                          bdrv_graph->reader_count - 1);
+    qatomic_store_release(&bdrv_graph->reader_count, bdrv_graph->reader_count - 1);
     /* make sure writer sees reader_count before we check has_writer */
     smp_mb();
 
@@ -283,9 +275,7 @@ void coroutine_fn bdrv_graph_co_rdunlock(void)
      *                  new. Therefore, kick again so on next iteration
      *                  writer will for sure read the updated value.
      */
-    if (qatomic_read(&has_writer)) {
-        aio_wait_kick();
-    }
+    if (qatomic_read(&has_writer)) { aio_wait_kick(); }
 }
 
 void bdrv_graph_rdlock_main_loop(void)

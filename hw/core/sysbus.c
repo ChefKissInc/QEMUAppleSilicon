@@ -23,23 +23,24 @@
 #include "monitor/monitor.h"
 #include "system/address-spaces.h"
 
-static void sysbus_dev_print(Monitor *mon, DeviceState *dev, int indent);
-static char *sysbus_get_fw_dev_path(DeviceState *dev);
+static void  sysbus_dev_print(Monitor* mon, DeviceState* dev, int indent);
+static char* sysbus_get_fw_dev_path(DeviceState* dev);
 
-typedef struct SysBusFind {
-    void *opaque;
-    FindSysbusDeviceFunc *func;
+typedef struct SysBusFind
+{
+    void*                 opaque;
+    FindSysbusDeviceFunc* func;
 } SysBusFind;
 
 /* Run func() for every sysbus device, traverse the tree for everything else */
-static int find_sysbus_device(Object *obj, void *opaque)
+static int find_sysbus_device(Object* obj, void* opaque)
 {
-    SysBusFind *find = opaque;
-    Object *dev;
-    SysBusDevice *sbdev;
+    SysBusFind*   find = opaque;
+    Object*       dev;
+    SysBusDevice* sbdev;
 
-    dev = object_dynamic_cast(obj, TYPE_SYS_BUS_DEVICE);
-    sbdev = (SysBusDevice *)dev;
+    dev   = object_dynamic_cast(obj, TYPE_SYS_BUS_DEVICE);
+    sbdev = (SysBusDevice*)dev;
 
     if (!sbdev) {
         /* Container, traverse it for children */
@@ -55,11 +56,11 @@ static int find_sysbus_device(Object *obj, void *opaque)
  * Loop through all dynamically created sysbus devices and call
  * func() for each instance.
  */
-void foreach_dynamic_sysbus_device(FindSysbusDeviceFunc *func, void *opaque)
+void foreach_dynamic_sysbus_device(FindSysbusDeviceFunc* func, void* opaque)
 {
-    Object *container;
+    Object*    container;
     SysBusFind find = {
-        .func = func,
+        .func   = func,
         .opaque = opaque,
     };
 
@@ -70,20 +71,19 @@ void foreach_dynamic_sysbus_device(FindSysbusDeviceFunc *func, void *opaque)
     find_sysbus_device(container, &find);
 }
 
-
-static void system_bus_class_init(ObjectClass *klass, const void *data)
+static void system_bus_class_init(ObjectClass* klass, const void* data)
 {
-    BusClass *k = BUS_CLASS(klass);
+    BusClass* k = BUS_CLASS(klass);
 
-    k->print_dev = sysbus_dev_print;
+    k->print_dev       = sysbus_dev_print;
     k->get_fw_dev_path = sysbus_get_fw_dev_path;
 }
 
 /* Check whether an IRQ source exists */
-bool sysbus_has_irq(SysBusDevice *dev, int n)
+bool sysbus_has_irq(SysBusDevice* dev, int n)
 {
-    char *prop = g_strdup_printf("%s[%d]", SYSBUS_DEVICE_GPIO_IRQ, n);
-    ObjectProperty *r;
+    char*           prop = g_strdup_printf("%s[%d]", SYSBUS_DEVICE_GPIO_IRQ, n);
+    ObjectProperty* r;
 
     r = object_property_find(OBJECT(dev), prop);
     g_free(prop);
@@ -91,36 +91,27 @@ bool sysbus_has_irq(SysBusDevice *dev, int n)
     return (r != NULL);
 }
 
-bool sysbus_is_irq_connected(SysBusDevice *dev, int n)
-{
-    return !!sysbus_get_connected_irq(dev, n);
-}
+bool sysbus_is_irq_connected(SysBusDevice* dev, int n) { return !!sysbus_get_connected_irq(dev, n); }
 
-qemu_irq sysbus_get_connected_irq(SysBusDevice *dev, int n)
+qemu_irq sysbus_get_connected_irq(SysBusDevice* dev, int n)
 {
-    DeviceState *d = DEVICE(dev);
+    DeviceState* d = DEVICE(dev);
     return qdev_get_gpio_out_connector(d, SYSBUS_DEVICE_GPIO_IRQ, n);
 }
 
-void sysbus_connect_irq(SysBusDevice *dev, int n, qemu_irq irq)
+void sysbus_connect_irq(SysBusDevice* dev, int n, qemu_irq irq)
 {
-    SysBusDeviceClass *sbd = SYS_BUS_DEVICE_GET_CLASS(dev);
+    SysBusDeviceClass* sbd = SYS_BUS_DEVICE_GET_CLASS(dev);
 
     qdev_connect_gpio_out_named(DEVICE(dev), SYSBUS_DEVICE_GPIO_IRQ, n, irq);
 
-    if (sbd->connect_irq_notifier) {
-        sbd->connect_irq_notifier(dev, irq);
-    }
+    if (sbd->connect_irq_notifier) { sbd->connect_irq_notifier(dev, irq); }
 }
 
 /* Check whether an MMIO region exists */
-bool sysbus_has_mmio(SysBusDevice *dev, unsigned int n)
-{
-    return (n < dev->num_mmio);
-}
+bool sysbus_has_mmio(SysBusDevice* dev, unsigned int n) { return (n < dev->num_mmio); }
 
-static void sysbus_mmio_map_common(SysBusDevice *dev, int n, hwaddr addr,
-                                   bool may_overlap, int priority)
+static void sysbus_mmio_map_common(SysBusDevice* dev, int n, hwaddr addr, bool may_overlap, int priority)
 {
     assert(n >= 0 && n < dev->num_mmio);
 
@@ -133,25 +124,15 @@ static void sysbus_mmio_map_common(SysBusDevice *dev, int n, hwaddr addr,
         memory_region_del_subregion(get_system_memory(), dev->mmio[n].memory);
     }
     dev->mmio[n].addr = addr;
-    if (may_overlap) {
-        memory_region_add_subregion_overlap(get_system_memory(),
-                                            addr,
-                                            dev->mmio[n].memory,
-                                            priority);
-    }
+    if (may_overlap) { memory_region_add_subregion_overlap(get_system_memory(), addr, dev->mmio[n].memory, priority); }
     else {
-        memory_region_add_subregion(get_system_memory(),
-                                    addr,
-                                    dev->mmio[n].memory);
+        memory_region_add_subregion(get_system_memory(), addr, dev->mmio[n].memory);
     }
 }
 
-void sysbus_mmio_map(SysBusDevice *dev, int n, hwaddr addr)
-{
-    sysbus_mmio_map_common(dev, n, addr, false, 0);
-}
+void sysbus_mmio_map(SysBusDevice* dev, int n, hwaddr addr) { sysbus_mmio_map_common(dev, n, addr, false, 0); }
 
-int sysbus_mmio_map_name(SysBusDevice *dev, const char *name, hwaddr addr)
+int sysbus_mmio_map_name(SysBusDevice* dev, const char* name, hwaddr addr)
 {
     for (int i = 0; i < dev->num_mmio; i++) {
         if (!strcmp(dev->mmio[i].memory->name, name)) {
@@ -162,41 +143,34 @@ int sysbus_mmio_map_name(SysBusDevice *dev, const char *name, hwaddr addr)
     return -1;
 }
 
-void sysbus_mmio_map_overlap(SysBusDevice *dev, int n, hwaddr addr,
-                             int priority)
-{
-    sysbus_mmio_map_common(dev, n, addr, true, priority);
-}
+void sysbus_mmio_map_overlap(SysBusDevice* dev, int n, hwaddr addr, int priority)
+{ sysbus_mmio_map_common(dev, n, addr, true, priority); }
 
 /* Request an IRQ source.  The actual IRQ object may be populated later.  */
-void sysbus_init_irq(SysBusDevice *dev, qemu_irq *p)
-{
-    qdev_init_gpio_out_named(DEVICE(dev), p, SYSBUS_DEVICE_GPIO_IRQ, 1);
-}
+void sysbus_init_irq(SysBusDevice* dev, qemu_irq* p)
+{ qdev_init_gpio_out_named(DEVICE(dev), p, SYSBUS_DEVICE_GPIO_IRQ, 1); }
 
 /* Pass IRQs from a target device.  */
-void sysbus_pass_irq(SysBusDevice *dev, SysBusDevice *target)
-{
-    qdev_pass_gpios(DEVICE(target), DEVICE(dev), SYSBUS_DEVICE_GPIO_IRQ);
-}
+void sysbus_pass_irq(SysBusDevice* dev, SysBusDevice* target)
+{ qdev_pass_gpios(DEVICE(target), DEVICE(dev), SYSBUS_DEVICE_GPIO_IRQ); }
 
-void sysbus_init_mmio(SysBusDevice *dev, MemoryRegion *memory)
+void sysbus_init_mmio(SysBusDevice* dev, MemoryRegion* memory)
 {
     int n;
 
     assert(dev->num_mmio < QDEV_MAX_MMIO);
-    n = dev->num_mmio++;
-    dev->mmio[n].addr = -1;
+    n                   = dev->num_mmio++;
+    dev->mmio[n].addr   = -1;
     dev->mmio[n].memory = memory;
 }
 
-MemoryRegion *sysbus_mmio_get_region(SysBusDevice *dev, int n)
+MemoryRegion* sysbus_mmio_get_region(SysBusDevice* dev, int n)
 {
     assert(n >= 0 && n < QDEV_MAX_MMIO);
     return dev->mmio[n].memory;
 }
 
-void sysbus_init_ioports(SysBusDevice *dev, uint32_t ioport, uint32_t size)
+void sysbus_init_ioports(SysBusDevice* dev, uint32_t ioport, uint32_t size)
 {
     uint32_t i;
 
@@ -211,32 +185,25 @@ void sysbus_init_ioports(SysBusDevice *dev, uint32_t ioport, uint32_t size)
  * from being set to NULL to break the normal init/realize
  * of some devices.
  */
-static void sysbus_device_realize(DeviceState *dev, Error **errp)
-{
-}
+static void sysbus_device_realize(DeviceState* dev, Error** errp) { }
 
-DeviceState *sysbus_create_varargs(const char *name,
-                                   hwaddr addr, ...)
+DeviceState* sysbus_create_varargs(const char* name, hwaddr addr, ...)
 {
-    DeviceState *dev;
-    SysBusDevice *s;
-    va_list va;
-    qemu_irq irq;
-    int n;
+    DeviceState*  dev;
+    SysBusDevice* s;
+    va_list       va;
+    qemu_irq      irq;
+    int           n;
 
     dev = qdev_new(name);
-    s = SYS_BUS_DEVICE(dev);
+    s   = SYS_BUS_DEVICE(dev);
     sysbus_realize_and_unref(s, &error_fatal);
-    if (addr != (hwaddr)-1) {
-        sysbus_mmio_map(s, 0, addr);
-    }
+    if (addr != (hwaddr)-1) { sysbus_mmio_map(s, 0, addr); }
     va_start(va, addr);
     n = 0;
     while (1) {
         irq = va_arg(va, qemu_irq);
-        if (!irq) {
-            break;
-        }
+        if (!irq) { break; }
         sysbus_connect_irq(s, n, irq);
         n++;
     }
@@ -244,34 +211,28 @@ DeviceState *sysbus_create_varargs(const char *name,
     return dev;
 }
 
-bool sysbus_realize(SysBusDevice *dev, Error **errp)
-{
-    return qdev_realize(DEVICE(dev), sysbus_get_default(), errp);
-}
+bool sysbus_realize(SysBusDevice* dev, Error** errp) { return qdev_realize(DEVICE(dev), sysbus_get_default(), errp); }
 
-bool sysbus_realize_and_unref(SysBusDevice *dev, Error **errp)
-{
-    return qdev_realize_and_unref(DEVICE(dev), sysbus_get_default(), errp);
-}
+bool sysbus_realize_and_unref(SysBusDevice* dev, Error** errp)
+{ return qdev_realize_and_unref(DEVICE(dev), sysbus_get_default(), errp); }
 
-static void sysbus_dev_print(Monitor *mon, DeviceState *dev, int indent)
+static void sysbus_dev_print(Monitor* mon, DeviceState* dev, int indent)
 {
-    SysBusDevice *s = SYS_BUS_DEVICE(dev);
-    hwaddr size;
-    int i;
+    SysBusDevice* s = SYS_BUS_DEVICE(dev);
+    hwaddr        size;
+    int           i;
 
     for (i = 0; i < s->num_mmio; i++) {
         size = memory_region_size(s->mmio[i].memory);
-        monitor_printf(mon, "%*smmio " HWADDR_FMT_plx "/" HWADDR_FMT_plx "\n",
-                       indent, "", s->mmio[i].addr, size);
+        monitor_printf(mon, "%*smmio " HWADDR_FMT_plx "/" HWADDR_FMT_plx "\n", indent, "", s->mmio[i].addr, size);
     }
 }
 
-static char *sysbus_get_fw_dev_path(DeviceState *dev)
+static char* sysbus_get_fw_dev_path(DeviceState* dev)
 {
-    SysBusDevice *s = SYS_BUS_DEVICE(dev);
-    SysBusDeviceClass *sbc = SYS_BUS_DEVICE_GET_CLASS(s);
-    char *addr, *fw_dev_path;
+    SysBusDevice*      s   = SYS_BUS_DEVICE(dev);
+    SysBusDeviceClass* sbc = SYS_BUS_DEVICE_GET_CLASS(s);
+    char *             addr, *fw_dev_path;
 
     if (sbc->explicit_ofw_unit_address) {
         addr = sbc->explicit_ofw_unit_address(s);
@@ -281,21 +242,16 @@ static char *sysbus_get_fw_dev_path(DeviceState *dev)
             return fw_dev_path;
         }
     }
-    if (s->num_mmio) {
-        return g_strdup_printf("%s@" HWADDR_FMT_plx, qdev_fw_name(dev),
-                               s->mmio[0].addr);
-    }
-    if (s->num_pio) {
-        return g_strdup_printf("%s@i%04x", qdev_fw_name(dev), s->pio[0]);
-    }
+    if (s->num_mmio) { return g_strdup_printf("%s@" HWADDR_FMT_plx, qdev_fw_name(dev), s->mmio[0].addr); }
+    if (s->num_pio) { return g_strdup_printf("%s@i%04x", qdev_fw_name(dev), s->pio[0]); }
     return g_strdup(qdev_fw_name(dev));
 }
 
-static void sysbus_device_class_init(ObjectClass *klass, const void *data)
+static void sysbus_device_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *k = DEVICE_CLASS(klass);
-    k->realize = sysbus_device_realize;
-    k->bus_type = TYPE_SYSTEM_BUS;
+    DeviceClass* k = DEVICE_CLASS(klass);
+    k->realize     = sysbus_device_realize;
+    k->bus_type    = TYPE_SYSTEM_BUS;
     /*
      * device_add plugs devices into a suitable bus.  For "real" buses,
      * that actually connects the device.  For sysbus, the connections
@@ -309,7 +265,7 @@ static void sysbus_device_class_init(ObjectClass *klass, const void *data)
     k->user_creatable = false;
 }
 
-static BusState *main_system_bus;
+static BusState* main_system_bus;
 
 static void main_system_bus_create(void)
 {
@@ -318,49 +274,43 @@ static void main_system_bus_create(void)
      * in order to make "if (bus != sysbus_get_default())" work
      */
     main_system_bus = g_new0(BusState, 1);
-    qbus_init(main_system_bus, sizeof(BusState),
-              TYPE_SYSTEM_BUS, NULL, "main-system-bus");
+    qbus_init(main_system_bus, sizeof(BusState), TYPE_SYSTEM_BUS, NULL, "main-system-bus");
     OBJECT(main_system_bus)->free = g_free;
 }
 
-BusState *sysbus_get_default(void)
+BusState* sysbus_get_default(void)
 {
-    if (!main_system_bus) {
-        main_system_bus_create();
-    }
+    if (!main_system_bus) { main_system_bus_create(); }
     return main_system_bus;
 }
 
-static void dynamic_sysbus_device_class_init(ObjectClass *klass,
-                                             const void *data)
+static void dynamic_sysbus_device_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *k = DEVICE_CLASS(klass);
+    DeviceClass* k = DEVICE_CLASS(klass);
 
     k->user_creatable = true;
-    k->hotpluggable = false;
+    k->hotpluggable   = false;
 }
 
-static const TypeInfo sysbus_types[] = {
-    {
-        .name           = TYPE_SYSTEM_BUS,
-        .parent         = TYPE_BUS,
-        .instance_size  = sizeof(BusState),
-        .class_init     = system_bus_class_init,
-    },
-    {
-        .name           = TYPE_SYS_BUS_DEVICE,
-        .parent         = TYPE_DEVICE,
-        .instance_size  = sizeof(SysBusDevice),
-        .abstract       = true,
-        .class_size     = sizeof(SysBusDeviceClass),
-        .class_init     = sysbus_device_class_init,
-    },
-    {
-        .name           = TYPE_DYNAMIC_SYS_BUS_DEVICE,
-        .parent         = TYPE_SYS_BUS_DEVICE,
-        .class_init     = dynamic_sysbus_device_class_init,
-        .abstract       = true,
-    }
-};
+static const TypeInfo sysbus_types[] = {{
+                                            .name          = TYPE_SYSTEM_BUS,
+                                            .parent        = TYPE_BUS,
+                                            .instance_size = sizeof(BusState),
+                                            .class_init    = system_bus_class_init,
+                                        },
+                                        {
+                                            .name          = TYPE_SYS_BUS_DEVICE,
+                                            .parent        = TYPE_DEVICE,
+                                            .instance_size = sizeof(SysBusDevice),
+                                            .abstract      = true,
+                                            .class_size    = sizeof(SysBusDeviceClass),
+                                            .class_init    = sysbus_device_class_init,
+                                        },
+                                        {
+                                            .name       = TYPE_DYNAMIC_SYS_BUS_DEVICE,
+                                            .parent     = TYPE_SYS_BUS_DEVICE,
+                                            .class_init = dynamic_sysbus_device_class_init,
+                                            .abstract   = true,
+                                        }};
 
 DEFINE_TYPES(sysbus_types)

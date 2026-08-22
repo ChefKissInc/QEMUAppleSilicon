@@ -32,7 +32,8 @@
  *
  * A class type for block job driver.
  */
-struct BlockJobDriver {
+struct BlockJobDriver
+{
     /** Generic JobDriver callbacks and settings */
     JobDriver job_driver;
 
@@ -49,7 +50,7 @@ struct BlockJobDriver {
      * in the context of draining a job node after requesting that the job be
      * paused, until all activity on the child has stopped.
      */
-    bool (*drained_poll)(BlockJob *job);
+    bool (*drained_poll)(BlockJob* job);
 
     /*
      * Global state (GS) API. These functions run under the BQL.
@@ -63,19 +64,19 @@ struct BlockJobDriver {
      * resumed in a new AioContext.  This is the place to move any resources
      * besides job->blk to the new AioContext.
      */
-    void (*attached_aio_context)(BlockJob *job, AioContext *new_context);
+    void (*attached_aio_context)(BlockJob* job, AioContext* new_context);
 
     /*
      * Change the @job's options according to @opts.
      *
      * Note that this can already be called before the job coroutine is running.
      */
-    void (*change)(BlockJob *job, BlockJobChangeOptions *opts, Error **errp);
+    void (*change)(BlockJob* job, BlockJobChangeOptions* opts, Error** errp);
 
     /*
      * Query information specific to this kind of block job.
      */
-    void (*query)(BlockJob *job, BlockJobInfo *info);
+    void (*query)(BlockJob* job, BlockJobInfo* info);
 };
 
 /*
@@ -107,25 +108,23 @@ struct BlockJobDriver {
  * This function is not part of the public job interface; it should be
  * called from a wrapper that is specific to the job type.
  */
-void * GRAPH_UNLOCKED
-block_job_create(const char *job_id, const BlockJobDriver *driver,
-                 JobTxn *txn, BlockDriverState *bs, uint64_t perm,
-                 uint64_t shared_perm, int flags,
-                 BlockCompletionFunc *cb, void *opaque, Error **errp);
+void* GRAPH_UNLOCKED block_job_create(const char* job_id, const BlockJobDriver* driver, JobTxn* txn,
+                                      BlockDriverState* bs, uint64_t perm, uint64_t shared_perm, int flags,
+                                      BlockCompletionFunc* cb, void* opaque, Error** errp);
 
 /**
  * block_job_free:
  * Callback to be used for JobDriver.free in all block jobs. Frees block job
  * specific resources in @job.
  */
-void block_job_free(Job *job);
+void block_job_free(Job* job);
 
 /**
  * block_job_user_resume:
  * Callback to be used for JobDriver.user_resume in all block jobs. Resets the
  * iostatus when the user resumes @job.
  */
-void block_job_user_resume(Job *job);
+void block_job_user_resume(Job* job);
 
 /*
  * I/O API functions. These functions are thread-safe.
@@ -144,5 +143,4 @@ void block_job_user_resume(Job *job);
  * Report an I/O error for a block job and possibly stop the VM.  Return the
  * action that was selected based on @on_err and @error.
  */
-BlockErrorAction block_job_error_action(BlockJob *job, BlockdevOnError on_err,
-                                        int is_read, int error);
+BlockErrorAction block_job_error_action(BlockJob* job, BlockdevOnError on_err, int is_read, int error);

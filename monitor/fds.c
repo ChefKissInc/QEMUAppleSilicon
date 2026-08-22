@@ -33,23 +33,26 @@
 
 /* file descriptors passed via SCM_RIGHTS */
 typedef struct mon_fd_t mon_fd_t;
-struct mon_fd_t {
-    char *name;
-    int fd;
+struct mon_fd_t
+{
+    char* name;
+    int   fd;
     QLIST_ENTRY(mon_fd_t) next;
 };
 
 /* file descriptor associated with a file descriptor set */
 typedef struct MonFdsetFd MonFdsetFd;
-struct MonFdsetFd {
-    int fd;
-    char *opaque;
+struct MonFdsetFd
+{
+    int   fd;
+    char* opaque;
     QLIST_ENTRY(MonFdsetFd) next;
 };
 
 /* file descriptor set containing fds passed via SCM_RIGHTS */
 typedef struct MonFdset MonFdset;
-struct MonFdset {
+struct MonFdset
+{
     int64_t id;
     QLIST_HEAD(, MonFdsetFd) fds;
     QLIST_HEAD(, MonFdsetFd) dup_fds;
@@ -60,27 +63,24 @@ struct MonFdset {
 static QemuMutex mon_fdsets_lock;
 static QLIST_HEAD(, MonFdset) mon_fdsets;
 
-static bool monitor_add_fd(Monitor *mon, int fd, const char *fdname, Error **errp)
+static bool monitor_add_fd(Monitor* mon, int fd, const char* fdname, Error** errp)
 {
-    mon_fd_t *monfd;
+    mon_fd_t* monfd;
 
     if (qemu_isdigit(fdname[0])) {
         close(fd);
-        error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "fdname",
-                   "a name not starting with a digit");
+        error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "fdname", "a name not starting with a digit");
         return false;
     }
 
     /* See close() call below. */
     qemu_mutex_lock(&mon->mon_lock);
-    QLIST_FOREACH(monfd, &mon->fds, next) {
+    QLIST_FOREACH (monfd, &mon->fds, next) {
         int tmp_fd;
 
-        if (strcmp(monfd->name, fdname) != 0) {
-            continue;
-        }
+        if (strcmp(monfd->name, fdname) != 0) { continue; }
 
-        tmp_fd = monfd->fd;
+        tmp_fd    = monfd->fd;
         monfd->fd = fd;
         qemu_mutex_unlock(&mon->mon_lock);
         /* Make sure close() is outside critical section */
@@ -88,9 +88,9 @@ static bool monitor_add_fd(Monitor *mon, int fd, const char *fdname, Error **err
         return true;
     }
 
-    monfd = g_new0(mon_fd_t, 1);
+    monfd       = g_new0(mon_fd_t, 1);
     monfd->name = g_strdup(fdname);
-    monfd->fd = fd;
+    monfd->fd   = fd;
 
     QLIST_INSERT_HEAD(&mon->fds, monfd, next);
     qemu_mutex_unlock(&mon->mon_lock);
@@ -98,10 +98,10 @@ static bool monitor_add_fd(Monitor *mon, int fd, const char *fdname, Error **err
 }
 
 #ifdef CONFIG_POSIX
-void qmp_getfd(const char *fdname, Error **errp)
+void qmp_getfd(const char* fdname, Error** errp)
 {
-    Monitor *cur_mon = monitor_cur();
-    int fd;
+    Monitor* cur_mon = monitor_cur();
+    int      fd;
 
     fd = qemu_chr_fe_get_msgfd(&cur_mon->chr);
     if (fd == -1) {
@@ -113,17 +113,15 @@ void qmp_getfd(const char *fdname, Error **errp)
 }
 #endif
 
-void qmp_closefd(const char *fdname, Error **errp)
+void qmp_closefd(const char* fdname, Error** errp)
 {
-    Monitor *cur_mon = monitor_cur();
-    mon_fd_t *monfd;
-    int tmp_fd;
+    Monitor*  cur_mon = monitor_cur();
+    mon_fd_t* monfd;
+    int       tmp_fd;
 
     qemu_mutex_lock(&cur_mon->mon_lock);
-    QLIST_FOREACH(monfd, &cur_mon->fds, next) {
-        if (strcmp(monfd->name, fdname) != 0) {
-            continue;
-        }
+    QLIST_FOREACH (monfd, &cur_mon->fds, next) {
+        if (strcmp(monfd->name, fdname) != 0) { continue; }
 
         QLIST_REMOVE(monfd, next);
         tmp_fd = monfd->fd;
@@ -139,17 +137,15 @@ void qmp_closefd(const char *fdname, Error **errp)
     error_setg(errp, "File descriptor named '%s' not found", fdname);
 }
 
-int monitor_get_fd(Monitor *mon, const char *fdname, Error **errp)
+int monitor_get_fd(Monitor* mon, const char* fdname, Error** errp)
 {
-    mon_fd_t *monfd;
+    mon_fd_t* monfd;
 
     QEMU_LOCK_GUARD(&mon->mon_lock);
-    QLIST_FOREACH(monfd, &mon->fds, next) {
+    QLIST_FOREACH (monfd, &mon->fds, next) {
         int fd;
 
-        if (strcmp(monfd->name, fdname) != 0) {
-            continue;
-        }
+        if (strcmp(monfd->name, fdname) != 0) { continue; }
 
         fd = monfd->fd;
         assert(fd >= 0);
@@ -166,25 +162,23 @@ int monitor_get_fd(Monitor *mon, const char *fdname, Error **errp)
     return -1;
 }
 
-static void monitor_fdset_free(MonFdset *mon_fdset)
+static void monitor_fdset_free(MonFdset* mon_fdset)
 {
     QLIST_REMOVE(mon_fdset, next);
     g_free(mon_fdset);
 }
 
-static void monitor_fdset_free_if_empty(MonFdset *mon_fdset)
+static void monitor_fdset_free_if_empty(MonFdset* mon_fdset)
 {
     /*
      * Only remove an empty fdset. The fds are owned by the user and
      * should have been removed with qmp_remove_fd(). The dup_fds are
      * owned by QEMU and should have been removed with qemu_close().
      */
-    if (QLIST_EMPTY(&mon_fdset->fds) && QLIST_EMPTY(&mon_fdset->dup_fds)) {
-        monitor_fdset_free(mon_fdset);
-    }
+    if (QLIST_EMPTY(&mon_fdset->fds) && QLIST_EMPTY(&mon_fdset->dup_fds)) { monitor_fdset_free(mon_fdset); }
 }
 
-static void monitor_fdset_fd_free(MonFdsetFd *mon_fdset_fd)
+static void monitor_fdset_fd_free(MonFdsetFd* mon_fdset_fd)
 {
     close(mon_fdset_fd->fd);
     g_free(mon_fdset_fd->opaque);
@@ -194,21 +188,18 @@ static void monitor_fdset_fd_free(MonFdsetFd *mon_fdset_fd)
 
 void monitor_fdsets_cleanup(void)
 {
-    MonFdset *mon_fdset;
-    MonFdset *mon_fdset_next;
+    MonFdset* mon_fdset;
+    MonFdset* mon_fdset_next;
 
     QEMU_LOCK_GUARD(&mon_fdsets_lock);
-    QLIST_FOREACH_SAFE(mon_fdset, &mon_fdsets, next, mon_fdset_next) {
-        monitor_fdset_free_if_empty(mon_fdset);
-    }
+    QLIST_FOREACH_SAFE (mon_fdset, &mon_fdsets, next, mon_fdset_next) { monitor_fdset_free_if_empty(mon_fdset); }
 }
 
-AddfdInfo *qmp_add_fd(bool has_fdset_id, int64_t fdset_id,
-                      const char *opaque, Error **errp)
+AddfdInfo* qmp_add_fd(bool has_fdset_id, int64_t fdset_id, const char* opaque, Error** errp)
 {
-    int fd;
-    Monitor *mon = monitor_cur();
-    AddfdInfo *fdinfo;
+    int        fd;
+    Monitor*   mon = monitor_cur();
+    AddfdInfo* fdinfo;
 
     fd = qemu_chr_fe_get_msgfd(&mon->chr);
     if (fd == -1) {
@@ -217,35 +208,28 @@ AddfdInfo *qmp_add_fd(bool has_fdset_id, int64_t fdset_id,
     }
 
     fdinfo = monitor_fdset_add_fd(fd, has_fdset_id, fdset_id, opaque, errp);
-    if (fdinfo) {
-        return fdinfo;
-    }
+    if (fdinfo) { return fdinfo; }
 
 error:
-    if (fd != -1) {
-        close(fd);
-    }
+    if (fd != -1) { close(fd); }
     return NULL;
 }
 
 #ifdef WIN32
-void qmp_get_win32_socket(const char *infos, const char *fdname, Error **errp)
+void qmp_get_win32_socket(const char* infos, const char* fdname, Error** errp)
 {
-    g_autofree WSAPROTOCOL_INFOW *info = NULL;
-    gsize len;
-    SOCKET sk;
-    int fd;
+    g_autofree WSAPROTOCOL_INFOW* info = NULL;
+    gsize                         len;
+    SOCKET                        sk;
+    int                           fd;
 
-    info = (void *)g_base64_decode(infos, &len);
+    info = (void*)g_base64_decode(infos, &len);
     if (len != sizeof(*info)) {
         error_setg(errp, "Invalid WSAPROTOCOL_INFOW value");
         return;
     }
 
-    sk = WSASocketW(FROM_PROTOCOL_INFO,
-                    FROM_PROTOCOL_INFO,
-                    FROM_PROTOCOL_INFO,
-                    info, 0, 0);
+    sk = WSASocketW(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, info, 0, 0);
     if (sk == INVALID_SOCKET) {
         error_setg_win32(errp, WSAGetLastError(), "Couldn't import socket");
         return;
@@ -262,64 +246,55 @@ void qmp_get_win32_socket(const char *infos, const char *fdname, Error **errp)
 }
 #endif
 
-
-void qmp_remove_fd(int64_t fdset_id, bool has_fd, int64_t fd, Error **errp)
+void qmp_remove_fd(int64_t fdset_id, bool has_fd, int64_t fd, Error** errp)
 {
-    MonFdset *mon_fdset;
+    MonFdset*   mon_fdset;
     MonFdsetFd *mon_fdset_fd, *mon_fdset_fd_next;
-    char fd_str[60];
+    char        fd_str[60];
 
     QEMU_LOCK_GUARD(&mon_fdsets_lock);
-    QLIST_FOREACH(mon_fdset, &mon_fdsets, next) {
-        if (mon_fdset->id != fdset_id) {
-            continue;
-        }
-        QLIST_FOREACH_SAFE(mon_fdset_fd, &mon_fdset->fds, next,
-                           mon_fdset_fd_next) {
+    QLIST_FOREACH (mon_fdset, &mon_fdsets, next) {
+        if (mon_fdset->id != fdset_id) { continue; }
+        QLIST_FOREACH_SAFE (mon_fdset_fd, &mon_fdset->fds, next, mon_fdset_fd_next) {
             if (has_fd) {
-                if (mon_fdset_fd->fd != fd) {
-                    continue;
-                }
+                if (mon_fdset_fd->fd != fd) { continue; }
                 monitor_fdset_fd_free(mon_fdset_fd);
                 break;
-            } else {
+            }
+            else {
                 monitor_fdset_fd_free(mon_fdset_fd);
             }
         }
-        if (has_fd && !mon_fdset_fd) {
-            goto error;
-        }
+        if (has_fd && !mon_fdset_fd) { goto error; }
         monitor_fdset_free_if_empty(mon_fdset);
         return;
     }
 
 error:
-    if (has_fd) {
-        snprintf(fd_str, sizeof(fd_str), "fdset-id:%" PRId64 ", fd:%" PRId64,
-                 fdset_id, fd);
-    } else {
+    if (has_fd) { snprintf(fd_str, sizeof(fd_str), "fdset-id:%" PRId64 ", fd:%" PRId64, fdset_id, fd); }
+    else {
         snprintf(fd_str, sizeof(fd_str), "fdset-id:%" PRId64, fdset_id);
     }
     error_setg(errp, "File descriptor named '%s' not found", fd_str);
 }
 
-FdsetInfoList *qmp_query_fdsets(Error **errp)
+FdsetInfoList* qmp_query_fdsets(Error** errp)
 {
-    MonFdset *mon_fdset;
-    MonFdsetFd *mon_fdset_fd;
-    FdsetInfoList *fdset_list = NULL;
+    MonFdset*      mon_fdset;
+    MonFdsetFd*    mon_fdset_fd;
+    FdsetInfoList* fdset_list = NULL;
 
     QEMU_LOCK_GUARD(&mon_fdsets_lock);
-    QLIST_FOREACH(mon_fdset, &mon_fdsets, next) {
-        FdsetInfo *fdset_info = g_malloc0(sizeof(*fdset_info));
+    QLIST_FOREACH (mon_fdset, &mon_fdsets, next) {
+        FdsetInfo* fdset_info = g_malloc0(sizeof(*fdset_info));
 
         fdset_info->fdset_id = mon_fdset->id;
 
-        QLIST_FOREACH(mon_fdset_fd, &mon_fdset->fds, next) {
-            FdsetFdInfo *fdsetfd_info;
+        QLIST_FOREACH (mon_fdset_fd, &mon_fdset->fds, next) {
+            FdsetFdInfo* fdsetfd_info;
 
-            fdsetfd_info = g_malloc0(sizeof(*fdsetfd_info));
-            fdsetfd_info->fd = mon_fdset_fd->fd;
+            fdsetfd_info         = g_malloc0(sizeof(*fdsetfd_info));
+            fdsetfd_info->fd     = mon_fdset_fd->fd;
             fdsetfd_info->opaque = g_strdup(mon_fdset_fd->opaque);
 
             QAPI_LIST_PREPEND(fdset_info->fds, fdsetfd_info);
@@ -331,46 +306,41 @@ FdsetInfoList *qmp_query_fdsets(Error **errp)
     return fdset_list;
 }
 
-AddfdInfo *monitor_fdset_add_fd(int fd, bool has_fdset_id, int64_t fdset_id,
-                                const char *opaque, Error **errp)
+AddfdInfo* monitor_fdset_add_fd(int fd, bool has_fdset_id, int64_t fdset_id, const char* opaque, Error** errp)
 {
-    MonFdset *mon_fdset = NULL;
-    MonFdsetFd *mon_fdset_fd;
-    AddfdInfo *fdinfo;
+    MonFdset*   mon_fdset = NULL;
+    MonFdsetFd* mon_fdset_fd;
+    AddfdInfo*  fdinfo;
 
     QEMU_LOCK_GUARD(&mon_fdsets_lock);
     if (has_fdset_id) {
-        QLIST_FOREACH(mon_fdset, &mon_fdsets, next) {
+        QLIST_FOREACH (mon_fdset, &mon_fdsets, next) {
             /* Break if match found or match impossible due to ordering by ID */
             if (fdset_id <= mon_fdset->id) {
-                if (fdset_id < mon_fdset->id) {
-                    mon_fdset = NULL;
-                }
+                if (fdset_id < mon_fdset->id) { mon_fdset = NULL; }
                 break;
             }
         }
     }
 
     if (mon_fdset == NULL) {
-        int64_t fdset_id_prev = -1;
-        MonFdset *mon_fdset_cur = QLIST_FIRST(&mon_fdsets);
+        int64_t   fdset_id_prev = -1;
+        MonFdset* mon_fdset_cur = QLIST_FIRST(&mon_fdsets);
 
         if (has_fdset_id) {
             if (fdset_id < 0) {
-                error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "fdset-id",
-                           "a non-negative value");
+                error_setg(errp, QERR_INVALID_PARAMETER_VALUE, "fdset-id", "a non-negative value");
                 return NULL;
             }
             /* Use specified fdset ID */
-            QLIST_FOREACH(mon_fdset, &mon_fdsets, next) {
+            QLIST_FOREACH (mon_fdset, &mon_fdsets, next) {
                 mon_fdset_cur = mon_fdset;
-                if (fdset_id < mon_fdset_cur->id) {
-                    break;
-                }
+                if (fdset_id < mon_fdset_cur->id) { break; }
             }
-        } else {
+        }
+        else {
             /* Use first available fdset ID */
-            QLIST_FOREACH(mon_fdset, &mon_fdsets, next) {
+            QLIST_FOREACH (mon_fdset, &mon_fdsets, next) {
                 mon_fdset_cur = mon_fdset;
                 if (fdset_id_prev == mon_fdset_cur->id - 1) {
                     fdset_id_prev = mon_fdset_cur->id;
@@ -381,64 +351,60 @@ AddfdInfo *monitor_fdset_add_fd(int fd, bool has_fdset_id, int64_t fdset_id,
         }
 
         mon_fdset = g_malloc0(sizeof(*mon_fdset));
-        if (has_fdset_id) {
-            mon_fdset->id = fdset_id;
-        } else {
+        if (has_fdset_id) { mon_fdset->id = fdset_id; }
+        else {
             mon_fdset->id = fdset_id_prev + 1;
         }
 
         /* The fdset list is ordered by fdset ID */
-        if (!mon_fdset_cur) {
-            QLIST_INSERT_HEAD(&mon_fdsets, mon_fdset, next);
-        } else if (mon_fdset->id < mon_fdset_cur->id) {
+        if (!mon_fdset_cur) { QLIST_INSERT_HEAD(&mon_fdsets, mon_fdset, next); }
+        else if (mon_fdset->id < mon_fdset_cur->id) {
             QLIST_INSERT_BEFORE(mon_fdset_cur, mon_fdset, next);
-        } else {
+        }
+        else {
             QLIST_INSERT_AFTER(mon_fdset_cur, mon_fdset, next);
         }
     }
 
-    mon_fdset_fd = g_malloc0(sizeof(*mon_fdset_fd));
-    mon_fdset_fd->fd = fd;
+    mon_fdset_fd         = g_malloc0(sizeof(*mon_fdset_fd));
+    mon_fdset_fd->fd     = fd;
     mon_fdset_fd->opaque = g_strdup(opaque);
     QLIST_INSERT_HEAD(&mon_fdset->fds, mon_fdset_fd, next);
 
-    fdinfo = g_malloc0(sizeof(*fdinfo));
+    fdinfo           = g_malloc0(sizeof(*fdinfo));
     fdinfo->fdset_id = mon_fdset->id;
-    fdinfo->fd = mon_fdset_fd->fd;
+    fdinfo->fd       = mon_fdset_fd->fd;
 
     return fdinfo;
 }
 
-int monitor_fdset_dup_fd_add(int64_t fdset_id, int flags, Error **errp)
+int monitor_fdset_dup_fd_add(int64_t fdset_id, int flags, Error** errp)
 {
 #ifdef _WIN32
     error_setg(errp, "Platform does not support fd passing (fdset)");
     return -ENOENT;
 #else
-    MonFdset *mon_fdset;
+    MonFdset* mon_fdset;
 
     QEMU_LOCK_GUARD(&mon_fdsets_lock);
-    QLIST_FOREACH(mon_fdset, &mon_fdsets, next) {
-        MonFdsetFd *mon_fdset_fd;
-        MonFdsetFd *mon_fdset_fd_dup;
-        int fd = -1;
-        int dup_fd;
-        int mon_fd_flags;
-        int mask = O_ACCMODE;
+    QLIST_FOREACH (mon_fdset, &mon_fdsets, next) {
+        MonFdsetFd* mon_fdset_fd;
+        MonFdsetFd* mon_fdset_fd_dup;
+        int         fd = -1;
+        int         dup_fd;
+        int         mon_fd_flags;
+        int         mask = O_ACCMODE;
 
-#ifdef O_DIRECT
+    #ifdef O_DIRECT
         mask |= O_DIRECT;
-#endif
+    #endif
 
-        if (mon_fdset->id != fdset_id) {
-            continue;
-        }
+        if (mon_fdset->id != fdset_id) { continue; }
 
-        QLIST_FOREACH(mon_fdset_fd, &mon_fdset->fds, next) {
+        QLIST_FOREACH (mon_fdset_fd, &mon_fdset->fds, next) {
             mon_fd_flags = fcntl(mon_fdset_fd->fd, F_GETFL);
             if (mon_fd_flags == -1) {
-                error_setg(errp, "Failed to read file status flags for fd=%d",
-                           mon_fdset_fd->fd);
+                error_setg(errp, "Failed to read file status flags for fd=%d", mon_fdset_fd->fd);
                 return -1;
             }
 
@@ -450,9 +416,7 @@ int monitor_fdset_dup_fd_add(int64_t fdset_id, int flags, Error **errp)
 
         if (fd == -1) {
             errno = EACCES;
-            error_setg(errp,
-                       "Failed to find file descriptor with matching flags=0x%x",
-                       flags);
+            error_setg(errp, "Failed to find file descriptor with matching flags=0x%x", flags);
             return -1;
         }
 
@@ -462,7 +426,7 @@ int monitor_fdset_dup_fd_add(int64_t fdset_id, int flags, Error **errp)
             return -1;
         }
 
-        mon_fdset_fd_dup = g_malloc0(sizeof(*mon_fdset_fd_dup));
+        mon_fdset_fd_dup     = g_malloc0(sizeof(*mon_fdset_fd_dup));
         mon_fdset_fd_dup->fd = dup_fd;
         QLIST_INSERT_HEAD(&mon_fdset->dup_fds, mon_fdset_fd_dup, next);
         return dup_fd;
@@ -476,12 +440,12 @@ int monitor_fdset_dup_fd_add(int64_t fdset_id, int flags, Error **errp)
 
 void monitor_fdset_dup_fd_remove(int dup_fd)
 {
-    MonFdset *mon_fdset;
-    MonFdsetFd *mon_fdset_fd_dup;
+    MonFdset*   mon_fdset;
+    MonFdsetFd* mon_fdset_fd_dup;
 
     QEMU_LOCK_GUARD(&mon_fdsets_lock);
-    QLIST_FOREACH(mon_fdset, &mon_fdsets, next) {
-        QLIST_FOREACH(mon_fdset_fd_dup, &mon_fdset->dup_fds, next) {
+    QLIST_FOREACH (mon_fdset, &mon_fdsets, next) {
+        QLIST_FOREACH (mon_fdset_fd_dup, &mon_fdset->dup_fds, next) {
             if (mon_fdset_fd_dup->fd == dup_fd) {
                 QLIST_REMOVE(mon_fdset_fd_dup, next);
                 g_free(mon_fdset_fd_dup);
@@ -492,24 +456,17 @@ void monitor_fdset_dup_fd_remove(int dup_fd)
     }
 }
 
-int monitor_fd_param(Monitor *mon, const char *fdname, Error **errp)
+int monitor_fd_param(Monitor* mon, const char* fdname, Error** errp)
 {
     int fd;
 
-    if (!qemu_isdigit(fdname[0]) && mon) {
-        fd = monitor_get_fd(mon, fdname, errp);
-    } else {
+    if (!qemu_isdigit(fdname[0]) && mon) { fd = monitor_get_fd(mon, fdname, errp); }
+    else {
         fd = qemu_parse_fd(fdname);
-        if (fd < 0) {
-            error_setg(errp, "Invalid file descriptor number '%s'",
-                       fdname);
-        }
+        if (fd < 0) { error_setg(errp, "Invalid file descriptor number '%s'", fdname); }
     }
 
     return fd;
 }
 
-static void __attribute__((__constructor__)) monitor_fds_init(void)
-{
-    qemu_mutex_init(&mon_fdsets_lock);
-}
+static void __attribute__((__constructor__)) monitor_fds_init(void) { qemu_mutex_init(&mon_fdsets_lock); }

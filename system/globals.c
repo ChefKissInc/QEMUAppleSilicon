@@ -28,30 +28,24 @@
 #include "system/cpus.h"
 #include "system/system.h"
 
-bool should_mlock(MlockState state)
-{
-    return state == MLOCK_ON || state == MLOCK_ON_FAULT;
-}
+bool should_mlock(MlockState state) { return state == MLOCK_ON || state == MLOCK_ON_FAULT; }
 
-bool is_mlock_on_fault(MlockState state)
-{
-    return state == MLOCK_ON_FAULT;
-}
+bool is_mlock_on_fault(MlockState state) { return state == MLOCK_ON_FAULT; }
 
-const char* keyboard_layout;
-MlockState mlock_state;
-bool enable_cpu_pm;
-int autostart = 1;
-Chardev *parallel_hds[MAX_PARALLEL_PORTS];
+const char*   keyboard_layout;
+MlockState    mlock_state;
+bool          enable_cpu_pm;
+int           autostart = 1;
+Chardev*      parallel_hds[MAX_PARALLEL_PORTS];
 QEMUOptionRom option_rom[MAX_OPTION_ROMS];
-int nb_option_roms;
-const char *qemu_name;
-unsigned int nb_prom_envs;
-const char *prom_envs[MAX_PROM_ENVS];
-uint8_t *boot_splash_filedata;
+int           nb_option_roms;
+const char*   qemu_name;
+unsigned int  nb_prom_envs;
+const char*   prom_envs[MAX_PROM_ENVS];
+uint8_t*      boot_splash_filedata;
 
 /* The bytes in qemu_uuid are in the order specified by RFC4122, _not_ in the
  * little-endian "wire format" described in the SMBIOS 2.6 specification.
  */
 QemuUUID qemu_uuid;
-bool qemu_uuid_set;
+bool     qemu_uuid_set;

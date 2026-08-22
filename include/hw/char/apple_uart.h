@@ -24,5 +24,4 @@
 #include "qom/object.h"
 #include "target/arm/cpu-qom.h"
 
-DeviceState *apple_uart_create(hwaddr addr, int fifo_size, int channel,
-                               Chardev *chr, qemu_irq irq);
+DeviceState* apple_uart_create(hwaddr addr, int fifo_size, int channel, Chardev* chr, qemu_irq irq);

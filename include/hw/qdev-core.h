@@ -68,14 +68,16 @@
  *
  */
 
-enum {
+enum
+{
     DEV_NVECTORS_UNSPECIFIED = -1,
 };
 
 #define TYPE_DEVICE "device"
 OBJECT_DECLARE_TYPE(DeviceState, DeviceClass, DEVICE)
 
-typedef enum DeviceCategory {
+typedef enum DeviceCategory
+{
     DEVICE_CATEGORY_BRIDGE,
     DEVICE_CATEGORY_USB,
     DEVICE_CATEGORY_STORAGE,
@@ -89,12 +91,12 @@ typedef enum DeviceCategory {
     DEVICE_CATEGORY_MAX
 } DeviceCategory;
 
-typedef void (*DeviceRealize)(DeviceState *dev, Error **errp);
-typedef void (*DeviceUnrealize)(DeviceState *dev);
-typedef void (*DeviceReset)(DeviceState *dev);
-typedef void (*BusRealize)(BusState *bus, Error **errp);
-typedef void (*BusUnrealize)(BusState *bus);
-typedef int (*DeviceSyncConfig)(DeviceState *dev, Error **errp);
+typedef void (*DeviceRealize)(DeviceState* dev, Error** errp);
+typedef void (*DeviceUnrealize)(DeviceState* dev);
+typedef void (*DeviceReset)(DeviceState* dev);
+typedef void (*BusRealize)(BusState* bus, Error** errp);
+typedef void (*BusUnrealize)(BusState* bus);
+typedef int  (*DeviceSyncConfig)(DeviceState* dev, Error** errp);
 
 /**
  * struct DeviceClass - The base class for all devices.
@@ -110,7 +112,8 @@ typedef int (*DeviceSyncConfig)(DeviceState *dev, Error **errp);
  * as readonly "hotpluggable" property of #DeviceState instance
  *
  */
-struct DeviceClass {
+struct DeviceClass
+{
     /* private: */
     ObjectClass parent_class;
 
@@ -123,11 +126,11 @@ struct DeviceClass {
     /**
      * @fw_name: name used to identify device to firmware interfaces
      */
-    const char *fw_name;
+    const char* fw_name;
     /**
      * @desc: human readable description of device
      */
-    const char *desc;
+    const char* desc;
 
     /**
      * @props_: properties associated with device, should only be
@@ -135,7 +138,7 @@ struct DeviceClass {
      * ensures a compile-time error if someone attempts to assign
      * dc->props directly.
      */
-    const Property *props_;
+    const Property* props_;
 
     /**
      * @props_count_: number of elements in @props_; should only be
@@ -168,43 +171,45 @@ struct DeviceClass {
      *
      * TODO: remove once every reset callback is unused
      */
-    DeviceReset legacy_reset;
-    DeviceRealize realize;
-    DeviceUnrealize unrealize;
+    DeviceReset      legacy_reset;
+    DeviceRealize    realize;
+    DeviceUnrealize  unrealize;
     DeviceSyncConfig sync_config;
 
     /**
      * @bus_type: bus type
      * private: to qdev / bus.
      */
-    const char *bus_type;
+    const char* bus_type;
 };
 
 typedef struct NamedGPIOList NamedGPIOList;
 
-struct NamedGPIOList {
-    char *name;
-    qemu_irq *in;
-    int num_in;
-    int num_out;
+struct NamedGPIOList
+{
+    char*     name;
+    qemu_irq* in;
+    int       num_in;
+    int       num_out;
     QLIST_ENTRY(NamedGPIOList) node;
 };
 
-typedef struct Clock Clock;
+typedef struct Clock          Clock;
 typedef struct NamedClockList NamedClockList;
 
-struct NamedClockList {
-    char *name;
-    Clock *clock;
-    bool output;
-    bool alias;
+struct NamedClockList
+{
+    char*  name;
+    Clock* clock;
+    bool   output;
+    bool   alias;
     QLIST_ENTRY(NamedClockList) node;
 };
 
-typedef struct {
+typedef struct
+{
     bool engaged_in_io;
 } MemReentrancyGuard;
-
 
 typedef QLIST_HEAD(, NamedGPIOList) NamedGPIOListHead;
 typedef QLIST_HEAD(, NamedClockList) NamedClockListHead;
@@ -216,7 +221,8 @@ typedef QLIST_HEAD(, BusState) BusStateHead;
  * This structure should not be accessed directly.  We declare it here
  * so that it can be embedded in individual device state structures.
  */
-struct DeviceState {
+struct DeviceState
+{
     /* private: */
     Object parent_obj;
     /* public: */
@@ -224,11 +230,11 @@ struct DeviceState {
     /**
      * @id: global device id
      */
-    char *id;
+    char* id;
     /**
      * @canonical_path: canonical path of realized device in the QOM tree
      */
-    char *canonical_path;
+    char* canonical_path;
     /**
      * @realized: has device been realized?
      */
@@ -252,7 +258,7 @@ struct DeviceState {
     /**
      * @parent_bus: bus this device belongs to
      */
-    BusState *parent_bus;
+    BusState* parent_bus;
     /**
      * @gpios: QLIST of named GPIOs the device provides.
      */
@@ -285,7 +291,7 @@ struct DeviceState {
     /**
      * @unplug_blockers: list of reasons to block unplugging of device
      */
-    GSList *unplug_blockers;
+    GSList* unplug_blockers;
     /**
      * @mem_reentrancy_guard: Is the device currently in mmio/pio/dma?
      *
@@ -295,9 +301,10 @@ struct DeviceState {
 };
 
 typedef struct DeviceListener DeviceListener;
-struct DeviceListener {
-    void (*realize)(DeviceListener *listener, DeviceState *dev);
-    void (*unrealize)(DeviceListener *listener, DeviceState *dev);
+struct DeviceListener
+{
+    void (*realize)(DeviceListener* listener, DeviceState* dev);
+    void (*unrealize)(DeviceListener* listener, DeviceState* dev);
     /*
      * This callback is called upon init of the DeviceState and
      * informs qdev if a device should be visible or hidden.  We can
@@ -307,28 +314,27 @@ struct DeviceListener {
      * On errors, it returns false and errp is set. Device creation
      * should fail in this case.
      */
-    bool (*hide_device)(DeviceListener *listener, const QDict *device_opts,
-                        bool from_json, Error **errp);
+    bool (*hide_device)(DeviceListener* listener, const QDict* device_opts, bool from_json, Error** errp);
     QTAILQ_ENTRY(DeviceListener) link;
 };
 
 #define TYPE_BUS "bus"
-DECLARE_OBJ_CHECKERS(BusState, BusClass,
-                     BUS, TYPE_BUS)
+DECLARE_OBJ_CHECKERS(BusState, BusClass, BUS, TYPE_BUS)
 
-struct BusClass {
+struct BusClass
+{
     ObjectClass parent_class;
 
     /* FIXME first arg should be BusState */
-    void (*print_dev)(Monitor *mon, DeviceState *dev, int indent);
-    char *(*get_dev_path)(DeviceState *dev);
+    void  (*print_dev)(Monitor* mon, DeviceState* dev, int indent);
+    char* (*get_dev_path)(DeviceState* dev);
 
     /*
      * This callback is used to create Open Firmware device path in accordance
      * with OF spec http://forthworks.com/standards/of1275.pdf. Individual bus
      * bindings can be found at http://playground.sun.com/1275/bindings/.
      */
-    char *(*get_fw_dev_path)(DeviceState *dev);
+    char* (*get_fw_dev_path)(DeviceState* dev);
 
     /*
      * Return whether the device can be added to @bus,
@@ -336,9 +342,9 @@ struct BusClass {
      * before realize.  If not, on return @errp contains the
      * human-readable error message.
      */
-    bool (*check_address)(BusState *bus, DeviceState *dev, Error **errp);
+    bool (*check_address)(BusState* bus, DeviceState* dev, Error** errp);
 
-    BusRealize realize;
+    BusRealize   realize;
     BusUnrealize unrealize;
 
     /* maximum devices allowed on the bus, 0: no limit. */
@@ -347,10 +353,11 @@ struct BusClass {
     int automatic_ids;
 };
 
-typedef struct BusChild {
+typedef struct BusChild
+{
     struct rcu_head rcu;
-    DeviceState *child;
-    int index;
+    DeviceState*    child;
+    int             index;
     QTAILQ_ENTRY(BusChild) sibling;
 } BusChild;
 
@@ -370,17 +377,18 @@ typedef QLIST_ENTRY(BusState) BusStateEntry;
  * @full: is the bus full?
  * @num_children: current number of child buses
  */
-struct BusState {
+struct BusState
+{
     /* private: */
     Object obj;
     /* public: */
-    DeviceState *parent;
-    char *name;
-    HotplugHandler *hotplug_handler;
-    int max_index;
-    bool realized;
-    bool full;
-    int num_children;
+    DeviceState*    parent;
+    char*           name;
+    HotplugHandler* hotplug_handler;
+    int             max_index;
+    bool            realized;
+    bool            full;
+    int             num_children;
 
     /**
      * @children: an RCU protected QTAILQ, thus readers must use RCU
@@ -406,22 +414,19 @@ struct BusState {
  *
  * An error is fatal for non-hotplugged devices, when the global is applied.
  */
-typedef struct GlobalProperty {
-    const char *driver;
-    const char *property;
-    const char *value;
-    bool used;
-    bool optional;
+typedef struct GlobalProperty
+{
+    const char* driver;
+    const char* property;
+    const char* value;
+    bool        used;
+    bool        optional;
 } GlobalProperty;
 
-static inline void
-compat_props_add(GPtrArray *arr,
-                 GlobalProperty props[], size_t nelem)
+static inline void compat_props_add(GPtrArray* arr, GlobalProperty props[], size_t nelem)
 {
     int i;
-    for (i = 0; i < nelem; i++) {
-        g_ptr_array_add(arr, (void *)&props[i]);
-    }
+    for (i = 0; i < nelem; i++) { g_ptr_array_add(arr, (void*)&props[i]); }
 }
 
 /*** Board API.  This should go away once we have a machine config file.  ***/
@@ -436,7 +441,7 @@ compat_props_add(GPtrArray *arr,
  *
  * Return: a derived DeviceState object with a reference count of 1.
  */
-DeviceState *qdev_new(const char *name);
+DeviceState* qdev_new(const char* name);
 
 /**
  * qdev_try_new: Try to create a device on the heap
@@ -448,7 +453,7 @@ DeviceState *qdev_new(const char *name);
  * Return: a derived DeviceState object with a reference count of 1 or
  * NULL if type @name does not exist.
  */
-DeviceState *qdev_try_new(const char *name);
+DeviceState* qdev_try_new(const char* name);
 
 /**
  * qdev_is_realized() - check if device is realized
@@ -457,10 +462,7 @@ DeviceState *qdev_try_new(const char *name);
  * Context: May be called outside big qemu lock.
  * Return: true if the device has been fully constructed, false otherwise.
  */
-static inline bool qdev_is_realized(DeviceState *dev)
-{
-    return qatomic_load_acquire(&dev->realized);
-}
+static inline bool qdev_is_realized(DeviceState* dev) { return qatomic_load_acquire(&dev->realized); }
 
 /**
  * qdev_realize: Realize @dev.
@@ -479,7 +481,7 @@ static inline bool qdev_is_realized(DeviceState *dev)
  *
  * Return: true on success, else false setting @errp with error
  */
-bool qdev_realize(DeviceState *dev, BusState *bus, Error **errp);
+bool qdev_realize(DeviceState* dev, BusState* bus, Error** errp);
 
 /**
  * qdev_realize_and_unref: Realize @dev and drop a reference
@@ -507,7 +509,7 @@ bool qdev_realize(DeviceState *dev, BusState *bus, Error **errp);
  *
  * Return: true on success, else false setting @errp with error
  */
-bool qdev_realize_and_unref(DeviceState *dev, BusState *bus, Error **errp);
+bool qdev_realize_and_unref(DeviceState* dev, BusState* bus, Error** errp);
 
 /**
  * qdev_unrealize: Unrealize a device
@@ -528,13 +530,12 @@ bool qdev_realize_and_unref(DeviceState *dev, BusState *bus, Error **errp);
  * the unplugging process); all other devices are expected to last for
  * the life of the simulation and should not be unrealized and freed.
  */
-void qdev_unrealize(DeviceState *dev);
-void qdev_set_legacy_instance_id(DeviceState *dev, int alias_id,
-                                 int required_for_version);
-HotplugHandler *qdev_get_bus_hotplug_handler(DeviceState *dev);
-HotplugHandler *qdev_get_machine_hotplug_handler(DeviceState *dev);
-bool qdev_hotplug_allowed(DeviceState *dev, BusState *bus, Error **errp);
-bool qdev_hotunplug_allowed(DeviceState *dev, Error **errp);
+void            qdev_unrealize(DeviceState* dev);
+void            qdev_set_legacy_instance_id(DeviceState* dev, int alias_id, int required_for_version);
+HotplugHandler* qdev_get_bus_hotplug_handler(DeviceState* dev);
+HotplugHandler* qdev_get_machine_hotplug_handler(DeviceState* dev);
+bool            qdev_hotplug_allowed(DeviceState* dev, BusState* bus, Error** errp);
+bool            qdev_hotunplug_allowed(DeviceState* dev, Error** errp);
 
 /**
  * qdev_get_hotplug_handler() - Get handler responsible for device wiring
@@ -546,13 +547,12 @@ bool qdev_hotunplug_allowed(DeviceState *dev, Error **errp);
  * Return: pointer to object that implements TYPE_HOTPLUG_HANDLER interface
  * or NULL if there aren't any.
  */
-HotplugHandler *qdev_get_hotplug_handler(DeviceState *dev);
-void qdev_unplug(DeviceState *dev, Error **errp);
-int qdev_sync_config(DeviceState *dev, Error **errp);
-void qdev_simple_device_unplug_cb(HotplugHandler *hotplug_dev,
-                                  DeviceState *dev, Error **errp);
-void qdev_machine_creation_done(void);
-bool qdev_machine_modified(void);
+HotplugHandler* qdev_get_hotplug_handler(DeviceState* dev);
+void            qdev_unplug(DeviceState* dev, Error** errp);
+int             qdev_sync_config(DeviceState* dev, Error** errp);
+void            qdev_simple_device_unplug_cb(HotplugHandler* hotplug_dev, DeviceState* dev, Error** errp);
+void            qdev_machine_creation_done(void);
+bool            qdev_machine_modified(void);
 
 /**
  * qdev_add_unplug_blocker: Add an unplug blocker to a device
@@ -560,7 +560,7 @@ bool qdev_machine_modified(void);
  * @dev: Device to be blocked from unplug
  * @reason: Reason for blocking
  */
-void qdev_add_unplug_blocker(DeviceState *dev, Error *reason);
+void qdev_add_unplug_blocker(DeviceState* dev, Error* reason);
 
 /**
  * qdev_del_unplug_blocker: Remove an unplug blocker from a device
@@ -569,7 +569,7 @@ void qdev_add_unplug_blocker(DeviceState *dev, Error *reason);
  * @reason: Pointer to the Error used with qdev_add_unplug_blocker.
  *          Used as a handle to lookup the blocker for deletion.
  */
-void qdev_del_unplug_blocker(DeviceState *dev, Error *reason);
+void qdev_del_unplug_blocker(DeviceState* dev, Error* reason);
 
 /**
  * qdev_unplug_blocked: Confirm if a device is blocked from unplug
@@ -580,7 +580,7 @@ void qdev_del_unplug_blocker(DeviceState *dev, Error *reason);
  * Returns: true (also setting @errp) if device is blocked from unplug,
  * false otherwise
  */
-bool qdev_unplug_blocked(DeviceState *dev, Error **errp);
+bool qdev_unplug_blocked(DeviceState* dev, Error** errp);
 
 /**
  * typedef GpioPolarity - Polarity of a GPIO line
@@ -593,7 +593,8 @@ bool qdev_unplug_blocked(DeviceState *dev, Error **errp);
  * whereas in active-low logic (%GPIO_POLARITY_ACTIVE_LOW), a pin
  * is active when the voltage on the pin is low (or grounded).
  */
-typedef enum {
+typedef enum
+{
     GPIO_POLARITY_ACTIVE_LOW,
     GPIO_POLARITY_ACTIVE_HIGH
 } GpioPolarity;
@@ -618,7 +619,7 @@ typedef enum {
  *
  * Return: qemu_irq corresponding to anonymous input GPIO line
  */
-qemu_irq qdev_get_gpio_in(DeviceState *dev, int n);
+qemu_irq qdev_get_gpio_in(DeviceState* dev, int n);
 
 /**
  * qdev_get_gpio_in_named: Get one of a device's named input GPIO lines
@@ -638,7 +639,7 @@ qemu_irq qdev_get_gpio_in(DeviceState *dev, int n);
  *
  * Return: qemu_irq corresponding to named input GPIO line
  */
-qemu_irq qdev_get_gpio_in_named(DeviceState *dev, const char *name, int n);
+qemu_irq qdev_get_gpio_in_named(DeviceState* dev, const char* name, int n);
 
 /**
  * qdev_connect_gpio_out: Connect one of a device's anonymous output GPIO lines
@@ -669,7 +670,7 @@ qemu_irq qdev_get_gpio_in_named(DeviceState *dev, const char *name, int n);
  *
  * For named output GPIO lines, use qdev_connect_gpio_out_named().
  */
-void qdev_connect_gpio_out(DeviceState *dev, int n, qemu_irq pin);
+void qdev_connect_gpio_out(DeviceState* dev, int n, qemu_irq pin);
 
 /**
  * qdev_connect_gpio_out_named: Connect one of a device's named output
@@ -697,8 +698,7 @@ void qdev_connect_gpio_out(DeviceState *dev, int n, qemu_irq pin);
  *
  * For anonymous output GPIO lines, use qdev_connect_gpio_out().
  */
-void qdev_connect_gpio_out_named(DeviceState *dev, const char *name, int n,
-                                 qemu_irq input_pin);
+void qdev_connect_gpio_out_named(DeviceState* dev, const char* name, int n, qemu_irq input_pin);
 
 /**
  * qdev_get_gpio_out_connector: Get the qemu_irq connected to an output GPIO
@@ -718,9 +718,9 @@ void qdev_connect_gpio_out_named(DeviceState *dev, const char *name, int n,
  *
  * Return: qemu_irq associated with GPIO or NULL if un-wired.
  */
-qemu_irq qdev_get_gpio_out_connector(DeviceState *dev, const char *name, int n);
+qemu_irq qdev_get_gpio_out_connector(DeviceState* dev, const char* name, int n);
 
-BusState *qdev_get_child_bus(DeviceState *dev, const char *name);
+BusState* qdev_get_child_bus(DeviceState* dev, const char* name);
 
 /*** Device API.  ***/
 
@@ -741,7 +741,7 @@ BusState *qdev_get_child_bus(DeviceState *dev, const char *name);
  * See qdev_get_gpio_in() for how code that uses such a device can get
  * hold of an input GPIO line to manipulate it.
  */
-void qdev_init_gpio_in(DeviceState *dev, qemu_irq_handler handler, int n);
+void qdev_init_gpio_in(DeviceState* dev, qemu_irq_handler handler, int n);
 
 /**
  * qdev_init_gpio_out: create an array of anonymous output GPIO lines
@@ -770,7 +770,7 @@ void qdev_init_gpio_in(DeviceState *dev, qemu_irq_handler handler, int n);
  * will be automatically released when @dev calls its instance_finalize()
  * handler.
  */
-void qdev_init_gpio_out(DeviceState *dev, qemu_irq *pins, int n);
+void qdev_init_gpio_out(DeviceState* dev, qemu_irq* pins, int n);
 
 /**
  * qdev_init_gpio_out_named: create an array of named output GPIO lines
@@ -783,8 +783,7 @@ void qdev_init_gpio_out(DeviceState *dev, qemu_irq *pins, int n);
  * with a name. Code using the device can then connect these GPIO lines
  * using qdev_connect_gpio_out_named().
  */
-void qdev_init_gpio_out_named(DeviceState *dev, qemu_irq *pins,
-                              const char *name, int n);
+void qdev_init_gpio_out_named(DeviceState* dev, qemu_irq* pins, const char* name, int n);
 
 /**
  * qdev_init_gpio_in_named_with_opaque() - create an array of input GPIO lines
@@ -794,10 +793,8 @@ void qdev_init_gpio_out_named(DeviceState *dev, qemu_irq *pins,
  * @name: Name of the GPIO input (must be unique for this device)
  * @n: Number of GPIO lines in this input set
  */
-void qdev_init_gpio_in_named_with_opaque(DeviceState *dev,
-                                         qemu_irq_handler handler,
-                                         void *opaque,
-                                         const char *name, int n);
+void qdev_init_gpio_in_named_with_opaque(DeviceState* dev, qemu_irq_handler handler, void* opaque, const char* name,
+                                         int n);
 
 /**
  * qdev_init_gpio_in_named() - create an array of input GPIO lines
@@ -809,12 +806,8 @@ void qdev_init_gpio_in_named_with_opaque(DeviceState *dev,
  * Like qdev_init_gpio_in_named_with_opaque(), but the opaque pointer
  * passed to the handler is @dev (which is the most commonly desired behaviour).
  */
-static inline void qdev_init_gpio_in_named(DeviceState *dev,
-                                           qemu_irq_handler handler,
-                                           const char *name, int n)
-{
-    qdev_init_gpio_in_named_with_opaque(dev, handler, dev, name, n);
-}
+static inline void qdev_init_gpio_in_named(DeviceState* dev, qemu_irq_handler handler, const char* name, int n)
+{ qdev_init_gpio_in_named_with_opaque(dev, handler, dev, name, n); }
 
 /**
  * qdev_pass_gpios: create GPIO lines on container which pass through to device
@@ -835,36 +828,30 @@ static inline void qdev_init_gpio_in_named(DeviceState *dev,
  * To users of the container device, the GPIO array created on @container
  * behaves exactly like any other.
  */
-void qdev_pass_gpios(DeviceState *dev, DeviceState *container,
-                     const char *name);
+void qdev_pass_gpios(DeviceState* dev, DeviceState* container, const char* name);
 
-BusState *qdev_get_parent_bus(const DeviceState *dev);
+BusState* qdev_get_parent_bus(const DeviceState* dev);
 
 /*** BUS API. ***/
 
-DeviceState *qdev_find_recursive(BusState *bus, const char *id);
+DeviceState* qdev_find_recursive(BusState* bus, const char* id);
 
 /* Returns 0 to walk children, > 0 to skip walk, < 0 to terminate walk. */
-typedef int (qbus_walkerfn)(BusState *bus, void *opaque);
-typedef int (qdev_walkerfn)(DeviceState *dev, void *opaque);
+typedef int(qbus_walkerfn)(BusState* bus, void* opaque);
+typedef int(qdev_walkerfn)(DeviceState* dev, void* opaque);
 
-void qbus_init(void *bus, size_t size, const char *typename,
-               DeviceState *parent, const char *name);
-BusState *qbus_new(const char *typename, DeviceState *parent, const char *name);
-bool qbus_realize(BusState *bus, Error **errp);
-void qbus_unrealize(BusState *bus);
+void      qbus_init(void* bus, size_t size, const char* typename, DeviceState* parent, const char* name);
+BusState* qbus_new(const char* typename, DeviceState* parent, const char* name);
+bool      qbus_realize(BusState* bus, Error** errp);
+void      qbus_unrealize(BusState* bus);
 
 /* Returns > 0 if either devfn or busfn skip walk somewhere in cursion,
  *         < 0 if either devfn or busfn terminate walk somewhere in cursion,
  *           0 otherwise. */
-int qbus_walk_children(BusState *bus,
-                       qdev_walkerfn *pre_devfn, qbus_walkerfn *pre_busfn,
-                       qdev_walkerfn *post_devfn, qbus_walkerfn *post_busfn,
-                       void *opaque);
-int qdev_walk_children(DeviceState *dev,
-                       qdev_walkerfn *pre_devfn, qbus_walkerfn *pre_busfn,
-                       qdev_walkerfn *post_devfn, qbus_walkerfn *post_busfn,
-                       void *opaque);
+int qbus_walk_children(BusState* bus, qdev_walkerfn* pre_devfn, qbus_walkerfn* pre_busfn, qdev_walkerfn* post_devfn,
+                       qbus_walkerfn* post_busfn, void* opaque);
+int qdev_walk_children(DeviceState* dev, qdev_walkerfn* pre_devfn, qbus_walkerfn* pre_busfn, qdev_walkerfn* post_devfn,
+                       qbus_walkerfn* post_busfn, void* opaque);
 
 /**
  * device_cold_reset() - perform a recursive cold reset on a device
@@ -873,7 +860,7 @@ int qdev_walk_children(DeviceState *dev,
  * Reset device @dev and perform a recursive processing using the resettable
  * interface. It triggers a RESET_TYPE_COLD.
  */
-void device_cold_reset(DeviceState *dev);
+void device_cold_reset(DeviceState* dev);
 
 /**
  * bus_cold_reset() - perform a recursive cold reset on a bus
@@ -882,7 +869,7 @@ void device_cold_reset(DeviceState *dev);
  * Reset bus @bus and perform a recursive processing using the resettable
  * interface. It triggers a RESET_TYPE_COLD.
  */
-void bus_cold_reset(BusState *bus);
+void bus_cold_reset(BusState* bus);
 
 /**
  * device_is_in_reset() - check device reset state
@@ -890,7 +877,7 @@ void bus_cold_reset(BusState *bus);
  *
  * Return: true if the device @dev is currently being reset.
  */
-bool device_is_in_reset(DeviceState *dev);
+bool device_is_in_reset(DeviceState* dev);
 
 /**
  * bus_is_in_reset() - check bus reset state
@@ -898,13 +885,13 @@ bool device_is_in_reset(DeviceState *dev);
  *
  * Return: true if the bus @bus is currently being reset.
  */
-bool bus_is_in_reset(BusState *bus);
+bool bus_is_in_reset(BusState* bus);
 
 /* This should go away once we get rid of the NULL bus hack */
-BusState *sysbus_get_default(void);
+BusState* sysbus_get_default(void);
 
-char *qdev_get_fw_dev_path(DeviceState *dev);
-char *qdev_get_own_fw_dev_path_from_handler(BusState *bus, DeviceState *dev);
+char* qdev_get_fw_dev_path(DeviceState* dev);
+char* qdev_get_own_fw_dev_path_from_handler(BusState* bus, DeviceState* dev);
 
 /**
  * device_class_set_props(): add a set of properties to an device
@@ -920,15 +907,14 @@ char *qdev_get_own_fw_dev_path_from_handler(BusState *bus, DeviceState *dev);
  * Validate that the array does not have a legacy terminator at compile-time;
  * requires -O2 and the array to be const.
  */
-#define device_class_set_props(dc, props) \
-    do {                                                                \
-        QEMU_BUILD_BUG_ON(sizeof(props) == 0);                          \
-        size_t props_count_ = ARRAY_SIZE(props);                        \
-        if ((props)[props_count_ - 1].name == NULL) {                   \
-            qemu_build_not_reached();                                   \
-        }                                                               \
-        device_class_set_props_n((dc), (props), props_count_);          \
-    } while (0)
+#define device_class_set_props(dc, props)                                         \
+    do {                                                                          \
+        QEMU_BUILD_BUG_ON(sizeof(props) == 0);                                    \
+        size_t props_count_ = ARRAY_SIZE(props);                                  \
+        if ((props)[props_count_ - 1].name == NULL) { qemu_build_not_reached(); } \
+        device_class_set_props_n((dc), (props), props_count_);                    \
+    }                                                                             \
+    while (0)
 
 /**
  * device_class_set_props_n(): add a set of properties to an device
@@ -940,7 +926,7 @@ char *qdev_get_own_fw_dev_path_from_handler(BusState *bus, DeviceState *dev);
  * you attempt to add an existing property defined by a parent class.
  * To modify an inherited property you need to use????
  */
-void device_class_set_props_n(DeviceClass *dc, const Property *props, size_t n);
+void device_class_set_props_n(DeviceClass* dc, const Property* props, size_t n);
 
 /**
  * device_class_set_parent_realize() - set up for chaining realize fns
@@ -954,12 +940,11 @@ void device_class_set_props_n(DeviceClass *dc, const Property *props, size_t n);
  * instance structure) so you can eventually call
  * dc->parent_realize(dev, errp)
  */
-static inline void device_class_set_parent_realize(DeviceClass *dc,
-                                     DeviceRealize dev_realize,
-                                     DeviceRealize *parent_realize)
+static inline void device_class_set_parent_realize(DeviceClass* dc, DeviceRealize dev_realize,
+                                                   DeviceRealize* parent_realize)
 {
     *parent_realize = dc->realize;
-    dc->realize = dev_realize;
+    dc->realize     = dev_realize;
 }
 
 /**
@@ -973,8 +958,7 @@ static inline void device_class_set_parent_realize(DeviceClass *dc,
  * In addition, devices which need to chain to their parent class's
  * reset methods or which need to be subclassed must use Resettable.
  */
-void device_class_set_legacy_reset(DeviceClass *dc,
-                                   DeviceReset dev_reset);
+void device_class_set_legacy_reset(DeviceClass* dc, DeviceReset dev_reset);
 
 /**
  * device_class_set_parent_unrealize() - set up for chaining unrealize fns
@@ -988,19 +972,17 @@ void device_class_set_legacy_reset(DeviceClass *dc,
  * (usually in the instance structure) so you can eventually call
  * dc->parent_unrealize(dev);
  */
-static inline void
-device_class_set_parent_unrealize(DeviceClass *dc,
-                                  DeviceUnrealize dev_unrealize,
-                                  DeviceUnrealize *parent_unrealize)
+static inline void device_class_set_parent_unrealize(DeviceClass* dc, DeviceUnrealize dev_unrealize,
+                                                     DeviceUnrealize* parent_unrealize)
 {
     *parent_unrealize = dc->unrealize;
-    dc->unrealize = dev_unrealize;
+    dc->unrealize     = dev_unrealize;
 }
 
-const char *qdev_fw_name(DeviceState *dev);
+const char* qdev_fw_name(DeviceState* dev);
 
-void qdev_assert_realized_properly(void);
-Object *qdev_get_machine(void);
+void    qdev_assert_realized_properly(void);
+Object* qdev_get_machine(void);
 
 /**
  * qdev_create_fake_machine(): Create a fake machine container.
@@ -1020,7 +1002,7 @@ void qdev_create_fake_machine(void);
  *
  * Returns: the machine container object.
  */
-Object *machine_get_container(const char *name);
+Object* machine_get_container(const char* name);
 
 /**
  * qdev_get_human_name() - Return a human-readable name for a device
@@ -1034,30 +1016,28 @@ Object *machine_get_container(const char *name);
  *
  * Use g_free() to free it.
  */
-char *qdev_get_human_name(DeviceState *dev);
+char* qdev_get_human_name(DeviceState* dev);
 
 /* FIXME: make this a link<> */
-bool qdev_set_parent_bus(DeviceState *dev, BusState *bus, Error **errp);
+bool qdev_set_parent_bus(DeviceState* dev, BusState* bus, Error** errp);
 
 extern bool qdev_hot_removed;
 
-char *qdev_get_dev_path(DeviceState *dev);
+char* qdev_get_dev_path(DeviceState* dev);
 
-void qbus_set_hotplug_handler(BusState *bus, Object *handler);
-void qbus_set_bus_hotplug_handler(BusState *bus);
+void qbus_set_hotplug_handler(BusState* bus, Object* handler);
+void qbus_set_bus_hotplug_handler(BusState* bus);
 
-static inline bool qbus_is_hotpluggable(BusState *bus)
+static inline bool qbus_is_hotpluggable(BusState* bus)
 {
-    HotplugHandler *plug_handler = bus->hotplug_handler;
-    bool ret = !!plug_handler;
+    HotplugHandler* plug_handler = bus->hotplug_handler;
+    bool            ret          = !!plug_handler;
 
     if (plug_handler) {
-        HotplugHandlerClass *hdc;
+        HotplugHandlerClass* hdc;
 
         hdc = HOTPLUG_HANDLER_GET_CLASS(plug_handler);
-        if (hdc->is_hotpluggable_bus) {
-            ret = hdc->is_hotpluggable_bus(plug_handler, bus);
-        }
+        if (hdc->is_hotpluggable_bus) { ret = hdc->is_hotpluggable_bus(plug_handler, bus); }
     }
     return ret;
 }
@@ -1080,13 +1060,10 @@ static inline bool qbus_is_hotpluggable(BusState *bus)
  * created devices will appear on the expansion-port bus where
  * guest software expects them.
  */
-static inline void qbus_mark_full(BusState *bus)
-{
-    bus->full = true;
-}
+static inline void qbus_mark_full(BusState* bus) { bus->full = true; }
 
-void device_listener_register(DeviceListener *listener);
-void device_listener_unregister(DeviceListener *listener);
+void device_listener_register(DeviceListener* listener);
+void device_listener_unregister(DeviceListener* listener);
 
 /**
  * qdev_should_hide_device() - check if device should be hidden
@@ -1099,9 +1076,10 @@ void device_listener_unregister(DeviceListener *listener);
  *
  * Return: if the device should be added now or not.
  */
-bool qdev_should_hide_device(const QDict *opts, bool from_json, Error **errp);
+bool qdev_should_hide_device(const QDict* opts, bool from_json, Error** errp);
 
-typedef enum MachineInitPhase {
+typedef enum MachineInitPhase
+{
     /* current_machine is NULL.  */
     PHASE_NO_MACHINE,
 

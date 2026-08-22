@@ -22,13 +22,9 @@
 #include "qapi/error.h"
 #include "qemu/base64.h"
 
-static const char *base64_valid_chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n";
+static const char* base64_valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n";
 
-uint8_t *qbase64_decode(const char *input,
-                        size_t in_len,
-                        size_t *out_len,
-                        Error **errp)
+uint8_t* qbase64_decode(const char* input, size_t in_len, size_t* out_len, Error** errp)
 {
     *out_len = 0;
 
@@ -47,7 +43,8 @@ uint8_t *qbase64_decode(const char *input,
 
         /* Now we know its a valid nul terminated string
          * strspn is safe to use... */
-    } else {
+    }
+    else {
         in_len = strlen(input);
     }
 

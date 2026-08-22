@@ -29,15 +29,16 @@ static const Property cpu_cluster_properties[] = {
     DEFINE_PROP_UINT32("cluster-id", CPUClusterState, cluster_id, 0),
 };
 
-typedef struct CallbackData {
-    CPUClusterState *cluster;
-    int cpu_count;
+typedef struct CallbackData
+{
+    CPUClusterState* cluster;
+    int              cpu_count;
 } CallbackData;
 
-static int add_cpu_to_cluster(Object *obj, void *opaque)
+static int add_cpu_to_cluster(Object* obj, void* opaque)
 {
-    CallbackData *cbdata = opaque;
-    CPUState *cpu = (CPUState *)object_dynamic_cast(obj, TYPE_CPU);
+    CallbackData* cbdata = opaque;
+    CPUState*     cpu    = (CPUState*)object_dynamic_cast(obj, TYPE_CPU);
 
     if (cpu) {
         cpu->cluster_index = cbdata->cluster->cluster_id;
@@ -46,13 +47,13 @@ static int add_cpu_to_cluster(Object *obj, void *opaque)
     return 0;
 }
 
-static void cpu_cluster_realize(DeviceState *dev, Error **errp)
+static void cpu_cluster_realize(DeviceState* dev, Error** errp)
 {
     /* Iterate through all our CPU children and set their cluster_index */
-    CPUClusterState *cluster = CPU_CLUSTER(dev);
-    Object *cluster_obj = OBJECT(dev);
-    CallbackData cbdata = {
-        .cluster = cluster,
+    CPUClusterState* cluster     = CPU_CLUSTER(dev);
+    Object*          cluster_obj = OBJECT(dev);
+    CallbackData     cbdata      = {
+        .cluster   = cluster,
         .cpu_count = 0,
     };
 
@@ -72,9 +73,9 @@ static void cpu_cluster_realize(DeviceState *dev, Error **errp)
     assert(cbdata.cpu_count > 0);
 }
 
-static void cpu_cluster_class_init(ObjectClass *klass, const void *data)
+static void cpu_cluster_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
+    DeviceClass* dc = DEVICE_CLASS(klass);
 
     device_class_set_props(dc, cpu_cluster_properties);
     dc->realize = cpu_cluster_realize;
@@ -84,15 +85,12 @@ static void cpu_cluster_class_init(ObjectClass *klass, const void *data)
 }
 
 static const TypeInfo cpu_cluster_type_info = {
-    .name = TYPE_CPU_CLUSTER,
-    .parent = TYPE_DEVICE,
+    .name          = TYPE_CPU_CLUSTER,
+    .parent        = TYPE_DEVICE,
     .instance_size = sizeof(CPUClusterState),
-    .class_init = cpu_cluster_class_init,
+    .class_init    = cpu_cluster_class_init,
 };
 
-static void cpu_cluster_register_types(void)
-{
-    type_register_static(&cpu_cluster_type_info);
-}
+static void cpu_cluster_register_types(void) { type_register_static(&cpu_cluster_type_info); }
 
 type_init(cpu_cluster_register_types)

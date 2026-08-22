@@ -42,17 +42,15 @@
  *     traps and watchpoint traps.
  * (probe = true, ra != 0 is invalid and will assert.)
  */
-uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
-                                  uint64_t ptr, MMUAccessType ptr_access,
-                                  int ptr_size, MMUAccessType tag_access,
-                                  bool probe, uintptr_t ra);
+uint8_t* allocation_tag_mem_probe(CPUARMState* env, int ptr_mmu_idx, uint64_t ptr, MMUAccessType ptr_access,
+                                  int ptr_size, MMUAccessType tag_access, bool probe, uintptr_t ra);
 
 /**
  * load_tag1 - Load 1 tag (nibble) from byte
  * @ptr: The tagged address
  * @mem: The tag address (packed, 2 tags in byte)
  */
-int load_tag1(uint64_t ptr, uint8_t *mem);
+int load_tag1(uint64_t ptr, uint8_t* mem);
 
 /**
  * store_tag1 - Store 1 tag (nibble) into byte
@@ -60,4 +58,4 @@ int load_tag1(uint64_t ptr, uint8_t *mem);
  * @mem: The tag address (packed, 2 tags in byte)
  * @tag: The tag to be stored in the nibble
  */
-void store_tag1(uint64_t ptr, uint8_t *mem, int tag);
+void store_tag1(uint64_t ptr, uint8_t* mem, int tag);

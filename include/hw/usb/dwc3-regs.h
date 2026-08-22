@@ -64,7 +64,7 @@
 #define DEVICE_EVENT_ERRATIC_ERROR      9
 #define DEVICE_EVENT_CMD_CMPL           10
 #define DEVICE_EVENT_OVERFLOW           11
-#define DEVT_VNDRDEVTSTRCVED 0x0c
+#define DEVT_VNDRDEVTSTRCVED            0x0c
 
 /* DWC3 registers memory space boundries */
 #define XHCI_REGS_START    0x0
@@ -128,13 +128,13 @@
 #define GHWPARAMS8 0xc600
 
 /* Device Registers */
-#define DCFG          0xc700
-#define DCTL          0xc704
-#define DEVTEN        0xc708
-#define DSTS          0xc70c
-#define DGCMDPAR      0xc710
-#define DGCMD         0xc714
-#define DALEPENA      0xc720
+#define DCFG     0xc700
+#define DCTL     0xc704
+#define DEVTEN   0xc708
+#define DSTS     0xc70c
+#define DGCMDPAR 0xc710
+#define DGCMD    0xc714
+#define DALEPENA 0xc720
 
 /* Device Endpoint Command Registers */
 #define DEPCMDPAR2(n) (0xc800 + (n * 0x10))
@@ -154,7 +154,7 @@
 /* Global Configuration Register */
 #define GCTL_PWRDNSCALE(n) ((n) << 19)
 #define GCTL_U2RSTECN      BIT(16)
-#define GCTL_RAMCLKSEL(x)  (((x)&GCTL_CLK_MASK) << 6)
+#define GCTL_RAMCLKSEL(x)  (((x) & GCTL_CLK_MASK) << 6)
 #define GCTL_CLK_BUS       (0)
 #define GCTL_CLK_PIPE      (1)
 #define GCTL_CLK_PIPEHALF  (2)
@@ -189,8 +189,8 @@
 #define GSTS_CURMOD_DRD       2
 
 /* Global Core ID */
-#define GSNPSID_MASK    0xffff0000
-#define GSNPSREV_MASK   0xffff
+#define GSNPSID_MASK  0xffff0000
+#define GSNPSREV_MASK 0xffff
 
 #define GSNPSID_REVISION_173A 0x5533173a
 #define GSNPSID_REVISION_175A 0x5533175a
@@ -210,49 +210,49 @@
 #define GSNPSID_REVISION_250A 0x5533250a
 
 /* Global USB2 PHY Configuration Register */
-#define GUSB2PHYCFG_PHYSOFTRST BIT(31)
-#define GUSB2PHYCFG_U2_FREECLK_EXISTS	BIT(30)
-#define GUSB2PHYCFG_ULPIEXTVBUSDRV	BIT(17)
-#define GUSB2PHYCFG_SUSPHY     BIT(6)
-#define GUSB2PHYCFG_ULPI_UTMI	BIT(4)
-#define GUSB2PHYCFG_ENBLSLPM	BIT(8)
-#define GUSB2PHYCFG_PHYIF(n)	(n << 3)
-#define GUSB2PHYCFG_PHYIF_MASK	GUSB2PHYCFG_PHYIF(1)
-#define GUSB2PHYCFG_USBTRDTIM(n)	(n << 10)
-#define GUSB2PHYCFG_USBTRDTIM_MASK	GUSB2PHYCFG_USBTRDTIM(0xf)
-#define USBTRDTIM_UTMI_8_BIT		9
-#define USBTRDTIM_UTMI_16_BIT		5
-#define UTMI_PHYIF_16_BIT		1
-#define UTMI_PHYIF_8_BIT		0
+#define GUSB2PHYCFG_PHYSOFTRST        BIT(31)
+#define GUSB2PHYCFG_U2_FREECLK_EXISTS BIT(30)
+#define GUSB2PHYCFG_ULPIEXTVBUSDRV    BIT(17)
+#define GUSB2PHYCFG_SUSPHY            BIT(6)
+#define GUSB2PHYCFG_ULPI_UTMI         BIT(4)
+#define GUSB2PHYCFG_ENBLSLPM          BIT(8)
+#define GUSB2PHYCFG_PHYIF(n)          (n << 3)
+#define GUSB2PHYCFG_PHYIF_MASK        GUSB2PHYCFG_PHYIF(1)
+#define GUSB2PHYCFG_USBTRDTIM(n)      (n << 10)
+#define GUSB2PHYCFG_USBTRDTIM_MASK    GUSB2PHYCFG_USBTRDTIM(0xf)
+#define USBTRDTIM_UTMI_8_BIT          9
+#define USBTRDTIM_UTMI_16_BIT         5
+#define UTMI_PHYIF_16_BIT             1
+#define UTMI_PHYIF_8_BIT              0
 
 /* Global USB2 PHY Vendor Control Register */
-#define GUSB2PHYACC_NEWREGREQ	BIT(25)
-#define GUSB2PHYACC_DONE		BIT(24)
-#define GUSB2PHYACC_BUSY		BIT(23)
-#define GUSB2PHYACC_WRITE		BIT(22)
-#define GUSB2PHYACC_ADDR(n)	(n << 16)
-#define GUSB2PHYACC_EXTEND_ADDR(n)	(n << 8)
-#define GUSB2PHYACC_DATA(n)	(n & 0xff)
+#define GUSB2PHYACC_NEWREGREQ      BIT(25)
+#define GUSB2PHYACC_DONE           BIT(24)
+#define GUSB2PHYACC_BUSY           BIT(23)
+#define GUSB2PHYACC_WRITE          BIT(22)
+#define GUSB2PHYACC_ADDR(n)        (n << 16)
+#define GUSB2PHYACC_EXTEND_ADDR(n) (n << 8)
+#define GUSB2PHYACC_DATA(n)        (n & 0xff)
 
 /* Global USB3 PIPE Control Register */
-#define GUSB3PIPECTL_PHYSOFTRST BIT(31)
-#define GUSB3PIPECTL_U2SSINP3OK	BIT(29)
-#define GUSB3PIPECTL_DISRXDETINP3	BIT(28)
-#define GUSB3PIPECTL_UX_EXIT_PX	BIT(27)
-#define GUSB3PIPECTL_REQP1P2P3	BIT(24)
-#define GUSB3PIPECTL_DEP1P2P3(n)	((n) << 19)
-#define GUSB3PIPECTL_DEP1P2P3_MASK	GUSB3PIPECTL_DEP1P2P3(7)
-#define GUSB3PIPECTL_DEP1P2P3_EN	GUSB3PIPECTL_DEP1P2P3(1)
-#define GUSB3PIPECTL_DEPOCHANGE	BIT(18)
-#define GUSB3PIPECTL_SUSPHY     BIT(17)
-#define GUSB3PIPECTL_LFPSFILT	BIT(9)
-#define GUSB3PIPECTL_RX_DETOPOLL	BIT(8)
-#define GUSB3PIPECTL_TX_DEEPH_MASK	GUSB3PIPECTL_TX_DEEPH(3)
-#define GUSB3PIPECTL_TX_DEEPH(n)	((n) << 1)
+#define GUSB3PIPECTL_PHYSOFTRST    BIT(31)
+#define GUSB3PIPECTL_U2SSINP3OK    BIT(29)
+#define GUSB3PIPECTL_DISRXDETINP3  BIT(28)
+#define GUSB3PIPECTL_UX_EXIT_PX    BIT(27)
+#define GUSB3PIPECTL_REQP1P2P3     BIT(24)
+#define GUSB3PIPECTL_DEP1P2P3(n)   ((n) << 19)
+#define GUSB3PIPECTL_DEP1P2P3_MASK GUSB3PIPECTL_DEP1P2P3(7)
+#define GUSB3PIPECTL_DEP1P2P3_EN   GUSB3PIPECTL_DEP1P2P3(1)
+#define GUSB3PIPECTL_DEPOCHANGE    BIT(18)
+#define GUSB3PIPECTL_SUSPHY        BIT(17)
+#define GUSB3PIPECTL_LFPSFILT      BIT(9)
+#define GUSB3PIPECTL_RX_DETOPOLL   BIT(8)
+#define GUSB3PIPECTL_TX_DEEPH_MASK GUSB3PIPECTL_TX_DEEPH(3)
+#define GUSB3PIPECTL_TX_DEEPH(n)   ((n) << 1)
 
 /* Global TX Fifo Size Register */
-#define GTXFIFOSIZ_TXFDEF(n)    ((n)&0xffff)
-#define GTXFIFOSIZ_TXFSTADDR(n) ((n)&0xffff0000)
+#define GTXFIFOSIZ_TXFDEF(n)    ((n) & 0xffff)
+#define GTXFIFOSIZ_TXFSTADDR(n) ((n) & 0xffff0000)
 
 /* Global HWPARAMS1 Register */
 #define GHWPARAMS1_EN_PWROPT(n)  (((n) & (3 << 24)) >> 24)
@@ -267,21 +267,21 @@
 #define MAX_HIBER_SCRATCHBUFS           15
 
 /* Global Event Count/Size Register */
-#define GEVNTCOUNT_EVENTSIZ_MASK   (0xfffc)
-#define GEVNTSIZ_EVNTINTRPTMASK    BIT(31)
+#define GEVNTCOUNT_EVENTSIZ_MASK (0xfffc)
+#define GEVNTSIZ_EVNTINTRPTMASK  BIT(31)
 
 /* Device Configuration Register */
-#define DCFG_BIT11                  BIT(11)
-#define DCFG_LPM_CAP                BIT(22)
-#define DCFG_IGNSTRMPP	            BIT(23)
+#define DCFG_BIT11     BIT(11)
+#define DCFG_LPM_CAP   BIT(22)
+#define DCFG_IGNSTRMPP BIT(23)
 
-#define DCFG_INTRNUM(_intr)         ((_intr) << 12)
-#define DCFG_INTRNUM_MASK           DCFG_INTRNUM(0xf)
-#define DCFG_INTRNUM_GET(_v)        (((_v) & DCFG_INTRNUM_MASK) >> 12)
+#define DCFG_INTRNUM(_intr)  ((_intr) << 12)
+#define DCFG_INTRNUM_MASK    DCFG_INTRNUM(0xf)
+#define DCFG_INTRNUM_GET(_v) (((_v) & DCFG_INTRNUM_MASK) >> 12)
 
-#define DCFG_DEVADDR(addr)          ((addr) << 3)
-#define DCFG_DEVADDR_MASK           DCFG_DEVADDR(0x7f)
-#define DCFG_DEVADDR_GET(_v)        (((_v) & DCFG_DEVADDR_MASK) >> 3)
+#define DCFG_DEVADDR(addr)   ((addr) << 3)
+#define DCFG_DEVADDR_MASK    DCFG_DEVADDR(0x7f)
+#define DCFG_DEVADDR_GET(_v) (((_v) & DCFG_DEVADDR_MASK) >> 3)
 
 #define DCFG_SPEED_MASK      (7 << 0)
 #define DCFG_SUPERSPEED_PLUS (5 << 0)
@@ -366,7 +366,7 @@
 #define DSTS_RXFIFOEMPTY BIT(17)
 
 #define DSTS_SOFFN_MASK (0x3fff << 3)
-#define DSTS_SOFFN(n)   (((n)&DSTS_SOFFN_MASK) >> 3)
+#define DSTS_SOFFN(n)   (((n) & DSTS_SOFFN_MASK) >> 3)
 
 #define DSTS_CONNECTSPD (7 << 0)
 
@@ -391,11 +391,11 @@
 #define DGCMD_SET_ENDPOINT_NRDY    0x0c
 #define DGCMD_RUN_SOC_BUS_LOOPBACK 0x10
 
-#define DGCMD_CMDSTATUS             BIT(15)
-#define DGCMD_CMDACT                BIT(10)
-#define DGCMD_CMDIOC                BIT(8)
-#define DGCMD_CMDTYPE_MASK          (0xff << 0)
-#define DGCMD_CMDTYPE_GET(_v)       ((_v) & 0xff)
+#define DGCMD_CMDSTATUS       BIT(15)
+#define DGCMD_CMDACT          BIT(10)
+#define DGCMD_CMDIOC          BIT(8)
+#define DGCMD_CMDTYPE_MASK    (0xff << 0)
+#define DGCMD_CMDTYPE_GET(_v) ((_v) & 0xff)
 
 /* Device Generic Command Parameter Register */
 #define DGCMDPAR_FORCE_LINKPM_ACCEPT BIT(0)
@@ -406,30 +406,30 @@
 #define DGCMDPAR_LOOPBACK_ENA        BIT(0)
 
 /* Device Endpoint Command Register */
-#define DEPCMD_PARAM_SHIFT    16
-#define DEPCMD_PARAM(x)       ((x) << DEPCMD_PARAM_SHIFT)
-#define DEPCMD_PARAM_MASK     DEPCMD_PARAM(0xffff)
-#define DEPCMD_STATUS         BIT(15)
-#define DEPCMD_HIPRI_FORCERM  BIT(11)
-#define DEPCMD_CMDACT         BIT(10)
-#define DEPCMD_CMDIOC         BIT(8)
+#define DEPCMD_PARAM_SHIFT   16
+#define DEPCMD_PARAM(x)      ((x) << DEPCMD_PARAM_SHIFT)
+#define DEPCMD_PARAM_MASK    DEPCMD_PARAM(0xffff)
+#define DEPCMD_STATUS        BIT(15)
+#define DEPCMD_HIPRI_FORCERM BIT(11)
+#define DEPCMD_CMDACT        BIT(10)
+#define DEPCMD_CMDIOC        BIT(8)
 
-#define DEPCMD_STARTCFG       (0x09 << 0)
-#define DEPCMD_ENDXFER        (0x08 << 0)
-#define DEPCMD_UPDATEXFER     (0x07 << 0)
-#define DEPCMD_STARTXFER      (0x06 << 0)
-#define DEPCMD_CLEARSTALL     (0x05 << 0)
-#define DEPCMD_SETSTALL       (0x04 << 0)
+#define DEPCMD_STARTCFG   (0x09 << 0)
+#define DEPCMD_ENDXFER    (0x08 << 0)
+#define DEPCMD_UPDATEXFER (0x07 << 0)
+#define DEPCMD_STARTXFER  (0x06 << 0)
+#define DEPCMD_CLEARSTALL (0x05 << 0)
+#define DEPCMD_SETSTALL   (0x04 << 0)
 
 /* This applies for core versions 1.90a and earlier */
-#define DEPCMD_GETSEQNUMBER      (0x03 << 0)
+#define DEPCMD_GETSEQNUMBER (0x03 << 0)
 /* This applies for core versions 1.94a and later */
-#define DEPCMD_GETEPSTATE        (0x03 << 0)
+#define DEPCMD_GETEPSTATE (0x03 << 0)
 
-#define DEPCMD_XFERCFG           (0x02 << 0)
-#define DEPCMD_CFG               (0x01 << 0)
-#define DEPCMD_CMDMASK           (0xff << 0)
-#define DEPCMD_CMD_GET(_v)       ((_v) & 0xff)
+#define DEPCMD_XFERCFG     (0x02 << 0)
+#define DEPCMD_CFG         (0x01 << 0)
+#define DEPCMD_CMDMASK     (0xff << 0)
+#define DEPCMD_CMD_GET(_v) ((_v) & 0xff)
 
 /* The EP number goes 0..31 so ep0 is always out and ep1 is always in */
 #define DALEPENA_EP(n) BIT(n)
@@ -439,7 +439,7 @@
 #define DEPCMD_TYPE_BULK    2
 #define DEPCMD_TYPE_INTR    3
 
-#define EVENT_PENDING   BIT(0)
+#define EVENT_PENDING BIT(0)
 
 #define EP_FLAG_STALLED BIT(0)
 #define EP_FLAG_WEDGED  BIT(1)
@@ -460,29 +460,30 @@
 /* This last one is specific to EP0 */
 #define EP0_DIR_IN BIT(31)
 
-enum dwc3_link_state {
+enum dwc3_link_state
+{
     /* In SuperSpeed */
-    LINK_STATE_U0 = 0x00, /* in HS, means ON */
-    LINK_STATE_U1 = 0x01,
-    LINK_STATE_U2 = 0x02, /* in HS, means SLEEP */
-    LINK_STATE_U3 = 0x03, /* in HS, means SUSPEND */
-    LINK_STATE_SS_DIS = 0x04,
-    LINK_STATE_RX_DET = 0x05, /* in HS, means Early Suspend */
+    LINK_STATE_U0       = 0x00, /* in HS, means ON */
+    LINK_STATE_U1       = 0x01,
+    LINK_STATE_U2       = 0x02, /* in HS, means SLEEP */
+    LINK_STATE_U3       = 0x03, /* in HS, means SUSPEND */
+    LINK_STATE_SS_DIS   = 0x04,
+    LINK_STATE_RX_DET   = 0x05, /* in HS, means Early Suspend */
     LINK_STATE_SS_INACT = 0x06,
-    LINK_STATE_POLL = 0x07,
-    LINK_STATE_RECOV = 0x08,
-    LINK_STATE_HRESET = 0x09,
-    LINK_STATE_CMPLY = 0x0a,
-    LINK_STATE_LPBK = 0x0b,
-    LINK_STATE_RESET = 0x0e,
-    LINK_STATE_RESUME = 0x0f,
-    LINK_STATE_MASK = 0x0f,
+    LINK_STATE_POLL     = 0x07,
+    LINK_STATE_RECOV    = 0x08,
+    LINK_STATE_HRESET   = 0x09,
+    LINK_STATE_CMPLY    = 0x0a,
+    LINK_STATE_LPBK     = 0x0b,
+    LINK_STATE_RESET    = 0x0e,
+    LINK_STATE_RESUME   = 0x0f,
+    LINK_STATE_MASK     = 0x0f,
 };
 
 /* TRB Length, PCM and Status */
 #define TRB_SIZE_MASK      (0x00ffffff)
-#define TRB_SIZE_LENGTH(n) ((n)&TRB_SIZE_MASK)
-#define TRB_SIZE_PCM1(n)   (((n)&0x03) << 24)
+#define TRB_SIZE_LENGTH(n) ((n) & TRB_SIZE_MASK)
+#define TRB_SIZE_PCM1(n)   (((n) & 0x03) << 24)
 #define TRB_SIZE_TRBSTS(n) (((n) & (0x0f << 28)) >> 28)
 
 #define TRBSTS_OK            0
@@ -500,8 +501,9 @@ enum dwc3_link_state {
 #define TRB_CTRL_IOC         BIT(11)
 #define TRB_CTRL_SID_SOFN(n) (((n) >> 14) & 0xffff)
 
-typedef enum TRBControlType {
-    TRBCTL_RESERVED  = 0,
+typedef enum TRBControlType
+{
+    TRBCTL_RESERVED = 0,
     TRBCTL_NORMAL,
     TRBCTL_CONTROL_SETUP,
     TRBCTL_CONTROL_STATUS2,
@@ -519,7 +521,8 @@ typedef enum TRBControlType {
  * @status: DW8-B
  * @trl: DWC-F
  */
-struct dwc3_trb {
+struct dwc3_trb
+{
     uint32_t bpl;
     uint32_t bph;
     uint32_t status;
@@ -527,14 +530,14 @@ struct dwc3_trb {
 } QEMU_PACKED;
 
 /* GHWPARAMS0 */
-#define GHWPARAMS0_MODE(n) ((n)&0x7)
+#define GHWPARAMS0_MODE(n) ((n) & 0x7)
 
 #define GHWPARAMS0_MODE_DEVICE 0
 #define GHWPARAMS0_MODE_HOST   1
 #define GHWPARAMS0_MODE_DRD    2
 #define GHWPARAMS0_MODE_HUB    3
 
-#define GHWPARAMS0_MDWIDTH(n) (((n)&0xff00) >> 8)
+#define GHWPARAMS0_MDWIDTH(n) (((n) & 0xff00) >> 8)
 
 /* GHWPARAMS1 */
 #define GHWPARAMS1_NUM_INT(n) (((n) & (0x3f << 15)) >> 15)
@@ -546,16 +549,16 @@ struct dwc3_trb {
 #define GHWPARAMS3_NUM_EPS(_n)     (((_n) & 0x3f) << 12)
 
 /* HWPARAMS7 */
-#define GHWPARAMS7_RAM1_DEPTH(n) ((n)&0xffff)
-
-
-/* -------------------------------------------------------------------------- */
+#define GHWPARAMS7_RAM1_DEPTH(n) ((n) & 0xffff)
 
 /* -------------------------------------------------------------------------- */
 
-struct dwc3_event_type {
-    uint32_t is_devspec : 1;
-    uint32_t type : 7;
+/* -------------------------------------------------------------------------- */
+
+struct dwc3_event_type
+{
+    uint32_t is_devspec   : 1;
+    uint32_t type         : 7;
     uint32_t reserved8_31 : 24;
 } QEMU_PACKED;
 
@@ -585,12 +588,13 @@ struct dwc3_event_type {
  * @parameters: Parameters of the current event. Refer to databook for
  *  more information.
  */
-struct dwc3_event_depevt {
-    uint32_t one_bit : 1;
+struct dwc3_event_depevt
+{
+    uint32_t one_bit         : 1;
     uint32_t endpoint_number : 5;
-    uint32_t endpoint_event : 4;
-    uint32_t reserved11_10 : 2;
-    uint32_t status : 4;
+    uint32_t endpoint_event  : 4;
+    uint32_t reserved11_10   : 2;
+    uint32_t status          : 4;
 
 /* Within XferNotReady */
 #define DEPEVT_STATUS_TRANSFER_ACTIVE BIT(3)
@@ -607,13 +611,13 @@ struct dwc3_event_depevt {
 #define DEPEVT_STREAMEVT_NOTFOUND 2
 
 /* Control-only Status */
-#define DEPEVT_STATUS_CONTROL_DATA   1
-#define DEPEVT_STATUS_CONTROL_STATUS 2
-#define DEPEVT_STATUS_CONTROL_PHASE(n)	((n) & 3)
+#define DEPEVT_STATUS_CONTROL_DATA     1
+#define DEPEVT_STATUS_CONTROL_STATUS   2
+#define DEPEVT_STATUS_CONTROL_PHASE(n) ((n) & 3)
 
 /* In response to Start Transfer */
-#define DEPEVT_TRANSFER_NO_RESOURCE	1
-#define DEPEVT_TRANSFER_BUS_EXPIRY	2
+#define DEPEVT_TRANSFER_NO_RESOURCE 1
+#define DEPEVT_TRANSFER_BUS_EXPIRY  2
 
     uint32_t parameters : 16;
 } QEMU_PACKED;
@@ -640,12 +644,13 @@ struct dwc3_event_depevt {
  * @event_info: Information about this event
  * @reserved31_24: Reserved, not used
  */
-struct dwc3_event_devt {
-    uint32_t one_bit : 1;
-    uint32_t device_event : 7;
-    uint32_t type : 4;
+struct dwc3_event_devt
+{
+    uint32_t one_bit       : 1;
+    uint32_t device_event  : 7;
+    uint32_t type          : 4;
     uint32_t reserved15_12 : 4;
-    uint32_t event_info : 8;
+    uint32_t event_info    : 8;
     uint32_t reserved31_24 : 8;
 } QEMU_PACKED;
 
@@ -656,24 +661,26 @@ struct dwc3_event_devt {
  * @phy_port_number: self-explanatory
  * @reserved31_12: Reserved, not used.
  */
-struct dwc3_event_gevt {
-    uint32_t one_bit : 1;
-    uint32_t device_event : 7;
+struct dwc3_event_gevt
+{
+    uint32_t one_bit         : 1;
+    uint32_t device_event    : 7;
     uint32_t phy_port_number : 4;
-    uint32_t reserved31_12 : 20;
+    uint32_t reserved31_12   : 20;
 } QEMU_PACKED;
 
-union dwc3_event {
-    uint32_t raw;
-    struct dwc3_event_type type;
+union dwc3_event
+{
+    uint32_t                 raw;
+    struct dwc3_event_type   type;
     struct dwc3_event_depevt depevt;
-    struct dwc3_event_devt devt;
-    struct dwc3_event_gevt gevt;
+    struct dwc3_event_devt   devt;
+    struct dwc3_event_gevt   gevt;
 };
 
-#define DEPCFG_RSC_IDX(x)         (((x) & 0x7f) << DEPCMD_PARAM_SHIFT)
-#define DEPCFG_RSC_IDX_MASK       DEPCFG_RSC_IDX(0x7f)
-#define DEPCFG_RSC_IDX_GET(x)     (((x) >> DEPCMD_PARAM_SHIFT) & 0x7f)
+#define DEPCFG_RSC_IDX(x)     (((x) & 0x7f) << DEPCMD_PARAM_SHIFT)
+#define DEPCFG_RSC_IDX_MASK   DEPCFG_RSC_IDX(0x7f)
+#define DEPCFG_RSC_IDX_GET(x) (((x) >> DEPCMD_PARAM_SHIFT) & 0x7f)
 
 #define DEPCFG_EP_TYPE(n)         (((n) >> 1) & 0x3)
 #define DEPCFG_FIFO_NUMBER(n)     (((n) >> 17) & 0xf)
@@ -703,4 +710,4 @@ union dwc3_event {
 #define DEPCFG_BULK_BASED          BIT(30)
 #define DEPCFG_FIFO_BASED          BIT(31)
 
-#define DEPXFERCFG_NUMXFERRES(_v)  ((_v) & 0xffff)
+#define DEPXFERCFG_NUMXFERRES(_v) ((_v) & 0xffff)

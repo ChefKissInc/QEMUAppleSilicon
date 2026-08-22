@@ -11,6 +11,6 @@
 #include "qapi/qapi-commands-run-state.h"
 
 /* in system/runstate-action.c */
-extern RebootAction reboot_action;
+extern RebootAction   reboot_action;
 extern ShutdownAction shutdown_action;
-extern PanicAction panic_action;
+extern PanicAction    panic_action;

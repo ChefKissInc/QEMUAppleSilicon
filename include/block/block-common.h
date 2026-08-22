@@ -48,10 +48,10 @@
  * These functions should not be called from a coroutine_fn; instead,
  * call the wrapped function directly.
  */
-#define co_wrapper                     no_coroutine_fn
-#define co_wrapper_mixed               no_coroutine_fn coroutine_mixed_fn
-#define co_wrapper_bdrv_rdlock         no_coroutine_fn
-#define co_wrapper_mixed_bdrv_rdlock   no_coroutine_fn coroutine_mixed_fn
+#define co_wrapper                   no_coroutine_fn
+#define co_wrapper_mixed             no_coroutine_fn coroutine_mixed_fn
+#define co_wrapper_bdrv_rdlock       no_coroutine_fn
+#define co_wrapper_mixed_bdrv_rdlock no_coroutine_fn coroutine_mixed_fn
 
 /*
  * no_co_wrapper: Function specifier used by block-coroutine-wrapper.py
@@ -77,62 +77,69 @@
 #include "block/blockjob.h"
 
 /* block.c */
-typedef struct BlockDriver BlockDriver;
-typedef struct BdrvChild BdrvChild;
+typedef struct BlockDriver    BlockDriver;
+typedef struct BdrvChild      BdrvChild;
 typedef struct BdrvChildClass BdrvChildClass;
 
-typedef enum BlockZoneOp {
+typedef enum BlockZoneOp
+{
     BLK_ZO_OPEN,
     BLK_ZO_CLOSE,
     BLK_ZO_FINISH,
     BLK_ZO_RESET,
 } BlockZoneOp;
 
-typedef enum BlockZoneModel {
+typedef enum BlockZoneModel
+{
     BLK_Z_NONE = 0x0, /* Regular block device */
-    BLK_Z_HM = 0x1, /* Host-managed zoned block device */
-    BLK_Z_HA = 0x2, /* Host-aware zoned block device */
+    BLK_Z_HM   = 0x1, /* Host-managed zoned block device */
+    BLK_Z_HA   = 0x2, /* Host-aware zoned block device */
 } BlockZoneModel;
 
-typedef enum BlockZoneState {
-    BLK_ZS_NOT_WP = 0x0,
-    BLK_ZS_EMPTY = 0x1,
-    BLK_ZS_IOPEN = 0x2,
-    BLK_ZS_EOPEN = 0x3,
-    BLK_ZS_CLOSED = 0x4,
-    BLK_ZS_RDONLY = 0xD,
-    BLK_ZS_FULL = 0xE,
+typedef enum BlockZoneState
+{
+    BLK_ZS_NOT_WP  = 0x0,
+    BLK_ZS_EMPTY   = 0x1,
+    BLK_ZS_IOPEN   = 0x2,
+    BLK_ZS_EOPEN   = 0x3,
+    BLK_ZS_CLOSED  = 0x4,
+    BLK_ZS_RDONLY  = 0xD,
+    BLK_ZS_FULL    = 0xE,
     BLK_ZS_OFFLINE = 0xF,
 } BlockZoneState;
 
-typedef enum BlockZoneType {
+typedef enum BlockZoneType
+{
     BLK_ZT_CONV = 0x1, /* Conventional random writes supported */
-    BLK_ZT_SWR = 0x2, /* Sequential writes required */
-    BLK_ZT_SWP = 0x3, /* Sequential writes preferred */
+    BLK_ZT_SWR  = 0x2, /* Sequential writes required */
+    BLK_ZT_SWP  = 0x3, /* Sequential writes preferred */
 } BlockZoneType;
 
 /*
  * Zone descriptor data structure.
  * Provides information on a zone with all position and size values in bytes.
  */
-typedef struct BlockZoneDescriptor {
-    uint64_t start;
-    uint64_t length;
-    uint64_t cap;
-    uint64_t wp;
-    BlockZoneType type;
+typedef struct BlockZoneDescriptor
+{
+    uint64_t       start;
+    uint64_t       length;
+    uint64_t       cap;
+    uint64_t       wp;
+    BlockZoneType  type;
     BlockZoneState state;
 } BlockZoneDescriptor;
 
 /*
  * Track write pointers of a zone in bytes.
  */
-typedef struct BlockZoneWps {
-    CoMutex colock;
+typedef struct BlockZoneWps
+{
+    CoMutex  colock;
     uint64_t wp[];
 } BlockZoneWps;
 
-typedef struct BlockDriverInfo {
+typedef struct BlockDriverInfo
+{
     /* in bytes, 0 if irrelevant */
     int cluster_size;
     /*
@@ -142,23 +149,25 @@ typedef struct BlockDriverInfo {
     int subcluster_size;
     /* offset at which the VM state can be saved (0 if not possible) */
     int64_t vm_state_offset;
-    bool is_dirty;
+    bool    is_dirty;
     /*
      * True if this block driver only supports compressed writes
      */
     bool needs_compressed_writes;
 } BlockDriverInfo;
 
-typedef struct BlockFragInfo {
+typedef struct BlockFragInfo
+{
     uint64_t allocated_clusters;
     uint64_t total_clusters;
     uint64_t fragmented_clusters;
     uint64_t compressed_clusters;
 } BlockFragInfo;
 
-typedef enum {
-    BDRV_REQ_COPY_ON_READ       = 0x1,
-    BDRV_REQ_ZERO_WRITE         = 0x2,
+typedef enum
+{
+    BDRV_REQ_COPY_ON_READ = 0x1,
+    BDRV_REQ_ZERO_WRITE   = 0x2,
 
     /*
      * The BDRV_REQ_MAY_UNMAP flag is used in write_zeroes requests to indicate
@@ -166,7 +175,7 @@ typedef enum {
      * that the result will read back as zeroes. The flag is only passed to the
      * driver if the block device is opened with BDRV_O_UNMAP.
      */
-    BDRV_REQ_MAY_UNMAP          = 0x4,
+    BDRV_REQ_MAY_UNMAP = 0x4,
 
     /*
      * An optimization hint when all QEMUIOVector elements are within
@@ -175,28 +184,28 @@ typedef enum {
      * Code that replaces the user's QEMUIOVector elements with bounce buffers
      * must take care to clear this flag.
      */
-    BDRV_REQ_REGISTERED_BUF     = 0x8,
+    BDRV_REQ_REGISTERED_BUF = 0x8,
 
-    BDRV_REQ_FUA                = 0x10,
-    BDRV_REQ_WRITE_COMPRESSED   = 0x20,
+    BDRV_REQ_FUA              = 0x10,
+    BDRV_REQ_WRITE_COMPRESSED = 0x20,
 
     /*
      * Signifies that this write request will not change the visible disk
      * content.
      */
-    BDRV_REQ_WRITE_UNCHANGED    = 0x40,
+    BDRV_REQ_WRITE_UNCHANGED = 0x40,
 
     /*
      * Forces request serialisation. Use only with write requests.
      */
-    BDRV_REQ_SERIALISING        = 0x80,
+    BDRV_REQ_SERIALISING = 0x80,
 
     /*
      * Execute the request only if the operation can be offloaded or otherwise
      * be executed efficiently, but return an error instead of using a slow
      * fallback.
      */
-    BDRV_REQ_NO_FALLBACK        = 0x100,
+    BDRV_REQ_NO_FALLBACK = 0x100,
 
     /*
      * BDRV_REQ_PREFETCH makes sense only in the context of copy-on-read
@@ -205,7 +214,7 @@ typedef enum {
      * need not read the data into memory (qiov) but only ensure they are
      * copied to the top layer (i.e., that COR operation is done).
      */
-    BDRV_REQ_PREFETCH  = 0x200,
+    BDRV_REQ_PREFETCH = 0x200,
 
     /*
      * If we need to wait for other requests, just fail immediately. Used
@@ -215,37 +224,40 @@ typedef enum {
     BDRV_REQ_NO_WAIT = 0x400,
 
     /* Mask of valid flags */
-    BDRV_REQ_MASK               = 0x7ff,
+    BDRV_REQ_MASK = 0x7ff,
 } BdrvRequestFlags;
 
-#define BDRV_O_NO_SHARE    0x0001 /* don't share permissions */
-#define BDRV_O_RDWR        0x0002
-#define BDRV_O_RESIZE      0x0004 /* request permission for resizing the node */
-#define BDRV_O_SNAPSHOT    0x0008 /* open the file read only and save
-                                     writes in a snapshot */
-#define BDRV_O_TEMPORARY   0x0010 /* delete the file after use */
-#define BDRV_O_NOCACHE     0x0020 /* do not use the host page cache */
-#define BDRV_O_NATIVE_AIO  0x0080 /* use native AIO instead of the
-                                     thread pool */
-#define BDRV_O_NO_BACKING  0x0100 /* don't open the backing file */
-#define BDRV_O_NO_FLUSH    0x0200 /* disable flushing on this disk */
+#define BDRV_O_NO_SHARE 0x0001 /* don't share permissions */
+#define BDRV_O_RDWR     0x0002
+#define BDRV_O_RESIZE   0x0004 /* request permission for resizing the node */
+#define BDRV_O_SNAPSHOT                                             \
+    0x0008                      /* open the file read only and save \
+                                   writes in a snapshot */
+#define BDRV_O_TEMPORARY 0x0010 /* delete the file after use */
+#define BDRV_O_NOCACHE   0x0020 /* do not use the host page cache */
+#define BDRV_O_NATIVE_AIO                                           \
+    0x0080                         /* use native AIO instead of the \
+                                      thread pool */
+#define BDRV_O_NO_BACKING   0x0100 /* don't open the backing file */
+#define BDRV_O_NO_FLUSH     0x0200 /* disable flushing on this disk */
 #define BDRV_O_COPY_ON_READ 0x0400 /* copy read backing sectors into image */
-#define BDRV_O_INACTIVE    0x0800  /* consistency hint for migration handoff */
-#define BDRV_O_CHECK       0x1000  /* open solely for consistency check */
-#define BDRV_O_ALLOW_RDWR  0x2000  /* allow reopen to change from r/o to r/w */
-#define BDRV_O_UNMAP       0x4000  /* execute guest UNMAP/TRIM operations */
-#define BDRV_O_PROTOCOL    0x8000  /* if no block driver is explicitly given:
-                                      select an appropriate protocol driver,
-                                      ignoring the format layer */
-#define BDRV_O_NO_IO       0x10000 /* don't initialize for I/O */
-#define BDRV_O_AUTO_RDONLY 0x20000 /* degrade to read-only if opening
-                                      read-write fails */
-#define BDRV_O_IO_URING    0x40000 /* use io_uring instead of the thread pool */
+#define BDRV_O_INACTIVE     0x0800 /* consistency hint for migration handoff */
+#define BDRV_O_CHECK        0x1000 /* open solely for consistency check */
+#define BDRV_O_ALLOW_RDWR   0x2000 /* allow reopen to change from r/o to r/w */
+#define BDRV_O_UNMAP        0x4000 /* execute guest UNMAP/TRIM operations */
+#define BDRV_O_PROTOCOL                                                 \
+    0x8000                   /* if no block driver is explicitly given: \
+                                select an appropriate protocol driver,  \
+                                ignoring the format layer */
+#define BDRV_O_NO_IO 0x10000 /* don't initialize for I/O */
+#define BDRV_O_AUTO_RDONLY                                         \
+    0x20000                     /* degrade to read-only if opening \
+                                   read-write fails */
+#define BDRV_O_IO_URING 0x40000 /* use io_uring instead of the thread pool */
 
 #define BDRV_O_CBW_DISCARD_SOURCE 0x80000 /* for copy-before-write filter */
 
-#define BDRV_O_CACHE_MASK  (BDRV_O_NOCACHE | BDRV_O_NO_FLUSH)
-
+#define BDRV_O_CACHE_MASK (BDRV_O_NOCACHE | BDRV_O_NO_FLUSH)
 
 /* Option names of options parsed by the block layer */
 
@@ -258,19 +270,17 @@ typedef enum {
 #define BDRV_OPT_FORCE_SHARE    "force-share"
 #define BDRV_OPT_ACTIVE         "active"
 
-
-#define BDRV_SECTOR_BITS   9
-#define BDRV_SECTOR_SIZE   (1ULL << BDRV_SECTOR_BITS)
+#define BDRV_SECTOR_BITS 9
+#define BDRV_SECTOR_SIZE (1ULL << BDRV_SECTOR_BITS)
 
 /*
  * Get the first most significant bit of wp. If it is zero, then
  * the zone type is SWR.
  */
-#define BDRV_ZT_IS_CONV(wp)    (wp & (1ULL << 63))
+#define BDRV_ZT_IS_CONV(wp) (wp & (1ULL << 63))
 
-#define BDRV_REQUEST_MAX_SECTORS MIN_CONST(SIZE_MAX >> BDRV_SECTOR_BITS, \
-                                           INT_MAX >> BDRV_SECTOR_BITS)
-#define BDRV_REQUEST_MAX_BYTES (BDRV_REQUEST_MAX_SECTORS << BDRV_SECTOR_BITS)
+#define BDRV_REQUEST_MAX_SECTORS MIN_CONST(SIZE_MAX >> BDRV_SECTOR_BITS, INT_MAX >> BDRV_SECTOR_BITS)
+#define BDRV_REQUEST_MAX_BYTES   (BDRV_REQUEST_MAX_SECTORS << BDRV_SECTOR_BITS)
 
 /*
  * We want allow aligning requests and disk length up to any 32bit alignment
@@ -280,7 +290,7 @@ typedef enum {
  * for disk size) to be the greatest power of 2 less than INT64_MAX.
  */
 #define BDRV_MAX_ALIGNMENT (1L << 30)
-#define BDRV_MAX_LENGTH (QEMU_ALIGN_DOWN(INT64_MAX, BDRV_MAX_ALIGNMENT))
+#define BDRV_MAX_LENGTH    (QEMU_ALIGN_DOWN(INT64_MAX, BDRV_MAX_ALIGNMENT))
 
 /*
  * Allocation status flags for bdrv_block_status() and friends.
@@ -337,30 +347,31 @@ typedef enum {
  * the caller hopes to learn, and some drivers may be able to give
  * faster answers by doing less work when the hint permits.
  */
-#define BDRV_WANT_ZERO          BDRV_BLOCK_ZERO
-#define BDRV_WANT_OFFSET_VALID  BDRV_BLOCK_OFFSET_VALID
-#define BDRV_WANT_ALLOCATED     BDRV_BLOCK_ALLOCATED
-#define BDRV_WANT_PRECISE       (BDRV_WANT_ZERO | BDRV_WANT_OFFSET_VALID | \
-                                 BDRV_WANT_OFFSET_VALID)
+#define BDRV_WANT_ZERO         BDRV_BLOCK_ZERO
+#define BDRV_WANT_OFFSET_VALID BDRV_BLOCK_OFFSET_VALID
+#define BDRV_WANT_ALLOCATED    BDRV_BLOCK_ALLOCATED
+#define BDRV_WANT_PRECISE      (BDRV_WANT_ZERO | BDRV_WANT_OFFSET_VALID | BDRV_WANT_OFFSET_VALID)
 
 typedef QTAILQ_HEAD(BlockReopenQueue, BlockReopenQueueEntry) BlockReopenQueue;
 
-typedef struct BDRVReopenState {
-    BlockDriverState *bs;
-    int flags;
+typedef struct BDRVReopenState
+{
+    BlockDriverState*           bs;
+    int                         flags;
     BlockdevDetectZeroesOptions detect_zeroes;
-    bool backing_missing;
-    BlockDriverState *old_backing_bs; /* keep pointer for permissions update */
-    BlockDriverState *old_file_bs; /* keep pointer for permissions update */
-    QDict *options;
-    QDict *explicit_options;
-    void *opaque;
+    bool                        backing_missing;
+    BlockDriverState*           old_backing_bs; /* keep pointer for permissions update */
+    BlockDriverState*           old_file_bs;    /* keep pointer for permissions update */
+    QDict*                      options;
+    QDict*                      explicit_options;
+    void*                       opaque;
 } BDRVReopenState;
 
 /*
  * Block operation types
  */
-typedef enum BlockOpType {
+typedef enum BlockOpType
+{
     BLOCK_OP_TYPE_BACKUP_SOURCE,
     BLOCK_OP_TYPE_BACKUP_TARGET,
     BLOCK_OP_TYPE_CHANGE,
@@ -380,7 +391,8 @@ typedef enum BlockOpType {
 } BlockOpType;
 
 /* Block node permission constants */
-enum {
+enum
+{
     /**
      * A user that has the "permission" of consistent reads is guaranteed that
      * their view of the contents of the block device is complete and
@@ -391,10 +403,10 @@ enum {
      * the property cannot be maintained in a few situations like for
      * intermediate nodes of a commit block job.
      */
-    BLK_PERM_CONSISTENT_READ    = 0x01,
+    BLK_PERM_CONSISTENT_READ = 0x01,
 
     /** This permission is required to change the visible disk contents. */
-    BLK_PERM_WRITE              = 0x02,
+    BLK_PERM_WRITE = 0x02,
 
     /**
      * This permission (which is weaker than BLK_PERM_WRITE) is both enough and
@@ -404,10 +416,10 @@ enum {
      * As the BLK_PERM_WRITE permission is strictly stronger, either is
      * sufficient to perform an unchanging write.
      */
-    BLK_PERM_WRITE_UNCHANGED    = 0x04,
+    BLK_PERM_WRITE_UNCHANGED = 0x04,
 
     /** This permission is required to change the size of a block node. */
-    BLK_PERM_RESIZE             = 0x08,
+    BLK_PERM_RESIZE = 0x08,
 
     /**
      * There was a now-removed bit BLK_PERM_GRAPH_MOD, with value of 0x10. QEMU
@@ -416,14 +428,11 @@ enum {
      * not interfere with this old unused thing.
      */
 
-    BLK_PERM_ALL                = 0x0f,
+    BLK_PERM_ALL = 0x0f,
 
-    DEFAULT_PERM_PASSTHROUGH    = BLK_PERM_CONSISTENT_READ
-                                 | BLK_PERM_WRITE
-                                 | BLK_PERM_WRITE_UNCHANGED
-                                 | BLK_PERM_RESIZE,
+    DEFAULT_PERM_PASSTHROUGH = BLK_PERM_CONSISTENT_READ | BLK_PERM_WRITE | BLK_PERM_WRITE_UNCHANGED | BLK_PERM_RESIZE,
 
-    DEFAULT_PERM_UNCHANGED      = BLK_PERM_ALL & ~DEFAULT_PERM_PASSTHROUGH,
+    DEFAULT_PERM_UNCHANGED = BLK_PERM_ALL & ~DEFAULT_PERM_PASSTHROUGH,
 };
 
 /*
@@ -472,19 +481,20 @@ enum {
  *
  * May also have some other children that don't have the PRIMARY or COW bit set.
  */
-enum BdrvChildRoleBits {
+enum BdrvChildRoleBits
+{
     /*
      * This child stores data.
      * Any node may have an arbitrary number of such children.
      */
-    BDRV_CHILD_DATA         = (1 << 0),
+    BDRV_CHILD_DATA = (1 << 0),
 
     /*
      * This child stores metadata.
      * Any node may have an arbitrary number of metadata-storing
      * children.
      */
-    BDRV_CHILD_METADATA     = (1 << 1),
+    BDRV_CHILD_METADATA = (1 << 1),
 
     /*
      * A child that always presents exactly the same visible data as
@@ -493,7 +503,7 @@ enum BdrvChildRoleBits {
      * This flag is mutually exclusive with DATA, METADATA, and COW.
      * Any node may have at most one filtered child at a time.
      */
-    BDRV_CHILD_FILTERED     = (1 << 2),
+    BDRV_CHILD_FILTERED = (1 << 2),
 
     /*
      * Child from which to read all data that isn't allocated in the
@@ -503,45 +513,47 @@ enum BdrvChildRoleBits {
      * FILTERED.
      * Any node may have at most one such backing child at a time.
      */
-    BDRV_CHILD_COW          = (1 << 3),
+    BDRV_CHILD_COW = (1 << 3),
 
     /*
      * The primary child.  For most drivers, this is the child whose
      * filename applies best to the parent node.
      * Any node may have at most one primary child at a time.
      */
-    BDRV_CHILD_PRIMARY      = (1 << 4),
+    BDRV_CHILD_PRIMARY = (1 << 4),
 
     /* Useful combination of flags */
-    BDRV_CHILD_IMAGE        = BDRV_CHILD_DATA
-                              | BDRV_CHILD_METADATA
-                              | BDRV_CHILD_PRIMARY,
+    BDRV_CHILD_IMAGE = BDRV_CHILD_DATA | BDRV_CHILD_METADATA | BDRV_CHILD_PRIMARY,
 };
 
 /* Mask of BdrvChildRoleBits values */
 typedef unsigned int BdrvChildRole;
 
-typedef struct BdrvCheckResult {
-    int corruptions;
-    int leaks;
-    int check_errors;
-    int corruptions_fixed;
-    int leaks_fixed;
-    int64_t image_end_offset;
+typedef struct BdrvCheckResult
+{
+    int           corruptions;
+    int           leaks;
+    int           check_errors;
+    int           corruptions_fixed;
+    int           leaks_fixed;
+    int64_t       image_end_offset;
     BlockFragInfo bfi;
 } BdrvCheckResult;
 
-typedef enum {
-    BDRV_FIX_LEAKS    = 1,
-    BDRV_FIX_ERRORS   = 2,
+typedef enum
+{
+    BDRV_FIX_LEAKS  = 1,
+    BDRV_FIX_ERRORS = 2,
 } BdrvCheckMode;
 
-typedef struct BlockSizes {
+typedef struct BlockSizes
+{
     uint32_t phys;
     uint32_t log;
 } BlockSizes;
 
-typedef struct HDGeometry {
+typedef struct HDGeometry
+{
     uint32_t heads;
     uint32_t sectors;
     uint32_t cylinders;
@@ -555,21 +567,19 @@ typedef struct HDGeometry {
  * all of them.
  */
 
-char *bdrv_perm_names(uint64_t perm);
+char*    bdrv_perm_names(uint64_t perm);
 uint64_t bdrv_qapi_perm_to_blk_perm(BlockPermission qapi_perm);
 
 void bdrv_init_with_whitelist(void);
 bool bdrv_uses_whitelist(void);
-int bdrv_is_whitelisted(BlockDriver *drv, bool read_only);
+int  bdrv_is_whitelisted(BlockDriver* drv, bool read_only);
 
-int bdrv_parse_aio(const char *mode, int *flags);
-int bdrv_parse_cache_mode(const char *mode, int *flags, bool *writethrough);
-int bdrv_parse_discard_flags(const char *mode, int *flags);
+int bdrv_parse_aio(const char* mode, int* flags);
+int bdrv_parse_cache_mode(const char* mode, int* flags, bool* writethrough);
+int bdrv_parse_discard_flags(const char* mode, int* flags);
 
-int path_has_protocol(const char *path);
-int path_is_absolute(const char *path);
-char *path_combine(const char *base_path, const char *filename);
+int   path_has_protocol(const char* path);
+int   path_is_absolute(const char* path);
+char* path_combine(const char* base_path, const char* filename);
 
-char *bdrv_get_full_backing_filename_from_filename(const char *backed,
-                                                   const char *backing,
-                                                   Error **errp);
+char* bdrv_get_full_backing_filename_from_filename(const char* backed, const char* backing, Error** errp);

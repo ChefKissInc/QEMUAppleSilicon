@@ -33,50 +33,50 @@
 OBJECT_DECLARE_SIMPLE_TYPE(GPIOKEYState, GPIOKEY)
 #define GPIO_KEY_LATENCY 100 /* 100ms */
 
-struct GPIOKEYState {
+struct GPIOKEYState
+{
     SysBusDevice parent_obj;
 
-    QEMUTimer *timer;
-    qemu_irq irq;
+    QEMUTimer* timer;
+    qemu_irq   irq;
 };
 
-static void gpio_key_reset(DeviceState *dev)
+static void gpio_key_reset(DeviceState* dev)
 {
-    GPIOKEYState *s = GPIOKEY(dev);
+    GPIOKEYState* s = GPIOKEY(dev);
 
     timer_del(s->timer);
 }
 
-static void gpio_key_timer_expired(void *opaque)
+static void gpio_key_timer_expired(void* opaque)
 {
-    GPIOKEYState *s = (GPIOKEYState *)opaque;
+    GPIOKEYState* s = (GPIOKEYState*)opaque;
 
     qemu_set_irq(s->irq, 0);
     timer_del(s->timer);
 }
 
-static void gpio_key_set_irq(void *opaque, int irq, int level)
+static void gpio_key_set_irq(void* opaque, int irq, int level)
 {
-    GPIOKEYState *s = (GPIOKEYState *)opaque;
+    GPIOKEYState* s = (GPIOKEYState*)opaque;
 
     qemu_set_irq(s->irq, 1);
-    timer_mod(s->timer,
-              qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL) + GPIO_KEY_LATENCY);
+    timer_mod(s->timer, qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL) + GPIO_KEY_LATENCY);
 }
 
-static void gpio_key_realize(DeviceState *dev, Error **errp)
+static void gpio_key_realize(DeviceState* dev, Error** errp)
 {
-    GPIOKEYState *s = GPIOKEY(dev);
-    SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
+    GPIOKEYState* s   = GPIOKEY(dev);
+    SysBusDevice* sbd = SYS_BUS_DEVICE(dev);
 
     sysbus_init_irq(sbd, &s->irq);
     qdev_init_gpio_in(dev, gpio_key_set_irq, 1);
     s->timer = timer_new_ms(QEMU_CLOCK_VIRTUAL, gpio_key_timer_expired, s);
 }
 
-static void gpio_key_class_init(ObjectClass *klass, const void *data)
+static void gpio_key_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
+    DeviceClass* dc = DEVICE_CLASS(klass);
 
     dc->realize = gpio_key_realize;
     device_class_set_legacy_reset(dc, gpio_key_reset);
@@ -89,9 +89,6 @@ static const TypeInfo gpio_key_info = {
     .class_init    = gpio_key_class_init,
 };
 
-static void gpio_key_register_types(void)
-{
-    type_register_static(&gpio_key_info);
-}
+static void gpio_key_register_types(void) { type_register_static(&gpio_key_info); }
 
 type_init(gpio_key_register_types)

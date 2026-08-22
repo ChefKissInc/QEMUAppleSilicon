@@ -61,7 +61,7 @@
  *    since the last period, effectively restarting the timer with a
  *    counter = counter value at the moment of change (.i.e. one less).
  */
-#define PTIMER_POLICY_LEGACY                0
+#define PTIMER_POLICY_LEGACY 0
 
 /* Periodic timer counter stays with "0" for a one period before wrapping
  * around.  */
@@ -69,15 +69,15 @@
 
 /* Running periodic timer that has counter = limit = 0 would continuously
  * re-trigger every period.  */
-#define PTIMER_POLICY_CONTINUOUS_TRIGGER    (1 << 1)
+#define PTIMER_POLICY_CONTINUOUS_TRIGGER (1 << 1)
 
 /* Starting to run with/setting counter to "0" won't trigger immediately,
  * but after a one period for both oneshot and periodic modes.  */
-#define PTIMER_POLICY_NO_IMMEDIATE_TRIGGER  (1 << 2)
+#define PTIMER_POLICY_NO_IMMEDIATE_TRIGGER (1 << 2)
 
 /* Starting to run with/setting counter to "0" won't re-load counter
  * immediately, but after a one period.  */
-#define PTIMER_POLICY_NO_IMMEDIATE_RELOAD   (1 << 3)
+#define PTIMER_POLICY_NO_IMMEDIATE_RELOAD (1 << 3)
 
 /* Make counter value of the running timer represent the actual value and
  * not the one less.  */
@@ -94,7 +94,7 @@
 
 /* ptimer.c */
 typedef struct ptimer_state ptimer_state;
-typedef void (*ptimer_cb)(void *opaque);
+typedef void                (*ptimer_cb)(void* opaque);
 
 /**
  * ptimer_init - Allocate and return a new ptimer
@@ -124,9 +124,7 @@ typedef void (*ptimer_cb)(void *opaque);
  * the ptimer state such that another ptimer expiry is triggered, then
  * the callback will be called a second time after the first call returns.
  */
-ptimer_state *ptimer_init(ptimer_cb callback,
-                          void *callback_opaque,
-                          uint8_t policy_mask);
+ptimer_state* ptimer_init(ptimer_cb callback, void* callback_opaque, uint8_t policy_mask);
 
 /**
  * ptimer_free - Free a ptimer
@@ -134,7 +132,7 @@ ptimer_state *ptimer_init(ptimer_cb callback,
  *
  * Free a ptimer created using ptimer_init().
  */
-void ptimer_free(ptimer_state *s);
+void ptimer_free(ptimer_state* s);
 
 /**
  * ptimer_transaction_begin() - Start a ptimer modification transaction
@@ -146,7 +144,7 @@ void ptimer_free(ptimer_state *s);
  * It is an error to call this function for a BH-based ptimer;
  * attempting to do this will trigger an assert.
  */
-void ptimer_transaction_begin(ptimer_state *s);
+void ptimer_transaction_begin(ptimer_state* s);
 
 /**
  * ptimer_transaction_commit() - Commit a ptimer modification transaction
@@ -156,7 +154,7 @@ void ptimer_transaction_begin(ptimer_state *s);
  * ptimer state now means that we should trigger the timer expiry
  * callback, it will be called directly.
  */
-void ptimer_transaction_commit(ptimer_state *s);
+void ptimer_transaction_commit(ptimer_state* s);
 
 /**
  * ptimer_set_period - Set counter increment interval in nanoseconds
@@ -170,7 +168,7 @@ void ptimer_transaction_commit(ptimer_state *s);
  * This function will assert if it is called outside a
  * ptimer_transaction_begin/commit block.
  */
-void ptimer_set_period(ptimer_state *s, int64_t period);
+void ptimer_set_period(ptimer_state* s, int64_t period);
 
 /**
  * ptimer_set_period_from_clock - Set counter increment from a Clock
@@ -191,8 +189,7 @@ void ptimer_set_period(ptimer_state *s, int64_t period);
  * This function will assert if it is called outside a
  * ptimer_transaction_begin/commit block.
  */
-void ptimer_set_period_from_clock(ptimer_state *s, const Clock *clock,
-                                  unsigned int divisor);
+void ptimer_set_period_from_clock(ptimer_state* s, const Clock* clock, unsigned int divisor);
 
 /**
  * ptimer_set_freq - Set counter frequency in Hz
@@ -208,7 +205,7 @@ void ptimer_set_period_from_clock(ptimer_state *s, const Clock *clock,
  * This function will assert if it is called outside a
  * ptimer_transaction_begin/commit block.
  */
-void ptimer_set_freq(ptimer_state *s, uint32_t freq);
+void ptimer_set_freq(ptimer_state* s, uint32_t freq);
 
 /**
  * ptimer_get_limit - Get the configured limit of the ptimer
@@ -223,7 +220,7 @@ void ptimer_set_freq(ptimer_state *s, uint32_t freq);
  * and set limit functions rather than needing to also track it
  * in their own state structure.
  */
-uint64_t ptimer_get_limit(ptimer_state *s);
+uint64_t ptimer_get_limit(ptimer_state* s);
 
 /**
  * ptimer_set_limit - Set the limit of the ptimer
@@ -238,7 +235,7 @@ uint64_t ptimer_get_limit(ptimer_state *s);
  * This function will assert if it is called outside a
  * ptimer_transaction_begin/commit block.
  */
-void ptimer_set_limit(ptimer_state *s, uint64_t limit, int reload);
+void ptimer_set_limit(ptimer_state* s, uint64_t limit, int reload);
 
 /**
  * ptimer_get_count - Get the current value of the ptimer
@@ -248,7 +245,7 @@ void ptimer_set_limit(ptimer_state *s, uint64_t limit, int reload);
  * return the correct value whether the counter is enabled or
  * disabled.
  */
-uint64_t ptimer_get_count(ptimer_state *s);
+uint64_t ptimer_get_count(ptimer_state* s);
 
 /**
  * ptimer_set_count - Set the current value of the ptimer
@@ -262,7 +259,7 @@ uint64_t ptimer_get_count(ptimer_state *s);
  * This function will assert if it is called outside a
  * ptimer_transaction_begin/commit block.
  */
-void ptimer_set_count(ptimer_state *s, uint64_t count);
+void ptimer_set_count(ptimer_state* s, uint64_t count);
 
 /**
  * ptimer_run - Start a ptimer counting
@@ -279,7 +276,7 @@ void ptimer_set_count(ptimer_state *s, uint64_t count);
  * This function will assert if it is called outside a
  * ptimer_transaction_begin/commit block.
  */
-void ptimer_run(ptimer_state *s, int oneshot);
+void ptimer_run(ptimer_state* s, int oneshot);
 
 /**
  * ptimer_stop - Stop a ptimer counting
@@ -294,4 +291,4 @@ void ptimer_run(ptimer_state *s, int oneshot);
  * This function will assert if it is called outside a
  * ptimer_transaction_begin/commit block.
  */
-void ptimer_stop(ptimer_state *s);
+void ptimer_stop(ptimer_state* s);

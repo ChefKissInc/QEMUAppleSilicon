@@ -35,44 +35,43 @@
 /***********************************************************/
 /* UDP Net console */
 
-struct UdpChardev {
-    Chardev parent;
-    QIOChannel *ioc;
-    uint8_t buf[CHR_READ_BUF_LEN];
-    int bufcnt;
-    int bufptr;
-    int max_size;
+struct UdpChardev
+{
+    Chardev     parent;
+    QIOChannel* ioc;
+    uint8_t     buf[CHR_READ_BUF_LEN];
+    int         bufcnt;
+    int         bufptr;
+    int         max_size;
 };
 typedef struct UdpChardev UdpChardev;
 
-DECLARE_INSTANCE_CHECKER(UdpChardev, UDP_CHARDEV,
-                         TYPE_CHARDEV_UDP)
+DECLARE_INSTANCE_CHECKER(UdpChardev, UDP_CHARDEV, TYPE_CHARDEV_UDP)
 
 /* Called with chr_write_lock held.  */
-static int udp_chr_write(Chardev *chr, const uint8_t *buf, int len)
+static int udp_chr_write(Chardev* chr, const uint8_t* buf, int len)
 {
-    UdpChardev *s = UDP_CHARDEV(chr);
+    UdpChardev* s = UDP_CHARDEV(chr);
 
-    return qio_channel_write(
-        s->ioc, (const char *)buf, len, NULL);
+    return qio_channel_write(s->ioc, (const char*)buf, len, NULL);
 }
 
-static void udp_chr_flush_buffer(UdpChardev *s)
+static void udp_chr_flush_buffer(UdpChardev* s)
 {
-    Chardev *chr = CHARDEV(s);
+    Chardev* chr = CHARDEV(s);
 
     while (s->max_size > 0 && s->bufptr < s->bufcnt) {
         int n = MIN(s->max_size, s->bufcnt - s->bufptr);
         qemu_chr_be_write(chr, &s->buf[s->bufptr], n);
-        s->bufptr += n;
-        s->max_size = qemu_chr_be_can_write(chr);
+        s->bufptr   += n;
+        s->max_size  = qemu_chr_be_can_write(chr);
     }
 }
 
-static int udp_chr_read_poll(void *opaque)
+static int udp_chr_read_poll(void* opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    UdpChardev *s = UDP_CHARDEV(opaque);
+    Chardev*    chr = CHARDEV(opaque);
+    UdpChardev* s   = UDP_CHARDEV(opaque);
 
     s->max_size = qemu_chr_be_can_write(chr);
 
@@ -84,17 +83,14 @@ static int udp_chr_read_poll(void *opaque)
     return s->max_size;
 }
 
-static gboolean udp_chr_read(QIOChannel *chan, GIOCondition cond, void *opaque)
+static gboolean udp_chr_read(QIOChannel* chan, GIOCondition cond, void* opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    UdpChardev *s = UDP_CHARDEV(opaque);
-    ssize_t ret;
+    Chardev*    chr = CHARDEV(opaque);
+    UdpChardev* s   = UDP_CHARDEV(opaque);
+    ssize_t     ret;
 
-    if (s->max_size == 0) {
-        return TRUE;
-    }
-    ret = qio_channel_read(
-        s->ioc, (char *)s->buf, sizeof(s->buf), NULL);
+    if (s->max_size == 0) { return TRUE; }
+    ret = qio_channel_read(s->ioc, (char*)s->buf, sizeof(s->buf), NULL);
     if (ret <= 0) {
         remove_fd_in_watch(chr);
         return FALSE;
@@ -106,81 +102,70 @@ static gboolean udp_chr_read(QIOChannel *chan, GIOCondition cond, void *opaque)
     return TRUE;
 }
 
-static void udp_chr_update_read_handler(Chardev *chr)
+static void udp_chr_update_read_handler(Chardev* chr)
 {
-    UdpChardev *s = UDP_CHARDEV(chr);
+    UdpChardev* s = UDP_CHARDEV(chr);
 
     remove_fd_in_watch(chr);
-    if (s->ioc) {
-        chr->gsource = io_add_watch_poll(chr, s->ioc,
-                                           udp_chr_read_poll,
-                                           udp_chr_read, chr,
-                                           chr->gcontext);
-    }
+    if (s->ioc) { chr->gsource = io_add_watch_poll(chr, s->ioc, udp_chr_read_poll, udp_chr_read, chr, chr->gcontext); }
 }
 
-static void char_udp_finalize(Object *obj)
+static void char_udp_finalize(Object* obj)
 {
-    Chardev *chr = CHARDEV(obj);
-    UdpChardev *s = UDP_CHARDEV(obj);
+    Chardev*    chr = CHARDEV(obj);
+    UdpChardev* s   = UDP_CHARDEV(obj);
 
     remove_fd_in_watch(chr);
-    if (s->ioc) {
-        object_unref(OBJECT(s->ioc));
-    }
+    if (s->ioc) { object_unref(OBJECT(s->ioc)); }
     qemu_chr_be_event(chr, CHR_EVENT_CLOSED);
 }
 
-static void udp_chr_parse(QemuOpts *opts, ChardevBackend *backend, Error **errp)
+static void udp_chr_parse(QemuOpts* opts, ChardevBackend* backend, Error** errp)
 {
-    const char *host = qemu_opt_get(opts, "host");
-    const char *port = qemu_opt_get(opts, "port");
-    const char *localaddr = qemu_opt_get(opts, "localaddr");
-    const char *localport = qemu_opt_get(opts, "localport");
-    bool has_local = false;
-    SocketAddressLegacy *addr;
-    ChardevUdp *udp;
+    const char*          host      = qemu_opt_get(opts, "host");
+    const char*          port      = qemu_opt_get(opts, "port");
+    const char*          localaddr = qemu_opt_get(opts, "localaddr");
+    const char*          localport = qemu_opt_get(opts, "localport");
+    bool                 has_local = false;
+    SocketAddressLegacy* addr;
+    ChardevUdp*          udp;
 
     backend->type = CHARDEV_BACKEND_KIND_UDP;
-    if (host == NULL || strlen(host) == 0) {
-        host = "localhost";
-    }
+    if (host == NULL || strlen(host) == 0) { host = "localhost"; }
     if (port == NULL || strlen(port) == 0) {
         error_setg(errp, "chardev: udp: remote port not specified");
         return;
     }
-    if (localport == NULL || strlen(localport) == 0) {
-        localport = "0";
-    } else {
+    if (localport == NULL || strlen(localport) == 0) { localport = "0"; }
+    else {
         has_local = true;
     }
-    if (localaddr == NULL || strlen(localaddr) == 0) {
-        localaddr = "";
-    } else {
+    if (localaddr == NULL || strlen(localaddr) == 0) { localaddr = ""; }
+    else {
         has_local = true;
     }
 
     udp = backend->u.udp.data = g_new0(ChardevUdp, 1);
     qemu_chr_parse_common(opts, qapi_ChardevUdp_base(udp));
 
-    addr = g_new0(SocketAddressLegacy, 1);
-    addr->type = SOCKET_ADDRESS_TYPE_INET;
-    addr->u.inet.data = g_new(InetSocketAddress, 1);
-    *addr->u.inet.data = (InetSocketAddress) {
-        .host = g_strdup(host),
-        .port = g_strdup(port),
+    addr               = g_new0(SocketAddressLegacy, 1);
+    addr->type         = SOCKET_ADDRESS_TYPE_INET;
+    addr->u.inet.data  = g_new(InetSocketAddress, 1);
+    *addr->u.inet.data = (InetSocketAddress){
+        .host     = g_strdup(host),
+        .port     = g_strdup(port),
         .has_ipv4 = qemu_opt_get(opts, "ipv4"),
-        .ipv4 = qemu_opt_get_bool(opts, "ipv4", 0),
+        .ipv4     = qemu_opt_get_bool(opts, "ipv4", 0),
         .has_ipv6 = qemu_opt_get(opts, "ipv6"),
-        .ipv6 = qemu_opt_get_bool(opts, "ipv6", 0),
+        .ipv6     = qemu_opt_get_bool(opts, "ipv6", 0),
     };
     udp->remote = addr;
 
     if (has_local) {
-        addr = g_new0(SocketAddressLegacy, 1);
-        addr->type = SOCKET_ADDRESS_TYPE_INET;
-        addr->u.inet.data = g_new(InetSocketAddress, 1);
-        *addr->u.inet.data = (InetSocketAddress) {
+        addr               = g_new0(SocketAddressLegacy, 1);
+        addr->type         = SOCKET_ADDRESS_TYPE_INET;
+        addr->u.inet.data  = g_new(InetSocketAddress, 1);
+        *addr->u.inet.data = (InetSocketAddress){
             .host = g_strdup(localaddr),
             .port = g_strdup(localport),
         };
@@ -188,15 +173,15 @@ static void udp_chr_parse(QemuOpts *opts, ChardevBackend *backend, Error **errp)
     }
 }
 
-static bool upd_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
+static bool upd_chr_open(Chardev* chr, ChardevBackend* backend, Error** errp)
 {
-    ChardevUdp *udp = backend->u.udp.data;
-    SocketAddress *local_addr = socket_address_flatten(udp->local);
-    SocketAddress *remote_addr = socket_address_flatten(udp->remote);
-    QIOChannelSocket *sioc = qio_channel_socket_new();
-    char *name;
-    UdpChardev *s = UDP_CHARDEV(chr);
-    int ret;
+    ChardevUdp*       udp         = backend->u.udp.data;
+    SocketAddress*    local_addr  = socket_address_flatten(udp->local);
+    SocketAddress*    remote_addr = socket_address_flatten(udp->remote);
+    QIOChannelSocket* sioc        = qio_channel_socket_new();
+    char*             name;
+    UdpChardev*       s = UDP_CHARDEV(chr);
+    int               ret;
 
     ret = qio_channel_socket_dgram_sync(sioc, local_addr, remote_addr, errp);
     qapi_free_SocketAddress(local_addr);
@@ -215,27 +200,24 @@ static bool upd_chr_open(Chardev *chr, ChardevBackend *backend, Error **errp)
     return true;
 }
 
-static void char_udp_class_init(ObjectClass *oc, const void *data)
+static void char_udp_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
-    cc->chr_parse = udp_chr_parse;
-    cc->chr_open = upd_chr_open;
-    cc->chr_write = udp_chr_write;
+    cc->chr_parse               = udp_chr_parse;
+    cc->chr_open                = upd_chr_open;
+    cc->chr_write               = udp_chr_write;
     cc->chr_update_read_handler = udp_chr_update_read_handler;
 }
 
 static const TypeInfo char_udp_type_info = {
-    .name = TYPE_CHARDEV_UDP,
-    .parent = TYPE_CHARDEV,
-    .instance_size = sizeof(UdpChardev),
+    .name              = TYPE_CHARDEV_UDP,
+    .parent            = TYPE_CHARDEV,
+    .instance_size     = sizeof(UdpChardev),
     .instance_finalize = char_udp_finalize,
-    .class_init = char_udp_class_init,
+    .class_init        = char_udp_class_init,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_udp_type_info);
-}
+static void register_types(void) { type_register_static(&char_udp_type_info); }
 
 type_init(register_types);

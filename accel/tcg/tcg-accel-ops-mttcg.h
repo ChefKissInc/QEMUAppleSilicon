@@ -10,4 +10,4 @@
 #pragma once
 
 /* start an mttcg vCPU thread */
-void mttcg_start_vcpu_thread(CPUState *cpu);
+void mttcg_start_vcpu_thread(CPUState* cpu);

@@ -10,4 +10,4 @@
 
 #include "target/arm/cpu-qom.h"
 
-uint64_t arm_cpu_mp_affinity(ARMCPU *cpu);
+uint64_t arm_cpu_mp_affinity(ARMCPU* cpu);

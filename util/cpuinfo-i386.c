@@ -6,7 +6,7 @@
 #include "qemu/osdep.h"
 #include "host/cpuinfo.h"
 #ifdef CONFIG_CPUID_H
-# include "qemu/cpuid.h"
+    #include "qemu/cpuid.h"
 #endif
 
 unsigned cpuinfo;
@@ -16,9 +16,7 @@ unsigned __attribute__((constructor)) cpuinfo_init(void)
 {
     unsigned info = cpuinfo;
 
-    if (info) {
-        return info;
-    }
+    if (info) { return info; }
 
 #ifdef CONFIG_CPUID_H
     unsigned max, a, b, c, d, b7 = 0, c7 = 0;
@@ -81,9 +79,8 @@ unsigned __attribute__((constructor)) cpuinfo_init(void)
                  * See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104688
                  */
                 __cpuid(0, a, b, c, d);
-                if (c == signature_INTEL_ecx) {
-                    info |= CPUINFO_ATOMIC_VMOVDQA;
-                } else if (c == signature_AMD_ecx) {
+                if (c == signature_INTEL_ecx) { info |= CPUINFO_ATOMIC_VMOVDQA; }
+                else if (c == signature_AMD_ecx) {
                     info |= CPUINFO_ATOMIC_VMOVDQA | CPUINFO_ATOMIC_VMOVDQU;
                 }
             }
@@ -97,7 +94,7 @@ unsigned __attribute__((constructor)) cpuinfo_init(void)
     }
 #endif
 
-    info |= CPUINFO_ALWAYS;
-    cpuinfo = info;
+    info    |= CPUINFO_ALWAYS;
+    cpuinfo  = info;
     return info;
 }

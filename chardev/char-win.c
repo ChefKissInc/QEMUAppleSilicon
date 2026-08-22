@@ -28,42 +28,34 @@
 #include "qapi/error.h"
 #include "chardev/char-win.h"
 
-static void win_chr_read(Chardev *chr, DWORD len)
+static void win_chr_read(Chardev* chr, DWORD len)
 {
-    WinChardev *s = WIN_CHARDEV(chr);
-    int max_size = qemu_chr_be_can_write(chr);
-    int ret, err;
-    uint8_t buf[CHR_READ_BUF_LEN];
-    DWORD size;
+    WinChardev* s        = WIN_CHARDEV(chr);
+    int         max_size = qemu_chr_be_can_write(chr);
+    int         ret, err;
+    uint8_t     buf[CHR_READ_BUF_LEN];
+    DWORD       size;
 
-    if (len > max_size) {
-        len = max_size;
-    }
-    if (len == 0) {
-        return;
-    }
+    if (len > max_size) { len = max_size; }
+    if (len == 0) { return; }
 
     ZeroMemory(&s->orecv, sizeof(s->orecv));
     s->orecv.hEvent = s->hrecv;
-    ret = ReadFile(s->file, buf, len, &size, &s->orecv);
+    ret             = ReadFile(s->file, buf, len, &size, &s->orecv);
     if (!ret) {
         err = GetLastError();
-        if (err == ERROR_IO_PENDING) {
-            ret = GetOverlappedResult(s->file, &s->orecv, &size, TRUE);
-        }
+        if (err == ERROR_IO_PENDING) { ret = GetOverlappedResult(s->file, &s->orecv, &size, TRUE); }
     }
 
-    if (size > 0) {
-        qemu_chr_be_write(chr, buf, size);
-    }
+    if (size > 0) { qemu_chr_be_write(chr, buf, size); }
 }
 
-static int win_chr_serial_poll(void *opaque)
+static int win_chr_serial_poll(void* opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    WinChardev *s = WIN_CHARDEV(opaque);
-    COMSTAT status;
-    DWORD comerr;
+    Chardev*    chr = CHARDEV(opaque);
+    WinChardev* s   = WIN_CHARDEV(opaque);
+    COMSTAT     status;
+    DWORD       comerr;
 
     ClearCommError(s->file, &comerr, &status);
     if (status.cbInQue > 0) {
@@ -73,14 +65,14 @@ static int win_chr_serial_poll(void *opaque)
     return 0;
 }
 
-int win_chr_serial_init(Chardev *chr, const char *filename, Error **errp)
+int win_chr_serial_init(Chardev* chr, const char* filename, Error** errp)
 {
-    WinChardev *s = WIN_CHARDEV(chr);
-    COMMCONFIG comcfg;
-    COMMTIMEOUTS cto = { 0, 0, 0, 0, 0};
-    COMSTAT comstat;
-    DWORD size;
-    DWORD err;
+    WinChardev*  s = WIN_CHARDEV(chr);
+    COMMCONFIG   comcfg;
+    COMMTIMEOUTS cto = {0, 0, 0, 0, 0};
+    COMSTAT      comstat;
+    DWORD        size;
+    DWORD        err;
 
     s->hsend = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!s->hsend) {
@@ -93,8 +85,7 @@ int win_chr_serial_init(Chardev *chr, const char *filename, Error **errp)
         goto fail;
     }
 
-    s->file = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-                      OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
+    s->file = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
     if (s->file == INVALID_HANDLE_VALUE) {
         error_setg_win32(errp, GetLastError(), "Failed CreateFile");
         s->file = NULL;
@@ -135,15 +126,15 @@ int win_chr_serial_init(Chardev *chr, const char *filename, Error **errp)
     qemu_add_polling_cb(win_chr_serial_poll, chr);
     return 0;
 
- fail:
+fail:
     return -1;
 }
 
-int win_chr_pipe_poll(void *opaque)
+int win_chr_pipe_poll(void* opaque)
 {
-    Chardev *chr = CHARDEV(opaque);
-    WinChardev *s = WIN_CHARDEV(opaque);
-    DWORD size;
+    Chardev*    chr = CHARDEV(opaque);
+    WinChardev* s   = WIN_CHARDEV(opaque);
+    DWORD       size;
 
     PeekNamedPipe(s->file, NULL, 0, NULL, &size, NULL);
     if (size > 0) {
@@ -154,18 +145,17 @@ int win_chr_pipe_poll(void *opaque)
 }
 
 /* Called with chr_write_lock held.  */
-static int win_chr_write(Chardev *chr, const uint8_t *buf, int len1)
+static int win_chr_write(Chardev* chr, const uint8_t* buf, int len1)
 {
-    WinChardev *s = WIN_CHARDEV(chr);
-    DWORD len, ret, size, err;
+    WinChardev* s = WIN_CHARDEV(chr);
+    DWORD       len, ret, size, err;
 
     len = len1;
     ZeroMemory(&s->osend, sizeof(s->osend));
     s->osend.hEvent = s->hsend;
     while (len > 0) {
-        if (s->hsend) {
-            ret = WriteFile(s->file, buf, len, &size, &s->osend);
-        } else {
+        if (s->hsend) { ret = WriteFile(s->file, buf, len, &size, &s->osend); }
+        else {
             ret = WriteFile(s->file, buf, len, &size, NULL);
         }
         if (!ret) {
@@ -175,13 +165,16 @@ static int win_chr_write(Chardev *chr, const uint8_t *buf, int len1)
                 if (ret) {
                     buf += size;
                     len -= size;
-                } else {
+                }
+                else {
                     break;
                 }
-            } else {
+            }
+            else {
                 break;
             }
-        } else {
+        }
+        else {
             buf += size;
             len -= size;
         }
@@ -189,56 +182,46 @@ static int win_chr_write(Chardev *chr, const uint8_t *buf, int len1)
     return len1 - len;
 }
 
-static void char_win_finalize(Object *obj)
+static void char_win_finalize(Object* obj)
 {
-    Chardev *chr = CHARDEV(obj);
-    WinChardev *s = WIN_CHARDEV(chr);
+    Chardev*    chr = CHARDEV(obj);
+    WinChardev* s   = WIN_CHARDEV(chr);
 
-    if (s->hsend) {
-        CloseHandle(s->hsend);
-    }
-    if (s->hrecv) {
-        CloseHandle(s->hrecv);
-    }
-    if (!s->keep_open && s->file) {
-        CloseHandle(s->file);
-    }
-    if (s->fpipe) {
-        qemu_del_polling_cb(win_chr_pipe_poll, chr);
-    } else {
+    if (s->hsend) { CloseHandle(s->hsend); }
+    if (s->hrecv) { CloseHandle(s->hrecv); }
+    if (!s->keep_open && s->file) { CloseHandle(s->file); }
+    if (s->fpipe) { qemu_del_polling_cb(win_chr_pipe_poll, chr); }
+    else {
         qemu_del_polling_cb(win_chr_serial_poll, chr);
     }
 
     qemu_chr_be_event(chr, CHR_EVENT_CLOSED);
 }
 
-void win_chr_set_file(Chardev *chr, HANDLE file, bool keep_open)
+void win_chr_set_file(Chardev* chr, HANDLE file, bool keep_open)
 {
-    WinChardev *s = WIN_CHARDEV(chr);
+    WinChardev* s = WIN_CHARDEV(chr);
 
     s->keep_open = keep_open;
-    s->file = file;
+    s->file      = file;
 }
 
-static void char_win_class_init(ObjectClass *oc, const void *data)
+static void char_win_class_init(ObjectClass* oc, const void* data)
 {
-    ChardevClass *cc = CHARDEV_CLASS(oc);
+    ChardevClass* cc = CHARDEV_CLASS(oc);
 
     cc->chr_write = win_chr_write;
 }
 
 static const TypeInfo char_win_type_info = {
-    .name = TYPE_CHARDEV_WIN,
-    .parent = TYPE_CHARDEV,
-    .instance_size = sizeof(WinChardev),
+    .name              = TYPE_CHARDEV_WIN,
+    .parent            = TYPE_CHARDEV,
+    .instance_size     = sizeof(WinChardev),
     .instance_finalize = char_win_finalize,
-    .class_init = char_win_class_init,
-    .abstract = true,
+    .class_init        = char_win_class_init,
+    .abstract          = true,
 };
 
-static void register_types(void)
-{
-    type_register_static(&char_win_type_info);
-}
+static void register_types(void) { type_register_static(&char_win_type_info); }
 
 type_init(register_types);

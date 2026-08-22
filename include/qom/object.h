@@ -17,14 +17,14 @@
 #include "qemu/module.h"
 
 typedef struct TypeImpl TypeImpl;
-typedef TypeImpl *Type;
+typedef TypeImpl*       Type;
 
 typedef struct TypeInfo TypeInfo;
 
 typedef struct InterfaceClass InterfaceClass;
-typedef struct InterfaceInfo InterfaceInfo;
+typedef struct InterfaceInfo  InterfaceInfo;
 
-#define TYPE_OBJECT "object"
+#define TYPE_OBJECT    "object"
 #define TYPE_CONTAINER "container"
 
 typedef struct ObjectProperty ObjectProperty;
@@ -39,11 +39,7 @@ typedef struct ObjectProperty ObjectProperty;
  *
  * Called when trying to get/set a property.
  */
-typedef void (ObjectPropertyAccessor)(Object *obj,
-                                      Visitor *v,
-                                      const char *name,
-                                      void *opaque,
-                                      Error **errp);
+typedef void(ObjectPropertyAccessor)(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp);
 
 /**
  * typedef ObjectPropertyResolve:
@@ -60,9 +56,7 @@ typedef void (ObjectPropertyAccessor)(Object *obj,
  * returns the #Object corresponding to "@path/@part".
  * If "@path/@part" is not a valid object path, it returns #NULL.
  */
-typedef Object *(ObjectPropertyResolve)(Object *obj,
-                                        void *opaque,
-                                        const char *part);
+typedef Object*(ObjectPropertyResolve)(Object * obj, void* opaque, const char* part);
 
 /**
  * typedef ObjectPropertyRelease:
@@ -72,9 +66,7 @@ typedef Object *(ObjectPropertyResolve)(Object *obj,
  *
  * Called when a property is removed from an object.
  */
-typedef void (ObjectPropertyRelease)(Object *obj,
-                                     const char *name,
-                                     void *opaque);
+typedef void(ObjectPropertyRelease)(Object* obj, const char* name, void* opaque);
 
 /**
  * typedef ObjectPropertyInit:
@@ -83,20 +75,20 @@ typedef void (ObjectPropertyRelease)(Object *obj,
  *
  * Called when a property is initialized.
  */
-typedef void (ObjectPropertyInit)(Object *obj, ObjectProperty *prop);
+typedef void(ObjectPropertyInit)(Object* obj, ObjectProperty* prop);
 
 struct ObjectProperty
 {
-    char *name;
-    char *type;
-    char *description;
-    ObjectPropertyAccessor *get;
-    ObjectPropertyAccessor *set;
-    ObjectPropertyResolve *resolve;
-    ObjectPropertyRelease *release;
-    ObjectPropertyInit *init;
-    void *opaque;
-    QObject *defval;
+    char*                   name;
+    char*                   type;
+    char*                   description;
+    ObjectPropertyAccessor* get;
+    ObjectPropertyAccessor* set;
+    ObjectPropertyResolve*  resolve;
+    ObjectPropertyRelease*  release;
+    ObjectPropertyInit*     init;
+    void*                   opaque;
+    QObject*                defval;
 };
 
 /**
@@ -106,7 +98,7 @@ struct ObjectProperty
  * Called when an object is being removed from the QOM composition tree.
  * The function should remove any backlinks from children objects to @obj.
  */
-typedef void (ObjectUnparent)(Object *obj);
+typedef void(ObjectUnparent)(Object* obj);
 
 /**
  * typedef ObjectFree:
@@ -114,7 +106,7 @@ typedef void (ObjectUnparent)(Object *obj);
  *
  * Called when an object's last reference is removed.
  */
-typedef void (ObjectFree)(void *obj);
+typedef void(ObjectFree)(void* obj);
 
 #define OBJECT_CLASS_CAST_CACHE 4
 
@@ -127,53 +119,53 @@ typedef void (ObjectFree)(void *obj);
 struct ObjectClass
 {
     /* private: */
-    Type type;
-    GSList *interfaces;
+    Type    type;
+    GSList* interfaces;
 
 #ifdef CONFIG_QOM_CAST_DEBUG
-    const char *object_cast_cache[OBJECT_CLASS_CAST_CACHE];
-    const char *class_cast_cache[OBJECT_CLASS_CAST_CACHE];
+    const char* object_cast_cache[OBJECT_CLASS_CAST_CACHE];
+    const char* class_cast_cache[OBJECT_CLASS_CAST_CACHE];
 #endif
 
-    ObjectUnparent *unparent;
+    ObjectUnparent* unparent;
 
-    GHashTable *properties;
+    GHashTable* properties;
 };
 
 typedef struct InterfaceImpl InterfaceImpl;
 struct InterfaceImpl
 {
-    const char *typename;
+    const char* typename;
 };
 
 #define MAX_INTERFACES 32
 
 struct TypeImpl
 {
-    const char *name;
+    const char* name;
 
     size_t class_size;
 
     size_t instance_size;
     size_t instance_align;
 
-    void (*class_init)(ObjectClass *klass, const void *data);
-    void (*class_base_init)(ObjectClass *klass, const void *data);
+    void (*class_init)(ObjectClass* klass, const void* data);
+    void (*class_base_init)(ObjectClass* klass, const void* data);
 
-    const void *class_data;
+    const void* class_data;
 
-    void (*instance_init)(Object *obj);
-    void (*instance_post_init)(Object *obj);
-    void (*instance_finalize)(Object *obj);
+    void (*instance_init)(Object* obj);
+    void (*instance_post_init)(Object* obj);
+    void (*instance_finalize)(Object* obj);
 
     bool abstract;
 
-    const char *parent;
-    TypeImpl *parent_type;
+    const char* parent;
+    TypeImpl*   parent_type;
 
-    ObjectClass *class;
+    ObjectClass* class;
 
-    int num_interfaces;
+    int           num_interfaces;
     InterfaceImpl interfaces[MAX_INTERFACES];
 };
 
@@ -192,11 +184,11 @@ struct TypeImpl
 struct Object
 {
     /* private: */
-    ObjectClass *class;
-    ObjectFree *free;
-    GHashTable *properties;
-    uint32_t ref;
-    Object *parent;
+    ObjectClass* class;
+    ObjectFree* free;
+    GHashTable* properties;
+    uint32_t    ref;
+    Object*     parent;
 };
 
 /**
@@ -211,33 +203,29 @@ struct Object
  * This macro will provide the instance type cast functions for a
  * QOM type.
  */
-#define DECLARE_INSTANCE_CHECKER(InstanceType, OBJ_NAME, TYPENAME) \
-    static inline G_GNUC_UNUSED InstanceType * \
-    OBJ_NAME(const void *obj) \
+#define DECLARE_INSTANCE_CHECKER(InstanceType, OBJ_NAME, TYPENAME)      \
+    static inline G_GNUC_UNUSED InstanceType* OBJ_NAME(const void* obj) \
     { return OBJECT_CHECK(InstanceType, obj, TYPENAME); }
 
-#define DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME) \
-    static inline G_GNUC_UNUSED ClassType * \
-    OBJ_NAME##_GET_CLASS(const void *obj) \
-    { return OBJECT_GET_CLASS(ClassType, obj, OBJ_NAME, TYPENAME); } \
-    \
-    static inline G_GNUC_UNUSED ClassType * \
-    OBJ_NAME##_CLASS(const void *klass) \
+#define DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)                 \
+    static inline G_GNUC_UNUSED ClassType* OBJ_NAME##_GET_CLASS(const void* obj) \
+    { return OBJECT_GET_CLASS(ClassType, obj, OBJ_NAME, TYPENAME); }             \
+                                                                                 \
+    static inline G_GNUC_UNUSED ClassType* OBJ_NAME##_CLASS(const void* klass)   \
     { return OBJECT_CLASS_CHECK(ClassType, klass, OBJ_NAME, TYPENAME); }
 
 #define DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME) \
-    DECLARE_INSTANCE_CHECKER(InstanceType, OBJ_NAME, TYPENAME) \
-    \
+    DECLARE_INSTANCE_CHECKER(InstanceType, OBJ_NAME, TYPENAME)               \
+                                                                             \
     DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)
 
-#define DO_OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME) \
-    typedef struct InstanceType InstanceType; \
-    typedef struct ClassType ClassType; \
-    \
-    G_DEFINE_AUTOPTR_CLEANUP_FUNC(InstanceType, object_unref) \
-    \
-    DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, \
-                         MODULE_OBJ_NAME, TYPE_##MODULE_OBJ_NAME)
+#define DO_OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME)                      \
+    typedef struct InstanceType InstanceType;                                                 \
+    typedef struct ClassType    ClassType;                                                    \
+                                                                                              \
+    G_DEFINE_AUTOPTR_CLEANUP_FUNC(InstanceType, object_unref)                                 \
+                                                                                              \
+    DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, MODULE_OBJ_NAME, TYPE_##MODULE_OBJ_NAME)
 /**
  * OBJECT_DECLARE_TYPE:
  * @InstanceType: instance struct name
@@ -253,7 +241,7 @@ struct Object
  * The object struct and class struct need to be declared manually.
  */
 #define OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME) \
-    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, false); \
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, false);                 \
     DO_OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME)
 
 /**
@@ -263,14 +251,14 @@ struct Object
  * to not optimise out casts on non-debug builds.
  */
 #define OBJECT_DECLARE_INTERFACE(InstanceType, ClassType, MODULE_OBJ_NAME) \
-    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, true); \
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, true);                       \
     DO_OBJECT_DECLARE_TYPE(InstanceType, ClassType, MODULE_OBJ_NAME)
 
-#define DO_OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME) \
-    typedef struct InstanceType InstanceType; \
-    \
-    G_DEFINE_AUTOPTR_CLEANUP_FUNC(InstanceType, object_unref) \
-    \
+#define DO_OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME)                \
+    typedef struct InstanceType InstanceType;                                       \
+                                                                                    \
+    G_DEFINE_AUTOPTR_CLEANUP_FUNC(InstanceType, object_unref)                       \
+                                                                                    \
     DECLARE_INSTANCE_CHECKER(InstanceType, MODULE_OBJ_NAME, TYPE_##MODULE_OBJ_NAME)
 
 /**
@@ -285,7 +273,7 @@ struct Object
  * virtual methods declared.
  */
 #define OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME) \
-    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, false); \
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, false);             \
     DO_OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME)
 
 /**
@@ -295,7 +283,7 @@ struct Object
  * to not optimise out casts on non-debug builds.
  */
 #define OBJECT_DECLARE_SIMPLE_INTERFACE(InstanceType, MODULE_OBJ_NAME) \
-    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, true); \
+    DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, true);                   \
     DO_OBJECT_DECLARE_SIMPLE_TYPE(InstanceType, MODULE_OBJ_NAME)
 
 /**
@@ -312,35 +300,26 @@ struct Object
  * This is the base macro used to implement all the OBJECT_DEFINE_*
  * macros. It should never be used directly in a source file.
  */
-#define DO_OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, \
-                                       MODULE_OBJ_NAME, \
-                                       PARENT_MODULE_OBJ_NAME, \
-                                       ABSTRACT, CLASS_SIZE, ...) \
-    static void \
-    module_obj_name##_finalize(Object *obj); \
-    static void \
-    module_obj_name##_class_init(ObjectClass *oc, const void *data); \
-    static void \
-    module_obj_name##_init(Object *obj); \
-    \
-    static const TypeInfo module_obj_name##_info = { \
-        .parent = TYPE_##PARENT_MODULE_OBJ_NAME, \
-        .name = TYPE_##MODULE_OBJ_NAME, \
-        .instance_size = sizeof(ModuleObjName), \
-        .instance_align = __alignof__(ModuleObjName), \
-        .instance_init = module_obj_name##_init, \
-        .instance_finalize = module_obj_name##_finalize, \
-        .class_size = CLASS_SIZE, \
-        .class_init = module_obj_name##_class_init, \
-        .abstract = ABSTRACT, \
-        .interfaces = (const InterfaceInfo[]) { __VA_ARGS__ } , \
-    }; \
-    \
-    static void \
-    module_obj_name##_register_types(void) \
-    { \
-        type_register_static(&module_obj_name##_info); \
-    } \
+#define DO_OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
+                                       ABSTRACT, CLASS_SIZE, ...)                                               \
+    static void module_obj_name##_finalize(Object* obj);                                                        \
+    static void module_obj_name##_class_init(ObjectClass* oc, const void* data);                                \
+    static void module_obj_name##_init(Object* obj);                                                            \
+                                                                                                                \
+    static const TypeInfo module_obj_name##_info = {                                                            \
+        .parent            = TYPE_##PARENT_MODULE_OBJ_NAME,                                                     \
+        .name              = TYPE_##MODULE_OBJ_NAME,                                                            \
+        .instance_size     = sizeof(ModuleObjName),                                                             \
+        .instance_align    = __alignof__(ModuleObjName),                                                        \
+        .instance_init     = module_obj_name##_init,                                                            \
+        .instance_finalize = module_obj_name##_finalize,                                                        \
+        .class_size        = CLASS_SIZE,                                                                        \
+        .class_init        = module_obj_name##_class_init,                                                      \
+        .abstract          = ABSTRACT,                                                                          \
+        .interfaces        = (const InterfaceInfo[]){__VA_ARGS__},                                              \
+    };                                                                                                          \
+                                                                                                                \
+    static void module_obj_name##_register_types(void) { type_register_static(&module_obj_name##_info); }       \
     type_init(module_obj_name##_register_types);
 
 /**
@@ -366,13 +345,10 @@ struct Object
  * This macro should rarely be used, instead one of the more specialized
  * macros is usually a better choice.
  */
-#define OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, \
-                                    MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
-                                    ABSTRACT, ...) \
-    DO_OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, \
-                                   MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
-                                   ABSTRACT, sizeof(ModuleObjName##Class), \
-                                   __VA_ARGS__)
+#define OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, ABSTRACT, \
+                                    ...)                                                                               \
+    DO_OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, ABSTRACT,  \
+                                   sizeof(ModuleObjName##Class), __VA_ARGS__)
 
 /**
  * OBJECT_DEFINE_TYPE:
@@ -385,11 +361,8 @@ struct Object
  * This is a specialization of OBJECT_DEFINE_TYPE_EXTENDED, which is suitable
  * for the common case of a non-abstract type, without any interfaces.
  */
-#define OBJECT_DEFINE_TYPE(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, \
-                           PARENT_MODULE_OBJ_NAME) \
-    OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, \
-                                MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
-                                false, { NULL })
+#define OBJECT_DEFINE_TYPE(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME) \
+    OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, false, {NULL})
 
 /**
  * OBJECT_DEFINE_TYPE_WITH_INTERFACES:
@@ -407,12 +380,10 @@ struct Object
  * Note when passing the list of interfaces, be sure to include the final
  * NULL entry, e.g.  { TYPE_USER_CREATABLE }, { NULL }
  */
-#define OBJECT_DEFINE_TYPE_WITH_INTERFACES(ModuleObjName, module_obj_name, \
-                                           MODULE_OBJ_NAME, \
-                                           PARENT_MODULE_OBJ_NAME, ...) \
-    OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, \
-                                MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
-                                false, __VA_ARGS__)
+#define OBJECT_DEFINE_TYPE_WITH_INTERFACES(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
+                                           ...)                                                                     \
+    OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, false,     \
+                                __VA_ARGS__)
 
 /**
  * OBJECT_DEFINE_ABSTRACT_TYPE:
@@ -425,11 +396,8 @@ struct Object
  * This is a specialization of OBJECT_DEFINE_TYPE_EXTENDED, which is suitable
  * for defining an abstract type, without any interfaces.
  */
-#define OBJECT_DEFINE_ABSTRACT_TYPE(ModuleObjName, module_obj_name, \
-                                    MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME) \
-    OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, \
-                                MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
-                                true, { NULL })
+#define OBJECT_DEFINE_ABSTRACT_TYPE(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME)           \
+    OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, true, {NULL})
 
 /**
  * OBJECT_DEFINE_SIMPLE_TYPE_WITH_INTERFACES:
@@ -443,13 +411,10 @@ struct Object
  * the case of a non-abstract type, with interfaces, and with no requirement
  * for a class struct.
  */
-#define OBJECT_DEFINE_SIMPLE_TYPE_WITH_INTERFACES(ModuleObjName, \
-                                                  module_obj_name, \
-                                                  MODULE_OBJ_NAME, \
-                                                  PARENT_MODULE_OBJ_NAME, ...) \
-    DO_OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, \
-                                   MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
-                                   false, 0, __VA_ARGS__)
+#define OBJECT_DEFINE_SIMPLE_TYPE_WITH_INTERFACES(ModuleObjName, module_obj_name, MODULE_OBJ_NAME,                    \
+                                                  PARENT_MODULE_OBJ_NAME, ...)                                        \
+    DO_OBJECT_DEFINE_TYPE_EXTENDED(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, false, 0, \
+                                   __VA_ARGS__)
 
 /**
  * OBJECT_DEFINE_SIMPLE_TYPE:
@@ -465,10 +430,9 @@ struct Object
  * OBJECT_DECLARE_SIMPLE_TYPE then this is probably the right choice for
  * defining it.
  */
-#define OBJECT_DEFINE_SIMPLE_TYPE(ModuleObjName, module_obj_name, \
-                                  MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME) \
-    OBJECT_DEFINE_SIMPLE_TYPE_WITH_INTERFACES(ModuleObjName, module_obj_name, \
-        MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, { NULL })
+#define OBJECT_DEFINE_SIMPLE_TYPE(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME)             \
+    OBJECT_DEFINE_SIMPLE_TYPE_WITH_INTERFACES(ModuleObjName, module_obj_name, MODULE_OBJ_NAME, PARENT_MODULE_OBJ_NAME, \
+                                              {NULL})
 
 /**
  * struct TypeInfo:
@@ -514,23 +478,23 @@ struct Object
  */
 struct TypeInfo
 {
-    const char *name;
-    const char *parent;
+    const char* name;
+    const char* parent;
 
     size_t instance_size;
     size_t instance_align;
-    void (*instance_init)(Object *obj);
-    void (*instance_post_init)(Object *obj);
-    void (*instance_finalize)(Object *obj);
+    void   (*instance_init)(Object* obj);
+    void   (*instance_post_init)(Object* obj);
+    void   (*instance_finalize)(Object* obj);
 
-    bool abstract;
+    bool   abstract;
     size_t class_size;
 
-    void (*class_init)(ObjectClass *klass, const void *data);
-    void (*class_base_init)(ObjectClass *klass, const void *data);
-    const void *class_data;
+    void        (*class_init)(ObjectClass* klass, const void* data);
+    void        (*class_base_init)(ObjectClass* klass, const void* data);
+    const void* class_data;
 
-    const InterfaceInfo *interfaces;
+    const InterfaceInfo* interfaces;
 };
 
 /**
@@ -540,8 +504,7 @@ struct TypeInfo
  * Converts an object to a #Object.  Since all objects are #Objects,
  * this function will always succeed.
  */
-#define OBJECT(obj) \
-    ((Object *)(obj))
+#define OBJECT(obj) ((Object*)(obj))
 
 /**
  * OBJECT_CLASS:
@@ -550,8 +513,7 @@ struct TypeInfo
  * Converts a class to an #ObjectClass.  Since all classes are #ObjectClasses,
  * this function will always succeed.
  */
-#define OBJECT_CLASS(class) \
-    ((ObjectClass *)(class))
+#define OBJECT_CLASS(class) ((ObjectClass*)(class))
 
 /**
  * OBJECT_CHECK:
@@ -566,9 +528,8 @@ struct TypeInfo
  * If an invalid object is passed to this function, a run time assert will be
  * generated.
  */
-#define OBJECT_CHECK(type, obj, name) \
-    ((type *)object_dynamic_cast_assert(OBJECT(obj), (name), \
-                                        __FILE__, __LINE__, __func__))
+#define OBJECT_CHECK(type, obj, name)                                                      \
+    ((type*)object_dynamic_cast_assert(OBJECT(obj), (name), __FILE__, __LINE__, __func__))
 
 /**
  * OBJECT_CLASS_CHECK:
@@ -581,15 +542,13 @@ struct TypeInfo
  * specific class type.
  */
 #ifdef CONFIG_QOM_CAST_DEBUG
-#define OBJECT_CLASS_CHECK(class_type, class, objname, name) \
-    ((class_type *)object_class_dynamic_cast_assert(OBJECT_CLASS(class), (name), \
-                                               __FILE__, __LINE__, __func__))
+    #define OBJECT_CLASS_CHECK(class_type, class, objname, name)                                                   \
+        ((class_type*)object_class_dynamic_cast_assert(OBJECT_CLASS(class), (name), __FILE__, __LINE__, __func__))
 #else
-#define OBJECT_CLASS_CHECK(class_type, class, objname, name) \
-    (objname##_IS_INTERFACE()) ? \
-        ((class_type *)object_class_dynamic_cast_assert(OBJECT_CLASS(class), (name), \
-                                                   __FILE__, __LINE__, __func__)) \
-    : ((class_type *)OBJECT_CLASS(class))
+    #define OBJECT_CLASS_CHECK(class_type, class, objname, name)                                                     \
+        (objname##_IS_INTERFACE()) ? ((class_type*)object_class_dynamic_cast_assert(OBJECT_CLASS(class), (name),     \
+                                                                                    __FILE__, __LINE__, __func__)) : \
+                                     ((class_type*)OBJECT_CLASS(class))
 #endif
 
 /**
@@ -605,7 +564,7 @@ struct TypeInfo
  * QOM type.
  */
 #define DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME) \
-    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, false); \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, false);                \
     DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)
 
 /**
@@ -614,7 +573,7 @@ struct TypeInfo
  * DO_OBJECT_INTERFACE_INFO(..., true)
  */
 #define DECLARE_CLASS_CHECKERS_IF(ClassType, OBJ_NAME, TYPENAME) \
-    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, true); \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, true);                    \
     DO_DECLARE_CLASS_CHECKERS(ClassType, OBJ_NAME, TYPENAME)
 
 /**
@@ -631,7 +590,7 @@ struct TypeInfo
  * QOM type.
  */
 #define DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME) \
-    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, false); \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, false);                            \
     DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME)
 
 /**
@@ -640,7 +599,7 @@ struct TypeInfo
  * DO_OBJECT_INTERFACE_INFO(..., true)
  */
 #define DECLARE_OBJ_CHECKERS_IF(InstanceType, ClassType, OBJ_NAME, TYPENAME) \
-    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, true); \
+    DO_OBJECT_INTERFACE_INFO(OBJ_NAME, true);                                \
     DO_DECLARE_OBJ_CHECKERS(InstanceType, ClassType, OBJ_NAME, TYPENAME)
 
 /**
@@ -653,7 +612,7 @@ struct TypeInfo
  * used by each type to provide a type safe macro to get a specific class type
  * from an object.
  */
-#define OBJECT_GET_CLASS(class, obj, objname, name) \
+#define OBJECT_GET_CLASS(class, obj, objname, name)                         \
     OBJECT_CLASS_CHECK(class, object_get_class(OBJECT(obj)), objname, name)
 
 /**
@@ -662,8 +621,9 @@ struct TypeInfo
  *
  * The information associated with an interface.
  */
-struct InterfaceInfo {
-    const char *type;
+struct InterfaceInfo
+{
+    const char* type;
 };
 
 /**
@@ -687,10 +647,10 @@ struct InterfaceClass
 #define TYPE_INTERFACE "interface"
 
 #ifdef CONFIG_QOM_CAST_DEBUG
-#define DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, is)
+    #define DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, is)
 #else
-#define DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, is) \
-    static inline G_GNUC_UNUSED bool MODULE_OBJ_NAME##_IS_INTERFACE(void) { return is; }
+    #define DO_OBJECT_INTERFACE_INFO(MODULE_OBJ_NAME, is)                                    \
+        static inline G_GNUC_UNUSED bool MODULE_OBJ_NAME##_IS_INTERFACE(void) { return is; }
 #endif
 
 /**
@@ -698,8 +658,7 @@ struct InterfaceClass
  * @klass: class to cast from
  * Returns: An #InterfaceClass or raise an error if cast is invalid
  */
-#define INTERFACE_CLASS(klass) \
-    OBJECT_CLASS_CHECK(InterfaceClass, klass, TYPE_INTERFACE, TYPE_INTERFACE)
+#define INTERFACE_CLASS(klass) OBJECT_CLASS_CHECK(InterfaceClass, klass, TYPE_INTERFACE, TYPE_INTERFACE)
 DO_OBJECT_INTERFACE_INFO(TYPE_INTERFACE, true);
 
 /**
@@ -710,9 +669,8 @@ DO_OBJECT_INTERFACE_INFO(TYPE_INTERFACE, true);
  *
  * Returns: @obj casted to @interface if cast is valid, otherwise raise error.
  */
-#define INTERFACE_CHECK(interface, obj, name) \
-    ((interface *)object_dynamic_cast_assert(OBJECT((obj)), (name), \
-                                             __FILE__, __LINE__, __func__))
+#define INTERFACE_CHECK(interface, obj, name)                                                     \
+    ((interface*)object_dynamic_cast_assert(OBJECT((obj)), (name), __FILE__, __LINE__, __func__))
 
 /**
  * object_new_with_class:
@@ -724,7 +682,7 @@ DO_OBJECT_INTERFACE_INFO(TYPE_INTERFACE, true);
  *
  * Returns: The newly allocated and instantiated object.
  */
-Object *object_new_with_class(ObjectClass *klass);
+Object* object_new_with_class(ObjectClass* klass);
 
 /**
  * object_new:
@@ -736,7 +694,7 @@ Object *object_new_with_class(ObjectClass *klass);
  *
  * Returns: The newly allocated and instantiated object.
  */
-Object *object_new(const char *typename);
+Object* object_new(const char* typename);
 
 /**
  * object_new_with_props:
@@ -784,10 +742,7 @@ Object *object_new(const char *typename);
  *
  * Returns: The newly allocated, instantiated & initialized object.
  */
-Object *object_new_with_props(const char *typename,
-                              Object *parent,
-                              const char *id,
-                              Error **errp,
+Object* object_new_with_props(const char* typename, Object* parent, const char* id, Error** errp,
                               ...) G_GNUC_NULL_TERMINATED;
 
 /**
@@ -800,19 +755,13 @@ Object *object_new_with_props(const char *typename,
  *
  * See object_new_with_props() for documentation.
  */
-Object *object_new_with_propv(const char *typename,
-                              Object *parent,
-                              const char *id,
-                              Error **errp,
-                              va_list vargs);
+Object* object_new_with_propv(const char* typename, Object* parent, const char* id, Error** errp, va_list vargs);
 
-bool object_apply_global_props(Object *obj, const GPtrArray *props,
-                               Error **errp);
-void object_set_machine_compat_props(GPtrArray *compat_props);
-void object_set_accelerator_compat_props(GPtrArray *compat_props);
-void object_register_sugar_prop(const char *driver, const char *prop,
-                                const char *value, bool optional);
-void object_apply_compat_props(Object *obj);
+bool object_apply_global_props(Object* obj, const GPtrArray* props, Error** errp);
+void object_set_machine_compat_props(GPtrArray* compat_props);
+void object_set_accelerator_compat_props(GPtrArray* compat_props);
+void object_register_sugar_prop(const char* driver, const char* prop, const char* value, bool optional);
+void object_apply_compat_props(Object* obj);
 
 /**
  * object_set_props:
@@ -848,7 +797,7 @@ void object_apply_compat_props(Object *obj);
  *
  * Returns: %true on success, %false on error.
  */
-bool object_set_props(Object *obj, Error **errp, ...) G_GNUC_NULL_TERMINATED;
+bool object_set_props(Object* obj, Error** errp, ...) G_GNUC_NULL_TERMINATED;
 
 /**
  * object_set_propv:
@@ -860,7 +809,7 @@ bool object_set_props(Object *obj, Error **errp, ...) G_GNUC_NULL_TERMINATED;
  *
  * Returns: %true on success, %false on error.
  */
-bool object_set_propv(Object *obj, Error **errp, va_list vargs);
+bool object_set_propv(Object* obj, Error** errp, va_list vargs);
 
 /**
  * object_initialize:
@@ -872,7 +821,7 @@ bool object_set_propv(Object *obj, Error **errp, va_list vargs);
  * have already been allocated.  The returned object has a reference count of 1,
  * and will be finalized when the last reference is dropped.
  */
-void object_initialize(void *obj, size_t size, const char *typename);
+void object_initialize(void* obj, size_t size, const char* typename);
 
 /**
  * object_initialize_child_with_props:
@@ -897,10 +846,8 @@ void object_initialize(void *obj, size_t size, const char *typename);
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_initialize_child_with_props(Object *parentobj,
-                             const char *propname,
-                             void *childobj, size_t size, const char *type,
-                             Error **errp, ...) G_GNUC_NULL_TERMINATED;
+bool object_initialize_child_with_props(Object* parentobj, const char* propname, void* childobj, size_t size,
+                                        const char* type, Error** errp, ...) G_GNUC_NULL_TERMINATED;
 
 /**
  * object_initialize_child_with_propsv:
@@ -916,10 +863,8 @@ bool object_initialize_child_with_props(Object *parentobj,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_initialize_child_with_propsv(Object *parentobj,
-                              const char *propname,
-                              void *childobj, size_t size, const char *type,
-                              Error **errp, va_list vargs);
+bool object_initialize_child_with_propsv(Object* parentobj, const char* propname, void* childobj, size_t size,
+                                         const char* type, Error** errp, va_list vargs);
 
 /**
  * object_initialize_child:
@@ -935,12 +880,9 @@ bool object_initialize_child_with_propsv(Object *parentobj,
  *                                      child, sizeof(*child), type,
  *                                      &error_abort, NULL)
  */
-#define object_initialize_child(parent, propname, child, type)          \
-    object_initialize_child_internal((parent), (propname),              \
-                                     (child), sizeof(*(child)), (type))
-void object_initialize_child_internal(Object *parent, const char *propname,
-                                      void *child, size_t size,
-                                      const char *type);
+#define object_initialize_child(parent, propname, child, type)                                \
+    object_initialize_child_internal((parent), (propname), (child), sizeof(*(child)), (type))
+void object_initialize_child_internal(Object* parent, const char* propname, void* child, size_t size, const char* type);
 
 /**
  * object_dynamic_cast:
@@ -952,7 +894,7 @@ void object_initialize_child_internal(Object *parent, const char *propname,
  *
  * Returns: This function returns @obj on success or #NULL on failure.
  */
-Object *object_dynamic_cast(Object *obj, const char *typename);
+Object* object_dynamic_cast(Object* obj, const char* typename);
 
 #ifdef CONFIG_QOM_CAST_DEBUG
 /**
@@ -969,16 +911,11 @@ Object *object_dynamic_cast(Object *obj, const char *typename);
  * This function is not meant to be called directly, but only through
  * the wrapper macro OBJECT_CHECK.
  */
-Object *object_dynamic_cast_assert(Object *obj, const char *typename,
-                                   const char *file, int line, const char *func);
+Object* object_dynamic_cast_assert(Object* obj, const char* typename, const char* file, int line, const char* func);
 #else
-static inline Object *object_dynamic_cast_assert(Object *obj,
-                                                 const char *typename,
-                                                 const char *file, int line,
-                                                 const char *func)
-{
-    return obj;
-}
+static inline Object* object_dynamic_cast_assert(Object* obj, const char* typename, const char* file, int line,
+                                                 const char* func)
+{ return obj; }
 #endif
 
 /**
@@ -987,10 +924,7 @@ static inline Object *object_dynamic_cast_assert(Object *obj,
  *
  * Returns: The #ObjectClass of the type associated with @obj.
  */
-static inline ObjectClass *object_get_class(Object *obj)
-{
-    return obj->class;
-}
+static inline ObjectClass* object_get_class(Object* obj) { return obj->class; }
 
 /**
  * object_get_typename:
@@ -998,10 +932,7 @@ static inline ObjectClass *object_get_class(Object *obj)
  *
  * Returns: The QOM typename of @obj.
  */
-static inline const char *object_get_typename(const Object *obj)
-{
-    return obj->class->type->name;
-}
+static inline const char* object_get_typename(const Object* obj) { return obj->class->type->name; }
 
 /**
  * type_register_static:
@@ -1009,7 +940,7 @@ static inline const char *object_get_typename(const Object *obj)
  *
  * Returns: the new #Type.
  */
-Type type_register_static(const TypeInfo *info);
+Type type_register_static(const TypeInfo* info);
 
 /**
  * type_register_static_array:
@@ -1019,7 +950,7 @@ Type type_register_static(const TypeInfo *info);
  * @infos and all of the strings it points to should exist for the life time
  * that the type is registered.
  */
-void type_register_static_array(const TypeInfo *infos, int nr_infos);
+void type_register_static_array(const TypeInfo* infos, int nr_infos);
 
 /**
  * DEFINE_TYPES:
@@ -1028,12 +959,9 @@ void type_register_static_array(const TypeInfo *infos, int nr_infos);
  * @type_array should be static constant that exists for the life time
  * that the type is registered.
  */
-#define DEFINE_TYPES(type_array)                                            \
-static void do_qemu_init_ ## type_array(void)                               \
-{                                                                           \
-    type_register_static_array(type_array, ARRAY_SIZE(type_array));         \
-}                                                                           \
-type_init(do_qemu_init_ ## type_array)
+#define DEFINE_TYPES(type_array)                                                                                    \
+    static void do_qemu_init_##type_array(void) { type_register_static_array(type_array, ARRAY_SIZE(type_array)); } \
+    type_init(do_qemu_init_##type_array)
 
 /**
  * type_print_class_properties:
@@ -1042,7 +970,7 @@ type_init(do_qemu_init_ ## type_array)
  * Print the object's class properties to stdout or the monitor.
  * Return whether an object was found.
  */
-bool type_print_class_properties(const char *type);
+bool type_print_class_properties(const char* type);
 
 /**
  * object_set_properties_from_keyval:
@@ -1055,8 +983,7 @@ bool type_print_class_properties(const char *type);
  * For each key in the dictionary, parse the value string if needed,
  * then set the corresponding property in @obj.
  */
-void object_set_properties_from_keyval(Object *obj, const QDict *qdict,
-                                       bool from_json, Error **errp);
+void object_set_properties_from_keyval(Object* obj, const QDict* qdict, bool from_json, Error** errp);
 
 /**
  * object_class_dynamic_cast_assert:
@@ -1072,10 +999,8 @@ void object_set_properties_from_keyval(Object *obj, const QDict *qdict,
  * enabled.  This function is not meant to be called directly, but only through
  * the wrapper macro OBJECT_CLASS_CHECK.
  */
-ObjectClass *object_class_dynamic_cast_assert(ObjectClass *klass,
-                                              const char *typename,
-                                              const char *file, int line,
-                                              const char *func);
+ObjectClass* object_class_dynamic_cast_assert(ObjectClass* klass, const char* typename, const char* file, int line,
+                                              const char* func);
 
 /**
  * object_class_dynamic_cast:
@@ -1091,8 +1016,7 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *klass,
  * classes or interfaces on the hierarchy leading to @klass implement
  * it.  (FIXME: perhaps this can be detected at type definition time?)
  */
-ObjectClass *object_class_dynamic_cast(ObjectClass *klass,
-                                       const char *typename);
+ObjectClass* object_class_dynamic_cast(ObjectClass* klass, const char* typename);
 
 /**
  * object_class_get_parent:
@@ -1100,7 +1024,7 @@ ObjectClass *object_class_dynamic_cast(ObjectClass *klass,
  *
  * Returns: The parent for @klass or %NULL if none.
  */
-ObjectClass *object_class_get_parent(ObjectClass *klass);
+ObjectClass* object_class_get_parent(ObjectClass* klass);
 
 /**
  * object_class_get_name:
@@ -1108,10 +1032,7 @@ ObjectClass *object_class_get_parent(ObjectClass *klass);
  *
  * Returns: The QOM typename for @klass.
  */
-static inline const char *object_class_get_name(ObjectClass *klass)
-{
-    return klass->type->name;
-}
+static inline const char* object_class_get_name(ObjectClass* klass) { return klass->type->name; }
 
 /**
  * object_class_is_abstract:
@@ -1119,10 +1040,7 @@ static inline const char *object_class_get_name(ObjectClass *klass)
  *
  * Returns: %true if @klass is abstract, %false otherwise.
  */
-static inline bool object_class_is_abstract(ObjectClass *klass)
-{
-    return klass->type->abstract;
-}
+static inline bool object_class_is_abstract(ObjectClass* klass) { return klass->type->abstract; }
 
 /**
  * object_class_by_name:
@@ -1130,7 +1048,7 @@ static inline bool object_class_is_abstract(ObjectClass *klass)
  *
  * Returns: The class for @typename or %NULL if not found.
  */
-ObjectClass *object_class_by_name(const char *typename);
+ObjectClass* object_class_by_name(const char* typename);
 
 /**
  * module_object_class_by_name:
@@ -1142,11 +1060,10 @@ ObjectClass *object_class_by_name(const char *typename);
  *
  * Returns: The class for @typename or %NULL if not found.
  */
-ObjectClass *module_object_class_by_name(const char *typename);
+ObjectClass* module_object_class_by_name(const char* typename);
 
-void object_class_foreach(void (*fn)(ObjectClass *klass, void *opaque),
-                          const char *implements_type, bool include_abstract,
-                          void *opaque);
+void object_class_foreach(void (*fn)(ObjectClass* klass, void* opaque), const char* implements_type,
+                          bool include_abstract, void* opaque);
 
 /**
  * object_class_get_list:
@@ -1155,8 +1072,7 @@ void object_class_foreach(void (*fn)(ObjectClass *klass, void *opaque),
  *
  * Returns: A singly-linked list of the classes in reverse hashtable order.
  */
-GSList *object_class_get_list(const char *implements_type,
-                              bool include_abstract);
+GSList* object_class_get_list(const char* implements_type, bool include_abstract);
 
 /**
  * object_class_get_list_sorted:
@@ -1166,8 +1082,7 @@ GSList *object_class_get_list(const char *implements_type,
  * Returns: A singly-linked list of the classes in alphabetical
  * case-insensitive order.
  */
-GSList *object_class_get_list_sorted(const char *implements_type,
-                              bool include_abstract);
+GSList* object_class_get_list_sorted(const char* implements_type, bool include_abstract);
 
 /**
  * object_ref:
@@ -1177,7 +1092,7 @@ GSList *object_class_get_list_sorted(const char *implements_type,
  * as its reference count is greater than zero.
  * Returns: @obj
  */
-Object *object_ref(void *obj);
+Object* object_ref(void* obj);
 
 /**
  * object_unref:
@@ -1186,7 +1101,7 @@ Object *object_ref(void *obj);
  * Decrease the reference count of an object.  An object cannot be freed as long
  * as its reference count is greater than zero.
  */
-void object_unref(void *obj);
+void object_unref(void* obj);
 
 /**
  * object_property_try_add:
@@ -1211,12 +1126,9 @@ void object_unref(void *obj);
  * Returns: The #ObjectProperty; this can be used to set the @resolve
  * callback for child and link properties.
  */
-ObjectProperty *object_property_try_add(Object *obj, const char *name,
-                                        const char *type,
-                                        ObjectPropertyAccessor *get,
-                                        ObjectPropertyAccessor *set,
-                                        ObjectPropertyRelease *release,
-                                        void *opaque, Error **errp);
+ObjectProperty* object_property_try_add(Object* obj, const char* name, const char* type, ObjectPropertyAccessor* get,
+                                        ObjectPropertyAccessor* set, ObjectPropertyRelease* release, void* opaque,
+                                        Error** errp);
 
 /**
  * object_property_add:
@@ -1240,21 +1152,14 @@ ObjectProperty *object_property_try_add(Object *obj, const char *name,
  *   destruction.  This may be NULL.
  * @opaque: an opaque pointer to pass to the callbacks for the property
  */
-ObjectProperty *object_property_add(Object *obj, const char *name,
-                                    const char *type,
-                                    ObjectPropertyAccessor *get,
-                                    ObjectPropertyAccessor *set,
-                                    ObjectPropertyRelease *release,
-                                    void *opaque);
+ObjectProperty* object_property_add(Object* obj, const char* name, const char* type, ObjectPropertyAccessor* get,
+                                    ObjectPropertyAccessor* set, ObjectPropertyRelease* release, void* opaque);
 
-void object_property_del(Object *obj, const char *name);
+void object_property_del(Object* obj, const char* name);
 
-ObjectProperty *object_class_property_add(ObjectClass *klass, const char *name,
-                                          const char *type,
-                                          ObjectPropertyAccessor *get,
-                                          ObjectPropertyAccessor *set,
-                                          ObjectPropertyRelease *release,
-                                          void *opaque);
+ObjectProperty* object_class_property_add(ObjectClass* klass, const char* name, const char* type,
+                                          ObjectPropertyAccessor* get, ObjectPropertyAccessor* set,
+                                          ObjectPropertyRelease* release, void* opaque);
 
 /**
  * object_property_set_default_bool:
@@ -1263,7 +1168,7 @@ ObjectProperty *object_class_property_add(ObjectClass *klass, const char *name,
  *
  * Set the property default value.
  */
-void object_property_set_default_bool(ObjectProperty *prop, bool value);
+void object_property_set_default_bool(ObjectProperty* prop, bool value);
 
 /**
  * object_property_set_default_str:
@@ -1272,7 +1177,7 @@ void object_property_set_default_bool(ObjectProperty *prop, bool value);
  *
  * Set the property default value.
  */
-void object_property_set_default_str(ObjectProperty *prop, const char *value);
+void object_property_set_default_str(ObjectProperty* prop, const char* value);
 
 /**
  * object_property_set_default_list:
@@ -1280,7 +1185,7 @@ void object_property_set_default_str(ObjectProperty *prop, const char *value);
  *
  * Set the property default value to be an empty list.
  */
-void object_property_set_default_list(ObjectProperty *prop);
+void object_property_set_default_list(ObjectProperty* prop);
 
 /**
  * object_property_set_default_int:
@@ -1289,7 +1194,7 @@ void object_property_set_default_list(ObjectProperty *prop);
  *
  * Set the property default value.
  */
-void object_property_set_default_int(ObjectProperty *prop, int64_t value);
+void object_property_set_default_int(ObjectProperty* prop, int64_t value);
 
 /**
  * object_property_set_default_uint:
@@ -1298,7 +1203,7 @@ void object_property_set_default_int(ObjectProperty *prop, int64_t value);
  *
  * Set the property default value.
  */
-void object_property_set_default_uint(ObjectProperty *prop, uint64_t value);
+void object_property_set_default_uint(ObjectProperty* prop, uint64_t value);
 
 /**
  * object_property_find:
@@ -1309,7 +1214,7 @@ void object_property_set_default_uint(ObjectProperty *prop, uint64_t value);
  *
  * Return its #ObjectProperty if found, or NULL.
  */
-ObjectProperty *object_property_find(Object *obj, const char *name);
+ObjectProperty* object_property_find(Object* obj, const char* name);
 
 /**
  * object_property_find_err:
@@ -1321,9 +1226,7 @@ ObjectProperty *object_property_find(Object *obj, const char *name);
  *
  * Return its #ObjectProperty if found, or NULL.
  */
-ObjectProperty *object_property_find_err(Object *obj,
-                                         const char *name,
-                                         Error **errp);
+ObjectProperty* object_property_find_err(Object* obj, const char* name, Error** errp);
 
 /**
  * object_class_property_find:
@@ -1334,8 +1237,7 @@ ObjectProperty *object_property_find_err(Object *obj,
  *
  * Return its #ObjectProperty if found, or NULL.
  */
-ObjectProperty *object_class_property_find(ObjectClass *klass,
-                                           const char *name);
+ObjectProperty* object_class_property_find(ObjectClass* klass, const char* name);
 
 /**
  * object_class_property_find_err:
@@ -1347,12 +1249,11 @@ ObjectProperty *object_class_property_find(ObjectClass *klass,
  *
  * Return its #ObjectProperty if found, or NULL.
  */
-ObjectProperty *object_class_property_find_err(ObjectClass *klass,
-                                               const char *name,
-                                               Error **errp);
+ObjectProperty* object_class_property_find_err(ObjectClass* klass, const char* name, Error** errp);
 
-typedef struct ObjectPropertyIterator {
-    ObjectClass *nextclass;
+typedef struct ObjectPropertyIterator
+{
+    ObjectClass*   nextclass;
     GHashTableIter iter;
 } ObjectPropertyIterator;
 
@@ -1380,8 +1281,7 @@ typedef struct ObjectPropertyIterator {
  *        ... do something with prop ...
  *      }
  */
-void object_property_iter_init(ObjectPropertyIterator *iter,
-                               Object *obj);
+void object_property_iter_init(ObjectPropertyIterator* iter, Object* obj);
 
 /**
  * object_class_property_iter_init:
@@ -1397,8 +1297,7 @@ void object_property_iter_init(ObjectPropertyIterator *iter,
  * This can be used on abstract classes as it does not create a temporary
  * instance.
  */
-void object_class_property_iter_init(ObjectPropertyIterator *iter,
-                                     ObjectClass *klass);
+void object_class_property_iter_init(ObjectPropertyIterator* iter, ObjectClass* klass);
 
 /**
  * object_property_iter_next:
@@ -1412,9 +1311,9 @@ void object_class_property_iter_init(ObjectPropertyIterator *iter,
  * Returns: the next property, or %NULL when all properties
  * have been traversed.
  */
-ObjectProperty *object_property_iter_next(ObjectPropertyIterator *iter);
+ObjectProperty* object_property_iter_next(ObjectPropertyIterator* iter);
 
-void object_unparent(Object *obj);
+void object_unparent(Object* obj);
 
 /**
  * object_property_get:
@@ -1428,8 +1327,7 @@ void object_unparent(Object *obj);
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_get(Object *obj, const char *name, Visitor *v,
-                         Error **errp);
+bool object_property_get(Object* obj, const char* name, Visitor* v, Error** errp);
 
 /**
  * object_property_set_str:
@@ -1442,8 +1340,7 @@ bool object_property_get(Object *obj, const char *name, Visitor *v,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_set_str(Object *obj, const char *name,
-                             const char *value, Error **errp);
+bool object_property_set_str(Object* obj, const char* name, const char* value, Error** errp);
 
 /**
  * object_property_get_str:
@@ -1455,8 +1352,7 @@ bool object_property_set_str(Object *obj, const char *name,
  * an error occurs (including when the property value is not a string).
  * The caller should free the string.
  */
-char *object_property_get_str(Object *obj, const char *name,
-                              Error **errp);
+char* object_property_get_str(Object* obj, const char* name, Error** errp);
 
 /**
  * object_property_set_link:
@@ -1473,8 +1369,7 @@ char *object_property_get_str(Object *obj, const char *name,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_set_link(Object *obj, const char *name,
-                              Object *value, Error **errp);
+bool object_property_set_link(Object* obj, const char* name, Object* value, Error** errp);
 
 /**
  * object_property_get_link:
@@ -1486,8 +1381,7 @@ bool object_property_set_link(Object *obj, const char *name,
  * or NULL if an error occurs (including when the property value is not a
  * string or not a valid object path).
  */
-Object *object_property_get_link(Object *obj, const char *name,
-                                 Error **errp);
+Object* object_property_get_link(Object* obj, const char* name, Error** errp);
 
 /**
  * object_property_set_bool:
@@ -1500,8 +1394,7 @@ Object *object_property_get_link(Object *obj, const char *name,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_set_bool(Object *obj, const char *name,
-                              bool value, Error **errp);
+bool object_property_set_bool(Object* obj, const char* name, bool value, Error** errp);
 
 /**
  * object_property_get_bool:
@@ -1512,8 +1405,7 @@ bool object_property_set_bool(Object *obj, const char *name,
  * Returns: the value of the property, converted to a boolean, or false if
  * an error occurs (including when the property value is not a bool).
  */
-bool object_property_get_bool(Object *obj, const char *name,
-                              Error **errp);
+bool object_property_get_bool(Object* obj, const char* name, Error** errp);
 
 /**
  * object_property_set_int:
@@ -1526,8 +1418,7 @@ bool object_property_get_bool(Object *obj, const char *name,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_set_int(Object *obj, const char *name,
-                             int64_t value, Error **errp);
+bool object_property_set_int(Object* obj, const char* name, int64_t value, Error** errp);
 
 /**
  * object_property_get_int:
@@ -1538,8 +1429,7 @@ bool object_property_set_int(Object *obj, const char *name,
  * Returns: the value of the property, converted to an integer, or -1 if
  * an error occurs (including when the property value is not an integer).
  */
-int64_t object_property_get_int(Object *obj, const char *name,
-                                Error **errp);
+int64_t object_property_get_int(Object* obj, const char* name, Error** errp);
 
 /**
  * object_property_set_uint:
@@ -1552,8 +1442,7 @@ int64_t object_property_get_int(Object *obj, const char *name,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_set_uint(Object *obj, const char *name,
-                              uint64_t value, Error **errp);
+bool object_property_set_uint(Object* obj, const char* name, uint64_t value, Error** errp);
 
 /**
  * object_property_get_uint:
@@ -1564,8 +1453,7 @@ bool object_property_set_uint(Object *obj, const char *name,
  * Returns: the value of the property, converted to an unsigned integer, or 0
  * an error occurs (including when the property value is not an integer).
  */
-uint64_t object_property_get_uint(Object *obj, const char *name,
-                                  Error **errp);
+uint64_t object_property_get_uint(Object* obj, const char* name, Error** errp);
 
 /**
  * object_property_get_enum:
@@ -1578,8 +1466,7 @@ uint64_t object_property_get_uint(Object *obj, const char *name,
  * can't be negative), or -1 on error (including when the property
  * value is not an enum).
  */
-int object_property_get_enum(Object *obj, const char *name,
-                             const char *typename, Error **errp);
+int object_property_get_enum(Object* obj, const char* name, const char* typename, Error** errp);
 
 /**
  * object_property_set:
@@ -1594,8 +1481,7 @@ int object_property_get_enum(Object *obj, const char *name,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_set(Object *obj, const char *name, Visitor *v,
-                         Error **errp);
+bool object_property_set(Object* obj, const char* name, Visitor* v, Error** errp);
 
 /**
  * object_property_parse:
@@ -1608,8 +1494,7 @@ bool object_property_set(Object *obj, const char *name, Visitor *v,
  *
  * Returns: %true on success, %false on failure.
  */
-bool object_property_parse(Object *obj, const char *name,
-                           const char *string, Error **errp);
+bool object_property_parse(Object* obj, const char* name, const char* string, Error** errp);
 
 /**
  * object_property_print:
@@ -1621,8 +1506,7 @@ bool object_property_parse(Object *obj, const char *name,
  * Returns a string representation of the value of the property.  The
  * caller shall free the string.
  */
-char *object_property_print(Object *obj, const char *name, bool human,
-                            Error **errp);
+char* object_property_print(Object* obj, const char* name, bool human, Error** errp);
 
 /**
  * object_property_get_type:
@@ -1632,15 +1516,14 @@ char *object_property_print(Object *obj, const char *name, bool human,
  *
  * Returns:  The type name of the property.
  */
-const char *object_property_get_type(Object *obj, const char *name,
-                                     Error **errp);
+const char* object_property_get_type(Object* obj, const char* name, Error** errp);
 
 /**
  * object_get_root:
  *
  * Returns: the root object of the composition tree
  */
-Object *object_get_root(void);
+Object* object_get_root(void);
 
 /**
  * object_get_container:
@@ -1650,8 +1533,7 @@ Object *object_get_root(void);
  *
  * Returns: the container with @name.
  */
-Object *object_get_container(const char *name);
-
+Object* object_get_container(const char* name);
 
 /**
  * object_get_objects_root:
@@ -1662,7 +1544,7 @@ Object *object_get_container(const char *name);
  *
  * Returns: the user object container
  */
-Object *object_get_objects_root(void);
+Object* object_get_objects_root(void);
 
 /**
  * object_get_internal_root:
@@ -1673,7 +1555,7 @@ Object *object_get_objects_root(void);
  *
  * Returns: the internal object container
  */
-Object *object_get_internal_root(void);
+Object* object_get_internal_root(void);
 
 /**
  * object_get_canonical_path_component:
@@ -1683,7 +1565,7 @@ Object *object_get_internal_root(void);
  * path is the path within the composition tree starting from the root.
  * %NULL if the object doesn't have a parent (and thus a canonical path).
  */
-const char *object_get_canonical_path_component(const Object *obj);
+const char* object_get_canonical_path_component(const Object* obj);
 
 /**
  * object_get_canonical_path:
@@ -1693,7 +1575,7 @@ const char *object_get_canonical_path_component(const Object *obj);
  * the path within the composition tree starting from the root.  Use
  * g_free() to free it.
  */
-char *object_get_canonical_path(const Object *obj);
+char* object_get_canonical_path(const Object* obj);
 
 /**
  * object_resolve_path:
@@ -1702,12 +1584,12 @@ char *object_get_canonical_path(const Object *obj);
  *   because it was ambiguous, or %NULL. Set to %false on success.
  *
  * There are two types of supported paths--absolute paths and partial paths.
- * 
+ *
  * Absolute paths are derived from the root object and can follow child<> or
  * link<> properties.  Since they can follow link<> properties, they can be
  * arbitrarily long.  Absolute paths look like absolute filenames and are
  * prefixed with a leading slash.
- * 
+ *
  * Partial paths look like relative filenames.  They do not begin with a
  * prefix.  The matching rules for partial paths are subtle but designed to make
  * specifying objects easy.  At each level of the composition tree, the partial
@@ -1718,7 +1600,7 @@ char *object_get_canonical_path(const Object *obj);
  *
  * Returns: The matched object or %NULL on path lookup failure.
  */
-Object *object_resolve_path(const char *path, bool *ambiguous);
+Object* object_resolve_path(const char* path, bool* ambiguous);
 
 /**
  * object_resolve_path_type:
@@ -1738,8 +1620,7 @@ Object *object_resolve_path(const char *path, bool *ambiguous);
  *
  * Returns: The matched object or NULL on path lookup failure.
  */
-Object *object_resolve_path_type(const char *path, const char *typename,
-                                 bool *ambiguous);
+Object* object_resolve_path_type(const char* path, const char* typename, bool* ambiguous);
 
 /**
  * object_resolve_type_unambiguous:
@@ -1752,7 +1633,7 @@ Object *object_resolve_path_type(const char *path, const char *typename,
  *
  * Returns: The matched object or NULL on path lookup failure.
  */
-Object *object_resolve_type_unambiguous(const char *typename, Error **errp);
+Object* object_resolve_type_unambiguous(const char* typename, Error** errp);
 
 /**
  * object_resolve_path_at:
@@ -1764,7 +1645,7 @@ Object *object_resolve_type_unambiguous(const char *typename, Error **errp);
  *
  * Returns: The resolved object or NULL on path lookup failure.
  */
-Object *object_resolve_path_at(Object *parent, const char *path);
+Object* object_resolve_path_at(Object* parent, const char* path);
 
 /**
  * object_resolve_path_component:
@@ -1776,7 +1657,7 @@ Object *object_resolve_path_at(Object *parent, const char *path);
  *
  * Returns: The resolved object or NULL on path lookup failure.
  */
-Object *object_resolve_path_component(Object *parent, const char *part);
+Object* object_resolve_path_component(Object* parent, const char* part);
 
 /**
  * object_property_try_add_child:
@@ -1797,8 +1678,7 @@ Object *object_resolve_path_component(Object *parent, const char *part);
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_try_add_child(Object *obj, const char *name,
-                                              Object *child, Error **errp);
+ObjectProperty* object_property_try_add_child(Object* obj, const char* name, Object* child, Error** errp);
 
 /**
  * object_property_add_child:
@@ -1809,16 +1689,16 @@ ObjectProperty *object_property_try_add_child(Object *obj, const char *name,
  * Same as object_property_try_add_child() with @errp hardcoded to
  * &error_abort
  */
-ObjectProperty *object_property_add_child(Object *obj, const char *name,
-                                          Object *child);
+ObjectProperty* object_property_add_child(Object* obj, const char* name, Object* child);
 
-typedef enum {
+typedef enum
+{
     /* Unref the link pointer when the property is deleted */
     OBJ_PROP_LINK_STRONG = 0x1,
 
     /* private */
     OBJ_PROP_LINK_DIRECT = 0x2,
-    OBJ_PROP_LINK_CLASS = 0x4,
+    OBJ_PROP_LINK_CLASS  = 0x4,
 } ObjectPropertyLinkFlags;
 
 /**
@@ -1832,8 +1712,7 @@ typedef enum {
  * callback function.  It allows the link property to be set and never returns
  * an error.
  */
-void object_property_allow_set_link(const Object *obj, const char *name,
-                                    Object *child, Error **errp);
+void object_property_allow_set_link(const Object* obj, const char* name, Object* child, Error** errp);
 
 /**
  * object_property_add_link:
@@ -1865,18 +1744,14 @@ void object_property_allow_set_link(const Object *obj, const char *name,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_link(Object *obj, const char *name,
-                              const char *type, Object **targetp,
-                              void (*check)(const Object *obj, const char *name,
-                                            Object *val, Error **errp),
-                              ObjectPropertyLinkFlags flags);
+ObjectProperty* object_property_add_link(Object* obj, const char* name, const char* type, Object** targetp,
+                                         void (*check)(const Object* obj, const char* name, Object* val, Error** errp),
+                                         ObjectPropertyLinkFlags flags);
 
-ObjectProperty *object_class_property_add_link(ObjectClass *oc,
-                              const char *name,
-                              const char *type, ptrdiff_t offset,
-                              void (*check)(const Object *obj, const char *name,
-                                            Object *val, Error **errp),
-                              ObjectPropertyLinkFlags flags);
+ObjectProperty* object_class_property_add_link(ObjectClass* oc, const char* name, const char* type, ptrdiff_t offset,
+                                               void (*check)(const Object* obj, const char* name, Object* val,
+                                                             Error** errp),
+                                               ObjectPropertyLinkFlags flags);
 
 /**
  * object_property_add_str:
@@ -1891,15 +1766,11 @@ ObjectProperty *object_class_property_add_link(ObjectClass *oc,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_str(Object *obj, const char *name,
-                             char *(*get)(Object *, Error **),
-                             void (*set)(Object *, const char *, Error **));
+ObjectProperty* object_property_add_str(Object* obj, const char* name, char* (*get)(Object*, Error**),
+                                        void (*set)(Object*, const char*, Error**));
 
-ObjectProperty *object_class_property_add_str(ObjectClass *klass,
-                                   const char *name,
-                                   char *(*get)(Object *, Error **),
-                                   void (*set)(Object *, const char *,
-                                               Error **));
+ObjectProperty* object_class_property_add_str(ObjectClass* klass, const char* name, char* (*get)(Object*, Error**),
+                                              void (*set)(Object*, const char*, Error**));
 
 /**
  * object_property_add_bool:
@@ -1913,14 +1784,11 @@ ObjectProperty *object_class_property_add_str(ObjectClass *klass,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_bool(Object *obj, const char *name,
-                              bool (*get)(Object *, Error **),
-                              void (*set)(Object *, bool, Error **));
+ObjectProperty* object_property_add_bool(Object* obj, const char* name, bool (*get)(Object*, Error**),
+                                         void (*set)(Object*, bool, Error**));
 
-ObjectProperty *object_class_property_add_bool(ObjectClass *klass,
-                                    const char *name,
-                                    bool (*get)(Object *, Error **),
-                                    void (*set)(Object *, bool, Error **));
+ObjectProperty* object_class_property_add_bool(ObjectClass* klass, const char* name, bool (*get)(Object*, Error**),
+                                               void (*set)(Object*, bool, Error**));
 
 /**
  * object_property_add_enum:
@@ -1936,18 +1804,12 @@ ObjectProperty *object_class_property_add_bool(ObjectClass *klass,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_enum(Object *obj, const char *name,
-                              const char *typename,
-                              const QEnumLookup *lookup,
-                              int (*get)(Object *, Error **),
-                              void (*set)(Object *, int, Error **));
+ObjectProperty* object_property_add_enum(Object* obj, const char* name, const char* typename, const QEnumLookup* lookup,
+                                         int (*get)(Object*, Error**), void (*set)(Object*, int, Error**));
 
-ObjectProperty *object_class_property_add_enum(ObjectClass *klass,
-                                    const char *name,
-                                    const char *typename,
-                                    const QEnumLookup *lookup,
-                                    int (*get)(Object *, Error **),
-                                    void (*set)(Object *, int, Error **));
+ObjectProperty* object_class_property_add_enum(ObjectClass* klass, const char* name, const char* typename,
+                                               const QEnumLookup* lookup, int (*get)(Object*, Error**),
+                                               void (*set)(Object*, int, Error**));
 
 /**
  * object_property_add_tm:
@@ -1960,14 +1822,13 @@ ObjectProperty *object_class_property_add_enum(ObjectClass *klass,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_tm(Object *obj, const char *name,
-                            void (*get)(Object *, struct tm *, Error **));
+ObjectProperty* object_property_add_tm(Object* obj, const char* name, void (*get)(Object*, struct tm*, Error**));
 
-ObjectProperty *object_class_property_add_tm(ObjectClass *klass,
-                            const char *name,
-                            void (*get)(Object *, struct tm *, Error **));
+ObjectProperty* object_class_property_add_tm(ObjectClass* klass, const char* name,
+                                             void (*get)(Object*, struct tm*, Error**));
 
-typedef enum {
+typedef enum
+{
     /* Automatically add a getter to the property */
     OBJ_PROP_FLAG_READ = 1 << 0,
     /* Automatically add a setter to the property */
@@ -1988,14 +1849,11 @@ typedef enum {
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_uint8_ptr(Object *obj, const char *name,
-                                              const uint8_t *v,
+ObjectProperty* object_property_add_uint8_ptr(Object* obj, const char* name, const uint8_t* v,
                                               ObjectPropertyFlags flags);
 
-ObjectProperty *object_class_property_add_uint8_ptr(ObjectClass *klass,
-                                         const char *name,
-                                         const uint8_t *v,
-                                         ObjectPropertyFlags flags);
+ObjectProperty* object_class_property_add_uint8_ptr(ObjectClass* klass, const char* name, const uint8_t* v,
+                                                    ObjectPropertyFlags flags);
 
 /**
  * object_property_add_uint16_ptr:
@@ -2009,14 +1867,11 @@ ObjectProperty *object_class_property_add_uint8_ptr(ObjectClass *klass,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_uint16_ptr(Object *obj, const char *name,
-                                    const uint16_t *v,
-                                    ObjectPropertyFlags flags);
+ObjectProperty* object_property_add_uint16_ptr(Object* obj, const char* name, const uint16_t* v,
+                                               ObjectPropertyFlags flags);
 
-ObjectProperty *object_class_property_add_uint16_ptr(ObjectClass *klass,
-                                          const char *name,
-                                          const uint16_t *v,
-                                          ObjectPropertyFlags flags);
+ObjectProperty* object_class_property_add_uint16_ptr(ObjectClass* klass, const char* name, const uint16_t* v,
+                                                     ObjectPropertyFlags flags);
 
 /**
  * object_property_add_uint32_ptr:
@@ -2030,14 +1885,11 @@ ObjectProperty *object_class_property_add_uint16_ptr(ObjectClass *klass,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_uint32_ptr(Object *obj, const char *name,
-                                    const uint32_t *v,
-                                    ObjectPropertyFlags flags);
+ObjectProperty* object_property_add_uint32_ptr(Object* obj, const char* name, const uint32_t* v,
+                                               ObjectPropertyFlags flags);
 
-ObjectProperty *object_class_property_add_uint32_ptr(ObjectClass *klass,
-                                          const char *name,
-                                          const uint32_t *v,
-                                          ObjectPropertyFlags flags);
+ObjectProperty* object_class_property_add_uint32_ptr(ObjectClass* klass, const char* name, const uint32_t* v,
+                                                     ObjectPropertyFlags flags);
 
 /**
  * object_property_add_uint64_ptr:
@@ -2051,14 +1903,11 @@ ObjectProperty *object_class_property_add_uint32_ptr(ObjectClass *klass,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_uint64_ptr(Object *obj, const char *name,
-                                    const uint64_t *v,
-                                    ObjectPropertyFlags flags);
+ObjectProperty* object_property_add_uint64_ptr(Object* obj, const char* name, const uint64_t* v,
+                                               ObjectPropertyFlags flags);
 
-ObjectProperty *object_class_property_add_uint64_ptr(ObjectClass *klass,
-                                          const char *name,
-                                          const uint64_t *v,
-                                          ObjectPropertyFlags flags);
+ObjectProperty* object_class_property_add_uint64_ptr(ObjectClass* klass, const char* name, const uint64_t* v,
+                                                     ObjectPropertyFlags flags);
 
 /**
  * object_property_add_alias:
@@ -2077,8 +1926,7 @@ ObjectProperty *object_class_property_add_uint64_ptr(ObjectClass *klass,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_alias(Object *obj, const char *name,
-                               Object *target_obj, const char *target_name);
+ObjectProperty* object_property_add_alias(Object* obj, const char* name, Object* target_obj, const char* target_name);
 
 /**
  * object_property_add_const_link:
@@ -2096,8 +1944,7 @@ ObjectProperty *object_property_add_alias(Object *obj, const char *name,
  *
  * Returns: The newly added property on success, or %NULL on failure.
  */
-ObjectProperty *object_property_add_const_link(Object *obj, const char *name,
-                                               Object *target);
+ObjectProperty* object_property_add_const_link(Object* obj, const char* name, Object* target);
 
 /**
  * object_property_set_description:
@@ -2109,10 +1956,8 @@ ObjectProperty *object_property_add_const_link(Object *obj, const char *name,
  *
  * Returns: %true on success, %false on failure.
  */
-void object_property_set_description(Object *obj, const char *name,
-                                     const char *description);
-void object_class_property_set_description(ObjectClass *klass, const char *name,
-                                           const char *description);
+void object_property_set_description(Object* obj, const char* name, const char* description);
+void object_class_property_set_description(ObjectClass* klass, const char* name, const char* description);
 
 /**
  * object_child_foreach:
@@ -2128,8 +1973,7 @@ void object_class_property_set_description(ObjectClass *klass, const char *name,
  *
  * Returns: The last value returned by @fn, or 0 if there is no child.
  */
-int object_child_foreach(Object *obj, int (*fn)(Object *child, void *opaque),
-                         void *opaque);
+int object_child_foreach(Object* obj, int (*fn)(Object* child, void* opaque), void* opaque);
 
 /**
  * object_child_foreach_recursive:
@@ -2146,9 +1990,7 @@ int object_child_foreach(Object *obj, int (*fn)(Object *child, void *opaque),
  *
  * Returns: The last value returned by @fn, or 0 if there is no child.
  */
-int object_child_foreach_recursive(Object *obj,
-                                   int (*fn)(Object *child, void *opaque),
-                                   void *opaque);
+int object_child_foreach_recursive(Object* obj, int (*fn)(Object* child, void* opaque), void* opaque);
 
 /**
  * object_property_add_new_container:
@@ -2160,7 +2002,7 @@ int object_child_foreach_recursive(Object *obj,
  * Returns: the newly created container object.  Its reference count is 1,
  * and the reference is owned by the parent object.
  */
-Object *object_property_add_new_container(Object *obj, const char *name);
+Object* object_property_add_new_container(Object* obj, const char* name);
 
 /**
  * object_property_help:
@@ -2172,7 +2014,6 @@ Object *object_property_add_new_container(Object *obj, const char *name);
  * Returns: a user-friendly formatted string describing the property
  * for help purposes.
  */
-char *object_property_help(const char *name, const char *type,
-                           QObject *defval, const char *description);
+char* object_property_help(const char* name, const char* type, QObject* defval, const char* description);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(Object, object_unref)

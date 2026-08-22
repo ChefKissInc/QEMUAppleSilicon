@@ -18,20 +18,16 @@
 #include "hw/pci/pcie_port.h"
 #include "hw/qdev-properties.h"
 
-static void rp_aer_vector_update(PCIDevice *d)
+static void rp_aer_vector_update(PCIDevice* d)
 {
-    PCIERootPortClass *rpc = PCIE_ROOT_PORT_GET_CLASS(d);
+    PCIERootPortClass* rpc = PCIE_ROOT_PORT_GET_CLASS(d);
 
-    if (rpc->aer_vector) {
-        pcie_aer_root_set_vector(d, rpc->aer_vector(d));
-    }
+    if (rpc->aer_vector) { pcie_aer_root_set_vector(d, rpc->aer_vector(d)); }
 }
 
-static void rp_write_config(PCIDevice *d, uint32_t address,
-                            uint32_t val, int len)
+static void rp_write_config(PCIDevice* d, uint32_t address, uint32_t val, int len)
 {
-    uint32_t root_cmd =
-        pci_get_long(d->config + d->exp.aer_cap + PCI_ERR_ROOT_COMMAND);
+    uint32_t root_cmd = pci_get_long(d->config + d->exp.aer_cap + PCI_ERR_ROOT_COMMAND);
     uint16_t slt_ctl, slt_sta;
 
     pcie_cap_slot_get(d, &slt_ctl, &slt_sta);
@@ -43,10 +39,10 @@ static void rp_write_config(PCIDevice *d, uint32_t address,
     pcie_aer_root_write_config(d, address, val, len, root_cmd);
 }
 
-static void rp_reset_hold(Object *obj, ResetType type)
+static void rp_reset_hold(Object* obj, ResetType type)
 {
-    PCIDevice *d = PCI_DEVICE(obj);
-    DeviceState *qdev = DEVICE(obj);
+    PCIDevice*   d    = PCI_DEVICE(obj);
+    DeviceState* qdev = DEVICE(obj);
 
     rp_aer_vector_update(d);
     pcie_cap_root_reset(d);
@@ -59,20 +55,19 @@ static void rp_reset_hold(Object *obj, ResetType type)
     pci_bridge_disable_base_limit(d);
 }
 
-static void rp_realize(PCIDevice *d, Error **errp)
+static void rp_realize(PCIDevice* d, Error** errp)
 {
-    PCIEPort *p = PCIE_PORT(d);
-    PCIESlot *s = PCIE_SLOT(d);
-    PCIDeviceClass *dc = PCI_DEVICE_GET_CLASS(d);
-    PCIERootPortClass *rpc = PCIE_ROOT_PORT_GET_CLASS(d);
-    int rc;
+    PCIEPort*          p   = PCIE_PORT(d);
+    PCIESlot*          s   = PCIE_SLOT(d);
+    PCIDeviceClass*    dc  = PCI_DEVICE_GET_CLASS(d);
+    PCIERootPortClass* rpc = PCIE_ROOT_PORT_GET_CLASS(d);
+    int                rc;
 
     pci_config_set_interrupt_pin(d->config, 1);
     pci_bridge_initfn(d, TYPE_PCIE_BUS);
     pcie_port_init_reg(d);
 
-    rc = pci_bridge_ssvid_init(d, rpc->ssvid_offset, dc->vendor_id,
-                               rpc->ssid, errp);
+    rc = pci_bridge_ssvid_init(d, rpc->ssvid_offset, dc->vendor_id, rpc->ssid, errp);
     if (rc < 0) {
         error_append_hint(errp, "Can't init SSV ID, error %d\n", rc);
         goto err_bridge;
@@ -80,16 +75,15 @@ static void rp_realize(PCIDevice *d, Error **errp)
 
     if (rpc->interrupts_init) {
         rc = rpc->interrupts_init(d, errp);
-        if (rc < 0) {
-            goto err_bridge;
-        }
+        if (rc < 0) { goto err_bridge; }
     }
 
-    rc = pcie_cap_init(d, rpc->exp_offset, PCI_EXP_TYPE_ROOT_PORT,
-                       p->port, errp);
+    rc = pcie_cap_init(d, rpc->exp_offset, PCI_EXP_TYPE_ROOT_PORT, p->port, errp);
     if (rc < 0) {
-        error_append_hint(errp, "Can't add Root Port capability, "
-                          "error %d\n", rc);
+        error_append_hint(errp,
+                          "Can't add Root Port capability, "
+                          "error %d\n",
+                          rc);
         goto err_int;
     }
 
@@ -105,17 +99,12 @@ static void rp_realize(PCIDevice *d, Error **errp)
         goto err_pcie_cap;
     }
 
-    rc = pcie_aer_init(d, PCI_ERR_VER, rpc->aer_offset,
-                       PCI_ERR_SIZEOF, errp);
-    if (rc < 0) {
-        goto err;
-    }
+    rc = pcie_aer_init(d, PCI_ERR_VER, rpc->aer_offset, PCI_ERR_SIZEOF, errp);
+    if (rc < 0) { goto err; }
     pcie_aer_root_init(d);
     rp_aer_vector_update(d);
 
-    if (rpc->acs_offset && !s->disable_acs) {
-        pcie_acs_init(d, rpc->acs_offset);
-    }
+    if (rpc->acs_offset && !s->disable_acs) { pcie_acs_init(d, rpc->acs_offset); }
     return;
 
 err:
@@ -123,76 +112,61 @@ err:
 err_pcie_cap:
     pcie_cap_exit(d);
 err_int:
-    if (rpc->interrupts_uninit) {
-        rpc->interrupts_uninit(d);
-    }
+    if (rpc->interrupts_uninit) { rpc->interrupts_uninit(d); }
 err_bridge:
     pci_bridge_exitfn(d);
 }
 
-static void rp_exit(PCIDevice *d)
+static void rp_exit(PCIDevice* d)
 {
-    PCIERootPortClass *rpc = PCIE_ROOT_PORT_GET_CLASS(d);
-    PCIESlot *s = PCIE_SLOT(d);
+    PCIERootPortClass* rpc = PCIE_ROOT_PORT_GET_CLASS(d);
+    PCIESlot*          s   = PCIE_SLOT(d);
 
     pcie_aer_exit(d);
     pcie_chassis_del_slot(s);
     pcie_cap_exit(d);
-    if (rpc->interrupts_uninit) {
-        rpc->interrupts_uninit(d);
-    }
+    if (rpc->interrupts_uninit) { rpc->interrupts_uninit(d); }
     pci_bridge_exitfn(d);
 }
 
 static const Property rp_props[] = {
-    DEFINE_PROP_BIT(COMPAT_PROP_PCP, PCIDevice, cap_present,
-                    QEMU_PCIE_SLTCAP_PCP_BITNR, true),
+    DEFINE_PROP_BIT(COMPAT_PROP_PCP, PCIDevice, cap_present, QEMU_PCIE_SLTCAP_PCP_BITNR, true),
     DEFINE_PROP_BOOL("disable-acs", PCIESlot, disable_acs, false),
 };
 
-static void rp_instance_post_init(Object *obj)
+static void rp_instance_post_init(Object* obj)
 {
-    PCIESlot *s = PCIE_SLOT(obj);
+    PCIESlot* s = PCIE_SLOT(obj);
 
-    if (!s->speed) {
-        s->speed = QEMU_PCI_EXP_LNK_2_5GT;
-    }
+    if (!s->speed) { s->speed = QEMU_PCI_EXP_LNK_2_5GT; }
 
-    if (!s->width) {
-        s->width = QEMU_PCI_EXP_LNK_X1;
-    }
+    if (!s->width) { s->width = QEMU_PCI_EXP_LNK_X1; }
 }
 
-static void rp_class_init(ObjectClass *klass, const void *data)
+static void rp_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
-    PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
-    ResettableClass *rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+    PCIDeviceClass*  k  = PCI_DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
 
     k->config_write = rp_write_config;
-    k->realize = rp_realize;
-    k->exit = rp_exit;
+    k->realize      = rp_realize;
+    k->exit         = rp_exit;
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
     rc->phases.hold = rp_reset_hold;
     device_class_set_props(dc, rp_props);
 }
 
 static const TypeInfo rp_info = {
-    .name          = TYPE_PCIE_ROOT_PORT,
-    .parent        = TYPE_PCIE_SLOT,
+    .name               = TYPE_PCIE_ROOT_PORT,
+    .parent             = TYPE_PCIE_SLOT,
     .instance_post_init = rp_instance_post_init,
-    .class_init    = rp_class_init,
-    .abstract      = true,
-    .class_size = sizeof(PCIERootPortClass),
-    .interfaces = (const InterfaceInfo[]) {
-        { INTERFACE_PCIE_DEVICE },
-        { }
-    },
+    .class_init         = rp_class_init,
+    .abstract           = true,
+    .class_size         = sizeof(PCIERootPortClass),
+    .interfaces         = (const InterfaceInfo[]){{INTERFACE_PCIE_DEVICE}, {}},
 };
 
-static void rp_register_types(void)
-{
-    type_register_static(&rp_info);
-}
+static void rp_register_types(void) { type_register_static(&rp_info); }
 
 type_init(rp_register_types)

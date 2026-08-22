@@ -19,17 +19,15 @@
 
 typedef struct QemuSeqLock QemuSeqLock;
 
-struct QemuSeqLock {
+struct QemuSeqLock
+{
     unsigned sequence;
 };
 
-static inline void seqlock_init(QemuSeqLock *sl)
-{
-    sl->sequence = 0;
-}
+static inline void seqlock_init(QemuSeqLock* sl) { sl->sequence = 0; }
 
 /* Lock out other writers and update the count.  */
-static inline void seqlock_write_begin(QemuSeqLock *sl)
+static inline void seqlock_write_begin(QemuSeqLock* sl)
 {
     qatomic_set(&sl->sequence, sl->sequence + 1);
 
@@ -37,7 +35,7 @@ static inline void seqlock_write_begin(QemuSeqLock *sl)
     smp_wmb();
 }
 
-static inline void seqlock_write_end(QemuSeqLock *sl)
+static inline void seqlock_write_end(QemuSeqLock* sl)
 {
     /* Write other fields before finalizing sequence.  */
     smp_wmb();
@@ -46,25 +44,22 @@ static inline void seqlock_write_end(QemuSeqLock *sl)
 }
 
 /* Lock out other writers and update the count.  */
-static inline void seqlock_write_lock_impl(QemuSeqLock *sl, QemuLockable *lock)
+static inline void seqlock_write_lock_impl(QemuSeqLock* sl, QemuLockable* lock)
 {
     qemu_lockable_lock(lock);
     seqlock_write_begin(sl);
 }
-#define seqlock_write_lock(sl, lock) \
-    seqlock_write_lock_impl(sl, QEMU_MAKE_LOCKABLE(lock))
+#define seqlock_write_lock(sl, lock) seqlock_write_lock_impl(sl, QEMU_MAKE_LOCKABLE(lock))
 
 /* Update the count and release the lock.  */
-static inline void seqlock_write_unlock_impl(QemuSeqLock *sl, QemuLockable *lock)
+static inline void seqlock_write_unlock_impl(QemuSeqLock* sl, QemuLockable* lock)
 {
     seqlock_write_end(sl);
     qemu_lockable_unlock(lock);
 }
-#define seqlock_write_unlock(sl, lock) \
-    seqlock_write_unlock_impl(sl, QEMU_MAKE_LOCKABLE(lock))
+#define seqlock_write_unlock(sl, lock) seqlock_write_unlock_impl(sl, QEMU_MAKE_LOCKABLE(lock))
 
-
-static inline unsigned seqlock_read_begin(const QemuSeqLock *sl)
+static inline unsigned seqlock_read_begin(const QemuSeqLock* sl)
 {
     /* Always fail if a write is in progress.  */
     unsigned ret = qatomic_read(&sl->sequence);
@@ -74,7 +69,7 @@ static inline unsigned seqlock_read_begin(const QemuSeqLock *sl)
     return ret & ~1;
 }
 
-static inline int seqlock_read_retry(const QemuSeqLock *sl, unsigned start)
+static inline int seqlock_read_retry(const QemuSeqLock* sl, unsigned start)
 {
     /* Read other fields before reading final sequence.  */
     smp_rmb();

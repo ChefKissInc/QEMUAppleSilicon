@@ -1,27 +1,30 @@
 #pragma once
 
-typedef void (*GdbCmdHandler)(GArray *params, void *user_ctx);
+typedef void (*GdbCmdHandler)(GArray* params, void* user_ctx);
 
-typedef enum GDBThreadIdKind {
+typedef enum GDBThreadIdKind
+{
     GDB_ONE_THREAD = 0,
-    GDB_ALL_THREADS,     /* One process, all threads */
+    GDB_ALL_THREADS, /* One process, all threads */
     GDB_ALL_PROCESSES,
     GDB_READ_THREAD_ERR
 } GDBThreadIdKind;
 
-typedef union GdbCmdVariant {
-    const char *data;
-    uint8_t opcode;
-    unsigned long val_ul;
+typedef union GdbCmdVariant
+{
+    const char*        data;
+    uint8_t            opcode;
+    unsigned long      val_ul;
     unsigned long long val_ull;
-    struct {
+    struct
+    {
         GDBThreadIdKind kind;
-        uint32_t pid;
-        uint32_t tid;
+        uint32_t        pid;
+        uint32_t        tid;
     } thread_id;
 } GdbCmdVariant;
 
-#define gdb_get_cmd_param(p, i)    (&g_array_index(p, GdbCmdVariant, i))
+#define gdb_get_cmd_param(p, i) (&g_array_index(p, GdbCmdVariant, i))
 
 /**
  * typedef GdbCmdParseEntry - gdb command parser
@@ -56,20 +59,21 @@ typedef union GdbCmdVariant {
  *
  * @need_cpu_context: Pass current CPU context to command handler via user_ctx.
  */
-typedef struct GdbCmdParseEntry {
+typedef struct GdbCmdParseEntry
+{
     GdbCmdHandler handler;
-    const char *cmd;
-    bool cmd_startswith;
-    const char *schema;
-    bool allow_stop_reply;
-    bool need_cpu_context;
+    const char*   cmd;
+    bool          cmd_startswith;
+    const char*   schema;
+    bool          allow_stop_reply;
+    bool          need_cpu_context;
 } GdbCmdParseEntry;
 
 /**
  * gdb_put_packet() - put string into gdb server's buffer so it is sent
  * to the client
  */
-int gdb_put_packet(const char *buf);
+int gdb_put_packet(const char* buf);
 
 /**
  * gdb_extend_query_table() - Extend query table.
@@ -77,7 +81,7 @@ int gdb_put_packet(const char *buf);
  *
  * The caller should free @table afterwards
  */
-void gdb_extend_query_table(GPtrArray *table);
+void gdb_extend_query_table(GPtrArray* table);
 
 /**
  * gdb_extend_set_table() - Extend set table.
@@ -85,7 +89,7 @@ void gdb_extend_query_table(GPtrArray *table);
  *
  * The caller should free @table afterwards
  */
-void gdb_extend_set_table(GPtrArray *table);
+void gdb_extend_set_table(GPtrArray* table);
 
 /**
  * gdb_extend_qsupported_features() - Extend the qSupported features string.
@@ -96,10 +100,10 @@ void gdb_extend_set_table(GPtrArray *table);
  * The caller should free @qsupported_features afterwards if
  * dynamically allocated.
  */
-void gdb_extend_qsupported_features(char *qsupported_features);
+void gdb_extend_qsupported_features(char* qsupported_features);
 
 /**
  * Convert a hex string to bytes. Conversion is done per byte, so 2 hex digits
  * are converted to 1 byte. Invalid hex digits are treated as 0 digits.
  */
-void gdb_hextomem(GByteArray *mem, const char *buf, int len);
+void gdb_hextomem(GByteArray* mem, const char* buf, int len);

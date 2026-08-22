@@ -31,76 +31,54 @@
 #define QEMU_AIO_ZONE_REPORT  0x0100
 #define QEMU_AIO_ZONE_MGMT    0x0200
 #define QEMU_AIO_ZONE_APPEND  0x0400
-#define QEMU_AIO_TYPE_MASK \
-        (QEMU_AIO_READ | \
-         QEMU_AIO_WRITE | \
-         QEMU_AIO_IOCTL | \
-         QEMU_AIO_FLUSH | \
-         QEMU_AIO_DISCARD | \
-         QEMU_AIO_WRITE_ZEROES | \
-         QEMU_AIO_COPY_RANGE | \
-         QEMU_AIO_TRUNCATE | \
-         QEMU_AIO_ZONE_REPORT | \
-         QEMU_AIO_ZONE_MGMT | \
-         QEMU_AIO_ZONE_APPEND)
+#define QEMU_AIO_TYPE_MASK                                                                                         \
+    (QEMU_AIO_READ | QEMU_AIO_WRITE | QEMU_AIO_IOCTL | QEMU_AIO_FLUSH | QEMU_AIO_DISCARD | QEMU_AIO_WRITE_ZEROES   \
+     | QEMU_AIO_COPY_RANGE | QEMU_AIO_TRUNCATE | QEMU_AIO_ZONE_REPORT | QEMU_AIO_ZONE_MGMT | QEMU_AIO_ZONE_APPEND)
 
 /* AIO flags */
-#define QEMU_AIO_MISALIGNED   0x1000
-#define QEMU_AIO_BLKDEV       0x2000
-#define QEMU_AIO_NO_FALLBACK  0x4000
-
+#define QEMU_AIO_MISALIGNED  0x1000
+#define QEMU_AIO_BLKDEV      0x2000
+#define QEMU_AIO_NO_FALLBACK 0x4000
 
 /* linux-aio.c - Linux native implementation */
 #ifdef CONFIG_LINUX_AIO
 typedef struct LinuxAioState LinuxAioState;
-LinuxAioState *laio_init(Error **errp);
-void laio_cleanup(LinuxAioState *s);
+LinuxAioState*               laio_init(Error** errp);
+void                         laio_cleanup(LinuxAioState* s);
 
 /* laio_co_submit: submit I/O requests in the thread's current AioContext. */
-int coroutine_fn laio_co_submit(int fd, uint64_t offset, QEMUIOVector *qiov,
-                                int type, BdrvRequestFlags flags,
+int coroutine_fn laio_co_submit(int fd, uint64_t offset, QEMUIOVector* qiov, int type, BdrvRequestFlags flags,
                                 uint64_t dev_max_batch);
 
 bool laio_has_fdsync(int);
 bool laio_has_fua(void);
-void laio_detach_aio_context(LinuxAioState *s, AioContext *old_context);
-void laio_attach_aio_context(LinuxAioState *s, AioContext *new_context);
+void laio_detach_aio_context(LinuxAioState* s, AioContext* old_context);
+void laio_attach_aio_context(LinuxAioState* s, AioContext* new_context);
 #else
-static inline bool laio_has_fua(void)
-{
-    return false;
-}
+static inline bool laio_has_fua(void) { return false; }
 #endif
 /* io_uring.c - Linux io_uring implementation */
 #ifdef CONFIG_LINUX_IO_URING
-LuringState *luring_init(Error **errp);
-void luring_cleanup(LuringState *s);
+LuringState* luring_init(Error** errp);
+void         luring_cleanup(LuringState* s);
 
 /* luring_co_submit: submit I/O requests in the thread's current AioContext. */
-int coroutine_fn luring_co_submit(BlockDriverState *bs, int fd, uint64_t offset,
-                                  QEMUIOVector *qiov, int type,
+int coroutine_fn luring_co_submit(BlockDriverState* bs, int fd, uint64_t offset, QEMUIOVector* qiov, int type,
                                   BdrvRequestFlags flags);
-void luring_detach_aio_context(LuringState *s, AioContext *old_context);
-void luring_attach_aio_context(LuringState *s, AioContext *new_context);
-bool luring_has_fua(void);
+void             luring_detach_aio_context(LuringState* s, AioContext* old_context);
+void             luring_attach_aio_context(LuringState* s, AioContext* new_context);
+bool             luring_has_fua(void);
 #else
-static inline bool luring_has_fua(void)
-{
-    return false;
-}
+static inline bool luring_has_fua(void) { return false; }
 #endif
 
 #ifdef _WIN32
 typedef struct QEMUWin32AIOState QEMUWin32AIOState;
-QEMUWin32AIOState *win32_aio_init(void);
-void win32_aio_cleanup(QEMUWin32AIOState *aio);
-int win32_aio_attach(QEMUWin32AIOState *aio, HANDLE hfile);
-BlockAIOCB *win32_aio_submit(BlockDriverState *bs,
-        QEMUWin32AIOState *aio, HANDLE hfile,
-        uint64_t offset, uint64_t bytes, QEMUIOVector *qiov,
-        BlockCompletionFunc *cb, void *opaque, int type);
-void win32_aio_detach_aio_context(QEMUWin32AIOState *aio,
-                                  AioContext *old_context);
-void win32_aio_attach_aio_context(QEMUWin32AIOState *aio,
-                                  AioContext *new_context);
+QEMUWin32AIOState*               win32_aio_init(void);
+void                             win32_aio_cleanup(QEMUWin32AIOState* aio);
+int                              win32_aio_attach(QEMUWin32AIOState* aio, HANDLE hfile);
+BlockAIOCB* win32_aio_submit(BlockDriverState* bs, QEMUWin32AIOState* aio, HANDLE hfile, uint64_t offset,
+                             uint64_t bytes, QEMUIOVector* qiov, BlockCompletionFunc* cb, void* opaque, int type);
+void        win32_aio_detach_aio_context(QEMUWin32AIOState* aio, AioContext* old_context);
+void        win32_aio_attach_aio_context(QEMUWin32AIOState* aio, AioContext* new_context);
 #endif

@@ -16,10 +16,8 @@
 #define TYPE_HOTPLUG_HANDLER "hotplug-handler"
 
 typedef struct HotplugHandlerClass HotplugHandlerClass;
-DECLARE_CLASS_CHECKERS_IF(HotplugHandlerClass, HOTPLUG_HANDLER,
-                       TYPE_HOTPLUG_HANDLER)
-#define HOTPLUG_HANDLER(obj) \
-     INTERFACE_CHECK(HotplugHandler, (obj), TYPE_HOTPLUG_HANDLER)
+DECLARE_CLASS_CHECKERS_IF(HotplugHandlerClass, HOTPLUG_HANDLER, TYPE_HOTPLUG_HANDLER)
+#define HOTPLUG_HANDLER(obj) INTERFACE_CHECK(HotplugHandler, (obj), TYPE_HOTPLUG_HANDLER)
 
 typedef struct HotplugHandler HotplugHandler;
 
@@ -29,8 +27,7 @@ typedef struct HotplugHandler HotplugHandler;
  * @plugged_dev: a device that has been (un)plugged
  * @errp: returns an error if this function fails
  */
-typedef void (*hotplug_fn)(HotplugHandler *plug_handler,
-                           DeviceState *plugged_dev, Error **errp);
+typedef void (*hotplug_fn)(HotplugHandler* plug_handler, DeviceState* plugged_dev, Error** errp);
 
 /**
  * HotplugDeviceClass:
@@ -49,7 +46,8 @@ typedef void (*hotplug_fn)(HotplugHandler *plug_handler,
  *          asynchronous and synchronous (surprise) removal.
  * @is_hotpluggable_bus: called to check if bus/its parent allow hotplug on bus
  */
-struct HotplugHandlerClass {
+struct HotplugHandlerClass
+{
     /* <private> */
     InterfaceClass parent;
 
@@ -58,7 +56,7 @@ struct HotplugHandlerClass {
     hotplug_fn plug;
     hotplug_fn unplug_request;
     hotplug_fn unplug;
-    bool (*is_hotpluggable_bus)(HotplugHandler *plug_handler, BusState *bus);
+    bool       (*is_hotpluggable_bus)(HotplugHandler* plug_handler, BusState* bus);
 };
 
 /**
@@ -66,32 +64,24 @@ struct HotplugHandlerClass {
  *
  * Call #HotplugHandlerClass.plug callback of @plug_handler.
  */
-void hotplug_handler_plug(HotplugHandler *plug_handler,
-                          DeviceState *plugged_dev,
-                          Error **errp);
+void hotplug_handler_plug(HotplugHandler* plug_handler, DeviceState* plugged_dev, Error** errp);
 
 /**
  * hotplug_handler_pre_plug:
  *
  * Call #HotplugHandlerClass.pre_plug callback of @plug_handler.
  */
-void hotplug_handler_pre_plug(HotplugHandler *plug_handler,
-                              DeviceState *plugged_dev,
-                              Error **errp);
+void hotplug_handler_pre_plug(HotplugHandler* plug_handler, DeviceState* plugged_dev, Error** errp);
 
 /**
  * hotplug_handler_unplug_request:
  *
  * Calls #HotplugHandlerClass.unplug_request callback of @plug_handler.
  */
-void hotplug_handler_unplug_request(HotplugHandler *plug_handler,
-                                    DeviceState *plugged_dev,
-                                    Error **errp);
+void hotplug_handler_unplug_request(HotplugHandler* plug_handler, DeviceState* plugged_dev, Error** errp);
 /**
  * hotplug_handler_unplug:
  *
  * Calls #HotplugHandlerClass.unplug callback of @plug_handler.
  */
-void hotplug_handler_unplug(HotplugHandler *plug_handler,
-                            DeviceState *plugged_dev,
-                            Error **errp);
+void hotplug_handler_unplug(HotplugHandler* plug_handler, DeviceState* plugged_dev, Error** errp);

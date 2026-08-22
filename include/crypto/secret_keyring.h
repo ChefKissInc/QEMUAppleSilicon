@@ -25,11 +25,10 @@
 #include "crypto/secret_common.h"
 
 #define TYPE_QCRYPTO_SECRET_KEYRING "secret_keyring"
-OBJECT_DECLARE_SIMPLE_TYPE(QCryptoSecretKeyring,
-                           QCRYPTO_SECRET_KEYRING)
+OBJECT_DECLARE_SIMPLE_TYPE(QCryptoSecretKeyring, QCRYPTO_SECRET_KEYRING)
 
-
-struct QCryptoSecretKeyring {
+struct QCryptoSecretKeyring
+{
     QCryptoSecretCommon parent;
-    int32_t serial;
+    int32_t             serial;
 };

@@ -31,7 +31,7 @@
 #include "qemu/hw-version.h"
 #include "monitor/monitor.h"
 
-static const char *hw_version = QEMU_HW_VERSION;
+static const char* hw_version = QEMU_HW_VERSION;
 
 int socket_set_cork(int fd, int v)
 {
@@ -48,7 +48,7 @@ int socket_set_nodelay(int fd)
     return setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &v, sizeof(v));
 }
 
-int qemu_madvise(void *addr, size_t len, int advice)
+int qemu_madvise(void* addr, size_t len, int advice)
 {
     if (advice == QEMU_MADV_INVALID) {
         errno = EINVAL;
@@ -69,7 +69,7 @@ int qemu_madvise(void *addr, size_t len, int advice)
 #endif
 }
 
-static int qemu_mprotect__osdep(void *addr, size_t size, int prot)
+static int qemu_mprotect__osdep(void* addr, size_t size, int prot)
 {
     assert(!((uintptr_t)addr & ~qemu_real_host_page_mask()));
     assert(!(size & ~qemu_real_host_page_mask()));
@@ -78,7 +78,7 @@ static int qemu_mprotect__osdep(void *addr, size_t size, int prot)
     DWORD old_protect;
 
     if (!VirtualProtect(addr, size, prot, &old_protect)) {
-        g_autofree gchar *emsg = g_win32_error_message(GetLastError());
+        g_autofree gchar* emsg = g_win32_error_message(GetLastError());
         error_report("%s: VirtualProtect failed: %s", __func__, emsg);
         return -1;
     }
@@ -92,7 +92,7 @@ static int qemu_mprotect__osdep(void *addr, size_t size, int prot)
 #endif
 }
 
-int qemu_mprotect_rw(void *addr, size_t size)
+int qemu_mprotect_rw(void* addr, size_t size)
 {
 #ifdef _WIN32
     return qemu_mprotect__osdep(addr, size, PAGE_READWRITE);
@@ -101,7 +101,7 @@ int qemu_mprotect_rw(void *addr, size_t size)
 #endif
 }
 
-int qemu_mprotect_rwx(void *addr, size_t size)
+int qemu_mprotect_rwx(void* addr, size_t size)
 {
 #ifdef _WIN32
     return qemu_mprotect__osdep(addr, size, PAGE_EXECUTE_READWRITE);
@@ -110,7 +110,7 @@ int qemu_mprotect_rwx(void *addr, size_t size)
 #endif
 }
 
-int qemu_mprotect_none(void *addr, size_t size)
+int qemu_mprotect_none(void* addr, size_t size)
 {
 #ifdef _WIN32
     return qemu_mprotect__osdep(addr, size, PAGE_NOACCESS);
@@ -134,14 +134,10 @@ int qemu_dup_flags(int fd, int flags)
     int dup_flags;
 
     ret = qemu_dup(fd);
-    if (ret == -1) {
-        goto fail;
-    }
+    if (ret == -1) { goto fail; }
 
     dup_flags = fcntl(ret, F_GETFL);
-    if (dup_flags == -1) {
-        goto fail;
-    }
+    if (dup_flags == -1) { goto fail; }
 
     if ((flags & O_SYNC) != (dup_flags & O_SYNC)) {
         errno = EINVAL;
@@ -149,25 +145,18 @@ int qemu_dup_flags(int fd, int flags)
     }
 
     /* Set/unset flags that we can with fcntl */
-    if (fcntl(ret, F_SETFL, flags) == -1) {
-        goto fail;
-    }
+    if (fcntl(ret, F_SETFL, flags) == -1) { goto fail; }
 
     /* Truncate the file in the cases that open() would truncate it */
-    if (flags & O_TRUNC ||
-            ((flags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))) {
-        if (ftruncate(ret, 0) == -1) {
-            goto fail;
-        }
+    if (flags & O_TRUNC || ((flags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))) {
+        if (ftruncate(ret, 0) == -1) { goto fail; }
     }
 
     return ret;
 
 fail:
     serrno = errno;
-    if (ret != -1) {
-        close(ret);
-    }
+    if (ret != -1) { close(ret); }
     errno = serrno;
     return -1;
 }
@@ -175,28 +164,23 @@ fail:
 int qemu_dup(int fd)
 {
     int ret;
-#ifdef F_DUPFD_CLOEXEC
+    #ifdef F_DUPFD_CLOEXEC
     ret = fcntl(fd, F_DUPFD_CLOEXEC, 0);
-#else
+    #else
     ret = dup(fd);
-    if (ret != -1) {
-        qemu_set_cloexec(ret);
-    }
-#endif
+    if (ret != -1) { qemu_set_cloexec(ret); }
+    #endif
     return ret;
 }
 
-static int qemu_parse_fdset(const char *param)
-{
-    return qemu_parse_fd(param);
-}
+static int qemu_parse_fdset(const char* param) { return qemu_parse_fd(param); }
 
 static void qemu_probe_lock_ops(void)
 {
     if (fcntl_op_setlk == -1) {
-#ifdef F_OFD_SETLK
-        int fd;
-        int ret;
+    #ifdef F_OFD_SETLK
+        int          fd;
+        int          ret;
         struct flock fl = {
             .l_whence = SEEK_SET,
             .l_start  = 0,
@@ -206,9 +190,7 @@ static void qemu_probe_lock_ops(void)
 
         fd = open("/dev/null", O_RDWR);
         if (fd < 0) {
-            fprintf(stderr,
-                    "Failed to open /dev/null for OFD lock probing: %s\n",
-                    strerror(errno));
+            fprintf(stderr, "Failed to open /dev/null for OFD lock probing: %s\n", strerror(errno));
             fcntl_op_setlk = F_SETLK;
             fcntl_op_getlk = F_GETLK;
             return;
@@ -218,30 +200,31 @@ static void qemu_probe_lock_ops(void)
         if (!ret) {
             fcntl_op_setlk = F_OFD_SETLK;
             fcntl_op_getlk = F_OFD_GETLK;
-        } else {
+        }
+        else {
             fcntl_op_setlk = F_SETLK;
             fcntl_op_getlk = F_GETLK;
         }
-#else
+    #else
         fcntl_op_setlk = F_SETLK;
         fcntl_op_getlk = F_GETLK;
-#endif
+    #endif
     }
 }
 
 bool qemu_has_ofd_lock(void)
 {
     qemu_probe_lock_ops();
-#ifdef F_OFD_SETLK
+    #ifdef F_OFD_SETLK
     return fcntl_op_setlk == F_OFD_SETLK;
-#else
+    #else
     return false;
-#endif
+    #endif
 }
 
 static int qemu_lock_fcntl(int fd, int64_t start, int64_t len, int fl_type)
 {
-    int ret;
+    int          ret;
     struct flock fl = {
         .l_whence = SEEK_SET,
         .l_start  = start,
@@ -254,18 +237,13 @@ static int qemu_lock_fcntl(int fd, int64_t start, int64_t len, int fl_type)
 }
 
 int qemu_lock_fd(int fd, int64_t start, int64_t len, bool exclusive)
-{
-    return qemu_lock_fcntl(fd, start, len, exclusive ? F_WRLCK : F_RDLCK);
-}
+{ return qemu_lock_fcntl(fd, start, len, exclusive ? F_WRLCK : F_RDLCK); }
 
-int qemu_unlock_fd(int fd, int64_t start, int64_t len)
-{
-    return qemu_lock_fcntl(fd, start, len, F_UNLCK);
-}
+int qemu_unlock_fd(int fd, int64_t start, int64_t len) { return qemu_lock_fcntl(fd, start, len, F_UNLCK); }
 
 int qemu_lock_fd_test(int fd, int64_t start, int64_t len, bool exclusive)
 {
-    int ret;
+    int          ret;
     struct flock fl = {
         .l_whence = SEEK_SET,
         .l_start  = start,
@@ -274,9 +252,8 @@ int qemu_lock_fd_test(int fd, int64_t start, int64_t len, bool exclusive)
     };
     qemu_probe_lock_ops();
     ret = fcntl(fd, fcntl_op_getlk, &fl);
-    if (ret == -1) {
-        return -errno;
-    } else {
+    if (ret == -1) { return -errno; }
+    else {
         return fl.l_type == F_UNLCK ? 0 : -EAGAIN;
     }
 }
@@ -291,16 +268,14 @@ bool qemu_has_direct_io(void)
 #endif
 }
 
-static int qemu_open_cloexec(const char *name, int flags, mode_t mode)
+static int qemu_open_cloexec(const char* name, int flags, mode_t mode)
 {
     int ret;
 #ifdef O_CLOEXEC
     ret = open(name, flags | O_CLOEXEC, mode);
 #else
     ret = open(name, flags, mode);
-    if (ret >= 0) {
-        qemu_set_cloexec(ret);
-    }
+    if (ret >= 0) { qemu_set_cloexec(ret); }
 #endif
     return ret;
 }
@@ -308,13 +283,12 @@ static int qemu_open_cloexec(const char *name, int flags, mode_t mode)
 /*
  * Opens a file with FD_CLOEXEC set
  */
-static int
-qemu_open_internal(const char *name, int flags, mode_t mode, Error **errp)
+static int qemu_open_internal(const char* name, int flags, mode_t mode, Error** errp)
 {
     int ret;
 
 #ifndef _WIN32
-    const char *fdset_id_str;
+    const char* fdset_id_str;
 
     /* Attempt dup of fd from fd set */
     if (strstart(name, "/dev/fdset/", &fdset_id_str)) {
@@ -334,14 +308,15 @@ qemu_open_internal(const char *name, int flags, mode_t mode, Error **errp)
     ret = qemu_open_cloexec(name, flags, mode);
 
     if (ret == -1) {
-        const char *action = flags & O_CREAT ? "create" : "open";
+        const char* action = flags & O_CREAT ? "create" : "open";
 #ifdef O_DIRECT
         /* Give more helpful error message for O_DIRECT */
         if (errno == EINVAL && (flags & O_DIRECT)) {
             ret = open(name, flags & ~O_DIRECT, mode);
             if (ret != -1) {
                 close(ret);
-                error_setg(errp, "Could not %s '%s': "
+                error_setg(errp,
+                           "Could not %s '%s': "
                            "filesystem does not support O_DIRECT",
                            action, name);
                 errno = EINVAL; /* restore first open()'s errno */
@@ -349,40 +324,34 @@ qemu_open_internal(const char *name, int flags, mode_t mode, Error **errp)
             }
         }
 #endif /* O_DIRECT */
-        error_setg_errno(errp, errno, "Could not %s '%s'",
-                         action, name);
+        error_setg_errno(errp, errno, "Could not %s '%s'", action, name);
     }
 
     return ret;
 }
 
-
-int qemu_open(const char *name, int flags, Error **errp)
+int qemu_open(const char* name, int flags, Error** errp)
 {
     assert(!(flags & O_CREAT));
 
     return qemu_open_internal(name, flags, 0, errp);
 }
 
-
-int qemu_create(const char *name, int flags, mode_t mode, Error **errp)
+int qemu_create(const char* name, int flags, mode_t mode, Error** errp)
 {
     assert(!(flags & O_CREAT));
 
     return qemu_open_internal(name, flags | O_CREAT, mode, errp);
 }
 
-
-int qemu_open_old(const char *name, int flags, ...)
+int qemu_open_old(const char* name, int flags, ...)
 {
     va_list ap;
-    mode_t mode = 0;
-    int ret;
+    mode_t  mode = 0;
+    int     ret;
 
     va_start(ap, flags);
-    if (flags & O_CREAT) {
-        mode = va_arg(ap, int);
-    }
+    if (flags & O_CREAT) { mode = va_arg(ap, int); }
     va_end(ap);
 
     ret = qemu_open_internal(name, flags, mode, NULL);
@@ -410,11 +379,9 @@ int qemu_close(int fd)
  * Returns: On success, zero is returned.  On error, -1 is returned,
  * and errno is set appropriately.
  */
-int qemu_unlink(const char *name)
+int qemu_unlink(const char* name)
 {
-    if (g_str_has_prefix(name, "/dev/fdset/")) {
-        return 0;
-    }
+    if (g_str_has_prefix(name, "/dev/fdset/")) { return 0; }
 
     return unlink(name);
 }
@@ -430,21 +397,20 @@ int qemu_unlink(const char *name)
  *   - return a short write (then name is wrong)
  *   - busy wait adding (errno == EAGAIN) to the loop
  */
-ssize_t qemu_write_full(int fd, const void *buf, size_t count)
+ssize_t qemu_write_full(int fd, const void* buf, size_t count)
 {
-    ssize_t ret = 0;
+    ssize_t ret   = 0;
     ssize_t total = 0;
 
     while (count) {
         ret = write(fd, buf, count);
         if (ret < 0) {
-            if (errno == EINTR)
-                continue;
+            if (errno == EINTR) { continue; }
             break;
         }
 
         count -= ret;
-        buf += ret;
+        buf   += ret;
         total += ret;
     }
 
@@ -460,14 +426,10 @@ int qemu_socket(int domain, int type, int protocol)
 
 #ifdef SOCK_CLOEXEC
     ret = socket(domain, type | SOCK_CLOEXEC, protocol);
-    if (ret != -1 || errno != EINVAL) {
-        return ret;
-    }
+    if (ret != -1 || errno != EINVAL) { return ret; }
 #endif
     ret = socket(domain, type, protocol);
-    if (ret >= 0) {
-        qemu_set_cloexec(ret);
-    }
+    if (ret >= 0) { qemu_set_cloexec(ret); }
 
     return ret;
 }
@@ -475,68 +437,53 @@ int qemu_socket(int domain, int type, int protocol)
 /*
  * Accept a connection and set FD_CLOEXEC
  */
-int qemu_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+int qemu_accept(int s, struct sockaddr* addr, socklen_t* addrlen)
 {
     int ret;
 
 #ifdef CONFIG_ACCEPT4
     ret = accept4(s, addr, addrlen, SOCK_CLOEXEC);
-    if (ret != -1 || errno != ENOSYS) {
-        return ret;
-    }
+    if (ret != -1 || errno != ENOSYS) { return ret; }
 #endif
     ret = accept(s, addr, addrlen);
-    if (ret >= 0) {
-        qemu_set_cloexec(ret);
-    }
+    if (ret >= 0) { qemu_set_cloexec(ret); }
 
     return ret;
 }
 
-ssize_t qemu_send_full(int s, const void *buf, size_t count)
+ssize_t qemu_send_full(int s, const void* buf, size_t count)
 {
-    ssize_t ret = 0;
+    ssize_t ret   = 0;
     ssize_t total = 0;
 
     while (count) {
         ret = send(s, buf, count, 0);
         if (ret < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
+            if (errno == EINTR) { continue; }
             break;
         }
 
         count -= ret;
-        buf += ret;
+        buf   += ret;
         total += ret;
     }
 
     return total;
 }
 
-void qemu_set_hw_version(const char *version)
-{
-    hw_version = version;
-}
+void qemu_set_hw_version(const char* version) { hw_version = version; }
 
-const char *qemu_hw_version(void)
-{
-    return hw_version;
-}
+const char* qemu_hw_version(void) { return hw_version; }
 
 #ifdef _WIN32
-static void socket_cleanup(void)
-{
-    WSACleanup();
-}
+static void socket_cleanup(void) { WSACleanup(); }
 #endif
 
 int socket_init(void)
 {
 #ifdef _WIN32
     WSADATA Data;
-    int ret, err;
+    int     ret, err;
 
     ret = WSAStartup(MAKEWORD(2, 2), &Data);
     if (ret != 0) {
@@ -549,34 +496,30 @@ int socket_init(void)
     return 0;
 }
 
-
 #ifndef CONFIG_IOVEC
-static ssize_t
-readv_writev(int fd, const struct iovec *iov, int iov_cnt, bool do_write)
+static ssize_t readv_writev(int fd, const struct iovec* iov, int iov_cnt, bool do_write)
 {
-    unsigned i = 0;
-    ssize_t ret = 0;
-    ssize_t off = 0;
+    unsigned i   = 0;
+    ssize_t  ret = 0;
+    ssize_t  off = 0;
     while (i < iov_cnt) {
-        ssize_t r = do_write
-            ? write(fd, iov[i].iov_base + off, iov[i].iov_len - off)
-            : read(fd, iov[i].iov_base + off, iov[i].iov_len - off);
+        ssize_t r = do_write ? write(fd, iov[i].iov_base + off, iov[i].iov_len - off) :
+                               read(fd, iov[i].iov_base + off, iov[i].iov_len - off);
         if (r > 0) {
             ret += r;
             off += r;
-            if (off < iov[i].iov_len) {
-                continue;
-            }
-        } else if (!r) {
+            if (off < iov[i].iov_len) { continue; }
+        }
+        else if (!r) {
             break;
-        } else if (errno == EINTR) {
+        }
+        else if (errno == EINTR) {
             continue;
-        } else {
+        }
+        else {
             /* else it is some "other" error,
              * only return if there was no data processed. */
-            if (ret == 0) {
-                ret = -1;
-            }
+            if (ret == 0) { ret = -1; }
             break;
         }
         off = 0;
@@ -585,17 +528,9 @@ readv_writev(int fd, const struct iovec *iov, int iov_cnt, bool do_write)
     return ret;
 }
 
-ssize_t
-readv(int fd, const struct iovec *iov, int iov_cnt)
-{
-    return readv_writev(fd, iov, iov_cnt, false);
-}
+ssize_t readv(int fd, const struct iovec* iov, int iov_cnt) { return readv_writev(fd, iov, iov_cnt, false); }
 
-ssize_t
-writev(int fd, const struct iovec *iov, int iov_cnt)
-{
-    return readv_writev(fd, iov, iov_cnt, true);
-}
+ssize_t writev(int fd, const struct iovec* iov, int iov_cnt) { return readv_writev(fd, iov, iov_cnt, true); }
 #endif
 
 /*

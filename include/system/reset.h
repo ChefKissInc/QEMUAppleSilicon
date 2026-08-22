@@ -29,7 +29,7 @@
 #include "hw/resettable.h"
 #include "qapi/qapi-events-run-state.h"
 
-typedef void QEMUResetHandler(void *opaque);
+typedef void QEMUResetHandler(void* opaque);
 
 /**
  * qemu_register_resettable: Register an object to be reset
@@ -47,7 +47,7 @@ typedef void QEMUResetHandler(void *opaque);
  *
  * We assume that the caller holds the BQL.
  */
-void qemu_register_resettable(Object *obj);
+void qemu_register_resettable(Object* obj);
 
 /**
  * qemu_unregister_resettable: Unregister an object to be reset
@@ -59,7 +59,7 @@ void qemu_register_resettable(Object *obj);
  *
  * We assume that the caller holds the BQL.
  */
-void qemu_unregister_resettable(Object *obj);
+void qemu_unregister_resettable(Object* obj);
 
 /**
  * qemu_register_reset: Register a callback for system reset
@@ -82,7 +82,7 @@ void qemu_unregister_resettable(Object *obj);
  *
  * We assume that the caller holds the BQL.
  */
-void qemu_register_reset(QEMUResetHandler *func, void *opaque);
+void qemu_register_reset(QEMUResetHandler* func, void* opaque);
 
 /**
  * qemu_register_reset_nosnapshotload: Register a callback for system reset
@@ -94,7 +94,7 @@ void qemu_register_reset(QEMUResetHandler *func, void *opaque);
  * put it into a clean state prior to loading a snapshot (i.e. for
  * SHUTDOWN_CAUSE_SNAPSHOT_LOAD).
  */
-void qemu_register_reset_nosnapshotload(QEMUResetHandler *func, void *opaque);
+void qemu_register_reset_nosnapshotload(QEMUResetHandler* func, void* opaque);
 
 /**
  * qemu_unregister_reset: Unregister a system reset callback
@@ -106,7 +106,7 @@ void qemu_register_reset_nosnapshotload(QEMUResetHandler *func, void *opaque);
  *
  * We assume that the caller holds the BQL.
  */
-void qemu_unregister_reset(QEMUResetHandler *func, void *opaque);
+void qemu_unregister_reset(QEMUResetHandler* func, void* opaque);
 
 /**
  * qemu_devices_reset: Perform a complete system reset

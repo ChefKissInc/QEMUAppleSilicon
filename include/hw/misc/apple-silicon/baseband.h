@@ -24,8 +24,7 @@
 #include "hw/pci/pci.h"
 #include "hw/sysbus.h"
 
-#define BASEBAND_GPIO_COREDUMP "baseband-gpio-coredump"
+#define BASEBAND_GPIO_COREDUMP      "baseband-gpio-coredump"
 #define BASEBAND_GPIO_RESET_DET_OUT "baseband-gpio-reset_det-out"
 
-SysBusDevice *apple_baseband_create(AppleDTNode *node, PCIBus *pci_bus,
-                                    ApplePCIEPort *port);
+SysBusDevice* apple_baseband_create(AppleDTNode* node, PCIBus* pci_bus, ApplePCIEPort* port);

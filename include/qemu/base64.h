@@ -45,7 +45,4 @@
  *
  * Returns: the decoded data or NULL
  */
-uint8_t *qbase64_decode(const char *input,
-                        size_t in_len,
-                        size_t *out_len,
-                        Error **errp);
+uint8_t* qbase64_decode(const char* input, size_t in_len, size_t* out_len, Error** errp);

@@ -17,74 +17,66 @@
 #include "qemu/error-report.h"
 #include "qapi/error-internal.h"
 
-Error *error_abort;
-Error *error_fatal;
-Error *error_warn;
+Error* error_abort;
+Error* error_fatal;
+Error* error_warn;
 
-static void error_handle(Error **errp, Error *err)
+static void error_handle(Error** errp, Error* err)
 {
     if (errp == &error_abort) {
         if (err->func) {
-            fprintf(stderr, "Unexpected error in %s() at %.*s:%d:\n",
-                    err->func, err->src_len, err->src, err->line);
-        } else {
-            fprintf(stderr, "Unexpected error at %.*s:%d:\n",
-		    err->src_len, err->src, err->line);
+            fprintf(stderr, "Unexpected error in %s() at %.*s:%d:\n", err->func, err->src_len, err->src, err->line);
+        }
+        else {
+            fprintf(stderr, "Unexpected error at %.*s:%d:\n", err->src_len, err->src, err->line);
         }
         error_report("%s", error_get_pretty(err));
-        if (err->hint) {
-            error_printf("%s", err->hint->str);
-        }
+        if (err->hint) { error_printf("%s", err->hint->str); }
         abort();
     }
     if (errp == &error_fatal) {
         error_report_err(err);
         exit(1);
     }
-    if (errp == &error_warn) {
-        warn_report_err(err);
-    } else if (errp && !*errp) {
+    if (errp == &error_warn) { warn_report_err(err); }
+    else if (errp && !*errp) {
         *errp = err;
-    } else {
+    }
+    else {
         error_free(err);
     }
 }
 
 G_GNUC_PRINTF(6, 0)
-static void error_setv(Error **errp,
-                       const char *src, int line, const char *func,
-                       ErrorClass err_class, const char *fmt, va_list ap,
-                       const char *suffix)
+static void error_setv(Error** errp, const char* src, int line, const char* func, ErrorClass err_class, const char* fmt,
+                       va_list ap, const char* suffix)
 {
-    Error *err;
-    int saved_errno = errno;
+    Error* err;
+    int    saved_errno = errno;
 
-    if (errp == NULL) {
-        return;
-    }
+    if (errp == NULL) { return; }
     assert(*errp == NULL);
 
-    err = g_malloc0(sizeof(*err));
+    err      = g_malloc0(sizeof(*err));
     err->msg = g_strdup_vprintf(fmt, ap);
     if (suffix) {
-        char *msg = err->msg;
-        err->msg = g_strdup_printf("%s: %s", msg, suffix);
+        char* msg = err->msg;
+        err->msg  = g_strdup_printf("%s: %s", msg, suffix);
         g_free(msg);
     }
     err->err_class = err_class;
-    err->src_len = -1;
-    err->src = src;
-    err->line = line;
-    err->func = func;
+    err->src_len   = -1;
+    err->src       = src;
+    err->line      = line;
+    err->func      = func;
 
     error_handle(errp, err);
 
     errno = saved_errno;
 }
 
-void error_set_internal(Error **errp,
-                        const char *src, int line, const char *func,
-                        ErrorClass err_class, const char *fmt, ...)
+void error_set_internal(Error** errp, const char* src, int line, const char* func, ErrorClass err_class,
+                        const char* fmt, ...)
 {
     va_list ap;
 
@@ -93,9 +85,7 @@ void error_set_internal(Error **errp,
     va_end(ap);
 }
 
-void error_setg_internal(Error **errp,
-                         const char *src, int line, const char *func,
-                         const char *fmt, ...)
+void error_setg_internal(Error** errp, const char* src, int line, const char* func, const char* fmt, ...)
 {
     va_list ap;
 
@@ -104,36 +94,28 @@ void error_setg_internal(Error **errp,
     va_end(ap);
 }
 
-void error_setg_errno_internal(Error **errp,
-                               const char *src, int line, const char *func,
-                               int os_errno, const char *fmt, ...)
+void error_setg_errno_internal(Error** errp, const char* src, int line, const char* func, int os_errno, const char* fmt,
+                               ...)
 {
     va_list ap;
-    int saved_errno = errno;
+    int     saved_errno = errno;
 
     va_start(ap, fmt);
-    error_setv(errp, src, line, func, ERROR_CLASS_GENERIC_ERROR, fmt, ap,
-               os_errno != 0 ? strerror(os_errno) : NULL);
+    error_setv(errp, src, line, func, ERROR_CLASS_GENERIC_ERROR, fmt, ap, os_errno != 0 ? strerror(os_errno) : NULL);
     va_end(ap);
 
     errno = saved_errno;
 }
 
-void error_setg_file_open_internal(Error **errp,
-                                   const char *src, int line, const char *func,
-                                   int os_errno, const char *filename)
-{
-    error_setg_errno_internal(errp, src, line, func, os_errno,
-                              "Could not open '%s'", filename);
-}
+void error_setg_file_open_internal(Error** errp, const char* src, int line, const char* func, int os_errno,
+                                   const char* filename)
+{ error_setg_errno_internal(errp, src, line, func, os_errno, "Could not open '%s'", filename); }
 
-void error_vprepend(Error *const *errp, const char *fmt, va_list ap)
+void error_vprepend(Error* const* errp, const char* fmt, va_list ap)
 {
-    GString *newmsg;
+    GString* newmsg;
 
-    if (!errp) {
-        return;
-    }
+    if (!errp) { return; }
 
     newmsg = g_string_new(NULL);
     g_string_vprintf(newmsg, fmt, ap);
@@ -142,7 +124,7 @@ void error_vprepend(Error *const *errp, const char *fmt, va_list ap)
     (*errp)->msg = g_string_free(newmsg, 0);
 }
 
-void error_prepend(Error *const *errp, const char *fmt, ...)
+void error_prepend(Error* const* errp, const char* fmt, ...)
 {
     va_list ap;
 
@@ -151,21 +133,17 @@ void error_prepend(Error *const *errp, const char *fmt, ...)
     va_end(ap);
 }
 
-void error_append_hint(Error *const *errp, const char *fmt, ...)
+void error_append_hint(Error* const* errp, const char* fmt, ...)
 {
     va_list ap;
-    int saved_errno = errno;
-    Error *err;
+    int     saved_errno = errno;
+    Error*  err;
 
-    if (!errp) {
-        return;
-    }
+    if (!errp) { return; }
     err = *errp;
     assert(err && errp != &error_abort && errp != &error_fatal);
 
-    if (!err->hint) {
-        err->hint = g_string_new(NULL);
-    }
+    if (!err->hint) { err->hint = g_string_new(NULL); }
     va_start(ap, fmt);
     g_string_append_vprintf(err->hint, fmt, ap);
     va_end(ap);
@@ -175,24 +153,18 @@ void error_append_hint(Error *const *errp, const char *fmt, ...)
 
 #ifdef _WIN32
 
-void error_setg_win32_internal(Error **errp,
-                               const char *src, int line, const char *func,
-                               int win32_err, const char *fmt, ...)
+void error_setg_win32_internal(Error** errp, const char* src, int line, const char* func, int win32_err,
+                               const char* fmt, ...)
 {
     va_list ap;
-    char *suffix = NULL;
+    char*   suffix = NULL;
 
-    if (errp == NULL) {
-        return;
-    }
+    if (errp == NULL) { return; }
 
-    if (win32_err != 0) {
-        suffix = g_win32_error_message(win32_err);
-    }
+    if (win32_err != 0) { suffix = g_win32_error_message(win32_err); }
 
     va_start(ap, fmt);
-    error_setv(errp, src, line, func, ERROR_CLASS_GENERIC_ERROR,
-               fmt, ap, suffix);
+    error_setv(errp, src, line, func, ERROR_CLASS_GENERIC_ERROR, fmt, ap, suffix);
     va_end(ap);
 
     g_free(suffix);
@@ -200,52 +172,40 @@ void error_setg_win32_internal(Error **errp,
 
 #endif
 
-Error *error_copy(const Error *err)
+Error* error_copy(const Error* err)
 {
-    Error *err_new;
+    Error* err_new;
 
-    err_new = g_malloc0(sizeof(*err));
-    err_new->msg = g_strdup(err->msg);
+    err_new            = g_malloc0(sizeof(*err));
+    err_new->msg       = g_strdup(err->msg);
     err_new->err_class = err->err_class;
-    err_new->src = err->src;
-    err_new->line = err->line;
-    err_new->func = err->func;
-    if (err->hint) {
-        err_new->hint = g_string_new(err->hint->str);
-    }
+    err_new->src       = err->src;
+    err_new->line      = err->line;
+    err_new->func      = err->func;
+    if (err->hint) { err_new->hint = g_string_new(err->hint->str); }
 
     return err_new;
 }
 
-ErrorClass error_get_class(const Error *err)
-{
-    return err->err_class;
-}
+ErrorClass error_get_class(const Error* err) { return err->err_class; }
 
-const char *error_get_pretty(const Error *err)
-{
-    return err->msg;
-}
+const char* error_get_pretty(const Error* err) { return err->msg; }
 
-void error_report_err(Error *err)
+void error_report_err(Error* err)
 {
     error_report("%s", error_get_pretty(err));
-    if (err->hint) {
-        error_printf("%s", err->hint->str);
-    }
+    if (err->hint) { error_printf("%s", err->hint->str); }
     error_free(err);
 }
 
-void warn_report_err(Error *err)
+void warn_report_err(Error* err)
 {
     warn_report("%s", error_get_pretty(err));
-    if (err->hint) {
-        error_printf("%s", err->hint->str);
-    }
+    if (err->hint) { error_printf("%s", err->hint->str); }
     error_free(err);
 }
 
-bool warn_report_err_once_cond(bool *printed, Error *err)
+bool warn_report_err_once_cond(bool* printed, Error* err)
 {
     if (*printed) {
         error_free(err);
@@ -256,7 +216,7 @@ bool warn_report_err_once_cond(bool *printed, Error *err)
     return true;
 }
 
-void error_reportf_err(Error *err, const char *fmt, ...)
+void error_reportf_err(Error* err, const char* fmt, ...)
 {
     va_list ap;
 
@@ -266,8 +226,7 @@ void error_reportf_err(Error *err, const char *fmt, ...)
     error_report_err(err);
 }
 
-
-void warn_reportf_err(Error *err, const char *fmt, ...)
+void warn_reportf_err(Error* err, const char* fmt, ...)
 {
     va_list ap;
 
@@ -277,34 +236,29 @@ void warn_reportf_err(Error *err, const char *fmt, ...)
     warn_report_err(err);
 }
 
-void error_free(Error *err)
+void error_free(Error* err)
 {
     if (err) {
         g_free(err->msg);
-        if (err->hint) {
-            g_string_free(err->hint, true);
-        }
+        if (err->hint) { g_string_free(err->hint, true); }
         g_free(err);
     }
 }
 
-void error_free_or_abort(Error **errp)
+void error_free_or_abort(Error** errp)
 {
     assert(errp && *errp);
     error_free(*errp);
     *errp = NULL;
 }
 
-void error_propagate(Error **dst_errp, Error *local_err)
+void error_propagate(Error** dst_errp, Error* local_err)
 {
-    if (!local_err) {
-        return;
-    }
+    if (!local_err) { return; }
     error_handle(dst_errp, local_err);
 }
 
-void error_propagate_prepend(Error **dst_errp, Error *err,
-                             const char *fmt, ...)
+void error_propagate_prepend(Error** dst_errp, Error* err, const char* fmt, ...)
 {
     va_list ap;
 

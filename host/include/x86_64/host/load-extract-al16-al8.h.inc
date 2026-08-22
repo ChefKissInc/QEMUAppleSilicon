@@ -8,7 +8,7 @@
 #pragma once
 
 #ifdef CONFIG_INT128_TYPE
-#include "host/atomic128-ldst.h.inc"
+    #include "host/atomic128-ldst.h.inc"
 
 /**
  * load_atom_extract_al16_or_al8:
@@ -19,12 +19,11 @@
  * cross an 16-byte boundary then the access must be 16-byte atomic,
  * otherwise the access must be 8-byte atomic.
  */
-static inline uint64_t ATTRIBUTE_ATOMIC128_OPT
-load_atom_extract_al16_or_al8(void *pv, int s)
+static inline uint64_t ATTRIBUTE_ATOMIC128_OPT load_atom_extract_al16_or_al8(void* pv, int s)
 {
-    uintptr_t pi = (uintptr_t)pv;
-    __int128_t *ptr_align = (__int128_t *)(pi & ~7);
-    int shr = (pi & 7) * 8;
+    uintptr_t      pi        = (uintptr_t)pv;
+    __int128_t*    ptr_align = (__int128_t*)(pi & ~7);
+    int            shr       = (pi & 7) * 8;
     X86Int128Union r;
 
     /*
@@ -33,15 +32,13 @@ load_atom_extract_al16_or_al8(void *pv, int s)
      * making the branch highly predictable.  Otherwise we must use VMOVDQA
      * when ptr_align % 16 == 0 for 16-byte atomicity.
      */
-    if ((cpuinfo & CPUINFO_ATOMIC_VMOVDQU) || (pi & 8)) {
-        asm("vmovdqu %1, %0" : "=x" (r.v) : "m" (*ptr_align));
-    } else {
-        asm("vmovdqa %1, %0" : "=x" (r.v) : "m" (*ptr_align));
+    if ((cpuinfo & CPUINFO_ATOMIC_VMOVDQU) || (pi & 8)) { asm("vmovdqu %1, %0" : "=x"(r.v) : "m"(*ptr_align)); }
+    else {
+        asm("vmovdqa %1, %0" : "=x"(r.v) : "m"(*ptr_align));
     }
     return int128_getlo(int128_urshift(r.s, shr));
 }
 #else
 /* Fallback definition that must be optimized away, or error.  */
-uint64_t QEMU_ERROR("unsupported atomic")
-    load_atom_extract_al16_or_al8(void *pv, int s);
+uint64_t QEMU_ERROR("unsupported atomic") load_atom_extract_al16_or_al8(void* pv, int s);
 #endif

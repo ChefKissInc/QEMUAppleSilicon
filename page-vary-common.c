@@ -34,9 +34,7 @@ bool set_preferred_target_page_bits_common(int bits)
      * a particular size.
      */
     if (target_page.bits == 0 || target_page.bits > bits) {
-        if (target_page.decided) {
-            return false;
-        }
+        if (target_page.decided) { return false; }
         target_page.bits = bits;
         smp_wmb();
     }
@@ -45,10 +43,8 @@ bool set_preferred_target_page_bits_common(int bits)
 
 void finalize_target_page_bits_common(int min)
 {
-    if (target_page.bits == 0) {
-        target_page.bits = min;
-    }
-    target_page.mask = -1ull << target_page.bits;
+    if (target_page.bits == 0) { target_page.bits = min; }
+    target_page.mask    = -1ull << target_page.bits;
     target_page.decided = true;
     smp_wmb();
 }

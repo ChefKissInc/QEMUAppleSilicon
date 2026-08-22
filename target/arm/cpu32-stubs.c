@@ -5,22 +5,10 @@
 #include "target/arm/internals.h"
 #include <glib.h>
 
-void arm_cpu_sme_finalize(ARMCPU *cpu, Error **errp)
-{
-    assert_not_reached();
-}
+void arm_cpu_sme_finalize(ARMCPU* cpu, Error** errp) { assert_not_reached(); }
 
-void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp)
-{
-    assert_not_reached();
-}
+void arm_cpu_sve_finalize(ARMCPU* cpu, Error** errp) { assert_not_reached(); }
 
-void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp)
-{
-    assert_not_reached();
-}
+void arm_cpu_pauth_finalize(ARMCPU* cpu, Error** errp) { assert_not_reached(); }
 
-void arm_cpu_lpa2_finalize(ARMCPU *cpu, Error **errp)
-{
-    assert_not_reached();
-}
+void arm_cpu_lpa2_finalize(ARMCPU* cpu, Error** errp) { assert_not_reached(); }

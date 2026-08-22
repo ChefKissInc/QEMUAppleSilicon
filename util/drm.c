@@ -20,28 +20,22 @@
 #include <glob.h>
 #include <dirent.h>
 
-int qemu_drm_rendernode_open(const char *rendernode)
+int qemu_drm_rendernode_open(const char* rendernode)
 {
-    DIR *dir;
-    struct dirent *e;
-    struct stat st;
-    int r, fd, ret;
-    char *p;
+    DIR*           dir;
+    struct dirent* e;
+    struct stat    st;
+    int            r, fd, ret;
+    char*          p;
 
-    if (rendernode) {
-        return open(rendernode, O_RDWR | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);
-    }
+    if (rendernode) { return open(rendernode, O_RDWR | O_CLOEXEC | O_NOCTTY | O_NONBLOCK); }
 
     dir = opendir("/dev/dri");
-    if (!dir) {
-        return -1;
-    }
+    if (!dir) { return -1; }
 
     fd = -1;
     while ((e = readdir(dir))) {
-        if (strncmp(e->d_name, "renderD", 7)) {
-            continue;
-        }
+        if (strncmp(e->d_name, "renderD", 7)) { continue; }
 
         p = g_strdup_printf("/dev/dri/%s", e->d_name);
 
@@ -68,8 +62,6 @@ int qemu_drm_rendernode_open(const char *rendernode)
     }
 
     closedir(dir);
-    if (fd < 0) {
-        return -1;
-    }
+    if (fd < 0) { return -1; }
     return fd;
 }

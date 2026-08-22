@@ -10,17 +10,18 @@
 
 #include "qapi/qapi-types-machine.h"
 
-typedef struct TargetInfo {
+typedef struct TargetInfo
+{
     /* runtime equivalent of TARGET_NAME definition */
-    const char *target_name;
+    const char* target_name;
     /* related to TARGET_ARCH definition */
     SysEmuTarget target_arch;
     /* runtime equivalent of TARGET_LONG_BITS definition */
     unsigned long_bits;
     /* runtime equivalent of CPU_RESOLVING_TYPE definition */
-    const char *cpu_type;
+    const char* cpu_type;
     /* QOM typename machines for this binary must implement */
-    const char *machine_typename;
+    const char* machine_typename;
     /* related to TARGET_BIG_ENDIAN definition */
     EndianMode endianness;
 } TargetInfo;
@@ -30,4 +31,4 @@ typedef struct TargetInfo {
  *
  * Returns: The TargetInfo structure definition for this target binary.
  */
-const TargetInfo *target_info(void);
+const TargetInfo* target_info(void);

@@ -33,10 +33,11 @@
  * is, some assertions apply to input and clone visitors, some
  * assertions apply to output and clone visitors).
  */
-typedef enum VisitorType {
-    VISITOR_INPUT = 1,
-    VISITOR_OUTPUT = 2,
-    VISITOR_CLONE = 3,
+typedef enum VisitorType
+{
+    VISITOR_INPUT   = 1,
+    VISITOR_OUTPUT  = 2,
+    VISITOR_CLONE   = 3,
     VISITOR_DEALLOC = 4,
 } VisitorType;
 
@@ -47,78 +48,66 @@ struct Visitor
      */
 
     /* Must be set to visit structs */
-    bool (*start_struct)(Visitor *v, const char *name, void **obj,
-                         size_t size, Error **errp);
+    bool (*start_struct)(Visitor* v, const char* name, void** obj, size_t size, Error** errp);
 
     /* Optional; intended for input visitors */
-    bool (*check_struct)(Visitor *v, Error **errp);
+    bool (*check_struct)(Visitor* v, Error** errp);
 
     /* Must be set to visit structs */
-    void (*end_struct)(Visitor *v, void **obj);
+    void (*end_struct)(Visitor* v, void** obj);
 
     /* Must be set; implementations may require @list to be non-null,
      * but must document it. */
-    bool (*start_list)(Visitor *v, const char *name, GenericList **list,
-                       size_t size, Error **errp);
+    bool (*start_list)(Visitor* v, const char* name, GenericList** list, size_t size, Error** errp);
 
     /* Must be set */
-    GenericList *(*next_list)(Visitor *v, GenericList *tail, size_t size);
+    GenericList* (*next_list)(Visitor* v, GenericList* tail, size_t size);
 
     /* Optional; intended for input visitors */
-    bool (*check_list)(Visitor *v, Error **errp);
+    bool (*check_list)(Visitor* v, Error** errp);
 
     /* Must be set */
-    void (*end_list)(Visitor *v, void **list);
+    void (*end_list)(Visitor* v, void** list);
 
     /* Must be set by input and clone visitors to visit alternates */
-    bool (*start_alternate)(Visitor *v, const char *name,
-                            GenericAlternate **obj, size_t size,
-                            Error **errp);
+    bool (*start_alternate)(Visitor* v, const char* name, GenericAlternate** obj, size_t size, Error** errp);
 
     /* Optional */
-    void (*end_alternate)(Visitor *v, void **obj);
+    void (*end_alternate)(Visitor* v, void** obj);
 
     /* Must be set */
-    bool (*type_int64)(Visitor *v, const char *name, int64_t *obj,
-                       Error **errp);
+    bool (*type_int64)(Visitor* v, const char* name, int64_t* obj, Error** errp);
 
     /* Must be set */
-    bool (*type_uint64)(Visitor *v, const char *name, uint64_t *obj,
-                        Error **errp);
+    bool (*type_uint64)(Visitor* v, const char* name, uint64_t* obj, Error** errp);
 
     /* Optional; fallback is type_uint64() */
-    bool (*type_size)(Visitor *v, const char *name, uint64_t *obj,
-                      Error **errp);
+    bool (*type_size)(Visitor* v, const char* name, uint64_t* obj, Error** errp);
 
     /* Must be set */
-    bool (*type_bool)(Visitor *v, const char *name, bool *obj, Error **errp);
+    bool (*type_bool)(Visitor* v, const char* name, bool* obj, Error** errp);
 
     /* Must be set */
-    bool (*type_str)(Visitor *v, const char *name, char **obj, Error **errp);
+    bool (*type_str)(Visitor* v, const char* name, char** obj, Error** errp);
 
     /* Must be set to visit numbers */
-    bool (*type_number)(Visitor *v, const char *name, double *obj,
-                        Error **errp);
+    bool (*type_number)(Visitor* v, const char* name, double* obj, Error** errp);
 
     /* Must be set to visit arbitrary QTypes */
-    bool (*type_any)(Visitor *v, const char *name, QObject **obj,
-                     Error **errp);
+    bool (*type_any)(Visitor* v, const char* name, QObject** obj, Error** errp);
 
     /* Must be set to visit explicit null values.  */
-    bool (*type_null)(Visitor *v, const char *name, QNull **obj,
-                      Error **errp);
+    bool (*type_null)(Visitor* v, const char* name, QNull** obj, Error** errp);
 
     /* Must be set for input visitors to visit structs, optional otherwise.
        The core takes care of the return type in the public interface. */
-    void (*optional)(Visitor *v, const char *name, bool *present);
+    void (*optional)(Visitor* v, const char* name, bool* present);
 
     /* Optional */
-    bool (*policy_reject)(Visitor *v, const char *name,
-                          uint64_t features, Error **errp);
+    bool (*policy_reject)(Visitor* v, const char* name, uint64_t features, Error** errp);
 
     /* Optional */
-    bool (*policy_skip)(Visitor *v, const char *name,
-                        uint64_t features);
+    bool (*policy_skip)(Visitor* v, const char* name, uint64_t features);
 
     /* Must be set */
     VisitorType type;
@@ -127,8 +116,8 @@ struct Visitor
     struct CompatPolicy compat_policy;
 
     /* Must be set for output visitors, optional otherwise. */
-    void (*complete)(Visitor *v, void *opaque);
+    void (*complete)(Visitor* v, void* opaque);
 
     /* Must be set */
-    void (*free)(Visitor *v);
+    void (*free)(Visitor* v);
 };

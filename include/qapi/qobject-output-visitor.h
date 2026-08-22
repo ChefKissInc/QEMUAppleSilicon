@@ -50,4 +50,4 @@ typedef struct QObjectOutputVisitor QObjectOutputVisitor;
  * The caller is responsible for freeing the visitor with
  * visit_free().
  */
-Visitor *qobject_output_visitor_new(QObject **result);
+Visitor* qobject_output_visitor_new(QObject** result);

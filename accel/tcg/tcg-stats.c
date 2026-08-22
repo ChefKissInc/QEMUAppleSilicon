@@ -17,67 +17,62 @@
 #include "tb-context.h"
 #include <math.h>
 
-static void dump_accel_info(AccelState *accel, GString *buf)
+static void dump_accel_info(AccelState* accel, GString* buf)
 {
-    bool one_insn_per_tb = object_property_get_bool(OBJECT(accel),
-                                                    "one-insn-per-tb",
-                                                    &error_fatal);
+    bool one_insn_per_tb = object_property_get_bool(OBJECT(accel), "one-insn-per-tb", &error_fatal);
 
     g_string_append_printf(buf, "Accelerator settings:\n");
-    g_string_append_printf(buf, "one-insn-per-tb: %s\n\n",
-                           one_insn_per_tb ? "on" : "off");
+    g_string_append_printf(buf, "one-insn-per-tb: %s\n\n", one_insn_per_tb ? "on" : "off");
 }
 
-static void print_qht_statistics(struct qht_stats hst, GString *buf)
+static void print_qht_statistics(struct qht_stats hst, GString* buf)
 {
     uint32_t hgram_opts;
-    size_t hgram_bins;
-    char *hgram;
-    double avg;
+    size_t   hgram_bins;
+    char*    hgram;
+    double   avg;
 
-    if (!hst.head_buckets) {
-        return;
-    }
-    g_string_append_printf(buf, "TB hash buckets     %zu/%zu "
+    if (!hst.head_buckets) { return; }
+    g_string_append_printf(buf,
+                           "TB hash buckets     %zu/%zu "
                            "(%0.2f%% head buckets used)\n",
                            hst.used_head_buckets, hst.head_buckets,
-                           (double)hst.used_head_buckets /
-                           hst.head_buckets * 100);
+                           (double)hst.used_head_buckets / hst.head_buckets * 100);
 
-    hgram_opts =  QDIST_PR_BORDER | QDIST_PR_LABELS;
-    hgram_opts |= QDIST_PR_100X   | QDIST_PR_PERCENT;
-    if (qdist_xmax(&hst.occupancy) - qdist_xmin(&hst.occupancy) == 1) {
-        hgram_opts |= QDIST_PR_NODECIMAL;
-    }
+    hgram_opts  = QDIST_PR_BORDER | QDIST_PR_LABELS;
+    hgram_opts |= QDIST_PR_100X | QDIST_PR_PERCENT;
+    if (qdist_xmax(&hst.occupancy) - qdist_xmin(&hst.occupancy) == 1) { hgram_opts |= QDIST_PR_NODECIMAL; }
     hgram = qdist_pr(&hst.occupancy, 10, hgram_opts);
-    avg = qdist_avg(&hst.occupancy);
+    avg   = qdist_avg(&hst.occupancy);
     if (!isnan(avg)) {
-        g_string_append_printf(buf, "TB hash occupancy   "
-                                    "%0.2f%% avg chain occ. "
-                                    "Histogram: %s\n",
+        g_string_append_printf(buf,
+                               "TB hash occupancy   "
+                               "%0.2f%% avg chain occ. "
+                               "Histogram: %s\n",
                                avg * 100, hgram);
     }
     g_free(hgram);
 
     hgram_opts = QDIST_PR_BORDER | QDIST_PR_LABELS;
     hgram_bins = qdist_xmax(&hst.chain) - qdist_xmin(&hst.chain);
-    if (hgram_bins > 10) {
-        hgram_bins = 10;
-    } else {
-        hgram_bins = 0;
+    if (hgram_bins > 10) { hgram_bins = 10; }
+    else {
+        hgram_bins  = 0;
         hgram_opts |= QDIST_PR_NODECIMAL | QDIST_PR_NOBINRANGE;
     }
     hgram = qdist_pr(&hst.chain, hgram_bins, hgram_opts);
-    avg = qdist_avg(&hst.chain);
+    avg   = qdist_avg(&hst.chain);
     if (!isnan(avg)) {
-        g_string_append_printf(buf, "TB hash avg chain   %0.3f buckets. "
+        g_string_append_printf(buf,
+                               "TB hash avg chain   %0.3f buckets. "
                                "Histogram: %s\n",
                                avg, hgram);
     }
     g_free(hgram);
 }
 
-struct tb_tree_stats {
+struct tb_tree_stats
+{
     size_t nb_tbs;
     size_t host_size;
     size_t target_size;
@@ -89,52 +84,44 @@ struct tb_tree_stats {
 
 static gboolean tb_tree_stats_iter(gpointer key, gpointer value, gpointer data)
 {
-    const TranslationBlock *tb = value;
-    struct tb_tree_stats *tst = data;
+    const TranslationBlock* tb  = value;
+    struct tb_tree_stats*   tst = data;
 
     tst->nb_tbs++;
-    tst->host_size += tb->tc.size;
+    tst->host_size   += tb->tc.size;
     tst->target_size += tb->size;
-    if (tb->size > tst->max_target_size) {
-        tst->max_target_size = tb->size;
-    }
+    if (tb->size > tst->max_target_size) { tst->max_target_size = tb->size; }
 
-    if (tb->page_addr[1] != -1) {
-        tst->cross_page++;
-    }
+    if (tb->page_addr[1] != -1) { tst->cross_page++; }
 
     if (tb->jmp_reset_offset[0] != TB_JMP_OFFSET_INVALID) {
         tst->direct_jmp_count++;
-        if (tb->jmp_reset_offset[1] != TB_JMP_OFFSET_INVALID) {
-            tst->direct_jmp2_count++;
-        }
+        if (tb->jmp_reset_offset[1] != TB_JMP_OFFSET_INVALID) { tst->direct_jmp2_count++; }
     }
     return false;
 }
 
-static void tlb_flush_counts(size_t *pfull, size_t *ppart, size_t *pelide)
+static void tlb_flush_counts(size_t* pfull, size_t* ppart, size_t* pelide)
 {
-    CPUState *cpu;
-    size_t full = 0, part = 0, elide = 0;
+    CPUState* cpu;
+    size_t    full = 0, part = 0, elide = 0;
 
-    CPU_FOREACH(cpu) {
-        full += qatomic_read(&cpu->neg.tlb.c.full_flush_count);
-        part += qatomic_read(&cpu->neg.tlb.c.part_flush_count);
+    CPU_FOREACH (cpu) {
+        full  += qatomic_read(&cpu->neg.tlb.c.full_flush_count);
+        part  += qatomic_read(&cpu->neg.tlb.c.part_flush_count);
         elide += qatomic_read(&cpu->neg.tlb.c.elide_flush_count);
     }
-    *pfull = full;
-    *ppart = part;
+    *pfull  = full;
+    *ppart  = part;
     *pelide = elide;
 }
 
-static void tcg_dump_flush_info(GString *buf)
+static void tcg_dump_flush_info(GString* buf)
 {
     size_t flush_full, flush_part, flush_elide;
 
-    g_string_append_printf(buf, "TB flush count      %u\n",
-                           qatomic_read(&tb_ctx.tb_flush_count));
-    g_string_append_printf(buf, "TB invalidate count %u\n",
-                           qatomic_read(&tb_ctx.tb_phys_invalidate_count));
+    g_string_append_printf(buf, "TB flush count      %u\n", qatomic_read(&tb_ctx.tb_flush_count));
+    g_string_append_printf(buf, "TB invalidate count %u\n", qatomic_read(&tb_ctx.tb_phys_invalidate_count));
 
     tlb_flush_counts(&flush_full, &flush_part, &flush_elide);
     g_string_append_printf(buf, "TLB full flushes    %zu\n", flush_full);
@@ -142,11 +129,11 @@ static void tcg_dump_flush_info(GString *buf)
     g_string_append_printf(buf, "TLB elided flushes  %zu\n", flush_elide);
 }
 
-static void dump_exec_info(GString *buf)
+static void dump_exec_info(GString* buf)
 {
     struct tb_tree_stats tst = {};
-    struct qht_stats hst;
-    size_t nb_tbs;
+    struct qht_stats     hst;
+    size_t               nb_tbs;
 
     tcg_tb_foreach(tb_tree_stats_iter, &tst);
     nb_tbs = tst.nb_tbs;
@@ -157,26 +144,22 @@ static void dump_exec_info(GString *buf)
      * otherwise users might think "-accel tcg,tb-size" is not honoured.
      * For avg host size we use the precise numbers from tb_tree_stats though.
      */
-    g_string_append_printf(buf, "gen code size       %zu/%zu\n",
-                           tcg_code_size(), tcg_code_capacity());
+    g_string_append_printf(buf, "gen code size       %zu/%zu\n", tcg_code_size(), tcg_code_capacity());
     g_string_append_printf(buf, "TB count            %zu\n", nb_tbs);
-    g_string_append_printf(buf, "TB avg target size  %zu max=%zu bytes\n",
-                           nb_tbs ? tst.target_size / nb_tbs : 0,
+    g_string_append_printf(buf, "TB avg target size  %zu max=%zu bytes\n", nb_tbs ? tst.target_size / nb_tbs : 0,
                            tst.max_target_size);
-    g_string_append_printf(buf, "TB avg host size    %zu bytes "
+    g_string_append_printf(buf,
+                           "TB avg host size    %zu bytes "
                            "(expansion ratio: %0.1f)\n",
                            nb_tbs ? tst.host_size / nb_tbs : 0,
-                           tst.target_size ?
-                           (double)tst.host_size / tst.target_size : 0);
-    g_string_append_printf(buf, "cross page TB count %zu (%zu%%)\n",
-                           tst.cross_page,
+                           tst.target_size ? (double)tst.host_size / tst.target_size : 0);
+    g_string_append_printf(buf, "cross page TB count %zu (%zu%%)\n", tst.cross_page,
                            nb_tbs ? (tst.cross_page * 100) / nb_tbs : 0);
-    g_string_append_printf(buf, "direct jump count   %zu (%zu%%) "
+    g_string_append_printf(buf,
+                           "direct jump count   %zu (%zu%%) "
                            "(2 jumps=%zu %zu%%)\n",
-                           tst.direct_jmp_count,
-                           nb_tbs ? (tst.direct_jmp_count * 100) / nb_tbs : 0,
-                           tst.direct_jmp2_count,
-                           nb_tbs ? (tst.direct_jmp2_count * 100) / nb_tbs : 0);
+                           tst.direct_jmp_count, nb_tbs ? (tst.direct_jmp_count * 100) / nb_tbs : 0,
+                           tst.direct_jmp2_count, nb_tbs ? (tst.direct_jmp2_count * 100) / nb_tbs : 0);
 
     qht_statistics_init(&tb_ctx.htable, &hst);
     print_qht_statistics(hst, buf);
@@ -186,13 +169,10 @@ static void dump_exec_info(GString *buf)
     tcg_dump_flush_info(buf);
 }
 
-void tcg_get_stats(AccelState *accel, GString *buf)
+void tcg_get_stats(AccelState* accel, GString* buf)
 {
     dump_accel_info(accel, buf);
     dump_exec_info(buf);
 }
 
-void tcg_dump_stats(GString *buf)
-{
-    tcg_get_stats(current_accel(), buf);
-}
+void tcg_dump_stats(GString* buf) { tcg_get_stats(current_accel(), buf); }

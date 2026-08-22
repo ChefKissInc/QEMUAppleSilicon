@@ -26,4 +26,4 @@
 
 /* in hw/watchdog.c */
 WatchdogAction get_watchdog_action(void);
-void watchdog_perform_action(void);
+void           watchdog_perform_action(void);

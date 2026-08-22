@@ -26,4 +26,4 @@
  * there is overlap with existing regions, the new added region has
  * higher priority and replaces the overlapped segment.
  */
-GList *resv_region_list_insert(GList *list, ReservedRegion *reg);
+GList* resv_region_list_insert(GList* list, ReservedRegion* reg);

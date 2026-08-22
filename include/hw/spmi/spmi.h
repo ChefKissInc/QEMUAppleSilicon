@@ -7,53 +7,54 @@
 /* The QEMU SPMI implementation only supports transfers from master to slave
  * devices */
 
-#define SPMI_CMD_EXT_WRITE 0x00
-#define SPMI_CMD_RESET 0x10
-#define SPMI_CMD_SLEEP 0x11
-#define SPMI_CMD_SHUTDOWN 0x12
-#define SPMI_CMD_WAKEUP 0x13
-#define SPMI_CMD_AUTHENTICATE 0x14
-#define SPMI_CMD_MSTR_READ 0x15
-#define SPMI_CMD_MSTR_WRITE 0x16
+#define SPMI_CMD_EXT_WRITE              0x00
+#define SPMI_CMD_RESET                  0x10
+#define SPMI_CMD_SLEEP                  0x11
+#define SPMI_CMD_SHUTDOWN               0x12
+#define SPMI_CMD_WAKEUP                 0x13
+#define SPMI_CMD_AUTHENTICATE           0x14
+#define SPMI_CMD_MSTR_READ              0x15
+#define SPMI_CMD_MSTR_WRITE             0x16
 #define SPMI_CMD_TRANSFER_BUS_OWNERSHIP 0x1A
-#define SPMI_CMD_DDB_MASTER_READ 0x1B
-#define SPMI_CMD_DDB_SLAVE_READ 0x1C
-#define SPMI_CMD_EXT_READ 0x20
-#define SPMI_CMD_EXT_WRITEL 0x30
-#define SPMI_CMD_EXT_READL 0x38
-#define SPMI_CMD_WRITE 0x40
-#define SPMI_CMD_READ 0x60
-#define SPMI_CMD_ZERO_WRITE 0x80
-
+#define SPMI_CMD_DDB_MASTER_READ        0x1B
+#define SPMI_CMD_DDB_SLAVE_READ         0x1C
+#define SPMI_CMD_EXT_READ               0x20
+#define SPMI_CMD_EXT_WRITEL             0x30
+#define SPMI_CMD_EXT_READL              0x38
+#define SPMI_CMD_WRITE                  0x40
+#define SPMI_CMD_READ                   0x60
+#define SPMI_CMD_ZERO_WRITE             0x80
 
 #define TYPE_SPMI_SLAVE "spmi-slave"
 OBJECT_DECLARE_TYPE(SPMISlave, SPMISlaveClass, SPMI_SLAVE)
 
-struct SPMISlaveClass {
+struct SPMISlaveClass
+{
     DeviceClass parent_class;
 
     /*
      * Master to slave.
      * Returns the number of bytes sent.
      */
-    int (*send)(SPMISlave *s, uint8_t *data, uint8_t len);
+    int (*send)(SPMISlave* s, uint8_t* data, uint8_t len);
 
     /*
      * Slave to master.
      * Returns the number of bytes received
      */
-    int (*recv)(SPMISlave *s, uint8_t *data, uint8_t len);
+    int (*recv)(SPMISlave* s, uint8_t* data, uint8_t len);
 
     /*
      * Command frame.
      * Returns non-zero to NAK an operation.
      */
-    int (*command)(SPMISlave *s, uint8_t opcode, uint16_t addr);
+    int (*command)(SPMISlave* s, uint8_t opcode, uint16_t addr);
 
-    void (*finish)(SPMISlave *s);
+    void (*finish)(SPMISlave* s);
 };
 
-struct SPMISlave {
+struct SPMISlave
+{
     DeviceState qdev;
 
     /* Remaining fields for internal use by the SPMI code.  */
@@ -63,22 +64,22 @@ struct SPMISlave {
 #define TYPE_SPMI_BUS "spmi-bus"
 OBJECT_DECLARE_SIMPLE_TYPE(SPMIBus, SPMI_BUS)
 
-struct SPMIBus {
-    BusState qbus;
-    SPMISlave *current_dev;
-    uint8_t saved_sid;
-    bool broadcast;
+struct SPMIBus
+{
+    BusState   qbus;
+    SPMISlave* current_dev;
+    uint8_t    saved_sid;
+    bool       broadcast;
 };
 
-SPMIBus *spmi_init_bus(DeviceState *parent, const char *name);
-void spmi_set_slave_sid(SPMISlave *dev, uint8_t sid);
-int spmi_bus_busy(SPMIBus *bus);
-int spmi_start_transfer(SPMIBus *bus, uint8_t sid, uint8_t opcode,
-                        uint16_t address);
-void spmi_end_transfer(SPMIBus *bus);
-int spmi_send_recv(SPMIBus *bus, uint8_t *data, uint8_t len, bool send);
-int spmi_send(SPMIBus *bus, uint8_t *data, uint8_t len);
-int spmi_recv(SPMIBus *bus, uint8_t *data, uint8_t len);
+SPMIBus* spmi_init_bus(DeviceState* parent, const char* name);
+void     spmi_set_slave_sid(SPMISlave* dev, uint8_t sid);
+int      spmi_bus_busy(SPMIBus* bus);
+int      spmi_start_transfer(SPMIBus* bus, uint8_t sid, uint8_t opcode, uint16_t address);
+void     spmi_end_transfer(SPMIBus* bus);
+int      spmi_send_recv(SPMIBus* bus, uint8_t* data, uint8_t len, bool send);
+int      spmi_send(SPMIBus* bus, uint8_t* data, uint8_t len);
+int      spmi_recv(SPMIBus* bus, uint8_t* data, uint8_t len);
 
 /**
  * Create an SPMI slave device on the heap.
@@ -89,7 +90,7 @@ int spmi_recv(SPMIBus *bus, uint8_t *data, uint8_t len);
  * properties to be set. Type @name must exist. The device still
  * needs to be realized. See qdev-core.h.
  */
-SPMISlave *spmi_slave_new(const char *name, uint8_t sid);
+SPMISlave* spmi_slave_new(const char* name, uint8_t sid);
 
 /**
  * Create and realize an SPMI slave device on the heap.
@@ -100,8 +101,7 @@ SPMISlave *spmi_slave_new(const char *name, uint8_t sid);
  * Create the device state structure, initialize it, put it on the
  * specified @bus, and drop the reference to it (the device is realized).
  */
-SPMISlave *spmi_slave_create_simple(SPMIBus *bus, const char *name,
-                                    uint8_t sid);
+SPMISlave* spmi_slave_create_simple(SPMIBus* bus, const char* name, uint8_t sid);
 
 /**
  * Realize and drop a reference an SPMI slave device
@@ -131,4 +131,4 @@ SPMISlave *spmi_slave_create_simple(SPMIBus *bus, const char *name,
  * which doesn't currently exist but would be trivial to create if we
  * had any code that wanted it.)
  */
-bool spmi_slave_realize_and_unref(SPMISlave *dev, SPMIBus *bus, Error **errp);
+bool spmi_slave_realize_and_unref(SPMISlave* dev, SPMIBus* bus, Error** errp);

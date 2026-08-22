@@ -24,22 +24,19 @@
 
 typedef struct QCryptoIVGenDriver QCryptoIVGenDriver;
 
-struct QCryptoIVGenDriver {
-    int (*init)(QCryptoIVGen *ivgen,
-                const uint8_t *key, size_t nkey,
-                Error **errp);
-    int (*calculate)(QCryptoIVGen *ivgen,
-                     uint64_t sector,
-                     uint8_t *iv, size_t niv,
-                     Error **errp);
-    void (*cleanup)(QCryptoIVGen *ivgen);
+struct QCryptoIVGenDriver
+{
+    int  (*init)(QCryptoIVGen* ivgen, const uint8_t* key, size_t nkey, Error** errp);
+    int  (*calculate)(QCryptoIVGen* ivgen, uint64_t sector, uint8_t* iv, size_t niv, Error** errp);
+    void (*cleanup)(QCryptoIVGen* ivgen);
 };
 
-struct QCryptoIVGen {
-    QCryptoIVGenDriver *driver;
-    void *private;
+struct QCryptoIVGen
+{
+    QCryptoIVGenDriver* driver;
+    void* private;
 
-    QCryptoIVGenAlgo algorithm;
+    QCryptoIVGenAlgo  algorithm;
     QCryptoCipherAlgo cipher;
-    QCryptoHashAlgo hash;
+    QCryptoHashAlgo   hash;
 };

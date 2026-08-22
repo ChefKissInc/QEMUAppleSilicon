@@ -26,7 +26,8 @@
 
 /* timers state, for sharing between icount and cpu-timers */
 
-typedef struct TimersState {
+typedef struct TimersState
+{
     /* Protected by BQL.  */
     int64_t cpu_ticks_prev;
     int64_t cpu_ticks_offset;
@@ -36,7 +37,7 @@ typedef struct TimersState {
      * BQL, and written from multiple threads.
      */
     QemuSeqLock vm_clock_seqlock;
-    QemuSpin vm_clock_lock;
+    QemuSpin    vm_clock_lock;
 
     int16_t cpu_ticks_enabled;
 

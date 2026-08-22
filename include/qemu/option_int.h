@@ -28,24 +28,27 @@
 #include "qemu/option.h"
 #include "qemu/error-report.h"
 
-struct QemuOpt {
-    char *name;
-    char *str;
+struct QemuOpt
+{
+    char* name;
+    char* str;
 
-    const QemuOptDesc *desc;
-    union {
-        bool boolean;
+    const QemuOptDesc* desc;
+    union
+    {
+        bool     boolean;
         uint64_t uint;
     } value;
 
-    QemuOpts     *opts;
+    QemuOpts* opts;
     QTAILQ_ENTRY(QemuOpt) next;
 };
 
-struct QemuOpts {
-    char *id;
-    QemuOptsList *list;
-    Location loc;
+struct QemuOpts
+{
+    char*         id;
+    QemuOptsList* list;
+    Location      loc;
     QTAILQ_HEAD(, QemuOpt) head;
     QTAILQ_ENTRY(QemuOpts) next;
 };

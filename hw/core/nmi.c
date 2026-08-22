@@ -25,63 +25,51 @@
 #include "qemu/module.h"
 #include "monitor/monitor.h"
 
-struct do_nmi_s {
-    int cpu_index;
-    Error *err;
-    bool handled;
+struct do_nmi_s
+{
+    int    cpu_index;
+    Error* err;
+    bool   handled;
 };
 
-static void nmi_children(Object *o, struct do_nmi_s *ns);
+static void nmi_children(Object* o, struct do_nmi_s* ns);
 
-static int do_nmi(Object *o, void *opaque)
+static int do_nmi(Object* o, void* opaque)
 {
-    struct do_nmi_s *ns = opaque;
-    NMIState *n = (NMIState *) object_dynamic_cast(o, TYPE_NMI);
+    struct do_nmi_s* ns = opaque;
+    NMIState*        n  = (NMIState*)object_dynamic_cast(o, TYPE_NMI);
 
     if (n) {
-        NMIClass *nc = NMI_GET_CLASS(n);
+        NMIClass* nc = NMI_GET_CLASS(n);
 
         ns->handled = true;
         nc->nmi_monitor_handler(n, ns->cpu_index, &ns->err);
-        if (ns->err) {
-            return -1;
-        }
+        if (ns->err) { return -1; }
     }
     nmi_children(o, ns);
 
     return 0;
 }
 
-static void nmi_children(Object *o, struct do_nmi_s *ns)
-{
-    object_child_foreach(o, do_nmi, ns);
-}
+static void nmi_children(Object* o, struct do_nmi_s* ns) { object_child_foreach(o, do_nmi, ns); }
 
-void nmi_monitor_handle(int cpu_index, Error **errp)
+void nmi_monitor_handle(int cpu_index, Error** errp)
 {
-    struct do_nmi_s ns = {
-        .cpu_index = cpu_index,
-        .err = NULL,
-        .handled = false
-    };
+    struct do_nmi_s ns = {.cpu_index = cpu_index, .err = NULL, .handled = false};
 
     nmi_children(object_get_root(), &ns);
-    if (ns.handled) {
-        error_propagate(errp, ns.err);
-    } else {
+    if (ns.handled) { error_propagate(errp, ns.err); }
+    else {
         error_setg(errp, "machine does not provide NMIs");
     }
 }
 
 static const TypeInfo nmi_info = {
-    .name          = TYPE_NMI,
-    .parent        = TYPE_INTERFACE,
-    .class_size    = sizeof(NMIClass),
+    .name       = TYPE_NMI,
+    .parent     = TYPE_INTERFACE,
+    .class_size = sizeof(NMIClass),
 };
 
-static void nmi_register_types(void)
-{
-    type_register_static(&nmi_info);
-}
+static void nmi_register_types(void) { type_register_static(&nmi_info); }
 
 type_init(nmi_register_types)

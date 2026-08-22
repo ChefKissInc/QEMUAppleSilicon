@@ -18,34 +18,24 @@
 #ifndef _WIN32
 unsigned int check_socket_activation(void)
 {
-    const char *s;
+    const char*   s;
     unsigned long pid;
     unsigned long nr_fds;
-    unsigned int i;
-    int fd;
-    int f;
-    int err;
+    unsigned int  i;
+    int           fd;
+    int           f;
+    int           err;
 
     s = getenv("LISTEN_PID");
-    if (s == NULL) {
-        return 0;
-    }
+    if (s == NULL) { return 0; }
     err = qemu_strtoul(s, NULL, 10, &pid);
-    if (err) {
-        return 0;
-    }
-    if (pid != getpid()) {
-        return 0;
-    }
+    if (err) { return 0; }
+    if (pid != getpid()) { return 0; }
 
     s = getenv("LISTEN_FDS");
-    if (s == NULL) {
-        return 0;
-    }
+    if (s == NULL) { return 0; }
     err = qemu_strtoul(s, NULL, 10, &nr_fds);
-    if (err) {
-        return 0;
-    }
+    if (err) { return 0; }
     assert(nr_fds <= UINT_MAX);
 
     /* So these are not passed to any child processes we might start. */
@@ -56,7 +46,7 @@ unsigned int check_socket_activation(void)
     /* So the file descriptors don't leak into child processes. */
     for (i = 0; i < nr_fds; ++i) {
         fd = FIRST_SOCKET_ACTIVATION_FD + i;
-        f = fcntl(fd, F_GETFD);
+        f  = fcntl(fd, F_GETFD);
         if (f == -1 || fcntl(fd, F_SETFD, f | FD_CLOEXEC) == -1) {
             /* If we cannot set FD_CLOEXEC then it probably means the file
              * descriptor is invalid, so socket activation has gone wrong
@@ -69,12 +59,9 @@ unsigned int check_socket_activation(void)
         }
     }
 
-    return (unsigned int) nr_fds;
+    return (unsigned int)nr_fds;
 }
 
 #else /* !_WIN32 */
-unsigned int check_socket_activation(void)
-{
-    return 0;
-}
+unsigned int check_socket_activation(void) { return 0; }
 #endif

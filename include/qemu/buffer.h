@@ -30,12 +30,13 @@ typedef struct Buffer Buffer;
  * is typically useful when buffering I/O or processing data.
  */
 
-struct Buffer {
-    char *name;
-    size_t capacity;
-    size_t offset;
+struct Buffer
+{
+    char*    name;
+    size_t   capacity;
+    size_t   offset;
     uint64_t avg_size;
-    uint8_t *buffer;
+    uint8_t* buffer;
 };
 
 /**
@@ -46,8 +47,7 @@ struct Buffer {
  * Optionally attach a name to the buffer, to make it easier
  * to identify in debug traces.
  */
-void buffer_init(Buffer *buffer, const char *name, ...)
-        G_GNUC_PRINTF(2, 3);
+void buffer_init(Buffer* buffer, const char* name, ...) G_GNUC_PRINTF(2, 3);
 
 /**
  * buffer_shrink:
@@ -57,7 +57,7 @@ void buffer_init(Buffer *buffer, const char *name, ...)
  * and reduces capacity in case only a fraction of the buffer is
  * actually used.
  */
-void buffer_shrink(Buffer *buffer);
+void buffer_shrink(Buffer* buffer);
 
 /**
  * buffer_reserve:
@@ -68,7 +68,7 @@ void buffer_shrink(Buffer *buffer);
  * @len bytes. If the current buffer is too small, it will
  * be reallocated, possibly to a larger size than requested.
  */
-void buffer_reserve(Buffer *buffer, size_t len);
+void buffer_reserve(Buffer* buffer, size_t len);
 
 /**
  * buffer_reset:
@@ -77,7 +77,7 @@ void buffer_reserve(Buffer *buffer, size_t len);
  * Reset the length of the stored data to zero, but do
  * not free / reallocate the memory buffer
  */
-void buffer_reset(Buffer *buffer);
+void buffer_reset(Buffer* buffer);
 
 /**
  * buffer_free:
@@ -86,7 +86,7 @@ void buffer_reset(Buffer *buffer);
  * Reset the length of the stored data to zero and also
  * free the internal memory buffer
  */
-void buffer_free(Buffer *buffer);
+void buffer_free(Buffer* buffer);
 
 /**
  * buffer_append:
@@ -99,7 +99,7 @@ void buffer_free(Buffer *buffer);
  * free space for @len bytes, typically by calling the
  * buffer_reserve() method prior to appending.
  */
-void buffer_append(Buffer *buffer, const void *data, size_t len);
+void buffer_append(Buffer* buffer, const void* data, size_t len);
 
 /**
  * buffer_advance:
@@ -111,7 +111,7 @@ void buffer_append(Buffer *buffer, const void *data, size_t len);
  * have at least @len bytes of free space after this
  * call completes
  */
-void buffer_advance(Buffer *buffer, size_t len);
+void buffer_advance(Buffer* buffer, size_t len);
 
 /**
  * buffer_end:
@@ -123,7 +123,7 @@ void buffer_advance(Buffer *buffer, size_t len);
  *
  * Returns: the tail of the buffer
  */
-uint8_t *buffer_end(Buffer *buffer);
+uint8_t* buffer_end(Buffer* buffer);
 
 /**
  * buffer_empty:
@@ -133,7 +133,7 @@ uint8_t *buffer_end(Buffer *buffer);
  *
  * Returns: true if the buffer holds data, false otherwise
  */
-gboolean buffer_empty(Buffer *buffer);
+gboolean buffer_empty(Buffer* buffer);
 
 /**
  * buffer_move_empty:
@@ -143,7 +143,7 @@ gboolean buffer_empty(Buffer *buffer);
  * Moves buffer, without copying data.  'to' buffer must be empty.
  * 'from' buffer is empty and zero-sized on return.
  */
-void buffer_move_empty(Buffer *to, Buffer *from);
+void buffer_move_empty(Buffer* to, Buffer* from);
 
 /**
  * buffer_move:
@@ -153,4 +153,4 @@ void buffer_move_empty(Buffer *to, Buffer *from);
  * Moves buffer, copying data (unless 'to' buffer happens to be empty).
  * 'from' buffer is empty and zero-sized on return.
  */
-void buffer_move(Buffer *to, Buffer *from);
+void buffer_move(Buffer* to, Buffer* from);

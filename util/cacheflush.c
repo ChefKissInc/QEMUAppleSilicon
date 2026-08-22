@@ -12,7 +12,6 @@
 #include "qemu/host-utils.h"
 #include "qemu/atomic.h"
 
-
 int qemu_icache_linesize = 0;
 int qemu_icache_linesize_log;
 int qemu_dcache_linesize = 0;
@@ -24,12 +23,12 @@ int qemu_dcache_linesize_log;
 
 #if defined(_WIN32)
 
-static void sys_cache_info(int *isize, int *dsize)
+static void sys_cache_info(int* isize, int* dsize)
 {
-    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf;
-    DWORD size = 0;
-    BOOL success;
-    size_t i, n;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buf;
+    DWORD                                 size = 0;
+    BOOL                                  success;
+    size_t                                i, n;
 
     /*
      * Check for the required buffer size first.  Note that if the zero
@@ -37,81 +36,60 @@ static void sys_cache_info(int *isize, int *dsize)
      * data available; fail in that case.
      */
     success = GetLogicalProcessorInformation(0, &size);
-    if (success || GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-        return;
-    }
+    if (success || GetLastError() != ERROR_INSUFFICIENT_BUFFER) { return; }
 
-    n = size / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+    n    = size / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
     size = n * sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
-    buf = g_new0(SYSTEM_LOGICAL_PROCESSOR_INFORMATION, n);
-    if (!GetLogicalProcessorInformation(buf, &size)) {
-        goto fail;
-    }
+    buf  = g_new0(SYSTEM_LOGICAL_PROCESSOR_INFORMATION, n);
+    if (!GetLogicalProcessorInformation(buf, &size)) { goto fail; }
 
     for (i = 0; i < n; i++) {
-        if (buf[i].Relationship == RelationCache
-            && buf[i].Cache.Level == 1) {
+        if (buf[i].Relationship == RelationCache && buf[i].Cache.Level == 1) {
             switch (buf[i].Cache.Type) {
-            case CacheUnified:
-                *isize = *dsize = buf[i].Cache.LineSize;
-                break;
-            case CacheInstruction:
-                *isize = buf[i].Cache.LineSize;
-                break;
-            case CacheData:
-                *dsize = buf[i].Cache.LineSize;
-                break;
-            default:
-                break;
+                case CacheUnified    : *isize = *dsize = buf[i].Cache.LineSize; break;
+                case CacheInstruction: *isize = buf[i].Cache.LineSize; break;
+                case CacheData       : *dsize = buf[i].Cache.LineSize; break;
+                default              : break;
             }
         }
     }
- fail:
+fail:
     g_free(buf);
 }
 
 #elif defined(CONFIG_DARWIN)
-# include <sys/sysctl.h>
-static void sys_cache_info(int *isize, int *dsize)
+    #include <sys/sysctl.h>
+static void sys_cache_info(int* isize, int* dsize)
 {
     /* There's only a single sysctl for both I/D cache line sizes.  */
-    long size;
+    long   size;
     size_t len = sizeof(size);
-    if (!sysctlbyname("hw.cachelinesize", &size, &len, NULL, 0)) {
-        *isize = *dsize = size;
-    }
+    if (!sysctlbyname("hw.cachelinesize", &size, &len, NULL, 0)) { *isize = *dsize = size; }
 }
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-# include <sys/sysctl.h>
-static void sys_cache_info(int *isize, int *dsize)
+    #include <sys/sysctl.h>
+static void sys_cache_info(int* isize, int* dsize)
 {
     /* There's only a single sysctl for both I/D cache line sizes.  */
-    int size;
+    int    size;
     size_t len = sizeof(size);
-    if (!sysctlbyname("machdep.cacheline_size", &size, &len, NULL, 0)) {
-        *isize = *dsize = size;
-    }
+    if (!sysctlbyname("machdep.cacheline_size", &size, &len, NULL, 0)) { *isize = *dsize = size; }
 }
 #else
 /* POSIX */
 
-static void sys_cache_info(int *isize, int *dsize)
+static void sys_cache_info(int* isize, int* dsize)
 {
-# ifdef _SC_LEVEL1_ICACHE_LINESIZE
-    int tmp_isize = (int) sysconf(_SC_LEVEL1_ICACHE_LINESIZE);
-    if (tmp_isize > 0) {
-        *isize = tmp_isize;
-    }
-# endif
-# ifdef _SC_LEVEL1_DCACHE_LINESIZE
-    int tmp_dsize = (int) sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-    if (tmp_dsize > 0) {
-        *dsize = tmp_dsize;
-    }
-# endif
+    #ifdef _SC_LEVEL1_ICACHE_LINESIZE
+    int tmp_isize = (int)sysconf(_SC_LEVEL1_ICACHE_LINESIZE);
+    if (tmp_isize > 0) { *isize = tmp_isize; }
+    #endif
+    #ifdef _SC_LEVEL1_DCACHE_LINESIZE
+    int tmp_dsize = (int)sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+    if (tmp_dsize > 0) { *dsize = tmp_dsize; }
+    #endif
 }
 #endif /* sys_cache_info */
-
 
 /*
  * Architecture (+ OS) specific cache detection mechanisms.
@@ -128,7 +106,7 @@ static bool have_coherent_icache;
  * in this case.
  */
 static uint64_t save_ctr_el0;
-static void arch_cache_info(int *isize, int *dsize)
+static void     arch_cache_info(int* isize, int* dsize)
 {
     uint64_t ctr;
 
@@ -144,49 +122,42 @@ static void arch_cache_info(int *isize, int *dsize)
     save_ctr_el0 = ctr;
 
     if (*isize == 0 || *dsize == 0) {
-        if (*isize == 0) {
-            *isize = 4 << (ctr & 0xf);
-        }
-        if (*dsize == 0) {
-            *dsize = 4 << ((ctr >> 16) & 0xf);
-        }
+        if (*isize == 0) { *isize = 4 << (ctr & 0xf); }
+        if (*dsize == 0) { *dsize = 4 << ((ctr >> 16) & 0xf); }
     }
 }
 
 #elif defined(_ARCH_PPC) && defined(__linux__)
-# include "elf.h"
+    #include "elf.h"
 
-static void arch_cache_info(int *isize, int *dsize)
+static void arch_cache_info(int* isize, int* dsize)
 {
-    if (*isize == 0) {
-        *isize = qemu_getauxval(AT_ICACHEBSIZE);
-    }
-    if (*dsize == 0) {
-        *dsize = qemu_getauxval(AT_DCACHEBSIZE);
-    }
+    if (*isize == 0) { *isize = qemu_getauxval(AT_ICACHEBSIZE); }
+    if (*dsize == 0) { *dsize = qemu_getauxval(AT_DCACHEBSIZE); }
     have_coherent_icache = qemu_getauxval(AT_HWCAP) & PPC_FEATURE_ICACHE_SNOOP;
 }
 
 #else
-static void arch_cache_info(int *isize, int *dsize) { }
+static void arch_cache_info(int* isize, int* dsize) { }
 #endif /* arch_cache_info */
 
 /*
  * ... and if all else fails ...
  */
 
-static void fallback_cache_info(int *isize, int *dsize)
+static void fallback_cache_info(int* isize, int* dsize)
 {
     /* If we can only find one of the two, assume they're the same.  */
     if (*isize) {
-        if (*dsize) {
-            /* Success! */
-        } else {
+        if (*dsize) { /* Success! */ }
+        else {
             *dsize = *isize;
         }
-    } else if (*dsize) {
+    }
+    else if (*dsize) {
         *isize = *dsize;
-    } else {
+    }
+    else {
 #if defined(_ARCH_PPC)
         /*
          * For PPC, we're going to use the cache sizes computed for
@@ -212,14 +183,13 @@ static void __attribute__((constructor)) init_cache_info(void)
     assert((isize & (isize - 1)) == 0);
     assert((dsize & (dsize - 1)) == 0);
 
-    qemu_icache_linesize = isize;
+    qemu_icache_linesize     = isize;
     qemu_icache_linesize_log = ctz32(isize);
-    qemu_dcache_linesize = dsize;
+    qemu_dcache_linesize     = dsize;
     qemu_dcache_linesize_log = ctz32(dsize);
 
     qatomic64_init();
 }
-
 
 /*
  * Architecture (+ OS) specific cache flushing mechanisms.
@@ -239,9 +209,9 @@ static void __attribute__((constructor)) init_cache_info(void)
  * performs a call to FlushInstructionCache, through __builtin___clear_cache.
  */
 
-#ifdef CONFIG_DARWIN
-/* Apple does not expose CTR_EL0, so we must use system interfaces. */
-#include <libkern/OSCacheControl.h>
+    #ifdef CONFIG_DARWIN
+        /* Apple does not expose CTR_EL0, so we must use system interfaces. */
+        #include <libkern/OSCacheControl.h>
 
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
@@ -250,12 +220,13 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
          * sys_icache_invalidate() syncs the dcache and icache,
          * so no need to call sys_dcache_flush().
          */
-    } else {
-        sys_dcache_flush((void *)rw, len);
     }
-    sys_icache_invalidate((void *)rx, len);
+    else {
+        sys_dcache_flush((void*)rw, len);
+    }
+    sys_icache_invalidate((void*)rx, len);
 }
-#else
+    #else
 
 /*
  * This is a copy of gcc's __aarch64_sync_cache_range, modified
@@ -263,12 +234,12 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
  */
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
-    const unsigned CTR_IDC = 1u << 28;
-    const unsigned CTR_DIC = 1u << 29;
-    const uint64_t ctr_el0 = save_ctr_el0;
+    const unsigned  CTR_IDC      = 1u << 28;
+    const unsigned  CTR_DIC      = 1u << 29;
+    const uint64_t  ctr_el0      = save_ctr_el0;
     const uintptr_t icache_lsize = qemu_icache_linesize;
     const uintptr_t dcache_lsize = qemu_dcache_linesize;
-    uintptr_t p;
+    uintptr_t       p;
 
     /*
      * If CTR_EL0.IDC is enabled, Data cache clean to the Point of Unification
@@ -281,7 +252,7 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
          * the instruction cache fetches the updated data.
          */
         for (p = rw & -dcache_lsize; p < rw + len; p += dcache_lsize) {
-            asm volatile("dc\tcvau, %0" : : "r" (p) : "memory");
+            asm volatile("dc\tcvau, %0" : : "r"(p) : "memory");
         }
     }
 
@@ -296,27 +267,25 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
         for (p = rx & -icache_lsize; p < rx + len; p += icache_lsize) {
             asm volatile("ic\tivau, %0" : : "r"(p) : "memory");
         }
-        asm volatile ("dsb\tish" : : : "memory");
+        asm volatile("dsb\tish" : : : "memory");
     }
 
     asm volatile("isb" : : : "memory");
 }
-#endif /* CONFIG_DARWIN */
+    #endif /* CONFIG_DARWIN */
 
 #elif defined(__mips__)
 
-#ifdef __OpenBSD__
-#include <machine/sysarch.h>
-#else
-#include <sys/cachectl.h>
-#endif
+    #ifdef __OpenBSD__
+        #include <machine/sysarch.h>
+    #else
+        #include <sys/cachectl.h>
+    #endif
 
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
-    if (rx != rw) {
-        cacheflush((void *)rw, len, DCACHE);
-    }
-    cacheflush((void *)rx, len, ICACHE);
+    if (rx != rw) { cacheflush((void*)rw, len, DCACHE); }
+    cacheflush((void*)rx, len, ICACHE);
 }
 
 #elif defined(__powerpc__)
@@ -324,19 +293,21 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
     uintptr_t p, b, e;
-    size_t dsize, isize;
+    size_t    dsize, isize;
 
     /*
      * Some processors have coherent caches and support a simplified
      * flushing procedure.  See
-     *   POWER9 UM, 4.6.2.2 Instruction Cache Block Invalidate (icbi) 
+     *   POWER9 UM, 4.6.2.2 Instruction Cache Block Invalidate (icbi)
      *   https://ibm.ent.box.com/s/tmklq90ze7aj8f4n32er1mu3sy9u8k3k
      */
     if (have_coherent_icache) {
-        asm volatile ("sync\n\t"
-                      "icbi 0,%0\n\t"
-                      "isync"
-                      : : "r"(rx) : "memory");
+        asm volatile("sync\n\t"
+                     "icbi 0,%0\n\t"
+                     "isync"
+                     :
+                     : "r"(rx)
+                     : "memory");
         return;
     }
 
@@ -345,18 +316,14 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 
     b = rw & ~(dsize - 1);
     e = (rw + len + dsize - 1) & ~(dsize - 1);
-    for (p = b; p < e; p += dsize) {
-        asm volatile ("dcbst 0,%0" : : "r"(p) : "memory");
-    }
-    asm volatile ("sync" : : : "memory");
+    for (p = b; p < e; p += dsize) { asm volatile("dcbst 0,%0" : : "r"(p) : "memory"); }
+    asm volatile("sync" : : : "memory");
 
     b = rx & ~(isize - 1);
     e = (rx + len + isize - 1) & ~(isize - 1);
-    for (p = b; p < e; p += isize) {
-        asm volatile ("icbi 0,%0" : : "r"(p) : "memory");
-    }
-    asm volatile ("sync" : : : "memory");
-    asm volatile ("isync" : : : "memory");
+    for (p = b; p < e; p += isize) { asm volatile("icbi 0,%0" : : "r"(p) : "memory"); }
+    asm volatile("sync" : : : "memory");
+    asm volatile("isync" : : : "memory");
 }
 
 #elif defined(__sparc__)
@@ -365,19 +332,15 @@ void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
     /* No additional data flush to the RW virtual address required. */
     uintptr_t p, end = (rx + len + 7) & -8;
-    for (p = rx & -8; p < end; p += 8) {
-        __asm__ __volatile__("flush\t%0" : : "r" (p));
-    }
+    for (p = rx & -8; p < end; p += 8) { __asm__ __volatile__("flush\t%0" : : "r"(p)); }
 }
 
 #else
 
 void flush_idcache_range(uintptr_t rx, uintptr_t rw, size_t len)
 {
-    if (rw != rx) {
-        __builtin___clear_cache((char *)rw, (char *)rw + len);
-    }
-    __builtin___clear_cache((char *)rx, (char *)rx + len);
+    if (rw != rx) { __builtin___clear_cache((char*)rw, (char*)rw + len); }
+    __builtin___clear_cache((char*)rx, (char*)rx + len);
 }
 
 #endif

@@ -31,13 +31,13 @@
 #define TYPE_KVM_ARM_GIC "kvm-arm-gic"
 typedef struct KVMARMGICClass KVMARMGICClass;
 /* This is reusing the GICState typedef from ARM_GIC_COMMON */
-DECLARE_OBJ_CHECKERS(GICState, KVMARMGICClass,
-                     KVM_ARM_GIC, TYPE_KVM_ARM_GIC)
+DECLARE_OBJ_CHECKERS(GICState, KVMARMGICClass, KVM_ARM_GIC, TYPE_KVM_ARM_GIC)
 
-struct KVMARMGICClass {
+struct KVMARMGICClass
+{
     ARMGICCommonClass parent_class;
-    DeviceRealize parent_realize;
-    ResettablePhases parent_phases;
+    DeviceRealize     parent_realize;
+    ResettablePhases  parent_phases;
 };
 
 void kvm_arm_gic_set_irq(uint32_t num_irq, int irq, int level)
@@ -58,111 +58,86 @@ void kvm_arm_gic_set_irq(uint32_t num_irq, int irq, int level)
          * hardware, with external interrupt IDs starting after the
          * internal ones.
          */
-        irqtype = KVM_ARM_IRQ_TYPE_SPI;
-        cpu = 0;
-        irq += GIC_INTERNAL;
-    } else {
+        irqtype  = KVM_ARM_IRQ_TYPE_SPI;
+        cpu      = 0;
+        irq     += GIC_INTERNAL;
+    }
+    else {
         /* Internal interrupt: decode into (cpu, interrupt id) */
-        irqtype = KVM_ARM_IRQ_TYPE_PPI;
-        irq -= (num_irq - GIC_INTERNAL);
-        cpu = irq / GIC_INTERNAL;
-        irq %= GIC_INTERNAL;
+        irqtype  = KVM_ARM_IRQ_TYPE_PPI;
+        irq     -= (num_irq - GIC_INTERNAL);
+        cpu      = irq / GIC_INTERNAL;
+        irq     %= GIC_INTERNAL;
     }
     kvm_arm_set_irq(cpu, irqtype, irq, !!level);
 }
 
-static void kvm_arm_gicv2_set_irq(void *opaque, int irq, int level)
+static void kvm_arm_gicv2_set_irq(void* opaque, int irq, int level)
 {
-    GICState *s = (GICState *)opaque;
+    GICState* s = (GICState*)opaque;
 
     kvm_arm_gic_set_irq(s->num_irq, irq, level);
 }
 
-static bool kvm_arm_gic_can_save_restore(GICState *s)
-{
-    return s->dev_fd >= 0;
-}
+static bool kvm_arm_gic_can_save_restore(GICState* s) { return s->dev_fd >= 0; }
 
-#define KVM_VGIC_ATTR(offset, cpu) \
-    ((((uint64_t)(cpu) << KVM_DEV_ARM_VGIC_CPUID_SHIFT) & \
-      KVM_DEV_ARM_VGIC_CPUID_MASK) | \
-     (((uint64_t)(offset) << KVM_DEV_ARM_VGIC_OFFSET_SHIFT) & \
-      KVM_DEV_ARM_VGIC_OFFSET_MASK))
+#define KVM_VGIC_ATTR(offset, cpu)                                                             \
+    ((((uint64_t)(cpu) << KVM_DEV_ARM_VGIC_CPUID_SHIFT) & KVM_DEV_ARM_VGIC_CPUID_MASK)         \
+     | (((uint64_t)(offset) << KVM_DEV_ARM_VGIC_OFFSET_SHIFT) & KVM_DEV_ARM_VGIC_OFFSET_MASK))
 
-static void kvm_gicd_access(GICState *s, int offset, int cpu,
-                            uint32_t *val, bool write)
-{
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_DIST_REGS,
-                      KVM_VGIC_ATTR(offset, cpu), val, write, &error_abort);
-}
+static void kvm_gicd_access(GICState* s, int offset, int cpu, uint32_t* val, bool write)
+{ kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_DIST_REGS, KVM_VGIC_ATTR(offset, cpu), val, write, &error_abort); }
 
-static void kvm_gicc_access(GICState *s, int offset, int cpu,
-                            uint32_t *val, bool write)
-{
-    kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CPU_REGS,
-                      KVM_VGIC_ATTR(offset, cpu), val, write, &error_abort);
-}
+static void kvm_gicc_access(GICState* s, int offset, int cpu, uint32_t* val, bool write)
+{ kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CPU_REGS, KVM_VGIC_ATTR(offset, cpu), val, write, &error_abort); }
 
-#define for_each_irq_reg(_ctr, _max_irq, _field_width) \
+#define for_each_irq_reg(_ctr, _max_irq, _field_width)                  \
     for (_ctr = 0; _ctr < ((_max_irq) / (32 / (_field_width))); _ctr++)
 
 /*
  * Translate from the in-kernel field for an IRQ value to/from the qemu
  * representation.
  */
-typedef void (*vgic_translate_fn)(GICState *s, int irq, int cpu,
-                                  uint32_t *field, bool to_kernel);
+typedef void (*vgic_translate_fn)(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel);
 
 /* synthetic translate function used for clear/set registers to completely
  * clear a setting using a clear-register before setting the remaining bits
  * using a set-register */
-static void translate_clear(GICState *s, int irq, int cpu,
-                            uint32_t *field, bool to_kernel)
+static void translate_clear(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
-    if (to_kernel) {
-        *field = ~0;
-    } else {
+    if (to_kernel) { *field = ~0; }
+    else {
         /* does not make sense: qemu model doesn't use set/clear regs */
         abort();
     }
 }
 
-static void translate_group(GICState *s, int irq, int cpu,
-                            uint32_t *field, bool to_kernel)
+static void translate_group(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
     int cm = (irq < GIC_INTERNAL) ? (1 << cpu) : ALL_CPU_MASK;
 
-    if (to_kernel) {
-        *field = GIC_DIST_TEST_GROUP(irq, cm);
-    } else {
-        if (*field & 1) {
-            GIC_DIST_SET_GROUP(irq, cm);
-        }
+    if (to_kernel) { *field = GIC_DIST_TEST_GROUP(irq, cm); }
+    else {
+        if (*field & 1) { GIC_DIST_SET_GROUP(irq, cm); }
     }
 }
 
-static void translate_enabled(GICState *s, int irq, int cpu,
-                              uint32_t *field, bool to_kernel)
+static void translate_enabled(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
     int cm = (irq < GIC_INTERNAL) ? (1 << cpu) : ALL_CPU_MASK;
 
-    if (to_kernel) {
-        *field = GIC_DIST_TEST_ENABLED(irq, cm);
-    } else {
-        if (*field & 1) {
-            GIC_DIST_SET_ENABLED(irq, cm);
-        }
+    if (to_kernel) { *field = GIC_DIST_TEST_ENABLED(irq, cm); }
+    else {
+        if (*field & 1) { GIC_DIST_SET_ENABLED(irq, cm); }
     }
 }
 
-static void translate_pending(GICState *s, int irq, int cpu,
-                              uint32_t *field, bool to_kernel)
+static void translate_pending(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
     int cm = (irq < GIC_INTERNAL) ? (1 << cpu) : ALL_CPU_MASK;
 
-    if (to_kernel) {
-        *field = gic_test_pending(s, irq, cm);
-    } else {
+    if (to_kernel) { *field = gic_test_pending(s, irq, cm); }
+    else {
         if (*field & 1) {
             GIC_DIST_SET_PENDING(irq, cm);
             /* TODO: Capture is level-line is held high in the kernel */
@@ -170,76 +145,61 @@ static void translate_pending(GICState *s, int irq, int cpu,
     }
 }
 
-static void translate_active(GICState *s, int irq, int cpu,
-                             uint32_t *field, bool to_kernel)
+static void translate_active(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
     int cm = (irq < GIC_INTERNAL) ? (1 << cpu) : ALL_CPU_MASK;
 
-    if (to_kernel) {
-        *field = GIC_DIST_TEST_ACTIVE(irq, cm);
-    } else {
-        if (*field & 1) {
-            GIC_DIST_SET_ACTIVE(irq, cm);
-        }
+    if (to_kernel) { *field = GIC_DIST_TEST_ACTIVE(irq, cm); }
+    else {
+        if (*field & 1) { GIC_DIST_SET_ACTIVE(irq, cm); }
     }
 }
 
-static void translate_trigger(GICState *s, int irq, int cpu,
-                              uint32_t *field, bool to_kernel)
+static void translate_trigger(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
-    if (to_kernel) {
-        *field = (GIC_DIST_TEST_EDGE_TRIGGER(irq)) ? 0x2 : 0x0;
-    } else {
-        if (*field & 0x2) {
-            GIC_DIST_SET_EDGE_TRIGGER(irq);
-        }
+    if (to_kernel) { *field = (GIC_DIST_TEST_EDGE_TRIGGER(irq)) ? 0x2 : 0x0; }
+    else {
+        if (*field & 0x2) { GIC_DIST_SET_EDGE_TRIGGER(irq); }
     }
 }
 
-static void translate_priority(GICState *s, int irq, int cpu,
-                               uint32_t *field, bool to_kernel)
+static void translate_priority(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
-    if (to_kernel) {
-        *field = GIC_DIST_GET_PRIORITY(irq, cpu) & 0xff;
-    } else {
-        gic_dist_set_priority(s, cpu, irq,
-                              *field & 0xff, MEMTXATTRS_UNSPECIFIED);
+    if (to_kernel) { *field = GIC_DIST_GET_PRIORITY(irq, cpu) & 0xff; }
+    else {
+        gic_dist_set_priority(s, cpu, irq, *field & 0xff, MEMTXATTRS_UNSPECIFIED);
     }
 }
 
-static void translate_targets(GICState *s, int irq, int cpu,
-                              uint32_t *field, bool to_kernel)
+static void translate_targets(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
-    if (to_kernel) {
-        *field = s->irq_target[irq] & 0xff;
-    } else {
+    if (to_kernel) { *field = s->irq_target[irq] & 0xff; }
+    else {
         s->irq_target[irq] = *field & 0xff;
     }
 }
 
-static void translate_sgisource(GICState *s, int irq, int cpu,
-                                uint32_t *field, bool to_kernel)
+static void translate_sgisource(GICState* s, int irq, int cpu, uint32_t* field, bool to_kernel)
 {
-    if (to_kernel) {
-        *field = s->sgi_pending[irq][cpu] & 0xff;
-    } else {
+    if (to_kernel) { *field = s->sgi_pending[irq][cpu] & 0xff; }
+    else {
         s->sgi_pending[irq][cpu] = *field & 0xff;
     }
 }
 
 /* Read a register group from the kernel VGIC */
-static void kvm_dist_get(GICState *s, uint32_t offset, int width,
-                         int maxirq, vgic_translate_fn translate_fn)
+static void kvm_dist_get(GICState* s, uint32_t offset, int width, int maxirq, vgic_translate_fn translate_fn)
 {
     uint32_t reg;
-    int i;
-    int j;
-    int irq;
-    int cpu;
-    int regsz = 32 / width; /* irqs per kernel register */
+    int      i;
+    int      j;
+    int      irq;
+    int      cpu;
+    int      regsz = 32 / width; /* irqs per kernel register */
     uint32_t field;
 
-    for_each_irq_reg(i, maxirq, width) {
+    for_each_irq_reg(i, maxirq, width)
+    {
         irq = i * regsz;
         cpu = 0;
         while ((cpu < s->num_cpu && irq < GIC_INTERNAL) || cpu == 0) {
@@ -256,18 +216,18 @@ static void kvm_dist_get(GICState *s, uint32_t offset, int width,
 }
 
 /* Write a register group to the kernel VGIC */
-static void kvm_dist_put(GICState *s, uint32_t offset, int width,
-                         int maxirq, vgic_translate_fn translate_fn)
+static void kvm_dist_put(GICState* s, uint32_t offset, int width, int maxirq, vgic_translate_fn translate_fn)
 {
     uint32_t reg;
-    int i;
-    int j;
-    int irq;
-    int cpu;
-    int regsz = 32 / width; /* irqs per kernel register */
+    int      i;
+    int      j;
+    int      irq;
+    int      cpu;
+    int      regsz = 32 / width; /* irqs per kernel register */
     uint32_t field;
 
-    for_each_irq_reg(i, maxirq, width) {
+    for_each_irq_reg(i, maxirq, width)
+    {
         irq = i * regsz;
         cpu = 0;
         while ((cpu < s->num_cpu && irq < GIC_INTERNAL) || cpu == 0) {
@@ -284,13 +244,13 @@ static void kvm_dist_put(GICState *s, uint32_t offset, int width,
     }
 }
 
-static void kvm_arm_gic_put(GICState *s)
+static void kvm_arm_gic_put(GICState* s)
 {
     uint32_t reg;
-    int i;
-    int cpu;
-    int num_cpu;
-    int num_irq;
+    int      i;
+    int      cpu;
+    int      num_cpu;
+    int      num_irq;
 
     /* Note: We do the restore in a slightly different order than the save
      * (where the order doesn't matter and is simply ordered according to the
@@ -310,14 +270,13 @@ static void kvm_arm_gic_put(GICState *s)
     num_cpu = ((reg & 0xe0) >> 5) + 1;
 
     if (num_irq < s->num_irq) {
-            fprintf(stderr, "Restoring %u IRQs, but kernel supports max %d\n",
-                    s->num_irq, num_irq);
-            abort();
-    } else if (num_cpu != s->num_cpu) {
-            fprintf(stderr, "Restoring %u CPU interfaces, kernel only has %d\n",
-                    s->num_cpu, num_cpu);
-            /* Did we not create the VCPUs in the kernel yet? */
-            abort();
+        fprintf(stderr, "Restoring %u IRQs, but kernel supports max %d\n", s->num_irq, num_irq);
+        abort();
+    }
+    else if (num_cpu != s->num_cpu) {
+        fprintf(stderr, "Restoring %u CPU interfaces, kernel only has %d\n", s->num_cpu, num_cpu);
+        /* Did we not create the VCPUs in the kernel yet? */
+        abort();
     }
 
     /* TODO: Consider checking compatibility with the IIDR ? */
@@ -347,14 +306,12 @@ static void kvm_arm_gic_put(GICState *s)
     kvm_dist_put(s, 0x380, 1, s->num_irq, translate_clear);
     kvm_dist_put(s, 0x300, 1, s->num_irq, translate_active);
 
-
     /* s->priorityX[irq] -> ICD_IPRIORITYRn */
     kvm_dist_put(s, 0x400, 8, s->num_irq, translate_priority);
 
     /* s->sgi_pending -> ICD_CPENDSGIRn */
     kvm_dist_put(s, 0xf10, 8, GIC_NR_SGIS, translate_clear);
     kvm_dist_put(s, 0xf20, 8, GIC_NR_SGIS, translate_sgisource);
-
 
     /*****************************************************************
      * CPU Interface(s) State
@@ -385,11 +342,11 @@ static void kvm_arm_gic_put(GICState *s)
     }
 }
 
-static void kvm_arm_gic_get(GICState *s)
+static void kvm_arm_gic_get(GICState* s)
 {
     uint32_t reg;
-    int i;
-    int cpu;
+    int      i;
+    int      cpu;
 
     /*****************************************************************
      * Distributor State
@@ -405,18 +362,15 @@ static void kvm_arm_gic_get(GICState *s)
     s->num_cpu = ((reg & 0xe0) >> 5) + 1;
 
     if (s->num_irq > GIC_MAXIRQ) {
-            fprintf(stderr, "Too many IRQs reported from the kernel: %d\n",
-                    s->num_irq);
-            abort();
+        fprintf(stderr, "Too many IRQs reported from the kernel: %d\n", s->num_irq);
+        abort();
     }
 
     /* GICD_IIDR -> ? */
     kvm_gicd_access(s, 0x8, 0, &reg, false);
 
     /* Clear all the IRQ settings */
-    for (i = 0; i < s->num_irq; i++) {
-        memset(&s->irq_state[i], 0, sizeof(s->irq_state[0]));
-    }
+    for (i = 0; i < s->num_irq; i++) { memset(&s->irq_state[i], 0, sizeof(s->irq_state[0])); }
 
     /* GICD_IGROUPRn -> irq_state[n].group */
     kvm_dist_get(s, 0x80, 1, s->num_irq, translate_group);
@@ -441,7 +395,6 @@ static void kvm_arm_gic_get(GICState *s)
 
     /* GICD_CPENDSGIRn -> s->sgi_pending */
     kvm_dist_get(s, 0xf10, 8, GIC_NR_SGIS, translate_sgisource);
-
 
     /*****************************************************************
      * CPU Interface(s) State
@@ -472,27 +425,23 @@ static void kvm_arm_gic_get(GICState *s)
     }
 }
 
-static void kvm_arm_gic_reset_hold(Object *obj, ResetType type)
+static void kvm_arm_gic_reset_hold(Object* obj, ResetType type)
 {
-    GICState *s = ARM_GIC_COMMON(obj);
-    KVMARMGICClass *kgc = KVM_ARM_GIC_GET_CLASS(s);
+    GICState*       s   = ARM_GIC_COMMON(obj);
+    KVMARMGICClass* kgc = KVM_ARM_GIC_GET_CLASS(s);
 
-    if (kgc->parent_phases.hold) {
-        kgc->parent_phases.hold(obj, type);
-    }
+    if (kgc->parent_phases.hold) { kgc->parent_phases.hold(obj, type); }
 
-    if (kvm_arm_gic_can_save_restore(s)) {
-        kvm_arm_gic_put(s);
-    }
+    if (kvm_arm_gic_can_save_restore(s)) { kvm_arm_gic_put(s); }
 }
 
-static void kvm_arm_gic_realize(DeviceState *dev, Error **errp)
+static void kvm_arm_gic_realize(DeviceState* dev, Error** errp)
 {
-    int i;
-    GICState *s = KVM_ARM_GIC(dev);
-    KVMARMGICClass *kgc = KVM_ARM_GIC_GET_CLASS(s);
-    Error *local_err = NULL;
-    int ret;
+    int             i;
+    GICState*       s         = KVM_ARM_GIC(dev);
+    KVMARMGICClass* kgc       = KVM_ARM_GIC_GET_CLASS(s);
+    Error*          local_err = NULL;
+    int             ret;
 
     kgc->parent_realize(dev, &local_err);
     if (local_err) {
@@ -502,13 +451,13 @@ static void kvm_arm_gic_realize(DeviceState *dev, Error **errp)
 
     if (s->security_extn) {
         error_setg(errp, "the in-kernel VGIC does not implement the "
-                   "security extensions");
+                         "security extensions");
         return;
     }
 
     if (s->virt_extn) {
         error_setg(errp, "the in-kernel VGIC does not implement the "
-                   "virtualization extensions");
+                         "virtualization extensions");
         return;
     }
 
@@ -521,53 +470,41 @@ static void kvm_arm_gic_realize(DeviceState *dev, Error **errp)
 
     /* Try to create the device via the device control API */
     s->dev_fd = -1;
-    ret = kvm_create_device(kvm_state, KVM_DEV_TYPE_ARM_VGIC_V2, false);
+    ret       = kvm_create_device(kvm_state, KVM_DEV_TYPE_ARM_VGIC_V2, false);
     if (ret >= 0) {
         s->dev_fd = ret;
 
         /* Newstyle API is used, we may have attributes */
         if (kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_NR_IRQS, 0)) {
             uint32_t numirqs = s->num_irq;
-            kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_NR_IRQS, 0,
-                              &numirqs, true, &error_abort);
+            kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_NR_IRQS, 0, &numirqs, true, &error_abort);
         }
         /* Tell the kernel to complete VGIC initialization now */
-        if (kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
-                                  KVM_DEV_ARM_VGIC_CTRL_INIT)) {
-            kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL,
-                              KVM_DEV_ARM_VGIC_CTRL_INIT, NULL, true,
+        if (kvm_device_check_attr(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL, KVM_DEV_ARM_VGIC_CTRL_INIT)) {
+            kvm_device_access(s->dev_fd, KVM_DEV_ARM_VGIC_GRP_CTRL, KVM_DEV_ARM_VGIC_CTRL_INIT, NULL, true,
                               &error_abort);
         }
-    } else {
+    }
+    else {
         error_setg_errno(errp, -ret, "error creating in-kernel VGIC");
-        error_append_hint(errp,
-                          "Perhaps the host CPU does not support GICv2?\n");
+        error_append_hint(errp, "Perhaps the host CPU does not support GICv2?\n");
         return;
     }
 
     /* Distributor */
-    kvm_arm_register_device(&s->iomem,
-                            (KVM_ARM_DEVICE_VGIC_V2 << KVM_ARM_DEVICE_ID_SHIFT)
-                            | KVM_VGIC_V2_ADDR_TYPE_DIST,
-                            KVM_DEV_ARM_VGIC_GRP_ADDR,
-                            KVM_VGIC_V2_ADDR_TYPE_DIST,
-                            s->dev_fd, 0);
+    kvm_arm_register_device(&s->iomem, (KVM_ARM_DEVICE_VGIC_V2 << KVM_ARM_DEVICE_ID_SHIFT) | KVM_VGIC_V2_ADDR_TYPE_DIST,
+                            KVM_DEV_ARM_VGIC_GRP_ADDR, KVM_VGIC_V2_ADDR_TYPE_DIST, s->dev_fd, 0);
     /* CPU interface for current core. Unlike arm_gic, we don't
      * provide the "interface for core #N" memory regions, because
      * cores with a VGIC don't have those.
      */
     kvm_arm_register_device(&s->cpuiomem[0],
-                            (KVM_ARM_DEVICE_VGIC_V2 << KVM_ARM_DEVICE_ID_SHIFT)
-                            | KVM_VGIC_V2_ADDR_TYPE_CPU,
-                            KVM_DEV_ARM_VGIC_GRP_ADDR,
-                            KVM_VGIC_V2_ADDR_TYPE_CPU,
-                            s->dev_fd, 0);
+                            (KVM_ARM_DEVICE_VGIC_V2 << KVM_ARM_DEVICE_ID_SHIFT) | KVM_VGIC_V2_ADDR_TYPE_CPU,
+                            KVM_DEV_ARM_VGIC_GRP_ADDR, KVM_VGIC_V2_ADDR_TYPE_CPU, s->dev_fd, 0);
 
     if (kvm_has_gsi_routing()) {
         /* set up irq routing */
-        for (i = 0; i < s->num_irq - GIC_INTERNAL; ++i) {
-            kvm_irqchip_add_irq_route(kvm_state, i, 0, i);
-        }
+        for (i = 0; i < s->num_irq - GIC_INTERNAL; ++i) { kvm_irqchip_add_irq_route(kvm_state, i, 0, i); }
 
         kvm_gsi_routing_allowed = true;
 
@@ -575,30 +512,25 @@ static void kvm_arm_gic_realize(DeviceState *dev, Error **errp)
     }
 }
 
-static void kvm_arm_gic_class_init(ObjectClass *klass, const void *data)
+static void kvm_arm_gic_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
-    ResettableClass *rc = RESETTABLE_CLASS(klass);
-    ARMGICCommonClass *agcc = ARM_GIC_COMMON_CLASS(klass);
-    KVMARMGICClass *kgc = KVM_ARM_GIC_CLASS(klass);
+    DeviceClass*       dc   = DEVICE_CLASS(klass);
+    ResettableClass*   rc   = RESETTABLE_CLASS(klass);
+    ARMGICCommonClass* agcc = ARM_GIC_COMMON_CLASS(klass);
+    KVMARMGICClass*    kgc  = KVM_ARM_GIC_CLASS(klass);
 
-    device_class_set_parent_realize(dc, kvm_arm_gic_realize,
-                                    &kgc->parent_realize);
-    resettable_class_set_parent_phases(rc, NULL, kvm_arm_gic_reset_hold, NULL,
-                                       &kgc->parent_phases);
+    device_class_set_parent_realize(dc, kvm_arm_gic_realize, &kgc->parent_realize);
+    resettable_class_set_parent_phases(rc, NULL, kvm_arm_gic_reset_hold, NULL, &kgc->parent_phases);
 }
 
 static const TypeInfo kvm_arm_gic_info = {
-    .name = TYPE_KVM_ARM_GIC,
-    .parent = TYPE_ARM_GIC_COMMON,
+    .name          = TYPE_KVM_ARM_GIC,
+    .parent        = TYPE_ARM_GIC_COMMON,
     .instance_size = sizeof(GICState),
-    .class_init = kvm_arm_gic_class_init,
-    .class_size = sizeof(KVMARMGICClass),
+    .class_init    = kvm_arm_gic_class_init,
+    .class_size    = sizeof(KVMARMGICClass),
 };
 
-static void kvm_arm_gic_register_types(void)
-{
-    type_register_static(&kvm_arm_gic_info);
-}
+static void kvm_arm_gic_register_types(void) { type_register_static(&kvm_arm_gic_info); }
 
 type_init(kvm_arm_gic_register_types)

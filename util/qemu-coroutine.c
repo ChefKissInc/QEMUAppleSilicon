@@ -21,7 +21,8 @@
 #include "qemu/cutils.h"
 #include "block/aio.h"
 
-enum {
+enum
+{
     COROUTINE_POOL_BATCH_MAX_SIZE = 128,
 };
 
@@ -45,7 +46,8 @@ enum {
  * | Batch 1 | Batch 2 | per-thread local_pool (maximum 2 batches)
  * `-------------------'
  */
-typedef struct CoroutinePoolBatch {
+typedef struct CoroutinePoolBatch
+{
     /* Batches are kept in a list */
     QSLIST_ENTRY(CoroutinePoolBatch) next;
 
@@ -59,42 +61,42 @@ typedef QSLIST_HEAD(, CoroutinePoolBatch) CoroutinePool;
 /* Host operating system limit on number of pooled coroutines */
 static unsigned int global_pool_hard_max_size;
 
-static QemuMutex global_pool_lock; /* protects the following variables */
+static QemuMutex     global_pool_lock; /* protects the following variables */
 static CoroutinePool global_pool = QSLIST_HEAD_INITIALIZER(global_pool);
-static unsigned int global_pool_size;
-static unsigned int global_pool_max_size = COROUTINE_POOL_BATCH_MAX_SIZE;
+static unsigned int  global_pool_size;
+static unsigned int  global_pool_max_size = COROUTINE_POOL_BATCH_MAX_SIZE;
 
 QEMU_DEFINE_STATIC_CO_TLS(CoroutinePool, local_pool);
 QEMU_DEFINE_STATIC_CO_TLS(Notifier, local_pool_cleanup_notifier);
 
-static CoroutinePoolBatch *coroutine_pool_batch_new(void)
+static CoroutinePoolBatch* coroutine_pool_batch_new(void)
 {
-    CoroutinePoolBatch *batch = g_new(CoroutinePoolBatch, 1);
+    CoroutinePoolBatch* batch = g_new(CoroutinePoolBatch, 1);
 
     QSLIST_INIT(&batch->list);
     batch->size = 0;
     return batch;
 }
 
-static void coroutine_pool_batch_delete(CoroutinePoolBatch *batch)
+static void coroutine_pool_batch_delete(CoroutinePoolBatch* batch)
 {
-    Coroutine *co;
-    Coroutine *tmp;
+    Coroutine* co;
+    Coroutine* tmp;
 
-    QSLIST_FOREACH_SAFE(co, &batch->list, pool_next, tmp) {
+    QSLIST_FOREACH_SAFE (co, &batch->list, pool_next, tmp) {
         QSLIST_REMOVE_HEAD(&batch->list, pool_next);
         qemu_coroutine_delete(co);
     }
     g_free(batch);
 }
 
-static void local_pool_cleanup(Notifier *n, void *value)
+static void local_pool_cleanup(Notifier* n, void* value)
 {
-    CoroutinePool *local_pool = get_ptr_local_pool();
-    CoroutinePoolBatch *batch;
-    CoroutinePoolBatch *tmp;
+    CoroutinePool*      local_pool = get_ptr_local_pool();
+    CoroutinePoolBatch* batch;
+    CoroutinePoolBatch* tmp;
 
-    QSLIST_FOREACH_SAFE(batch, local_pool, next, tmp) {
+    QSLIST_FOREACH_SAFE (batch, local_pool, next, tmp) {
         QSLIST_REMOVE_HEAD(local_pool, next);
         coroutine_pool_batch_delete(batch);
     }
@@ -103,7 +105,7 @@ static void local_pool_cleanup(Notifier *n, void *value)
 /* Ensure the atexit notifier is registered */
 static void local_pool_cleanup_init_once(void)
 {
-    Notifier *notifier = get_ptr_local_pool_cleanup_notifier();
+    Notifier* notifier = get_ptr_local_pool_cleanup_notifier();
     if (!notifier->notify) {
         notifier->notify = local_pool_cleanup;
         qemu_thread_atexit_add(notifier);
@@ -111,15 +113,13 @@ static void local_pool_cleanup_init_once(void)
 }
 
 /* Helper to get the next unused coroutine from the local pool */
-static Coroutine *coroutine_pool_get_local(void)
+static Coroutine* coroutine_pool_get_local(void)
 {
-    CoroutinePool *local_pool = get_ptr_local_pool();
-    CoroutinePoolBatch *batch = QSLIST_FIRST(local_pool);
-    Coroutine *co;
+    CoroutinePool*      local_pool = get_ptr_local_pool();
+    CoroutinePoolBatch* batch      = QSLIST_FIRST(local_pool);
+    Coroutine*          co;
 
-    if (unlikely(!batch)) {
-        return NULL;
-    }
+    if (unlikely(!batch)) { return NULL; }
 
     co = QSLIST_FIRST(&batch->list);
     QSLIST_REMOVE_HEAD(&batch->list, pool_next);
@@ -135,10 +135,11 @@ static Coroutine *coroutine_pool_get_local(void)
 /* Get the next batch from the global pool */
 static void coroutine_pool_refill_local(void)
 {
-    CoroutinePool *local_pool = get_ptr_local_pool();
-    CoroutinePoolBatch *batch = NULL;
+    CoroutinePool*      local_pool = get_ptr_local_pool();
+    CoroutinePoolBatch* batch      = NULL;
 
-    WITH_QEMU_LOCK_GUARD(&global_pool_lock) {
+    WITH_QEMU_LOCK_GUARD(&global_pool_lock)
+    {
         batch = QSLIST_FIRST(&global_pool);
 
         if (batch) {
@@ -154,11 +155,11 @@ static void coroutine_pool_refill_local(void)
 }
 
 /* Add a batch of coroutines to the global pool */
-static void coroutine_pool_put_global(CoroutinePoolBatch *batch)
+static void coroutine_pool_put_global(CoroutinePoolBatch* batch)
 {
-    WITH_QEMU_LOCK_GUARD(&global_pool_lock) {
-        unsigned int max = MIN(global_pool_max_size,
-                               global_pool_hard_max_size);
+    WITH_QEMU_LOCK_GUARD(&global_pool_lock)
+    {
+        unsigned int max = MIN(global_pool_max_size, global_pool_hard_max_size);
 
         if (global_pool_size < max) {
             QSLIST_INSERT_HEAD(&global_pool, batch, next);
@@ -174,9 +175,9 @@ static void coroutine_pool_put_global(CoroutinePoolBatch *batch)
 }
 
 /* Get the next unused coroutine from the pool or return NULL */
-static Coroutine *coroutine_pool_get(void)
+static Coroutine* coroutine_pool_get(void)
 {
-    Coroutine *co;
+    Coroutine* co;
 
     co = coroutine_pool_get_local();
     if (!co) {
@@ -186,10 +187,10 @@ static Coroutine *coroutine_pool_get(void)
     return co;
 }
 
-static void coroutine_pool_put(Coroutine *co)
+static void coroutine_pool_put(Coroutine* co)
 {
-    CoroutinePool *local_pool = get_ptr_local_pool();
-    CoroutinePoolBatch *batch = QSLIST_FIRST(local_pool);
+    CoroutinePool*      local_pool = get_ptr_local_pool();
+    CoroutinePoolBatch* batch      = QSLIST_FIRST(local_pool);
 
     if (unlikely(!batch)) {
         batch = coroutine_pool_batch_new();
@@ -198,7 +199,7 @@ static void coroutine_pool_put(Coroutine *co)
     }
 
     if (unlikely(batch->size >= COROUTINE_POOL_BATCH_MAX_SIZE)) {
-        CoroutinePoolBatch *next = QSLIST_NEXT(batch, next);
+        CoroutinePoolBatch* next = QSLIST_NEXT(batch, next);
 
         /* Is the local pool full? */
         if (next) {
@@ -214,45 +215,40 @@ static void coroutine_pool_put(Coroutine *co)
     batch->size++;
 }
 
-Coroutine *qemu_coroutine_create(CoroutineEntry *entry, void *opaque)
+Coroutine* qemu_coroutine_create(CoroutineEntry* entry, void* opaque)
 {
-    Coroutine *co = NULL;
+    Coroutine* co = NULL;
 
-    if (IS_ENABLED(CONFIG_COROUTINE_POOL)) {
-        co = coroutine_pool_get();
-    }
+    if (IS_ENABLED(CONFIG_COROUTINE_POOL)) { co = coroutine_pool_get(); }
 
-    if (!co) {
-        co = qemu_coroutine_new();
-    }
+    if (!co) { co = qemu_coroutine_new(); }
 
-    co->entry = entry;
+    co->entry     = entry;
     co->entry_arg = opaque;
     QSIMPLEQ_INIT(&co->co_queue_wakeup);
     return co;
 }
 
-static void coroutine_delete(Coroutine *co)
+static void coroutine_delete(Coroutine* co)
 {
     co->caller = NULL;
 
-    if (IS_ENABLED(CONFIG_COROUTINE_POOL)) {
-        coroutine_pool_put(co);
-    } else {
+    if (IS_ENABLED(CONFIG_COROUTINE_POOL)) { coroutine_pool_put(co); }
+    else {
         qemu_coroutine_delete(co);
     }
 }
 
-void qemu_aio_coroutine_enter(AioContext *ctx, Coroutine *co)
+void qemu_aio_coroutine_enter(AioContext* ctx, Coroutine* co)
 {
     QSIMPLEQ_HEAD(, Coroutine) pending = QSIMPLEQ_HEAD_INITIALIZER(pending);
-    Coroutine *from = qemu_coroutine_self();
+    Coroutine* from = qemu_coroutine_self();
 
     QSIMPLEQ_INSERT_TAIL(&pending, co, co_queue_next);
 
     /* Run co and any queued coroutines */
     while (!QSIMPLEQ_EMPTY(&pending)) {
-        Coroutine *to = QSIMPLEQ_FIRST(&pending);
+        Coroutine*      to = QSIMPLEQ_FIRST(&pending);
         CoroutineAction ret;
 
         /*
@@ -261,7 +257,7 @@ void qemu_aio_coroutine_enter(AioContext *ctx, Coroutine *co)
          */
         smp_read_barrier_depends();
 
-        const char *scheduled = qatomic_read(&to->scheduled);
+        const char* scheduled = qatomic_read(&to->scheduled);
 
         QSIMPLEQ_REMOVE_HEAD(&pending, co_queue_next);
 
@@ -271,9 +267,7 @@ void qemu_aio_coroutine_enter(AioContext *ctx, Coroutine *co)
          * cause us to enter it twice, potentially even after the coroutine has
          * been deleted */
         if (scheduled) {
-            fprintf(stderr,
-                    "%s: Co-routine was already scheduled in '%s'\n",
-                    __func__, scheduled);
+            fprintf(stderr, "%s: Co-routine was already scheduled in '%s'\n", __func__, scheduled);
             abort();
         }
 
@@ -283,7 +277,7 @@ void qemu_aio_coroutine_enter(AioContext *ctx, Coroutine *co)
         }
 
         to->caller = from;
-        to->ctx = ctx;
+        to->ctx    = ctx;
 
         /* Store to->ctx before anything that stores to.  Matches
          * barrier in aio_co_wake and qemu_co_mutex_wake.
@@ -298,35 +292,28 @@ void qemu_aio_coroutine_enter(AioContext *ctx, Coroutine *co)
         QSIMPLEQ_PREPEND(&pending, &to->co_queue_wakeup);
 
         switch (ret) {
-        case COROUTINE_YIELD:
-            break;
-        case COROUTINE_TERMINATE:
-            assert(!to->locks_held);
-            trace_qemu_coroutine_terminate(to);
-            coroutine_delete(to);
-            break;
-        default:
-            abort();
+            case COROUTINE_YIELD: break;
+            case COROUTINE_TERMINATE:
+                assert(!to->locks_held);
+                trace_qemu_coroutine_terminate(to);
+                coroutine_delete(to);
+                break;
+            default: abort();
         }
     }
 }
 
-void qemu_coroutine_enter(Coroutine *co)
-{
-    qemu_aio_coroutine_enter(qemu_get_current_aio_context(), co);
-}
+void qemu_coroutine_enter(Coroutine* co) { qemu_aio_coroutine_enter(qemu_get_current_aio_context(), co); }
 
-void qemu_coroutine_enter_if_inactive(Coroutine *co)
+void qemu_coroutine_enter_if_inactive(Coroutine* co)
 {
-    if (!qemu_coroutine_entered(co)) {
-        qemu_coroutine_enter(co);
-    }
+    if (!qemu_coroutine_entered(co)) { qemu_coroutine_enter(co); }
 }
 
 void coroutine_fn qemu_coroutine_yield(void)
 {
-    Coroutine *self = qemu_coroutine_self();
-    Coroutine *to = self->caller;
+    Coroutine* self = qemu_coroutine_self();
+    Coroutine* to   = self->caller;
 
     trace_qemu_coroutine_yield(self, to);
 
@@ -339,15 +326,9 @@ void coroutine_fn qemu_coroutine_yield(void)
     qemu_coroutine_switch(self, to, COROUTINE_YIELD);
 }
 
-bool qemu_coroutine_entered(Coroutine *co)
-{
-    return co->caller;
-}
+bool qemu_coroutine_entered(Coroutine* co) { return co->caller; }
 
-AioContext *qemu_coroutine_get_aio_context(Coroutine *co)
-{
-    return co->ctx;
-}
+AioContext* qemu_coroutine_get_aio_context(Coroutine* co) { return co->ctx; }
 
 void qemu_coroutine_inc_pool_size(unsigned int additional_pool_size)
 {
@@ -364,8 +345,8 @@ void qemu_coroutine_dec_pool_size(unsigned int removing_pool_size)
 static unsigned int get_global_pool_hard_max_size(void)
 {
 #ifdef __linux__
-    g_autofree char *contents = NULL;
-    int max_map_count;
+    g_autofree char* contents = NULL;
+    int              max_map_count;
 
     /*
      * Linux processes can have up to max_map_count virtual memory areas
@@ -373,17 +354,16 @@ static unsigned int get_global_pool_hard_max_size(void)
      * must limit the coroutine pool to a safe size to avoid running out of
      * VMAs.
      */
-    if (g_file_get_contents("/proc/sys/vm/max_map_count", &contents, NULL,
-                            NULL) &&
-        qemu_strtoi(contents, NULL, 10, &max_map_count) == 0) {
+    if (g_file_get_contents("/proc/sys/vm/max_map_count", &contents, NULL, NULL)
+        && qemu_strtoi(contents, NULL, 10, &max_map_count) == 0)
+    {
         /*
          * This is an upper bound that avoids exceeding max_map_count.
          * Each coroutine takes up 2 VMAs so halve the
          * remaining amount.
          */
-        if (max_map_count > 5000) {
-            return (max_map_count - 5000) / 2;
-        } else {
+        if (max_map_count > 5000) { return (max_map_count - 5000) / 2; }
+        else {
             /* Disable the global pool but threads still have local pools */
             return 0;
         }

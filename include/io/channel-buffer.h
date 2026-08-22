@@ -26,7 +26,6 @@
 #define TYPE_QIO_CHANNEL_BUFFER "qio-channel-buffer"
 OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelBuffer, QIO_CHANNEL_BUFFER)
 
-
 /**
  * QIOChannelBuffer:
  *
@@ -35,14 +34,14 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIOChannelBuffer, QIO_CHANNEL_BUFFER)
  *
  */
 
-struct QIOChannelBuffer {
+struct QIOChannelBuffer
+{
     QIOChannel parent;
-    size_t capacity; /* Total allocated memory */
-    size_t usage;    /* Current size of data */
-    size_t offset;   /* Offset for future I/O ops */
-    uint8_t *data;
+    size_t     capacity; /* Total allocated memory */
+    size_t     usage;    /* Current size of data */
+    size_t     offset;   /* Offset for future I/O ops */
+    uint8_t*   data;
 };
-
 
 /**
  * qio_channel_buffer_new:
@@ -52,5 +51,4 @@ struct QIOChannelBuffer {
  *
  * Returns: the new channel object
  */
-QIOChannelBuffer *
-qio_channel_buffer_new(size_t capacity);
+QIOChannelBuffer* qio_channel_buffer_new(size_t capacity);

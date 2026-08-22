@@ -4,7 +4,7 @@
 
 /* Framebuffer device helper routines.  */
 
-typedef void (*drawfn)(void *, uint8_t *, const uint8_t *, int, int);
+typedef void (*drawfn)(void*, uint8_t*, const uint8_t*, int, int);
 
 /* framebuffer_update_memory_section: Update framebuffer
  * #MemoryRegionSection, for example if the framebuffer is switched to
@@ -17,12 +17,8 @@ typedef void (*drawfn)(void *, uint8_t *, const uint8_t *, int, int);
  * @rows: Height of the screen.
  * @src_width: Number of bytes in framebuffer memory between two rows.
  */
-void framebuffer_update_memory_section(
-    MemoryRegionSection *mem_section,
-    MemoryRegion *root,
-    hwaddr base,
-    unsigned rows,
-    unsigned src_width);
+void framebuffer_update_memory_section(MemoryRegionSection* mem_section, MemoryRegion* root, hwaddr base, unsigned rows,
+                                       unsigned src_width);
 
 /* framebuffer_update_display: Draw the framebuffer on a surface.
  *
@@ -47,16 +43,6 @@ void framebuffer_update_memory_section(
  * @last_row: Pointer to an integer, receives the number of the last row that
  * was drawn (either the last dirty row, or @rows-1 if @invalidate is true).
  */
-void framebuffer_update_display(
-    DisplaySurface *ds,
-    MemoryRegionSection *mem_section,
-    int cols,
-    int rows,
-    int src_width,
-    int dest_row_pitch,
-    int dest_col_pitch,
-    int invalidate,
-    drawfn fn,
-    void *opaque,
-    int *first_row,
-    int *last_row);
+void framebuffer_update_display(DisplaySurface* ds, MemoryRegionSection* mem_section, int cols, int rows, int src_width,
+                                int dest_row_pitch, int dest_col_pitch, int invalidate, drawfn fn, void* opaque,
+                                int* first_row, int* last_row);

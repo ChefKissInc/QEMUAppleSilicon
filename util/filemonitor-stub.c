@@ -23,37 +23,22 @@
 #include "qemu/error-report.h"
 #include "qapi/error.h"
 
-
-QFileMonitor *
-qemu_file_monitor_new(Error **errp)
+QFileMonitor* qemu_file_monitor_new(Error** errp)
 {
     error_setg(errp, "File monitoring not available on this platform");
     return NULL;
 }
 
+void qemu_file_monitor_free(QFileMonitor* mon G_GNUC_UNUSED) { }
 
-void
-qemu_file_monitor_free(QFileMonitor *mon G_GNUC_UNUSED)
-{
-}
-
-
-int64_t
-qemu_file_monitor_add_watch(QFileMonitor *mon G_GNUC_UNUSED,
-                            const char *dirpath G_GNUC_UNUSED,
-                            const char *filename G_GNUC_UNUSED,
-                            QFileMonitorHandler cb G_GNUC_UNUSED,
-                            void *opaque G_GNUC_UNUSED,
-                            Error **errp)
+int64_t qemu_file_monitor_add_watch(QFileMonitor* mon G_GNUC_UNUSED, const char* dirpath G_GNUC_UNUSED,
+                                    const char* filename G_GNUC_UNUSED, QFileMonitorHandler cb G_GNUC_UNUSED,
+                                    void* opaque G_GNUC_UNUSED, Error** errp)
 {
     error_setg(errp, "File monitoring not available on this platform");
     return -1;
 }
 
-
-void
-qemu_file_monitor_remove_watch(QFileMonitor *mon G_GNUC_UNUSED,
-                               const char *dirpath G_GNUC_UNUSED,
-                               int64_t id G_GNUC_UNUSED)
-{
-}
+void qemu_file_monitor_remove_watch(QFileMonitor* mon G_GNUC_UNUSED, const char* dirpath G_GNUC_UNUSED,
+                                    int64_t id G_GNUC_UNUSED)
+{ }

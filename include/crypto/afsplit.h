@@ -101,12 +101,8 @@
  *
  * Returns: 0 on success, -1 on error;
  */
-int qcrypto_afsplit_encode(QCryptoHashAlgo hash,
-                           size_t blocklen,
-                           uint32_t stripes,
-                           const uint8_t *in,
-                           uint8_t *out,
-                           Error **errp);
+int qcrypto_afsplit_encode(QCryptoHashAlgo hash, size_t blocklen, uint32_t stripes, const uint8_t* in, uint8_t* out,
+                           Error** errp);
 
 /**
  * qcrypto_afsplit_decode:
@@ -123,9 +119,5 @@ int qcrypto_afsplit_encode(QCryptoHashAlgo hash,
  *
  * Returns: 0 on success, -1 on error;
  */
-int qcrypto_afsplit_decode(QCryptoHashAlgo hash,
-                           size_t blocklen,
-                           uint32_t stripes,
-                           const uint8_t *in,
-                           uint8_t *out,
-                           Error **errp);
+int qcrypto_afsplit_decode(QCryptoHashAlgo hash, size_t blocklen, uint32_t stripes, const uint8_t* in, uint8_t* out,
+                           Error** errp);

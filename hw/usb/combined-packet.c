@@ -25,7 +25,7 @@
 #include "qemu/iov.h"
 #include "trace.h"
 
-static void usb_combined_packet_add(USBCombinedPacket *combined, USBPacket *p)
+static void usb_combined_packet_add(USBCombinedPacket* combined, USBPacket* p)
 {
     qemu_iovec_concat(&combined->iov, &p->iov, 0, p->iov.size);
     QTAILQ_INSERT_TAIL(&combined->packets, p, combined_entry);
@@ -33,8 +33,7 @@ static void usb_combined_packet_add(USBCombinedPacket *combined, USBPacket *p)
 }
 
 /* Note will free combined when the last packet gets removed */
-static void usb_combined_packet_remove(USBCombinedPacket *combined,
-                                       USBPacket *p)
+static void usb_combined_packet_remove(USBCombinedPacket* combined, USBPacket* p)
 {
     assert(p->combined == combined);
     p->combined = NULL;
@@ -46,13 +45,13 @@ static void usb_combined_packet_remove(USBCombinedPacket *combined,
 }
 
 /* Also handles completion of non combined packets for pipelined input eps */
-void usb_combined_input_packet_complete(USBDevice *dev, USBPacket *p)
+void usb_combined_input_packet_complete(USBDevice* dev, USBPacket* p)
 {
-    USBCombinedPacket *combined = p->combined;
-    USBEndpoint *ep = p->ep;
-    USBPacket *next;
-    int status, actual_length;
-    bool short_not_ok, done = false;
+    USBCombinedPacket* combined = p->combined;
+    USBEndpoint*       ep       = p->ep;
+    USBPacket*         next;
+    int                status, actual_length;
+    bool               short_not_ok, done = false;
 
     if (combined == NULL) {
         usb_packet_complete_one(dev, p);
@@ -61,24 +60,22 @@ void usb_combined_input_packet_complete(USBDevice *dev, USBPacket *p)
 
     assert(combined->first == p && p == QTAILQ_FIRST(&combined->packets));
 
-    status = combined->first->status;
+    status        = combined->first->status;
     actual_length = combined->first->actual_length;
-    short_not_ok = QTAILQ_LAST(&combined->packets)->short_not_ok;
+    short_not_ok  = QTAILQ_LAST(&combined->packets)->short_not_ok;
 
-    QTAILQ_FOREACH_SAFE(p, &combined->packets, combined_entry, next) {
+    QTAILQ_FOREACH_SAFE (p, &combined->packets, combined_entry, next) {
         if (!done) {
             /* Distribute data over uncombined packets */
-            if (actual_length >= p->iov.size) {
-                p->actual_length = p->iov.size;
-            } else {
+            if (actual_length >= p->iov.size) { p->actual_length = p->iov.size; }
+            else {
                 /* Send short or error packet to complete the transfer */
                 p->actual_length = actual_length;
-                done = true;
+                done             = true;
             }
             /* Report status on the last packet */
-            if (done || next == NULL) {
-                p->status = status;
-            } else {
+            if (done || next == NULL) { p->status = status; }
+            else {
                 p->status = USB_RET_SUCCESS;
             }
             p->short_not_ok = short_not_ok;
@@ -86,7 +83,8 @@ void usb_combined_input_packet_complete(USBDevice *dev, USBPacket *p)
             usb_combined_packet_remove(combined, p);
             usb_packet_complete_one(dev, p);
             actual_length -= p->actual_length;
-        } else {
+        }
+        else {
             /* Remove any leftover packets from the queue */
             p->status = USB_RET_REMOVE_FROM_QUEUE;
             /* Note will free combined on the last packet! */
@@ -100,17 +98,15 @@ leave:
 }
 
 /* May only be called for combined packets! */
-void usb_combined_packet_cancel(USBDevice *dev, USBPacket *p)
+void usb_combined_packet_cancel(USBDevice* dev, USBPacket* p)
 {
-    USBCombinedPacket *combined = p->combined;
+    USBCombinedPacket* combined = p->combined;
     assert(combined != NULL);
-    USBPacket *first = p->combined->first;
+    USBPacket* first = p->combined->first;
 
     /* Note will free combined on the last packet! */
     usb_combined_packet_remove(combined, p);
-    if (p == first) {
-        usb_device_cancel_packet(dev, p);
-    }
+    if (p == first) { usb_device_cancel_packet(dev, p); }
 }
 
 /*
@@ -119,16 +115,16 @@ void usb_combined_packet_cancel(USBDevice *dev, USBPacket *p)
  * the last packet of such splits transfers have, thereby allowing input
  * transfer pipelining (which we cannot do on short_not_ok transfers)
  */
-void usb_ep_combine_input_packets(USBEndpoint *ep)
+void usb_ep_combine_input_packets(USBEndpoint* ep)
 {
     USBPacket *p, *u, *next, *prev = NULL, *first = NULL;
-    USBPort *port = ep->dev->port;
-    int totalsize;
+    USBPort*   port = ep->dev->port;
+    int        totalsize;
 
     assert(ep->pipeline);
     assert(ep->pid == USB_TOKEN_IN);
 
-    QTAILQ_FOREACH_SAFE(p, &ep->queue, queue, next) {
+    QTAILQ_FOREACH_SAFE (p, &ep->queue, queue, next) {
         /* Empty the queue on a halt */
         if (ep->halted) {
             p->status = USB_RET_REMOVE_FROM_QUEUE;
@@ -148,13 +144,11 @@ void usb_ep_combine_input_packets(USBEndpoint *ep)
          * stop, as we must not submit packets to the device after a transfer
          * ending with short_not_ok packet.
          */
-        if (prev && prev->short_not_ok) {
-            break;
-        }
+        if (prev && prev->short_not_ok) { break; }
 
         if (first) {
             if (first->combined == NULL) {
-                USBCombinedPacket *combined = g_new0(USBCombinedPacket, 1);
+                USBCombinedPacket* combined = g_new0(USBCombinedPacket, 1);
 
                 combined->first = first;
                 QTAILQ_INIT(&combined->packets);
@@ -162,29 +156,31 @@ void usb_ep_combine_input_packets(USBEndpoint *ep)
                 usb_combined_packet_add(combined, first);
             }
             usb_combined_packet_add(first->combined, p);
-        } else {
+        }
+        else {
             first = p;
         }
 
         /* Is this packet the last one of a (combined) transfer? */
         totalsize = (p->combined) ? p->combined->iov.size : p->iov.size;
-        if ((p->iov.size % ep->max_packet_size) != 0 || !p->short_not_ok ||
-                next == NULL ||
-                /* Work around for Linux usbfs bulk splitting + migration */
-                (totalsize == (16 * KiB - 36) && p->int_req) ||
-                /* Next package may grow combined package over 1MiB */
-                totalsize > 1 * MiB - ep->max_packet_size) {
+        if ((p->iov.size % ep->max_packet_size) != 0 || !p->short_not_ok || next == NULL ||
+            /* Work around for Linux usbfs bulk splitting + migration */
+            (totalsize == (16 * KiB - 36) && p->int_req) ||
+            /* Next package may grow combined package over 1MiB */
+            totalsize > 1 * MiB - ep->max_packet_size)
+        {
             usb_device_handle_data(ep->dev, first);
             assert(first->status == USB_RET_ASYNC);
             if (first->combined) {
-                QTAILQ_FOREACH(u, &first->combined->packets, combined_entry) {
+                QTAILQ_FOREACH (u, &first->combined->packets, combined_entry) {
                     usb_packet_set_state(u, USB_PACKET_ASYNC);
                 }
-            } else {
+            }
+            else {
                 usb_packet_set_state(first, USB_PACKET_ASYNC);
             }
             first = NULL;
-            prev = p;
+            prev  = p;
         }
     }
 }

@@ -34,8 +34,7 @@
  * partially or completely with the address range covered by the
  * access).
  */
-static inline bool watchpoint_address_matches(CPUWatchpoint *wp,
-                                              vaddr addr, vaddr len)
+static inline bool watchpoint_address_matches(CPUWatchpoint* wp, vaddr addr, vaddr len)
 {
     /*
      * We know the lengths are non-zero, but a little caution is
@@ -43,31 +42,28 @@ static inline bool watchpoint_address_matches(CPUWatchpoint *wp,
      * exactly at the top of the address space and so addr + len
      * wraps round to zero.
      */
-    vaddr wpend = wp->vaddr + wp->len - 1;
+    vaddr wpend   = wp->vaddr + wp->len - 1;
     vaddr addrend = addr + len - 1;
 
     return !(addr > wpend || wp->vaddr > addrend);
 }
 
 /* Return flags for watchpoints that match addr + prot.  */
-int cpu_watchpoint_address_matches(CPUState *cpu, vaddr addr, vaddr len)
+int cpu_watchpoint_address_matches(CPUState* cpu, vaddr addr, vaddr len)
 {
-    CPUWatchpoint *wp;
-    int ret = 0;
+    CPUWatchpoint* wp;
+    int            ret = 0;
 
-    QTAILQ_FOREACH(wp, &cpu->watchpoints, entry) {
-        if (watchpoint_address_matches(wp, addr, len)) {
-            ret |= wp->flags;
-        }
+    QTAILQ_FOREACH (wp, &cpu->watchpoints, entry) {
+        if (watchpoint_address_matches(wp, addr, len)) { ret |= wp->flags; }
     }
     return ret;
 }
 
 /* Generate a debug exception if a watchpoint has been hit.  */
-void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
-                          MemTxAttrs attrs, int flags, uintptr_t ra)
+void cpu_check_watchpoint(CPUState* cpu, vaddr addr, vaddr len, MemTxAttrs attrs, int flags, uintptr_t ra)
 {
-    CPUWatchpoint *wp;
+    CPUWatchpoint* wp;
 
     assert(tcg_enabled());
     if (cpu->watchpoint_hit) {
@@ -88,17 +84,17 @@ void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
     }
 
     assert((flags & ~BP_MEM_ACCESS) == 0);
-    QTAILQ_FOREACH(wp, &cpu->watchpoints, entry) {
+    QTAILQ_FOREACH (wp, &cpu->watchpoints, entry) {
         int hit_flags = wp->flags & flags;
 
         if (hit_flags && watchpoint_address_matches(wp, addr, len)) {
-            wp->flags |= hit_flags << BP_HIT_SHIFT;
-            wp->hitaddr = MAX(addr, wp->vaddr);
-            wp->hitattrs = attrs;
+            wp->flags    |= hit_flags << BP_HIT_SHIFT;
+            wp->hitaddr   = MAX(addr, wp->vaddr);
+            wp->hitattrs  = attrs;
 
-            if (wp->flags & BP_CPU
-                && cpu->cc->tcg_ops->debug_check_watchpoint
-                && !cpu->cc->tcg_ops->debug_check_watchpoint(cpu, wp)) {
+            if (wp->flags & BP_CPU && cpu->cc->tcg_ops->debug_check_watchpoint
+                && !cpu->cc->tcg_ops->debug_check_watchpoint(cpu, wp))
+            {
                 wp->flags &= ~BP_WATCHPOINT_HIT;
                 continue;
             }
@@ -109,12 +105,14 @@ void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
             if (wp->flags & BP_STOP_BEFORE_ACCESS) {
                 cpu->exception_index = EXCP_DEBUG;
                 cpu_loop_exit(cpu);
-            } else {
+            }
+            else {
                 /* Force execution of one insn next time.  */
                 cpu->cflags_next_tb = 1 | CF_NOIRQ | curr_cflags(cpu);
                 cpu_loop_exit_noexc(cpu);
             }
-        } else {
+        }
+        else {
             wp->flags &= ~BP_WATCHPOINT_HIT;
         }
     }

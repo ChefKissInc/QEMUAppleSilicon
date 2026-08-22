@@ -42,9 +42,7 @@
  *
  * Returns: the new main loop source
  */
-GSource *qio_channel_create_fd_watch(QIOChannel *ioc,
-                                     int fd,
-                                     GIOCondition condition);
+GSource* qio_channel_create_fd_watch(QIOChannel* ioc, int fd, GIOCondition condition);
 
 /**
  * qio_channel_create_socket_watch:
@@ -60,9 +58,7 @@ GSource *qio_channel_create_fd_watch(QIOChannel *ioc,
  *
  * Returns: the new main loop source
  */
-GSource *qio_channel_create_socket_watch(QIOChannel *ioc,
-                                         int fd,
-                                         GIOCondition condition);
+GSource* qio_channel_create_socket_watch(QIOChannel* ioc, int fd, GIOCondition condition);
 
 /**
  * qio_channel_create_fd_pair_watch:
@@ -81,7 +77,4 @@ GSource *qio_channel_create_socket_watch(QIOChannel *ioc,
  *
  * Returns: the new main loop source
  */
-GSource *qio_channel_create_fd_pair_watch(QIOChannel *ioc,
-                                          int fdread,
-                                          int fdwrite,
-                                          GIOCondition condition);
+GSource* qio_channel_create_fd_pair_watch(QIOChannel* ioc, int fdread, int fdwrite, GIOCondition condition);

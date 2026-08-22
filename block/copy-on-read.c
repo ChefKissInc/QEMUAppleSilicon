@@ -28,39 +28,34 @@
 #include "qobject/qdict.h"
 #include "block/copy-on-read.h"
 
-
-typedef struct BDRVStateCOR {
-    BlockDriverState *bottom_bs;
-    bool chain_frozen;
+typedef struct BDRVStateCOR
+{
+    BlockDriverState* bottom_bs;
+    bool              chain_frozen;
 } BDRVStateCOR;
 
-
-static int GRAPH_UNLOCKED
-cor_open(BlockDriverState *bs, QDict *options, int flags, Error **errp)
+static int GRAPH_UNLOCKED cor_open(BlockDriverState* bs, QDict* options, int flags, Error** errp)
 {
-    BlockDriverState *bottom_bs = NULL;
-    BDRVStateCOR *state = bs->opaque;
+    BlockDriverState* bottom_bs = NULL;
+    BDRVStateCOR*     state     = bs->opaque;
     /* Find a bottom node name, if any */
-    const char *bottom_node = qdict_get_try_str(options, "bottom");
-    int ret;
+    const char* bottom_node = qdict_get_try_str(options, "bottom");
+    int         ret;
 
     GLOBAL_STATE_CODE();
 
     ret = bdrv_open_file_child(NULL, options, "file", bs, errp);
-    if (ret < 0) {
-        return ret;
-    }
+    if (ret < 0) { return ret; }
 
     GRAPH_RDLOCK_GUARD_MAINLOOP();
 
     bs->supported_read_flags = BDRV_REQ_PREFETCH;
 
-    bs->supported_write_flags = BDRV_REQ_WRITE_UNCHANGED |
-        (BDRV_REQ_FUA & bs->file->bs->supported_write_flags);
+    bs->supported_write_flags = BDRV_REQ_WRITE_UNCHANGED | (BDRV_REQ_FUA & bs->file->bs->supported_write_flags);
 
-    bs->supported_zero_flags = BDRV_REQ_WRITE_UNCHANGED |
-        ((BDRV_REQ_FUA | BDRV_REQ_MAY_UNMAP | BDRV_REQ_NO_FALLBACK) &
-            bs->file->bs->supported_zero_flags);
+    bs->supported_zero_flags =
+        BDRV_REQ_WRITE_UNCHANGED
+        | ((BDRV_REQ_FUA | BDRV_REQ_MAY_UNMAP | BDRV_REQ_NO_FALLBACK) & bs->file->bs->supported_zero_flags);
 
     if (bottom_node) {
         bottom_bs = bdrv_find_node(bottom_node);
@@ -81,9 +76,7 @@ cor_open(BlockDriverState *bs, QDict *options, int flags, Error **errp)
             return -EINVAL;
         }
 
-        if (bdrv_freeze_backing_chain(bs, bottom_bs, errp) < 0) {
-            return -EINVAL;
-        }
+        if (bdrv_freeze_backing_chain(bs, bottom_bs, errp) < 0) { return -EINVAL; }
         state->chain_frozen = true;
 
         /*
@@ -102,48 +95,33 @@ cor_open(BlockDriverState *bs, QDict *options, int flags, Error **errp)
     return 0;
 }
 
+#define PERM_PASSTHROUGH (BLK_PERM_CONSISTENT_READ | BLK_PERM_WRITE | BLK_PERM_RESIZE)
+#define PERM_UNCHANGED   (BLK_PERM_ALL & ~PERM_PASSTHROUGH)
 
-#define PERM_PASSTHROUGH (BLK_PERM_CONSISTENT_READ \
-                          | BLK_PERM_WRITE \
-                          | BLK_PERM_RESIZE)
-#define PERM_UNCHANGED (BLK_PERM_ALL & ~PERM_PASSTHROUGH)
-
-static void cor_child_perm(BlockDriverState *bs, BdrvChild *c,
-                           BdrvChildRole role,
-                           BlockReopenQueue *reopen_queue,
-                           uint64_t perm, uint64_t shared,
-                           uint64_t *nperm, uint64_t *nshared)
+static void cor_child_perm(BlockDriverState* bs, BdrvChild* c, BdrvChildRole role, BlockReopenQueue* reopen_queue,
+                           uint64_t perm, uint64_t shared, uint64_t* nperm, uint64_t* nshared)
 {
-    *nperm = perm & PERM_PASSTHROUGH;
+    *nperm   = perm & PERM_PASSTHROUGH;
     *nshared = (shared & PERM_PASSTHROUGH) | PERM_UNCHANGED;
 
     /* We must not request write permissions for an inactive node, the child
      * cannot provide it. */
-    if (!(bs->open_flags & BDRV_O_INACTIVE)) {
-        *nperm |= BLK_PERM_WRITE_UNCHANGED;
-    }
+    if (!(bs->open_flags & BDRV_O_INACTIVE)) { *nperm |= BLK_PERM_WRITE_UNCHANGED; }
 }
 
+static int64_t coroutine_fn GRAPH_RDLOCK cor_co_getlength(BlockDriverState* bs)
+{ return bdrv_co_getlength(bs->file->bs); }
 
-static int64_t coroutine_fn GRAPH_RDLOCK cor_co_getlength(BlockDriverState *bs)
+static int coroutine_fn GRAPH_RDLOCK cor_co_preadv_part(BlockDriverState* bs, int64_t offset, int64_t bytes,
+                                                        QEMUIOVector* qiov, size_t qiov_offset, BdrvRequestFlags flags)
 {
-    return bdrv_co_getlength(bs->file->bs);
-}
-
-
-static int coroutine_fn GRAPH_RDLOCK
-cor_co_preadv_part(BlockDriverState *bs, int64_t offset, int64_t bytes,
-                   QEMUIOVector *qiov, size_t qiov_offset,
-                   BdrvRequestFlags flags)
-{
-    int64_t n;
-    int local_flags;
-    int ret;
-    BDRVStateCOR *state = bs->opaque;
+    int64_t       n;
+    int           local_flags;
+    int           ret;
+    BDRVStateCOR* state = bs->opaque;
 
     if (!state->bottom_bs) {
-        return bdrv_co_preadv_part(bs->file, offset, bytes, qiov, qiov_offset,
-                                   flags | BDRV_REQ_COPY_ON_READ);
+        return bdrv_co_preadv_part(bs->file, offset, bytes, qiov, qiov_offset, flags | BDRV_REQ_COPY_ON_READ);
     }
 
     while (bytes) {
@@ -152,88 +130,51 @@ cor_co_preadv_part(BlockDriverState *bs, int64_t offset, int64_t bytes,
         /* In case of failure, try to copy-on-read anyway */
         ret = bdrv_co_is_allocated(bs->file->bs, offset, bytes, &n);
         if (ret <= 0) {
-            ret = bdrv_co_is_allocated_above(bdrv_backing_chain_next(bs->file->bs),
-                                             state->bottom_bs, true, offset,
-                                             n, &n);
-            if (ret > 0 || ret < 0) {
-                local_flags |= BDRV_REQ_COPY_ON_READ;
-            }
+            ret = bdrv_co_is_allocated_above(bdrv_backing_chain_next(bs->file->bs), state->bottom_bs, true, offset, n,
+                                             &n);
+            if (ret > 0 || ret < 0) { local_flags |= BDRV_REQ_COPY_ON_READ; }
             /* Finish earlier if the end of a backing file has been reached */
-            if (n == 0) {
-                break;
-            }
+            if (n == 0) { break; }
         }
 
         /* Skip if neither read nor write are needed */
-        if ((local_flags & (BDRV_REQ_PREFETCH | BDRV_REQ_COPY_ON_READ)) !=
-            BDRV_REQ_PREFETCH) {
-            ret = bdrv_co_preadv_part(bs->file, offset, n, qiov, qiov_offset,
-                                      local_flags);
-            if (ret < 0) {
-                return ret;
-            }
+        if ((local_flags & (BDRV_REQ_PREFETCH | BDRV_REQ_COPY_ON_READ)) != BDRV_REQ_PREFETCH) {
+            ret = bdrv_co_preadv_part(bs->file, offset, n, qiov, qiov_offset, local_flags);
+            if (ret < 0) { return ret; }
         }
 
-        offset += n;
+        offset      += n;
         qiov_offset += n;
-        bytes -= n;
+        bytes       -= n;
     }
 
     return 0;
 }
 
+static int coroutine_fn GRAPH_RDLOCK cor_co_pwritev_part(BlockDriverState* bs, int64_t offset, int64_t bytes,
+                                                         QEMUIOVector* qiov, size_t qiov_offset, BdrvRequestFlags flags)
+{ return bdrv_co_pwritev_part(bs->file, offset, bytes, qiov, qiov_offset, flags); }
 
-static int coroutine_fn GRAPH_RDLOCK
-cor_co_pwritev_part(BlockDriverState *bs, int64_t offset, int64_t bytes,
-                    QEMUIOVector *qiov, size_t qiov_offset,
-                    BdrvRequestFlags flags)
+static int coroutine_fn GRAPH_RDLOCK cor_co_pwrite_zeroes(BlockDriverState* bs, int64_t offset, int64_t bytes,
+                                                          BdrvRequestFlags flags)
+{ return bdrv_co_pwrite_zeroes(bs->file, offset, bytes, flags); }
+
+static int coroutine_fn GRAPH_RDLOCK cor_co_pdiscard(BlockDriverState* bs, int64_t offset, int64_t bytes)
+{ return bdrv_co_pdiscard(bs->file, offset, bytes); }
+
+static int coroutine_fn GRAPH_RDLOCK cor_co_pwritev_compressed(BlockDriverState* bs, int64_t offset, int64_t bytes,
+                                                               QEMUIOVector* qiov)
+{ return bdrv_co_pwritev(bs->file, offset, bytes, qiov, BDRV_REQ_WRITE_COMPRESSED); }
+
+static void coroutine_fn GRAPH_RDLOCK cor_co_eject(BlockDriverState* bs, bool eject_flag)
+{ bdrv_co_eject(bs->file->bs, eject_flag); }
+
+static void coroutine_fn GRAPH_RDLOCK cor_co_lock_medium(BlockDriverState* bs, bool locked)
+{ bdrv_co_lock_medium(bs->file->bs, locked); }
+
+static void GRAPH_UNLOCKED cor_close(BlockDriverState* bs)
 {
-    return bdrv_co_pwritev_part(bs->file, offset, bytes, qiov, qiov_offset,
-                                flags);
-}
-
-
-static int coroutine_fn GRAPH_RDLOCK
-cor_co_pwrite_zeroes(BlockDriverState *bs, int64_t offset, int64_t bytes,
-                     BdrvRequestFlags flags)
-{
-    return bdrv_co_pwrite_zeroes(bs->file, offset, bytes, flags);
-}
-
-
-static int coroutine_fn GRAPH_RDLOCK
-cor_co_pdiscard(BlockDriverState *bs, int64_t offset, int64_t bytes)
-{
-    return bdrv_co_pdiscard(bs->file, offset, bytes);
-}
-
-
-static int coroutine_fn GRAPH_RDLOCK
-cor_co_pwritev_compressed(BlockDriverState *bs, int64_t offset, int64_t bytes,
-                          QEMUIOVector *qiov)
-{
-    return bdrv_co_pwritev(bs->file, offset, bytes, qiov,
-                           BDRV_REQ_WRITE_COMPRESSED);
-}
-
-
-static void coroutine_fn GRAPH_RDLOCK
-cor_co_eject(BlockDriverState *bs, bool eject_flag)
-{
-    bdrv_co_eject(bs->file->bs, eject_flag);
-}
-
-
-static void coroutine_fn GRAPH_RDLOCK
-cor_co_lock_medium(BlockDriverState *bs, bool locked)
-{
-    bdrv_co_lock_medium(bs->file->bs, locked);
-}
-
-
-static void GRAPH_UNLOCKED cor_close(BlockDriverState *bs)
-{
-    BDRVStateCOR *s = bs->opaque;
+    BDRVStateCOR* s = bs->opaque;
 
     GLOBAL_STATE_CODE();
 
@@ -247,33 +188,31 @@ static void GRAPH_UNLOCKED cor_close(BlockDriverState *bs)
     bdrv_unref(s->bottom_bs);
 }
 
-
 static BlockDriver bdrv_copy_on_read = {
-    .format_name                        = "copy-on-read",
-    .instance_size                      = sizeof(BDRVStateCOR),
+    .format_name   = "copy-on-read",
+    .instance_size = sizeof(BDRVStateCOR),
 
-    .bdrv_open                          = cor_open,
-    .bdrv_close                         = cor_close,
-    .bdrv_child_perm                    = cor_child_perm,
+    .bdrv_open       = cor_open,
+    .bdrv_close      = cor_close,
+    .bdrv_child_perm = cor_child_perm,
 
-    .bdrv_co_getlength                  = cor_co_getlength,
+    .bdrv_co_getlength = cor_co_getlength,
 
-    .bdrv_co_preadv_part                = cor_co_preadv_part,
-    .bdrv_co_pwritev_part               = cor_co_pwritev_part,
-    .bdrv_co_pwrite_zeroes              = cor_co_pwrite_zeroes,
-    .bdrv_co_pdiscard                   = cor_co_pdiscard,
-    .bdrv_co_pwritev_compressed         = cor_co_pwritev_compressed,
+    .bdrv_co_preadv_part        = cor_co_preadv_part,
+    .bdrv_co_pwritev_part       = cor_co_pwritev_part,
+    .bdrv_co_pwrite_zeroes      = cor_co_pwrite_zeroes,
+    .bdrv_co_pdiscard           = cor_co_pdiscard,
+    .bdrv_co_pwritev_compressed = cor_co_pwritev_compressed,
 
-    .bdrv_co_eject                      = cor_co_eject,
-    .bdrv_co_lock_medium                = cor_co_lock_medium,
+    .bdrv_co_eject       = cor_co_eject,
+    .bdrv_co_lock_medium = cor_co_lock_medium,
 
-    .is_filter                          = true,
+    .is_filter = true,
 };
 
-
-void no_coroutine_fn bdrv_cor_filter_drop(BlockDriverState *cor_filter_bs)
+void no_coroutine_fn bdrv_cor_filter_drop(BlockDriverState* cor_filter_bs)
 {
-    BDRVStateCOR *s = cor_filter_bs->opaque;
+    BDRVStateCOR* s = cor_filter_bs->opaque;
 
     GLOBAL_STATE_CODE();
 
@@ -287,10 +226,6 @@ void no_coroutine_fn bdrv_cor_filter_drop(BlockDriverState *cor_filter_bs)
     bdrv_unref(cor_filter_bs);
 }
 
-
-static void bdrv_copy_on_read_init(void)
-{
-    bdrv_register(&bdrv_copy_on_read);
-}
+static void bdrv_copy_on_read_init(void) { bdrv_register(&bdrv_copy_on_read); }
 
 block_init(bdrv_copy_on_read_init);

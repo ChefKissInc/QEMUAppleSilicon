@@ -18,7 +18,7 @@
 #include "qemu/module.h"
 #include "qemu/queue.h"
 
-typedef struct ReplicationOps ReplicationOps;
+typedef struct ReplicationOps   ReplicationOps;
 typedef struct ReplicationState ReplicationState;
 
 /**
@@ -93,9 +93,10 @@ typedef struct ReplicationState ReplicationState;
  * @ops: replication operation of this ReplicationState
  * @node: node that we will insert into @replication_states QLIST
  */
-struct ReplicationState {
-    void *opaque;
-    ReplicationOps *ops;
+struct ReplicationState
+{
+    void*           opaque;
+    ReplicationOps* ops;
     QLIST_ENTRY(ReplicationState) node;
 };
 
@@ -106,11 +107,12 @@ struct ReplicationState {
  * @checkpoint: callback to do checkpoint
  * @get_error: callback to check if error occurred during replication
  */
-struct ReplicationOps {
-    void (*start)(ReplicationState *rs, ReplicationMode mode, Error **errp);
-    void (*stop)(ReplicationState *rs, bool failover, Error **errp);
-    void (*checkpoint)(ReplicationState *rs, Error **errp);
-    void (*get_error)(ReplicationState *rs, Error **errp);
+struct ReplicationOps
+{
+    void (*start)(ReplicationState* rs, ReplicationMode mode, Error** errp);
+    void (*stop)(ReplicationState* rs, bool failover, Error** errp);
+    void (*checkpoint)(ReplicationState* rs, Error** errp);
+    void (*get_error)(ReplicationState* rs, Error** errp);
 };
 
 /**
@@ -123,7 +125,7 @@ struct ReplicationOps {
  *
  * Returns: the new ReplicationState instance
  */
-ReplicationState *replication_new(void *opaque, ReplicationOps *ops);
+ReplicationState* replication_new(void* opaque, ReplicationOps* ops);
 
 /**
  * replication_remove:
@@ -132,7 +134,7 @@ ReplicationState *replication_new(void *opaque, ReplicationOps *ops);
  * Called to remove a ReplicationState instance, and then delete it from
  * @replication_states QLIST
  */
-void replication_remove(ReplicationState *rs);
+void replication_remove(ReplicationState* rs);
 
 /**
  * replication_start_all:
@@ -143,7 +145,7 @@ void replication_remove(ReplicationState *rs);
  *
  * Note: the caller of the function MUST make sure vm stopped
  */
-void replication_start_all(ReplicationMode mode, Error **errp);
+void replication_start_all(ReplicationMode mode, Error** errp);
 
 /**
  * replication_do_checkpoint_all:
@@ -151,7 +153,7 @@ void replication_start_all(ReplicationMode mode, Error **errp);
  *
  * This interface is called after all VM state is transferred to Secondary QEMU
  */
-void replication_do_checkpoint_all(Error **errp);
+void replication_do_checkpoint_all(Error** errp);
 
 /**
  * replication_get_error_all:
@@ -159,7 +161,7 @@ void replication_do_checkpoint_all(Error **errp);
  *
  * This interface is called to check if error occurred during replication
  */
-void replication_get_error_all(Error **errp);
+void replication_get_error_all(Error** errp);
 
 /**
  * replication_stop_all:
@@ -169,4 +171,4 @@ void replication_get_error_all(Error **errp);
  * It is called on failover. The vm should be stopped before calling it, if you
  * use this API to shutdown the guest, or other things except failover
  */
-void replication_stop_all(bool failover, Error **errp);
+void replication_stop_all(bool failover, Error** errp);

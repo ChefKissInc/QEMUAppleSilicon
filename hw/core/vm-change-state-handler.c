@@ -19,16 +19,14 @@
 #include "hw/qdev-core.h"
 #include "system/runstate.h"
 
-static int qdev_get_dev_tree_depth(DeviceState *dev)
+static int qdev_get_dev_tree_depth(DeviceState* dev)
 {
     int depth;
 
     for (depth = 0; dev; depth++) {
-        BusState *bus = dev->parent_bus;
+        BusState* bus = dev->parent_bus;
 
-        if (!bus) {
-            break;
-        }
+        if (!bus) { break; }
 
         dev = bus->parent;
     }
@@ -55,10 +53,8 @@ static int qdev_get_dev_tree_depth(DeviceState *dev)
  *
  * Returns: an entry to be freed with qemu_del_vm_change_state_handler()
  */
-VMChangeStateEntry *qdev_add_vm_change_state_handler(DeviceState *dev,
-                                                     VMChangeStateHandler *cb,
-                                                     VMChangeStateHandlerWithRet *cb_ret,
-                                                     void *opaque)
+VMChangeStateEntry* qdev_add_vm_change_state_handler(DeviceState* dev, VMChangeStateHandler* cb,
+                                                     VMChangeStateHandlerWithRet* cb_ret, void* opaque)
 {
     assert(!cb || !cb_ret);
     return qdev_add_vm_change_state_handler_full(dev, cb, NULL, cb_ret, opaque);
@@ -68,13 +64,12 @@ VMChangeStateEntry *qdev_add_vm_change_state_handler(DeviceState *dev,
  * Exactly like qdev_add_vm_change_state_handler() but passes a prepare_cb
  * and the cb_ret arguments too.
  */
-VMChangeStateEntry *qdev_add_vm_change_state_handler_full(
-    DeviceState *dev, VMChangeStateHandler *cb, VMChangeStateHandler *prepare_cb,
-    VMChangeStateHandlerWithRet *cb_ret, void *opaque)
+VMChangeStateEntry* qdev_add_vm_change_state_handler_full(DeviceState* dev, VMChangeStateHandler* cb,
+                                                          VMChangeStateHandler*        prepare_cb,
+                                                          VMChangeStateHandlerWithRet* cb_ret, void* opaque)
 {
     int depth = qdev_get_dev_tree_depth(dev);
 
     assert(!cb || !cb_ret);
-    return qemu_add_vm_change_state_handler_prio_full(cb, prepare_cb, cb_ret,
-                                                      opaque, depth);
+    return qemu_add_vm_change_state_handler_prio_full(cb, prepare_cb, cb_ret, opaque, depth);
 }

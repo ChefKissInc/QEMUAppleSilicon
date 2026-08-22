@@ -27,21 +27,19 @@
 
 /* enable or disable single step mode. EXCP_DEBUG is returned by the
    CPU loop after each instruction */
-void cpu_single_step(CPUState *cpu, int enabled)
+void cpu_single_step(CPUState* cpu, int enabled)
 {
     if (cpu->singlestep_enabled != enabled) {
         cpu->singlestep_enabled = enabled;
 
-        const AccelOpsClass *ops = cpus_get_accel();
-        if (ops->update_guest_debug) {
-            ops->update_guest_debug(cpu);
-        }
+        const AccelOpsClass* ops = cpus_get_accel();
+        if (ops->update_guest_debug) { ops->update_guest_debug(cpu); }
 
         trace_breakpoint_singlestep(cpu->cpu_index, enabled);
     }
 }
 
-void cpu_abort(CPUState *cpu, const char *fmt, ...)
+void cpu_abort(CPUState* cpu, const char* fmt, ...)
 {
     va_list ap;
     va_list ap2;
@@ -53,7 +51,7 @@ void cpu_abort(CPUState *cpu, const char *fmt, ...)
     fprintf(stderr, "\n");
     cpu_dump_state(cpu, stderr, CPU_DUMP_FPU | CPU_DUMP_CCOP);
     if (qemu_log_separate()) {
-        FILE *logfile = qemu_log_trylock();
+        FILE* logfile = qemu_log_trylock();
         if (logfile) {
             fprintf(logfile, "qemu: fatal: ");
             vfprintf(logfile, fmt, ap2);

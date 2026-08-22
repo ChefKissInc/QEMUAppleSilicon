@@ -1,22 +1,14 @@
 #include "qemu/osdep.h"
 #include "qemu/main-loop.h"
 
-static bool bql_is_locked = false;
+static bool     bql_is_locked = false;
 static uint32_t bql_unlock_blocked;
 
-bool bql_locked(void)
-{
-    return bql_is_locked;
-}
+bool bql_locked(void) { return bql_is_locked; }
 
-void bql_lock_impl(const char *file, int line)
-{
-}
+void bql_lock_impl(const char* file, int line) { }
 
-void bql_unlock(void)
-{
-    assert(!bql_unlock_blocked);
-}
+void bql_unlock(void) { assert(!bql_unlock_blocked); }
 
 void bql_block_unlock(bool increase)
 {

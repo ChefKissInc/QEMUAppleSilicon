@@ -46,22 +46,15 @@
 #define BANK_HYP    6
 #define BANK_MON    7
 
-static inline int arm_env_mmu_index(CPUARMState *env)
-{
-    return EX_TBFLAG_ANY(env->hflags, MMUIDX);
-}
+static inline int arm_env_mmu_index(CPUARMState* env) { return EX_TBFLAG_ANY(env->hflags, MMUIDX); }
 
 static inline bool excp_is_internal(int excp)
 {
     /* Return true if this exception number represents a QEMU-internal
      * exception that will not be passed to the guest.
      */
-    return excp == EXCP_INTERRUPT
-        || excp == EXCP_HLT
-        || excp == EXCP_DEBUG
-        || excp == EXCP_HALTED
-        || excp == EXCP_EXCEPTION_EXIT
-        || excp == EXCP_KERNEL_TRAP;
+    return excp == EXCP_INTERRUPT || excp == EXCP_HLT || excp == EXCP_DEBUG || excp == EXCP_HALTED
+           || excp == EXCP_EXCEPTION_EXIT || excp == EXCP_KERNEL_TRAP;
 }
 
 /*
@@ -97,34 +90,34 @@ REG_FIELD(DBGWCR, SSCE, 29, 1)
 /* Bit definitions for CPACR (AArch32 only) */
 REG_FIELD(CPACR, CP10, 20, 2)
 REG_FIELD(CPACR, CP11, 22, 2)
-REG_FIELD(CPACR, TRCDIS, 28, 1)    /* matches CPACR_EL1.TTA */
-REG_FIELD(CPACR, D32DIS, 30, 1)    /* up to v7; RAZ in v8 */
+REG_FIELD(CPACR, TRCDIS, 28, 1) /* matches CPACR_EL1.TTA */
+REG_FIELD(CPACR, D32DIS, 30, 1) /* up to v7; RAZ in v8 */
 REG_FIELD(CPACR, ASEDIS, 31, 1)
 
 /* Bit definitions for CPACR_EL1 (AArch64 only) */
 REG_FIELD(CPACR_EL1, ZEN, 16, 2)
 REG_FIELD(CPACR_EL1, FPEN, 20, 2)
 REG_FIELD(CPACR_EL1, SMEN, 24, 2)
-REG_FIELD(CPACR_EL1, TTA, 28, 1)   /* matches CPACR.TRCDIS */
+REG_FIELD(CPACR_EL1, TTA, 28, 1) /* matches CPACR.TRCDIS */
 
 /* Bit definitions for HCPTR (AArch32 only) */
 REG_FIELD(HCPTR, TCP10, 10, 1)
 REG_FIELD(HCPTR, TCP11, 11, 1)
 REG_FIELD(HCPTR, TASE, 15, 1)
 REG_FIELD(HCPTR, TTA, 20, 1)
-REG_FIELD(HCPTR, TAM, 30, 1)       /* matches CPTR_EL2.TAM */
-REG_FIELD(HCPTR, TCPAC, 31, 1)     /* matches CPTR_EL2.TCPAC */
+REG_FIELD(HCPTR, TAM, 30, 1)   /* matches CPTR_EL2.TAM */
+REG_FIELD(HCPTR, TCPAC, 31, 1) /* matches CPTR_EL2.TCPAC */
 
 /* Bit definitions for CPTR_EL2 (AArch64 only) */
-REG_FIELD(CPTR_EL2, TZ, 8, 1)      /* !E2H */
-REG_FIELD(CPTR_EL2, TFP, 10, 1)    /* !E2H, matches HCPTR.TCP10 */
-REG_FIELD(CPTR_EL2, TSM, 12, 1)    /* !E2H */
-REG_FIELD(CPTR_EL2, ZEN, 16, 2)    /* E2H */
-REG_FIELD(CPTR_EL2, FPEN, 20, 2)   /* E2H */
-REG_FIELD(CPTR_EL2, SMEN, 24, 2)   /* E2H */
+REG_FIELD(CPTR_EL2, TZ, 8, 1)    /* !E2H */
+REG_FIELD(CPTR_EL2, TFP, 10, 1)  /* !E2H, matches HCPTR.TCP10 */
+REG_FIELD(CPTR_EL2, TSM, 12, 1)  /* !E2H */
+REG_FIELD(CPTR_EL2, ZEN, 16, 2)  /* E2H */
+REG_FIELD(CPTR_EL2, FPEN, 20, 2) /* E2H */
+REG_FIELD(CPTR_EL2, SMEN, 24, 2) /* E2H */
 REG_FIELD(CPTR_EL2, TTA, 28, 1)
-REG_FIELD(CPTR_EL2, TAM, 30, 1)    /* matches HCPTR.TAM */
-REG_FIELD(CPTR_EL2, TCPAC, 31, 1)  /* matches HCPTR.TCPAC */
+REG_FIELD(CPTR_EL2, TAM, 30, 1)   /* matches HCPTR.TAM */
+REG_FIELD(CPTR_EL2, TCPAC, 31, 1) /* matches HCPTR.TCPAC */
 
 /* Bit definitions for CPTR_EL3 (AArch64 only) */
 REG_FIELD(CPTR_EL3, EZ, 8, 1)
@@ -134,48 +127,47 @@ REG_FIELD(CPTR_EL3, TTA, 20, 1)
 REG_FIELD(CPTR_EL3, TAM, 30, 1)
 REG_FIELD(CPTR_EL3, TCPAC, 31, 1)
 
-#define MDCR_MTPME    (1U << 28)
-#define MDCR_TDCC     (1U << 27)
-#define MDCR_HLP      (1U << 26)  /* MDCR_EL2 */
-#define MDCR_SCCD     (1U << 23)  /* MDCR_EL3 */
-#define MDCR_HCCD     (1U << 23)  /* MDCR_EL2 */
-#define MDCR_EPMAD    (1U << 21)
-#define MDCR_EDAD     (1U << 20)
-#define MDCR_TTRF     (1U << 19)
-#define MDCR_STE      (1U << 18)  /* MDCR_EL3 */
-#define MDCR_SPME     (1U << 17)  /* MDCR_EL3 */
-#define MDCR_HPMD     (1U << 17)  /* MDCR_EL2 */
-#define MDCR_SDD      (1U << 16)
-#define MDCR_SPD      (3U << 14)
-#define MDCR_TDRA     (1U << 11)
-#define MDCR_TDOSA    (1U << 10)
-#define MDCR_TDA      (1U << 9)
-#define MDCR_TDE      (1U << 8)
-#define MDCR_HPME     (1U << 7)
-#define MDCR_TPM      (1U << 6)
-#define MDCR_TPMCR    (1U << 5)
-#define MDCR_HPMN     (0x1fU)
+#define MDCR_MTPME (1U << 28)
+#define MDCR_TDCC  (1U << 27)
+#define MDCR_HLP   (1U << 26) /* MDCR_EL2 */
+#define MDCR_SCCD  (1U << 23) /* MDCR_EL3 */
+#define MDCR_HCCD  (1U << 23) /* MDCR_EL2 */
+#define MDCR_EPMAD (1U << 21)
+#define MDCR_EDAD  (1U << 20)
+#define MDCR_TTRF  (1U << 19)
+#define MDCR_STE   (1U << 18) /* MDCR_EL3 */
+#define MDCR_SPME  (1U << 17) /* MDCR_EL3 */
+#define MDCR_HPMD  (1U << 17) /* MDCR_EL2 */
+#define MDCR_SDD   (1U << 16)
+#define MDCR_SPD   (3U << 14)
+#define MDCR_TDRA  (1U << 11)
+#define MDCR_TDOSA (1U << 10)
+#define MDCR_TDA   (1U << 9)
+#define MDCR_TDE   (1U << 8)
+#define MDCR_HPME  (1U << 7)
+#define MDCR_TPM   (1U << 6)
+#define MDCR_TPMCR (1U << 5)
+#define MDCR_HPMN  (0x1fU)
 
 /* Not all of the MDCR_EL3 bits are present in the 32-bit SDCR */
-#define SDCR_VALID_MASK (MDCR_MTPME | MDCR_TDCC | MDCR_SCCD | \
-                         MDCR_EPMAD | MDCR_EDAD | MDCR_TTRF | \
-                         MDCR_STE | MDCR_SPME | MDCR_SPD)
+#define SDCR_VALID_MASK                                                                                         \
+    (MDCR_MTPME | MDCR_TDCC | MDCR_SCCD | MDCR_EPMAD | MDCR_EDAD | MDCR_TTRF | MDCR_STE | MDCR_SPME | MDCR_SPD)
 
-#define TTBCR_N      (7U << 0) /* TTBCR.EAE==0 */
-#define TTBCR_T0SZ   (7U << 0) /* TTBCR.EAE==1 */
-#define TTBCR_PD0    (1U << 4)
-#define TTBCR_PD1    (1U << 5)
-#define TTBCR_EPD0   (1U << 7)
-#define TTBCR_IRGN0  (3U << 8)
-#define TTBCR_ORGN0  (3U << 10)
-#define TTBCR_SH0    (3U << 12)
-#define TTBCR_T1SZ   (3U << 16)
-#define TTBCR_A1     (1U << 22)
-#define TTBCR_EPD1   (1U << 23)
-#define TTBCR_IRGN1  (3U << 24)
-#define TTBCR_ORGN1  (3U << 26)
-#define TTBCR_SH1    (1U << 28)
-#define TTBCR_EAE    (1U << 31)
+#define TTBCR_N     (7U << 0) /* TTBCR.EAE==0 */
+#define TTBCR_T0SZ  (7U << 0) /* TTBCR.EAE==1 */
+#define TTBCR_PD0   (1U << 4)
+#define TTBCR_PD1   (1U << 5)
+#define TTBCR_EPD0  (1U << 7)
+#define TTBCR_IRGN0 (3U << 8)
+#define TTBCR_ORGN0 (3U << 10)
+#define TTBCR_SH0   (3U << 12)
+#define TTBCR_T1SZ  (3U << 16)
+#define TTBCR_A1    (1U << 22)
+#define TTBCR_EPD1  (1U << 23)
+#define TTBCR_IRGN1 (3U << 24)
+#define TTBCR_ORGN1 (3U << 26)
+#define TTBCR_SH1   (1U << 28)
+#define TTBCR_EAE   (1U << 31)
 
 REG_FIELD(VTCR, T0SZ, 0, 6)
 REG_FIELD(VTCR, SL0, 6, 2)
@@ -196,22 +188,22 @@ REG_FIELD(VTCR, NSA, 30, 1)
 REG_FIELD(VTCR, DS, 32, 1)
 REG_FIELD(VTCR, SL2, 33, 1)
 
-#define HCRX_ENAS0    (1ULL << 0)
-#define HCRX_ENALS    (1ULL << 1)
-#define HCRX_ENASR    (1ULL << 2)
-#define HCRX_FNXS     (1ULL << 3)
-#define HCRX_FGTNXS   (1ULL << 4)
-#define HCRX_SMPME    (1ULL << 5)
-#define HCRX_TALLINT  (1ULL << 6)
-#define HCRX_VINMI    (1ULL << 7)
-#define HCRX_VFNMI    (1ULL << 8)
-#define HCRX_CMOW     (1ULL << 9)
-#define HCRX_MCE2     (1ULL << 10)
-#define HCRX_MSCEN    (1ULL << 11)
+#define HCRX_ENAS0   (1ULL << 0)
+#define HCRX_ENALS   (1ULL << 1)
+#define HCRX_ENASR   (1ULL << 2)
+#define HCRX_FNXS    (1ULL << 3)
+#define HCRX_FGTNXS  (1ULL << 4)
+#define HCRX_SMPME   (1ULL << 5)
+#define HCRX_TALLINT (1ULL << 6)
+#define HCRX_VINMI   (1ULL << 7)
+#define HCRX_VFNMI   (1ULL << 8)
+#define HCRX_CMOW    (1ULL << 9)
+#define HCRX_MCE2    (1ULL << 10)
+#define HCRX_MSCEN   (1ULL << 11)
 
-#define HPFAR_NS      (1ULL << 63)
+#define HPFAR_NS (1ULL << 63)
 
-#define HSTR_TTEE (1 << 16)
+#define HSTR_TTEE  (1 << 16)
 #define HSTR_TJDBX (1 << 17)
 
 /*
@@ -253,7 +245,7 @@ REG_FIELD(CNTHCTL, CNTPMASK, 19, 1)
  * These values will never be visible to the guest.
  */
 #define M_FAKE_FSR_NSC_EXEC 0xf /* NS executing in S&NSC memory */
-#define M_FAKE_FSR_SFAULT 0xe /* SecureFault INVTRAN, INVEP or AUVIOL */
+#define M_FAKE_FSR_SFAULT   0xe /* SecureFault INVTRAN, INVEP or AUVIOL */
 
 /**
  * raise_exception: Raise the specified exception.
@@ -261,15 +253,13 @@ REG_FIELD(CNTHCTL, CNTPMASK, 19, 1)
  * and target exception level. This should be called from helper functions,
  * and never returns because we will longjump back up to the CPU main loop.
  */
-G_NORETURN void raise_exception(CPUARMState *env, uint32_t excp,
-                                uint32_t syndrome, uint32_t target_el);
+G_NORETURN void raise_exception(CPUARMState* env, uint32_t excp, uint32_t syndrome, uint32_t target_el);
 
 /*
  * Similarly, but also use unwinding to restore cpu state.
  */
-G_NORETURN void raise_exception_ra(CPUARMState *env, uint32_t excp,
-                                      uint32_t syndrome, uint32_t target_el,
-                                      uintptr_t ra);
+G_NORETURN void raise_exception_ra(CPUARMState* env, uint32_t excp, uint32_t syndrome, uint32_t target_el,
+                                   uintptr_t ra);
 
 /*
  * For AArch64, map a given EL to an index in the banked_spsr array.
@@ -292,23 +282,15 @@ static inline unsigned int aarch64_banked_spsr_index(unsigned int el)
 static inline int bank_number(int mode)
 {
     switch (mode) {
-    case ARM_CPU_MODE_USR:
-    case ARM_CPU_MODE_SYS:
-        return BANK_USRSYS;
-    case ARM_CPU_MODE_SVC:
-        return BANK_SVC;
-    case ARM_CPU_MODE_ABT:
-        return BANK_ABT;
-    case ARM_CPU_MODE_UND:
-        return BANK_UND;
-    case ARM_CPU_MODE_IRQ:
-        return BANK_IRQ;
-    case ARM_CPU_MODE_FIQ:
-        return BANK_FIQ;
-    case ARM_CPU_MODE_HYP:
-        return BANK_HYP;
-    case ARM_CPU_MODE_MON:
-        return BANK_MON;
+        case ARM_CPU_MODE_USR:
+        case ARM_CPU_MODE_SYS: return BANK_USRSYS;
+        case ARM_CPU_MODE_SVC: return BANK_SVC;
+        case ARM_CPU_MODE_ABT: return BANK_ABT;
+        case ARM_CPU_MODE_UND: return BANK_UND;
+        case ARM_CPU_MODE_IRQ: return BANK_IRQ;
+        case ARM_CPU_MODE_FIQ: return BANK_FIQ;
+        case ARM_CPU_MODE_HYP: return BANK_HYP;
+        case ARM_CPU_MODE_MON: return BANK_MON;
     }
     assert_not_reached();
 }
@@ -324,39 +306,33 @@ static inline int bank_number(int mode)
  * bank_number() used for the index into env->banked_r13[] and
  * env->banked_spsr[].
  */
-static inline int r14_bank_number(int mode)
-{
-    return (mode == ARM_CPU_MODE_HYP) ? BANK_USRSYS : bank_number(mode);
-}
+static inline int r14_bank_number(int mode) { return (mode == ARM_CPU_MODE_HYP) ? BANK_USRSYS : bank_number(mode); }
 
-void arm_cpu_register(const ARMCPUInfo *info);
+void arm_cpu_register(const ARMCPUInfo* info);
 
-void register_cp_regs_for_features(ARMCPU *cpu);
-void init_cpreg_list(ARMCPU *cpu);
+void register_cp_regs_for_features(ARMCPU* cpu);
+void init_cpreg_list(ARMCPU* cpu);
 
-void arm_cpu_register_gdb_regs_for_features(ARMCPU *cpu);
+void arm_cpu_register_gdb_regs_for_features(ARMCPU* cpu);
 void arm_translate_init(void);
-void arm_translate_code(CPUState *cs, TranslationBlock *tb,
-                        int *max_insns, vaddr pc, void *host_pc);
+void arm_translate_code(CPUState* cs, TranslationBlock* tb, int* max_insns, vaddr pc, void* host_pc);
 
-void arm_cpu_register_gdb_commands(ARMCPU *cpu);
-void aarch64_cpu_register_gdb_commands(ARMCPU *cpu, GString *,
-                                       GPtrArray *, GPtrArray *);
+void arm_cpu_register_gdb_commands(ARMCPU* cpu);
+void aarch64_cpu_register_gdb_commands(ARMCPU* cpu, GString*, GPtrArray*, GPtrArray*);
 
-void arm_restore_state_to_opc(CPUState *cs,
-                              const TranslationBlock *tb,
-                              const uint64_t *data);
+void arm_restore_state_to_opc(CPUState* cs, const TranslationBlock* tb, const uint64_t* data);
 
 #ifdef CONFIG_TCG
-TCGTBCPUState arm_get_tb_cpu_state(CPUState *cs);
-void arm_cpu_synchronize_from_tb(CPUState *cs, const TranslationBlock *tb);
+TCGTBCPUState arm_get_tb_cpu_state(CPUState* cs);
+void          arm_cpu_synchronize_from_tb(CPUState* cs, const TranslationBlock* tb);
 
 /* Our implementation of TCGCPUOps::cpu_exec_halt */
-bool arm_cpu_exec_halt(CPUState *cs);
-int arm_cpu_mmu_index(CPUState *cs, bool ifetch);
+bool arm_cpu_exec_halt(CPUState* cs);
+int  arm_cpu_mmu_index(CPUState* cs, bool ifetch);
 #endif /* CONFIG_TCG */
 
-typedef enum ARMFPRounding {
+typedef enum ARMFPRounding
+{
     FPROUNDING_TIEEVEN,
     FPROUNDING_POSINF,
     FPROUNDING_NEGINF,
@@ -374,28 +350,26 @@ static inline FloatRoundMode arm_rmode_to_sf(ARMFPRounding rmode)
 }
 
 /* Return the effective value of SCR_EL3.RW */
-static inline bool arm_scr_rw_eff(CPUARMState *env)
+static inline bool arm_scr_rw_eff(CPUARMState* env)
 {
     /*
      * SCR_EL3.RW has an effective value of 1 if:
      *  - we are NS and EL2 is implemented but doesn't support AArch32
      *  - we are S and EL2 is enabled (in which case it must be AArch64)
      */
-    ARMCPU *cpu = env_archcpu(env);
+    ARMCPU* cpu = env_archcpu(env);
 
-    if (env->cp15.scr_el3 & SCR_RW) {
-        return true;
-    }
+    if (env->cp15.scr_el3 & SCR_RW) { return true; }
     if (env->cp15.scr_el3 & SCR_NS) {
-        return arm_feature(env, ARM_FEATURE_EL2) &&
-            !cpu_isar_feature(aa64_aa32_el2, cpu);
-    } else {
+        return arm_feature(env, ARM_FEATURE_EL2) && !cpu_isar_feature(aa64_aa32_el2, cpu);
+    }
+    else {
         return env->cp15.scr_el3 & SCR_EEL2;
     }
 }
 
 /* Return true if the specified exception level is running in AArch64 state. */
-static inline bool arm_el_is_aa64(CPUARMState *env, int el)
+static inline bool arm_el_is_aa64(CPUARMState* env, int el)
 {
     /*
      * This isn't valid for EL0 (if we're in EL0, is_a64() is what you want,
@@ -409,21 +383,13 @@ static inline bool arm_el_is_aa64(CPUARMState *env, int el)
      * register width, and then lower levels have a register width controlled
      * by bits in the SCR or HCR registers.
      */
-    if (el == 3) {
-        return aa64;
-    }
+    if (el == 3) { return aa64; }
 
-    if (arm_feature(env, ARM_FEATURE_EL3)) {
-        aa64 = aa64 && arm_scr_rw_eff(env);
-    }
+    if (arm_feature(env, ARM_FEATURE_EL3)) { aa64 = aa64 && arm_scr_rw_eff(env); }
 
-    if (el == 2) {
-        return aa64;
-    }
+    if (el == 2) { return aa64; }
 
-    if (arm_is_el2_enabled(env)) {
-        aa64 = aa64 && (env->cp15.hcr_el2 & HCR_RW);
-    }
+    if (arm_is_el2_enabled(env)) { aa64 = aa64 && (env->cp15.hcr_el2 & HCR_RW); }
 
     return aa64;
 }
@@ -432,101 +398,87 @@ static inline bool arm_el_is_aa64(CPUARMState *env, int el)
  * Return the current Exception Level (as per ARMv8; note that this differs
  * from the ARMv7 Privilege Level).
  */
-static inline int arm_current_el(CPUARMState *env)
+static inline int arm_current_el(CPUARMState* env)
 {
-    if (is_a64(env)) {
-        return extract32(env->pstate, 2, 2);
-    }
+    if (is_a64(env)) { return extract32(env->pstate, 2, 2); }
 
     switch (env->uncached_cpsr & 0x1f) {
-    case ARM_CPU_MODE_USR:
-        return 0;
-    case ARM_CPU_MODE_HYP:
-        return 2;
-    case ARM_CPU_MODE_MON:
-        return 3;
-    default:
-        if (arm_is_secure(env) && !arm_el_is_aa64(env, 3)) {
-            /* If EL3 is 32-bit then all secure privileged modes run in EL3 */
-            return 3;
-        }
+        case ARM_CPU_MODE_USR: return 0;
+        case ARM_CPU_MODE_HYP: return 2;
+        case ARM_CPU_MODE_MON: return 3;
+        default:
+            if (arm_is_secure(env) && !arm_el_is_aa64(env, 3)) {
+                /* If EL3 is 32-bit then all secure privileged modes run in EL3 */
+                return 3;
+            }
 
-        return 1;
+            return 1;
     }
 }
 
 /* Return true if the processor is in GXF state */
-static inline bool arm_is_guarded(CPUARMState *env)
+static inline bool arm_is_guarded(CPUARMState* env)
 {
-    return arm_feature(env, ARM_FEATURE_GXF) && (arm_current_el(env) > 0) &&
-           (env->gxf.gxf_status_el[arm_current_el(env)] & 1);
+    return arm_feature(env, ARM_FEATURE_GXF) && (arm_current_el(env) > 0)
+           && (env->gxf.gxf_status_el[arm_current_el(env)] & 1);
 }
 
 /* Return true if the processor has SPRR enabled */
-static inline bool arm_is_sprr_enabled(CPUARMState *env)
-{
-    return env->sprr.sprr_config_el[arm_current_el(env)] & 1;
-}
+static inline bool arm_is_sprr_enabled(CPUARMState* env) { return env->sprr.sprr_config_el[arm_current_el(env)] & 1; }
 
-static inline bool arm_cpu_data_is_big_endian_a32(CPUARMState *env,
-                                                  bool sctlr_b)
+static inline bool arm_cpu_data_is_big_endian_a32(CPUARMState* env, bool sctlr_b)
 {
     /* In 32bit endianness is determined by looking at CPSR's E bit */
     return env->uncached_cpsr & CPSR_E;
 }
 
 static inline bool arm_cpu_data_is_big_endian_a64(int el, uint64_t sctlr)
-{
-    return sctlr & (el ? SCTLR_EE : SCTLR_E0E);
-}
+{ return sctlr & (el ? SCTLR_EE : SCTLR_E0E); }
 
 /* Return true if the processor is in big-endian mode. */
-static inline bool arm_cpu_data_is_big_endian(CPUARMState *env)
+static inline bool arm_cpu_data_is_big_endian(CPUARMState* env)
 {
-    if (!is_a64(env)) {
-        return arm_cpu_data_is_big_endian_a32(env, arm_sctlr_b(env));
-    } else {
-        int cur_el = arm_current_el(env);
-        uint64_t sctlr = arm_sctlr(env, cur_el);
+    if (!is_a64(env)) { return arm_cpu_data_is_big_endian_a32(env, arm_sctlr_b(env)); }
+    else {
+        int      cur_el = arm_current_el(env);
+        uint64_t sctlr  = arm_sctlr(env, cur_el);
         return arm_cpu_data_is_big_endian_a64(cur_el, sctlr);
     }
 }
 
-static inline void aarch64_save_sp(CPUARMState *env, int el)
+static inline void aarch64_save_sp(CPUARMState* env, int el)
 {
     if (env->pstate & PSTATE_SP) {
-        if (arm_is_guarded(env)) {
-            env->gxf.sp_gl[el] = env->xregs[31];
-        } else {
+        if (arm_is_guarded(env)) { env->gxf.sp_gl[el] = env->xregs[31]; }
+        else {
             env->sp_el[el] = env->xregs[31];
         }
-    } else {
+    }
+    else {
         env->sp_el[0] = env->xregs[31];
     }
 }
 
-static inline void aarch64_restore_sp(CPUARMState *env, int el)
+static inline void aarch64_restore_sp(CPUARMState* env, int el)
 {
     if (env->pstate & PSTATE_SP) {
-        if (arm_is_guarded(env)) {
-            env->xregs[31] = env->gxf.sp_gl[el];
-        } else {
+        if (arm_is_guarded(env)) { env->xregs[31] = env->gxf.sp_gl[el]; }
+        else {
             env->xregs[31] = env->sp_el[el];
         }
-    } else {
+    }
+    else {
         env->xregs[31] = env->sp_el[0];
     }
 }
 
-static inline void update_spsel(CPUARMState *env, uint32_t imm)
+static inline void update_spsel(CPUARMState* env, uint32_t imm)
 {
     unsigned int cur_el = arm_current_el(env);
     /* Update PSTATE SPSel bit; this requires us to update the
      * working stack pointer in xregs[31].
      */
-    if (!((imm ^ env->pstate) & PSTATE_SP)) {
-        return;
-    }
+    if (!((imm ^ env->pstate) & PSTATE_SP)) { return; }
     aarch64_save_sp(env, cur_el);
     env->pstate = deposit32(env->pstate, 0, 1, imm);
 
@@ -544,7 +496,7 @@ static inline void update_spsel(CPUARMState *env, uint32_t imm)
  * Returns the implementation defined bit-width of physical addresses.
  * The ARMv8 reference manuals refer to this as PAMax().
  */
-unsigned int arm_pamax(ARMCPU *cpu);
+unsigned int arm_pamax(ARMCPU* cpu);
 
 /*
  * round_down_to_parange_index
@@ -569,74 +521,68 @@ uint8_t round_down_to_parange_bit_size(uint8_t bit_size);
  * This is always the case if our translation regime is 64 bit,
  * but depends on TTBCR.EAE for 32 bit.
  */
-static inline bool extended_addresses_enabled(CPUARMState *env)
+static inline bool extended_addresses_enabled(CPUARMState* env)
 {
     uint64_t tcr = env->cp15.tcr_el[arm_is_secure(env) ? 3 : 1];
-    return arm_el_is_aa64(env, 1) ||
-           (arm_feature(env, ARM_FEATURE_LPAE) && (tcr & TTBCR_EAE));
+    return arm_el_is_aa64(env, 1) || (arm_feature(env, ARM_FEATURE_LPAE) && (tcr & TTBCR_EAE));
 }
 
 /* Update a QEMU watchpoint based on the information the guest has set in the
  * DBGWCR<n>_EL1 and DBGWVR<n>_EL1 registers.
  */
-void hw_watchpoint_update(ARMCPU *cpu, int n);
+void hw_watchpoint_update(ARMCPU* cpu, int n);
 /* Update the QEMU watchpoints for every guest watchpoint. This does a
  * complete delete-and-reinstate of the QEMU watchpoint list and so is
  * suitable for use after migration or on reset.
  */
-void hw_watchpoint_update_all(ARMCPU *cpu);
+void hw_watchpoint_update_all(ARMCPU* cpu);
 /* Update a QEMU breakpoint based on the information the guest has set in the
  * DBGBCR<n>_EL1 and DBGBVR<n>_EL1 registers.
  */
-void hw_breakpoint_update(ARMCPU *cpu, int n);
+void hw_breakpoint_update(ARMCPU* cpu, int n);
 /* Update the QEMU breakpoints for every guest breakpoint. This does a
  * complete delete-and-reinstate of the QEMU breakpoint list and so is
  * suitable for use after migration or on reset.
  */
-void hw_breakpoint_update_all(ARMCPU *cpu);
+void hw_breakpoint_update_all(ARMCPU* cpu);
 
 /* Callback function for checking if a breakpoint should trigger. */
-bool arm_debug_check_breakpoint(CPUState *cs);
+bool arm_debug_check_breakpoint(CPUState* cs);
 
 /* Callback function for checking if a watchpoint should trigger. */
-bool arm_debug_check_watchpoint(CPUState *cs, CPUWatchpoint *wp);
+bool arm_debug_check_watchpoint(CPUState* cs, CPUWatchpoint* wp);
 
 /* Adjust addresses (in BE32 mode) before testing against watchpoint
  * addresses.
  */
-vaddr arm_adjust_watchpoint_address(CPUState *cs, vaddr addr, int len);
+vaddr arm_adjust_watchpoint_address(CPUState* cs, vaddr addr, int len);
 
 /* Callback function for when a watchpoint or breakpoint triggers. */
-void arm_debug_excp_handler(CPUState *cs);
+void arm_debug_excp_handler(CPUState* cs);
 
 #ifndef CONFIG_TCG
-static inline bool arm_is_psci_call(ARMCPU *cpu, int excp_type)
-{
-    return false;
-}
+static inline bool arm_is_psci_call(ARMCPU* cpu, int excp_type) { return false; }
 #else
 /* Return true if the r0/x0 value indicates that this SMC/HVC is a PSCI call. */
-bool arm_is_psci_call(ARMCPU *cpu, int excp_type);
+bool arm_is_psci_call(ARMCPU* cpu, int excp_type);
 #endif
 /* Actually handle a PSCI call */
-void arm_handle_psci_call(ARMCPU *cpu);
+void arm_handle_psci_call(ARMCPU* cpu);
 
 /**
  * arm_clear_exclusive: clear the exclusive monitor
  * @env: CPU env
  * Clear the CPU's exclusive monitor, like the guest CLREX instruction.
  */
-static inline void arm_clear_exclusive(CPUARMState *env)
-{
-    env->exclusive_addr = -1;
-}
+static inline void arm_clear_exclusive(CPUARMState* env) { env->exclusive_addr = -1; }
 
 /**
  * ARMFaultType: type of an ARM MMU fault
  * This corresponds to the v8A pseudocode's Fault enumeration,
  * with extensions for QEMU internal conditions.
  */
-typedef enum ARMFaultType {
+typedef enum ARMFaultType
+{
     ARMFault_None,
     ARMFault_AccessFlag,
     ARMFault_Alignment,
@@ -658,13 +604,14 @@ typedef enum ARMFaultType {
     ARMFault_Exclusive,
     ARMFault_ICacheMaint,
     ARMFault_QEMU_NSCExec, /* v8M: NS executing in S&NSC memory */
-    ARMFault_QEMU_SFault, /* v8M: SecureFault INVTRAN, INVEP or AUVIOL */
+    ARMFault_QEMU_SFault,  /* v8M: SecureFault INVTRAN, INVEP or AUVIOL */
     ARMFault_GPCFOnWalk,
     ARMFault_GPCFOnOutput,
     ARMFault_GXF_Abort,
 } ARMFaultType;
 
-typedef enum ARMGPCF {
+typedef enum ARMGPCF
+{
     GPCF_None,
     GPCF_AddressSize,
     GPCF_Walk,
@@ -687,18 +634,19 @@ typedef enum ARMGPCF {
  * @ea: True if we should set the EA (external abort type) bit in syndrome
  */
 typedef struct ARMMMUFaultInfo ARMMMUFaultInfo;
-struct ARMMMUFaultInfo {
-    ARMFaultType type;
-    ARMGPCF gpcf;
-    hwaddr s2addr;
-    hwaddr paddr;
+struct ARMMMUFaultInfo
+{
+    ARMFaultType     type;
+    ARMGPCF          gpcf;
+    hwaddr           s2addr;
+    hwaddr           paddr;
     ARMSecuritySpace paddr_space;
-    int level;
-    int domain;
-    bool stage2;
-    bool s1ptw;
-    bool s1ns;
-    bool ea;
+    int              level;
+    int              domain;
+    bool             stage2;
+    bool             s1ptw;
+    bool             s1ns;
+    bool             ea;
 };
 
 /**
@@ -707,76 +655,39 @@ struct ARMMMUFaultInfo {
  * we set up a whole FSR-format code including domain field and
  * putting the high bit of the FSC into bit 10.
  */
-static inline uint32_t arm_fi_to_sfsc(ARMMMUFaultInfo *fi)
+static inline uint32_t arm_fi_to_sfsc(ARMMMUFaultInfo* fi)
 {
     uint32_t fsc;
 
     switch (fi->type) {
-    case ARMFault_None:
-        return 0;
-    case ARMFault_AccessFlag:
-        fsc = fi->level == 1 ? 0x3 : 0x6;
-        break;
-    case ARMFault_Alignment:
-        fsc = 0x1;
-        break;
-    case ARMFault_Permission:
-        fsc = fi->level == 1 ? 0xd : 0xf;
-        break;
-    case ARMFault_Domain:
-        fsc = fi->level == 1 ? 0x9 : 0xb;
-        break;
-    case ARMFault_Translation:
-        fsc = fi->level == 1 ? 0x5 : 0x7;
-        break;
-    case ARMFault_SyncExternal:
-        fsc = 0x8 | (fi->ea << 12);
-        break;
-    case ARMFault_SyncExternalOnWalk:
-        fsc = fi->level == 1 ? 0xc : 0xe;
-        fsc |= (fi->ea << 12);
-        break;
-    case ARMFault_SyncParity:
-        fsc = 0x409;
-        break;
-    case ARMFault_SyncParityOnWalk:
-        fsc = fi->level == 1 ? 0x40c : 0x40e;
-        break;
-    case ARMFault_AsyncParity:
-        fsc = 0x408;
-        break;
-    case ARMFault_AsyncExternal:
-        fsc = 0x406 | (fi->ea << 12);
-        break;
-    case ARMFault_Debug:
-        fsc = 0x2;
-        break;
-    case ARMFault_TLBConflict:
-        fsc = 0x400;
-        break;
-    case ARMFault_Lockdown:
-        fsc = 0x404;
-        break;
-    case ARMFault_Exclusive:
-        fsc = 0x405;
-        break;
-    case ARMFault_ICacheMaint:
-        fsc = 0x4;
-        break;
-    case ARMFault_Background:
-        fsc = 0x0;
-        break;
-    case ARMFault_QEMU_NSCExec:
-        fsc = M_FAKE_FSR_NSC_EXEC;
-        break;
-    case ARMFault_QEMU_SFault:
-        fsc = M_FAKE_FSR_SFAULT;
-        break;
-    default:
-        /* Other faults can't occur in a context that requires a
-         * short-format status code.
-         */
-        assert_not_reached();
+        case ARMFault_None        : return 0;
+        case ARMFault_AccessFlag  : fsc = fi->level == 1 ? 0x3 : 0x6; break;
+        case ARMFault_Alignment   : fsc = 0x1; break;
+        case ARMFault_Permission  : fsc = fi->level == 1 ? 0xd : 0xf; break;
+        case ARMFault_Domain      : fsc = fi->level == 1 ? 0x9 : 0xb; break;
+        case ARMFault_Translation : fsc = fi->level == 1 ? 0x5 : 0x7; break;
+        case ARMFault_SyncExternal: fsc = 0x8 | (fi->ea << 12); break;
+        case ARMFault_SyncExternalOnWalk:
+            fsc  = fi->level == 1 ? 0xc : 0xe;
+            fsc |= (fi->ea << 12);
+            break;
+        case ARMFault_SyncParity      : fsc = 0x409; break;
+        case ARMFault_SyncParityOnWalk: fsc = fi->level == 1 ? 0x40c : 0x40e; break;
+        case ARMFault_AsyncParity     : fsc = 0x408; break;
+        case ARMFault_AsyncExternal   : fsc = 0x406 | (fi->ea << 12); break;
+        case ARMFault_Debug           : fsc = 0x2; break;
+        case ARMFault_TLBConflict     : fsc = 0x400; break;
+        case ARMFault_Lockdown        : fsc = 0x404; break;
+        case ARMFault_Exclusive       : fsc = 0x405; break;
+        case ARMFault_ICacheMaint     : fsc = 0x4; break;
+        case ARMFault_Background      : fsc = 0x0; break;
+        case ARMFault_QEMU_NSCExec    : fsc = M_FAKE_FSR_NSC_EXEC; break;
+        case ARMFault_QEMU_SFault     : fsc = M_FAKE_FSR_SFAULT; break;
+        default:
+            /* Other faults can't occur in a context that requires a
+             * short-format status code.
+             */
+            assert_not_reached();
     }
 
     fsc |= (fi->domain << 4);
@@ -788,104 +699,76 @@ static inline uint32_t arm_fi_to_sfsc(ARMMMUFaultInfo *fi)
  * Compare pseudocode EncodeLDFSC(), though unlike that function
  * we fill in also the LPAE bit 9 of a DFSR format.
  */
-static inline uint32_t arm_fi_to_lfsc(ARMMMUFaultInfo *fi)
+static inline uint32_t arm_fi_to_lfsc(ARMMMUFaultInfo* fi)
 {
     uint32_t fsc;
 
     switch (fi->type) {
-    case ARMFault_None:
-        return 0;
-    case ARMFault_AddressSize:
-        assert(fi->level >= -1 && fi->level <= 3);
-        if (fi->level < 0) {
-            fsc = 0b101001;
-        } else {
-            fsc = fi->level;
-        }
-        break;
-    case ARMFault_AccessFlag:
-        assert(fi->level >= 0 && fi->level <= 3);
-        fsc = 0b001000 | fi->level;
-        break;
-    case ARMFault_Permission:
-        assert(fi->level >= 0 && fi->level <= 3);
-        fsc = 0b001100 | fi->level;
-        break;
-    case ARMFault_Translation:
-        assert(fi->level >= -1 && fi->level <= 3);
-        if (fi->level < 0) {
-            fsc = 0b101011;
-        } else {
-            fsc = 0b000100 | fi->level;
-        }
-        break;
-    case ARMFault_SyncExternal:
-        fsc = 0x10 | (fi->ea << 12);
-        break;
-    case ARMFault_SyncExternalOnWalk:
-        assert(fi->level >= -1 && fi->level <= 3);
-        if (fi->level < 0) {
-            fsc = 0b010011;
-        } else {
-            fsc = 0b010100 | fi->level;
-        }
-        fsc |= fi->ea << 12;
-        break;
-    case ARMFault_SyncParity:
-        fsc = 0x18;
-        break;
-    case ARMFault_SyncParityOnWalk:
-        assert(fi->level >= -1 && fi->level <= 3);
-        if (fi->level < 0) {
-            fsc = 0b011011;
-        } else {
-            fsc = 0b011100 | fi->level;
-        }
-        break;
-    case ARMFault_AsyncParity:
-        fsc = 0x19;
-        break;
-    case ARMFault_AsyncExternal:
-        fsc = 0x11 | (fi->ea << 12);
-        break;
-    case ARMFault_Alignment:
-        fsc = 0x21;
-        break;
-    case ARMFault_Debug:
-        fsc = 0x22;
-        break;
-    case ARMFault_TLBConflict:
-        fsc = 0x30;
-        break;
-    case ARMFault_UnsuppAtomicUpdate:
-        fsc = 0x31;
-        break;
-    case ARMFault_Lockdown:
-        fsc = 0x34;
-        break;
-    case ARMFault_Exclusive:
-        fsc = 0x35;
-        break;
-    case ARMFault_GPCFOnWalk:
-        assert(fi->level >= -1 && fi->level <= 3);
-        if (fi->level < 0) {
-            fsc = 0b100011;
-        } else {
-            fsc = 0b100100 | fi->level;
-        }
-        break;
-    case ARMFault_GPCFOnOutput:
-        fsc = 0b101000;
-        break;
-    case ARMFault_GXF_Abort:
-        /* TODO: GXF set this properly */
-        fsc = (fi->level & 3) | (0x3 << 2);
-        break;
-    default:
-        /* Other faults can't occur in a context that requires a
-         * long-format status code.
-         */
-        assert_not_reached();
+        case ARMFault_None: return 0;
+        case ARMFault_AddressSize:
+            assert(fi->level >= -1 && fi->level <= 3);
+            if (fi->level < 0) { fsc = 0b101001; }
+            else {
+                fsc = fi->level;
+            }
+            break;
+        case ARMFault_AccessFlag:
+            assert(fi->level >= 0 && fi->level <= 3);
+            fsc = 0b001000 | fi->level;
+            break;
+        case ARMFault_Permission:
+            assert(fi->level >= 0 && fi->level <= 3);
+            fsc = 0b001100 | fi->level;
+            break;
+        case ARMFault_Translation:
+            assert(fi->level >= -1 && fi->level <= 3);
+            if (fi->level < 0) { fsc = 0b101011; }
+            else {
+                fsc = 0b000100 | fi->level;
+            }
+            break;
+        case ARMFault_SyncExternal: fsc = 0x10 | (fi->ea << 12); break;
+        case ARMFault_SyncExternalOnWalk:
+            assert(fi->level >= -1 && fi->level <= 3);
+            if (fi->level < 0) { fsc = 0b010011; }
+            else {
+                fsc = 0b010100 | fi->level;
+            }
+            fsc |= fi->ea << 12;
+            break;
+        case ARMFault_SyncParity: fsc = 0x18; break;
+        case ARMFault_SyncParityOnWalk:
+            assert(fi->level >= -1 && fi->level <= 3);
+            if (fi->level < 0) { fsc = 0b011011; }
+            else {
+                fsc = 0b011100 | fi->level;
+            }
+            break;
+        case ARMFault_AsyncParity       : fsc = 0x19; break;
+        case ARMFault_AsyncExternal     : fsc = 0x11 | (fi->ea << 12); break;
+        case ARMFault_Alignment         : fsc = 0x21; break;
+        case ARMFault_Debug             : fsc = 0x22; break;
+        case ARMFault_TLBConflict       : fsc = 0x30; break;
+        case ARMFault_UnsuppAtomicUpdate: fsc = 0x31; break;
+        case ARMFault_Lockdown          : fsc = 0x34; break;
+        case ARMFault_Exclusive         : fsc = 0x35; break;
+        case ARMFault_GPCFOnWalk:
+            assert(fi->level >= -1 && fi->level <= 3);
+            if (fi->level < 0) { fsc = 0b100011; }
+            else {
+                fsc = 0b100100 | fi->level;
+            }
+            break;
+        case ARMFault_GPCFOnOutput: fsc = 0b101000; break;
+        case ARMFault_GXF_Abort:
+            /* TODO: GXF set this properly */
+            fsc = (fi->level & 3) | (0x3 << 2);
+            break;
+        default:
+            /* Other faults can't occur in a context that requires a
+             * long-format status code.
+             */
+            assert_not_reached();
     }
 
     fsc |= 1 << 9;
@@ -902,8 +785,7 @@ static inline bool arm_extabort_type(MemTxResult result)
     return result != MEMTX_DECODE_ERROR;
 }
 
-bool arm_cpu_tlb_fill_align(CPUState *cs, CPUTLBEntryFull *out, vaddr addr,
-                            MMUAccessType access_type, int mmu_idx,
+bool arm_cpu_tlb_fill_align(CPUState* cs, CPUTLBEntryFull* out, vaddr addr, MMUAccessType access_type, int mmu_idx,
                             MemOp memop, int size, bool probe, uintptr_t ra);
 
 static inline int arm_to_core_mmu_idx(ARMMMUIdx mmu_idx)
@@ -913,10 +795,7 @@ static inline int arm_to_core_mmu_idx(ARMMMUIdx mmu_idx)
     return coreidx;
 }
 
-static inline ARMMMUIdx core_to_arm_mmu_idx(CPUARMState *env, int mmu_idx)
-{
-    return mmu_idx | ARM_MMU_IDX_A;
-}
+static inline ARMMMUIdx core_to_arm_mmu_idx(CPUARMState* env, int mmu_idx) { return mmu_idx | ARM_MMU_IDX_A; }
 
 static inline ARMMMUIdx core_to_aa64_mmu_idx(int mmu_idx)
 {
@@ -928,72 +807,56 @@ static inline ARMMMUIdx core_to_aa64_mmu_idx(int mmu_idx)
 static inline int arm_mmu_idx_to_el(ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-    case ARMMMUIdx_E10_0:
-    case ARMMMUIdx_E20_0:
-    case ARMMMUIdx_E30_0:
-        return 0;
-    case ARMMMUIdx_E10_1:
-    case ARMMMUIdx_E10_1_PAN:
-    case ARMMMUIdx_GE10_1:
-    case ARMMMUIdx_GE10_1_PAN:
-        return 1;
-    case ARMMMUIdx_E2:
-    case ARMMMUIdx_E20_2:
-    case ARMMMUIdx_E20_2_PAN:
-    case ARMMMUIdx_GE2:
-    case ARMMMUIdx_GE20_2:
-    case ARMMMUIdx_GE20_2_PAN:
-        return 2;
-    case ARMMMUIdx_E3:
-    case ARMMMUIdx_E30_3_PAN:
-    case ARMMMUIdx_GE3:
-    case ARMMMUIdx_GE30_3_PAN:
-        return 3;
-    default:
-        tcg_debug_assert_not_reached();
+        case ARMMMUIdx_E10_0:
+        case ARMMMUIdx_E20_0:
+        case ARMMMUIdx_E30_0     : return 0;
+        case ARMMMUIdx_E10_1     :
+        case ARMMMUIdx_E10_1_PAN :
+        case ARMMMUIdx_GE10_1    :
+        case ARMMMUIdx_GE10_1_PAN: return 1;
+        case ARMMMUIdx_E2        :
+        case ARMMMUIdx_E20_2     :
+        case ARMMMUIdx_E20_2_PAN :
+        case ARMMMUIdx_GE2       :
+        case ARMMMUIdx_GE20_2    :
+        case ARMMMUIdx_GE20_2_PAN: return 2;
+        case ARMMMUIdx_E3        :
+        case ARMMMUIdx_E30_3_PAN :
+        case ARMMMUIdx_GE3       :
+        case ARMMMUIdx_GE30_3_PAN: return 3;
+        default                  : tcg_debug_assert_not_reached();
     }
 }
 
-static inline bool arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx)
-{
-    return (mmu_idx & ARM_MMU_IDX_A_GXF) != 0;
-}
+static inline bool arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx) { return (mmu_idx & ARM_MMU_IDX_A_GXF) != 0; }
 
 /*
  * Return true if the stage 1 translation regime is using LPAE
  * format page tables
  */
-bool arm_s1_regime_using_lpae_format(CPUARMState *env, ARMMMUIdx mmu_idx);
+bool arm_s1_regime_using_lpae_format(CPUARMState* env, ARMMMUIdx mmu_idx);
 
 /* Raise a data fault alignment exception for the specified virtual address */
-G_NORETURN void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
-                                            MMUAccessType access_type,
-                                            int mmu_idx, uintptr_t retaddr);
+G_NORETURN void arm_cpu_do_unaligned_access(CPUState* cs, vaddr vaddr, MMUAccessType access_type, int mmu_idx,
+                                            uintptr_t retaddr);
 
 /* arm_cpu_do_transaction_failed: handle a memory system error response
  * (eg "no device/memory present at address") by raising an external abort
  * exception
  */
-void arm_cpu_do_transaction_failed(CPUState *cs, hwaddr physaddr,
-                                   vaddr addr, unsigned size,
-                                   MMUAccessType access_type,
-                                   int mmu_idx, MemTxAttrs attrs,
-                                   MemTxResult response, uintptr_t retaddr);
+void arm_cpu_do_transaction_failed(CPUState* cs, hwaddr physaddr, vaddr addr, unsigned size, MMUAccessType access_type,
+                                   int mmu_idx, MemTxAttrs attrs, MemTxResult response, uintptr_t retaddr);
 
 /* Call any registered EL change hooks */
-static inline void arm_call_pre_el_change_hook(ARMCPU *cpu)
+static inline void arm_call_pre_el_change_hook(ARMCPU* cpu)
 {
     ARMELChangeHook *hook, *next;
-    QLIST_FOREACH_SAFE(hook, &cpu->pre_el_change_hooks, node, next) {
-        hook->hook(cpu, hook->opaque);
-    }
+    QLIST_FOREACH_SAFE (hook, &cpu->pre_el_change_hooks, node, next) { hook->hook(cpu, hook->opaque); }
 }
-static inline void arm_call_el_change_hook(ARMCPU *cpu)
+static inline void arm_call_el_change_hook(ARMCPU* cpu)
 {
     ARMELChangeHook *hook, *next;
-    QLIST_FOREACH_SAFE(hook, &cpu->el_change_hooks, node, next) {
-        hook->hook(cpu, hook->opaque);
-    }
+    QLIST_FOREACH_SAFE (hook, &cpu->el_change_hooks, node, next) { hook->hook(cpu, hook->opaque); }
 }
 
 /*
@@ -1009,125 +872,107 @@ static inline void arm_call_el_change_hook(ARMCPU *cpu)
 static inline bool regime_has_2_ranges(ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-    case ARMMMUIdx_Stage1_E0:
-    case ARMMMUIdx_Stage1_E1:
-    case ARMMMUIdx_Stage1_E1_PAN:
-    case ARMMMUIdx_Stage1_GE1:
-    case ARMMMUIdx_Stage1_GE1_PAN:
-    case ARMMMUIdx_E10_0:
-    case ARMMMUIdx_E10_1:
-    case ARMMMUIdx_E10_1_PAN:
-    case ARMMMUIdx_E20_0:
-    case ARMMMUIdx_E20_2:
-    case ARMMMUIdx_E20_2_PAN:
-    case ARMMMUIdx_GE10_1:
-    case ARMMMUIdx_GE10_1_PAN:
-    case ARMMMUIdx_GE20_2:
-    case ARMMMUIdx_GE20_2_PAN:
-        return true;
-    default:
-        return false;
+        case ARMMMUIdx_Stage1_E0:
+        case ARMMMUIdx_Stage1_E1:
+        case ARMMMUIdx_Stage1_E1_PAN:
+        case ARMMMUIdx_Stage1_GE1:
+        case ARMMMUIdx_Stage1_GE1_PAN:
+        case ARMMMUIdx_E10_0:
+        case ARMMMUIdx_E10_1:
+        case ARMMMUIdx_E10_1_PAN:
+        case ARMMMUIdx_E20_0:
+        case ARMMMUIdx_E20_2:
+        case ARMMMUIdx_E20_2_PAN:
+        case ARMMMUIdx_GE10_1:
+        case ARMMMUIdx_GE10_1_PAN:
+        case ARMMMUIdx_GE20_2:
+        case ARMMMUIdx_GE20_2_PAN    : return true;
+        default                      : return false;
     }
 }
 
-static inline bool regime_is_pan(CPUARMState *env, ARMMMUIdx mmu_idx)
+static inline bool regime_is_pan(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-    case ARMMMUIdx_Stage1_E1_PAN:
-    case ARMMMUIdx_Stage1_GE1_PAN:
-    case ARMMMUIdx_E10_1_PAN:
-    case ARMMMUIdx_E20_2_PAN:
-    case ARMMMUIdx_E30_3_PAN:
-    case ARMMMUIdx_GE10_1_PAN:
-    case ARMMMUIdx_GE20_2_PAN:
-    case ARMMMUIdx_GE30_3_PAN:
-        return true;
-    default:
-        return false;
+        case ARMMMUIdx_Stage1_E1_PAN:
+        case ARMMMUIdx_Stage1_GE1_PAN:
+        case ARMMMUIdx_E10_1_PAN:
+        case ARMMMUIdx_E20_2_PAN:
+        case ARMMMUIdx_E30_3_PAN:
+        case ARMMMUIdx_GE10_1_PAN:
+        case ARMMMUIdx_GE20_2_PAN:
+        case ARMMMUIdx_GE30_3_PAN    : return true;
+        default                      : return false;
     }
 }
 
 static inline bool regime_is_stage2(ARMMMUIdx mmu_idx)
-{
-    return mmu_idx == ARMMMUIdx_Stage2 || mmu_idx == ARMMMUIdx_Stage2_S;
-}
+{ return mmu_idx == ARMMMUIdx_Stage2 || mmu_idx == ARMMMUIdx_Stage2_S; }
 
 /* Return the exception level which controls this address translation regime */
-static inline uint32_t regime_el(CPUARMState *env, ARMMMUIdx mmu_idx)
+static inline uint32_t regime_el(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-    case ARMMMUIdx_E20_0:
-    case ARMMMUIdx_E20_2:
-    case ARMMMUIdx_E20_2_PAN:
-    case ARMMMUIdx_Stage2:
-    case ARMMMUIdx_Stage2_S:
-    case ARMMMUIdx_E2:
-    case ARMMMUIdx_GE20_2:
-    case ARMMMUIdx_GE20_2_PAN:
-    case ARMMMUIdx_GE2:
-        return 2;
-    case ARMMMUIdx_E3:
-    case ARMMMUIdx_E30_0:
-    case ARMMMUIdx_E30_3_PAN:
-    case ARMMMUIdx_GE3:
-    case ARMMMUIdx_GE30_3_PAN:
-        return 3;
-    case ARMMMUIdx_E10_0:
-    case ARMMMUIdx_Stage1_E0:
-    case ARMMMUIdx_Stage1_E1:
-    case ARMMMUIdx_Stage1_E1_PAN:
-    case ARMMMUIdx_Stage1_GE1:
-    case ARMMMUIdx_Stage1_GE1_PAN:
-    case ARMMMUIdx_E10_1:
-    case ARMMMUIdx_E10_1_PAN:
-    case ARMMMUIdx_GE10_1:
-    case ARMMMUIdx_GE10_1_PAN:
-        return 1;
-    default:
-        assert_not_reached();
+        case ARMMMUIdx_E20_0:
+        case ARMMMUIdx_E20_2:
+        case ARMMMUIdx_E20_2_PAN:
+        case ARMMMUIdx_Stage2:
+        case ARMMMUIdx_Stage2_S:
+        case ARMMMUIdx_E2:
+        case ARMMMUIdx_GE20_2:
+        case ARMMMUIdx_GE20_2_PAN:
+        case ARMMMUIdx_GE2           : return 2;
+        case ARMMMUIdx_E3            :
+        case ARMMMUIdx_E30_0         :
+        case ARMMMUIdx_E30_3_PAN     :
+        case ARMMMUIdx_GE3           :
+        case ARMMMUIdx_GE30_3_PAN    : return 3;
+        case ARMMMUIdx_E10_0         :
+        case ARMMMUIdx_Stage1_E0     :
+        case ARMMMUIdx_Stage1_E1     :
+        case ARMMMUIdx_Stage1_E1_PAN :
+        case ARMMMUIdx_Stage1_GE1    :
+        case ARMMMUIdx_Stage1_GE1_PAN:
+        case ARMMMUIdx_E10_1         :
+        case ARMMMUIdx_E10_1_PAN     :
+        case ARMMMUIdx_GE10_1        :
+        case ARMMMUIdx_GE10_1_PAN    : return 1;
+        default                      : assert_not_reached();
     }
 }
 
-static inline bool regime_is_user(CPUARMState *env, ARMMMUIdx mmu_idx)
+static inline bool regime_is_user(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-    case ARMMMUIdx_E10_0:
-    case ARMMMUIdx_E20_0:
-    case ARMMMUIdx_E30_0:
-    case ARMMMUIdx_Stage1_E0:
-        return true;
-    case ARMMMUIdx_E10_1:
-    case ARMMMUIdx_E10_1_PAN:
-    case ARMMMUIdx_GE10_1:
-    case ARMMMUIdx_GE10_1_PAN:
-        assert_not_reached();
-    default:
-        return false;
+        case ARMMMUIdx_E10_0:
+        case ARMMMUIdx_E20_0:
+        case ARMMMUIdx_E30_0:
+        case ARMMMUIdx_Stage1_E0 : return true;
+        case ARMMMUIdx_E10_1     :
+        case ARMMMUIdx_E10_1_PAN :
+        case ARMMMUIdx_GE10_1    :
+        case ARMMMUIdx_GE10_1_PAN: assert_not_reached();
+        default                  : return false;
     }
 }
 
 /* Return the SCTLR value which controls this address translation regime */
-static inline uint64_t regime_sctlr(CPUARMState *env, ARMMMUIdx mmu_idx)
-{
-    return env->cp15.sctlr_el[regime_el(env, mmu_idx)];
-}
+static inline uint64_t regime_sctlr(CPUARMState* env, ARMMMUIdx mmu_idx)
+{ return env->cp15.sctlr_el[regime_el(env, mmu_idx)]; }
 
 /*
  * These are the fields in VTCR_EL2 which affect both the Secure stage 2
  * and the Non-Secure stage 2 translation regimes (and hence which are
  * not present in VSTCR_EL2).
  */
-#define VTCR_SHARED_FIELD_MASK \
-    (R_VTCR_IRGN0_MASK | R_VTCR_ORGN0_MASK | R_VTCR_SH0_MASK | \
-     R_VTCR_PS_MASK | R_VTCR_VS_MASK | R_VTCR_HA_MASK | R_VTCR_HD_MASK | \
-     R_VTCR_DS_MASK)
+#define VTCR_SHARED_FIELD_MASK                                                                                  \
+    (R_VTCR_IRGN0_MASK | R_VTCR_ORGN0_MASK | R_VTCR_SH0_MASK | R_VTCR_PS_MASK | R_VTCR_VS_MASK | R_VTCR_HA_MASK \
+     | R_VTCR_HD_MASK | R_VTCR_DS_MASK)
 
 /* Return the value of the TCR controlling this translation regime */
-static inline uint64_t regime_tcr(CPUARMState *env, ARMMMUIdx mmu_idx)
+static inline uint64_t regime_tcr(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
-    if (mmu_idx == ARMMMUIdx_Stage2) {
-        return env->cp15.vtcr_el2;
-    }
+    if (mmu_idx == ARMMMUIdx_Stage2) { return env->cp15.vtcr_el2; }
     if (mmu_idx == ARMMMUIdx_Stage2_S) {
         /*
          * Secure stage 2 shares fields from VTCR_EL2. We merge those
@@ -1137,24 +982,19 @@ static inline uint64_t regime_tcr(CPUARMState *env, ARMMMUIdx mmu_idx)
          * If a future architecture change defines bits in VSTCR_EL2 that
          * overlap with these VTCR_EL2 fields we may need to revisit this.
          */
-        uint64_t v = env->cp15.vstcr_el2 & ~VTCR_SHARED_FIELD_MASK;
-        v |= env->cp15.vtcr_el2 & VTCR_SHARED_FIELD_MASK;
+        uint64_t v  = env->cp15.vstcr_el2 & ~VTCR_SHARED_FIELD_MASK;
+        v          |= env->cp15.vtcr_el2 & VTCR_SHARED_FIELD_MASK;
         return v;
     }
     return env->cp15.tcr_el[regime_el(env, mmu_idx)];
 }
 
 /* Return true if the translation regime is using LPAE format page tables */
-static inline bool regime_using_lpae_format(CPUARMState *env, ARMMMUIdx mmu_idx)
+static inline bool regime_using_lpae_format(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
     int el = regime_el(env, mmu_idx);
-    if (el == 2 || arm_el_is_aa64(env, el)) {
-        return true;
-    }
-    if (arm_feature(env, ARM_FEATURE_LPAE)
-        && (regime_tcr(env, mmu_idx) & TTBCR_EAE)) {
-        return true;
-    }
+    if (el == 2 || arm_el_is_aa64(env, el)) { return true; }
+    if (arm_feature(env, ARM_FEATURE_LPAE) && (regime_tcr(env, mmu_idx) & TTBCR_EAE)) { return true; }
     return false;
 }
 
@@ -1163,11 +1003,10 @@ static inline bool regime_using_lpae_format(CPUARMState *env, ARMMMUIdx mmu_idx)
  * Note that the ID register BRPS field is "number of bps - 1",
  * and we return the actual number of breakpoints.
  */
-static inline int arm_num_brps(ARMCPU *cpu)
+static inline int arm_num_brps(ARMCPU* cpu)
 {
-    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
-        return FIELD_EX64_IDREG(&cpu->isar, ID_AA64DFR0, BRPS) + 1;
-    } else {
+    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) { return FIELD_EX64_IDREG(&cpu->isar, ID_AA64DFR0, BRPS) + 1; }
+    else {
         return REG_FIELD_EX32(cpu->isar.dbgdidr, DBGDIDR, BRPS) + 1;
     }
 }
@@ -1177,11 +1016,10 @@ static inline int arm_num_brps(ARMCPU *cpu)
  * Note that the ID register WRPS field is "number of wps - 1",
  * and we return the actual number of watchpoints.
  */
-static inline int arm_num_wrps(ARMCPU *cpu)
+static inline int arm_num_wrps(ARMCPU* cpu)
 {
-    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
-        return FIELD_EX64_IDREG(&cpu->isar, ID_AA64DFR0, WRPS) + 1;
-    } else {
+    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) { return FIELD_EX64_IDREG(&cpu->isar, ID_AA64DFR0, WRPS) + 1; }
+    else {
         return REG_FIELD_EX32(cpu->isar.dbgdidr, DBGDIDR, WRPS) + 1;
     }
 }
@@ -1191,11 +1029,10 @@ static inline int arm_num_wrps(ARMCPU *cpu)
  * Note that the ID register CTX_CMPS field is "number of cmps - 1",
  * and we return the actual number of comparators.
  */
-static inline int arm_num_ctx_cmps(ARMCPU *cpu)
+static inline int arm_num_ctx_cmps(ARMCPU* cpu)
 {
-    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
-        return FIELD_EX64_IDREG(&cpu->isar, ID_AA64DFR0, CTX_CMPS) + 1;
-    } else {
+    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) { return FIELD_EX64_IDREG(&cpu->isar, ID_AA64DFR0, CTX_CMPS) + 1; }
+    else {
         return REG_FIELD_EX32(cpu->isar.dbgdidr, DBGDIDR, CTX_CMPS) + 1;
     }
 }
@@ -1208,12 +1045,10 @@ static inline int arm_num_ctx_cmps(ARMCPU *cpu)
  * of the AArch32 CPU mode ("svc", "usr", etc) as indicated by
  * the low bits of the specified PSR.
  */
-static inline const char *aarch32_mode_name(uint32_t psr)
+static inline const char* aarch32_mode_name(uint32_t psr)
 {
-    static const char cpu_mode_names[16][4] = {
-        "usr", "fiq", "irq", "svc", "???", "???", "mon", "abt",
-        "???", "???", "hyp", "und", "???", "???", "???", "sys"
-    };
+    static const char cpu_mode_names[16][4] = {"usr", "fiq", "irq", "svc", "???", "???", "mon", "abt",
+                                               "???", "???", "hyp", "und", "???", "???", "???", "sys"};
 
     return cpu_mode_names[psr & 0xf];
 }
@@ -1221,7 +1056,7 @@ static inline const char *aarch32_mode_name(uint32_t psr)
 /**
  * arm_cpu_exec_interrupt(): Implementation of the cpu_exec_inrerrupt hook.
  */
-bool arm_cpu_exec_interrupt(CPUState *cs, int interrupt_request);
+bool arm_cpu_exec_interrupt(CPUState* cs, int interrupt_request);
 
 /**
  * arm_cpu_update_virq: Update CPU_INTERRUPT_VIRQ bit in cs->interrupt_request
@@ -1230,7 +1065,7 @@ bool arm_cpu_exec_interrupt(CPUState *cs, int interrupt_request);
  * a change to either the input VIRQ line from the GIC or the HCR_EL2.VI bit.
  * Must be called with the BQL held.
  */
-void arm_cpu_update_virq(ARMCPU *cpu);
+void arm_cpu_update_virq(ARMCPU* cpu);
 
 /**
  * arm_cpu_update_vfiq: Update CPU_INTERRUPT_VFIQ bit in cs->interrupt_request
@@ -1239,7 +1074,7 @@ void arm_cpu_update_virq(ARMCPU *cpu);
  * a change to either the input VFIQ line from the GIC or the HCR_EL2.VF bit.
  * Must be called with the BQL held.
  */
-void arm_cpu_update_vfiq(ARMCPU *cpu);
+void arm_cpu_update_vfiq(ARMCPU* cpu);
 
 /**
  * arm_cpu_update_vinmi: Update CPU_INTERRUPT_VINMI bit in cs->interrupt_request
@@ -1248,7 +1083,7 @@ void arm_cpu_update_vfiq(ARMCPU *cpu);
  * a change to either the input VNMI line from the GIC or the HCRX_EL2.VINMI.
  * Must be called with the BQL held.
  */
-void arm_cpu_update_vinmi(ARMCPU *cpu);
+void arm_cpu_update_vinmi(ARMCPU* cpu);
 
 /**
  * arm_cpu_update_vfnmi: Update CPU_INTERRUPT_VFNMI bit in cs->interrupt_request
@@ -1257,7 +1092,7 @@ void arm_cpu_update_vinmi(ARMCPU *cpu);
  * a change to the HCRX_EL2.VFNMI.
  * Must be called with the BQL held.
  */
-void arm_cpu_update_vfnmi(ARMCPU *cpu);
+void arm_cpu_update_vfnmi(ARMCPU* cpu);
 
 /**
  * arm_cpu_update_vserr: Update CPU_INTERRUPT_VSERR bit
@@ -1265,7 +1100,7 @@ void arm_cpu_update_vfnmi(ARMCPU *cpu);
  * Update the CPU_INTERRUPT_VSERR bit in cs->interrupt_request,
  * following a change to the HCR_EL2.VSE bit.
  */
-void arm_cpu_update_vserr(ARMCPU *cpu);
+void arm_cpu_update_vserr(ARMCPU* cpu);
 
 /**
  * arm_mmu_idx_el:
@@ -1274,7 +1109,7 @@ void arm_cpu_update_vserr(ARMCPU *cpu);
  *
  * Return the full ARMMMUIdx for the translation regime for EL.
  */
-ARMMMUIdx arm_mmu_idx_el(CPUARMState *env, int el);
+ARMMMUIdx arm_mmu_idx_el(CPUARMState* env, int el);
 
 /**
  * arm_mmu_idx:
@@ -1282,7 +1117,7 @@ ARMMMUIdx arm_mmu_idx_el(CPUARMState *env, int el);
  *
  * Return the full ARMMMUIdx for the current translation regime.
  */
-ARMMMUIdx arm_mmu_idx(CPUARMState *env);
+ARMMMUIdx arm_mmu_idx(CPUARMState* env);
 
 /**
  * arm_stage1_mmu_idx:
@@ -1291,7 +1126,7 @@ ARMMMUIdx arm_mmu_idx(CPUARMState *env);
  * Return the ARMMMUIdx for the stage1 traversal for the current regime.
  */
 ARMMMUIdx stage_1_mmu_idx(ARMMMUIdx mmu_idx);
-ARMMMUIdx arm_stage1_mmu_idx(CPUARMState *env);
+ARMMMUIdx arm_stage1_mmu_idx(CPUARMState* env);
 
 /**
  * arm_mmu_idx_is_stage1_of_2:
@@ -1303,82 +1138,50 @@ ARMMMUIdx arm_stage1_mmu_idx(CPUARMState *env);
 static inline bool arm_mmu_idx_is_stage1_of_2(ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-    case ARMMMUIdx_Stage1_E0:
-    case ARMMMUIdx_Stage1_E1:
-    case ARMMMUIdx_Stage1_E1_PAN:
-    case ARMMMUIdx_Stage1_GE1:
-    case ARMMMUIdx_Stage1_GE1_PAN:
-        return true;
-    default:
-        return false;
+        case ARMMMUIdx_Stage1_E0:
+        case ARMMMUIdx_Stage1_E1:
+        case ARMMMUIdx_Stage1_E1_PAN:
+        case ARMMMUIdx_Stage1_GE1:
+        case ARMMMUIdx_Stage1_GE1_PAN: return true;
+        default                      : return false;
     }
 }
 
-static inline uint32_t aarch32_cpsr_valid_mask(uint64_t features,
-                                               const ARMISARegisters *id)
+static inline uint32_t aarch32_cpsr_valid_mask(uint64_t features, const ARMISARegisters* id)
 {
     uint32_t valid = CPSR_M | CPSR_AIF | CPSR_IL | CPSR_NZCV;
 
-    if ((features >> ARM_FEATURE_V4T) & 1) {
-        valid |= CPSR_T;
-    }
-    if ((features >> ARM_FEATURE_V5) & 1) {
-        valid |= CPSR_Q; /* V5TE in reality*/
-    }
-    if ((features >> ARM_FEATURE_V6) & 1) {
-        valid |= CPSR_E | CPSR_GE;
-    }
-    if ((features >> ARM_FEATURE_THUMB2) & 1) {
-        valid |= CPSR_IT;
-    }
-    if (isar_feature_aa32_jazelle(id)) {
-        valid |= CPSR_J;
-    }
-    if (isar_feature_aa32_pan(id)) {
-        valid |= CPSR_PAN;
-    }
-    if (isar_feature_aa32_dit(id)) {
-        valid |= CPSR_DIT;
-    }
-    if (isar_feature_aa32_ssbs(id)) {
-        valid |= CPSR_SSBS;
-    }
+    if ((features >> ARM_FEATURE_V4T) & 1) { valid |= CPSR_T; }
+    if ((features >> ARM_FEATURE_V5) & 1) { valid |= CPSR_Q; /* V5TE in reality*/ }
+    if ((features >> ARM_FEATURE_V6) & 1) { valid |= CPSR_E | CPSR_GE; }
+    if ((features >> ARM_FEATURE_THUMB2) & 1) { valid |= CPSR_IT; }
+    if (isar_feature_aa32_jazelle(id)) { valid |= CPSR_J; }
+    if (isar_feature_aa32_pan(id)) { valid |= CPSR_PAN; }
+    if (isar_feature_aa32_dit(id)) { valid |= CPSR_DIT; }
+    if (isar_feature_aa32_ssbs(id)) { valid |= CPSR_SSBS; }
 
     return valid;
 }
 
-static inline uint32_t aarch64_pstate_valid_mask(const ARMISARegisters *id)
+static inline uint32_t aarch64_pstate_valid_mask(const ARMISARegisters* id)
 {
     uint32_t valid;
 
     valid = PSTATE_M | PSTATE_DAIF | PSTATE_IL | PSTATE_SS | PSTATE_NZCV;
-    if (isar_feature_aa64_bti(id)) {
-        valid |= PSTATE_BTYPE;
-    }
-    if (isar_feature_aa64_pan(id)) {
-        valid |= PSTATE_PAN;
-    }
-    if (isar_feature_aa64_uao(id)) {
-        valid |= PSTATE_UAO;
-    }
-    if (isar_feature_aa64_dit(id)) {
-        valid |= PSTATE_DIT;
-    }
-    if (isar_feature_aa64_ssbs(id)) {
-        valid |= PSTATE_SSBS;
-    }
-    if (isar_feature_aa64_mte(id)) {
-        valid |= PSTATE_TCO;
-    }
-    if (isar_feature_aa64_nmi(id)) {
-        valid |= PSTATE_ALLINT;
-    }
+    if (isar_feature_aa64_bti(id)) { valid |= PSTATE_BTYPE; }
+    if (isar_feature_aa64_pan(id)) { valid |= PSTATE_PAN; }
+    if (isar_feature_aa64_uao(id)) { valid |= PSTATE_UAO; }
+    if (isar_feature_aa64_dit(id)) { valid |= PSTATE_DIT; }
+    if (isar_feature_aa64_ssbs(id)) { valid |= PSTATE_SSBS; }
+    if (isar_feature_aa64_mte(id)) { valid |= PSTATE_TCO; }
+    if (isar_feature_aa64_nmi(id)) { valid |= PSTATE_ALLINT; }
 
     return valid;
 }
 
 /* Granule size (i.e. page size) */
-typedef enum ARMGranuleSize {
+typedef enum ARMGranuleSize
+{
     /* Same order as TG0 encoding */
     Gran4K,
     Gran64K,
@@ -1395,14 +1198,10 @@ typedef enum ARMGranuleSize {
 static inline int arm_granule_bits(ARMGranuleSize gran)
 {
     switch (gran) {
-    case Gran64K:
-        return 16;
-    case Gran16K:
-        return 14;
-    case Gran4K:
-        return 12;
-    default:
-        assert_not_reached();
+        case Gran64K: return 16;
+        case Gran16K: return 14;
+        case Gran4K : return 12;
+        default     : assert_not_reached();
     }
 }
 
@@ -1410,19 +1209,20 @@ static inline int arm_granule_bits(ARMGranuleSize gran)
  * Parameters of a given virtual address, as extracted from the
  * translation control register (TCR) for a given regime.
  */
-typedef struct ARMVAParameters {
-    unsigned tsz    : 8;
-    unsigned ps     : 3;
-    unsigned sh     : 2;
-    unsigned select : 1;
-    bool tbi        : 1;
-    bool epd        : 1;
-    bool hpd        : 1;
-    bool tsz_oob    : 1;  /* tsz has been clamped to legal range */
-    bool ds         : 1;
-    bool ha         : 1;
-    bool hd         : 1;
-    ARMGranuleSize gran : 2;
+typedef struct ARMVAParameters
+{
+    unsigned       tsz     : 8;
+    unsigned       ps      : 3;
+    unsigned       sh      : 2;
+    unsigned       select  : 1;
+    bool           tbi     : 1;
+    bool           epd     : 1;
+    bool           hpd     : 1;
+    bool           tsz_oob : 1; /* tsz has been clamped to legal range */
+    bool           ds      : 1;
+    bool           ha      : 1;
+    bool           hd      : 1;
+    ARMGranuleSize gran    : 2;
 } ARMVAParameters;
 
 /**
@@ -1434,63 +1234,56 @@ typedef struct ARMVAParameters {
  * @el1_is_aa32: true if we are asking about stage 2 when EL1 is AArch32
  *  (ignored if @mmu_idx is for a stage 1 regime; only affects tsz/tsz_oob)
  */
-ARMVAParameters aa64_va_parameters(CPUARMState *env, uint64_t va,
-                                   ARMMMUIdx mmu_idx, bool data,
-                                   bool el1_is_aa32);
+ARMVAParameters aa64_va_parameters(CPUARMState* env, uint64_t va, ARMMMUIdx mmu_idx, bool data, bool el1_is_aa32);
 
 int aa64_va_parameter_tbi(uint64_t tcr, ARMMMUIdx mmu_idx);
 int aa64_va_parameter_tbid(uint64_t tcr, ARMMMUIdx mmu_idx);
 int aa64_va_parameter_tcma(uint64_t tcr, ARMMMUIdx mmu_idx);
 
 /* Determine if allocation tags are available.  */
-static inline bool allocation_tag_access_enabled(CPUARMState *env, int el,
-                                                 uint64_t sctlr)
+static inline bool allocation_tag_access_enabled(CPUARMState* env, int el, uint64_t sctlr)
 {
-    if (el < 3
-        && arm_feature(env, ARM_FEATURE_EL3)
-        && !(env->cp15.scr_el3 & SCR_ATA)) {
-        return false;
-    }
+    if (el < 3 && arm_feature(env, ARM_FEATURE_EL3) && !(env->cp15.scr_el3 & SCR_ATA)) { return false; }
     if (el < 2 && arm_is_el2_enabled(env)) {
         uint64_t hcr = arm_hcr_el2_eff(env);
-        if (!(hcr & HCR_ATA) && (!(hcr & HCR_E2H) || !(hcr & HCR_TGE))) {
-            return false;
-        }
+        if (!(hcr & HCR_ATA) && (!(hcr & HCR_E2H) || !(hcr & HCR_TGE))) { return false; }
     }
     sctlr &= (el == 0 ? SCTLR_ATA0 : SCTLR_ATA);
     return sctlr != 0;
 }
 
 /* Security attributes for an address, as returned by v8m_security_lookup. */
-typedef struct V8M_SAttributes {
-    bool subpage; /* true if these attrs don't cover the whole TARGET_PAGE */
-    bool ns;
-    bool nsc;
+typedef struct V8M_SAttributes
+{
+    bool    subpage; /* true if these attrs don't cover the whole TARGET_PAGE */
+    bool    ns;
+    bool    nsc;
     uint8_t sregion;
-    bool srvalid;
+    bool    srvalid;
     uint8_t iregion;
-    bool irvalid;
+    bool    irvalid;
 } V8M_SAttributes;
 
-void v8m_security_lookup(CPUARMState *env, uint32_t address,
-                         MMUAccessType access_type, ARMMMUIdx mmu_idx,
-                         bool secure, V8M_SAttributes *sattrs);
+void v8m_security_lookup(CPUARMState* env, uint32_t address, MMUAccessType access_type, ARMMMUIdx mmu_idx, bool secure,
+                         V8M_SAttributes* sattrs);
 
 /* Cacheability and shareability attributes for a memory access */
-typedef struct ARMCacheAttrs {
+typedef struct ARMCacheAttrs
+{
     /*
      * If is_s2_format is true, attrs is the S2 descriptor bits [5:2]
      * Otherwise, attrs is the same as the MAIR_EL1 8-bit format
      */
-    unsigned int attrs:8;
-    unsigned int shareability:2; /* as in the SH field of the VMSAv8-64 PTEs */
-    bool is_s2_format:1;
+    unsigned int attrs        : 8;
+    unsigned int shareability : 2; /* as in the SH field of the VMSAv8-64 PTEs */
+    bool         is_s2_format : 1;
 } ARMCacheAttrs;
 
 /* Fields that are valid upon success. */
-typedef struct GetPhysAddrResult {
+typedef struct GetPhysAddrResult
+{
     CPUTLBEntryFull f;
-    ARMCacheAttrs cacheattrs;
+    ARMCacheAttrs   cacheattrs;
 } GetPhysAddrResult;
 
 /**
@@ -1516,10 +1309,8 @@ typedef struct GetPhysAddrResult {
  *  * for PSMAv5 based systems we don't bother to return a full FSR format
  *    value.
  */
-bool get_phys_addr(CPUARMState *env, vaddr address,
-                   MMUAccessType access_type, MemOp memop, ARMMMUIdx mmu_idx,
-                   GetPhysAddrResult *result, ARMMMUFaultInfo *fi)
-    __attribute__((nonnull));
+bool get_phys_addr(CPUARMState* env, vaddr address, MMUAccessType access_type, MemOp memop, ARMMMUIdx mmu_idx,
+                   GetPhysAddrResult* result, ARMMMUFaultInfo* fi) __attribute__((nonnull));
 
 /**
  * get_phys_addr_for_at:
@@ -1534,18 +1325,15 @@ bool get_phys_addr(CPUARMState *env, vaddr address,
  * Similar to get_phys_addr, but for use by AccessType_AT, i.e.
  * system instructions for address translation.
  */
-bool get_phys_addr_for_at(CPUARMState *env, vaddr address, unsigned prot_check,
-                          ARMMMUIdx mmu_idx, ARMSecuritySpace space,
-                          GetPhysAddrResult *result, ARMMMUFaultInfo *fi)
+bool get_phys_addr_for_at(CPUARMState* env, vaddr address, unsigned prot_check, ARMMMUIdx mmu_idx,
+                          ARMSecuritySpace space, GetPhysAddrResult* result, ARMMMUFaultInfo* fi)
     __attribute__((nonnull));
 
-bool pmsav8_mpu_lookup(CPUARMState *env, uint32_t address,
-                       MMUAccessType access_type, unsigned prot_check,
-                       ARMMMUIdx mmu_idx, bool is_secure,
-                       GetPhysAddrResult *result,
-                       ARMMMUFaultInfo *fi, uint32_t *mregion);
+bool pmsav8_mpu_lookup(CPUARMState* env, uint32_t address, MMUAccessType access_type, unsigned prot_check,
+                       ARMMMUIdx mmu_idx, bool is_secure, GetPhysAddrResult* result, ARMMMUFaultInfo* fi,
+                       uint32_t* mregion);
 
-void arm_log_exception(CPUState *cs);
+void arm_log_exception(CPUState* cs);
 
 /*
  * SVE predicates are 1/8 the size of SVE vectors, and cannot use
@@ -1557,15 +1345,15 @@ REG_FIELD(PREDDESC, ESZ, 6, 2)
 REG_FIELD(PREDDESC, DATA, 8, 24)
 
 /* Bits within a descriptor passed to the helper_mte_check* functions. */
-REG_FIELD(MTEDESC, MIDX,  0, 4)
-REG_FIELD(MTEDESC, TBI,   4, 2)
-REG_FIELD(MTEDESC, TCMA,  6, 2)
+REG_FIELD(MTEDESC, MIDX, 0, 4)
+REG_FIELD(MTEDESC, TBI, 4, 2)
+REG_FIELD(MTEDESC, TCMA, 6, 2)
 REG_FIELD(MTEDESC, WRITE, 8, 1)
 REG_FIELD(MTEDESC, ALIGN, 9, 3)
-REG_FIELD(MTEDESC, SIZEM1, 12, 32 - 12)  /* size - 1 */
+REG_FIELD(MTEDESC, SIZEM1, 12, 32 - 12) /* size - 1 */
 
-bool mte_probe(CPUARMState *env, uint32_t desc, uint64_t ptr);
-uint64_t mte_check(CPUARMState *env, uint32_t desc, uint64_t ptr, uintptr_t ra);
+bool     mte_probe(CPUARMState* env, uint32_t desc, uint64_t ptr);
+uint64_t mte_check(CPUARMState* env, uint32_t desc, uint64_t ptr, uintptr_t ra);
 
 /**
  * mte_mops_probe: Check where the next MTE failure is for a FEAT_MOPS operation
@@ -1580,8 +1368,7 @@ uint64_t mte_check(CPUARMState *env, uint32_t desc, uint64_t ptr, uintptr_t ra);
  * and TCMA bits with mte_checks_needed() and an MTE check is definitely
  * required.
  */
-uint64_t mte_mops_probe(CPUARMState *env, uint64_t ptr, uint64_t size,
-                        uint32_t desc);
+uint64_t mte_mops_probe(CPUARMState* env, uint64_t ptr, uint64_t size, uint32_t desc);
 
 /**
  * mte_mops_probe_rev: Check where the next MTE failure is for a FEAT_MOPS
@@ -1597,8 +1384,7 @@ uint64_t mte_mops_probe(CPUARMState *env, uint64_t ptr, uint64_t size,
  * and TCMA bits with mte_checks_needed() and an MTE check is definitely
  * required.
  */
-uint64_t mte_mops_probe_rev(CPUARMState *env, uint64_t ptr, uint64_t size,
-                            uint32_t desc);
+uint64_t mte_mops_probe_rev(CPUARMState* env, uint64_t ptr, uint64_t size, uint32_t desc);
 
 /**
  * mte_check_fail: Record an MTE tag check failure
@@ -1609,8 +1395,7 @@ uint64_t mte_mops_probe_rev(CPUARMState *env, uint64_t ptr, uint64_t size,
  *
  * This may never return (if the MTE tag checks are configured to fault).
  */
-void mte_check_fail(CPUARMState *env, uint32_t desc,
-                    uint64_t dirty_ptr, uintptr_t ra);
+void mte_check_fail(CPUARMState* env, uint32_t desc, uint64_t dirty_ptr, uintptr_t ra);
 
 /**
  * mte_mops_set_tags: Set MTE tags for a portion of a FEAT_MOPS operation
@@ -1619,24 +1404,14 @@ void mte_check_fail(CPUARMState *env, uint32_t desc,
  * @size: length of region (guaranteed not to cross page boundary)
  * @desc: MTEDESC descriptor word
  */
-void mte_mops_set_tags(CPUARMState *env, uint64_t dirty_ptr, uint64_t size,
-                       uint32_t desc);
+void mte_mops_set_tags(CPUARMState* env, uint64_t dirty_ptr, uint64_t size, uint32_t desc);
 
-static inline int allocation_tag_from_addr(uint64_t ptr)
-{
-    return extract64(ptr, 56, 4);
-}
+static inline int allocation_tag_from_addr(uint64_t ptr) { return extract64(ptr, 56, 4); }
 
-static inline uint64_t address_with_allocation_tag(uint64_t ptr, int rtag)
-{
-    return deposit64(ptr, 56, 4, rtag);
-}
+static inline uint64_t address_with_allocation_tag(uint64_t ptr, int rtag) { return deposit64(ptr, 56, 4, rtag); }
 
 /* Return true if tbi bits mean that the access is checked.  */
-static inline bool tbi_check(uint32_t desc, int bit55)
-{
-    return (desc >> (R_MTEDESC_TBI_SHIFT + bit55)) & 1;
-}
+static inline bool tbi_check(uint32_t desc, int bit55) { return (desc >> (R_MTEDESC_TBI_SHIFT + bit55)) & 1; }
 
 /* Return true if tcma bits mean that the access is unchecked.  */
 static inline bool tcma_check(uint32_t desc, int bit55, int ptr_tag)
@@ -1646,17 +1421,18 @@ static inline bool tcma_check(uint32_t desc, int bit55, int ptr_tag)
      * (ptr<59:55> == 00000 || ptr<59:55> == 11111) into a single test.
      */
     bool match = ((ptr_tag + bit55) & 0xf) == 0;
-    bool tcma = (desc >> (R_MTEDESC_TCMA_SHIFT + bit55)) & 1;
+    bool tcma  = (desc >> (R_MTEDESC_TCMA_SHIFT + bit55)) & 1;
     return tcma && match;
 }
 
 /* Values for M-profile PSR.ECI for MVE insns */
-enum MVEECIState {
+enum MVEECIState
+{
     ECI_NONE = 0, /* No completed beats */
-    ECI_A0 = 1, /* Completed: A0 */
+    ECI_A0   = 1, /* Completed: A0 */
     ECI_A0A1 = 2, /* Completed: A0, A1 */
     /* 3 is reserved */
-    ECI_A0A1A2 = 4, /* Completed: A0, A1, A2 */
+    ECI_A0A1A2   = 4, /* Completed: A0, A1, A2 */
     ECI_A0A1A2B0 = 5, /* Completed: A0, A1, A2, B0 */
     /* All other values reserved */
 };
@@ -1664,83 +1440,77 @@ enum MVEECIState {
 /* Definitions for the PMU registers */
 #define PMCRN_MASK  0xf800
 #define PMCRN_SHIFT 11
-#define PMCRLP  0x80
-#define PMCRLC  0x40
-#define PMCRDP  0x20
-#define PMCRX   0x10
-#define PMCRD   0x8
-#define PMCRC   0x4
-#define PMCRP   0x2
-#define PMCRE   0x1
+#define PMCRLP      0x80
+#define PMCRLC      0x40
+#define PMCRDP      0x20
+#define PMCRX       0x10
+#define PMCRD       0x8
+#define PMCRC       0x4
+#define PMCRP       0x2
+#define PMCRE       0x1
 /*
  * Mask of PMCR bits writable by guest (not including WO bits like C, P,
  * which can be written as 1 to trigger behaviour but which stay RAZ).
  */
 #define PMCR_WRITABLE_MASK (PMCRLP | PMCRLC | PMCRDP | PMCRX | PMCRD | PMCRE)
 
-#define PMXEVTYPER_P          0x80000000
-#define PMXEVTYPER_U          0x40000000
-#define PMXEVTYPER_NSK        0x20000000
-#define PMXEVTYPER_NSU        0x10000000
-#define PMXEVTYPER_NSH        0x08000000
-#define PMXEVTYPER_M          0x04000000
-#define PMXEVTYPER_MT         0x02000000
-#define PMXEVTYPER_EVTCOUNT   0x0000ffff
-#define PMXEVTYPER_MASK       (PMXEVTYPER_P | PMXEVTYPER_U | PMXEVTYPER_NSK | \
-                               PMXEVTYPER_NSU | PMXEVTYPER_NSH | \
-                               PMXEVTYPER_M | PMXEVTYPER_MT | \
-                               PMXEVTYPER_EVTCOUNT)
+#define PMXEVTYPER_P        0x80000000
+#define PMXEVTYPER_U        0x40000000
+#define PMXEVTYPER_NSK      0x20000000
+#define PMXEVTYPER_NSU      0x10000000
+#define PMXEVTYPER_NSH      0x08000000
+#define PMXEVTYPER_M        0x04000000
+#define PMXEVTYPER_MT       0x02000000
+#define PMXEVTYPER_EVTCOUNT 0x0000ffff
+#define PMXEVTYPER_MASK                                                                                            \
+    (PMXEVTYPER_P | PMXEVTYPER_U | PMXEVTYPER_NSK | PMXEVTYPER_NSU | PMXEVTYPER_NSH | PMXEVTYPER_M | PMXEVTYPER_MT \
+     | PMXEVTYPER_EVTCOUNT)
 
-#define PMCCFILTR             0xf8000000
-#define PMCCFILTR_M           PMXEVTYPER_M
-#define PMCCFILTR_EL0         (PMCCFILTR | PMCCFILTR_M)
+#define PMCCFILTR     0xf8000000
+#define PMCCFILTR_M   PMXEVTYPER_M
+#define PMCCFILTR_EL0 (PMCCFILTR | PMCCFILTR_M)
 
-static inline uint32_t pmu_num_counters(CPUARMState *env)
+static inline uint32_t pmu_num_counters(CPUARMState* env)
 {
-    ARMCPU *cpu = env_archcpu(env);
+    ARMCPU* cpu = env_archcpu(env);
 
     return (cpu->isar.reset_pmcr_el0 & PMCRN_MASK) >> PMCRN_SHIFT;
 }
 
 /* Bits allowed to be set/cleared for PMCNTEN* and PMINTEN* */
-static inline uint64_t pmu_counter_mask(CPUARMState *env)
-{
-  return (1ULL << 31) | ((1ULL << pmu_num_counters(env)) - 1);
-}
+static inline uint64_t pmu_counter_mask(CPUARMState* env)
+{ return (1ULL << 31) | ((1ULL << pmu_num_counters(env)) - 1); }
 
-GDBFeature *arm_gen_dynamic_svereg_feature(CPUState *cpu, int base_reg);
-GDBFeature *arm_gen_dynamic_smereg_feature(CPUState *cpu, int base_reg);
-int aarch64_gdb_get_sve_reg(CPUState *cs, GByteArray *buf, int reg);
-int aarch64_gdb_set_sve_reg(CPUState *cs, uint8_t *buf, int reg);
-int aarch64_gdb_get_sme_reg(CPUState *cs, GByteArray *buf, int reg);
-int aarch64_gdb_set_sme_reg(CPUState *cs, uint8_t *buf, int reg);
-int aarch64_gdb_get_fpu_reg(CPUState *cs, GByteArray *buf, int reg);
-int aarch64_gdb_set_fpu_reg(CPUState *cs, uint8_t *buf, int reg);
-int aarch64_gdb_get_pauth_reg(CPUState *cs, GByteArray *buf, int reg);
-int aarch64_gdb_set_pauth_reg(CPUState *cs, uint8_t *buf, int reg);
-int aarch64_gdb_get_tag_ctl_reg(CPUState *cs, GByteArray *buf, int reg);
-int aarch64_gdb_set_tag_ctl_reg(CPUState *cs, uint8_t *buf, int reg);
-void arm_cpu_sve_finalize(ARMCPU *cpu, Error **errp);
-void arm_cpu_sme_finalize(ARMCPU *cpu, Error **errp);
-void arm_cpu_pauth_finalize(ARMCPU *cpu, Error **errp);
-void arm_cpu_lpa2_finalize(ARMCPU *cpu, Error **errp);
-void aarch64_max_tcg_initfn(Object *obj);
-void aarch64_add_pauth_properties(Object *obj);
-void aarch64_add_sve_properties(Object *obj);
-void aarch64_add_sme_properties(Object *obj);
+GDBFeature* arm_gen_dynamic_svereg_feature(CPUState* cpu, int base_reg);
+GDBFeature* arm_gen_dynamic_smereg_feature(CPUState* cpu, int base_reg);
+int         aarch64_gdb_get_sve_reg(CPUState* cs, GByteArray* buf, int reg);
+int         aarch64_gdb_set_sve_reg(CPUState* cs, uint8_t* buf, int reg);
+int         aarch64_gdb_get_sme_reg(CPUState* cs, GByteArray* buf, int reg);
+int         aarch64_gdb_set_sme_reg(CPUState* cs, uint8_t* buf, int reg);
+int         aarch64_gdb_get_fpu_reg(CPUState* cs, GByteArray* buf, int reg);
+int         aarch64_gdb_set_fpu_reg(CPUState* cs, uint8_t* buf, int reg);
+int         aarch64_gdb_get_pauth_reg(CPUState* cs, GByteArray* buf, int reg);
+int         aarch64_gdb_set_pauth_reg(CPUState* cs, uint8_t* buf, int reg);
+int         aarch64_gdb_get_tag_ctl_reg(CPUState* cs, GByteArray* buf, int reg);
+int         aarch64_gdb_set_tag_ctl_reg(CPUState* cs, uint8_t* buf, int reg);
+void        arm_cpu_sve_finalize(ARMCPU* cpu, Error** errp);
+void        arm_cpu_sme_finalize(ARMCPU* cpu, Error** errp);
+void        arm_cpu_pauth_finalize(ARMCPU* cpu, Error** errp);
+void        arm_cpu_lpa2_finalize(ARMCPU* cpu, Error** errp);
+void        aarch64_max_tcg_initfn(Object* obj);
+void        aarch64_add_pauth_properties(Object* obj);
+void        aarch64_add_sve_properties(Object* obj);
+void        aarch64_add_sme_properties(Object* obj);
 
 /* Return true if the gdbstub is presenting an AArch64 CPU */
-static inline bool arm_gdbstub_is_aarch64(ARMCPU *cpu)
-{
-    return arm_feature(&cpu->env, ARM_FEATURE_AARCH64);
-}
+static inline bool arm_gdbstub_is_aarch64(ARMCPU* cpu) { return arm_feature(&cpu->env, ARM_FEATURE_AARCH64); }
 
-bool el_is_in_host(CPUARMState *env, int el);
+bool el_is_in_host(CPUARMState* env, int el);
 
-void aa32_max_features(ARMCPU *cpu);
-int exception_target_el(CPUARMState *env);
-bool arm_singlestep_active(CPUARMState *env);
-bool arm_generate_debug_exceptions(CPUARMState *env);
+void aa32_max_features(ARMCPU* cpu);
+int  exception_target_el(CPUARMState* env);
+bool arm_singlestep_active(CPUARMState* env);
+bool arm_generate_debug_exceptions(CPUARMState* env);
 
 /**
  * pauth_ptr_mask:
@@ -1758,30 +1528,25 @@ static inline uint64_t pauth_ptr_mask(ARMVAParameters param)
 }
 
 /* Add the cpreg definitions for debug related system registers */
-void define_debug_regs(ARMCPU *cpu);
+void define_debug_regs(ARMCPU* cpu);
 
 /* Add the cpreg definitions for TLBI instructions */
-void define_tlb_insn_regs(ARMCPU *cpu);
+void define_tlb_insn_regs(ARMCPU* cpu);
 /* Add the cpreg definitions for AT instructions */
-void define_at_insn_regs(ARMCPU *cpu);
+void define_at_insn_regs(ARMCPU* cpu);
 /* Add the cpreg definitions for PM cpregs */
-void define_pm_cpregs(ARMCPU *cpu);
+void define_pm_cpregs(ARMCPU* cpu);
 
 /* Effective value of MDCR_EL2 */
-static inline uint64_t arm_mdcr_el2_eff(CPUARMState *env)
-{
-    return arm_is_el2_enabled(env) ? env->cp15.mdcr_el2 : 0;
-}
+static inline uint64_t arm_mdcr_el2_eff(CPUARMState* env) { return arm_is_el2_enabled(env) ? env->cp15.mdcr_el2 : 0; }
 
 /* Powers of 2 for sve_vq_map et al. */
-#define SVE_VQ_POW2_MAP                                 \
-    ((1 << (1 - 1)) | (1 << (2 - 1)) |                  \
-     (1 << (4 - 1)) | (1 << (8 - 1)) | (1 << (16 - 1)))
+#define SVE_VQ_POW2_MAP ((1 << (1 - 1)) | (1 << (2 - 1)) | (1 << (4 - 1)) | (1 << (8 - 1)) | (1 << (16 - 1)))
 
 /*
  * Return true if it is possible to take a fine-grained-trap to EL2.
  */
-static inline bool arm_fgt_active(CPUARMState *env, int el)
+static inline bool arm_fgt_active(CPUARMState* env, int el)
 {
     /*
      * The Arm ARM only requires the "{E2H,TGE} != {1,1}" test for traps
@@ -1791,10 +1556,9 @@ static inline bool arm_fgt_active(CPUARMState *env, int el)
      * FGT traps only happen when EL2 is enabled and EL1 is AArch64;
      * traps from AArch32 only happen for the EL0 is AArch32 case.
      */
-    return arm_is_el2_enabled(env) && cpu_isar_feature(aa64_fgt, env_archcpu(env)) &&
-        el < 2 && arm_el_is_aa64(env, 1) &&
-        (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE) &&
-        (!arm_feature(env, ARM_FEATURE_EL3) || (env->cp15.scr_el3 & SCR_FGTEN));
+    return arm_is_el2_enabled(env) && cpu_isar_feature(aa64_fgt, env_archcpu(env)) && el < 2 && arm_el_is_aa64(env, 1)
+           && (arm_hcr_el2_eff(env) & (HCR_E2H | HCR_TGE)) != (HCR_E2H | HCR_TGE)
+           && (!arm_feature(env, ARM_FEATURE_EL3) || (env->cp15.scr_el3 & SCR_FGTEN));
 }
 
 /*
@@ -1812,7 +1576,8 @@ static inline bool arm_fgt_active(CPUARMState *env, int el)
  * never know which core will eventually execute your function.
  */
 
-typedef struct {
+typedef struct
+{
     uint64_t bcr;
     uint64_t bvr;
 } HWBreakpoint;
@@ -1823,59 +1588,60 @@ typedef struct {
  * somewhere. We also need to supply a CPUWatchpoint to the GDB stub
  * when the watchpoint is hit.
  */
-typedef struct {
-    uint64_t wcr;
-    uint64_t wvr;
+typedef struct
+{
+    uint64_t      wcr;
+    uint64_t      wvr;
     CPUWatchpoint details;
 } HWWatchpoint;
 
 /* Maximum and current break/watch point counts */
-extern int max_hw_bps, max_hw_wps;
+extern int     max_hw_bps, max_hw_wps;
 extern GArray *hw_breakpoints, *hw_watchpoints;
 
-#define cur_hw_wps      (hw_watchpoints->len)
-#define cur_hw_bps      (hw_breakpoints->len)
-#define get_hw_bp(i)    (&g_array_index(hw_breakpoints, HWBreakpoint, i))
-#define get_hw_wp(i)    (&g_array_index(hw_watchpoints, HWWatchpoint, i))
+#define cur_hw_wps   (hw_watchpoints->len)
+#define cur_hw_bps   (hw_breakpoints->len)
+#define get_hw_bp(i) (&g_array_index(hw_breakpoints, HWBreakpoint, i))
+#define get_hw_wp(i) (&g_array_index(hw_watchpoints, HWWatchpoint, i))
 
-bool find_hw_breakpoint(CPUState *cpu, vaddr pc);
-int insert_hw_breakpoint(vaddr pc);
-int delete_hw_breakpoint(vaddr pc);
+bool find_hw_breakpoint(CPUState* cpu, vaddr pc);
+int  insert_hw_breakpoint(vaddr pc);
+int  delete_hw_breakpoint(vaddr pc);
 
-bool check_watchpoint_in_range(int i, vaddr addr);
-CPUWatchpoint *find_hw_watchpoint(CPUState *cpu, vaddr addr);
-int insert_hw_watchpoint(vaddr addr, vaddr len, int type);
-int delete_hw_watchpoint(vaddr addr, vaddr len, int type);
+bool           check_watchpoint_in_range(int i, vaddr addr);
+CPUWatchpoint* find_hw_watchpoint(CPUState* cpu, vaddr addr);
+int            insert_hw_watchpoint(vaddr addr, vaddr len, int type);
+int            delete_hw_watchpoint(vaddr addr, vaddr len, int type);
 
 /* Return the current value of the system counter in ticks */
-uint64_t gt_get_countervalue(CPUARMState *env);
+uint64_t gt_get_countervalue(CPUARMState* env);
 /*
  * Return the currently applicable offset between the system counter
  * and the counter for the specified timer, as used for direct register
  * accesses.
  */
-uint64_t gt_direct_access_timer_offset(CPUARMState *env, int timeridx);
+uint64_t gt_direct_access_timer_offset(CPUARMState* env, int timeridx);
 
 /*
  * Return mask of ARMMMUIdxBit values corresponding to an "invalidate
  * all EL1" scope; this covers stage 1 and stage 2.
  */
-int alle1_tlbmask(CPUARMState *env);
+int alle1_tlbmask(CPUARMState* env);
 
 /* Set the float_status behaviour to match the Arm defaults */
-void arm_set_default_fp_behaviours(float_status *s);
+void arm_set_default_fp_behaviours(float_status* s);
 /* Set the float_status behaviour to match Arm FPCR.AH=1 behaviour */
-void arm_set_ah_fp_behaviours(float_status *s);
+void arm_set_ah_fp_behaviours(float_status* s);
 /* Read the float_status info and return the appropriate FPSR value */
-uint32_t vfp_get_fpsr_from_host(CPUARMState *env);
+uint32_t vfp_get_fpsr_from_host(CPUARMState* env);
 /* Clear the exception status flags from all float_status fields */
-void vfp_clear_float_status_exc_flags(CPUARMState *env);
+void vfp_clear_float_status_exc_flags(CPUARMState* env);
 /*
  * Update float_status fields to handle the bits of the FPCR
  * specified by mask changing to the values in val.
  */
-void vfp_set_fpcr_to_host(CPUARMState *env, uint32_t val, uint32_t mask);
-bool arm_pan_enabled(CPUARMState *env);
+void vfp_set_fpcr_to_host(CPUARMState* env, uint32_t val, uint32_t mask);
+bool arm_pan_enabled(CPUARMState* env);
 
 /* Compare uint64_t for qsort and bsearch. */
-int compare_u64(const void *a, const void *b);
+int compare_u64(const void* a, const void* b);

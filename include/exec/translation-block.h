@@ -21,12 +21,14 @@ typedef ram_addr_t tb_page_addr_t;
  * @ptr and @size.
  * Note: the address of search data can be obtained by adding @size to @ptr.
  */
-struct tb_tc {
-    const void *ptr;    /* pointer to the translated code */
-    size_t size;
+struct tb_tc
+{
+    const void* ptr; /* pointer to the translated code */
+    size_t      size;
 };
 
-struct TranslationBlock {
+struct TranslationBlock
+{
     /*
      * Guest PC corresponding to this block.  This must be the true
      * virtual address.  Therefore e.g. x86 stores EIP + CS_BASE, and
@@ -51,8 +53,8 @@ struct TranslationBlock {
      */
     uint64_t cs_base;
 
-    uint32_t flags; /* flags defining in which context the code was generated */
-    uint32_t cflags;    /* compile flags */
+    uint32_t flags;  /* flags defining in which context the code was generated */
+    uint32_t cflags; /* compile flags */
 
 /* Note that TCG_MAX_INSNS is 512; we validate this match elsewhere. */
 #define CF_COUNT_MASK    0x000001ff
@@ -85,7 +87,7 @@ struct TranslationBlock {
      * list is protected by the PageDesc lock(s).
      */
 
-    uintptr_t page_next[2];
+    uintptr_t      page_next[2];
     tb_page_addr_t page_addr[2];
 
     /* jmp_lock placed here to fill a 4-byte hole. Its documentation is below */
@@ -99,9 +101,9 @@ struct TranslationBlock {
      * two of such jumps are supported.
      */
 #define TB_JMP_OFFSET_INVALID 0xffff /* indicates no jump generated */
-    uint16_t jmp_reset_offset[2]; /* offset of original jump target */
-    uint16_t jmp_insn_offset[2];  /* offset of direct jump insn */
-    uintptr_t jmp_target_addr[2]; /* target address */
+    uint16_t  jmp_reset_offset[2];   /* offset of original jump target */
+    uint16_t  jmp_insn_offset[2];    /* offset of direct jump insn */
+    uintptr_t jmp_target_addr[2];    /* target address */
 
     /*
      * Each TB has a NULL-terminated list (jmp_list_head) of incoming jumps.
@@ -126,39 +128,21 @@ struct TranslationBlock {
 };
 
 /* The alignment given to TranslationBlock during allocation. */
-#define CODE_GEN_ALIGN  16
+#define CODE_GEN_ALIGN 16
 
 /* Hide the qatomic_read to make code a little easier on the eyes */
-static inline uint32_t tb_cflags(const TranslationBlock *tb)
-{
-    return qatomic_read(&tb->cflags);
-}
+static inline uint32_t tb_cflags(const TranslationBlock* tb) { return qatomic_read(&tb->cflags); }
 
-bool tcg_cflags_has(CPUState *cpu, uint32_t flags);
-void tcg_cflags_set(CPUState *cpu, uint32_t flags);
+bool tcg_cflags_has(CPUState* cpu, uint32_t flags);
+void tcg_cflags_set(CPUState* cpu, uint32_t flags);
 
-static inline tb_page_addr_t tb_page_addr0(const TranslationBlock *tb)
-{
-    return tb->page_addr[0];
-}
+static inline tb_page_addr_t tb_page_addr0(const TranslationBlock* tb) { return tb->page_addr[0]; }
 
-static inline tb_page_addr_t tb_page_addr1(const TranslationBlock *tb)
-{
-    return tb->page_addr[1];
-}
+static inline tb_page_addr_t tb_page_addr1(const TranslationBlock* tb) { return tb->page_addr[1]; }
 
-static inline void tb_set_page_addr0(TranslationBlock *tb,
-                                     tb_page_addr_t addr)
-{
-    tb->page_addr[0] = addr;
-}
+static inline void tb_set_page_addr0(TranslationBlock* tb, tb_page_addr_t addr) { tb->page_addr[0] = addr; }
 
-static inline void tb_set_page_addr1(TranslationBlock *tb,
-                                     tb_page_addr_t addr)
-{
-    tb->page_addr[1] = addr;
-}
+static inline void tb_set_page_addr1(TranslationBlock* tb, tb_page_addr_t addr) { tb->page_addr[1] = addr; }
 
 /* TranslationBlock invalidate API */
-void tb_invalidate_phys_range(CPUState *cpu, tb_page_addr_t start,
-                              tb_page_addr_t last);
+void tb_invalidate_phys_range(CPUState* cpu, tb_page_addr_t start, tb_page_addr_t last);

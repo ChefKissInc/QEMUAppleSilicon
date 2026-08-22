@@ -34,36 +34,33 @@
 
 static int choose_nonexcluded_tag(int tag, int offset, uint16_t exclude)
 {
-    if (exclude == 0xffff) {
-        return 0;
-    }
+    if (exclude == 0xffff) { return 0; }
     if (offset == 0) {
-        while (exclude & (1 << tag)) {
-            tag = (tag + 1) & 15;
-        }
-    } else {
+        while (exclude & (1 << tag)) { tag = (tag + 1) & 15; }
+    }
+    else {
         do {
             do {
                 tag = (tag + 1) & 15;
-            } while (exclude & (1 << tag));
-        } while (--offset > 0);
+            }
+            while (exclude & (1 << tag));
+        }
+        while (--offset > 0);
     }
     return tag;
 }
 
-uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
-                                  uint64_t ptr, MMUAccessType ptr_access,
-                                  int ptr_size, MMUAccessType tag_access,
-                                  bool probe, uintptr_t ra)
+uint8_t* allocation_tag_mem_probe(CPUARMState* env, int ptr_mmu_idx, uint64_t ptr, MMUAccessType ptr_access,
+                                  int ptr_size, MMUAccessType tag_access, bool probe, uintptr_t ra)
 {
-    CPUTLBEntryFull *full;
-    MemTxAttrs attrs;
-    int in_page, flags;
-    hwaddr ptr_paddr, tag_paddr, xlat;
-    MemoryRegion *mr;
-    ARMASIdx tag_asi;
-    AddressSpace *tag_as;
-    void *host;
+    CPUTLBEntryFull* full;
+    MemTxAttrs       attrs;
+    int              in_page, flags;
+    hwaddr           ptr_paddr, tag_paddr, xlat;
+    MemoryRegion*    mr;
+    ARMASIdx         tag_asi;
+    AddressSpace*    tag_as;
+    void*            host;
 
     /*
      * Probe the first byte of the virtual address.  This raises an
@@ -75,17 +72,12 @@ uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
      * for the pure probe, or assert that we received a valid page for the
      * no-fault-expected probe.
      */
-    flags = probe_access_full(env, ptr, 0, ptr_access, ptr_mmu_idx,
-                              ra == 0, &host, &full, ra);
-    if (probe && (flags & TLB_INVALID_MASK)) {
-        return NULL;
-    }
+    flags = probe_access_full(env, ptr, 0, ptr_access, ptr_mmu_idx, ra == 0, &host, &full, ra);
+    if (probe && (flags & TLB_INVALID_MASK)) { return NULL; }
     assert(!(flags & TLB_INVALID_MASK));
 
     /* If the virtual page MemAttr != Tagged, access unchecked. */
-    if (full->extra.arm.pte_attrs != 0xf0) {
-        return NULL;
-    }
+    if (full->extra.arm.pte_attrs != 0xf0) { return NULL; }
 
     /*
      * If not backed by host ram, there is no tag storage: access unchecked.
@@ -94,7 +86,8 @@ uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
     if (unlikely(flags & TLB_MMIO)) {
         qemu_log_mask(LOG_GUEST_ERROR,
                       "Page @ 0x%" PRIx64 " indicates Tagged Normal memory "
-                      "but is not backed by host ram\n", ptr);
+                      "but is not backed by host ram\n",
+                      ptr);
         return NULL;
     }
 
@@ -103,8 +96,8 @@ uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
      * which may invalidate this pointer via tlb resize.
      */
     ptr_paddr = full->phys_addr | (ptr & ~TARGET_PAGE_MASK);
-    attrs = full->attrs;
-    full = NULL;
+    attrs     = full->attrs;
+    full      = NULL;
 
     /*
      * The Normal memory access can extend to the next page.  E.g. a single
@@ -114,8 +107,7 @@ uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
      */
     in_page = -(ptr | TARGET_PAGE_MASK);
     if (unlikely(ptr_size > in_page)) {
-        flags |= probe_access_full(env, ptr + in_page, 0, ptr_access,
-                                   ptr_mmu_idx, ra == 0, &host, &full, ra);
+        flags |= probe_access_full(env, ptr + in_page, 0, ptr_access, ptr_mmu_idx, ra == 0, &host, &full, ra);
         assert(!(flags & TLB_INVALID_MASK));
     }
 
@@ -131,9 +123,8 @@ uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
 
     /* Look up the address in tag space. */
     tag_asi = attrs.secure ? ARMASIdx_TagS : ARMASIdx_TagNS;
-    tag_as = cpu_get_address_space(env_cpu(env), tag_asi);
-    mr = address_space_translate(tag_as, tag_paddr, &xlat, NULL,
-                                 tag_access == MMU_DATA_STORE, attrs);
+    tag_as  = cpu_get_address_space(env_cpu(env), tag_asi);
+    mr      = address_space_translate(tag_as, tag_paddr, &xlat, NULL, tag_access == MMU_DATA_STORE, attrs);
 
     /*
      * Note that @mr will never be NULL.  If there is nothing in the address
@@ -161,22 +152,17 @@ uint8_t *allocation_tag_mem_probe(CPUARMState *env, int ptr_mmu_idx,
     return memory_region_get_ram_ptr(mr) + xlat;
 }
 
-static uint8_t *allocation_tag_mem(CPUARMState *env, int ptr_mmu_idx,
-                                   uint64_t ptr, MMUAccessType ptr_access,
-                                   int ptr_size, MMUAccessType tag_access,
-                                   uintptr_t ra)
-{
-    return allocation_tag_mem_probe(env, ptr_mmu_idx, ptr, ptr_access,
-                                    ptr_size, tag_access, false, ra);
-}
+static uint8_t* allocation_tag_mem(CPUARMState* env, int ptr_mmu_idx, uint64_t ptr, MMUAccessType ptr_access,
+                                   int ptr_size, MMUAccessType tag_access, uintptr_t ra)
+{ return allocation_tag_mem_probe(env, ptr_mmu_idx, ptr, ptr_access, ptr_size, tag_access, false, ra); }
 
-uint64_t HELPER(irg)(CPUARMState *env, uint64_t rn, uint64_t rm)
+uint64_t HELPER(irg)(CPUARMState* env, uint64_t rn, uint64_t rm)
 {
     uint16_t exclude = extract32(rm | env->cp15.gcr_el1, 0, 16);
-    int rrnd = extract32(env->cp15.gcr_el1, 16, 1);
-    int start = extract32(env->cp15.rgsr_el1, 0, 4);
-    int seed = extract32(env->cp15.rgsr_el1, 8, 16);
-    int offset, i, rtag;
+    int      rrnd    = extract32(env->cp15.gcr_el1, 16, 1);
+    int      start   = extract32(env->cp15.rgsr_el1, 0, 4);
+    int      seed    = extract32(env->cp15.rgsr_el1, 8, 16);
+    int      offset, i, rtag;
 
     /*
      * Our IMPDEF choice for GCR_EL1.RRND==1 is to continue to use the
@@ -187,7 +173,7 @@ uint64_t HELPER(irg)(CPUARMState *env, uint64_t rn, uint64_t rm)
      */
     if (unlikely(seed == 0) && rrnd) {
         do {
-            Error *err = NULL;
+            Error*   err = NULL;
             uint16_t two;
 
             if (qemu_guest_getrandom(&two, sizeof(two), &err) < 0) {
@@ -195,139 +181,121 @@ uint64_t HELPER(irg)(CPUARMState *env, uint64_t rn, uint64_t rm)
                  * Failed, for unknown reasons in the crypto subsystem.
                  * Best we can do is log the reason and use a constant seed.
                  */
-                qemu_log_mask(LOG_UNIMP, "IRG: Crypto failure: %s\n",
-                              error_get_pretty(err));
+                qemu_log_mask(LOG_UNIMP, "IRG: Crypto failure: %s\n", error_get_pretty(err));
                 error_free(err);
                 two = 1;
             }
             seed = two;
-        } while (seed == 0);
+        }
+        while (seed == 0);
     }
 
     /* RandomTag */
     for (i = offset = 0; i < 4; ++i) {
         /* NextRandomTagBit */
-        int top = (extract32(seed, 5, 1) ^ extract32(seed, 3, 1) ^
-                   extract32(seed, 2, 1) ^ extract32(seed, 0, 1));
-        seed = (top << 15) | (seed >> 1);
-        offset |= top << i;
+        int top  = (extract32(seed, 5, 1) ^ extract32(seed, 3, 1) ^ extract32(seed, 2, 1) ^ extract32(seed, 0, 1));
+        seed     = (top << 15) | (seed >> 1);
+        offset  |= top << i;
     }
-    rtag = choose_nonexcluded_tag(start, offset, exclude);
+    rtag               = choose_nonexcluded_tag(start, offset, exclude);
     env->cp15.rgsr_el1 = rtag | (seed << 8);
 
     return address_with_allocation_tag(rn, rtag);
 }
 
-uint64_t HELPER(addsubg)(CPUARMState *env, uint64_t ptr,
-                         int32_t offset, uint32_t tag_offset)
+uint64_t HELPER(addsubg)(CPUARMState* env, uint64_t ptr, int32_t offset, uint32_t tag_offset)
 {
-    int start_tag = allocation_tag_from_addr(ptr);
-    uint16_t exclude = extract32(env->cp15.gcr_el1, 0, 16);
-    int rtag = choose_nonexcluded_tag(start_tag, tag_offset, exclude);
+    int      start_tag = allocation_tag_from_addr(ptr);
+    uint16_t exclude   = extract32(env->cp15.gcr_el1, 0, 16);
+    int      rtag      = choose_nonexcluded_tag(start_tag, tag_offset, exclude);
 
     return address_with_allocation_tag(ptr + offset, rtag);
 }
 
-int load_tag1(uint64_t ptr, uint8_t *mem)
+int load_tag1(uint64_t ptr, uint8_t* mem)
 {
     int ofs = extract32(ptr, LOG2_TAG_GRANULE, 1) * 4;
     return extract32(*mem, ofs, 4);
 }
 
-uint64_t HELPER(ldg)(CPUARMState *env, uint64_t ptr, uint64_t xt)
+uint64_t HELPER(ldg)(CPUARMState* env, uint64_t ptr, uint64_t xt)
 {
-    int mmu_idx = arm_env_mmu_index(env);
-    uint8_t *mem;
-    int rtag = 0;
+    int      mmu_idx = arm_env_mmu_index(env);
+    uint8_t* mem;
+    int      rtag = 0;
 
     /* Trap if accessing an invalid page.  */
-    mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_LOAD, 1,
-                             MMU_DATA_LOAD, GETPC());
+    mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_LOAD, 1, MMU_DATA_LOAD, GETPC());
 
     /* Load if page supports tags. */
-    if (mem) {
-        rtag = load_tag1(ptr, mem);
-    }
+    if (mem) { rtag = load_tag1(ptr, mem); }
 
     return address_with_allocation_tag(xt, rtag);
 }
 
-static void check_tag_aligned(CPUARMState *env, uint64_t ptr, uintptr_t ra)
+static void check_tag_aligned(CPUARMState* env, uint64_t ptr, uintptr_t ra)
 {
     if (unlikely(!QEMU_IS_ALIGNED(ptr, TAG_GRANULE))) {
-        arm_cpu_do_unaligned_access(env_cpu(env), ptr, MMU_DATA_STORE,
-                                    arm_env_mmu_index(env), ra);
+        arm_cpu_do_unaligned_access(env_cpu(env), ptr, MMU_DATA_STORE, arm_env_mmu_index(env), ra);
         assert_not_reached();
     }
 }
 
 /* For use in a non-parallel context, store to the given nibble.  */
-void store_tag1(uint64_t ptr, uint8_t *mem, int tag)
+void store_tag1(uint64_t ptr, uint8_t* mem, int tag)
 {
     int ofs = extract32(ptr, LOG2_TAG_GRANULE, 1) * 4;
-    *mem = deposit32(*mem, ofs, 4, tag);
+    *mem    = deposit32(*mem, ofs, 4, tag);
 }
 
 /* For use in a parallel context, atomically store to the given nibble.  */
-static void store_tag1_parallel(uint64_t ptr, uint8_t *mem, int tag)
+static void store_tag1_parallel(uint64_t ptr, uint8_t* mem, int tag)
 {
-    int ofs = extract32(ptr, LOG2_TAG_GRANULE, 1) * 4;
+    int     ofs = extract32(ptr, LOG2_TAG_GRANULE, 1) * 4;
     uint8_t old = qatomic_read(mem);
 
     while (1) {
         uint8_t new = deposit32(old, ofs, 4, tag);
         uint8_t cmp = qatomic_cmpxchg(mem, old, new);
-        if (likely(cmp == old)) {
-            return;
-        }
+        if (likely(cmp == old)) { return; }
         old = cmp;
     }
 }
 
-typedef void stg_store1(uint64_t, uint8_t *, int);
+typedef void stg_store1(uint64_t, uint8_t*, int);
 
-static inline void do_stg(CPUARMState *env, uint64_t ptr, uint64_t xt,
-                          uintptr_t ra, stg_store1 store1)
+static inline void do_stg(CPUARMState* env, uint64_t ptr, uint64_t xt, uintptr_t ra, stg_store1 store1)
 {
-    int mmu_idx = arm_env_mmu_index(env);
-    uint8_t *mem;
+    int      mmu_idx = arm_env_mmu_index(env);
+    uint8_t* mem;
 
     check_tag_aligned(env, ptr, ra);
 
     /* Trap if accessing an invalid page.  */
-    mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE, TAG_GRANULE,
-                             MMU_DATA_STORE, ra);
+    mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE, TAG_GRANULE, MMU_DATA_STORE, ra);
 
     /* Store if page supports tags. */
-    if (mem) {
-        store1(ptr, mem, allocation_tag_from_addr(xt));
-    }
+    if (mem) { store1(ptr, mem, allocation_tag_from_addr(xt)); }
 }
 
-void HELPER(stg)(CPUARMState *env, uint64_t ptr, uint64_t xt)
-{
-    do_stg(env, ptr, xt, GETPC(), store_tag1);
-}
+void HELPER(stg)(CPUARMState* env, uint64_t ptr, uint64_t xt) { do_stg(env, ptr, xt, GETPC(), store_tag1); }
 
-void HELPER(stg_parallel)(CPUARMState *env, uint64_t ptr, uint64_t xt)
-{
-    do_stg(env, ptr, xt, GETPC(), store_tag1_parallel);
-}
+void HELPER(stg_parallel)(CPUARMState* env, uint64_t ptr, uint64_t xt)
+{ do_stg(env, ptr, xt, GETPC(), store_tag1_parallel); }
 
-void HELPER(stg_stub)(CPUARMState *env, uint64_t ptr)
+void HELPER(stg_stub)(CPUARMState* env, uint64_t ptr)
 {
-    int mmu_idx = arm_env_mmu_index(env);
-    uintptr_t ra = GETPC();
+    int       mmu_idx = arm_env_mmu_index(env);
+    uintptr_t ra      = GETPC();
 
     check_tag_aligned(env, ptr, ra);
     probe_write(env, ptr, TAG_GRANULE, mmu_idx, ra);
 }
 
-static inline void do_st2g(CPUARMState *env, uint64_t ptr, uint64_t xt,
-                           uintptr_t ra, stg_store1 store1)
+static inline void do_st2g(CPUARMState* env, uint64_t ptr, uint64_t xt, uintptr_t ra, stg_store1 store1)
 {
-    int mmu_idx = arm_env_mmu_index(env);
-    int tag = allocation_tag_from_addr(xt);
+    int      mmu_idx = arm_env_mmu_index(env);
+    int      tag     = allocation_tag_from_addr(xt);
     uint8_t *mem1, *mem2;
 
     check_tag_aligned(env, ptr, ra);
@@ -338,23 +306,16 @@ static inline void do_st2g(CPUARMState *env, uint64_t ptr, uint64_t xt,
      */
     if (ptr & TAG_GRANULE) {
         /* Two stores unaligned mod TAG_GRANULE*2 -- modify two bytes. */
-        mem1 = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE,
-                                  TAG_GRANULE, MMU_DATA_STORE, ra);
-        mem2 = allocation_tag_mem(env, mmu_idx, ptr + TAG_GRANULE,
-                                  MMU_DATA_STORE, TAG_GRANULE,
-                                  MMU_DATA_STORE, ra);
+        mem1 = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE, TAG_GRANULE, MMU_DATA_STORE, ra);
+        mem2 = allocation_tag_mem(env, mmu_idx, ptr + TAG_GRANULE, MMU_DATA_STORE, TAG_GRANULE, MMU_DATA_STORE, ra);
 
         /* Store if page(s) support tags. */
-        if (mem1) {
-            store1(TAG_GRANULE, mem1, tag);
-        }
-        if (mem2) {
-            store1(0, mem2, tag);
-        }
-    } else {
+        if (mem1) { store1(TAG_GRANULE, mem1, tag); }
+        if (mem2) { store1(0, mem2, tag); }
+    }
+    else {
         /* Two stores aligned mod TAG_GRANULE*2 -- modify one byte. */
-        mem1 = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE,
-                                  2 * TAG_GRANULE, MMU_DATA_STORE, ra);
+        mem1 = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE, 2 * TAG_GRANULE, MMU_DATA_STORE, ra);
         if (mem1) {
             tag |= tag << 4;
             qatomic_set(mem1, tag);
@@ -362,52 +323,43 @@ static inline void do_st2g(CPUARMState *env, uint64_t ptr, uint64_t xt,
     }
 }
 
-void HELPER(st2g)(CPUARMState *env, uint64_t ptr, uint64_t xt)
-{
-    do_st2g(env, ptr, xt, GETPC(), store_tag1);
-}
+void HELPER(st2g)(CPUARMState* env, uint64_t ptr, uint64_t xt) { do_st2g(env, ptr, xt, GETPC(), store_tag1); }
 
-void HELPER(st2g_parallel)(CPUARMState *env, uint64_t ptr, uint64_t xt)
-{
-    do_st2g(env, ptr, xt, GETPC(), store_tag1_parallel);
-}
+void HELPER(st2g_parallel)(CPUARMState* env, uint64_t ptr, uint64_t xt)
+{ do_st2g(env, ptr, xt, GETPC(), store_tag1_parallel); }
 
-void HELPER(st2g_stub)(CPUARMState *env, uint64_t ptr)
+void HELPER(st2g_stub)(CPUARMState* env, uint64_t ptr)
 {
-    int mmu_idx = arm_env_mmu_index(env);
-    uintptr_t ra = GETPC();
-    int in_page = -(ptr | TARGET_PAGE_MASK);
+    int       mmu_idx = arm_env_mmu_index(env);
+    uintptr_t ra      = GETPC();
+    int       in_page = -(ptr | TARGET_PAGE_MASK);
 
     check_tag_aligned(env, ptr, ra);
 
-    if (likely(in_page >= 2 * TAG_GRANULE)) {
-        probe_write(env, ptr, 2 * TAG_GRANULE, mmu_idx, ra);
-    } else {
+    if (likely(in_page >= 2 * TAG_GRANULE)) { probe_write(env, ptr, 2 * TAG_GRANULE, mmu_idx, ra); }
+    else {
         probe_write(env, ptr, TAG_GRANULE, mmu_idx, ra);
         probe_write(env, ptr + TAG_GRANULE, TAG_GRANULE, mmu_idx, ra);
     }
 }
 
-uint64_t HELPER(ldgm)(CPUARMState *env, uint64_t ptr)
+uint64_t HELPER(ldgm)(CPUARMState* env, uint64_t ptr)
 {
-    int mmu_idx = arm_env_mmu_index(env);
-    uintptr_t ra = GETPC();
-    int gm_bs = env_archcpu(env)->gm_blocksize;
-    int gm_bs_bytes = 4 << gm_bs;
-    void *tag_mem;
-    uint64_t ret;
-    int shift;
+    int       mmu_idx     = arm_env_mmu_index(env);
+    uintptr_t ra          = GETPC();
+    int       gm_bs       = env_archcpu(env)->gm_blocksize;
+    int       gm_bs_bytes = 4 << gm_bs;
+    void*     tag_mem;
+    uint64_t  ret;
+    int       shift;
 
     ptr = QEMU_ALIGN_DOWN(ptr, gm_bs_bytes);
 
     /* Trap if accessing an invalid page.  */
-    tag_mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_LOAD,
-                                 gm_bs_bytes, MMU_DATA_LOAD, ra);
+    tag_mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_LOAD, gm_bs_bytes, MMU_DATA_LOAD, ra);
 
     /* The tag is squashed to zero if the page does not support tags.  */
-    if (!tag_mem) {
-        return 0;
-    }
+    if (!tag_mem) { return 0; }
 
     /*
      * The ordering of elements within the word corresponds to
@@ -422,188 +374,176 @@ uint64_t HELPER(ldgm)(CPUARMState *env, uint64_t ptr)
      * support a cpu that requires it.
      */
     switch (gm_bs) {
-    case 3:
-        /* 32 bytes -> 2 tags -> 8 result bits */
-        ret = *(uint8_t *)tag_mem;
-        break;
-    case 4:
-        /* 64 bytes -> 4 tags -> 16 result bits */
-        ret = cpu_to_le16(*(uint16_t *)tag_mem);
-        break;
-    case 5:
-        /* 128 bytes -> 8 tags -> 32 result bits */
-        ret = cpu_to_le32(*(uint32_t *)tag_mem);
-        break;
-    case 6:
-        /* 256 bytes -> 16 tags -> 64 result bits */
-        return cpu_to_le64(*(uint64_t *)tag_mem);
-    default:
-        /*
-         * CPU configured with unsupported/invalid gm blocksize.
-         * This is detected early in arm_cpu_realizefn.
-         */
-        assert_not_reached();
+        case 3:
+            /* 32 bytes -> 2 tags -> 8 result bits */
+            ret = *(uint8_t*)tag_mem;
+            break;
+        case 4:
+            /* 64 bytes -> 4 tags -> 16 result bits */
+            ret = cpu_to_le16(*(uint16_t*)tag_mem);
+            break;
+        case 5:
+            /* 128 bytes -> 8 tags -> 32 result bits */
+            ret = cpu_to_le32(*(uint32_t*)tag_mem);
+            break;
+        case 6:
+            /* 256 bytes -> 16 tags -> 64 result bits */
+            return cpu_to_le64(*(uint64_t*)tag_mem);
+        default:
+            /*
+             * CPU configured with unsupported/invalid gm blocksize.
+             * This is detected early in arm_cpu_realizefn.
+             */
+            assert_not_reached();
     }
     shift = extract64(ptr, LOG2_TAG_GRANULE, 4) * 4;
     return ret << shift;
 }
 
-void HELPER(stgm)(CPUARMState *env, uint64_t ptr, uint64_t val)
+void HELPER(stgm)(CPUARMState* env, uint64_t ptr, uint64_t val)
 {
-    int mmu_idx = arm_env_mmu_index(env);
-    uintptr_t ra = GETPC();
-    int gm_bs = env_archcpu(env)->gm_blocksize;
-    int gm_bs_bytes = 4 << gm_bs;
-    void *tag_mem;
-    int shift;
+    int       mmu_idx     = arm_env_mmu_index(env);
+    uintptr_t ra          = GETPC();
+    int       gm_bs       = env_archcpu(env)->gm_blocksize;
+    int       gm_bs_bytes = 4 << gm_bs;
+    void*     tag_mem;
+    int       shift;
 
     ptr = QEMU_ALIGN_DOWN(ptr, gm_bs_bytes);
 
     /* Trap if accessing an invalid page.  */
-    tag_mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE,
-                                 gm_bs_bytes, MMU_DATA_LOAD, ra);
+    tag_mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE, gm_bs_bytes, MMU_DATA_LOAD, ra);
 
     /*
      * Tag store only happens if the page support tags,
      * and if the OS has enabled access to the tags.
      */
-    if (!tag_mem) {
-        return;
-    }
+    if (!tag_mem) { return; }
 
     /* See LDGM for comments on BS and on shift.  */
-    shift = extract64(ptr, LOG2_TAG_GRANULE, 4) * 4;
-    val >>= shift;
+    shift   = extract64(ptr, LOG2_TAG_GRANULE, 4) * 4;
+    val   >>= shift;
     switch (gm_bs) {
-    case 3:
-        /* 32 bytes -> 2 tags -> 8 result bits */
-        *(uint8_t *)tag_mem = val;
-        break;
-    case 4:
-        /* 64 bytes -> 4 tags -> 16 result bits */
-        *(uint16_t *)tag_mem = cpu_to_le16(val);
-        break;
-    case 5:
-        /* 128 bytes -> 8 tags -> 32 result bits */
-        *(uint32_t *)tag_mem = cpu_to_le32(val);
-        break;
-    case 6:
-        /* 256 bytes -> 16 tags -> 64 result bits */
-        *(uint64_t *)tag_mem = cpu_to_le64(val);
-        break;
-    default:
-        /* cpu configured with unsupported gm blocksize. */
-        assert_not_reached();
+        case 3:
+            /* 32 bytes -> 2 tags -> 8 result bits */
+            *(uint8_t*)tag_mem = val;
+            break;
+        case 4:
+            /* 64 bytes -> 4 tags -> 16 result bits */
+            *(uint16_t*)tag_mem = cpu_to_le16(val);
+            break;
+        case 5:
+            /* 128 bytes -> 8 tags -> 32 result bits */
+            *(uint32_t*)tag_mem = cpu_to_le32(val);
+            break;
+        case 6:
+            /* 256 bytes -> 16 tags -> 64 result bits */
+            *(uint64_t*)tag_mem = cpu_to_le64(val);
+            break;
+        default:
+            /* cpu configured with unsupported gm blocksize. */
+            assert_not_reached();
     }
 }
 
-void HELPER(stzgm_tags)(CPUARMState *env, uint64_t ptr, uint64_t val)
+void HELPER(stzgm_tags)(CPUARMState* env, uint64_t ptr, uint64_t val)
 {
-    uintptr_t ra = GETPC();
-    int mmu_idx = arm_env_mmu_index(env);
-    int log2_dcz_bytes, log2_tag_bytes;
-    intptr_t dcz_bytes, tag_bytes;
-    uint8_t *mem;
+    uintptr_t ra      = GETPC();
+    int       mmu_idx = arm_env_mmu_index(env);
+    int       log2_dcz_bytes, log2_tag_bytes;
+    intptr_t  dcz_bytes, tag_bytes;
+    uint8_t*  mem;
 
     /*
      * In arm_cpu_realizefn, we assert that dcz > LOG2_TAG_GRANULE+1,
      * i.e. 32 bytes, which is an unreasonably small dcz anyway,
      * to make sure that we can access one complete tag byte here.
      */
-    log2_dcz_bytes = env_archcpu(env)->dcz_blocksize + 2;
-    log2_tag_bytes = log2_dcz_bytes - (LOG2_TAG_GRANULE + 1);
-    dcz_bytes = (intptr_t)1 << log2_dcz_bytes;
-    tag_bytes = (intptr_t)1 << log2_tag_bytes;
-    ptr &= -dcz_bytes;
+    log2_dcz_bytes  = env_archcpu(env)->dcz_blocksize + 2;
+    log2_tag_bytes  = log2_dcz_bytes - (LOG2_TAG_GRANULE + 1);
+    dcz_bytes       = (intptr_t)1 << log2_dcz_bytes;
+    tag_bytes       = (intptr_t)1 << log2_tag_bytes;
+    ptr            &= -dcz_bytes;
 
-    mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE, dcz_bytes,
-                             MMU_DATA_STORE, ra);
+    mem = allocation_tag_mem(env, mmu_idx, ptr, MMU_DATA_STORE, dcz_bytes, MMU_DATA_STORE, ra);
     if (mem) {
         int tag_pair = (val & 0xf) * 0x11;
         memset(mem, tag_pair, tag_bytes);
     }
 }
 
-static void mte_sync_check_fail(CPUARMState *env, uint32_t desc,
-                                uint64_t dirty_ptr, uintptr_t ra)
+static void mte_sync_check_fail(CPUARMState* env, uint32_t desc, uint64_t dirty_ptr, uintptr_t ra)
 {
     int is_write, syn;
 
     env->exception.vaddress = dirty_ptr;
 
     is_write = REG_FIELD_EX32(desc, MTEDESC, WRITE);
-    syn = syn_data_abort_no_iss(arm_current_el(env) != 0, 0, 0, 0, 0, is_write,
-                                0x11);
+    syn      = syn_data_abort_no_iss(arm_current_el(env) != 0, 0, 0, 0, 0, is_write, 0x11);
     raise_exception_ra(env, EXCP_DATA_ABORT, syn, exception_target_el(env), ra);
     assert_not_reached();
 }
 
-static void mte_async_check_fail(CPUARMState *env, uint64_t dirty_ptr,
-                                 uintptr_t ra, ARMMMUIdx arm_mmu_idx, int el)
+static void mte_async_check_fail(CPUARMState* env, uint64_t dirty_ptr, uintptr_t ra, ARMMMUIdx arm_mmu_idx, int el)
 {
     int select;
 
-    if (regime_has_2_ranges(arm_mmu_idx)) {
-        select = extract64(dirty_ptr, 55, 1);
-    } else {
+    if (regime_has_2_ranges(arm_mmu_idx)) { select = extract64(dirty_ptr, 55, 1); }
+    else {
         select = 0;
     }
     env->cp15.tfsr_el[el] |= 1 << select;
 }
 
 /* Record a tag check failure.  */
-void mte_check_fail(CPUARMState *env, uint32_t desc,
-                    uint64_t dirty_ptr, uintptr_t ra)
+void mte_check_fail(CPUARMState* env, uint32_t desc, uint64_t dirty_ptr, uintptr_t ra)
 {
-    int mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
+    int       mmu_idx     = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     ARMMMUIdx arm_mmu_idx = core_to_aa64_mmu_idx(mmu_idx);
-    int el, reg_el, tcf;
-    uint64_t sctlr;
+    int       el, reg_el, tcf;
+    uint64_t  sctlr;
 
     reg_el = regime_el(env, arm_mmu_idx);
-    sctlr = env->cp15.sctlr_el[reg_el];
+    sctlr  = env->cp15.sctlr_el[reg_el];
 
     switch (arm_mmu_idx) {
-    case ARMMMUIdx_E10_0:
-    case ARMMMUIdx_E20_0:
-        el = 0;
-        tcf = extract64(sctlr, 38, 2);
-        break;
-    default:
-        el = reg_el;
-        tcf = extract64(sctlr, 40, 2);
+        case ARMMMUIdx_E10_0:
+        case ARMMMUIdx_E20_0:
+            el  = 0;
+            tcf = extract64(sctlr, 38, 2);
+            break;
+        default: el = reg_el; tcf = extract64(sctlr, 40, 2);
     }
 
     switch (tcf) {
-    case 1:
-        /* Tag check fail causes a synchronous exception. */
-        mte_sync_check_fail(env, desc, dirty_ptr, ra);
-        break;
-
-    case 0:
-        /*
-         * Tag check fail does not affect the PE.
-         * We eliminate this case by not setting MTE_ACTIVE
-         * in tb_flags, so that we never make this runtime call.
-         */
-        assert_not_reached();
-
-    case 2:
-        /* Tag check fail causes asynchronous flag set.  */
-        mte_async_check_fail(env, dirty_ptr, ra, arm_mmu_idx, el);
-        break;
-
-    case 3:
-        /*
-         * Tag check fail causes asynchronous flag set for stores, or
-         * a synchronous exception for loads.
-         */
-        if (REG_FIELD_EX32(desc, MTEDESC, WRITE)) {
-            mte_async_check_fail(env, dirty_ptr, ra, arm_mmu_idx, el);
-        } else {
+        case 1:
+            /* Tag check fail causes a synchronous exception. */
             mte_sync_check_fail(env, desc, dirty_ptr, ra);
-        }
-        break;
+            break;
+
+        case 0:
+            /*
+             * Tag check fail does not affect the PE.
+             * We eliminate this case by not setting MTE_ACTIVE
+             * in tb_flags, so that we never make this runtime call.
+             */
+            assert_not_reached();
+
+        case 2:
+            /* Tag check fail causes asynchronous flag set.  */
+            mte_async_check_fail(env, dirty_ptr, ra, arm_mmu_idx, el);
+            break;
+
+        case 3:
+            /*
+             * Tag check fail causes asynchronous flag set for stores, or
+             * a synchronous exception for loads.
+             */
+            if (REG_FIELD_EX32(desc, MTEDESC, WRITE)) { mte_async_check_fail(env, dirty_ptr, ra, arm_mmu_idx, el); }
+            else {
+                mte_sync_check_fail(env, desc, dirty_ptr, ra);
+            }
+            break;
     }
 }
 
@@ -634,35 +574,25 @@ void mte_check_fail(CPUARMState *env, uint32_t desc,
  * and thus does not begin to pay off until 6 tags.
  * Which, according to the survey above, is unlikely to be common.
  */
-static int checkN(uint8_t *mem, int odd, int cmp, int count)
+static int checkN(uint8_t* mem, int odd, int cmp, int count)
 {
     int n = 0, diff;
 
     /* Replicate the test tag and compare.  */
-    cmp *= 0x11;
-    diff = *mem++ ^ cmp;
+    cmp  *= 0x11;
+    diff  = *mem++ ^ cmp;
 
-    if (odd) {
-        goto start_odd;
-    }
+    if (odd) { goto start_odd; }
 
     while (1) {
         /* Test even tag. */
-        if (unlikely((diff) & 0x0f)) {
-            break;
-        }
-        if (++n == count) {
-            break;
-        }
+        if (unlikely((diff) & 0x0f)) { break; }
+        if (++n == count) { break; }
 
     start_odd:
         /* Test odd tag. */
-        if (unlikely((diff) & 0xf0)) {
-            break;
-        }
-        if (++n == count) {
-            break;
-        }
+        if (unlikely((diff) & 0xf0)) { break; }
+        if (++n == count) { break; }
 
         diff = *mem++ ^ cmp;
     }
@@ -683,35 +613,25 @@ static int checkN(uint8_t *mem, int odd, int cmp, int count)
  * tags starting with @tag and then the tags preceding it.
  * This is needed by the backwards-memory-copying operations.
  */
-static int checkNrev(uint8_t *mem, int odd, int cmp, int count)
+static int checkNrev(uint8_t* mem, int odd, int cmp, int count)
 {
     int n = 0, diff;
 
     /* Replicate the test tag and compare.  */
-    cmp *= 0x11;
-    diff = *mem-- ^ cmp;
+    cmp  *= 0x11;
+    diff  = *mem-- ^ cmp;
 
-    if (!odd) {
-        goto start_even;
-    }
+    if (!odd) { goto start_even; }
 
     while (1) {
         /* Test odd tag. */
-        if (unlikely((diff) & 0xf0)) {
-            break;
-        }
-        if (++n == count) {
-            break;
-        }
+        if (unlikely((diff) & 0xf0)) { break; }
+        if (++n == count) { break; }
 
     start_even:
         /* Test even tag. */
-        if (unlikely((diff) & 0x0f)) {
-            break;
-        }
-        if (++n == count) {
-            break;
-        }
+        if (unlikely((diff) & 0x0f)) { break; }
+        if (++n == count) { break; }
 
         diff = *mem-- ^ cmp;
     }
@@ -730,40 +650,35 @@ static int checkNrev(uint8_t *mem, int odd, int cmp, int count)
  * Return negative on trivial success for tbi disabled.
  * Return positive on success with tbi enabled.
  */
-static int mte_probe_int(CPUARMState *env, uint32_t desc, uint64_t ptr,
-                         uintptr_t ra, uint64_t *fault)
+static int mte_probe_int(CPUARMState* env, uint32_t desc, uint64_t ptr, uintptr_t ra, uint64_t* fault)
 {
-    int mmu_idx, ptr_tag, bit55;
-    uint64_t ptr_last, prev_page, next_page;
-    uint64_t tag_first, tag_last;
-    uint32_t sizem1, tag_count, n, c;
-    uint8_t *mem1, *mem2;
+    int           mmu_idx, ptr_tag, bit55;
+    uint64_t      ptr_last, prev_page, next_page;
+    uint64_t      tag_first, tag_last;
+    uint32_t      sizem1, tag_count, n, c;
+    uint8_t *     mem1, *mem2;
     MMUAccessType type;
 
-    bit55 = extract64(ptr, 55, 1);
+    bit55  = extract64(ptr, 55, 1);
     *fault = ptr;
 
     /* If TBI is disabled, the access is unchecked, and ptr is not dirty. */
-    if (unlikely(!tbi_check(desc, bit55))) {
-        return -1;
-    }
+    if (unlikely(!tbi_check(desc, bit55))) { return -1; }
 
     ptr_tag = allocation_tag_from_addr(ptr);
 
-    if (tcma_check(desc, bit55, ptr_tag)) {
-        return 1;
-    }
+    if (tcma_check(desc, bit55, ptr_tag)) { return 1; }
 
     mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
-    type = REG_FIELD_EX32(desc, MTEDESC, WRITE) ? MMU_DATA_STORE : MMU_DATA_LOAD;
-    sizem1 = REG_FIELD_EX32(desc, MTEDESC, SIZEM1);
+    type    = REG_FIELD_EX32(desc, MTEDESC, WRITE) ? MMU_DATA_STORE : MMU_DATA_LOAD;
+    sizem1  = REG_FIELD_EX32(desc, MTEDESC, SIZEM1);
 
     /* Find the addr of the end of the access */
     ptr_last = ptr + sizem1;
 
     /* Round the bounds to the tag granule, and compute the number of tags. */
     tag_first = QEMU_ALIGN_DOWN(ptr, TAG_GRANULE);
-    tag_last = QEMU_ALIGN_DOWN(ptr_last, TAG_GRANULE);
+    tag_last  = QEMU_ALIGN_DOWN(ptr_last, TAG_GRANULE);
     tag_count = ((tag_last - tag_first) / TAG_GRANULE) + 1;
 
     /* Locate the page boundaries. */
@@ -772,21 +687,16 @@ static int mte_probe_int(CPUARMState *env, uint32_t desc, uint64_t ptr,
 
     if (likely(tag_last - prev_page < TARGET_PAGE_SIZE)) {
         /* Memory access stays on one page. */
-        mem1 = allocation_tag_mem(env, mmu_idx, ptr, type, sizem1 + 1,
-                                  MMU_DATA_LOAD, ra);
-        if (!mem1) {
-            return 1;
-        }
+        mem1 = allocation_tag_mem(env, mmu_idx, ptr, type, sizem1 + 1, MMU_DATA_LOAD, ra);
+        if (!mem1) { return 1; }
         /* Perform all of the comparisons. */
         n = checkN(mem1, ptr & TAG_GRANULE, ptr_tag, tag_count);
-    } else {
+    }
+    else {
         /* Memory access crosses to next page. */
-        mem1 = allocation_tag_mem(env, mmu_idx, ptr, type, next_page - ptr,
-                                  MMU_DATA_LOAD, ra);
+        mem1 = allocation_tag_mem(env, mmu_idx, ptr, type, next_page - ptr, MMU_DATA_LOAD, ra);
 
-        mem2 = allocation_tag_mem(env, mmu_idx, next_page, type,
-                                  ptr_last - next_page + 1,
-                                  MMU_DATA_LOAD, ra);
+        mem2 = allocation_tag_mem(env, mmu_idx, next_page, type, ptr_last - next_page + 1, MMU_DATA_LOAD, ra);
 
         /*
          * Perform all of the comparisons.
@@ -794,46 +704,37 @@ static int mte_probe_int(CPUARMState *env, uint32_t desc, uint64_t ptr,
          * two pages that do not both have tagging enabled.
          */
         n = c = (next_page - tag_first) / TAG_GRANULE;
-        if (mem1) {
-            n = checkN(mem1, ptr & TAG_GRANULE, ptr_tag, c);
-        }
+        if (mem1) { n = checkN(mem1, ptr & TAG_GRANULE, ptr_tag, c); }
         if (n == c) {
-            if (!mem2) {
-                return 1;
-            }
+            if (!mem2) { return 1; }
             n += checkN(mem2, 0, ptr_tag, tag_count - c);
         }
     }
 
-    if (likely(n == tag_count)) {
-        return 1;
-    }
+    if (likely(n == tag_count)) { return 1; }
 
     /*
      * If we failed, we know which granule.  For the first granule, the
      * failure address is @ptr, the first byte accessed.  Otherwise the
      * failure address is the first byte of the nth granule.
      */
-    if (n > 0) {
-        *fault = tag_first + n * TAG_GRANULE;
-    }
+    if (n > 0) { *fault = tag_first + n * TAG_GRANULE; }
     return 0;
 }
 
-uint64_t mte_check(CPUARMState *env, uint32_t desc, uint64_t ptr, uintptr_t ra)
+uint64_t mte_check(CPUARMState* env, uint32_t desc, uint64_t ptr, uintptr_t ra)
 {
     uint64_t fault;
-    int ret = mte_probe_int(env, desc, ptr, ra, &fault);
+    int      ret = mte_probe_int(env, desc, ptr, ra, &fault);
 
-    if (unlikely(ret == 0)) {
-        mte_check_fail(env, desc, fault, ra);
-    } else if (ret < 0) {
+    if (unlikely(ret == 0)) { mte_check_fail(env, desc, fault, ra); }
+    else if (ret < 0) {
         return ptr;
     }
     return ptr;
 }
 
-uint64_t HELPER(mte_check)(CPUARMState *env, uint32_t desc, uint64_t ptr)
+uint64_t HELPER(mte_check)(CPUARMState* env, uint32_t desc, uint64_t ptr)
 {
     /*
      * R_XCHFJ: Alignment check not caused by memory type is priority 1,
@@ -846,8 +747,8 @@ uint64_t HELPER(mte_check)(CPUARMState *env, uint32_t desc, uint64_t ptr)
     if (unlikely(align)) {
         align = (1u << align) - 1;
         if (unlikely(ptr & align)) {
-            int idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
-            bool w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
+            int           idx  = REG_FIELD_EX32(desc, MTEDESC, MIDX);
+            bool          w    = REG_FIELD_EX32(desc, MTEDESC, WRITE);
             MMUAccessType type = w ? MMU_DATA_STORE : MMU_DATA_LOAD;
             arm_cpu_do_unaligned_access(env_cpu(env), ptr, type, idx, GETPC());
         }
@@ -862,10 +763,10 @@ uint64_t HELPER(mte_check)(CPUARMState *env, uint32_t desc, uint64_t ptr)
  * is only intended to probe the tag -- the validity of the page must
  * be checked beforehand.
  */
-bool mte_probe(CPUARMState *env, uint32_t desc, uint64_t ptr)
+bool mte_probe(CPUARMState* env, uint32_t desc, uint64_t ptr)
 {
     uint64_t fault;
-    int ret = mte_probe_int(env, desc, ptr, 0, &fault);
+    int      ret = mte_probe_int(env, desc, ptr, 0, &fault);
 
     return ret != 0;
 }
@@ -873,27 +774,23 @@ bool mte_probe(CPUARMState *env, uint32_t desc, uint64_t ptr)
 /*
  * Perform an MTE checked access for DC_ZVA.
  */
-uint64_t HELPER(mte_check_zva)(CPUARMState *env, uint32_t desc, uint64_t ptr)
+uint64_t HELPER(mte_check_zva)(CPUARMState* env, uint32_t desc, uint64_t ptr)
 {
     uintptr_t ra = GETPC();
-    int log2_dcz_bytes, log2_tag_bytes;
-    int mmu_idx, bit55;
-    intptr_t dcz_bytes, tag_bytes, i;
-    void *mem;
-    uint64_t ptr_tag, mem_tag, align_ptr;
+    int       log2_dcz_bytes, log2_tag_bytes;
+    int       mmu_idx, bit55;
+    intptr_t  dcz_bytes, tag_bytes, i;
+    void*     mem;
+    uint64_t  ptr_tag, mem_tag, align_ptr;
 
     bit55 = extract64(ptr, 55, 1);
 
     /* If TBI is disabled, the access is unchecked, and ptr is not dirty. */
-    if (unlikely(!tbi_check(desc, bit55))) {
-        return ptr;
-    }
+    if (unlikely(!tbi_check(desc, bit55))) { return ptr; }
 
     ptr_tag = allocation_tag_from_addr(ptr);
 
-    if (tcma_check(desc, bit55, ptr_tag)) {
-        goto done;
-    }
+    if (tcma_check(desc, bit55, ptr_tag)) { goto done; }
 
     /*
      * In arm_cpu_realizefn, we asserted that dcz > LOG2_TAG_GRANULE+1,
@@ -902,9 +799,9 @@ uint64_t HELPER(mte_check_zva)(CPUARMState *env, uint32_t desc, uint64_t ptr)
      */
     log2_dcz_bytes = env_archcpu(env)->dcz_blocksize + 2;
     log2_tag_bytes = log2_dcz_bytes - (LOG2_TAG_GRANULE + 1);
-    dcz_bytes = (intptr_t)1 << log2_dcz_bytes;
-    tag_bytes = (intptr_t)1 << log2_tag_bytes;
-    align_ptr = ptr & -dcz_bytes;
+    dcz_bytes      = (intptr_t)1 << log2_dcz_bytes;
+    tag_bytes      = (intptr_t)1 << log2_tag_bytes;
+    align_ptr      = ptr & -dcz_bytes;
 
     /*
      * Trap if accessing an invalid page.  DC_ZVA requires that we supply
@@ -912,12 +809,9 @@ uint64_t HELPER(mte_check_zva)(CPUARMState *env, uint32_t desc, uint64_t ptr)
      * that we probe the actual space.  So do both.
      */
     mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
-    (void) probe_write(env, ptr, 1, mmu_idx, ra);
-    mem = allocation_tag_mem(env, mmu_idx, align_ptr, MMU_DATA_STORE,
-                             dcz_bytes, MMU_DATA_LOAD, ra);
-    if (!mem) {
-        goto done;
-    }
+    (void)probe_write(env, ptr, 1, mmu_idx, ra);
+    mem = allocation_tag_mem(env, mmu_idx, align_ptr, MMU_DATA_STORE, dcz_bytes, MMU_DATA_LOAD, ra);
+    if (!mem) { goto done; }
 
     /*
      * Unlike the reasoning for checkN, DC_ZVA is always aligned, and thus
@@ -932,67 +826,59 @@ uint64_t HELPER(mte_check_zva)(CPUARMState *env, uint32_t desc, uint64_t ptr)
      * tag bytes to be in little-endian order.
      */
     switch (log2_tag_bytes) {
-    case 0: /* zva_blocksize 32 */
-        mem_tag = *(uint8_t *)mem;
-        ptr_tag *= 0x11u;
-        break;
-    case 1: /* zva_blocksize 64 */
-        mem_tag = cpu_to_le16(*(uint16_t *)mem);
-        ptr_tag *= 0x1111u;
-        break;
-    case 2: /* zva_blocksize 128 */
-        mem_tag = cpu_to_le32(*(uint32_t *)mem);
-        ptr_tag *= 0x11111111u;
-        break;
-    case 3: /* zva_blocksize 256 */
-        mem_tag = cpu_to_le64(*(uint64_t *)mem);
-        ptr_tag *= 0x1111111111111111ull;
-        break;
+        case 0: /* zva_blocksize 32 */
+            mem_tag  = *(uint8_t*)mem;
+            ptr_tag *= 0x11u;
+            break;
+        case 1: /* zva_blocksize 64 */
+            mem_tag  = cpu_to_le16(*(uint16_t*)mem);
+            ptr_tag *= 0x1111u;
+            break;
+        case 2: /* zva_blocksize 128 */
+            mem_tag  = cpu_to_le32(*(uint32_t*)mem);
+            ptr_tag *= 0x11111111u;
+            break;
+        case 3: /* zva_blocksize 256 */
+            mem_tag  = cpu_to_le64(*(uint64_t*)mem);
+            ptr_tag *= 0x1111111111111111ull;
+            break;
 
-    default: /* zva_blocksize 512, 1024, 2048 */
-        ptr_tag *= 0x1111111111111111ull;
-        i = 0;
-        do {
-            mem_tag = cpu_to_le64(*(uint64_t *)(mem + i));
-            if (unlikely(mem_tag != ptr_tag)) {
-                goto fail;
+        default: /* zva_blocksize 512, 1024, 2048 */
+            ptr_tag *= 0x1111111111111111ull;
+            i        = 0;
+            do {
+                mem_tag = cpu_to_le64(*(uint64_t*)(mem + i));
+                if (unlikely(mem_tag != ptr_tag)) { goto fail; }
+                i         += 8;
+                align_ptr += 16 * TAG_GRANULE;
             }
-            i += 8;
-            align_ptr += 16 * TAG_GRANULE;
-        } while (i < tag_bytes);
-        goto done;
+            while (i < tag_bytes);
+            goto done;
     }
 
-    if (likely(mem_tag == ptr_tag)) {
-        goto done;
-    }
+    if (likely(mem_tag == ptr_tag)) { goto done; }
 
- fail:
+fail:
     /* Locate the first nibble that differs. */
     i = ctz64(mem_tag ^ ptr_tag) >> 4;
     mte_check_fail(env, desc, align_ptr + i * TAG_GRANULE, ra);
 
- done:
+done:
     return ptr;
 }
 
-uint64_t mte_mops_probe(CPUARMState *env, uint64_t ptr, uint64_t size,
-                        uint32_t desc)
+uint64_t mte_mops_probe(CPUARMState* env, uint64_t ptr, uint64_t size, uint32_t desc)
 {
-    int mmu_idx, tag_count;
+    int      mmu_idx, tag_count;
     uint64_t ptr_tag, tag_first, tag_last;
-    void *mem;
-    bool w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
+    void*    mem;
+    bool     w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
     uint32_t n;
 
     mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     /* True probe; this will never fault */
-    mem = allocation_tag_mem_probe(env, mmu_idx, ptr,
-                                   w ? MMU_DATA_STORE : MMU_DATA_LOAD,
-                                   size, MMU_DATA_LOAD, true, 0);
-    if (!mem) {
-        return size;
-    }
+    mem = allocation_tag_mem_probe(env, mmu_idx, ptr, w ? MMU_DATA_STORE : MMU_DATA_LOAD, size, MMU_DATA_LOAD, true, 0);
+    if (!mem) { return size; }
 
     /*
      * TODO: checkN() is not designed for checks of the size we expect
@@ -1005,34 +891,30 @@ uint64_t mte_mops_probe(CPUARMState *env, uint64_t ptr, uint64_t size,
      *   }
      */
     /* Round the bounds to the tag granule, and compute the number of tags. */
-    ptr_tag = allocation_tag_from_addr(ptr);
+    ptr_tag   = allocation_tag_from_addr(ptr);
     tag_first = QEMU_ALIGN_DOWN(ptr, TAG_GRANULE);
-    tag_last = QEMU_ALIGN_DOWN(ptr + size - 1, TAG_GRANULE);
+    tag_last  = QEMU_ALIGN_DOWN(ptr + size - 1, TAG_GRANULE);
     tag_count = ((tag_last - tag_first) / TAG_GRANULE) + 1;
-    n = checkN(mem, ptr & TAG_GRANULE, ptr_tag, tag_count);
-    if (likely(n == tag_count)) {
-        return size;
-    }
+    n         = checkN(mem, ptr & TAG_GRANULE, ptr_tag, tag_count);
+    if (likely(n == tag_count)) { return size; }
 
     /*
      * Failure; for the first granule, it's at @ptr. Otherwise
      * it's at the first byte of the nth granule. Calculate how
      * many bytes we can access without hitting that failure.
      */
-    if (n == 0) {
-        return 0;
-    } else {
+    if (n == 0) { return 0; }
+    else {
         return n * TAG_GRANULE - (ptr - tag_first);
     }
 }
 
-uint64_t mte_mops_probe_rev(CPUARMState *env, uint64_t ptr, uint64_t size,
-                            uint32_t desc)
+uint64_t mte_mops_probe_rev(CPUARMState* env, uint64_t ptr, uint64_t size, uint32_t desc)
 {
-    int mmu_idx, tag_count;
+    int      mmu_idx, tag_count;
     uint64_t ptr_tag, tag_first, tag_last;
-    void *mem;
-    bool w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
+    void*    mem;
+    bool     w = REG_FIELD_EX32(desc, MTEDESC, WRITE);
     uint32_t n;
 
     mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
@@ -1045,12 +927,8 @@ uint64_t mte_mops_probe_rev(CPUARMState *env, uint64_t ptr, uint64_t size,
      * adjusting the ptr to point to the start of the region and then having
      * to adjust the returned 'mem' to get the end of the tag memory.
      */
-    mem = allocation_tag_mem_probe(env, mmu_idx, ptr,
-                                   w ? MMU_DATA_STORE : MMU_DATA_LOAD,
-                                   1, MMU_DATA_LOAD, true, 0);
-    if (!mem) {
-        return size;
-    }
+    mem = allocation_tag_mem_probe(env, mmu_idx, ptr, w ? MMU_DATA_STORE : MMU_DATA_LOAD, 1, MMU_DATA_LOAD, true, 0);
+    if (!mem) { return size; }
 
     /*
      * TODO: checkNrev() is not designed for checks of the size we expect
@@ -1063,33 +941,29 @@ uint64_t mte_mops_probe_rev(CPUARMState *env, uint64_t ptr, uint64_t size,
      *   }
      */
     /* Round the bounds to the tag granule, and compute the number of tags. */
-    ptr_tag = allocation_tag_from_addr(ptr);
+    ptr_tag   = allocation_tag_from_addr(ptr);
     tag_first = QEMU_ALIGN_DOWN(ptr - (size - 1), TAG_GRANULE);
-    tag_last = QEMU_ALIGN_DOWN(ptr, TAG_GRANULE);
+    tag_last  = QEMU_ALIGN_DOWN(ptr, TAG_GRANULE);
     tag_count = ((tag_last - tag_first) / TAG_GRANULE) + 1;
-    n = checkNrev(mem, ptr & TAG_GRANULE, ptr_tag, tag_count);
-    if (likely(n == tag_count)) {
-        return size;
-    }
+    n         = checkNrev(mem, ptr & TAG_GRANULE, ptr_tag, tag_count);
+    if (likely(n == tag_count)) { return size; }
 
     /*
      * Failure; for the first granule, it's at @ptr. Otherwise
      * it's at the last byte of the nth granule. Calculate how
      * many bytes we can access without hitting that failure.
      */
-    if (n == 0) {
-        return 0;
-    } else {
+    if (n == 0) { return 0; }
+    else {
         return (n - 1) * TAG_GRANULE + ((ptr + 1) - tag_last);
     }
 }
 
-void mte_mops_set_tags(CPUARMState *env, uint64_t ptr, uint64_t size,
-                       uint32_t desc)
+void mte_mops_set_tags(CPUARMState* env, uint64_t ptr, uint64_t size, uint32_t desc)
 {
-    int mmu_idx, tag_count;
+    int      mmu_idx, tag_count;
     uint64_t ptr_tag;
-    void *mem;
+    void*    mem;
 
     if (!desc) {
         /* Tags not actually enabled */
@@ -1098,17 +972,14 @@ void mte_mops_set_tags(CPUARMState *env, uint64_t ptr, uint64_t size,
 
     mmu_idx = REG_FIELD_EX32(desc, MTEDESC, MIDX);
     /* True probe: this will never fault */
-    mem = allocation_tag_mem_probe(env, mmu_idx, ptr, MMU_DATA_STORE, size,
-                                   MMU_DATA_STORE, true, 0);
-    if (!mem) {
-        return;
-    }
+    mem = allocation_tag_mem_probe(env, mmu_idx, ptr, MMU_DATA_STORE, size, MMU_DATA_STORE, true, 0);
+    if (!mem) { return; }
 
     /*
      * We know that ptr and size are both TAG_GRANULE aligned; store
      * the tag from the pointer value into the tag memory.
      */
-    ptr_tag = allocation_tag_from_addr(ptr);
+    ptr_tag   = allocation_tag_from_addr(ptr);
     tag_count = size / TAG_GRANULE;
     if (ptr & TAG_GRANULE) {
         /* Not 2*TAG_GRANULE-aligned: store tag to first nibble */

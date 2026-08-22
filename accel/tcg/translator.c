@@ -19,34 +19,29 @@
 #include "internal-common.h"
 #include "tb-internal.h"
 
-static void set_can_do_io(DisasContextBase *db, bool val)
+static void set_can_do_io(DisasContextBase* db, bool val)
 {
     QEMU_BUILD_BUG_ON(sizeof_field(CPUState, neg.can_do_io) != 1);
-    tcg_gen_st8_i32(tcg_constant_i32(val), tcg_env,
-                    offsetof(CPUState, neg.can_do_io) - sizeof(CPUState));
+    tcg_gen_st8_i32(tcg_constant_i32(val), tcg_env, offsetof(CPUState, neg.can_do_io) - sizeof(CPUState));
 }
 
-bool translator_io_start(DisasContextBase *db)
+bool translator_io_start(DisasContextBase* db)
 {
     /*
      * Ensure that this instruction will be the last in the TB.
      * The target may override this to something more forceful.
      */
-    if (db->is_jmp == DISAS_NEXT) {
-        db->is_jmp = DISAS_TOO_MANY;
-    }
+    if (db->is_jmp == DISAS_NEXT) { db->is_jmp = DISAS_TOO_MANY; }
     return true;
 }
 
-static void gen_tb_start(DisasContextBase *db, uint32_t cflags)
+static void gen_tb_start(DisasContextBase* db, uint32_t cflags)
 {
     TCGv_i32 count = NULL;
 
     if (!(cflags & CF_NOIRQ)) {
         count = tcg_temp_new_i32();
-        tcg_gen_ld_i32(count, tcg_env,
-                       offsetof(CPUState, neg.icount_decr.u32) -
-                       sizeof(CPUState));
+        tcg_gen_ld_i32(count, tcg_env, offsetof(CPUState, neg.icount_decr.u32) - sizeof(CPUState));
     }
 
     /*
@@ -56,15 +51,14 @@ static void gen_tb_start(DisasContextBase *db, uint32_t cflags)
      * should have ensured we don't run more instructions than the
      * budget.
      */
-    if (cflags & CF_NOIRQ) {
-        tcg_ctx->exitreq_label = NULL;
-    } else {
+    if (cflags & CF_NOIRQ) { tcg_ctx->exitreq_label = NULL; }
+    else {
         tcg_ctx->exitreq_label = gen_new_label();
         tcg_gen_brcondi_i32(TCG_COND_LT, count, 0, tcg_ctx->exitreq_label);
     }
 }
 
-static void gen_tb_end(const TranslationBlock *tb, uint32_t cflags, int num_insns)
+static void gen_tb_end(const TranslationBlock* tb, uint32_t cflags, int num_insns)
 {
     if (tcg_ctx->exitreq_label) {
         gen_set_label(tcg_ctx->exitreq_label);
@@ -72,60 +66,53 @@ static void gen_tb_end(const TranslationBlock *tb, uint32_t cflags, int num_insn
     }
 }
 
-bool translator_is_same_page(const DisasContextBase *db, vaddr addr)
-{
-    return ((addr ^ db->pc_first) & TARGET_PAGE_MASK) == 0;
-}
+bool translator_is_same_page(const DisasContextBase* db, vaddr addr)
+{ return ((addr ^ db->pc_first) & TARGET_PAGE_MASK) == 0; }
 
-bool translator_use_goto_tb(DisasContextBase *db, vaddr dest)
+bool translator_use_goto_tb(DisasContextBase* db, vaddr dest)
 {
     /* Suppress goto_tb if requested. */
-    if (tb_cflags(db->tb) & CF_NO_GOTO_TB) {
-        return false;
-    }
+    if (tb_cflags(db->tb) & CF_NO_GOTO_TB) { return false; }
 
     /* Check for the dest on the same page as the start of the TB.  */
     return translator_is_same_page(db, dest);
 }
 
-void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
-                     vaddr pc, void *host_pc, const TranslatorOps *ops,
-                     DisasContextBase *db)
+void translator_loop(CPUState* cpu, TranslationBlock* tb, int* max_insns, vaddr pc, void* host_pc,
+                     const TranslatorOps* ops, DisasContextBase* db)
 {
-    uint32_t cflags = tb_cflags(tb);
-    TCGOp *first_insn_start = NULL;
+    uint32_t cflags           = tb_cflags(tb);
+    TCGOp*   first_insn_start = NULL;
 
     /* Initialize DisasContext */
-    db->tb = tb;
-    db->pc_first = pc;
-    db->pc_next = pc;
-    db->is_jmp = DISAS_NEXT;
-    db->num_insns = 0;
-    db->max_insns = *max_insns;
-    db->insn_start = NULL;
-    db->fake_insn = false;
+    db->tb           = tb;
+    db->pc_first     = pc;
+    db->pc_next      = pc;
+    db->is_jmp       = DISAS_NEXT;
+    db->num_insns    = 0;
+    db->max_insns    = *max_insns;
+    db->insn_start   = NULL;
+    db->fake_insn    = false;
     db->host_addr[0] = host_pc;
     db->host_addr[1] = NULL;
     db->record_start = 0;
-    db->record_len = 0;
-    db->code_mmuidx = cpu_mmu_index(cpu, true);
+    db->record_len   = 0;
+    db->code_mmuidx  = cpu_mmu_index(cpu, true);
 
     ops->init_disas_context(db, cpu);
-    tcg_debug_assert(db->is_jmp == DISAS_NEXT);  /* no early exit */
+    tcg_debug_assert(db->is_jmp == DISAS_NEXT); /* no early exit */
 
     /* Start translating.  */
     gen_tb_start(db, cflags);
     ops->tb_start(db, cpu);
-    tcg_debug_assert(db->is_jmp == DISAS_NEXT);  /* no early exit */
+    tcg_debug_assert(db->is_jmp == DISAS_NEXT); /* no early exit */
 
     while (true) {
         *max_insns = ++db->num_insns;
         ops->insn_start(db, cpu);
         db->insn_start = tcg_last_op();
-        if (first_insn_start == NULL) {
-            first_insn_start = db->insn_start;
-        }
-        tcg_debug_assert(db->is_jmp == DISAS_NEXT);  /* no early exit */
+        if (first_insn_start == NULL) { first_insn_start = db->insn_start; }
+        tcg_debug_assert(db->is_jmp == DISAS_NEXT); /* no early exit */
 
         /*
          * Disassemble one instruction.  The translate_insn hook should
@@ -136,9 +123,7 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
         ops->translate_insn(db, cpu);
 
         /* Stop translation if translate_insn so indicated.  */
-        if (db->is_jmp != DISAS_NEXT) {
-            break;
-        }
+        if (db->is_jmp != DISAS_NEXT) { break; }
 
         /* Stop translation if the output buffer is full,
            or we have executed all of the allowed instructions.  */
@@ -156,9 +141,8 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
      * Manage can_do_io for the translation block: set to false before
      * the first insn and set to true before the last insn.
      */
-    if (db->num_insns == 1) {
-        tcg_debug_assert(first_insn_start == db->insn_start);
-    } else {
+    if (db->num_insns == 1) { tcg_debug_assert(first_insn_start == db->insn_start); }
+    else {
         tcg_debug_assert(first_insn_start != db->insn_start);
         tcg_ctx->emit_before_op = first_insn_start;
         set_can_do_io(db, false);
@@ -168,17 +152,15 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
     tcg_ctx->emit_before_op = NULL;
 
     /* May be used by disas_log. */
-    tb->size = db->pc_next - db->pc_first;
+    tb->size   = db->pc_next - db->pc_first;
     tb->icount = db->num_insns;
 
-    if (qemu_loglevel_mask(CPU_LOG_TB_IN_ASM)
-        && qemu_log_in_addr_range(db->pc_first)) {
-        FILE *logfile = qemu_log_trylock();
+    if (qemu_loglevel_mask(CPU_LOG_TB_IN_ASM) && qemu_log_in_addr_range(db->pc_first)) {
+        FILE* logfile = qemu_log_trylock();
         if (logfile) {
             fprintf(logfile, "----------------\n");
 
-            if (!ops->disas_log ||
-                !ops->disas_log(db, cpu, logfile)) {
+            if (!ops->disas_log || !ops->disas_log(db, cpu, logfile)) {
                 fprintf(logfile, "IN: %016" VADDR_PRIx "\n", db->pc_first);
             }
             fprintf(logfile, "\n");
@@ -187,13 +169,12 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
     }
 }
 
-static bool translator_ld(CPUArchState *env, DisasContextBase *db,
-                          void *dest, vaddr pc, size_t len)
+static bool translator_ld(CPUArchState* env, DisasContextBase* db, void* dest, vaddr pc, size_t len)
 {
-    TranslationBlock *tb = db->tb;
-    vaddr last = pc + len - 1;
-    void *host;
-    vaddr base;
+    TranslationBlock* tb   = db->tb;
+    vaddr             last = pc + len - 1;
+    void*             host;
+    vaddr             base;
 
     /* Use slow path if first page is MMIO. */
     if (unlikely(tb_page_addr0(tb) == -1)) {
@@ -217,9 +198,9 @@ static bool translator_ld(CPUArchState *env, DisasContextBase *db,
          */
         size_t len0 = -(pc | TARGET_PAGE_MASK);
         memcpy(dest, host + (pc - base), len0);
-        pc += len0;
+        pc   += len0;
         dest += len0;
-        len -= len0;
+        len  -= len0;
     }
 
     /*
@@ -264,44 +245,42 @@ static bool translator_ld(CPUArchState *env, DisasContextBase *db,
         old_page1 = tb_page_addr1(tb);
         if (likely(new_page1 != old_page1)) {
             page0 = tb_page_addr0(tb);
-            if (unlikely(old_page1 != -1)) {
-                tb_unlock_page1(page0, old_page1);
-            }
+            if (unlikely(old_page1 != -1)) { tb_unlock_page1(page0, old_page1); }
             tb_set_page_addr1(tb, new_page1);
             tb_lock_page1(page0, new_page1);
         }
         host = db->host_addr[1];
     }
 
- do_read:
+do_read:
     /*
      * Assume aligned reads should be atomic, if possible.
      * We're not in a position to jump out with EXCP_ATOMIC.
      */
     host += pc - base;
     switch (len) {
-    case 2:
-        if (QEMU_IS_ALIGNED(pc, 2)) {
-            uint16_t t = qatomic_read((uint16_t *)host);
-            stw_he_p(dest, t);
-            return true;
-        }
-        break;
-    case 4:
-        if (QEMU_IS_ALIGNED(pc, 4)) {
-            uint32_t t = qatomic_read((uint32_t *)host);
-            stl_he_p(dest, t);
-            return true;
-        }
-        break;
+        case 2:
+            if (QEMU_IS_ALIGNED(pc, 2)) {
+                uint16_t t = qatomic_read((uint16_t*)host);
+                stw_he_p(dest, t);
+                return true;
+            }
+            break;
+        case 4:
+            if (QEMU_IS_ALIGNED(pc, 4)) {
+                uint32_t t = qatomic_read((uint32_t*)host);
+                stl_he_p(dest, t);
+                return true;
+            }
+            break;
 #ifdef CONFIG_ATOMIC64
-    case 8:
-        if (QEMU_IS_ALIGNED(pc, 8)) {
-            uint64_t t = qatomic_read__nocheck((uint64_t *)host);
-            stq_he_p(dest, t);
-            return true;
-        }
-        break;
+        case 8:
+            if (QEMU_IS_ALIGNED(pc, 8)) {
+                uint64_t t = qatomic_read__nocheck((uint64_t*)host);
+                stq_he_p(dest, t);
+                return true;
+            }
+            break;
 #endif
     }
     /* Unaligned or partial read from the second page is not atomic. */
@@ -309,15 +288,12 @@ static bool translator_ld(CPUArchState *env, DisasContextBase *db,
     return true;
 }
 
-static void record_save(DisasContextBase *db, vaddr pc,
-                        const void *from, int size)
+static void record_save(DisasContextBase* db, vaddr pc, const void* from, int size)
 {
     int offset;
 
     /* Do not record probes before the start of TB. */
-    if (pc < db->pc_first) {
-        return;
-    }
+    if (pc < db->pc_first) { return; }
 
     /*
      * In translator_access, we verified that pc is within 2 pages
@@ -332,8 +308,9 @@ static void record_save(DisasContextBase *db, vaddr pc,
      */
     if (db->record_len == 0) {
         db->record_start = offset;
-        db->record_len = size;
-    } else {
+        db->record_len   = size;
+    }
+    else {
         assert(offset == db->record_start + db->record_len);
         assert(db->record_len + size <= sizeof(db->record));
         db->record_len += size;
@@ -342,24 +319,16 @@ static void record_save(DisasContextBase *db, vaddr pc,
     memcpy(db->record + (offset - db->record_start), from, size);
 }
 
-size_t translator_st_len(const DisasContextBase *db)
-{
-    return db->fake_insn ? db->record_len : db->tb->size;
-}
+size_t translator_st_len(const DisasContextBase* db) { return db->fake_insn ? db->record_len : db->tb->size; }
 
-bool translator_st(const DisasContextBase *db, void *dest,
-                   vaddr addr, size_t len)
+bool translator_st(const DisasContextBase* db, void* dest, vaddr addr, size_t len)
 {
     size_t offset, offset_end;
 
-    if (addr < db->pc_first) {
-        return false;
-    }
-    offset = addr - db->pc_first;
+    if (addr < db->pc_first) { return false; }
+    offset     = addr - db->pc_first;
     offset_end = offset + len;
-    if (offset_end > translator_st_len(db)) {
-        return false;
-    }
+    if (offset_end > translator_st_len(db)) { return false; }
 
     if (!db->fake_insn) {
         size_t offset_page1 = -(db->pc_first | TARGET_PAGE_MASK);
@@ -374,90 +343,77 @@ bool translator_st(const DisasContextBase *db, void *dest,
                 size_t len0 = offset_page1 - offset;
                 memcpy(dest, db->host_addr[0] + offset, len0);
                 offset += len0;
-                dest += len0;
+                dest   += len0;
             }
         }
 
         /* Get any bytes from the second page. */
         if (db->host_addr[1] && offset >= offset_page1) {
-            memcpy(dest, db->host_addr[1] + (offset - offset_page1),
-                   offset_end - offset);
+            memcpy(dest, db->host_addr[1] + (offset - offset_page1), offset_end - offset);
             return true;
         }
     }
 
     /* Else get recorded bytes. */
-    if (db->record_len != 0 &&
-        offset >= db->record_start &&
-        offset_end <= db->record_start + db->record_len) {
-        memcpy(dest, db->record + (offset - db->record_start),
-               offset_end - offset);
+    if (db->record_len != 0 && offset >= db->record_start && offset_end <= db->record_start + db->record_len) {
+        memcpy(dest, db->record + (offset - db->record_start), offset_end - offset);
         return true;
     }
     return false;
 }
 
-uint8_t translator_ldub(CPUArchState *env, DisasContextBase *db, vaddr pc)
+uint8_t translator_ldub(CPUArchState* env, DisasContextBase* db, vaddr pc)
 {
     uint8_t val;
 
     if (!translator_ld(env, db, &val, pc, sizeof(val))) {
         MemOpIdx oi = make_memop_idx(MO_UB, db->code_mmuidx);
-        val = cpu_ldb_code_mmu(env, pc, oi, 0);
+        val         = cpu_ldb_code_mmu(env, pc, oi, 0);
         record_save(db, pc, &val, sizeof(val));
     }
     return val;
 }
 
-uint16_t translator_lduw_end(CPUArchState *env, DisasContextBase *db,
-                             vaddr pc, MemOp endian)
+uint16_t translator_lduw_end(CPUArchState* env, DisasContextBase* db, vaddr pc, MemOp endian)
 {
     uint16_t val;
 
     if (!translator_ld(env, db, &val, pc, sizeof(val))) {
         MemOpIdx oi = make_memop_idx(MO_UW, db->code_mmuidx);
-        val = cpu_ldw_code_mmu(env, pc, oi, 0);
+        val         = cpu_ldw_code_mmu(env, pc, oi, 0);
         record_save(db, pc, &val, sizeof(val));
     }
-    if (endian & MO_BSWAP) {
-        val = bswap16(val);
-    }
+    if (endian & MO_BSWAP) { val = bswap16(val); }
     return val;
 }
 
-uint32_t translator_ldl_end(CPUArchState *env, DisasContextBase *db,
-                            vaddr pc, MemOp endian)
+uint32_t translator_ldl_end(CPUArchState* env, DisasContextBase* db, vaddr pc, MemOp endian)
 {
     uint32_t val;
 
     if (!translator_ld(env, db, &val, pc, sizeof(val))) {
         MemOpIdx oi = make_memop_idx(MO_UL, db->code_mmuidx);
-        val = cpu_ldl_code_mmu(env, pc, oi, 0);
+        val         = cpu_ldl_code_mmu(env, pc, oi, 0);
         record_save(db, pc, &val, sizeof(val));
     }
-    if (endian & MO_BSWAP) {
-        val = bswap32(val);
-    }
+    if (endian & MO_BSWAP) { val = bswap32(val); }
     return val;
 }
 
-uint64_t translator_ldq_end(CPUArchState *env, DisasContextBase *db,
-                            vaddr pc, MemOp endian)
+uint64_t translator_ldq_end(CPUArchState* env, DisasContextBase* db, vaddr pc, MemOp endian)
 {
     uint64_t val;
 
     if (!translator_ld(env, db, &val, pc, sizeof(val))) {
         MemOpIdx oi = make_memop_idx(MO_UQ, db->code_mmuidx);
-        val = cpu_ldq_code_mmu(env, pc, oi, 0);
+        val         = cpu_ldq_code_mmu(env, pc, oi, 0);
         record_save(db, pc, &val, sizeof(val));
     }
-    if (endian & MO_BSWAP) {
-        val = bswap64(val);
-    }
+    if (endian & MO_BSWAP) { val = bswap64(val); }
     return val;
 }
 
-void translator_fake_ld(DisasContextBase *db, const void *data, size_t len)
+void translator_fake_ld(DisasContextBase* db, const void* data, size_t len)
 {
     db->fake_insn = true;
     record_save(db, db->pc_first, data, len);
