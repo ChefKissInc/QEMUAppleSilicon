@@ -276,21 +276,10 @@ static void qemu_input_queue_sync(QemuInputEventQueueHead* queue)
     queue_count++;
 }
 
-void qemu_input_event_send_impl(QemuConsole* src, InputEvent* evt)
+void qemu_input_event_send(QemuConsole* src, InputEvent* evt)
 {
     QemuInputHandlerState* s;
 
-    qemu_input_event_trace(src, evt);
-
-    /* send event */
-    s = qemu_input_find_handler(1 << evt->type, src);
-    if (!s) { return; }
-    s->handler->event(s->dev, src, evt);
-    s->events++;
-}
-
-void qemu_input_event_send(QemuConsole* src, InputEvent* evt)
-{
     /* Expect all parts of QEMU to send events with QCodes exclusively.
      * Key numbers are only supported as end-user input via QMP */
     assert(!(evt->type == INPUT_EVENT_KIND_KEY && evt->u.key.data->key->type == KEY_VALUE_KIND_NUMBER));
@@ -308,11 +297,21 @@ void qemu_input_event_send(QemuConsole* src, InputEvent* evt)
     }
 
     if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) { return; }
+
+    qemu_input_event_trace(src, evt);
+
+    /* send event */
+    s = qemu_input_find_handler(1 << evt->type, src);
+    if (!s) { return; }
+    s->handler->event(s->dev, src, evt);
+    s->events++;
 }
 
-void qemu_input_event_sync_impl(void)
+void qemu_input_event_sync(void)
 {
     QemuInputHandlerState* s;
+
+    if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) { return; }
 
     trace_input_event_sync();
 
@@ -321,11 +320,6 @@ void qemu_input_event_sync_impl(void)
         if (s->handler->sync) { s->handler->sync(s->dev); }
         s->events = 0;
     }
-}
-
-void qemu_input_event_sync(void)
-{
-    if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) { return; }
 }
 
 static InputEvent* qemu_input_event_new_key(KeyValue* key, bool down)

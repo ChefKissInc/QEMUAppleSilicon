@@ -34,9 +34,7 @@ void                   qemu_input_handler_deactivate(QemuInputHandlerState* s);
 void                   qemu_input_handler_unregister(QemuInputHandlerState* s);
 void                   qemu_input_handler_bind(QemuInputHandlerState* s, const char* device_id, int head, Error** errp);
 void                   qemu_input_event_send(QemuConsole* src, InputEvent* evt);
-void                   qemu_input_event_send_impl(QemuConsole* src, InputEvent* evt);
 void                   qemu_input_event_sync(void);
-void                   qemu_input_event_sync_impl(void);
 
 void qemu_input_event_send_key(QemuConsole* src, KeyValue* key, bool down);
 void qemu_input_event_send_key_number(QemuConsole* src, int num, bool down);
