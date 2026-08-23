@@ -640,8 +640,8 @@ static uint32_t apple_mt_spi_transfer(SSIPeripheral* dev, uint32_t val)
 
 static bool apple_mt_spi_contact_is_from_edge(int16_t x, int16_t y)
 {
-    return x < MT_SENSOR_SENSOR_EDGE || x >= MT_SENSOR_SURFACE_WIDTH - MT_SENSOR_EDGE || y < MT_SENSOR_EDGE
-           || y >= MT_SENSOR_SURFACE_HEIGHT - MT_SENSOR_SENSOR_EDGE;
+    return x < MT_SENSOR_EDGE || x >= MT_SENSOR_SURFACE_WIDTH - MT_SENSOR_EDGE || y < MT_SENSOR_EDGE
+           || y >= MT_SENSOR_SURFACE_HEIGHT - MT_SENSOR_EDGE;
 }
 
 /* MultitouchSupport alg_ComputeContactDensityFromRadii, with maximum_radii/minimum_radii == 0 */
