@@ -3201,10 +3201,12 @@ static inline void la_set_pref(TCGTemp* ts, TCGRegSet value)
     *temp_pref = value;
 }
 
+static inline void la_clear_pref(TCGTemp* ts) { la_set_pref(ts, 0); }
+
 static inline void la_dead_pref(TCGTemp* ts)
 {
     tcg_debug_assert(ts->state == TS_DEAD);
-    la_set_pref(ts, 0);
+    la_clear_pref(ts);
 }
 
 static inline void la_live_pref(TCGTemp* ts)
@@ -3515,7 +3517,7 @@ static void __attribute__((noinline)) liveness_pass_1(TCGContext* s)
                                 case TCG_CALL_ARG_EXTEND_U:
                                 case TCG_CALL_ARG_EXTEND_S:
                                     if (arg_slot_reg_p(loc->arg_slot)) {
-                                        la_dead_pref(ts);
+                                        la_clear_pref(ts);
                                         break;
                                     }
                                     /* fall through */
