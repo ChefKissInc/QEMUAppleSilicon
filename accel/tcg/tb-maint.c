@@ -18,6 +18,7 @@
  */
 
 #include "qemu/osdep.h"
+#include "qemu/error-report.h"
 #include "qemu/interval-tree.h"
 #include "qemu/qtree.h"
 #include "exec/cputlb.h"
