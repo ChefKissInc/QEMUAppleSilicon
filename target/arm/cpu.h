@@ -2564,15 +2564,13 @@ bool write_cpustate_to_list(ARMCPU* cpu, bool kvm_sync);
  * The constant names here are patterned after the general style of the names
  * of the AT/ATS operations.
  * The values used are carefully arranged to make mmu_idx => EL lookup easy.
- * For M profile we arrange them to have a bit for priv, a bit for negpri
- * and a bit for secure.
  */
-#define ARM_MMU_IDX_A_GXF 0x20
-#define ARM_MMU_IDX_A     0x40 /* A profile */
-#define ARM_MMU_IDX_NOTLB 0x80 /* does not have a TLB */
+#define ARM_MMU_IDX_A     0x10 /* A profile */
+#define ARM_MMU_IDX_NOTLB 0x20 /* does not have a TLB */
+#define ARM_MMU_IDX_A_GXF 0x40
 
-#define ARM_MMU_IDX_TYPE_MASK    (ARM_MMU_IDX_A | ARM_MMU_IDX_NOTLB)
-#define ARM_MMU_IDX_COREIDX_MASK 0x1f
+#define ARM_MMU_IDX_TYPE_MASK    (ARM_MMU_IDX_A_GXF | ARM_MMU_IDX_A | ARM_MMU_IDX_NOTLB)
+#define ARM_MMU_IDX_COREIDX_MASK 0xf
 
 typedef enum ARMMMUIdx
 {
