@@ -20,7 +20,7 @@
 
 #include "qemu/osdep.h"
 #include "block/aio.h"
-#include "hw/arm/mt-spi.h"
+#include "hw/input/mt-spi.h"
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/ssi/ssi.h"

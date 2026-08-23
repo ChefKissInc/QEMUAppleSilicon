@@ -26,7 +26,7 @@
 #include "hw/arm/kernel_patches.h"
 #include "hw/arm/lm-backlight.h"
 #include "hw/arm/mem.h"
-#include "hw/arm/mt-spi.h"
+#include "hw/input/mt-spi.h"
 #include "hw/arm/sart.h"
 #include "hw/arm/sep-sim.h"
 #include "hw/arm/sep.h"
