@@ -2565,12 +2565,12 @@ bool write_cpustate_to_list(ARMCPU* cpu, bool kvm_sync);
  * of the AT/ATS operations.
  * The values used are carefully arranged to make mmu_idx => EL lookup easy.
  */
-#define ARM_MMU_IDX_A     0x10 /* A profile */
-#define ARM_MMU_IDX_NOTLB 0x20 /* does not have a TLB */
-#define ARM_MMU_IDX_A_GXF 0x40
+#define ARM_MMU_IDX_A_GXF 0x10
+#define ARM_MMU_IDX_A     0x40 /* A profile */
+#define ARM_MMU_IDX_NOTLB 0x80 /* does not have a TLB */
 
-#define ARM_MMU_IDX_TYPE_MASK    (ARM_MMU_IDX_A_GXF | ARM_MMU_IDX_A | ARM_MMU_IDX_NOTLB)
-#define ARM_MMU_IDX_COREIDX_MASK 0xf
+#define ARM_MMU_IDX_TYPE_MASK    (ARM_MMU_IDX_A | ARM_MMU_IDX_NOTLB)
+#define ARM_MMU_IDX_COREIDX_MASK 0x1f
 
 typedef enum ARMMMUIdx
 {
@@ -2621,6 +2621,8 @@ typedef enum ARMMMUIdx
     ARMMMUIdx_Stage1_GE1     = 3 | ARM_MMU_IDX_NOTLB,
     ARMMMUIdx_Stage1_GE1_PAN = 4 | ARM_MMU_IDX_NOTLB,
 } ARMMMUIdx;
+
+QEMU_BUILD_BUG_ON((ARMMMUIdx_Phys_Realm & ARM_MMU_IDX_COREIDX_MASK) >= ARM_MMU_IDX_A_GXF);
 
 /*
  * Bit macros for the core-mmu-index values for each index,
