@@ -61,7 +61,7 @@ void hmp_stopcapture(Monitor* mon, const QDict* qdict)
 void hmp_wavcapture(Monitor* mon, const QDict* qdict)
 {
     const char*   path      = qdict_get_str(qdict, "path");
-    int           freq      = qdict_get_try_int(qdict, "freq", 44100);
+    int           freq      = qdict_get_try_int(qdict, "freq", 48000);
     int           bits      = qdict_get_try_int(qdict, "bits", 16);
     int           nchannels = qdict_get_try_int(qdict, "nchannels", 2);
     const char*   audiodev  = qdict_get_str(qdict, "audiodev");

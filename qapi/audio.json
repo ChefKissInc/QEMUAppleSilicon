@@ -28,7 +28,7 @@
 #     (default true)
 #
 # @frequency: frequency to use when using fixed settings (default
-#     44100)
+#     48000)
 #
 # @channels: number of channels when using fixed settings (default 2)
 #

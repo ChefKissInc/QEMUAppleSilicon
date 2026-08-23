@@ -2796,7 +2796,7 @@ static void vnc_connect(VncDisplay* vd, QIOChannelSocket* sioc, bool skipauth, b
     vs->last_x = -1;
     vs->last_y = -1;
 
-    vs->as.freq       = 44100;
+    vs->as.freq       = 48000;
     vs->as.nchannels  = 2;
     vs->as.fmt        = AUDIO_FORMAT_S16;
     vs->as.endianness = 0;

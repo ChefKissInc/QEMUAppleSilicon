@@ -827,21 +827,21 @@ static void* alsa_audio_init(Audiodev* dev, Error** errp)
 
     /* don't set has_* so alsa_open can identify it wasn't set by the user */
     if (!dev->u.alsa.out->has_period_length) {
-        /* 256 frames assuming 44100Hz */
-        dev->u.alsa.out->period_length = 5805;
+        /* 256 frames assuming 48000Hz */
+        dev->u.alsa.out->period_length = 5333;
     }
     if (!dev->u.alsa.out->has_buffer_length) {
-        /* 4096 frames assuming 44100Hz */
-        dev->u.alsa.out->buffer_length = 92880;
+        /* 4096 frames assuming 48000Hz */
+        dev->u.alsa.out->buffer_length = 85333;
     }
 
     if (!dev->u.alsa.in->has_period_length) {
-        /* 256 frames assuming 44100Hz */
-        dev->u.alsa.in->period_length = 5805;
+        /* 256 frames assuming 48000Hz */
+        dev->u.alsa.in->period_length = 5333;
     }
     if (!dev->u.alsa.in->has_buffer_length) {
-        /* 4096 frames assuming 44100Hz */
-        dev->u.alsa.in->buffer_length = 92880;
+        /* 4096 frames assuming 48000Hz */
+        dev->u.alsa.in->buffer_length = 85333;
     }
 
     return dev;

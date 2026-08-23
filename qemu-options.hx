@@ -655,7 +655,7 @@ SRST
 
     ``in|out.frequency=frequency``
         Specify the frequency to use when using fixed-settings. Default
-        is 44100Hz.
+        is 48000Hz.
 
     ``in|out.channels=channels``
         Specify the number of channels to use when using fixed-settings.

@@ -1784,7 +1784,7 @@ static void audio_validate_per_direction_opts(AudiodevPerDirectionOptions* pdo, 
 
     if (!pdo->has_frequency) {
         pdo->has_frequency = true;
-        pdo->frequency     = 44100;
+        pdo->frequency     = 48000;
     }
     if (!pdo->has_channels) {
         pdo->has_channels = true;

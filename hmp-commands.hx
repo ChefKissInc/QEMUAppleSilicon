@@ -701,7 +701,7 @@ ERST
         .name       = "wavcapture",
         .args_type  = "path:F,audiodev:s,freq:i?,bits:i?,nchannels:i?",
         .params     = "path audiodev [frequency [bits [channels]]]",
-        .help       = "capture audio to a wave file (default frequency=44100 bits=16 channels=2)",
+        .help       = "capture audio to a wave file (default frequency=48000 bits=16 channels=2)",
         .cmd        = hmp_wavcapture,
     },
 SRST
@@ -712,7 +712,7 @@ SRST
 
   Defaults:
 
-  - Sample rate = 44100 Hz - CD quality
+  - Sample rate = 48000 Hz - DVD quality
   - Bits = 16
   - Number of channels = 2 - Stereo
 ERST
