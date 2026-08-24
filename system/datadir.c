@@ -43,8 +43,6 @@ char* qemu_find_file(QemuFileType type, const char* name)
     }
 
     switch (type) {
-        case QEMU_FILE_TYPE_BIOS  : subdir = ""; break;
-        case QEMU_FILE_TYPE_DTB   : subdir = "dtb/"; break;
         case QEMU_FILE_TYPE_KEYMAP: subdir = "keymaps/"; break;
         default                   : abort();
     }

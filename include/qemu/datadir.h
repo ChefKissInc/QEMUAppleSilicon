@@ -2,16 +2,12 @@
 
 typedef enum
 {
-    QEMU_FILE_TYPE_BIOS,
-    QEMU_FILE_TYPE_DTB,
     QEMU_FILE_TYPE_KEYMAP,
 } QemuFileType;
 
 /**
  * qemu_find_file:
- * @type: QEMU_FILE_TYPE_BIOS (for BIOS, VGA BIOS)
- *        QEMU_FILE_TYPE_DTB (for device tree blobs)
- *        or QEMU_FILE_TYPE_KEYMAP (for keymaps).
+ * @type: QEMU_FILE_TYPE_KEYMAP (for keymaps).
  * @name: Relative or absolute file name
  *
  * If @name exists on disk as an absolute path, or a path relative
