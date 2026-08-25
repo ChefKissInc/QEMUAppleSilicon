@@ -18,6 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "hw/arm/a13.h"
+#include "hw/arm/a9.h"
 #include "hw/arm/sep/private.h"
 
 #ifdef SEP_ENABLE_TRACE_BUFFER
@@ -33,10 +35,10 @@ struct AppleSEPDebugTraceState
     SysBusDevice parent_obj;
 
     AppleSEPState* sep;
-    MemoryRegion   debug_trace_mr;
-    hwaddr         debug_trace_size;
-    hwaddr         trace_buffer_base_offset;
-    uint8_t        debug_trace_regs[DEBUG_TRACE_SIZE];
+    MemoryRegion   mr;
+    hwaddr         size;
+    hwaddr         offset;
+    uint8_t        regs[DEBUG_TRACE_SIZE];
 };
 
 void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
@@ -44,7 +46,9 @@ void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
     DPRINTF("SEP_PROGRESS: Enable Trace Buffer: s->shmbuf_base: "
             "0x" HWADDR_FMT_plx "\n",
             s->shmbuf_base);
+
     if (!s->sep->shmbuf_base) { return; }
+
     AddressSpace* nsas = &address_space_memory;
     typedef struct
     {
@@ -56,17 +60,19 @@ void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
     shm_region_t shm_region_TRAC = {0};
     assert_cmpuint(sizeof(shm_region_TRAC), ==, 0x10);
     shm_region_TRAC.name         = 'TRAC';
-    shm_region_TRAC.size         = s->debug_trace_size;
-    shm_region_TRAC.offset       = s->trace_buffer_base_offset;
+    shm_region_TRAC.size         = s->size;
+    shm_region_TRAC.offset       = s->offset;
     shm_region_t shm_region_null = {0};
     assert_cmpuint(sizeof(shm_region_null), ==, 0x10);
     shm_region_null.name      = 'null';
     uint32_t region_SCOT_size = 0x4000;
-    address_space_write(nsas, s->shmbuf_base + 0x14, MEMTXATTRS_UNSPECIFIED, &region_SCOT_size,
+    address_space_write(nsas, s->sep->shmbuf_base + 0x14, MEMTXATTRS_UNSPECIFIED, &region_SCOT_size,
                         sizeof(region_SCOT_size));
-    address_space_write(nsas, s->shmbuf_base + 0x20, MEMTXATTRS_UNSPECIFIED, &shm_region_TRAC, sizeof(shm_region_TRAC));
-    address_space_write(nsas, s->shmbuf_base + 0x30, MEMTXATTRS_UNSPECIFIED, &shm_region_null, sizeof(shm_region_null));
-    address_space_set(nsas, s->shmbuf_base + 0xC000 + 0x20, 0, region_SCOT_size - 0x20,
+    address_space_write(nsas, s->sep->shmbuf_base + 0x20, MEMTXATTRS_UNSPECIFIED, &shm_region_TRAC,
+                        sizeof(shm_region_TRAC));
+    address_space_write(nsas, s->sep->shmbuf_base + 0x30, MEMTXATTRS_UNSPECIFIED, &shm_region_null,
+                        sizeof(shm_region_null));
+    address_space_set(nsas, s->sep->shmbuf_base + 0xC000 + 0x20, 0, region_SCOT_size - 0x20,
                       MEMTXATTRS_UNSPECIFIED);    // clean up SCOT a bit
     #endif
     typedef struct
@@ -257,7 +263,7 @@ void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
     // if 15: THDR: 0x06/0x01 TRAC: 0x06/0x02
 
     object_mapping_TRAC_IOS14.name               = 'TRAC';
-    object_mapping_TRAC_IOS14.size               = s->debug_trace_size;
+    object_mapping_TRAC_IOS14.size               = s->size;
     object_mapping_TRAC_IOS14.access_permissions = 0x06;
         #if SEP_USE_VERSION_OVERRIDE == 14
     object_mapping_TRAC_IOS14.arg6 = 0x00;
@@ -266,7 +272,7 @@ void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
         #endif
     object_mapping_TRAC_IOS14.arg7    = 0x01;
     object_mapping_TRAC_IOS14.some_id = '_dat';
-    object_mapping_TRAC_IOS14.phys    = s->sep->shmbuf_base + s->trace_buffer_base_offset;
+    object_mapping_TRAC_IOS14.phys    = s->sep->shmbuf_base + s->offset;
     // object_mapping_TRAC_IOS14.virt_mapping_next = SEPOS_VIRT_MAPPING_BASE_IOS14 +
     // (sizeof(sepos_virt_mapping_t) * SEPOS_VIRT_MAPPING_INDEX);
     // object_mapping_TRAC_IOS14.virt_mapping_previous = SEPOS_VIRT_MAPPING_BASE_IOS14 +
@@ -291,6 +297,12 @@ void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
     address_space_write(nsas, sepos_phys_base + sepos_acl_base + (sizeof(sepos_acl_t) * SEPOS_ACL_INDEX),
                         MEMTXATTRS_UNSPECIFIED, &acl_for_TRAC, sizeof(acl_for_TRAC));
     #endif
+}
+
+void apple_sep_debug_trace_set_region(AppleSEPDebugTraceState* s, hwaddr offset, hwaddr size)
+{
+    s->offset = offset;
+    s->size   = size;
 }
 
 static const char* sepos_return_module_thread_string_t8015(uint64_t module_thread_id)
@@ -492,19 +504,19 @@ static void debug_trace_reg_write(void* opaque, hwaddr addr, uint64_t data, unsi
         return;
     }
 
-    if (addr + size > ARRAY_SIZE(s->debug_trace_regs)) {
+    if (addr + size > ARRAY_SIZE(s->regs)) {
         qemu_log_mask(LOG_UNIMP, "DEBUG_TRACE: Unknown write at 0x" HWADDR_FMT_plx " of value 0x%" PRIX64 " size=%u\n",
                       addr, data, size);
         return;
     }
 
-    offset = ((uint32_t*)s->debug_trace_regs)[0x4 / 4];
+    offset = ((uint32_t*)s->regs)[0x4 / 4];
     if (offset != 0) {
         offset  -= 1;
         offset <<= 6;
     }
 
-    memcpy(&s->debug_trace_regs[addr], &data, size);
+    memcpy(&s->regs[addr], &data, size);
 
     uint32_t addr_mod = addr % 0x40;
     if (addr != 0x40 &&    // offset register
@@ -523,13 +535,13 @@ static void debug_trace_reg_write(void* opaque, hwaddr addr, uint64_t data, unsi
     if (addr_mod != 0x30) { return; }
 
     SEPMessage m        = {0};
-    uint64_t   trace_id = *(uint64_t*)&s->debug_trace_regs[addr - 0x30];
-    uint64_t   arg2     = *(uint64_t*)&s->debug_trace_regs[addr - 0x28];
-    uint64_t   arg3     = *(uint64_t*)&s->debug_trace_regs[addr - 0x20];
-    uint64_t   arg4     = *(uint64_t*)&s->debug_trace_regs[addr - 0x18];
-    uint64_t   arg5     = *(uint64_t*)&s->debug_trace_regs[addr - 0x10];
-    uint64_t   tid      = *(uint64_t*)&s->debug_trace_regs[addr - 0x08];
-    uint64_t   time     = *(uint64_t*)&s->debug_trace_regs[addr - 0x00];
+    uint64_t   trace_id = *(uint64_t*)&s->regs[addr - 0x30];
+    uint64_t   arg2     = *(uint64_t*)&s->regs[addr - 0x28];
+    uint64_t   arg3     = *(uint64_t*)&s->regs[addr - 0x20];
+    uint64_t   arg4     = *(uint64_t*)&s->regs[addr - 0x18];
+    uint64_t   arg5     = *(uint64_t*)&s->regs[addr - 0x10];
+    uint64_t   tid      = *(uint64_t*)&s->regs[addr - 0x08];
+    uint64_t   time     = *(uint64_t*)&s->regs[addr - 0x00];
     DPRINTF("\nDEBUG_TRACE: Debug:"
             " 0x%" PRIX64 " 0x%" PRIX64 " 0x%" PRIX64 " 0x%" PRIX64 " 0x%" PRIX64 " 0x%" PRIX64 " %" PRIu64 "\n",
             trace_id, arg2, arg3, arg4, arg5, tid, time);
@@ -731,15 +743,15 @@ static void debug_trace_reg_write(void* opaque, hwaddr addr, uint64_t data, unsi
                     tid, tid_str, arg2);
             break;
         case 0x82140324:    // SEP_Driver__Mailbox_Rx
-            if (offset + 0x90 + sizeof(uint32_t) > ARRAY_SIZE(s->debug_trace_regs)) {
+            if (offset + 0x90 + sizeof(uint32_t) > ARRAY_SIZE(s->regs)) {
                 DPRINTF("DEBUG_TRACE: Description: tid: 0x%05" PRIX64 "/%s: "
                         "SEP_Driver__Mailbox_Rx:"
                         " INVALID OFFSET!\n",
                         tid, tid_str);
                 break;
             }
-            memcpy((void*)&m + 0x00, &s->debug_trace_regs[offset + 0x88], sizeof(uint32_t));
-            memcpy((void*)&m + 0x04, &s->debug_trace_regs[offset + 0x90], sizeof(uint32_t));
+            memcpy((void*)&m + 0x00, &s->regs[offset + 0x88], sizeof(uint32_t));
+            memcpy((void*)&m + 0x04, &s->regs[offset + 0x90], sizeof(uint32_t));
             DPRINTF("DEBUG_TRACE: Description: tid: 0x%05" PRIX64 "/%s: "
                     "SEP_Driver__Mailbox_Rx:"
                     " endpoint: 0x%02x tag: 0x%02x opcode: "
@@ -859,7 +871,7 @@ static uint64_t debug_trace_reg_read(void* opaque, hwaddr addr, unsigned size)
             qemu_log_mask(LOG_UNIMP, "DEBUG_TRACE: Unknown read at 0x" HWADDR_FMT_plx " size=%u ret==0x%" PRIX64 "\n",
                           addr, size, ret);
         jump_default:
-            memcpy(&ret, &s->debug_trace_regs[addr], size);
+            memcpy(&ret, &s->regs[addr], size);
             break;
     }
     return ret;
@@ -880,26 +892,25 @@ static void apple_sep_debug_trace_reset_enter(Object* obj, ResetType type)
 {
     AppleSEPDebugTraceState* s = APPLE_SEP_DEBUG_TRACE(obj);
 
-    memset(s->debug_trace_regs, 0, sizeof(s->debug_trace_regs));
+    memset(s->regs, 0, sizeof(s->regs));
 }
 
 static void apple_sep_debug_trace_realize(DeviceState* dev, Error** errp)
 {
-    AppleSEPDebugTraceState* s = APPLE_SEP_DEBUG_TRACE(dev);
+    AppleSEPDebugTraceState* s   = APPLE_SEP_DEBUG_TRACE(dev);
+    SysBusDevice*            sbd = SYS_BUS_DEVICE(dev);
 
     // TODO: Let's think about something for T8015
-    memory_region_init_io(&s->debug_trace_mr, obj, &debug_trace_reg_ops, s, "sep.debug_trace",
-                          s->debug_trace_size);    // Debug trace printing
-    sysbus_init_mmio(sbd, &s->debug_trace_mr);
+    memory_region_init_io(&s->mr, OBJECT(s), &debug_trace_reg_ops, s, "mr", s->size);
+    sysbus_init_mmio(sbd, &s->mr);
+
     #ifdef SEP_ENABLE_DEBUG_TRACE_MAPPING
-    if (s->chip_id >= 0x8020) {
-        if (modern) {
-            memory_region_add_subregion(&APPLE_A13(s->cpu)->memory, s->shmbuf_base + s->trace_buffer_base_offset,
-                                        &s->debug_trace_mr);
+    if (s->sep->chip_id >= 0x8020) {
+        if (s->sep->modern) {
+            memory_region_add_subregion(&APPLE_A13(s->sep->cpu)->memory, s->sep->shmbuf_base + s->offset, &s->mr);
         }
         else {
-            memory_region_add_subregion(&APPLE_A9(s->cpu)->memory, s->shmbuf_base + s->trace_buffer_base_offset,
-                                        &s->debug_trace_mr);
+            memory_region_add_subregion(&APPLE_A9(s->sep->cpu)->memory, s->sep->shmbuf_base + s->offset, &s->mr);
         }
     }
     #endif
@@ -907,8 +918,11 @@ static void apple_sep_debug_trace_realize(DeviceState* dev, Error** errp)
 
 static void apple_sep_debug_trace_class_init(ObjectClass* klass, const void* class_data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
-    dc->realize     = apple_sep_debug_trace_realize;
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_sep_debug_trace_reset_enter;
+    dc->realize      = apple_sep_debug_trace_realize;
 }
 
 static const TypeInfo apple_sep_debug_trace_type_info = {
@@ -934,6 +948,9 @@ AppleSEPDebugTraceState* apple_sep_debug_trace_create(AppleSEPState* sep)
 #endif
 
 #ifdef ENABLE_CPU_DUMP_STATE
+    #include "hw/boards.h"
+    #include "qapi/error.h"
+
 void apple_sep_dump_cpu_handler(void)
 {
     MachineState*  machine = MACHINE(qdev_get_machine());

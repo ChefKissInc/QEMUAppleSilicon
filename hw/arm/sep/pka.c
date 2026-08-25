@@ -227,7 +227,7 @@ static void pka_tmm_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned
     AppleSEPPKAState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case 0x818 ... 0x834:    // some data
@@ -248,7 +248,7 @@ static uint64_t pka_tmm_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t          ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case 0x818 ... 0x834:

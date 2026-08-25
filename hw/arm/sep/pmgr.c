@@ -58,7 +58,7 @@ static void pmgr_base_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
     AppleSEPPMGRState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case 0x10:    // mod_AES_HDCP
@@ -108,7 +108,7 @@ static uint64_t pmgr_base_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t           ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     memcpy(&ret, &s->base_regs[addr], size);
     switch (addr) {
@@ -125,8 +125,8 @@ static uint64_t pmgr_base_reg_read(void* opaque, hwaddr addr, unsigned size)
             break;
         case 0x8200:
 #ifdef SEP_ENABLE_TRACE_BUFFER
-            if (s->chip_id == 0x8015) {
-                enable_trace_buffer(s);    // for T8015
+            if (s->sep->chip_id == 0x8015) {
+                apple_sep_debug_trace_enable(s->sep->debug_trace);    // for T8015
             }
 #endif
             goto jump_default;

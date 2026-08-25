@@ -35,6 +35,7 @@ struct AppleSEPProgressState
 };
 
 #ifdef SEP_DISABLE_ASLR
+    #include "hw/arm/a13.h"
 static void disable_aslr(AppleSEPProgressState* s)
 {
     DPRINTF("SEP_PROGRESS: Disable ASLR\n");
@@ -47,14 +48,14 @@ static void disable_aslr(AppleSEPProgressState* s)
     // T8030: go to the first SYS_ACC_PWR_DN_SAVE read in the kernel,
     // and then do p/x $x0+0x80 == e.g. 0x3407CA380
     // TODO: do this automatically in the reset function instead.
-    if (s->chip_id == 0x8015) {
+    if (s->sep->chip_id == 0x8015) {
     #if SEP_USE_VERSION_OVERRIDE == 14
         phys_addr = 0x34015FD40ULL;    // T8015
     #else
         assert_not_reached();
     #endif
     }
-    else if (s->chip_id == 0x8020) {
+    else if (s->sep->chip_id == 0x8020) {
     #if SEP_USE_VERSION_OVERRIDE == 14
         phys_addr = 0x340736380ULL;    // T8020 iOS 14
     #elif SEP_USE_VERSION_OVERRIDE == 15
@@ -65,7 +66,7 @@ static void disable_aslr(AppleSEPProgressState* s)
         assert_not_reached();
     #endif
     }
-    else if (s->chip_id == 0x8030) {
+    else if (s->sep->chip_id == 0x8030) {
         // 0x8030 is now handled in disable_aslr_SYS_ACC_PWR_DN_SAVE, which is
         // handled/called in apple_sep_iop_start
         return;
@@ -84,15 +85,6 @@ static void disable_aslr(AppleSEPProgressState* s)
         address_space_set(nsas, phys_addr, 0, 0x40, MEMTXATTRS_UNSPECIFIED);
     }
 }
-
-static void disable_aslr_SYS_ACC_PWR_DN_SAVE(AppleSEPProgressState* s)
-{
-    DPRINTF("SEP_BOOT_MONITOR_JUMP: Disable ASLR SYS_ACC_PWR_DN_SAVE\n");
-    AppleA13State* acpu        = APPLE_A13(s->cpu);
-    hwaddr         pwr_dn_save = acpu->A13_CPREG_VAR_NAME(SYS_ACC_PWR_DN_SAVE);
-    AddressSpace*  nsas        = &address_space_memory;
-    address_space_set(nsas, pwr_dn_save + 0x80, 0, 0x40, MEMTXATTRS_UNSPECIFIED);
-}
 #endif
 
 static void progress_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
@@ -101,7 +93,7 @@ static void progress_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
     SEPMessage             sep_msg = {0};
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case 0x4:
@@ -110,7 +102,7 @@ static void progress_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
 #ifdef SEP_ENABLE_TRACE_BUFFER
                 // Only works for >= T8020 here, because the T8015 SEPOS is
                 // compressed.
-                enable_trace_buffer(s);
+                apple_sep_debug_trace_enable(s->sep->debug_trace);
 #endif
             }
             break;
@@ -142,15 +134,15 @@ static void progress_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
                             sep_msg.param, sep_msg.data);
     #ifdef SEP_ENABLE_TRACE_BUFFER
                     int debug_trace_mmio_index = -1;
-                    if (s->chip_id == 0x8015) { debug_trace_mmio_index = 11; }
-                    else if (s->chip_id >= 0x8020) {
+                    if (s->sep->chip_id == 0x8015) { debug_trace_mmio_index = 11; }
+                    else if (s->sep->chip_id >= 0x8020) {
                         debug_trace_mmio_index = 14;
                     }
                     if (debug_trace_mmio_index != -1) {
-                        s->shmbuf_base              = shmbuf_base;
-                        uint64_t tracebuf_mmio_addr = shmbuf_base + s->trace_buffer_base_offset;
-                        DPRINTF("%s: SHMBUF_TEST1: tracbuf=0x" HWADDR_FMT_plx "\n", s->mailbox->role,
-                                tracebuf_mmio_addr);
+                        s->sep->shmbuf_base = shmbuf_base;
+                        // uint64_t tracebuf_mmio_addr = shmbuf_base + s->trace_buffer_base_offset;
+                        // DPRINTF("%s: SHMBUF_TEST1: tracbuf=0x" HWADDR_FMT_plx "\n", s->mailbox->role,
+                        //         tracebuf_mmio_addr);
                         // _if SEP_ENABLE_DEBUG_TRACE_MAPPING
                         // TODO: T8020 isn't handled here anymore, but T8015
                         // probably still should.
@@ -260,7 +252,7 @@ static uint64_t progress_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t               ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         default:

@@ -162,19 +162,16 @@ AppleSEPState* apple_sep_from_node(AppleDTNode* node, MemoryRegion* ool_mr, vadd
 #ifdef SEP_ENABLE_TRACE_BUFFER
     if (s->chip_id >= 0x8020) {
         if (s->chip_id == 0x8020) { assert_not_reached(); }
-        s->shmbuf_base               = SEP_SHMBUF_BASE;
-        s->trace_buffer->base_offset = 0x10000;
-        s->debug_trace->size         = 0x10000;
+        s->shmbuf_base = SEP_SHMBUF_BASE;
+        apple_sep_debug_trace_set_region(s->debug_trace, 0x10000, 0x10000);
     }
     else if (s->chip_id == 0x8015) {
-        s->shmbuf_base               = 0;          // is dynamic
-        s->trace_buffer->base_offset = 0x10000;    // ???
-        s->debug_trace->size         = 0x10000;    // ???
+        s->shmbuf_base = 0;    // is dynamic
+        apple_sep_debug_trace_set_region(s->debug_trace, 0x10000, 0x10000);
     }
     else if (s->chip_id == 0x8000) {
-        s->shmbuf_base               = 0;          // is dynamic ???
-        s->trace_buffer->base_offset = 0x10000;    // ???
-        s->debug_trace->size         = 0x10000;    // ???
+        s->shmbuf_base = 0;    // is dynamic ???
+        apple_sep_debug_trace_set_region(s->debug_trace, 0x10000, 0x10000);
     }
     else {
         assert_not_reached();

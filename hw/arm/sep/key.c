@@ -112,7 +112,7 @@ static void key_base_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
     AppleSEPKeyState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case SEP_KEY_BASE_LOAD_KEY_OFFSET:    // load_key
@@ -158,7 +158,7 @@ static uint64_t key_base_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t          ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case SEP_KEY_BASE_LOAD_KEY_OFFSET:
@@ -194,7 +194,7 @@ static void key_fkey_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
     AppleSEPKeyState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         default:
@@ -213,7 +213,7 @@ static uint64_t key_fkey_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint8_t           key_fkey_offset_0x14_index_limit = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         default:
@@ -264,7 +264,7 @@ static void key_fcfg_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
     AppleSEPKeyState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
 
     switch (addr) {
@@ -331,7 +331,7 @@ static uint64_t key_fcfg_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint8_t           key_fcfg_offset_0x14_index_limit;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case 0x14: {

@@ -23,6 +23,7 @@
 #include "exec/tb-flush.h"
 #include "hw/arm/a13.h"
 #include "hw/arm/sep/private.h"
+#include "system/address-spaces.h"
 #include "system/memory.h"
 #include "system/tcg.h"
 
@@ -42,7 +43,7 @@ static void boot_monitor_reg_write(void* opaque, hwaddr addr, uint64_t data, uns
     AppleSEPBootMonitorState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case 0x04:              // some status flag, bit0
@@ -99,7 +100,7 @@ static uint64_t boot_monitor_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t                  ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
     switch (addr) {
         case 0x04:    // some status flag, bit0, maybe "is active"
@@ -161,13 +162,16 @@ static void apple_sep_cpu_moni_reset_regs(CPUState* cpu, hwaddr load_addr, hwadd
     cpu_set_pc(cpu, load_addr);
 }
 
+static hwaddr apple_sep_boot_monitor_load_addr(AppleSEPBootMonitorState* s)
+{ return ((hwaddr*)s->boot_monitor_regs)[0x20 / 8]; }
+
 // some race conditions might happen before, during and/or after the jump.
 static void apple_sep_cpu_moni_jump(CPUState* cpu, run_on_cpu_data data)
 {
     ARMCPU*                   arm_cpu = container_of(cpu, ARMCPU, parent_obj);
-    AppleSEPBootMonitorState* sep     = data.host_ptr;
+    AppleSEPBootMonitorState* s       = data.host_ptr;
 
-    hwaddr load_addr = ((hwaddr*)sep->boot_monitor_regs)[0x20 / 8];
+    hwaddr load_addr = apple_sep_boot_monitor_load_addr(s);
 
     DPRINTF("%s: have load_addr 0x" HWADDR_FMT_plx "\n", __func__, load_addr);
 
@@ -194,11 +198,27 @@ static void apple_sep_cpu_moni_jump(CPUState* cpu, run_on_cpu_data data)
     // using qemu_irq_raise ARM_CPU_IRQ here will cause a7iop atomic sigsegv
 }
 
+#ifdef SEP_DISABLE_ASLR
+static void disable_aslr_SYS_ACC_PWR_DN_SAVE(AppleSEPState* s)
+{
+    DPRINTF("SEP_BOOT_MONITOR_JUMP: Disable ASLR SYS_ACC_PWR_DN_SAVE\n");
+    AppleA13State* acpu        = APPLE_A13(s->cpu);
+    hwaddr         pwr_dn_save = acpu->A13_CPREG_VAR_NAME(SYS_ACC_PWR_DN_SAVE);
+    AddressSpace*  nsas        = &address_space_memory;
+    address_space_set(nsas, pwr_dn_save + 0x80, 0, 0x40, MEMTXATTRS_UNSPECIFIED);
+}
+#endif
+
 void apple_sep_boot_monitor_jump(AppleSEPBootMonitorState* s)
 {
     AppleSEPState* sep = s->sep;
 
-    if (sep->modern) { async_safe_run_on_cpu(CPU(sep->cpu), apple_sep_cpu_moni_jump, RUN_ON_CPU_HOST_PTR(s)); }
+    if (sep->modern) {
+#ifdef SEP_DISABLE_ASLR
+        if (apple_sep_boot_monitor_load_addr(s) != 0) { disable_aslr_SYS_ACC_PWR_DN_SAVE(sep); }
+#endif
+        async_safe_run_on_cpu(CPU(sep->cpu), apple_sep_cpu_moni_jump, RUN_ON_CPU_HOST_PTR(s));
+    }
 }
 
 static void apple_sep_boot_monitor_reset_enter(Object* obj, ResetType type)

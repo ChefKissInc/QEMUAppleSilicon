@@ -941,8 +941,7 @@ static uint8_t apple_sep_ssc_rx(I2CSlave* i2c)
     DPRINTF("apple_sep_ssc_rx: resp_cur=0x%02x ret=0x%02x\n", ssc->resp_cur - 1, ret);
 #if 0
     // could raising the interrupt here cause hangs?
-    AppleSEPState *sep = ssc->aess_state->sep;
-    apple_a7iop_interrupt_status_push(sep->mailbox,
+    apple_a7iop_interrupt_status_push(ssc->sep->mailbox,
                                       0x10002); // I2C
 #endif
     return ret;

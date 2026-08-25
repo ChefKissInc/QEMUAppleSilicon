@@ -1118,7 +1118,7 @@ static void aesc_base_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
     AppleSEPAESCState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         default:
@@ -1134,7 +1134,7 @@ static uint64_t aesc_base_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t           ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         default:

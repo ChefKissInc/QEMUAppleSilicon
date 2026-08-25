@@ -461,8 +461,7 @@ static void pmgr_unk_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
 static uint64_t pmgr_unk_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
     AppleS8000MachineState* s8000 = APPLE_S8000(qdev_get_machine());
-    // AppleSEPState *sep;
-    hwaddr base = (hwaddr)opaque;
+    hwaddr                  base  = (hwaddr)opaque;
 
     uint32_t security_epoch = 1;    // On IMG4: Security Epoch ; On IMG3: Minimum
                                     // Epoch, verified on SecureROM s5l8955xsi

@@ -83,14 +83,16 @@ AppleSEPBootMonitorState* apple_sep_boot_monitor_create(AppleSEPState* sep);
 /* debug-trace.c */
 #ifdef ENABLE_CPU_DUMP_STATE
 void apple_sep_dump_cpu_handler(void);
+#else
+    #define apple_sep_dump_cpu_handler() (void)0
 #endif
 #ifdef SEP_ENABLE_TRACE_BUFFER
     #define TYPE_APPLE_SEP_DEBUG_TRACE "apple-sep.debug-trace"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleSEPDebugTraceState, APPLE_SEP_DEBUG_TRACE)
 
+void                     apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s);
+void                     apple_sep_debug_trace_set_region(AppleSEPDebugTraceState* s, hwaddr offset, hwaddr size);
 AppleSEPDebugTraceState* apple_sep_debug_trace_create(AppleSEPState* sep);
-
-void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s);
 #endif
 
 /* eisp.c */

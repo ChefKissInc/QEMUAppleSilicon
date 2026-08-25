@@ -41,7 +41,7 @@ static void misc0_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned s
     AppleSEPMiscState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         case 0x108:
@@ -63,7 +63,7 @@ static uint64_t misc0_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t           ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         default:
@@ -92,7 +92,7 @@ static void misc1_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned s
     AppleSEPMiscState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         case 0x180:
@@ -113,7 +113,7 @@ static uint64_t misc1_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t           ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         default:
@@ -142,7 +142,7 @@ static void misc2_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned s
     AppleSEPMiscState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         // Some engine?: case 0x28: 0x8 bytes from TRNG
@@ -159,7 +159,7 @@ static uint64_t misc2_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t           ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         case 0x24:    // ????

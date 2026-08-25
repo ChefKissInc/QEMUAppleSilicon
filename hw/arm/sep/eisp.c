@@ -38,7 +38,7 @@ static void eisp_base_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
     AppleSEPEISPState* s = APPLE_SEP_EISP(opaque);
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
 
     switch (addr) {
@@ -55,7 +55,7 @@ static uint64_t eisp_base_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t           ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
 
     switch (addr) {
@@ -84,7 +84,7 @@ static void eisp_hmac_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
     AppleSEPEISPState* s = APPLE_SEP_EISP(opaque);
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
 
     switch (addr) {
@@ -101,7 +101,7 @@ static uint64_t eisp_hmac_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t           ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
 
     switch (addr) {

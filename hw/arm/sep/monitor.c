@@ -39,7 +39,7 @@ static void moni_base_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
     AppleSEPMonitorState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         default:
@@ -55,7 +55,7 @@ static uint64_t moni_base_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t              ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         case 0xa000:
@@ -104,7 +104,7 @@ static void moni_thrm_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
     AppleSEPMonitorState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         default:
@@ -120,7 +120,7 @@ static uint64_t moni_thrm_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint64_t              ret = 0;
 
 #ifdef ENABLE_CPU_DUMP_STATE
-    cpu_dump_state(CPU(s->cpu), stderr, CPU_DUMP_CODE);
+    apple_sep_dump_cpu_handler();
 #endif
     switch (addr) {
         default:
