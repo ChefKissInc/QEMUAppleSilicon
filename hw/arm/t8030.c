@@ -28,8 +28,8 @@
 #include "hw/arm/mem.h"
 #include "hw/input/mt-spi.h"
 #include "hw/arm/sart.h"
-#include "hw/arm/sep-sim.h"
-#include "hw/arm/sep.h"
+#include "hw/arm/sep/sim.h"
+#include "hw/arm/sep/emu.h"
 #include "hw/arm/t8030-config.c.inc"
 #include "hw/arm/t8030.h"
 #include "hw/audio/aop-audio.h"
@@ -63,6 +63,7 @@
 #include "hw/spmi/apple_spmi.h"
 #include "hw/ssi/apple_spi.h"
 #include "hw/ssi/ssi.h"
+#include "hw/sysbus.h"
 #include "hw/usb/apple_typec.h"
 #include "hw/watchdog/apple_wdt.h"
 #include "qapi/visitor.h"
@@ -340,12 +341,14 @@ static void t8030_load_kernelcache(AppleT8030MachineState* t8030, const char* cm
     phys_ptr += info->sep_fw_size;
 
     if (t8030->sep_fw_filename != NULL) {
-        AppleSEPState* sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", &error_fatal));
-        sep->sep_fw_addr   = info->sep_fw_addr;
-        if (!g_file_get_contents(t8030->sep_fw_filename, &sep->fw_data, &sep->sep_fw_size, NULL)) {
+        AppleSEPState* sep     = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", &error_fatal));
+        gchar*         fw_data = NULL;
+        gsize          sep_fw_size;
+        if (!g_file_get_contents(t8030->sep_fw_filename, &fw_data, &sep_fw_size, NULL)) {
             error_setg(&error_fatal, "Failed to read SEP Firmware from `%s`", t8030->sep_fw_filename);
             return;
         }
+        apple_sep_set_fw(sep, info->sep_fw_addr, fw_data, sep_fw_size);
     }
 
     // Kernel boot args
@@ -656,7 +659,7 @@ static uint64_t pmgr_unk_reg_read(void* opaque, hwaddr addr, unsigned size)
         case 0x3D2BC004:    // Current Secure Mode
             sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
-            if (sep != NULL && sep->pmgr_fuse_changer_bit1_was_set) {
+            if (sep != NULL && apple_sep_get_fuse_changer_bit(sep, 1)) {
                 current_secure_mode = 0;    // SEP DSEC img4 tag demotion active
             }
             return current_secure_mode ? FUSE_ENABLED : FUSE_DISABLED;
@@ -671,7 +674,7 @@ static uint64_t pmgr_unk_reg_read(void* opaque, hwaddr addr, unsigned size)
         case 0x3D2BC010:    // Current Board ID and Epoch
             sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
-            if (sep != NULL) { sep_bit30_current_value = (uint32_t)sep->pmgr_fuse_changer_bit0_was_set << 30; }
+            if (sep != NULL) { sep_bit30_current_value = (uint32_t)apple_sep_get_fuse_changer_bit(sep, 0) << 30; }
             QEMU_FALLTHROUGH;
         case 0x3D2BC410:    // Raw Board ID and Epoch, bit 30 should remain unset
             return ((t8030->board_id >> 5) & 0x7) | ((security_epoch & 0x7f) << 5) | sep_bit30_current_value
@@ -764,12 +767,12 @@ static void pmgr_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned si
             sep = APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", NULL));
 
             if (sep != NULL) {
-                if (data & BIT32(31)) { apple_a13_reset(APPLE_A13(sep->cpu)); }
+                if (data & BIT32(31)) { apple_a13_reset(APPLE_A13(apple_sep_get_cpu(sep))); }
                 else if (data & BIT32(10)) {
-                    apple_a13_set_off(APPLE_A13(sep->cpu));
+                    apple_a13_set_off(APPLE_A13(apple_sep_get_cpu(sep)));
                 }
                 else {
-                    apple_a13_set_on(APPLE_A13(sep->cpu));
+                    apple_a13_set_on(APPLE_A13(apple_sep_get_cpu(sep)));
                 }
             }
             break;
@@ -1996,24 +1999,24 @@ static void t8030_create_sep(AppleT8030MachineState* t8030)
     prop = apple_dt_get_prop(child, "reg");
     assert_nonnull(prop);
 
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_AKF_MBOX, t8030->armio_base + ldq_le_p(prop->data));
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_PMGR, t8030->armio_base + 0x41000000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_TRNG_REGS, t8030->armio_base + 0x41180000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_KEY, t8030->armio_base + 0x411C0000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_KEY_FCFG, t8030->armio_base + 0x41440000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MONI, t8030->armio_base + 0x413C0000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MONI_THRM, t8030->armio_base + 0x41400000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_EISP, t8030->armio_base + 0x40800000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_EISP_HMAC, t8030->armio_base + 0x40AA0000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_AESS, t8030->armio_base + 0x41040000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_AESH, t8030->armio_base + 0x41080000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_PKA, t8030->armio_base + 0x41100000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_PKA_TMM, t8030->armio_base + 0x41504000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC0, t8030->armio_base + 0x42140000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC1, t8030->armio_base + 0x41240000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_MISC2, t8030->armio_base + 0x410C4000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_PROGRESS, t8030->armio_base + 0x41280000);
-    sysbus_mmio_map(SYS_BUS_DEVICE(sep), SEP_MMIO_INDEX_BOOT_MONITOR, t8030->armio_base + 0x41500000);
+    sysbus_mmio_map(SYS_BUS_DEVICE(sep), 0, t8030->armio_base + ldq_le_p(prop->data));
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_PMGR, t8030->armio_base + 0x41000000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_TRNG_REGS, t8030->armio_base + 0x41180000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_KEY, t8030->armio_base + 0x411C0000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_KEY_FCFG, t8030->armio_base + 0x41440000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_MONI, t8030->armio_base + 0x413C0000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_MONI_THRM, t8030->armio_base + 0x41400000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_EISP, t8030->armio_base + 0x40800000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_EISP_HMAC, t8030->armio_base + 0x40AA0000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_AESS, t8030->armio_base + 0x41040000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_AESH, t8030->armio_base + 0x41080000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_PKA, t8030->armio_base + 0x41100000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_PKA_TMM, t8030->armio_base + 0x41504000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_MISC0, t8030->armio_base + 0x42140000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_MISC1, t8030->armio_base + 0x41240000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_MISC2, t8030->armio_base + 0x410C4000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_PROGRESS, t8030->armio_base + 0x41280000);
+    apple_sep_map_mmio(sep, SEP_MMIO_INDEX_BOOT_MONITOR, t8030->armio_base + 0x41500000);
 
     prop = apple_dt_get_prop(child, "interrupts");
     assert_nonnull(prop);

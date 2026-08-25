@@ -27,7 +27,7 @@
 #include "hw/arm/mem.h"
 #include "hw/arm/s8000-config.c.inc"
 #include "hw/arm/s8000.h"
-#include "hw/arm/sep-sim.h"
+#include "hw/arm/sep/sim.h"
 #include "hw/char/exynos4210_uart.h"
 #include "hw/block/nvme_mmu.h"
 #include "hw/display/apple_displaypipe_v2.h"

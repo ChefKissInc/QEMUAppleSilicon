@@ -21,7 +21,7 @@
 #include "qemu/osdep.h"
 #include "crypto/hash.h"
 #include "hw/arm/dt.h"
-#include "hw/arm/sep-sim.h"
+#include "hw/arm/sep/sim.h"
 #include "hw/misc/a7iop/core.h"
 #include "hw/misc/a7iop/mailbox/core.h"
 #include "hw/resettable.h"

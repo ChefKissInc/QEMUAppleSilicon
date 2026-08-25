@@ -2659,6 +2659,7 @@ if have_system
     'audio',
     'backends',
     'hw/arm',
+    'hw/arm/sep',
     'hw/audio',
     'hw/block',
     'hw/char',

@@ -646,6 +646,7 @@ SysBusDevice* apple_aes_create(AppleDTNode* node, uint32_t board_id)
 
     sysbus_init_mmio(sbd, &s->iomems[0]);
 
+    // also called PKA_SECU, but with size 0x8000 instead of 0x4000
     memory_region_init_io(&s->iomems[1], OBJECT(dev), &aes_security_reg_ops, s, TYPE_APPLE_AES ".security.mmio",
                           reg[3]);
     sysbus_init_mmio(sbd, &s->iomems[1]);

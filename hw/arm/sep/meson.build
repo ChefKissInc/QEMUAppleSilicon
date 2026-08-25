@@ -1,0 +1,16 @@
+arm_common_ss.add(when: 'CONFIG_APPLE_SOC', if_true: files(
+    'aes.c',
+    'boot-monitor.c',
+    'debug-trace.c',
+    'eisp.c',
+    'key.c',
+    'misc.c',
+    'monitor.c',
+    'pka.c',
+    'pmgr.c',
+    'progress.c',
+    'ssc.c',
+    'trng.c',
+    'sim.c',
+    'emu.c',
+))

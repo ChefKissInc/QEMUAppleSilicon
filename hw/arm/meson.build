@@ -12,14 +12,14 @@ arm_common_ss.add(when: 'CONFIG_APPLE_SOC', if_true: files(
     'boot.c',
     'dt.c',
     'mem.c',
-    'sep-sim.c',
-    'sep.c',
     'patcher.c',
     'kernel_patches.c',
     'lm-backlight.c',
     's8000.c',
     't8030.c',
 ))
+
+subdir('sep')
 
 hw_arch += {'arm': arm_ss}
 hw_common_arch += {'arm': arm_common_ss}
