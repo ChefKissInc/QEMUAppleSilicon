@@ -32,15 +32,7 @@
 #include "system/dma.h"
 #include "art.h"
 #include "libtasn1.h"
-
-typedef struct
-{
-    uint8_t  ep;
-    uint8_t  tag;
-    uint8_t  op;
-    uint8_t  param;
-    uint32_t data;
-} QEMU_PACKED SEPMessage;
+#include "hw/arm/sep/core.h"
 
 typedef struct
 {
