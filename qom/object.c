@@ -98,10 +98,12 @@ static void type_construct(TypeImpl* ti, const TypeInfo* info)
 
     ti->abstract = info->abstract;
 
-    for (i = 0; info->interfaces && info->interfaces[i].type; i++) {
-        ti->interfaces[i].typename = g_strdup(info->interfaces[i].type);
+    if (info->interfaces) {
+        for (i = 0; info->interfaces[i].type; ++i) {
+            ti->interfaces[i].typename = info->interfaces[i].type;
+        }
+        ti->num_interfaces = i;
     }
-    ti->num_interfaces = i;
 }
 
 static TypeImpl* type_table_add(const TypeInfo* info)
