@@ -25,6 +25,8 @@
 #include "hw/arm/sep/private.h"
 #include <nettle/drbg-ctr.h>
 #include <nettle/version.h>
+#include <nettle/macros.h>
+#include <nettle/memxor.h>
 
 #define TRNG_REGS_REG_SIZE (0x10000)    // T8015/T8030
 
