@@ -476,13 +476,15 @@ static void apple_sio_dma(AppleSIOState* s, AppleSIODMAEndpoint* ep, SIOMessage 
             break;
         }
         case OP_QUERY:
-            if (QTAILQ_EMPTY(&ep->buffers)) {
+            buf = QTAILQ_FIRST(&ep->buffers);
+            if (buf == NULL) {
                 reply.op = OP_SYNC_ERROR;
                 break;
             }
 
-            reply.op   = OP_QUERY_OK;
-            reply.data = apple_sio_dma_remaining_locked(ep);
+            reply.op    = OP_QUERY_OK;
+            reply.param = buf->tag;
+            reply.data  = buf->completed;
             break;
         case OP_STOP:
             reply.op = OP_ACK;
