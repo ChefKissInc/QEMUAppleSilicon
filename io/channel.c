@@ -557,6 +557,12 @@ void qio_channel_wake_read(QIOChannel* ioc)
     if (co) { aio_co_wake(co); }
 }
 
+void qio_channel_wake_write(QIOChannel* ioc)
+{
+    Coroutine* co = qatomic_xchg(&ioc->write_coroutine, NULL);
+    if (co) { aio_co_wake(co); }
+}
+
 static gboolean qio_channel_wait_complete(QIOChannel* ioc, GIOCondition condition, gpointer opaque)
 {
     GMainLoop* loop = opaque;

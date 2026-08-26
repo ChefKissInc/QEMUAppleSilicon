@@ -745,6 +745,16 @@ void coroutine_fn qio_channel_yield(QIOChannel* ioc, GIOCondition condition);
 void qio_channel_wake_read(QIOChannel* ioc);
 
 /**
+ * qio_channel_wake_write:
+ * @ioc: the channel object
+ *
+ * If qio_channel_yield() is currently waiting for the channel to become
+ * writable, interrupt it and reenter immediately. This function is safe to call
+ * from any thread.
+ */
+void qio_channel_wake_write(QIOChannel* ioc);
+
+/**
  * qio_channel_wait:
  * @ioc: the channel object
  * @condition: the I/O condition to wait for
