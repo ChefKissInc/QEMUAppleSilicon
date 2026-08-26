@@ -582,6 +582,31 @@ if 'objc' in all_languages
   # Note sanitizer flags are not applied to Objective-C sources!
   add_project_arguments(objc.get_supported_arguments(warn_flags), native: false, language: 'objc')
 endif
+linux_arch = {
+  'aarch64'     : 'arm64',
+  'loongarch64' : 'loongarch',
+  'mips'        : 'mips',
+  'mips64'      : 'mips',
+  'ppc'         : 'powerpc',
+  'ppc64'       : 'powerpc',
+  'riscv32'     : 'riscv',
+  'riscv64'     : 'riscv',
+  's390x'       : 's390',
+  'x86'         : 'x86',
+  'x86_64'      : 'x86',
+}.get(cpu, '')
+
+if host_os == 'linux' and linux_arch != ''
+  linux_headers_asm = meson.current_source_dir() / 'linux-headers' / ('asm-' + linux_arch)
+  if not fs.is_dir(linux_headers_asm)
+    error('linux-headers/asm-@0@ does not exist.'.format(linux_arch))
+  endif
+  run_command(python, files('scripts/mksymlink.py'),
+              linux_headers_asm,
+              meson.current_build_dir() / 'linux-headers' / 'asm',
+              check: true)
+endif
+
 if host_os == 'linux'
   add_project_arguments('-isystem', meson.current_source_dir() / 'linux-headers',
                         '-isystem', 'linux-headers',
