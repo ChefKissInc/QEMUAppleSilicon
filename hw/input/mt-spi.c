@@ -271,14 +271,14 @@ static inline uint8_t apple_mt_spi_buf_read_byte(const AppleMTSPIBuffer* buf, si
 static inline uint16_t apple_mt_spi_buf_read_word(const AppleMTSPIBuffer* buf, size_t off)
 {
     assert_nonnull(buf->data);
-    assert_cmphex(off + sizeof(uint16_t), <, buf->len);
+    assert_cmphex(off + sizeof(uint16_t), <=, buf->len);
     return lduw_be_p(buf->data + off);
 }
 
 static inline uint32_t apple_mt_spi_buf_read_dword(const AppleMTSPIBuffer* buf, size_t off)
 {
     assert_nonnull(buf->data);
-    assert_cmphex(off + sizeof(uint32_t), <, buf->len);
+    assert_cmphex(off + sizeof(uint32_t), <=, buf->len);
     return apple_mt_spi_buf_read_word(buf, off) | (apple_mt_spi_buf_read_word(buf, off + sizeof(uint16_t)) << 16);
 }
 
