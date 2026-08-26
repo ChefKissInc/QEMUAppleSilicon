@@ -48,14 +48,20 @@
 
 static void usb_tcp_host_closed(USBTCPHostState* s)
 {
+    QIOChannel* ioc = s->ioc;
+
     DPRINTF("%s\n", __func__);
-    if (s->ioc != NULL) {
-        qio_channel_shutdown(s->ioc, QIO_CHANNEL_SHUTDOWN_BOTH, NULL);
-        qio_channel_close(s->ioc, NULL);
-        object_unref(OBJECT(s->ioc));
-        s->ioc = NULL;
-    }
+
     s->closed = true;
+
+    if (ioc != NULL) {
+        s->ioc = NULL;
+        qio_channel_shutdown(ioc, QIO_CHANNEL_SHUTDOWN_BOTH, NULL);
+        qio_channel_wake_read(ioc);
+        qio_channel_wake_write(ioc);
+
+        object_unref(OBJECT(ioc));
+    }
 }
 
 static ssize_t tcp_usb_read(QIOChannel* ioc, void* buf, size_t len)
