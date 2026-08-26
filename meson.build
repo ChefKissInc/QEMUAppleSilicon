@@ -17,7 +17,6 @@ ss = import('sourceset')
 fs = import('fs')
 
 host_os = host_machine.system()
-config_host = keyval.load(meson.current_build_dir() / 'config-host.mak')
 
 # Temporary directory used for files created while
 # configure runs. Since it is in the build directory
@@ -47,7 +46,7 @@ supported_cpus = ['ppc', 'ppc64', 's390x', 'riscv32', 'riscv64', 'x86', 'x86_64'
 
 cpu = host_machine.cpu_family()
 
-target_dirs = config_host['TARGET_DIRS'].split()
+target_dirs = ['aarch64-softmmu']
 
 # type of binaries to build
 have_system = false
@@ -2454,7 +2453,6 @@ host_kconfig = \
 
 ignored = [ 'TARGET_XML_FILES', 'TARGET_ABI_DIR' ]
 
-default_targets = 'CONFIG_DEFAULT_TARGETS' in config_host
 actual_target_dirs = []
 foreach target : target_dirs
   config_target = { 'TARGET_NAME': target.split('-')[0] }
@@ -2478,9 +2476,6 @@ foreach target : target_dirs
     endif
   endforeach
   if target_kconfig.length() == 0
-    if default_targets
-      continue
-    endif
     error('No accelerator available for target @0@'.format(target))
   endif
 
@@ -3431,17 +3426,6 @@ summary(summary_info, bool_yn: true, section: 'Directories')
 # Host binaries
 summary_info = {}
 
-# FIXME: the [binaries] section of machine files, which can be probed
-# with find_program(), would be great for passing gdb and genisoimage
-# paths from configure to Meson.  However, there seems to be no way to
-# hide a program (for example if gdb is too old).
-if config_host.has_key('GDB')
-  summary_info += {'gdb':             config_host['GDB']}
-endif
-summary_info += {'genisoimage':       config_host['GENISOIMAGE']}
-if host_os == 'windows' and have_ga
-  summary_info += {'wixl':            wixl}
-endif
 if slirp.found() and have_system
   summary_info += {'smbd':            have_slirp_smbd ? smbd_path : false}
 endif
