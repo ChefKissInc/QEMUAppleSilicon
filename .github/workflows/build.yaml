@@ -25,10 +25,7 @@ jobs:
           sudo apt-get install -y build-essential libtool ninja-build pkg-config libglib2.0-dev gnutls-bin libjpeg-turbo8-dev libpng-dev libslirp-dev libssh-dev libusb-1.0-0-dev liblzo2-dev libncurses5-dev libpixman-1-dev libsnappy-dev vde2 zstd libgnutls28-dev libgmp10 libgmp3-dev lzfse liblzfse-dev python3-pip nettle-bin nettle-dev meson
       - name: Build
         run: |
-          mkdir build
-          cd build
-          export PATH="$HOME/.local/bin:$PATH"
-          PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig meson setup build .
+          meson setup build .
           meson compile -C build
 
   build_macos:
@@ -51,6 +48,5 @@ jobs:
       - name: Build
         run: |
           BREW_PREFIX=$(brew --prefix)
-          mkdir build && cd build
           LIBTOOL="glibtool" meson setup build . -Dsdl=disabled -Dgtk=disabled -Dcocoa=enabled -Dc_args="-DNCURSES_WIDECHAR=1 -I$BREW_PREFIX/include" -Dc_link_args="-L$BREW_PREFIX/lib"
           meson compile -C build
