@@ -170,7 +170,7 @@ static AppleAOPResult apple_aop_audio_handle_command(void* opaque, uint16_t seq,
                         case DEV_PROP_STREAM_FORMAT:
                             stl_le_p(payload_out, DEV_PROP_STREAM_FORMAT_LEN);
                             stl_le_p(payload_out + 4, 'pcm ');
-                            stl_le_p(payload_out + 8, 44100);
+                            stl_le_p(payload_out + 8, 48000);
                             stl_le_p(payload_out + 12, 2);
                             stl_le_p(payload_out + 16, 2);
                             break;
