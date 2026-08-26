@@ -331,7 +331,7 @@ static void tlbi_aa64_alle3is_write(CPUARMState* env, const ARMCPRegInfo* ri, ui
 {
     CPUState* cs = env_cpu(env);
 
-    tlb_flush_by_mmuidx_all_cpus_synced(cs, ARMMMUIdxBit_E3);
+    tlb_flush_by_mmuidx_all_cpus_synced(cs, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3);
 }
 
 static void tlbi_aa64_vae2_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
@@ -360,7 +360,7 @@ static void tlbi_aa64_vae3_write(CPUARMState* env, const ARMCPRegInfo* ri, uint6
     CPUState* cs       = CPU(cpu);
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
 
-    tlb_flush_page_by_mmuidx(cs, pageaddr, ARMMMUIdxBit_E3);
+    tlb_flush_page_by_mmuidx(cs, pageaddr, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3);
 }
 
 static void tlbi_aa64_vae1is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
@@ -408,7 +408,7 @@ static void tlbi_aa64_vae3is_write(CPUARMState* env, const ARMCPRegInfo* ri, uin
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
     int       bits     = tlbbits_for_regime(env, ARMMMUIdx_E3, pageaddr);
 
-    tlb_flush_page_bits_by_mmuidx_all_cpus_synced(cs, pageaddr, ARMMMUIdxBit_E3, bits);
+    tlb_flush_page_bits_by_mmuidx_all_cpus_synced(cs, pageaddr, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3, bits);
 }
 
 static int ipas2e1_tlbmask(CPUARMState* env, int64_t value)
@@ -1274,7 +1274,7 @@ static void tlbi_aa64_rvae3_write(CPUARMState* env, const ARMCPRegInfo* ri, uint
      * flush-last-level-only.
      */
 
-    do_rvae_write(env, value, ARMMMUIdxBit_E3, tlb_force_broadcast(env));
+    do_rvae_write(env, value, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3, tlb_force_broadcast(env));
 }
 
 static void tlbi_aa64_rvae3is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
@@ -1286,7 +1286,7 @@ static void tlbi_aa64_rvae3is_write(CPUARMState* env, const ARMCPRegInfo* ri, ui
      * flush-last-level-only or inner/outer specific flushes.
      */
 
-    do_rvae_write(env, value, ARMMMUIdxBit_E3, true);
+    do_rvae_write(env, value, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3, true);
 }
 
 static void tlbi_aa64_ripas2e1_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
