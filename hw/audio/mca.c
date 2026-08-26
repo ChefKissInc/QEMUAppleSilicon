@@ -408,7 +408,7 @@ SysBusDevice* apple_mca_create(AppleDTNode* node, AppleSIODMAEndpoint* tx_ep, Ap
     if (AUD_register_card("mca", &s->card, NULL)) {
         audsettings settings = {0};
         settings.fmt         = AUDIO_FORMAT_S16;
-        settings.freq        = 44100;
+        settings.freq        = 48000;
         settings.nchannels   = 2;
         settings.endianness  = 0;    // LE
         s->voice             = AUD_open_out(&s->card, s->voice, "mca.out", s, apple_mca_out_callback, &settings);
