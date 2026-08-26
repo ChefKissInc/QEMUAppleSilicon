@@ -533,13 +533,8 @@ static void usb_tcp_host_unrealize(DeviceState* dev)
 {
     USBTCPHostState* s = USB_TCP_HOST(dev);
 
-    if (s->ioc) {
-        qio_channel_shutdown(s->ioc, QIO_CHANNEL_SHUTDOWN_BOTH, NULL);
-        qio_channel_close(s->ioc, NULL);
-        s->ioc = NULL;
-    }
+    usb_tcp_host_closed(s);
 
-    s->closed  = true;
     s->stopped = true;
 }
 
