@@ -29,7 +29,7 @@ jobs:
           cd build
           export PATH="$HOME/.local/bin:$PATH"
           PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig meson setup build .
-          ninja -C build
+          meson compile -C build
 
   build_macos:
     name: macOS Build
@@ -53,4 +53,4 @@ jobs:
           BREW_PREFIX=$(brew --prefix)
           mkdir build && cd build
           LIBTOOL="glibtool" meson setup build . -Dsdl=disabled -Dgtk=disabled -Dcocoa=enabled -Dc_args="-DNCURSES_WIDECHAR=1 -I$BREW_PREFIX/include" -Dc_link_args="-L$BREW_PREFIX/lib"
-          ninja -C build
+          meson compile -C build
