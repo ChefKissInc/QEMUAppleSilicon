@@ -12,6 +12,7 @@ typedef struct AppleSIODMAEndpoint AppleSIODMAEndpoint;
 
 uint64_t             apple_sio_dma_read(AppleSIODMAEndpoint* ep, void* buffer, uint64_t len);
 uint64_t             apple_sio_dma_write(AppleSIODMAEndpoint* ep, void* buffer, uint64_t len);
+uint64_t             apple_sio_dma_blit(AppleSIODMAEndpoint* ep, int fillc, uint64_t len);
 uint64_t             apple_sio_dma_remaining(AppleSIODMAEndpoint* ep);
 AppleSIODMAEndpoint* apple_sio_get_endpoint(AppleSIOState* s, int ep);
 AppleSIODMAEndpoint* apple_sio_get_endpoint_from_node(AppleSIOState* s, AppleDTNode* node, int idx);

@@ -21,6 +21,7 @@
 #include "hw/dma/apple_sio.h"
 #include "hw/misc/a7iop/rtkit.h"
 #include "qapi/error.h"
+#include "qemu/iov.h"
 #include "qemu/log.h"
 #include "qemu/queue.h"
 #include "system/dma.h"
@@ -337,6 +338,33 @@ uint64_t apple_sio_dma_write(AppleSIODMAEndpoint* ep, void* buffer, uint64_t len
         buf = QTAILQ_FIRST(&ep->buffers);
         if (buf == NULL || !apple_sio_dma_map_buf(s, ep, buf)) { break; }
         iovec_len       = qemu_iovec_from_buf(&buf->iov, buf->completed, buffer + actual_len, len - actual_len);
+        actual_len     += iovec_len;
+        buf->completed += iovec_len;
+        if (buf->completed >= buf->iov.size) { apple_sio_dma_writeback(s, ep, buf); }
+    }
+
+    return actual_len;
+}
+
+uint64_t apple_sio_dma_blit(AppleSIODMAEndpoint* ep, int fillc, uint64_t len)
+{
+    AppleSIOState* s;
+    SIODMABuffer*  buf;
+    uint64_t       iovec_len;
+    uint64_t       actual_len = 0;
+
+    assert_cmpuint(ep->direction, ==, DMA_DIRECTION_FROM_DEVICE);
+
+    if (len == 0) { return 0; }
+
+    QEMU_LOCK_GUARD(&ep->mutex);
+
+    s = container_of(ep, AppleSIOState, eps[ep->id]);
+
+    while (len > actual_len) {
+        buf = QTAILQ_FIRST(&ep->buffers);
+        if (buf == NULL || !apple_sio_dma_map_buf(s, ep, buf)) { break; }
+        iovec_len       = qemu_iovec_memset(&buf->iov, buf->completed, fillc, len - actual_len);
         actual_len     += iovec_len;
         buf->completed += iovec_len;
         if (buf->completed >= buf->iov.size) { apple_sio_dma_writeback(s, ep, buf); }
