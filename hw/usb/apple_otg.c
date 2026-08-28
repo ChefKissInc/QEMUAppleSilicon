@@ -81,8 +81,6 @@ static void apple_otg_realize(DeviceState* dev, Error** errp)
     qdev_realize(DEVICE(s->dwc2.device), bus, errp);
 }
 
-static void apple_otg_reset(DeviceState* dev) { AppleOTGState* s = APPLE_OTG(dev); }
-
 static void phy_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     qemu_log_mask(LOG_UNIMP, "OTG: phy reg WRITE @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx "\n", addr, data);
@@ -210,7 +208,6 @@ static void apple_otg_class_init(ObjectClass* klass, const void* data)
 {
     DeviceClass* dc = DEVICE_CLASS(klass);
     dc->realize     = apple_otg_realize;
-    device_class_set_legacy_reset(dc, apple_otg_reset);
     dc->desc = "Apple Synopsys USB OTG Controller";
 }
 
