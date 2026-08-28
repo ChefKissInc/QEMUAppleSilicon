@@ -387,11 +387,10 @@ static int pmu_d2255_tx(I2CSlave* i2c, uint8_t data)
     return 0;
 }
 
-static void pmu_d2255_reset(DeviceState* device)
+static void pmu_d2255_reset_enter(Object* obj, ResetType type)
 {
-    PMUD2255State* s;
+    PMUD2255State* s = PMU_D2255(obj);
 
-    s                = PMU_D2255(device);
     s->op_state      = PMU_OP_STATE_NONE;
     s->address       = 0;
     s->address_state = PMU_ADDR_UPPER;
@@ -401,12 +400,14 @@ static void pmu_d2255_reset(DeviceState* device)
 
 static void pmu_d2255_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*   dc = DEVICE_CLASS(klass);
-    I2CSlaveClass* c  = I2C_SLAVE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+    I2CSlaveClass*   c  = I2C_SLAVE_CLASS(klass);
+
+    rc->phases.enter = pmu_d2255_reset_enter;
 
     dc->desc = "Apple PMU D2255";
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
-    device_class_set_legacy_reset(dc, pmu_d2255_reset);
 
     c->event = pmu_d2255_event;
     c->recv  = pmu_d2255_rx;
