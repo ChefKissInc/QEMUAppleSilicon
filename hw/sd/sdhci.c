@@ -291,14 +291,14 @@ static void sdhci_reset(SDHCIState* s)
     }
 }
 
-static void sdhci_poweron_reset(DeviceState* dev)
+static void sdhci_poweron_reset_enter(Object* obj, ResetType type)
 {
     /*
      * QOM (ie power-on) reset. This is identical to reset
      * commanded via device register apart from handling of the
      * 'pending insert on powerup' quirk.
      */
-    SDHCIState* s = (SDHCIState*)dev;
+    SDHCIState* s = (SDHCIState*)obj;
 
     sdhci_reset(s);
 
@@ -1301,10 +1301,12 @@ void sdhci_common_unrealize(SDHCIState* s)
 
 void sdhci_common_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = sdhci_poweron_reset_enter;
 
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
-    device_class_set_legacy_reset(dc, sdhci_poweron_reset);
 }
 
 /* --- qdev SysBus --- */
