@@ -33,9 +33,9 @@
     }                                                                   \
     while (0)
 
-static void i2c_ddc_reset(DeviceState* ds)
+static void i2c_ddc_reset_enter(Object* obj, ResetType type)
 {
-    I2CDDCState* s = I2CDDC(ds);
+    I2CDDCState* s = I2CDDC(obj);
 
     s->firstbyte = false;
     s->reg       = 0;
@@ -88,10 +88,12 @@ static const Property i2c_ddc_properties[] = {
 
 static void i2c_ddc_class_init(ObjectClass* oc, const void* data)
 {
-    DeviceClass*   dc  = DEVICE_CLASS(oc);
-    I2CSlaveClass* isc = I2C_SLAVE_CLASS(oc);
+    ResettableClass* rc  = RESETTABLE_CLASS(oc);
+    DeviceClass*     dc  = DEVICE_CLASS(oc);
+    I2CSlaveClass*   isc = I2C_SLAVE_CLASS(oc);
 
-    device_class_set_legacy_reset(dc, i2c_ddc_reset);
+    rc->phases.enter = i2c_ddc_reset_enter;
+
     device_class_set_props(dc, i2c_ddc_properties);
     isc->event = i2c_ddc_event;
     isc->recv  = i2c_ddc_rx;
