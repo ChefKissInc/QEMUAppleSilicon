@@ -287,7 +287,6 @@ static void coroutine_fn usb_tcp_host_msg_loop_co(void* opaque)
                 assert_true(bql_locked());
                 usb_device_reset(port->dev);
                 break;
-                ;
             default: assert_not_reached(); break;
         }
     }
