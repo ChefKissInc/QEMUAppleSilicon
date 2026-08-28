@@ -614,8 +614,8 @@ static const Property apple_a13_cluster_properties[] = {
 
 static void apple_a13_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*     dc = DEVICE_CLASS(klass);
-    AppleA13Class*   tc = APPLE_A13_CLASS(klass);
+    DeviceClass*   dc = DEVICE_CLASS(klass);
+    AppleA13Class* tc = APPLE_A13_CLASS(klass);
 
     device_class_set_parent_realize(dc, apple_a13_realize, &tc->parent_realize);
     dc->desc = "Apple A13 CPU";
