@@ -22,6 +22,7 @@
 #include "hw/audio/mca.h"
 #include "qemu/error-report.h"
 #include "qemu/fifo32.h"
+#include "qemu/timer.h"
 
 #if 0
     #define MCA_DPRINTF(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
@@ -127,6 +128,19 @@
 #define MCLK_CFG_BUSY       BIT(30)
 #define MCLK_CFG_ENABLED    BIT(31)
 
+#define MCA_FRAME_RATE   (48000)
+#define MCA_CHANNELS     (2)
+#define MCA_SAMPLE_BYTES (sizeof(uint16_t))
+#define MCA_FRAME_BYTES  (MCA_CHANNELS * MCA_SAMPLE_BYTES)
+#define MCA_BYTE_RATE    (MCA_FRAME_RATE * MCA_FRAME_BYTES)
+
+#define MCA_QUANTUM_BYTES (0x100)
+#define MCA_QUANTUM_NS    (MCA_QUANTUM_BYTES * NANOSECONDS_PER_SECOND / MCA_BYTE_RATE)
+#define MCA_MAX_DEBT_NS   (50 * SCALE_MS)
+#define MCA_MAX_CATCHUP   (4)
+
+#define MCA_RING_SIZE (65536)
+
 typedef struct
 {
     uint32_t txb_config;
@@ -155,7 +169,12 @@ struct AppleMCAState
     AppleSIODMAEndpoint* rx_ep;
     QEMUSoundCard        card;
     SWVoiceOut*          voice;
-    uint8_t              buf[32768];
+    QEMUTimer*           timer;
+    int64_t              last_ns;
+    bool                 running;
+    uint8_t              ring[MCA_RING_SIZE];
+    uint32_t             ring_head;
+    uint32_t             ring_used;
 };
 
 static void apple_mca_class_init(ObjectClass* klass, const void* data)
@@ -181,6 +200,90 @@ static void apple_mca_register_types(void) { type_register_static(&apple_mca_inf
 
 type_init(apple_mca_register_types);
 
+static uint32_t apple_mca_dma_into_ring(AppleMCAState* s, uint32_t want)
+{
+    uint32_t done = 0;
+
+    want = MIN(want, MCA_RING_SIZE);
+
+    if (want > MCA_RING_SIZE - s->ring_used) {
+        uint32_t drop  = want - (MCA_RING_SIZE - s->ring_used);
+        drop           = ROUND_UP(drop, MCA_FRAME_BYTES);
+        drop           = MIN(drop, s->ring_used);
+        s->ring_head   = (s->ring_head + drop) % MCA_RING_SIZE;
+        s->ring_used  -= drop;
+    }
+
+    while (done < want) {
+        uint32_t freeb = MCA_RING_SIZE - s->ring_used;
+        uint32_t tail  = (s->ring_head + s->ring_used) % MCA_RING_SIZE;
+        uint32_t run   = MIN(want - done, MIN(freeb, MCA_RING_SIZE - tail));
+        uint32_t got;
+
+        if (run == 0) { break; }
+
+        got = apple_sio_dma_read(s->tx_ep, s->ring + tail, run);
+        if (got < run) { memset(s->ring + tail + got, 0, run - got); }
+
+        s->ring_used += run;
+        done         += run;
+    }
+
+    return done;
+}
+
+static void apple_mca_serialise(void* opaque)
+{
+    AppleMCAState* s = opaque;
+    int64_t        now;
+    uint64_t       due;
+    uint64_t       frames;
+    uint32_t       pulled = 0;
+
+    now = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+
+    if (now <= s->last_ns) {
+        timer_mod_ns(s->timer, now + MCA_QUANTUM_NS);
+        return;
+    }
+
+    frames = muldiv64(now - s->last_ns, MCA_FRAME_RATE, NANOSECONDS_PER_SECOND);
+    frames = MIN(frames, (uint64_t)MCA_QUANTUM_BYTES * MCA_MAX_CATCHUP / MCA_FRAME_BYTES);
+    due    = frames * MCA_FRAME_BYTES;
+
+    if (due != 0) {
+        pulled = apple_mca_dma_into_ring(s, due);
+        frames = pulled / MCA_FRAME_BYTES;
+
+        // TX 2ch, RX 4ch. FIXME
+        apple_sio_dma_blit(s->rx_ep, 0, frames * (MCA_FRAME_BYTES * 2));
+
+        if (now - s->last_ns > MCA_MAX_DEBT_NS) { s->last_ns = now; }
+
+        s->last_ns += muldiv64(frames, NANOSECONDS_PER_SECOND, MCA_FRAME_RATE);
+    }
+
+    timer_mod_ns(s->timer, now + MCA_QUANTUM_NS);
+}
+
+static void apple_mca_set_running(AppleMCAState* s, bool running)
+{
+    if (running == s->running) { return; }
+
+    s->running = running;
+
+    AUD_set_active_out(s->voice, running);
+    AUD_set_volume_out(s->voice, !running, 255, 255);
+
+    if (running) {
+        s->last_ns = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+        timer_mod_ns(s->timer, s->last_ns + MCA_QUANTUM_NS);
+    }
+    else {
+        timer_del(s->timer);
+    }
+}
+
 static void apple_mca_sio_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     AppleMCAState* s = opaque;
@@ -196,11 +299,7 @@ static void apple_mca_sio_reg_write(void* opaque, hwaddr addr, uint64_t data, un
         case RXB_REG_BASE + REG_RX_CFG: s->sio_clusters[index].rxb_config = data; break;
         case TXB_REG_BASE + REG_TX_CFG: s->sio_clusters[index].txb_config = data; break;
         case TXB_REG_BASE + REG_SIO_UNIT_CTL:
-            if (index == 5) {
-                const bool active = data & SIO_UNIT_CTL_ENABLE;
-                AUD_set_active_out(s->voice, active);
-                AUD_set_volume_out(s->voice, !active, 255, 255);
-            }
+            if (index == 5) { apple_mca_set_running(s, (data & SIO_UNIT_CTL_ENABLE) != 0); }
             s->sio_clusters[index].txb_control = data;
             break;
     }
@@ -343,24 +442,16 @@ static const MemoryRegionOps apple_mca_mclk_ops = {
 static void apple_mca_out_callback(void* opaque, int avail)
 {
     AppleMCAState* s = opaque;
+    uint32_t       to_write;
+    uint32_t       written;
 
-    uint8_t* temp    = s->buf;
-    int64_t  to_play = avail;
-
-    while (to_play > 0) {
-        uint32_t chunk = MIN(to_play, sizeof(s->buf));
-
-        uint32_t pulled = apple_sio_dma_read(s->tx_ep, temp, chunk);
-        if (pulled == 0) {
-            memset(temp, 0, chunk);
-            pulled = chunk;
-        }
-
-        uint32_t written = apple_sio_dma_write(s->rx_ep, temp, pulled);
-        written          = AUD_write(s->voice, temp, written);
-
-        to_play -= written;
-        if (written < pulled) { break; }
+    while (avail > 0 && s->ring_used != 0) {
+        to_write = MIN((uint32_t)avail, MIN(s->ring_used, MCA_RING_SIZE - s->ring_head));
+        written  = AUD_write(s->voice, s->ring + s->ring_head, to_write);
+        if (written == 0) { break; }
+        s->ring_head  = (s->ring_head + written) % MCA_RING_SIZE;
+        s->ring_used -= written;
+        avail        -= written;
     }
 }
 
@@ -404,6 +495,8 @@ SysBusDevice* apple_mca_create(AppleDTNode* node, AppleSIODMAEndpoint* tx_ep, Ap
 
     s->tx_ep = tx_ep;
     s->rx_ep = rx_ep;
+
+    s->timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, apple_mca_serialise, s);
 
     if (AUD_register_card("mca", &s->card, NULL)) {
         audsettings settings = {0};
