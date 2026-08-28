@@ -163,15 +163,6 @@ struct DeviceClass
     bool hotpluggable;
 
     /* callbacks */
-    /**
-     * @legacy_reset: deprecated device reset method pointer
-     *
-     * Modern code should use the ResettableClass interface to
-     * implement a multi-phase reset.
-     *
-     * TODO: remove once every reset callback is unused
-     */
-    DeviceReset      legacy_reset;
     DeviceRealize    realize;
     DeviceUnrealize  unrealize;
     DeviceSyncConfig sync_config;
@@ -946,19 +937,6 @@ static inline void device_class_set_parent_realize(DeviceClass* dc, DeviceRealiz
     *parent_realize = dc->realize;
     dc->realize     = dev_realize;
 }
-
-/**
- * device_class_set_legacy_reset(): set the DeviceClass::reset method
- * @dc: The device class
- * @dev_reset: the reset function
- *
- * This function sets the DeviceClass::reset method. This is widely
- * used in existing code, but new code should prefer to use the
- * Resettable API as documented in docs/devel/reset.rst.
- * In addition, devices which need to chain to their parent class's
- * reset methods or which need to be subclassed must use Resettable.
- */
-void device_class_set_legacy_reset(DeviceClass* dc, DeviceReset dev_reset);
 
 /**
  * device_class_set_parent_unrealize() - set up for chaining unrealize fns

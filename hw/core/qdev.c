@@ -609,44 +609,10 @@ static void device_class_init(ObjectClass* class, const void* data)
     rc->get_state      = device_get_reset_state;
     rc->child_foreach  = device_reset_child_foreach;
 
-    /*
-     * A NULL legacy_reset implies a three-phase reset device. Devices can
-     * only be reset using three-phase aware mechanisms, but we still support
-     * for transitional purposes leaf classes which set the old legacy_reset
-     * method via device_class_set_legacy_reset().
-     */
-    dc->legacy_reset = NULL;
-
     object_class_property_add_bool(class, "realized", device_get_realized, device_set_realized);
     object_class_property_add_bool(class, "hotpluggable", device_get_hotpluggable, NULL);
     object_class_property_add_bool(class, "hotplugged", device_get_hotplugged, NULL);
     object_class_property_add_link(class, "parent_bus", TYPE_BUS, offsetof(DeviceState, parent_bus), NULL, 0);
-}
-
-static void do_legacy_reset(Object* obj, ResetType type)
-{
-    DeviceClass* dc = DEVICE_GET_CLASS(obj);
-
-    dc->legacy_reset(DEVICE(obj));
-}
-
-void device_class_set_legacy_reset(DeviceClass* dc, DeviceReset dev_reset)
-{
-    /*
-     * A legacy DeviceClass::reset has identical semantics to the
-     * three-phase "hold" method, with no "enter" or "exit"
-     * behaviour. Classes that use this legacy function must be leaf
-     * classes that do not chain up to their parent class reset.
-     * There is no mechanism for resetting a device that does not
-     * use the three-phase APIs, so the only place which calls
-     * the legacy_reset hook is do_legacy_reset().
-     */
-    ResettableClass* rc = RESETTABLE_CLASS(dc);
-
-    rc->phases.enter = NULL;
-    rc->phases.hold  = do_legacy_reset;
-    rc->phases.exit  = NULL;
-    dc->legacy_reset = dev_reset;
 }
 
 Object* qdev_get_machine(void)
