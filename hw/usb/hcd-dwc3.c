@@ -1020,10 +1020,7 @@ static void dwc3_usb_device_connected_speed(DWC3State* s)
 
 static void dwc3_reset_enter(Object* obj, ResetType type)
 {
-    DWC3Class* c = DWC3_USB_GET_CLASS(obj);
     DWC3State* s = DWC3_USB(obj);
-
-    if (c->parent_phases.enter) { c->parent_phases.enter(obj, type); }
 
     dwc3_dcore_reset(s);
     s->gsts    = GSTS_CURMOD_DRD;
@@ -1047,20 +1044,14 @@ static void dwc3_reset_enter(Object* obj, ResetType type)
 
 static void dwc3_reset_hold(Object* obj, ResetType type)
 {
-    DWC3Class* c = DWC3_USB_GET_CLASS(obj);
     DWC3State* s = DWC3_USB(obj);
-
-    if (c->parent_phases.hold != NULL) { c->parent_phases.hold(obj, type); }
 
     dwc3_update_irq(s);
 }
 
 static void dwc3_reset_exit(Object* obj, ResetType type)
 {
-    DWC3Class* c = DWC3_USB_GET_CLASS(obj);
     DWC3State* s = DWC3_USB(obj);
-
-    if (c->parent_phases.exit != NULL) { c->parent_phases.exit(obj, type); }
 
     s->device.parent_obj.addr = 0;
 }
@@ -2110,13 +2101,15 @@ static void dwc3_usb_device_class_initfn(ObjectClass* klass, const void* data)
 
 static void usb_dwc3_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*     dc = DEVICE_CLASS(klass);
-    DWC3Class*       c  = DWC3_USB_CLASS(klass);
     ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = dwc3_reset_enter;
+    rc->phases.hold  = dwc3_reset_hold;
+    rc->phases.exit  = dwc3_reset_exit;
 
     dc->realize = usb_dwc3_realize;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
-    resettable_class_set_parent_phases(rc, dwc3_reset_enter, dwc3_reset_hold, dwc3_reset_exit, &c->parent_phases);
 }
 
 static const TypeInfo dwc3_usb_device_type_info = {
@@ -2131,7 +2124,6 @@ static const TypeInfo usb_dwc3_info = {
     .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(DWC3State),
     .instance_init = usb_dwc3_init,
-    .class_size    = sizeof(DWC3Class),
     .class_init    = usb_dwc3_class_init,
 };
 

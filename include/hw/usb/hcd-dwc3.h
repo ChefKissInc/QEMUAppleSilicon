@@ -208,20 +208,11 @@ typedef struct DWC3State
     uint32_t global_rsc_idx_counter;
 } DWC3State;
 
-struct DWC3Class
-{
-    /*< private >*/
-    SysBusDeviceClass parent_class;
-    ResettablePhases  parent_phases;
-
-    /*< public >*/
-};
-
 #define TYPE_DWC3_USB_DEVICE "dwc3-usb-device"
-OBJECT_DECLARE_TYPE(DWC3DeviceState, USBDeviceClass, DWC3_USB_DEVICE)
+OBJECT_DECLARE_SIMPLE_TYPE(DWC3DeviceState, DWC3_USB_DEVICE)
 
 #define TYPE_DWC3_USB "dwc3-usb"
-OBJECT_DECLARE_TYPE(DWC3State, DWC3Class, DWC3_USB)
+OBJECT_DECLARE_SIMPLE_TYPE(DWC3State, DWC3_USB)
 
 int  dwc3_bd_map(DWC3State* s, DWC3BufferDesc* desc, USBPacket* p);
 void dwc3_bd_unmap(DWC3State* s, DWC3BufferDesc* desc);
