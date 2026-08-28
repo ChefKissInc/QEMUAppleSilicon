@@ -820,8 +820,6 @@ meson.override_dependency('glib-2.0', glib)
 add_project_dependencies(glib.partial_dependency(compile_args: true, includes: true),
                          native: false, language: all_languages)
 
-xml_pp = find_program('scripts/xml-preprocess.py')
-
 lttng = not_found
 if 'ust' in get_option('trace_backends')
   lttng = dependency('lttng-ust', required: true, version: '>= 2.1',
