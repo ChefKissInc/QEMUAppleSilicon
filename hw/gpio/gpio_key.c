@@ -41,13 +41,6 @@ struct GPIOKEYState
     qemu_irq   irq;
 };
 
-static void gpio_key_reset(DeviceState* dev)
-{
-    GPIOKEYState* s = GPIOKEY(dev);
-
-    timer_del(s->timer);
-}
-
 static void gpio_key_timer_expired(void* opaque)
 {
     GPIOKEYState* s = (GPIOKEYState*)opaque;
@@ -64,6 +57,13 @@ static void gpio_key_set_irq(void* opaque, int irq, int level)
     timer_mod(s->timer, qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL) + GPIO_KEY_LATENCY);
 }
 
+static void gpio_key_reset_enter(Object* obj, ResetType type)
+{
+    GPIOKEYState* s = GPIOKEY(obj);
+
+    timer_del(s->timer);
+}
+
 static void gpio_key_realize(DeviceState* dev, Error** errp)
 {
     GPIOKEYState* s   = GPIOKEY(dev);
@@ -76,10 +76,11 @@ static void gpio_key_realize(DeviceState* dev, Error** errp)
 
 static void gpio_key_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    dc->realize = gpio_key_realize;
-    device_class_set_legacy_reset(dc, gpio_key_reset);
+    rc->phases.enter = gpio_key_reset_enter;
+    dc->realize      = gpio_key_realize;
 }
 
 static const TypeInfo gpio_key_info = {
