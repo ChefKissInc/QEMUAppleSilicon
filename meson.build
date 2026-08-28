@@ -864,38 +864,6 @@ if not get_option('libnfs').auto() or have_block
                       method: 'pkg-config')
 endif
 
-libattr_test = '''
-  #include <stddef.h>
-  #include <sys/types.h>
-  #ifdef CONFIG_LIBATTR
-  #include <attr/xattr.h>
-  #else
-  #include <sys/xattr.h>
-  #endif
-  int main(void) { getxattr(NULL, NULL, NULL, 0); setxattr(NULL, NULL, NULL, 0, 0); return 0; }'''
-
-libattr = not_found
-have_old_libattr = false
-if get_option('attr').allowed()
-  if cc.links(libattr_test)
-    libattr = declare_dependency()
-  else
-    libattr = cc.find_library('attr', has_headers: ['attr/xattr.h'],
-                              required: get_option('attr'))
-    if libattr.found() and not \
-      cc.links(libattr_test, dependencies: libattr, args: '-DCONFIG_LIBATTR')
-      libattr = not_found
-      if get_option('attr').enabled()
-        error('could not link libattr')
-      else
-        warning('could not link libattr, disabling')
-      endif
-    else
-      have_old_libattr = libattr.found()
-    endif
-  endif
-endif
-
 cocoa = dependency('appleframeworks',
                    modules: ['Cocoa', 'CoreVideo', 'QuartzCore'],
                    required: get_option('cocoa'))
@@ -1736,7 +1704,6 @@ if get_option('module_upgrades') and not enable_modules
 endif
 config_host_data.set('CONFIG_MODULE_UPGRADES', get_option('module_upgrades'))
 
-config_host_data.set('CONFIG_ATTR', libattr.found())
 config_host_data.set('CONFIG_BDRV_WHITELIST_TOOLS', get_option('block_drv_whitelist_in_tools'))
 config_host_data.set('CONFIG_BRLAPI', brlapi.found())
 config_host_data.set('CONFIG_BSD', host_os in bsd_oses)
@@ -1769,7 +1736,6 @@ endif
 config_host_data.set('CONFIG_GTK', gtk.found())
 config_host_data.set('CONFIG_VTE', vte.found())
 config_host_data.set('CONFIG_GTK_CLIPBOARD', have_gtk_clipboard)
-config_host_data.set('CONFIG_LIBATTR', have_old_libattr)
 config_host_data.set('CONFIG_LIBCAP_NG', libcap_ng.found())
 config_host_data.set('CONFIG_LIBDAXCTL', libdaxctl.found())
 config_host_data.set('CONFIG_LIBNFS', libnfs.found())
@@ -3629,7 +3595,6 @@ summary_info += {'curl support':      curl}
 summary_info += {'Multipath support': mpathpersist}
 summary_info += {'Linux AIO support': libaio}
 summary_info += {'Linux io_uring support': linux_io_uring}
-summary_info += {'ATTR/XATTR support': libattr}
 summary_info += {'libcap-ng support': libcap_ng}
 summary_info += {'rbd support':       rbd}
 summary_info += {'libusb':            libusb}
