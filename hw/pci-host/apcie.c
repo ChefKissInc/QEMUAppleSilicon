@@ -1346,9 +1346,9 @@ static const MemoryRegionOps apple_pcie_port_phy_ip_ops = {
 
 static const char* apple_pcie_host_root_bus_path(PCIHostState* host_bridge, PCIBus* rootbus) { return "0000:00"; }
 
-static void apple_pcie_host_reset(DeviceState* dev)
+static void apple_pcie_host_reset_enter(Object* obj, ResetType type)
 {
-    ApplePCIEHost* host = APPLE_PCIE_HOST(dev);
+    ApplePCIEHost* host = APPLE_PCIE_HOST(obj);
 
     host->root_phy_enabled           = 0x0;
     host->root_refclk_buffer_enabled = 0x0;
@@ -2017,12 +2017,14 @@ static void apple_pcie_host_realize(DeviceState* dev, Error** errp)
 
 static void apple_pcie_host_class_init(ObjectClass* klass, const void* data)
 {
+    ResettableClass*    rc = RESETTABLE_CLASS(klass);
     PCIHostBridgeClass* hc = PCI_HOST_BRIDGE_CLASS(klass);
     DeviceClass*        dc = DEVICE_CLASS(klass);
 
+    rc->phases.enter = apple_pcie_host_reset_enter;
+
     hc->root_bus_path = apple_pcie_host_root_bus_path;
     dc->realize       = apple_pcie_host_realize;
-    device_class_set_legacy_reset(dc, apple_pcie_host_reset);
     // dc->fw_name = "pci";
 
     dc->user_creatable = false;
