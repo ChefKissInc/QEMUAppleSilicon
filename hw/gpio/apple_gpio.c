@@ -208,20 +208,6 @@ static void apple_gpio_set(void* opaque, int pin, int level)
     }
 }
 
-static void apple_gpio_realize(DeviceState* dev, Error** errp) { }
-
-static void apple_gpio_reset(DeviceState* dev)
-{
-    int             i;
-    AppleGPIOState* s = APPLE_GPIO(dev);
-
-    for (i = 0; i < s->pin_count; i++) { s->gpio_cfg[i] = CFG_DISABLED; }
-
-    memset(s->int_config, 0, sizeof(*s->int_config) * s->pin_count * s->irq_group_count);
-    memset(s->in_old, 0, sizeof(*s->in_old) * s->in_len);
-    memset(s->in, 0, sizeof(*s->in_old) * s->in_len);
-}
-
 static void apple_gpio_cfg_write(AppleGPIOState* s, unsigned int pin, hwaddr addr, uint32_t value)
 {
     DPRINTF("%s: WRITE addr 0x" HWADDR_FMT_plx " value 0x" HWADDR_FMT_plx " pin %d/0x%x\n", __func__, addr, value, pin,
@@ -406,15 +392,29 @@ DeviceState* apple_gpio_from_node(AppleDTNode* node)
                           apple_dt_get_prop_u32(node, "#gpio-int-groups", &error_fatal));
 }
 
+static void apple_gpio_reset_enter(Object* obj, ResetType type)
+{
+    int             i;
+    AppleGPIOState* s = APPLE_GPIO(obj);
+
+    for (i = 0; i < s->pin_count; i++) { s->gpio_cfg[i] = CFG_DISABLED; }
+
+    memset(s->int_config, 0, sizeof(*s->int_config) * s->pin_count * s->irq_group_count);
+    memset(s->in_old, 0, sizeof(*s->in_old) * s->in_len);
+    memset(s->in, 0, sizeof(*s->in_old) * s->in_len);
+}
+
+static void apple_gpio_realize(DeviceState* dev, Error** errp) { }
+
 static void apple_gpio_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc;
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    dc = DEVICE_CLASS(klass);
+    rc->phases.enter = apple_gpio_reset_enter;
 
     dc->desc    = "Apple General Purpose Input/Output Controller";
     dc->realize = apple_gpio_realize;
-    device_class_set_legacy_reset(dc, apple_gpio_reset);
 }
 
 static const TypeInfo apple_gpio_info = {
