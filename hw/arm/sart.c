@@ -174,11 +174,9 @@ static IOMMUTLBEntry apple_sart_translate(IOMMUMemoryRegion* mr, hwaddr addr, IO
     return entry;
 }
 
-static void apple_sart_reset(DeviceState* dev)
+static void apple_sart_reset_enter(Object* obj, ResetType type)
 {
-    AppleSARTState* s;
-
-    s = APPLE_SART(dev);
+    AppleSARTState* s = APPLE_SART(obj);
 
     memset(s->reg, 0, sizeof(s->reg));
     memset(s->regions, 0, sizeof(s->regions));
@@ -219,9 +217,11 @@ SysBusDevice* apple_sart_from_node(AppleDTNode* node)
 
 static void apple_sart_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    device_class_set_legacy_reset(dc, apple_sart_reset);
+    rc->phases.enter = apple_sart_reset_enter;
+
     dc->desc = "Apple SART IOMMU";
 }
 
