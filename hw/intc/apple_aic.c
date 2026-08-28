@@ -204,10 +204,10 @@ static void apple_aic_tick(void* opaque)
     timer_mod_ns(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + kAICWT);
 }
 
-static void apple_aic_reset(DeviceState* dev)
+static void apple_aic_reset_enter(Object* obj, ResetType type)
 {
     int            i;
-    AppleAICState* s = APPLE_AIC(dev);
+    AppleAICState* s = APPLE_AIC(obj);
 
     /* mask all IRQs */
     memset(s->eir_mask, 0xFF, sizeof(uint32_t) * s->numEIR);
@@ -232,7 +232,7 @@ static void apple_aic_write(void* opaque, hwaddr addr, uint64_t data, unsigned s
     QEMU_LOCK_GUARD(&s->mutex);
 
     switch (addr) {
-        case REG_AIC_RST    : apple_aic_reset(DEVICE(s)); break;
+        case REG_AIC_RST    : device_cold_reset(DEVICE(s)); break;
         case REG_AIC_GLB_CFG: s->global_cfg = data; break;
         case REG_AIC_IPI_SET: {
             int i;
@@ -509,12 +509,14 @@ SysBusDevice* apple_aic_create(uint32_t numCPU, AppleDTNode* node, AppleDTNode* 
 
 static void apple_aic_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_aic_reset_enter;
 
     dc->realize   = apple_aic_realize;
     dc->unrealize = apple_aic_unrealize;
-    device_class_set_legacy_reset(dc, apple_aic_reset);
-    dc->desc = "Apple Interrupt Controller";
+    dc->desc      = "Apple Interrupt Controller";
 }
 
 static const TypeInfo apple_aic_info = {
