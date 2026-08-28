@@ -7522,9 +7522,9 @@ static void nvme_set_smart_warning(Object* obj, Visitor* v, const char* name, vo
     }
 }
 
-static void nvme_pci_reset(DeviceState* qdev)
+static void nvme_pci_reset_hold(Object* obj, ResetType type)
 {
-    NvmeCtrl* n = NVME(qdev);
+    NvmeCtrl* n = NVME(obj);
 
     trace_pci_nvme_pci_reset();
     nvme_ctrl_reset(n, NVME_RESET_FUNCTION);
@@ -7541,8 +7541,11 @@ static uint32_t nvme_pci_read_config(PCIDevice* dev, uint32_t address, int len)
 
 static void nvme_class_init(ObjectClass* oc, const void* data)
 {
-    DeviceClass*    dc = DEVICE_CLASS(oc);
-    PCIDeviceClass* pc = PCI_DEVICE_CLASS(oc);
+    ResettableClass* rc = RESETTABLE_CLASS(oc);
+    DeviceClass*     dc = DEVICE_CLASS(oc);
+    PCIDeviceClass*  pc = PCI_DEVICE_CLASS(oc);
+
+    rc->phases.hold = nvme_pci_reset_hold;
 
     pc->realize      = nvme_realize;
     pc->config_write = nvme_pci_write_config;
@@ -7554,7 +7557,6 @@ static void nvme_class_init(ObjectClass* oc, const void* data)
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
     dc->desc = "Non-Volatile Memory Express";
     device_class_set_props(dc, nvme_props);
-    device_class_set_legacy_reset(dc, nvme_pci_reset);
 }
 
 static void nvme_instance_init(Object* obj)
