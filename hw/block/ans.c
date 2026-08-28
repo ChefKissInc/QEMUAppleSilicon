@@ -284,9 +284,9 @@ static void apple_ans_unrealize(DeviceState* dev)
     qdev_unrealize(DEVICE(s->rtk));
 }
 
-static void apple_ans_reset(DeviceState* qdev)
+static void apple_ans_reset_enter(Object* obj, ResetType type)
 {
-    AppleANSState* s = APPLE_ANS(qdev);
+    AppleANSState* s = APPLE_ANS(obj);
     PCIDevice*     d = PCI_DEVICE(s->nvme);
 
     pcie_cap_deverr_reset(d);
@@ -294,12 +294,14 @@ static void apple_ans_reset(DeviceState* qdev)
 
 static void apple_ans_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_ans_reset_enter;
 
     dc->realize   = apple_ans_realize;
     dc->unrealize = apple_ans_unrealize;
-    device_class_set_legacy_reset(dc, apple_ans_reset);
-    dc->desc = "Apple NAND Storage (ANS)";
+    dc->desc      = "Apple NAND Storage (ANS)";
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
 }
 
