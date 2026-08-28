@@ -407,7 +407,6 @@ static void machine_class_init(ObjectClass* oc, const void* data)
 
     /* Default 128 MB as guest ram size */
     mc->default_ram_size = 128 * MiB;
-    mc->rom_file_has_mr  = true;
 
     mc->create_default_memdev = create_default_memdev;
 

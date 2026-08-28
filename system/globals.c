@@ -36,8 +36,6 @@ const char*   keyboard_layout;
 MlockState    mlock_state;
 bool          enable_cpu_pm;
 int           autostart = 1;
-QEMUOptionRom option_rom[MAX_OPTION_ROMS];
-int           nb_option_roms;
 const char*   qemu_name;
 unsigned int  nb_prom_envs;
 const char*   prom_envs[MAX_PROM_ENVS];

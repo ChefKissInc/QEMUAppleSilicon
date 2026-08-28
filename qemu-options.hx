@@ -3525,15 +3525,6 @@ SRST
     race conditions.
 ERST
 
-DEF("option-rom", HAS_ARG, QEMU_OPTION_option_rom, \
-    "-option-rom rom load a file, rom, into the option ROM space\n",
-    QEMU_ARCH_ALL)
-SRST
-``-option-rom file``
-    Load the contents of file as an option ROM. This option is useful to
-    load things like EtherBoot.
-ERST
-
 DEF("rtc", HAS_ARG, QEMU_OPTION_rtc, \
     "-rtc [base=utc|localtime|<datetime>][,clock=host|rt|vm]\n" \
     "                set the RTC base and clock\n",

@@ -173,21 +173,6 @@ static QemuOptsList qemu_rtc_opts = {
                     {/* end of list */}},
 };
 
-static QemuOptsList qemu_option_rom_opts = {
-    .name             = "option-rom",
-    .implied_opt_name = "romfile",
-    .head             = QTAILQ_HEAD_INITIALIZER(qemu_option_rom_opts.head),
-    .desc             = {{
-                             .name = "bootindex",
-                             .type = QEMU_OPT_NUMBER,
-                         },
-                         {
-                             .name = "romfile",
-                             .type = QEMU_OPT_STRING,
-                         },
-                         {/* end of list */}},
-};
-
 static QemuOptsList qemu_accel_opts = {
     .name             = "accel",
     .implied_opt_name = "accel",
@@ -2004,7 +1989,6 @@ void qemu_init(int argc, char** argv)
     qemu_add_opts(&qemu_global_opts);
     qemu_add_opts(&qemu_mon_opts);
     qemu_add_opts(&qemu_trace_opts);
-    qemu_add_opts(&qemu_option_rom_opts);
     qemu_add_opts(&qemu_accel_opts);
     qemu_add_opts(&qemu_mem_opts);
     qemu_add_opts(&qemu_smp_opts);
@@ -2308,21 +2292,6 @@ void qemu_init(int argc, char** argv)
                         exit(1);
                     }
                     qemu_uuid_set = true;
-                    break;
-                case QEMU_OPTION_option_rom:
-                    if (nb_option_roms >= MAX_OPTION_ROMS) {
-                        error_report("too many option ROMs");
-                        exit(1);
-                    }
-                    opts = qemu_opts_parse_noisily(qemu_find_opts("option-rom"), optarg, true);
-                    if (!opts) { exit(1); }
-                    option_rom[nb_option_roms].name      = qemu_opt_get(opts, "romfile");
-                    option_rom[nb_option_roms].bootindex = qemu_opt_get_number(opts, "bootindex", -1);
-                    if (!option_rom[nb_option_roms].name) {
-                        error_report("Option ROM file is not specified");
-                        exit(1);
-                    }
-                    nb_option_roms++;
                     break;
                 case QEMU_OPTION_name:
                     opts = qemu_opts_parse_noisily(qemu_find_opts("name"), optarg, true);

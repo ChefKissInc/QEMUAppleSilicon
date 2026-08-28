@@ -47,15 +47,6 @@ bool is_mlock_on_fault(MlockState);
 
 extern MlockState mlock_state;
 
-#define MAX_OPTION_ROMS 16
-typedef struct QEMUOptionRom
-{
-    const char* name;
-    int32_t     bootindex;
-} QEMUOptionRom;
-extern QEMUOptionRom option_rom[MAX_OPTION_ROMS];
-extern int           nb_option_roms;
-
 #define MAX_PROM_ENVS 128
 extern const char*  prom_envs[MAX_PROM_ENVS];
 extern unsigned int nb_prom_envs;

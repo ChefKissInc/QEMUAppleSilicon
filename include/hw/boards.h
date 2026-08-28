@@ -278,8 +278,6 @@ struct MachineClass
     ram_addr_t         default_ram_size;
     const char*        default_cpu_type;
     bool               default_kernel_irqchip_split;
-    bool               option_rom_has_mr;
-    bool               rom_file_has_mr;
     int                minimum_page_bits;
     bool               has_hotpluggable_cpus;
     bool               ignore_memory_transaction_failures;
