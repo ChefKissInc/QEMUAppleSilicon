@@ -475,7 +475,6 @@ static void usb_tcp_host_attach(USBPort* port)
         return;
     }
 
-    object_ref(ioc);
     qio_channel_set_blocking(ioc, false, NULL);
     s->closed = false;
     s->ioc    = ioc;
