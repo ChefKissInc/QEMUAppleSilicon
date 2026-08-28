@@ -785,9 +785,9 @@ static uint64_t sd_req_get_address(SDState* sd, SDRequest req)
 static inline uint64_t sd_addr_to_wpnum(uint64_t addr)
 { return addr >> (HWBLOCK_SHIFT + SECTOR_SHIFT + WPGROUP_SHIFT); }
 
-static void sd_reset(DeviceState* dev)
+static void sd_reset_hold(Object* obj, ResetType type)
 {
-    SDState*     sd = SDMMC_COMMON(dev);
+    SDState*     sd = SDMMC_COMMON(obj);
     SDCardClass* sc = SDMMC_COMMON_GET_CLASS(sd);
     uint64_t     size;
     uint64_t     sect;
@@ -843,7 +843,7 @@ static void sd_cardchange(void* opaque, bool load, Error** errp)
 
     if (inserted) {
         trace_sdcard_inserted(readonly);
-        sd_reset(dev);
+        device_cold_reset(dev);
     }
     else {
         trace_sdcard_ejected();
@@ -1171,7 +1171,7 @@ static sd_rsp_type_t sd_cmd_GO_IDLE_STATE(SDState* sd, SDRequest req)
     }
     if (sd->state != sd_inactive_state) {
         sd->state = sd_idle_state;
-        sd_reset(DEVICE(sd));
+        device_cold_reset(DEVICE(sd));
     }
 
     return sd_is_spi(sd) ? sd_r1 : sd_r0;
@@ -2391,11 +2391,13 @@ static const Property emmc_properties[] = {
 
 static void sdmmc_common_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
-    SDCardClass* sc = SDMMC_COMMON_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+    SDCardClass*     sc = SDMMC_COMMON_CLASS(klass);
+
+    rc->phases.hold = sd_reset_hold;
 
     device_class_set_props(dc, sdmmc_common_properties);
-    device_class_set_legacy_reset(dc, sd_reset);
     dc->bus_type = TYPE_SD_BUS;
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
 
