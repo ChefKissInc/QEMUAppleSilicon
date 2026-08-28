@@ -535,9 +535,9 @@ static void exynos4210_uart_event(void* opaque, QEMUChrEvent event)
     }
 }
 
-static void exynos4210_uart_reset(DeviceState* dev)
+static void exynos4210_uart_reset_enter(Object* obj, ResetType type)
 {
-    Exynos4210UartState* s = EXYNOS4210_UART(dev);
+    Exynos4210UartState* s = EXYNOS4210_UART(obj);
     int                  i;
 
     for (i = 0; i < ARRAY_SIZE(exynos4210_uart_regs); i++) {
@@ -604,10 +604,12 @@ static const Property exynos4210_uart_properties[] = {
 
 static void exynos4210_uart_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = exynos4210_uart_reset_enter;
 
     dc->realize = exynos4210_uart_realize;
-    device_class_set_legacy_reset(dc, exynos4210_uart_reset);
     device_class_set_props(dc, exynos4210_uart_properties);
 }
 
