@@ -242,11 +242,9 @@ static uint32_t apple_cs42l77_transfer(SSIPeripheral* dev, uint32_t val)
     return ret;
 }
 
-static void apple_cs42l77_reset(DeviceState* dev)
+static void apple_cs42l77_reset_enter(Object* obj, ResetType type)
 {
-    AppleCS42L77State* s;
-
-    s = APPLE_CS42L77(dev);
+    AppleCS42L77State* s = APPLE_CS42L77(obj);
 
     s->start_addr = 0;
     s->address    = 0;
@@ -265,8 +263,11 @@ static void apple_cs42l77_reset(DeviceState* dev)
 
 static void apple_cs42l77_class_init(ObjectClass* klass, const void* data)
 {
+    ResettableClass*    rc = RESETTABLE_CLASS(klass);
     DeviceClass*        dc = DEVICE_CLASS(klass);
     SSIPeripheralClass* c  = SSI_PERIPHERAL_CLASS(klass);
+
+    rc->phases.enter = apple_cs42l77_reset_enter;
 
     dc->desc           = "Apple CS42L77 Amp";
     dc->user_creatable = false;
@@ -274,7 +275,6 @@ static void apple_cs42l77_class_init(ObjectClass* klass, const void* data)
 
     c->realize  = apple_cs42l77_realize;
     c->transfer = apple_cs42l77_transfer;
-    device_class_set_legacy_reset(dc, apple_cs42l77_reset);
 }
 
 static const TypeInfo apple_cs42l77_type_info = {
