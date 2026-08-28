@@ -147,7 +147,7 @@ static void apple_typec_class_init(ObjectClass* klass, const void* data)
 {
     DeviceClass* dc = DEVICE_CLASS(klass);
     dc->realize     = apple_typec_realize;
-    dc->desc = "Apple Type C USB PHY";
+    dc->desc        = "Apple Type C USB PHY";
 }
 
 static const TypeInfo apple_typec_info = {

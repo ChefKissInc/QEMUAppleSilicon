@@ -639,11 +639,11 @@ static void apple_a13_cluster_reset_enter(Object* obj, ResetType type)
 
 static void apple_a13_cluster_class_init(ObjectClass* klass, const void* data)
 {
-    ResettableClass *rc = RESETTABLE_CLASS(klass);
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    dc->realize = apple_a13_cluster_realize;
-    rc->phases.enter = apple_a13_cluster_reset_enter;
+    dc->realize        = apple_a13_cluster_realize;
+    rc->phases.enter   = apple_a13_cluster_reset_enter;
     dc->desc           = "Apple A13 CPU Cluster";
     dc->user_creatable = false;
     device_class_set_props(dc, apple_a13_cluster_properties);

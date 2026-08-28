@@ -596,7 +596,7 @@ static void apple_a7iop_mailbox_reset_enter(Object* obj, ResetType type)
 
 static void apple_a7iop_mailbox_reset_hold(Object* obj, ResetType type)
 {
-    AppleA7IOPMailbox*                s = APPLE_A7IOP_MAILBOX(obj);
+    AppleA7IOPMailbox* s = APPLE_A7IOP_MAILBOX(obj);
 
     apple_a7iop_mailbox_update_irq_status(s);
 }
@@ -604,10 +604,10 @@ static void apple_a7iop_mailbox_reset_hold(Object* obj, ResetType type)
 static void apple_a7iop_mailbox_class_init(ObjectClass* klass, const void* data)
 {
     ResettableClass* rc = RESETTABLE_CLASS(klass);
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
     rc->phases.enter = apple_a7iop_mailbox_reset_enter;
-    rc->phases.hold = apple_a7iop_mailbox_reset_hold;
+    rc->phases.hold  = apple_a7iop_mailbox_reset_hold;
 
     dc->desc = "Apple A7IOP Mailbox";
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);

@@ -803,9 +803,7 @@ static void adp_v4_update_disp_bh(void* opaque)
 
     disp_image = qemu_console_surface(adp->console)->image;
 
-    for (i = 0; i < ADP_V4_GP_COUNT; ++i) {
-        adp_v4_gp_draw(&adp->genpipe[i], &adp->dma_as, disp_image, adp->console);
-    }
+    for (i = 0; i < ADP_V4_GP_COUNT; ++i) { adp_v4_gp_draw(&adp->genpipe[i], &adp->dma_as, disp_image, adp->console); }
 
     qatomic_or(&adp->int_status, R_CONTROL_INT_FRAME_PROCESSED_MASK);
     adp_v4_update_irqs(adp);

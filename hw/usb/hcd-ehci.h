@@ -347,7 +347,7 @@ struct EHCIPCIState
     EHCIState ehci;
 };
 
-#define TYPE_SYS_BUS_EHCI    "sysbus-ehci-usb"
+#define TYPE_SYS_BUS_EHCI "sysbus-ehci-usb"
 
 OBJECT_DECLARE_TYPE(EHCISysBusState, SysBusEHCIClass, SYS_BUS_EHCI)
 

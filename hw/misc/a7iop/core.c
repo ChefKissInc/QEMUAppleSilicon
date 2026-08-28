@@ -145,7 +145,7 @@ static void apple_a7iop_unrealize(DeviceState* dev)
 static void apple_a7iop_class_init(ObjectClass* oc, const void* data)
 {
     ResettableClass* rc = RESETTABLE_CLASS(oc);
-    DeviceClass* dc = DEVICE_CLASS(oc);
+    DeviceClass*     dc = DEVICE_CLASS(oc);
 
     rc->phases.enter = apple_a7iop_reset_enter;
 

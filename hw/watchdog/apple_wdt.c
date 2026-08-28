@@ -266,7 +266,7 @@ SysBusDevice* apple_wdt_from_node(AppleDTNode* node)
     return sbd;
 }
 
-static void apple_wdt_reset_enter(Object *obj, ResetType type)
+static void apple_wdt_reset_enter(Object* obj, ResetType type)
 {
     AppleWDTState* s = APPLE_WDT(obj);
     memset(s->reg.raw, 0, REG_SIZE);
@@ -274,13 +274,13 @@ static void apple_wdt_reset_enter(Object *obj, ResetType type)
 
 static void apple_wdt_class_init(ObjectClass* klass, const void* data)
 {
-    ResettableClass *rc = RESETTABLE_CLASS(klass);
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    dc->realize   = apple_wdt_realize;
-    dc->unrealize = apple_wdt_unrealize;
+    dc->realize      = apple_wdt_realize;
+    dc->unrealize    = apple_wdt_unrealize;
     rc->phases.enter = apple_wdt_reset_enter;
-    dc->desc = "Apple Watch Dog Timer";
+    dc->desc         = "Apple Watch Dog Timer";
     set_bit(DEVICE_CATEGORY_WATCHDOG, dc->categories);
 }
 

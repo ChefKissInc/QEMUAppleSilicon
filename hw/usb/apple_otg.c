@@ -208,7 +208,7 @@ static void apple_otg_class_init(ObjectClass* klass, const void* data)
 {
     DeviceClass* dc = DEVICE_CLASS(klass);
     dc->realize     = apple_otg_realize;
-    dc->desc = "Apple Synopsys USB OTG Controller";
+    dc->desc        = "Apple Synopsys USB OTG Controller";
 }
 
 static const TypeInfo apple_otg_info = {
