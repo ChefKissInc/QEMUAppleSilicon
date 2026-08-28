@@ -240,9 +240,9 @@ static const MemoryRegionOps exynos4210_i2c_ops = {
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
-static void exynos4210_i2c_reset(DeviceState* d)
+static void exynos4210_i2c_reset_enter(Object* obj, ResetType type)
 {
-    Exynos4210I2CState* s = EXYNOS4_I2C(d);
+    Exynos4210I2CState* s = EXYNOS4_I2C(obj);
 
     s->i2ccon   = 0x00;
     s->i2cstat  = 0x00;
@@ -266,9 +266,9 @@ static void exynos4210_i2c_init(Object* obj)
 
 static void exynos4210_i2c_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
 
-    device_class_set_legacy_reset(dc, exynos4210_i2c_reset);
+    rc->phases.enter = exynos4210_i2c_reset_enter;
 }
 
 static const TypeInfo exynos4210_i2c_type_info = {
