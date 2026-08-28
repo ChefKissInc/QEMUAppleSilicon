@@ -183,13 +183,6 @@ static void apple_a13_deliver_ipi(AppleA13State* cpu, uint64_t src_cpu, uint64_t
 static void apple_a13_cluster_deliver_ipi(AppleA13Cluster* c, uint64_t cpu_id, uint64_t src_cpu, uint64_t flag)
 { apple_a13_deliver_ipi(c->cpus[cpu_id], src_cpu, flag); }
 
-static void apple_a13_cluster_reset(DeviceState* dev)
-{
-    AppleA13Cluster* cluster = APPLE_A13_CLUSTER(dev);
-    memset(cluster->deferredIPI, 0, sizeof(cluster->deferredIPI));
-    memset(cluster->noWakeIPI, 0, sizeof(cluster->noWakeIPI));
-}
-
 static int add_cpu_to_cluster(Object* obj, void* opaque)
 {
     AppleA13Cluster* cluster = opaque;
@@ -637,12 +630,20 @@ static void apple_a13_class_init(ObjectClass* klass, const void* data)
     set_bit(DEVICE_CATEGORY_CPU, dc->categories);
 }
 
+static void apple_a13_cluster_reset_enter(Object* obj, ResetType type)
+{
+    AppleA13Cluster* cluster = APPLE_A13_CLUSTER(obj);
+    memset(cluster->deferredIPI, 0, sizeof(cluster->deferredIPI));
+    memset(cluster->noWakeIPI, 0, sizeof(cluster->noWakeIPI));
+}
+
 static void apple_a13_cluster_class_init(ObjectClass* klass, const void* data)
 {
+    ResettableClass *rc = RESETTABLE_CLASS(klass);
     DeviceClass* dc = DEVICE_CLASS(klass);
 
     dc->realize = apple_a13_cluster_realize;
-    device_class_set_legacy_reset(dc, apple_a13_cluster_reset);
+    rc->phases.enter = apple_a13_cluster_reset_enter;
     dc->desc           = "Apple A13 CPU Cluster";
     dc->user_creatable = false;
     device_class_set_props(dc, apple_a13_cluster_properties);
