@@ -26,20 +26,11 @@
 #include "qom/object.h"
 
 #define TYPE_APPLE_I2C "apple-i2c"
-OBJECT_DECLARE_TYPE(AppleI2CState, AppleHWI2CClass, APPLE_I2C)
+OBJECT_DECLARE_SIMPLE_TYPE(AppleI2CState, APPLE_I2C)
 
 #define APPLE_I2C_MMIO_SIZE (0x10000)
 #define APPLE_I2C_SDA       "i2c.sda"
 #define APPLE_I2C_SCL       "i2c.scl"
-
-struct AppleHWI2CClass
-{
-    /*< private >*/
-    SysBusDeviceClass parent_class;
-    ResettablePhases  parent_phases;
-
-    /*< public >*/
-};
 
 struct AppleI2CState
 {

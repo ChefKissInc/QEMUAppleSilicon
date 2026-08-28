@@ -245,10 +245,8 @@ static const MemoryRegionOps i2c_reg_ops = {
 
 static void apple_i2c_reset_enter(Object* obj, ResetType type)
 {
-    AppleHWI2CClass* c = APPLE_I2C_GET_CLASS(obj);
-    AppleI2CState*   s = APPLE_I2C(obj);
+    AppleI2CState* s = APPLE_I2C(obj);
 
-    if (c->parent_phases.enter) { c->parent_phases.enter(obj, type); }
     memset(s->reg, 0, sizeof(s->reg));
     s->nak = s->xip = s->is_recv = 0;
     fifo8_reset(&s->rx_fifo);
@@ -256,20 +254,15 @@ static void apple_i2c_reset_enter(Object* obj, ResetType type)
 
 static void apple_i2c_reset_hold(Object* obj, ResetType type)
 {
-    AppleHWI2CClass* c = APPLE_I2C_GET_CLASS(obj);
-    AppleI2CState*   s = APPLE_I2C(obj);
+    AppleI2CState* s = APPLE_I2C(obj);
 
-    if (c->parent_phases.hold != NULL) { c->parent_phases.hold(obj, type); }
     qemu_set_irq(s->irq, 0);
     s->last_irq = 0;
 }
 
 static void apple_i2c_reset_exit(Object* obj, ResetType type)
 {
-    AppleHWI2CClass* c = APPLE_I2C_GET_CLASS(obj);
-    AppleI2CState*   s = APPLE_I2C(obj);
-
-    if (c->parent_phases.exit != NULL) { c->parent_phases.exit(obj, type); }
+    AppleI2CState* s = APPLE_I2C(obj);
 
     qemu_set_irq(s->sda, 1);
     qemu_set_irq(s->scl, 1);
@@ -300,20 +293,20 @@ SysBusDevice* apple_i2c_create(const char* name)
 
 static void apple_i2c_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*     dc = DEVICE_CLASS(klass);
-    AppleHWI2CClass* c  = APPLE_I2C_CLASS(klass);
     ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_i2c_reset_enter;
+    rc->phases.hold  = apple_i2c_reset_hold;
+    rc->phases.exit  = apple_i2c_reset_exit;
 
     dc->desc = "Apple I2C Controller";
-    resettable_class_set_parent_phases(rc, apple_i2c_reset_enter, apple_i2c_reset_hold, apple_i2c_reset_exit,
-                                       &c->parent_phases);
 }
 
 static const TypeInfo apple_i2c_type_info = {
     .name          = TYPE_APPLE_I2C,
     .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(AppleI2CState),
-    .class_size    = sizeof(AppleHWI2CClass),
     .class_init    = apple_i2c_class_init,
 };
 
