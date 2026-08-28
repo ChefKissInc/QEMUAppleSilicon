@@ -79,8 +79,6 @@ struct AppleWDTState
 static unsigned int wdog_cntfrq_period_ns(AppleWDTState* s)
 { return NANOSECONDS_PER_SECOND > s->cntfrq_hz ? NANOSECONDS_PER_SECOND / s->cntfrq_hz : 1; }
 
-static void apple_wdt_reset(DeviceState* dev);
-
 static void wdt_set_irq(AppleWDTState* s, int level)
 {
     trace_apple_wdt_set_irq(level != 0);
@@ -108,7 +106,7 @@ static void wdt_update(void* opaque)
         if (chip_tmr >= s->reg.chip_reset_counter) {
             trace_apple_wdt_chip_reset();
             watchdog_perform_action();
-            apple_wdt_reset(DEVICE(s));
+            device_cold_reset(DEVICE(s));
             return;
         }
         else {
@@ -121,7 +119,7 @@ static void wdt_update(void* opaque)
         if (sys_tmr >= s->reg.sys_reset_counter) {
             trace_apple_wdt_system_reset();
             watchdog_perform_action();
-            apple_wdt_reset(DEVICE(s));
+            device_cold_reset(DEVICE(s));
             return;
         }
         else {
@@ -204,12 +202,6 @@ static uint64_t wdt_reg_read(void* opaque, hwaddr addr, unsigned size)
     return val;
 }
 
-static void apple_wdt_reset(DeviceState* dev)
-{
-    AppleWDTState* s = APPLE_WDT(dev);
-    memset(s->reg.raw, 0, REG_SIZE);
-}
-
 static const MemoryRegionOps wdt_reg_ops = {
     .write                 = wdt_reg_write,
     .read                  = wdt_reg_read,
@@ -227,7 +219,6 @@ static void apple_wdt_realize(DeviceState* dev, Error** errp)
     s->cntfrq_hz     = WDOG_CNTFRQ_HZ;
     s->cnt_period_ns = wdog_cntfrq_period_ns(s);
     s->timer         = timer_new_ns(QEMU_CLOCK_VIRTUAL, wdt_update, s);
-    apple_wdt_reset(dev);
 }
 
 static void apple_wdt_unrealize(DeviceState* dev)
@@ -275,13 +266,20 @@ SysBusDevice* apple_wdt_from_node(AppleDTNode* node)
     return sbd;
 }
 
+static void apple_wdt_reset_enter(Object *obj, ResetType type)
+{
+    AppleWDTState* s = APPLE_WDT(obj);
+    memset(s->reg.raw, 0, REG_SIZE);
+}
+
 static void apple_wdt_class_init(ObjectClass* klass, const void* data)
 {
+    ResettableClass *rc = RESETTABLE_CLASS(klass);
     DeviceClass* dc = DEVICE_CLASS(klass);
 
     dc->realize   = apple_wdt_realize;
     dc->unrealize = apple_wdt_unrealize;
-    device_class_set_legacy_reset(dc, apple_wdt_reset);
+    rc->phases.enter = apple_wdt_reset_enter;
     dc->desc = "Apple Watch Dog Timer";
     set_bit(DEVICE_CATEGORY_WATCHDOG, dc->categories);
 }
