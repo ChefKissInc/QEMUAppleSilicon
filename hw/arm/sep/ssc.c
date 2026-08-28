@@ -966,9 +966,9 @@ static int apple_sep_ssc_tx(I2CSlave* i2c, uint8_t data)
     return 0;
 }
 
-static void apple_sep_ssc_reset(DeviceState* state)
+static void apple_sep_ssc_reset_enter(Object* obj, ResetType type)
 {
-    AppleSEPSSCState* ssc = APPLE_SEP_SSC(state);
+    AppleSEPSSCState* ssc = APPLE_SEP_SSC(obj);
     DPRINTF("%s: called\n", __func__);
 
     ssc->req_cur  = 0;
@@ -990,7 +990,6 @@ static void apple_sep_ssc_reset(DeviceState* state)
     memset(ssc->kbkdf_counter, 0, sizeof(ssc->kbkdf_counter));
     uint8_t cpsn[0x07] = {0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xFE};
     memcpy(ssc->cpsn, cpsn, sizeof(cpsn));
-    blk_set_perm(ssc->blk, BLK_PERM_CONSISTENT_READ | BLK_PERM_WRITE, BLK_PERM_ALL, &error_fatal);
 }
 
 AppleSEPSSCState* apple_sep_ssc_create(AppleI2CState* i2c, uint8_t addr, AppleSEPState* sep)
@@ -1009,8 +1008,11 @@ static const Property apple_sep_ssc_props[] = {
 
 static void apple_sep_ssc_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*   dc = DEVICE_CLASS(klass);
-    I2CSlaveClass* c  = I2C_SLAVE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+    I2CSlaveClass*   c  = I2C_SLAVE_CLASS(klass);
+
+    rc->phases.enter = apple_sep_ssc_reset_enter;
 
     dc->desc = "Apple SSC";
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
@@ -1018,18 +1020,8 @@ static void apple_sep_ssc_class_init(ObjectClass* klass, const void* data)
     c->event = apple_sep_ssc_event;
     c->recv  = apple_sep_ssc_rx;
     c->send  = apple_sep_ssc_tx;
-    device_class_set_legacy_reset(dc, apple_sep_ssc_reset);
 
     device_class_set_props(dc, apple_sep_ssc_props);
-}
-
-static void apple_sep_ssc_init(Object* obj)
-{
-    AppleSEPSSCState* ssc = APPLE_SEP_SSC(obj);
-
-    const struct ecc_curve* ecc = nettle_get_secp_384r1();
-    ecc_scalar_init(&ssc->ecc_key_main, ecc);
-    for (int i = 0; i < KBKDF_KEY_MAX_SLOTS; i++) { ecc_scalar_init(&ssc->ecc_keys[i], ecc); }
 }
 
 static const TypeInfo apple_sep_ssc_type_info = {
@@ -1038,7 +1030,6 @@ static const TypeInfo apple_sep_ssc_type_info = {
     .class_init     = apple_sep_ssc_class_init,
     .instance_size  = sizeof(AppleSEPSSCState),
     .instance_align = __alignof__(AppleSEPSSCState),
-    .instance_init  = apple_sep_ssc_init,
 };
 
 static void apple_sep_ssc_register_types(void) { type_register_static(&apple_sep_ssc_type_info); }
