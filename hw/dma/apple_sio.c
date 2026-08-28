@@ -202,7 +202,7 @@ static void apple_sio_dma_destroy_buffer(AppleSIODMAEndpoint* ep, SIODMABuffer* 
 // -- internal references --
 // Firestorm$Inferno/18A5351d/sio.bndb@00009f14{armv8_timebase_get_current}
 // -- end internal references --
-static uint64_t apple_sio_get_cur_ts(AppleSIOState* s)
+static uint64_t apple_sio_get_cur_ts(const AppleSIOState* s)
 { return muldiv64(qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL), s->gtimer_freq, NANOSECONDS_PER_SECOND); }
 
 static void apple_sio_dma_del_buffers(AppleSIODMAEndpoint* ep)
@@ -257,9 +257,11 @@ static void apple_sio_dma_writeback(AppleSIOState* s, AppleSIODMAEndpoint* ep, S
     apple_rtkit_send_user_msg(rtk, EP_CONTROL, m.raw);
 }
 
-static bool apple_sio_dma_map_buf(AppleSIODMAEndpoint* ep, SIODMABuffer* buf)
+static bool apple_sio_dma_map_buf(const AppleSIOState* s, AppleSIODMAEndpoint* ep, SIODMABuffer* buf)
 {
     if (buf->mapped) { return true; }
+
+    buf->start_timestamp = apple_sio_get_cur_ts(s);
 
     qemu_iovec_init(&buf->iov, buf->segment_count);
 
@@ -306,7 +308,7 @@ uint64_t apple_sio_dma_read(AppleSIODMAEndpoint* ep, void* buffer, uint64_t len)
 
     while (len > actual_len) {
         buf = QTAILQ_FIRST(&ep->buffers);
-        if (buf == NULL || !apple_sio_dma_map_buf(ep, buf)) { break; }
+        if (buf == NULL || !apple_sio_dma_map_buf(s, ep, buf)) { break; }
         iovec_len       = qemu_iovec_to_buf(&buf->iov, buf->completed, buffer + actual_len, len - actual_len);
         actual_len     += iovec_len;
         buf->completed += iovec_len;
@@ -333,7 +335,7 @@ uint64_t apple_sio_dma_write(AppleSIODMAEndpoint* ep, void* buffer, uint64_t len
 
     while (len > actual_len) {
         buf = QTAILQ_FIRST(&ep->buffers);
-        if (buf == NULL || !apple_sio_dma_map_buf(ep, buf)) { break; }
+        if (buf == NULL || !apple_sio_dma_map_buf(s, ep, buf)) { break; }
         iovec_len       = qemu_iovec_from_buf(&buf->iov, buf->completed, buffer + actual_len, len - actual_len);
         actual_len     += iovec_len;
         buf->completed += iovec_len;
@@ -469,8 +471,6 @@ static void apple_sio_dma(AppleSIOState* s, AppleSIODMAEndpoint* ep, SIOMessage 
                 qemu_sglist_add(&buf->sgl, buf->segments[i].addr, buf->segments[i].len);
             }
             QTAILQ_INSERT_TAIL(&ep->buffers, buf, next);
-
-            buf->start_timestamp = apple_sio_get_cur_ts(s);
 
             reply.op = OP_ACK;
             break;
