@@ -893,6 +893,8 @@ static void apple_mt_spi_reset_enter(Object* obj, ResetType type)
 
     s = APPLE_MT_SPI(obj);
 
+    QEMU_LOCK_GUARD(&s->lock);
+
     timer_del(s->timer);
     timer_del(s->end_timer);
 
@@ -942,7 +944,7 @@ static void apple_mt_spi_class_init(ObjectClass* klass, const void* data)
     k->transfer = apple_mt_spi_transfer;
 }
 
-static void apple_mt_instance_init(Object* obj)
+static void apple_mt_spi_init(Object* obj)
 {
     AppleMTSPIState* s;
 
@@ -960,9 +962,9 @@ static void apple_mt_instance_init(Object* obj)
 static const TypeInfo apple_mt_spi_type_info = {
     .name          = TYPE_APPLE_MT_SPI,
     .parent        = TYPE_SSI_PERIPHERAL,
-    .instance_size = sizeof(AppleMTSPIState),
-    .instance_init = apple_mt_instance_init,
     .class_init    = apple_mt_spi_class_init,
+    .instance_size = sizeof(AppleMTSPIState),
+    .instance_init = apple_mt_spi_init,
 };
 
 static void apple_mt_spi_register_types(void) { type_register_static(&apple_mt_spi_type_info); }
