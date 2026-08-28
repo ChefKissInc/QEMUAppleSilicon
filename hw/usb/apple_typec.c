@@ -59,8 +59,6 @@ static void apple_typec_realize(DeviceState* dev, Error** errp)
     qdev_realize(DEVICE(&s->dwc3.device), bus, errp);
 }
 
-static void apple_typec_reset(DeviceState* dev) { AppleTypeCState* s = APPLE_TYPEC(dev); }
-
 static void phy_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     // qemu_log_mask(LOG_UNIMP, "ATC: phy reg WRITE @ 0x" HWADDR_FMT_plx "
@@ -149,7 +147,6 @@ static void apple_typec_class_init(ObjectClass* klass, const void* data)
 {
     DeviceClass* dc = DEVICE_CLASS(klass);
     dc->realize     = apple_typec_realize;
-    device_class_set_legacy_reset(dc, apple_typec_reset);
     dc->desc = "Apple Type C USB PHY";
 }
 
