@@ -228,9 +228,9 @@ static void at24c_eeprom_realize(DeviceState* dev, Error** errp)
     }
 }
 
-static void at24c_eeprom_reset(DeviceState* state)
+static void at24c_eeprom_reset_enter(Object* obj, ResetType type)
 {
-    EEPROMState* ee = AT24C_EE(state);
+    EEPROMState* ee = AT24C_EE(obj);
 
     ee->changed  = false;
     ee->cur      = 0;
@@ -246,16 +246,19 @@ static const Property at24c_eeprom_props[] = {
 
 static void at24c_eeprom_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*   dc = DEVICE_CLASS(klass);
-    I2CSlaveClass* k  = I2C_SLAVE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+    I2CSlaveClass*   k  = I2C_SLAVE_CLASS(klass);
+
+    rc->phases.enter = at24c_eeprom_reset_enter;
 
     dc->realize = &at24c_eeprom_realize;
-    k->event    = &at24c_eeprom_event;
-    k->recv     = &at24c_eeprom_recv;
-    k->send     = &at24c_eeprom_send;
+
+    k->event = &at24c_eeprom_event;
+    k->recv  = &at24c_eeprom_recv;
+    k->send  = &at24c_eeprom_send;
 
     device_class_set_props(dc, at24c_eeprom_props);
-    device_class_set_legacy_reset(dc, at24c_eeprom_reset);
 }
 
 static const TypeInfo at24c_eeprom_type = {
