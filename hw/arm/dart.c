@@ -531,9 +531,9 @@ end:
     return entry;
 }
 
-static void apple_dart_reset(DeviceState* dev)
+static void apple_dart_reset_enter(Object* obj, ResetType type)
 {
-    AppleDARTState*          dart = APPLE_DART(dev);
+    AppleDARTState*          dart = APPLE_DART(obj);
     AppleDARTMapperInstance* mapper;
     uint32_t                 i;
     uint32_t                 j;
@@ -810,11 +810,13 @@ void hmp_info_dart(Monitor* mon, const QDict* qdict)
 
 static void apple_dart_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_dart_reset_enter;
 
     dc->realize = apple_dart_realize;
-    device_class_set_legacy_reset(dc, apple_dart_reset);
-    dc->desc = "Apple DART IOMMU";
+    dc->desc    = "Apple DART IOMMU";
 }
 
 static void apple_dart_iommu_memory_region_class_init(ObjectClass* klass, const void* data)
