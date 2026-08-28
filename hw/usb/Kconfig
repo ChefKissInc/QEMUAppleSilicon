@@ -1,18 +1,6 @@
 config USB
     bool
 
-config USB_UHCI
-    bool
-    select USB
-
-config USB_OHCI
-    bool
-    select USB
-
-config USB_OHCI_SYSBUS
-    bool
-    select USB_OHCI
-
 config USB_EHCI
     bool
     select USB
