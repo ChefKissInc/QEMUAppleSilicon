@@ -407,9 +407,7 @@ static const MemoryRegionOps apple_spmi_fault_ops = {
 static void apple_spmi_reset_enter(Object* obj, ResetType type)
 {
     AppleSPMIState* s = APPLE_SPMI(obj);
-    AppleSPMIClass* c = APPLE_SPMI_GET_CLASS(obj);
 
-    if (c->parent_phases.enter) { c->parent_phases.enter(obj, type); }
     memset(s->control_reg, 0, sizeof(s->control_reg));
     memset(s->queue_reg, 0, sizeof(s->queue_reg));
     memset(s->fault_reg, 0, sizeof(s->fault_reg));
@@ -423,9 +421,7 @@ static void apple_spmi_reset_enter(Object* obj, ResetType type)
 static void apple_spmi_reset_exit(Object* obj, ResetType type)
 {
     AppleSPMIState* s = APPLE_SPMI(obj);
-    AppleSPMIClass* c = APPLE_SPMI_GET_CLASS(obj);
 
-    if (c->parent_phases.exit != NULL) { c->parent_phases.exit(obj, type); }
     apple_spmi_update_queues_status(s);
     apple_spmi_update_irq(s);
 }
@@ -509,14 +505,15 @@ SysBusDevice* apple_spmi_from_node(AppleDTNode* node)
 
 static void apple_spmi_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*     dc = DEVICE_CLASS(klass);
-    AppleSPMIClass*  c  = APPLE_SPMI_CLASS(klass);
     ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_spmi_reset_enter;
+    rc->phases.exit  = apple_spmi_reset_exit;
 
     dc->realize = apple_spmi_realize;
     dc->desc    = "Apple SPMI Controller";
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
-    resettable_class_set_parent_phases(rc, apple_spmi_reset_enter, NULL, apple_spmi_reset_exit, &c->parent_phases);
 }
 
 static const TypeInfo apple_spmi_info = {
@@ -524,7 +521,6 @@ static const TypeInfo apple_spmi_info = {
     .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(AppleSPMIState),
     .instance_init = apple_spmi_init,
-    .class_size    = sizeof(AppleSPMIClass),
     .class_init    = apple_spmi_class_init,
 };
 
