@@ -548,16 +548,14 @@ AppleA7IOPMailbox* apple_a7iop_mailbox_new(const char* role, AppleA7IOPVersion v
     return s;
 }
 
-static void apple_a7iop_mailbox_reset(DeviceState* dev)
+static void apple_a7iop_mailbox_reset_enter(Object* obj, ResetType type)
 {
-    AppleA7IOPMailbox*                s;
+    AppleA7IOPMailbox*                s = APPLE_A7IOP_MAILBOX(obj);
     AppleA7IOPMessage*                msg;
     AppleA7IOPMessage*                msg_next;
     AppleA7IOPInterruptStatusMessage* intr_status_msg;
     AppleA7IOPInterruptStatusMessage* intr_status_msg_next;
     int                               i;
-
-    s = APPLE_A7IOP_MAILBOX(dev);
 
     QEMU_LOCK_GUARD(&s->lock);
 
@@ -594,16 +592,23 @@ static void apple_a7iop_mailbox_reset(DeviceState* dev)
     s->timer0_masked  = 0;
     s->timer1_masked  = 0;
     s->sepd_enabled   = 0;
+}
+
+static void apple_a7iop_mailbox_reset_hold(Object* obj, ResetType type)
+{
+    AppleA7IOPMailbox*                s = APPLE_A7IOP_MAILBOX(obj);
+
     apple_a7iop_mailbox_update_irq_status(s);
 }
 
 static void apple_a7iop_mailbox_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc;
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass* dc = DEVICE_CLASS(klass);
 
-    dc = DEVICE_CLASS(klass);
+    rc->phases.enter = apple_a7iop_mailbox_reset_enter;
+    rc->phases.hold = apple_a7iop_mailbox_reset_hold;
 
-    device_class_set_legacy_reset(dc, apple_a7iop_mailbox_reset);
     dc->desc = "Apple A7IOP Mailbox";
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
