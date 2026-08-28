@@ -244,9 +244,9 @@ static void apple_nvme_mmu_realize(DeviceState* dev, Error** errp)
     apple_nvme_mmu_start(s);
 }
 
-static void apple_nvme_mmu_reset(DeviceState* qdev)
+static void apple_nvme_mmu_reset_enter(Object* obj, ResetType type)
 {
-    AppleNVMeMMUState* s = APPLE_NVME_MMU(qdev);
+    AppleNVMeMMUState* s = APPLE_NVME_MMU(obj);
     PCIDevice*         d = PCI_DEVICE(s->nvme);
 
     pcie_cap_deverr_reset(d);
@@ -254,11 +254,13 @@ static void apple_nvme_mmu_reset(DeviceState* qdev)
 
 static void apple_nvme_mmu_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_nvme_mmu_reset_enter;
 
     dc->realize = apple_nvme_mmu_realize;
-    device_class_set_legacy_reset(dc, apple_nvme_mmu_reset);
-    dc->desc = "Apple NVMe MMU";
+    dc->desc    = "Apple NVMe MMU";
     set_bit(DEVICE_CATEGORY_BRIDGE, dc->categories);
     dc->fw_name = "pci";
 }
