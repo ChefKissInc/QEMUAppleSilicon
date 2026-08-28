@@ -948,14 +948,14 @@ void qemu_display_register(QemuDisplay* ui)
 bool qemu_display_find_default(DisplayOptions* opts)
 {
     static DisplayType prio[] = {
+#if defined(CONFIG_COCOA)
+        DISPLAY_TYPE_COCOA
+#endif
 #if defined(CONFIG_GTK)
         DISPLAY_TYPE_GTK,
 #endif
 #if defined(CONFIG_SDL)
         DISPLAY_TYPE_SDL,
-#endif
-#if defined(CONFIG_COCOA)
-        DISPLAY_TYPE_COCOA
 #endif
     };
     int i;
