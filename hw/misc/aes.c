@@ -114,7 +114,6 @@ static QCryptoCipherMode key_mode(block_mode_t mode)
     }
 }
 
-static void  apple_aes_reset(DeviceState* s);
 static void* aes_thread(void* opaque);
 
 static void aes_update_irq(AppleAESState* s)
@@ -420,7 +419,7 @@ static void aes_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned siz
                 case AES_BLK_CONTROL_START    : aes_start(s); break;
                 case AES_BLK_CONTROL_STOP     : aes_stop(s); break;
                 case AES_BLK_CONTROL_RESET    : aes_empty_fifo(s); break;
-                case AES_BLK_CONTROL_RESET_AES: apple_aes_reset(DEVICE(s)); break;
+                case AES_BLK_CONTROL_RESET_AES: device_cold_reset(DEVICE(s)); break;
                 default                       : qemu_log_mask(LOG_GUEST_ERROR, "REG_AES_CONTROL: Invalid write: 0x%x\n", val); break;
             }
             nowrite = true;
@@ -571,9 +570,9 @@ static const MemoryRegionOps aes_security_reg_ops = {
     .valid.unaligned       = false,
 };
 
-static void apple_aes_reset(DeviceState* dev)
+static void apple_aes_reset_enter(Object* obj, ResetType type)
 {
-    AppleAESState* s = APPLE_AES(dev);
+    AppleAESState* s = APPLE_AES(obj);
 
     s->reg = (aes_reg_t){0};
 
@@ -595,6 +594,12 @@ static void apple_aes_reset(DeviceState* dev)
     s->data_read = 0;
     s->data_len  = 0;
     s->stopped   = true;
+}
+
+static void apple_aes_reset_hold(Object* obj, ResetType type)
+{
+    AppleAESState* s = APPLE_AES(obj);
+
     aes_stop(s);
     aes_empty_fifo(s);
 }
@@ -611,14 +616,12 @@ static void apple_aes_realize(DeviceState* dev, Error** errp)
 
     qemu_cond_init(&s->thread_cond);
     qemu_mutex_init(&s->queue_mutex);
-    apple_aes_reset(dev);
 }
 
 static void apple_aes_unrealize(DeviceState* dev)
 {
     AppleAESState* s = APPLE_AES(dev);
 
-    apple_aes_reset(dev);
     qemu_cond_destroy(&s->thread_cond);
     qemu_mutex_destroy(&s->queue_mutex);
 }
@@ -661,12 +664,15 @@ SysBusDevice* apple_aes_create(AppleDTNode* node, uint32_t board_id)
 
 static void apple_aes_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_aes_reset_enter;
+    rc->phases.hold  = apple_aes_reset_hold;
 
     dc->realize   = apple_aes_realize;
     dc->unrealize = apple_aes_unrealize;
-    device_class_set_legacy_reset(dc, apple_aes_reset);
-    dc->desc = "Apple AES Accelerator";
+    dc->desc      = "Apple AES Accelerator";
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
 
