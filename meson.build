@@ -3401,7 +3401,6 @@ summary(summary_info, bool_yn: true, section: 'Host binaries')
 summary_info = {}
 summary_info += {'system-mode emulation': have_system}
 summary_info += {'block layer':       have_block}
-summary_info += {'Install blobs':     get_option('install_blobs')}
 summary_info += {'module support':    enable_modules}
 if enable_modules
   summary_info += {'alternative module path': get_option('module_upgrades')}
