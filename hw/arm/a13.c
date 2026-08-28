@@ -527,12 +527,6 @@ static void apple_a13_realize(DeviceState* dev, Error** errp)
     acpu->fast_ipi = qdev_get_gpio_in(fiq_or, 1);
 }
 
-static void apple_a13_reset_hold(Object* obj, ResetType type)
-{
-    AppleA13Class* tclass = APPLE_A13_GET_CLASS(obj);
-    if (tclass->parent_phases.hold != NULL) { tclass->parent_phases.hold(obj, type); }
-}
-
 static void apple_a13_instance_init(Object* obj) { object_property_set_uint(obj, "cntfrq", 24000000, &error_fatal); }
 
 AppleA13State* apple_a13_create(const char* name, uint32_t cpu_id, uint32_t phys_id, uint32_t cluster_id,
@@ -620,12 +614,10 @@ static const Property apple_a13_cluster_properties[] = {
 
 static void apple_a13_class_init(ObjectClass* klass, const void* data)
 {
-    ResettableClass* rc = RESETTABLE_CLASS(klass);
     DeviceClass*     dc = DEVICE_CLASS(klass);
     AppleA13Class*   tc = APPLE_A13_CLASS(klass);
 
     device_class_set_parent_realize(dc, apple_a13_realize, &tc->parent_realize);
-    resettable_class_set_parent_phases(rc, NULL, apple_a13_reset_hold, NULL, &tc->parent_phases);
     dc->desc = "Apple A13 CPU";
     set_bit(DEVICE_CATEGORY_CPU, dc->categories);
 }
