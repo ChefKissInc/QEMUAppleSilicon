@@ -287,9 +287,9 @@ static void ssi_sd_realize(SSIPeripheral* d, Error** errp)
     qbus_init(&s->sdbus, sizeof(s->sdbus), TYPE_SD_BUS, DEVICE(d), "sd-bus");
 }
 
-static void ssi_sd_reset(DeviceState* dev)
+static void ssi_sd_reset_enter(Object* obj, ResetType type)
 {
-    ssi_sd_state* s = SSI_SD(dev);
+    ssi_sd_state* s = SSI_SD(obj);
 
     s->mode = SSI_SD_CMD;
     s->cmd  = 0;
@@ -305,13 +305,15 @@ static void ssi_sd_reset(DeviceState* dev)
 
 static void ssi_sd_class_init(ObjectClass* klass, const void* data)
 {
+    ResettableClass*    rc = RESETTABLE_CLASS(klass);
     DeviceClass*        dc = DEVICE_CLASS(klass);
     SSIPeripheralClass* k  = SSI_PERIPHERAL_CLASS(klass);
+
+    rc->phases.enter = ssi_sd_reset_enter;
 
     k->realize     = ssi_sd_realize;
     k->transfer    = ssi_sd_transfer;
     k->cs_polarity = SSI_CS_LOW;
-    device_class_set_legacy_reset(dc, ssi_sd_reset);
     /* Reason: GPIO chip-select line should be wired up */
     dc->user_creatable = false;
 }
