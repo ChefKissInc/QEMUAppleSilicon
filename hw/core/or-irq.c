@@ -41,9 +41,9 @@ static void or_irq_handler(void* opaque, int n, int level)
     qemu_set_irq(s->out_irq, or_level);
 }
 
-static void or_irq_reset(DeviceState* dev)
+static void or_irq_reset_enter(Object* obj, ResetType type)
 {
-    OrIRQState* s = OR_IRQ(dev);
+    OrIRQState* s = OR_IRQ(obj);
     int         i;
 
     for (i = 0; i < MAX_OR_LINES; i++) { s->levels[i] = false; }
@@ -71,13 +71,13 @@ static const Property or_irq_properties[] = {
 
 static void or_irq_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    device_class_set_legacy_reset(dc, or_irq_reset);
+    rc->phases.enter = or_irq_reset_enter;
+
     device_class_set_props(dc, or_irq_properties);
-    dc->realize = or_irq_realize;
-
-    /* Reason: Needs to be wired up to work, e.g. see stm32f205_soc.c */
+    dc->realize        = or_irq_realize;
     dc->user_creatable = false;
 }
 
