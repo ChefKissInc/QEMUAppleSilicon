@@ -150,18 +150,18 @@ static void coroutine_fn usb_tcp_host_respond_packet_co(void* opaque)
 
             if (!tcp_usb_write(s->ioc, &hdr, sizeof(hdr))) {
                 usb_tcp_host_closed(s);
-                return;
+                break;
             }
 
             if (!tcp_usb_write(s->ioc, &resp, sizeof(resp))) {
                 usb_tcp_host_closed(s);
-                return;
+                break;
             }
 
             if (buffer) {
                 if (!tcp_usb_write(s->ioc, buffer, resp.length)) {
                     usb_tcp_host_closed(s);
-                    return;
+                    break;
                 }
             }
         }
