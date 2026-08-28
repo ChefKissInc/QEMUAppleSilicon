@@ -715,7 +715,6 @@ void HELPER(gexit)(CPUARMState* env)
                   "Guarded execution exit from AArch64 GL%d to "
                   "AArch64 EL%d PC 0x%" PRIx64 "\n",
                   cur_el, cur_el, env->pc);
-    return;
 }
 
 void HELPER(dc_zva)(CPUARMState* env, uint64_t vaddr_in)
