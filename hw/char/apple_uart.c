@@ -476,9 +476,9 @@ static void apple_uart_event(void* opaque, QEMUChrEvent event)
     }
 }
 
-static void apple_uart_reset(DeviceState* dev)
+static void apple_uart_reset_enter(Object* obj, ResetType type)
 {
-    AppleUartState* s = APPLE_UART(dev);
+    AppleUartState* s = APPLE_UART(obj);
     int             i;
 
     for (i = 0; i < ARRAY_SIZE(apple_uart_regs); i++) {
@@ -558,10 +558,12 @@ static const Property apple_uart_properties[] = {
 
 static void apple_uart_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_uart_reset_enter;
 
     dc->realize = apple_uart_realize;
-    device_class_set_legacy_reset(dc, apple_uart_reset);
     device_class_set_props(dc, apple_uart_properties);
 }
 
