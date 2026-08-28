@@ -113,13 +113,12 @@ void apple_a7iop_init(AppleA7IOP* s, const char* role, uint64_t mmio_size, Apple
     // qdev_init_gpio_out_named(dev, &s->iop_irq, APPLE_A7IOP_IOP_IRQ, 1);
 }
 
-static void apple_a7iop_reset(DeviceState* dev)
+static void apple_a7iop_reset_enter(Object* obj, ResetType type)
 {
-    AppleA7IOP* s;
-
-    s = APPLE_A7IOP(dev);
+    AppleA7IOP* s = APPLE_A7IOP(obj);
 
     QEMU_LOCK_GUARD(&s->lock);
+
     s->cpu_status = CPU_STATUS_IDLE;
 }
 
@@ -145,11 +144,11 @@ static void apple_a7iop_unrealize(DeviceState* dev)
 
 static void apple_a7iop_class_init(ObjectClass* oc, const void* data)
 {
-    DeviceClass* dc;
+    ResettableClass* rc = RESETTABLE_CLASS(oc);
+    DeviceClass* dc = DEVICE_CLASS(oc);
 
-    dc = DEVICE_CLASS(oc);
+    rc->phases.enter = apple_a7iop_reset_enter;
 
-    device_class_set_legacy_reset(dc, apple_a7iop_reset);
     dc->realize   = apple_a7iop_realize;
     dc->unrealize = apple_a7iop_unrealize;
     dc->desc      = "Apple A7IOP";
