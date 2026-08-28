@@ -31,7 +31,6 @@ endif
 
 qemu_confdir = get_option('sysconfdir') / get_option('qemu_suffix')
 qemu_datadir = get_option('datadir') / get_option('qemu_suffix')
-qemu_moddir = get_option('libdir') / get_option('qemu_suffix')
 
 qemu_desktopdir = get_option('datadir') / 'applications'
 qemu_icondir = get_option('datadir') / 'icons'
@@ -121,13 +120,6 @@ have_tools = get_option('tools') \
   .disable_auto_if(not have_system) \
   .allowed()
 have_block = have_system or have_tools
-
-enable_modules = get_option('modules') \
-  .require(host_os != 'windows',
-           error_message: 'Modules are not available for Windows') \
-  .require(not get_option('prefer_static'),
-           error_message: 'Modules are incompatible with static linking') \
-  .allowed()
 
 #######################################
 # Variables for host and accelerators #
@@ -450,9 +442,6 @@ if get_option('cfi')
   if not get_option('b_lto')
     error('Selected Control-Flow Integrity but LTO is disabled')
   endif
-  if enable_modules
-    error('Selected Control-Flow Integrity is not compatible with modules')
-  endif
   # Check for cfi flags. CFI requires LTO so we can't use
   # get_supported_arguments, but need a more complex "compiles" which allows
   # custom arguments
@@ -767,12 +756,6 @@ glib_req_ver = '>=2.66.0'
 glib_pc = dependency('glib-2.0', version: glib_req_ver, required: true,
                     method: 'pkg-config')
 glib_cflags = []
-if enable_modules
-  gmodule = dependency('gmodule-export-2.0', version: glib_req_ver, required: true,
-                       method: 'pkg-config')
-else
-  gmodule = not_found
-endif
 
 # This workaround is required due to a bug in pkg-config file for glib as it
 # doesn't define GLIB_STATIC_COMPILATION for pkg-config --static
@@ -801,7 +784,7 @@ if not cc.compiles('''
         to the right pkg-config files for your build target.''')
 endif
 
-glib = declare_dependency(dependencies: [glib_pc, gmodule],
+glib = declare_dependency(dependencies: [glib_pc],
                           compile_args: glib_cflags,
                           version: glib_pc.version())
 
@@ -1667,16 +1650,7 @@ config_host_data.set_quoted('CONFIG_QEMU_HELPERDIR', get_option('prefix') / get_
 config_host_data.set_quoted('CONFIG_QEMU_ICONDIR', get_option('prefix') / qemu_icondir)
 config_host_data.set_quoted('CONFIG_QEMU_LOCALEDIR', get_option('prefix') / get_option('localedir'))
 config_host_data.set_quoted('CONFIG_QEMU_LOCALSTATEDIR', get_option('prefix') / get_option('localstatedir'))
-config_host_data.set_quoted('CONFIG_QEMU_MODDIR', get_option('prefix') / qemu_moddir)
 config_host_data.set_quoted('CONFIG_SYSCONFDIR', get_option('prefix') / get_option('sysconfdir'))
-
-if enable_modules
-  config_host_data.set('CONFIG_STAMP', run_command(
-      meson.current_source_dir() / 'scripts/qemu-stamp.py',
-      meson.project_version(), get_option('pkgversion'), '--',
-      meson.current_source_dir() / 'configure',
-      capture: true, check: true).stdout().strip())
-endif
 
 have_slirp_smbd = get_option('slirp_smbd') \
   .require(host_os != 'windows', error_message: 'Host smbd not supported on this platform.') \
@@ -1696,11 +1670,6 @@ if get_option('kvm').allowed() and host_os == 'linux'
   kvm_targets_c = '"' + '" ,"'.join(kvm_targets) + '"'
 endif
 config_host_data.set('CONFIG_KVM_TARGETS', kvm_targets_c)
-
-if get_option('module_upgrades') and not enable_modules
-  error('Cannot enable module-upgrades as modules are not enabled')
-endif
-config_host_data.set('CONFIG_MODULE_UPGRADES', get_option('module_upgrades'))
 
 config_host_data.set('CONFIG_BDRV_WHITELIST_TOOLS', get_option('block_drv_whitelist_in_tools'))
 config_host_data.set('CONFIG_BRLAPI', brlapi.found())
@@ -1741,7 +1710,6 @@ config_host_data.set('CONFIG_LIBSSH', libssh.found())
 config_host_data.set('CONFIG_LINUX_AIO', libaio.found())
 config_host_data.set('CONFIG_LINUX_IO_URING', linux_io_uring.found())
 config_host_data.set('CONFIG_LIBPMEM', libpmem.found())
-config_host_data.set('CONFIG_MODULES', enable_modules)
 config_host_data.set('CONFIG_RBD', rbd.found())
 config_host_data.set('CONFIG_RELOCATABLE', get_option('relocatable'))
 config_host_data.set('CONFIG_SAFESTACK', get_option('safe_stack'))
@@ -2731,11 +2699,6 @@ else
   subdir('hw/core')
 endif
 
-if enable_modules
-  libmodulecommon = static_library('module-common', files('module-common.c') + genh, pic: true, c_args: '-DBUILD_DSO')
-  modulecommon = declare_dependency(objects: libmodulecommon.extract_all_objects(recursive: false), compile_args: '-DBUILD_DSO')
-endif
-
 qom_ss = qom_ss.apply({})
 libqom = static_library('qom', qom_ss.sources() + genh,
                         dependencies: [qom_ss.dependencies()],
@@ -2854,103 +2817,19 @@ foreach d, list : modules
   endif
 
   foreach m, module_ss : list
-    if enable_modules
-      module_ss.add(modulecommon)
-      module_ss = module_ss.apply(config_all_devices, strict: false)
-      sl = static_library(d + '-' + m, [genh, module_ss.sources()],
-                          dependencies: module_ss.dependencies(), pic: true)
-      if d == 'block'
-        block_mods += sl
-      else
-        system_mods += sl
-      endif
-      emulator_modules += shared_module(sl.name(),
-                    name_prefix: '',
-                    objects: sl.extract_all_objects(recursive: false),
-                    dependencies: module_ss.dependencies(),
-                    install: true,
-                    install_dir: qemu_moddir)
-      if module_ss.sources() != []
-        modinfo_files += custom_target(d + '-' + m + '.modinfo',
-                                       output: d + '-' + m + '.modinfo',
-                                       input: sl.extract_all_objects(recursive: true),
-                                       capture: true,
-                                       command: [modinfo_collect, '@INPUT@'])
-      endif
+    if d == 'block'
+      block_ss.add_all(module_ss)
     else
-      if d == 'block'
-        block_ss.add_all(module_ss)
-      else
-        system_ss.add_all(module_ss)
-      endif
+      system_ss.add_all(module_ss)
     endif
   endforeach
 endforeach
 
 foreach d, list : target_modules
   foreach m, module_ss : list
-    if enable_modules
-      module_ss.add(modulecommon)
-      foreach target : target_dirs
-        if target.endswith('-softmmu')
-          config_target = config_target_mak[target]
-          target_inc = [include_directories('target' / config_target['TARGET_BASE_ARCH'])]
-          c_args = ['-DCOMPILING_PER_TARGET',
-                    '-DCONFIG_TARGET="@0@-config-target.h"'.format(target),
-                    '-DCONFIG_DEVICES="@0@-config-devices.h"'.format(target)]
-          target_module_ss = module_ss.apply(config_target, strict: false)
-          if target_module_ss.sources() != []
-            module_name = d + '-' + m + '-' + config_target['TARGET_NAME']
-            sl = static_library(module_name,
-                                [genh, target_module_ss.sources()],
-                                dependencies: target_module_ss.dependencies(),
-                                include_directories: target_inc,
-                                c_args: c_args,
-                                pic: true)
-            system_mods += sl
-            emulator_modules += shared_module(sl.name(),
-                    name_prefix: '',
-                    objects: sl.extract_all_objects(recursive: false),
-                    dependencies: target_module_ss.dependencies(),
-                    install: true,
-                    install_dir: qemu_moddir)
-            modinfo_files += custom_target(module_name + '.modinfo',
-                                           output: module_name + '.modinfo',
-                                           input: sl.extract_all_objects(recursive: true),
-                                           capture: true,
-                                           command: [modinfo_collect, '--target', target, '@INPUT@'])
-          endif
-        endif
-      endforeach
-    else
-      specific_ss.add_all(module_ss)
-    endif
+    specific_ss.add_all(module_ss)
   endforeach
 endforeach
-
-if enable_modules
-  foreach target : target_dirs
-    if target.endswith('-softmmu')
-      config_target = config_target_mak[target]
-      config_devices_mak = target + '-config-devices.mak'
-      modinfo_src = custom_target('modinfo-' + target + '.c',
-                                  output: 'modinfo-' + target + '.c',
-                                  input: modinfo_files,
-                                  command: [modinfo_generate, '--devices', config_devices_mak, '@INPUT@'],
-                                  capture: true)
-
-      modinfo_lib = static_library('modinfo-' + target + '.c', modinfo_src)
-      modinfo_dep = declare_dependency(link_with: modinfo_lib)
-
-      arch = config_target['TARGET_NAME'] == 'sparc64' ? 'sparc64' : config_target['TARGET_BASE_ARCH']
-      hw_arch[arch].add(modinfo_dep)
-    endif
-  endforeach
-
-  if emulator_modules.length() > 0
-    alias_target('modules', emulator_modules)
-  endif
-endif
 
 nm = find_program('nm')
 undefsym = find_program('scripts/undefsym.py')
@@ -3375,7 +3254,6 @@ summary_info += {'BIOS directory':    qemu_datadir}
 pathsep = host_os == 'windows' ? ';' : ':'
 summary_info += {'binary directory':  get_option('prefix') / get_option('bindir')}
 summary_info += {'library directory': get_option('prefix') / get_option('libdir')}
-summary_info += {'module directory':  qemu_moddir}
 summary_info += {'libexec directory': get_option('prefix') / get_option('libexecdir')}
 summary_info += {'include directory': get_option('prefix') / get_option('includedir')}
 summary_info += {'config directory':  get_option('prefix') / get_option('sysconfdir')}
@@ -3399,10 +3277,6 @@ summary(summary_info, bool_yn: true, section: 'Host binaries')
 summary_info = {}
 summary_info += {'system-mode emulation': have_system}
 summary_info += {'block layer':       have_block}
-summary_info += {'module support':    enable_modules}
-if enable_modules
-  summary_info += {'alternative module path': get_option('module_upgrades')}
-endif
 if have_system
   summary_info += {'Audio drivers':     ' '.join(audio_drivers_selected)}
 endif

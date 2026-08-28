@@ -71,7 +71,6 @@ static void qdev_print_devinfos(bool show_no_user)
     int     i;
     bool    cat_printed;
 
-    module_load_qom_all();
     list = object_class_get_list_sorted(TYPE_DEVICE, false);
 
     for (i = 0; i <= DEVICE_CATEGORY_MAX; i++) {

@@ -961,11 +961,6 @@ bool qemu_display_find_default(DisplayOptions* opts)
     int i;
 
     for (i = 0; i < (int)ARRAY_SIZE(prio); i++) {
-        if (dpys[prio[i]] == NULL) {
-            Error* local_err = NULL;
-            int    rv        = ui_module_load(DisplayType_str(prio[i]), &local_err);
-            if (rv < 0) { error_report_err(local_err); }
-        }
         if (dpys[prio[i]] == NULL) { continue; }
         opts->type = prio[i];
         return true;
@@ -977,11 +972,6 @@ void qemu_display_early_init(DisplayOptions* opts)
 {
     assert(opts->type < DISPLAY_TYPE__MAX);
     if (opts->type == DISPLAY_TYPE_NONE) { return; }
-    if (dpys[opts->type] == NULL) {
-        Error* local_err = NULL;
-        int    rv        = ui_module_load(DisplayType_str(opts->type), &local_err);
-        if (rv < 0) { error_report_err(local_err); }
-    }
     if (dpys[opts->type] == NULL) {
         error_report("Display '%s' is not available.", DisplayType_str(opts->type));
         exit(1);
@@ -1017,11 +1007,6 @@ void qemu_display_help(void)
     printf("Available display backend types:\n");
     printf("none\n");
     for (idx = DISPLAY_TYPE_NONE; idx < DISPLAY_TYPE__MAX; idx++) {
-        if (!dpys[idx]) {
-            Error* local_err = NULL;
-            int    rv        = ui_module_load(DisplayType_str(idx), &local_err);
-            if (rv < 0) { error_report_err(local_err); }
-        }
         if (dpys[idx]) { printf("%s\n", DisplayType_str(dpys[idx]->type)); }
     }
     printf("\n"

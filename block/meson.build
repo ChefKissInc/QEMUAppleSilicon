@@ -104,9 +104,6 @@ foreach m : [
   if m[0].found()
     module_ss = ss.source_set()
     module_ss.add(when: m[0], if_true: m[2])
-    if enable_modules
-      modsrc += m[2]
-    endif
     block_modules += {m[1] : module_ss}
   endif
 endforeach

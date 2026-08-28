@@ -395,27 +395,9 @@ static BlockDriver* bdrv_do_find_format(const char* format_name)
 
 BlockDriver* bdrv_find_format(const char* format_name)
 {
-    BlockDriver* drv1;
-    int          i;
-
     GLOBAL_STATE_CODE();
 
-    drv1 = bdrv_do_find_format(format_name);
-    if (drv1) { return drv1; }
-
-    /* The driver isn't registered, maybe we need to load a module */
-    for (i = 0; i < (int)ARRAY_SIZE(block_driver_modules); ++i) {
-        if (!strcmp(block_driver_modules[i].format_name, format_name)) {
-            Error* local_err = NULL;
-            int    rv        = block_module_load(block_driver_modules[i].library_name, &local_err);
-            if (rv > 0) { return bdrv_do_find_format(format_name); }
-            else if (rv < 0) {
-                error_report_err(local_err);
-            }
-            break;
-        }
-    }
-    return NULL;
+    return bdrv_do_find_format(format_name);
 }
 
 static int bdrv_format_is_whitelisted(const char* format_name, bool read_only)
@@ -807,7 +789,6 @@ BlockDriver* bdrv_find_protocol(const char* filename, bool allow_protocol_prefix
     char         protocol[128];
     int          len;
     const char*  p;
-    int          i;
 
     GLOBAL_STATE_CODE();
 
@@ -833,19 +814,8 @@ BlockDriver* bdrv_find_protocol(const char* filename, bool allow_protocol_prefix
     drv1 = bdrv_do_find_protocol(protocol);
     if (drv1) { return drv1; }
 
-    for (i = 0; i < (int)ARRAY_SIZE(block_driver_modules); ++i) {
-        if (block_driver_modules[i].protocol_name && !strcmp(block_driver_modules[i].protocol_name, protocol)) {
-            int rv = block_module_load(block_driver_modules[i].library_name, errp);
-            if (rv > 0) { drv1 = bdrv_do_find_protocol(protocol); }
-            else if (rv < 0) {
-                return NULL;
-            }
-            break;
-        }
-    }
-
-    if (!drv1) { error_setg(errp, "Unknown protocol '%s'", protocol); }
-    return drv1;
+    error_setg(errp, "Unknown protocol '%s'", protocol);
+    return NULL;
 }
 
 /*

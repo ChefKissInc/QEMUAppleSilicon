@@ -1,7 +1,3 @@
-# These options do not correspond to a --enable/--disable-* option
-# on the configure script command line.  If you add more, list them in
-# scripts/meson-buildoptions.py's SKIP_OPTIONS constant too.
-
 option('qemu_suffix', type : 'string', value: 'qemu',
        description: 'Suffix for QEMU data/modules/config directories (can be empty)')
 option('pkgversion', type : 'string', value : '',
@@ -29,16 +25,8 @@ option('coroutine_backend', type: 'combo',
        choices: ['ucontext', 'sigaltstack', 'windows', 'wasm', 'auto'],
        value: 'auto', description: 'coroutine backend to use')
 
-# Everything else can be set via --enable/--disable-* option
-# on the configure script command line.  After adding an option
-# here make sure to run "make update-buildoptions".
-
 option('gettext', type : 'feature', value : 'auto',
        description: 'Localization of the GTK+ user interface')
-option('modules', type : 'feature', value : 'disabled',
-       description: 'modules support (non Windows)')
-option('module_upgrades', type : 'boolean', value : false,
-       description: 'try to load modules from alternate paths for upgrades')
 option('sparse', type : 'feature', value : 'auto',
        description: 'sparse checker')
 option('tools', type : 'feature', value : 'auto',

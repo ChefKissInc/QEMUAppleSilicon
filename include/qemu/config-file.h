@@ -2,7 +2,6 @@
 
 typedef void QEMUConfigCB(const char* group, QDict* qdict, void* opaque, Error** errp);
 
-void          qemu_load_module_for_opts(const char* group);
 QemuOptsList* qemu_find_opts(const char* group);
 QemuOptsList* qemu_find_opts_err(const char* group, Error** errp);
 QemuOpts*     qemu_find_opts_singleton(const char* group);

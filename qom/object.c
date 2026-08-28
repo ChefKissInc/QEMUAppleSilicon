@@ -173,27 +173,17 @@ void type_register_static_array(const TypeInfo* infos, int nr_infos)
     for (i = 0; i < nr_infos; i++) { type_register_static(&infos[i]); }
 }
 
-static TypeImpl* type_get_by_name_noload(const char* name)
+static TypeImpl* type_get_by_name_or_null(const char* name)
 {
     if (name == NULL) { return NULL; }
 
     return type_table_lookup(name);
 }
 
-static TypeImpl* type_get_or_load_by_name(const char* name, Error** errp)
+static TypeImpl* type_get_by_name(const char* name, Error** errp)
 {
-    TypeImpl* type = type_get_by_name_noload(name);
+    TypeImpl* type = type_get_by_name_or_null(name);
 
-#ifdef CONFIG_MODULES
-    if (!type) {
-        int rv = module_load_qom(name, errp);
-        if (rv > 0) { type = type_get_by_name_noload(name); }
-        else {
-            error_prepend(errp, "could not load a module for type '%s'", name);
-            return NULL;
-        }
-    }
-#endif
     if (!type) { error_setg(errp, "unknown type '%s'", name); }
 
     return type;
@@ -202,7 +192,7 @@ static TypeImpl* type_get_or_load_by_name(const char* name, Error** errp)
 static TypeImpl* type_get_parent(TypeImpl* type)
 {
     if (!type->parent_type && type->parent) {
-        type->parent_type = type_get_by_name_noload(type->parent);
+        type->parent_type = type_get_by_name_or_null(type->parent);
         if (!type->parent_type) {
             fprintf(stderr, "Type '%s' is missing its parent '%s'\n", type->name, type->parent);
             abort();
@@ -334,7 +324,7 @@ static void type_initialize(TypeImpl* ti)
         }
 
         for (i = 0; i < ti->num_interfaces; i++) {
-            TypeImpl* t = type_get_by_name_noload(ti->interfaces[i].typename);
+            TypeImpl* t = type_get_by_name_or_null(ti->interfaces[i].typename);
             if (!t) {
                 error_report("missing interface '%s' for object '%s'", ti->interfaces[i].typename, parent->name);
                 abort();
@@ -496,7 +486,7 @@ static void object_initialize_with_type(Object* obj, size_t size, TypeImpl* type
 
 void object_initialize(void* data, size_t size, const char* typename)
 {
-    TypeImpl* type = type_get_or_load_by_name(typename, &error_fatal);
+    TypeImpl* type = type_get_by_name(typename, &error_fatal);
 
     object_initialize_with_type(data, size, type);
 }
@@ -680,7 +670,7 @@ Object* object_new_with_class(ObjectClass* klass) { return object_new_with_type(
 
 Object* object_new(const char* typename)
 {
-    TypeImpl* ti = type_get_or_load_by_name(typename, &error_fatal);
+    TypeImpl* ti = type_get_by_name(typename, &error_fatal);
 
     return object_new_with_type(ti);
 }
@@ -851,7 +841,7 @@ ObjectClass* object_class_dynamic_cast(ObjectClass* class, const char* typename)
     type = class->type;
     if (type->name == typename) { return class; }
 
-    target_type = type_get_by_name_noload(typename);
+    target_type = type_get_by_name_or_null(typename);
     if (!target_type) {
         /* target class type unknown, so fail the cast */
         return NULL;
@@ -904,7 +894,7 @@ out:
 
     if (!class->interfaces) { return class; }
 
-    target_type = type_get_by_name_noload(typename);
+    target_type = type_get_by_name_or_null(typename);
     if (!target_type) {
         /* target class type unknown, so fail the cast */
         return NULL;
@@ -924,7 +914,7 @@ out:
 
 ObjectClass* object_class_by_name(const char* typename)
 {
-    TypeImpl* type = type_get_by_name_noload(typename);
+    TypeImpl* type = type_get_by_name_or_null(typename);
 
     if (!type) { return NULL; }
 
@@ -935,7 +925,7 @@ ObjectClass* object_class_by_name(const char* typename)
 
 ObjectClass* module_object_class_by_name(const char* typename)
 {
-    TypeImpl* type = type_get_or_load_by_name(typename, NULL);
+    TypeImpl* type = type_get_by_name(typename, NULL);
 
     if (!type) { return NULL; }
 

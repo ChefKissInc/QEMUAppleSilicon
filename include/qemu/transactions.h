@@ -38,8 +38,6 @@
 
 #pragma once
 
-#include <gmodule.h>
-
 typedef struct TransactionActionDrv
 {
     void (*abort)(void* opaque);
