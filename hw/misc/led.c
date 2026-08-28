@@ -49,9 +49,9 @@ static void led_set_state_gpio_handler(void* opaque, int line, int new_state)
     led_set_state(s, !!new_state == s->gpio_active_high);
 }
 
-static void led_reset(DeviceState* dev)
+static void led_reset_enter(Object* obj, ResetType type)
 {
-    LEDState* s = LED(dev);
+    LEDState* s = LED(obj);
 
     led_set_state(s, s->gpio_active_high);
 }
@@ -81,10 +81,12 @@ static const Property led_properties[] = {
 
 static void led_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    dc->desc = "LED";
-    device_class_set_legacy_reset(dc, led_reset);
+    rc->phases.enter = led_reset_enter;
+
+    dc->desc    = "LED";
     dc->realize = led_realize;
     set_bit(DEVICE_CATEGORY_DISPLAY, dc->categories);
     device_class_set_props(dc, led_properties);
