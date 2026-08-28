@@ -352,18 +352,6 @@ void hmp_ioport_write(Monitor* mon, const QDict* qdict)
     }
 }
 
-void hmp_boot_set(Monitor* mon, const QDict* qdict)
-{
-    Error*      local_err  = NULL;
-    const char* bootdevice = qdict_get_str(qdict, "bootdevice");
-
-    qemu_boot_set(bootdevice, &local_err);
-    if (local_err) { error_report_err(local_err); }
-    else {
-        monitor_printf(mon, "boot device list now set to %s\n", bootdevice);
-    }
-}
-
 void hmp_info_mtree(Monitor* mon, const QDict* qdict)
 {
     bool flatview      = qdict_get_try_bool(qdict, "flatview", false);

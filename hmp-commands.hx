@@ -759,23 +759,6 @@ SRST
 ERST
 
     {
-        .name       = "boot_set",
-        .args_type  = "bootdevice:s",
-        .params     = "bootdevice",
-        .help       = "define new values for the boot device list",
-        .cmd        = hmp_boot_set,
-    },
-
-SRST
-``boot_set`` *bootdevicelist*
-  Define new values for the boot device list. Those values will override
-  the values specified on the command line through the ``-boot`` option.
-
-  The values that can be specified here depend on the machine type, but are
-  the same that can be specified in the ``-boot`` command line option.
-ERST
-
-    {
         .name       = "nmi",
         .args_type  = "",
         .params     = "",

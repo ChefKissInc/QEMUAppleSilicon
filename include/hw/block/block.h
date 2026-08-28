@@ -24,7 +24,6 @@ typedef struct BlockConf
     uint32_t      logical_block_size;
     uint32_t      min_io_size;
     uint32_t      opt_io_size;
-    int32_t       bootindex;
     uint32_t      discard_granularity;
     /* geometry, not all devices use this */
     uint32_t        cyls, heads, secs;

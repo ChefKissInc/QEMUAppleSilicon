@@ -118,7 +118,6 @@ struct USBRedirDevice
     bool        suppress_remote_wake;
     bool        in_write;
     uint8_t     debug;
-    int32_t     bootindex;
     char*       filter_str;
     /* Data passed from chardev the fd_read cb to the usbredirparser read cb */
     const uint8_t* read_buf;
@@ -1962,20 +1961,11 @@ static void usbredir_class_initfn(ObjectClass* klass, const void* data)
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
 
-static void usbredir_instance_init(Object* obj)
-{
-    USBDevice*      udev = USB_DEVICE(obj);
-    USBRedirDevice* dev  = USB_REDIRECT(udev);
-
-    device_add_bootindex_property(obj, &dev->bootindex, "bootindex", NULL, &udev->qdev);
-}
-
 static const TypeInfo usbredir_dev_info = {
     .name          = TYPE_USB_REDIR,
     .parent        = TYPE_USB_DEVICE,
     .instance_size = sizeof(USBRedirDevice),
     .class_init    = usbredir_class_initfn,
-    .instance_init = usbredir_instance_init,
 };
 module_obj(TYPE_USB_REDIR);
 module_kconfig(USB);

@@ -201,42 +201,6 @@ static QemuOptsList qemu_accel_opts = {
          {}},
 };
 
-static QemuOptsList qemu_boot_opts = {
-    .name             = "boot-opts",
-    .implied_opt_name = "order",
-    .merge_lists      = true,
-    .head             = QTAILQ_HEAD_INITIALIZER(qemu_boot_opts.head),
-    .desc             = {{
-                             .name = "order",
-                             .type = QEMU_OPT_STRING,
-                         },
-                         {
-                             .name = "once",
-                             .type = QEMU_OPT_STRING,
-                         },
-                         {
-                             .name = "menu",
-                             .type = QEMU_OPT_BOOL,
-                         },
-                         {
-                             .name = "splash",
-                             .type = QEMU_OPT_STRING,
-                         },
-                         {
-                             .name = "splash-time",
-                             .type = QEMU_OPT_NUMBER,
-                         },
-                         {
-                             .name = "reboot-timeout",
-                             .type = QEMU_OPT_NUMBER,
-                         },
-                         {
-                             .name = "strict",
-                             .type = QEMU_OPT_BOOL,
-                         },
-                         {/*End of list */}},
-};
-
 static QemuOptsList qemu_add_fd_opts = {
     .name = "add-fd",
     .head = QTAILQ_HEAD_INITIALIZER(qemu_add_fd_opts.head),
@@ -408,8 +372,6 @@ static int parse_name(void* opaque, QemuOpts* opts, Error** errp)
 
     return 0;
 }
-
-bool defaults_enabled(void) { return has_defaults; }
 
 #ifndef _WIN32
 static int parse_add_fd(void* opaque, QemuOpts* opts, Error** errp)
@@ -847,10 +809,8 @@ struct device_config
     {
         DEV_USB,      /* -usbdevice     */
         DEV_SERIAL,   /* -serial        */
-        DEV_PARALLEL, /* -parallel      */
         DEV_DEBUGCON, /* -debugcon */
         DEV_GDB,      /* -gdb, -s */
-        DEV_SCLP,     /* s390 sclp */
     } type;
     const char* cmdline;
     Location    loc;
@@ -997,29 +957,6 @@ Chardev* serial_hd(int i)
     assert(i >= 0);
     if (i < num_serial_hds) { return serial_hds[i]; }
     return NULL;
-}
-
-static bool parallel_parse(const char* devname, Error** errp)
-{
-    static int index = 0;
-    char       label[32];
-
-    if (strcmp(devname, "none") == 0) { return true; }
-    if (index == MAX_PARALLEL_PORTS) {
-        error_setg(errp, "too many parallel ports");
-        return false;
-    }
-    snprintf(label, sizeof(label), "parallel%d", index);
-    parallel_hds[index] = qemu_chr_new_mux_mon(label, devname, NULL);
-    if (!parallel_hds[index]) {
-        error_setg(errp,
-                   "could not connect parallel device"
-                   " to character backend '%s'",
-                   devname);
-        return false;
-    }
-    index++;
-    return true;
 }
 
 static bool debugcon_parse(const char* devname, Error** errp)
@@ -1469,7 +1406,6 @@ static void qemu_create_late_backends(void)
     qemu_opts_foreach(qemu_find_opts("mon"), mon_init_func, NULL, &error_fatal);
 
     foreach_device_config_or_exit(DEV_SERIAL, serial_parse);
-    foreach_device_config_or_exit(DEV_PARALLEL, parallel_parse);
     foreach_device_config_or_exit(DEV_DEBUGCON, debugcon_parse);
 }
 
@@ -1591,7 +1527,7 @@ static int global_init_func(void* opaque, QemuOpts* opts, Error** errp)
 static bool is_qemuopts_group(const char* group)
 {
     if (g_str_equal(group, "object") || g_str_equal(group, "audiodev") || g_str_equal(group, "machine")
-        || g_str_equal(group, "smp-opts") || g_str_equal(group, "boot-opts"))
+        || g_str_equal(group, "smp-opts"))
     {
         return false;
     }
@@ -1621,9 +1557,6 @@ static void qemu_record_config_group(const char* group, QDict* dict, bool from_j
     }
     else if (g_str_equal(group, "smp-opts")) {
         machine_merge_property("smp", dict, &error_fatal);
-    }
-    else if (g_str_equal(group, "boot-opts")) {
-        machine_merge_property("boot", dict, &error_fatal);
     }
     else {
         abort();
@@ -2075,7 +2008,6 @@ void qemu_init(int argc, char** argv)
     qemu_add_opts(&qemu_accel_opts);
     qemu_add_opts(&qemu_mem_opts);
     qemu_add_opts(&qemu_smp_opts);
-    qemu_add_opts(&qemu_boot_opts);
     qemu_add_opts(&qemu_add_fd_opts);
     qemu_add_opts(&qemu_object_opts);
     qemu_add_opts(&qemu_overcommit_opts);
@@ -2175,7 +2107,6 @@ void qemu_init(int argc, char** argv)
                 case QEMU_OPTION_append: qdict_put_str(machine_opts_dict, "append", optarg); break;
                 case QEMU_OPTION_dtb   : qdict_put_str(machine_opts_dict, "dtb", optarg); break;
                 case QEMU_OPTION_cdrom : drive_add(IF_DEFAULT, 2, optarg, CDROM_OPTS); break;
-                case QEMU_OPTION_boot  : machine_parse_property_opt(qemu_find_opts("boot-opts"), "boot", optarg); break;
                 case QEMU_OPTION_netdev:
                     default_net = 0;
                     if (netdev_is_modern(optarg)) { netdev_parse_modern(optarg); }

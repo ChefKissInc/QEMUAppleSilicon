@@ -379,54 +379,6 @@ static void machine_set_smp_cache(Object* obj, Visitor* v, const char* name, voi
     qapi_free_SmpCachePropertiesList(caches);
 }
 
-static void machine_get_boot(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
-{
-    MachineState*      ms     = MACHINE(obj);
-    BootConfiguration* config = &ms->boot_config;
-    visit_type_BootConfiguration(v, name, &config, &error_abort);
-}
-
-static void machine_free_boot_config(MachineState* ms)
-{
-    g_free(ms->boot_config.order);
-    g_free(ms->boot_config.once);
-    g_free(ms->boot_config.splash);
-}
-
-static void machine_copy_boot_config(MachineState* ms, BootConfiguration* config)
-{
-    MachineClass* machine_class = MACHINE_GET_CLASS(ms);
-
-    machine_free_boot_config(ms);
-    ms->boot_config = *config;
-    if (!config->order) { ms->boot_config.order = g_strdup(machine_class->default_boot_order); }
-}
-
-static void machine_set_boot(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
-{
-    ERRP_GUARD();
-    MachineState*      ms     = MACHINE(obj);
-    BootConfiguration* config = NULL;
-
-    if (!visit_type_BootConfiguration(v, name, &config, errp)) { return; }
-    if (config->order) {
-        validate_bootdevices(config->order, errp);
-        if (*errp) { goto out_free; }
-    }
-    if (config->once) {
-        validate_bootdevices(config->once, errp);
-        if (*errp) { goto out_free; }
-    }
-
-    machine_copy_boot_config(ms, config);
-    /* Strings live in ms->boot_config.  */
-    free(config);
-    return;
-
-out_free:
-    qapi_free_BootConfiguration(config);
-}
-
 static bool create_default_memdev(MachineState* ms, const char* path, Error** errp)
 {
     Object*       obj;
@@ -470,9 +422,6 @@ static void machine_class_init(ObjectClass* oc, const void* data)
 
     object_class_property_add_str(oc, "dtb", machine_get_dtb, machine_set_dtb);
     object_class_property_set_description(oc, "dtb", "Kernel device tree file");
-
-    object_class_property_add(oc, "boot", "BootConfiguration", machine_get_boot, machine_set_boot, NULL, NULL);
-    object_class_property_set_description(oc, "boot", "Boot configuration");
 
     object_class_property_add(oc, "smp", "SMPConfiguration", machine_get_smp, machine_set_smp, NULL, NULL);
     object_class_property_set_description(oc, "smp", "CPU topology");
@@ -554,15 +503,12 @@ static void machine_initfn(Object* obj)
         ms->smp_cache.props[i].cache    = (CacheLevelAndType)i;
         ms->smp_cache.props[i].topology = CPU_TOPOLOGY_LEVEL_DEFAULT;
     }
-
-    machine_copy_boot_config(ms, &(BootConfiguration){0});
 }
 
 static void machine_finalize(Object* obj)
 {
     MachineState* ms = MACHINE(obj);
 
-    machine_free_boot_config(ms);
     g_free(ms->kernel_filename);
     g_free(ms->initrd_filename);
     g_free(ms->kernel_cmdline);
@@ -706,11 +652,6 @@ void qemu_remove_machine_init_done_notifier(Notifier* notify) { notifier_remove(
 void qdev_machine_creation_done(void)
 {
     cpu_synchronize_all_post_init();
-
-    if (current_machine->boot_config.once) {
-        qemu_boot_set(current_machine->boot_config.once, &error_fatal);
-        qemu_register_reset(restore_boot_order, g_strdup(current_machine->boot_config.order));
-    }
 
     /*
      * ok, initial machine setup is done, starting from now we can

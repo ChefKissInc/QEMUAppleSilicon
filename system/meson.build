@@ -8,7 +8,6 @@ system_ss.add(files(
 ), sdl, libpmem, libdaxctl)
 
 system_ss.add(files(
-  'bootdevice.c',
   'cpus.c',
   'cpu-timers.c',
   'datadir.c',

@@ -792,21 +792,11 @@ static void nvme_ns_class_init(ObjectClass* oc, const void* data)
     dc->desc = "Virtual NVMe namespace";
 }
 
-static void nvme_ns_instance_init(Object* obj)
-{
-    NvmeNamespace* ns = NVME_NS(obj);
-
-    sprintf(ns->bootindex_suffix, "/namespace@%" PRIu32 ",0", ns->params.nsid);
-
-    device_add_bootindex_property(obj, &ns->bootindex, "bootindex", ns->bootindex_suffix, DEVICE(obj));
-}
-
 static const TypeInfo nvme_ns_info = {
     .name          = TYPE_NVME_NS,
     .parent        = TYPE_DEVICE,
     .class_init    = nvme_ns_class_init,
     .instance_size = sizeof(NvmeNamespace),
-    .instance_init = nvme_ns_instance_init,
 };
 
 static void nvme_ns_register_types(void) { type_register_static(&nvme_ns_info); }

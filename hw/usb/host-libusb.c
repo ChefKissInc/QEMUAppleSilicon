@@ -87,7 +87,6 @@ struct USBHostDevice
     /* properties */
     struct USBAutoFilter match;
     char*                hostdevice;
-    int32_t              bootindex;
     uint32_t             iso_urb_count;
     uint32_t             iso_urb_frames;
     uint32_t             options;
@@ -1105,14 +1104,6 @@ static void usb_host_realize(USBDevice* udev, Error** errp)
     qemu_add_exit_notifier(&s->exit);
 }
 
-static void usb_host_instance_init(Object* obj)
-{
-    USBDevice*     udev = USB_DEVICE(obj);
-    USBHostDevice* s    = USB_HOST_DEVICE(udev);
-
-    device_add_bootindex_property(obj, &s->bootindex, "bootindex", NULL, &udev->qdev);
-}
-
 static void usb_host_unrealize(USBDevice* udev)
 {
     USBHostDevice* s = USB_HOST_DEVICE(udev);
@@ -1532,7 +1523,6 @@ static const TypeInfo usb_host_dev_info = {
     .parent        = TYPE_USB_DEVICE,
     .instance_size = sizeof(USBHostDevice),
     .class_init    = usb_host_class_initfn,
-    .instance_init = usb_host_instance_init,
 };
 module_obj(TYPE_USB_HOST_DEVICE);
 module_kconfig(USB);
