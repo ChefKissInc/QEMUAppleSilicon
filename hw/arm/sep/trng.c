@@ -223,7 +223,7 @@ static void trng_regs_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
                 memcpy(seed_material + 0x20, &s->ecid, sizeof(s->ecid));
                 memcpy(seed_material + 0x28, &s->counter, sizeof(s->counter));
                 if (s->ctr_drbg_init) {
-                    s->ctr_drbg_init = 0;
+                    s->ctr_drbg_init = false;
                     drbg_ctr_aes256_init(&s->ctr_drbg_rng, seed_material);
                     memset(s->fifo, 0, sizeof(s->fifo));
                 }
@@ -239,7 +239,7 @@ static void trng_regs_reg_write(void* opaque, hwaddr addr, uint64_t data, unsign
             break;
         case REG_TRNG_UNKN5:
             s->offset_0x70 = data;
-            if ((s->offset_0x70 & TRNG_UNKN5_INIT_DRBG) != 0) { s->ctr_drbg_init = 1; }
+            if ((s->offset_0x70 & TRNG_UNKN5_INIT_DRBG) != 0) { s->ctr_drbg_init = true; }
             else if ((s->offset_0x70 & TRNG_UNKN5_ENCRYPT_FIFO) == 0) {
                 memset(s->key, 0, sizeof(s->key));
             }
@@ -311,6 +311,20 @@ static const MemoryRegionOps trng_regs_reg_ops = {
     .valid.unaligned       = false,
 };
 
+static void apple_sep_trng_reset_enter(Object* obj, ResetType type)
+{
+    AppleSEPTRNGState* s = APPLE_SEP_TRNG(obj);
+
+    memset(s->key, 0, sizeof(s->key));
+    memset(s->fifo, 0, sizeof(s->fifo));
+    s->offset_0x70   = 0;
+    s->ecid          = 0;
+    s->counter       = 0;
+    s->config        = 0;
+    s->ctr_drbg_init = false;
+    memset(&s->ctr_drbg_rng, 0, sizeof(s->ctr_drbg_rng));
+}
+
 static void apple_sep_trng_realize(DeviceState* dev, Error** errp)
 {
     AppleSEPTRNGState* s   = APPLE_SEP_TRNG(dev);
@@ -322,7 +336,10 @@ static void apple_sep_trng_realize(DeviceState* dev, Error** errp)
 
 static void apple_sep_trng_class_init(ObjectClass* klass, const void* class_data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = apple_sep_trng_reset_enter;
 
     dc->realize = apple_sep_trng_realize;
 }
