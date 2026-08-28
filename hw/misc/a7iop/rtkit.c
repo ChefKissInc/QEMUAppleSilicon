@@ -419,7 +419,7 @@ AppleRTKit* apple_rtkit_new(void* opaque, const char* role, uint64_t mmio_size, 
     return s;
 }
 
-static void apple_rtkit_reset_hold(Object* obj, ResetType type)
+static void apple_rtkit_reset_enter(Object* obj, ResetType type)
 {
     AppleRTKit*        s;
     AppleRTKitClass*   rtkc;
@@ -429,7 +429,7 @@ static void apple_rtkit_reset_hold(Object* obj, ResetType type)
     s    = APPLE_RTKIT(obj);
     rtkc = APPLE_RTKIT_GET_CLASS(obj);
 
-    if (rtkc->parent_phases.hold != NULL) { rtkc->parent_phases.hold(obj, type); }
+    if (rtkc->parent_phases.enter != NULL) { rtkc->parent_phases.enter(obj, type); }
 
     QEMU_LOCK_GUARD(&s->lock);
 
@@ -444,16 +444,13 @@ static void apple_rtkit_reset_hold(Object* obj, ResetType type)
 
 static void apple_rtkit_class_init(ObjectClass* klass, const void* data)
 {
-    ResettableClass* rc;
-    DeviceClass*     dc;
-    AppleRTKitClass* rtkc;
+    ResettableClass* rc   = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc   = DEVICE_CLASS(klass);
+    AppleRTKitClass* rtkc = APPLE_RTKIT_CLASS(klass);
 
-    rc   = RESETTABLE_CLASS(klass);
-    dc   = DEVICE_CLASS(klass);
-    rtkc = APPLE_RTKIT_CLASS(klass);
+    resettable_class_set_parent_phases(rc, apple_rtkit_reset_enter, NULL, NULL, &rtkc->parent_phases);
 
     dc->desc = "Apple RTKit IOP";
-    resettable_class_set_parent_phases(rc, NULL, apple_rtkit_reset_hold, NULL, &rtkc->parent_phases);
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }
 
