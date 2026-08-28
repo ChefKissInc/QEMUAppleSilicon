@@ -245,17 +245,8 @@ struct DWC2State
     };
 };
 
-struct DWC2Class
-{
-    /*< private >*/
-    SysBusDeviceClass parent_class;
-    ResettablePhases  parent_phases;
-
-    /*< public >*/
-};
-
 #define TYPE_DWC2_USB_DEVICE "dwc2-usb-device"
-OBJECT_DECLARE_TYPE(DWC2DeviceState, USBDeviceClass, DWC2_USB_DEVICE)
+OBJECT_DECLARE_SIMPLE_TYPE(DWC2DeviceState, DWC2_USB_DEVICE)
 
 #define TYPE_DWC2_USB "dwc2-usb"
-OBJECT_DECLARE_TYPE(DWC2State, DWC2Class, DWC2_USB)
+OBJECT_DECLARE_SIMPLE_TYPE(DWC2State, DWC2_USB)

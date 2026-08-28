@@ -1862,13 +1862,10 @@ static void dwc2_work_timer(void* opaque)
 
 static void dwc2_reset_enter(Object* obj, ResetType type)
 {
-    DWC2Class* c = DWC2_USB_GET_CLASS(obj);
     DWC2State* s = DWC2_USB(obj);
     int        i;
 
     trace_usb_dwc2_reset_enter();
-
-    if (c->parent_phases.enter) { c->parent_phases.enter(obj, type); }
 
     timer_del(s->frame_timer);
     qemu_bh_cancel(s->async_bh);
@@ -1952,24 +1949,18 @@ static void dwc2_reset_enter(Object* obj, ResetType type)
 
 static void dwc2_reset_hold(Object* obj, ResetType type)
 {
-    DWC2Class* c = DWC2_USB_GET_CLASS(obj);
     DWC2State* s = DWC2_USB(obj);
 
     trace_usb_dwc2_reset_hold();
-
-    if (c->parent_phases.hold) { c->parent_phases.hold(obj, type); }
 
     dwc2_update_irq(s);
 }
 
 static void dwc2_reset_exit(Object* obj, ResetType type)
 {
-    DWC2Class* c = DWC2_USB_GET_CLASS(obj);
     DWC2State* s = DWC2_USB(obj);
 
     trace_usb_dwc2_reset_exit();
-
-    if (c->parent_phases.exit) { c->parent_phases.exit(obj, type); }
 
     s->hprt0 = HPRT0_PWR;
     if (s->uport.dev && s->uport.dev->attached) {
@@ -2118,14 +2109,16 @@ static void dwc2_usb_device_class_initfn_common(ObjectClass* klass, const void* 
 
 static void dwc2_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass*     dc = DEVICE_CLASS(klass);
-    DWC2Class*       c  = DWC2_USB_CLASS(klass);
     ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = dwc2_reset_enter;
+    rc->phases.hold  = dwc2_reset_hold;
+    rc->phases.exit  = dwc2_reset_exit;
 
     dc->realize = dwc2_realize;
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
     device_class_set_props(dc, dwc2_usb_properties);
-    resettable_class_set_parent_phases(rc, dwc2_reset_enter, dwc2_reset_hold, dwc2_reset_exit, &c->parent_phases);
 }
 
 static const TypeInfo dwc2_usb_device_type_info = {
@@ -2140,7 +2133,6 @@ static const TypeInfo dwc2_usb_type_info = {
     .parent        = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(DWC2State),
     .instance_init = dwc2_init,
-    .class_size    = sizeof(DWC2Class),
     .class_init    = dwc2_class_init,
 };
 
