@@ -2403,12 +2403,12 @@ static void xhci_port_reset(XHCIPort* port, bool warm_reset)
     xhci_port_notify(port, PORTSC_PRC);
 }
 
-static void xhci_reset(DeviceState* dev)
+static void xhci_reset_enter(Object* obj, ResetType type)
 {
-    XHCIState* xhci = XHCI(dev);
+    XHCIState* xhci = XHCI(obj);
     int        i;
 
-    trace_usb_xhci_reset();
+    trace_usb_xhci_reset_enter();
     if (!(xhci->usbsts & USBSTS_HCH)) { DPRINTF("xhci: reset while running!\n"); }
 
     xhci->usbcmd      = 0;
@@ -2419,7 +2419,14 @@ static void xhci_reset(DeviceState* dev)
     xhci->dcbaap_low  = 0;
     xhci->dcbaap_high = 0;
     xhci->config      = 0;
+}
 
+static void xhci_reset_hold(Object* obj, ResetType type)
+{
+    XHCIState* xhci = XHCI(obj);
+    int        i;
+
+    trace_usb_xhci_reset_hold();
     for (i = 0; i < xhci->numslots; i++) { xhci_disable_slot(xhci, i + 1); }
 
     for (i = 0; i < xhci->numports; i++) { xhci_port_update(xhci->ports + i, 0); }
@@ -2629,7 +2636,7 @@ static void xhci_oper_write(void* ptr, hwaddr reg, uint64_t val, unsigned size)
             }
             xhci->usbcmd = val & 0xc0f;
             xhci_mfwrap_update(xhci);
-            if (val & USBCMD_HCRST) { xhci_reset(DEVICE(xhci)); }
+            if (val & USBCMD_HCRST) { device_cold_reset(DEVICE(xhci)); }
             xhci_intr_update(xhci, 0);
             break;
 
@@ -3041,11 +3048,14 @@ static const Property xhci_properties[] = {
 
 static void xhci_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
+
+    rc->phases.enter = xhci_reset_enter;
+    rc->phases.hold  = xhci_reset_hold;
 
     dc->realize   = usb_xhci_realize;
     dc->unrealize = usb_xhci_unrealize;
-    device_class_set_legacy_reset(dc, xhci_reset);
     device_class_set_props(dc, xhci_properties);
     dc->user_creatable = false;
 }

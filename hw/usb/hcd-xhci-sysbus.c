@@ -23,18 +23,10 @@ static bool xhci_sysbus_intr_raise(XHCIState* xhci, int n, bool level)
     return false;
 }
 
-void xhci_sysbus_reset(DeviceState* dev)
-{
-    XHCISysbusState* s = XHCI_SYSBUS(dev);
-
-    device_cold_reset(DEVICE(&s->xhci));
-}
-
 static void xhci_sysbus_realize(DeviceState* dev, Error** errp)
 {
     XHCISysbusState* s = XHCI_SYSBUS(dev);
 
-    object_property_set_link(OBJECT(&s->xhci), "host", OBJECT(s), NULL);
     if (!qdev_realize(DEVICE(&s->xhci), NULL, errp)) { return; }
     s->irq = g_new0(qemu_irq, s->xhci.numintrs);
     qdev_init_gpio_out_named(dev, s->irq, SYSBUS_DEVICE_GPIO_IRQ, s->xhci.numintrs);
@@ -71,7 +63,6 @@ static void xhci_sysbus_class_init(ObjectClass* klass, const void* data)
 {
     DeviceClass* dc = DEVICE_CLASS(klass);
 
-    device_class_set_legacy_reset(dc, xhci_sysbus_reset);
     dc->realize = xhci_sysbus_realize;
     device_class_set_props(dc, xhci_sysbus_props);
 }

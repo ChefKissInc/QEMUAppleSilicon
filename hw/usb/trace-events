@@ -42,7 +42,8 @@ usb_ehci_doorbell_ack(void) ""
 usb_ehci_dma_error(void) ""
 
 # hcd-xhci.c
-usb_xhci_reset(void) "=== RESET ==="
+usb_xhci_reset_enter(void) "=== RESET ENTER ==="
+usb_xhci_reset_hold(void) "=== RESET HOLD ==="
 usb_xhci_exit(void) "=== EXIT ==="
 usb_xhci_run(void) ""
 usb_xhci_stop(void) ""
