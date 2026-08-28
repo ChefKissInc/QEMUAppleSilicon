@@ -90,11 +90,11 @@ static const MemoryRegionOps aux_ops = {
         },
 };
 
-static void dpcd_reset(DeviceState* dev)
+static void dpcd_reset_enter(Object* obj, ResetType type)
 {
-    DPCDState* s = DPCD(dev);
+    DPCDState* s = DPCD(obj);
 
-    memset(&(s->dpcd_info), 0, sizeof(s->dpcd_info));
+    memset(s->dpcd_info, 0, sizeof(s->dpcd_info));
 
     s->dpcd_info[DPCD_REVISION]            = DPCD_REV_1_0;
     s->dpcd_info[DPCD_MAX_LINK_RATE]       = DPCD_5_4GBPS;
@@ -122,9 +122,9 @@ static void dpcd_init(Object* obj)
 
 static void dpcd_class_init(ObjectClass* oc, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(oc);
+    ResettableClass* rc = RESETTABLE_CLASS(oc);
 
-    device_class_set_legacy_reset(dc, dpcd_reset);
+    rc->phases.enter = dpcd_reset_enter;
 }
 
 static const TypeInfo dpcd_info = {
