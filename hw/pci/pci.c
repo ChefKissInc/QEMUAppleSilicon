@@ -686,12 +686,7 @@ static void pci_init_mask_bridge(PCIDevice* d)
     pci_word_test_and_set_mask(d->config + PCI_PREF_MEMORY_BASE, PCI_PREF_RANGE_TYPE_64);
     pci_word_test_and_set_mask(d->config + PCI_PREF_MEMORY_LIMIT, PCI_PREF_RANGE_TYPE_64);
 
-    /*
-     * TODO: Bridges default to 10-bit VGA decoding but we currently only
-     * implement 16-bit decoding (no alias support).
-     */
     pci_set_word(d->wmask + PCI_BRIDGE_CONTROL, PCI_BRIDGE_CTL_PARITY | PCI_BRIDGE_CTL_SERR | PCI_BRIDGE_CTL_ISA
-                                                    | PCI_BRIDGE_CTL_VGA | PCI_BRIDGE_CTL_VGA_16BIT
                                                     | PCI_BRIDGE_CTL_MASTER_ABORT | PCI_BRIDGE_CTL_BUS_RESET
                                                     | PCI_BRIDGE_CTL_FAST_BACK | PCI_BRIDGE_CTL_DISCARD
                                                     | PCI_BRIDGE_CTL_SEC_DISCARD | PCI_BRIDGE_CTL_DISCARD_SERR);
@@ -982,8 +977,6 @@ static void pci_unregister_io_regions(PCIDevice* pci_dev)
         if (!r->size || r->addr == PCI_BAR_UNMAPPED) { continue; }
         memory_region_del_subregion(r->address_space, r->memory);
     }
-
-    pci_unregister_vga(pci_dev);
 }
 
 static void pci_qdev_unrealize(DeviceState* dev)
@@ -1044,53 +1037,6 @@ void pci_register_bar(PCIDevice* pci_dev, int region_num, uint8_t type, MemoryRe
         pci_set_long(pci_dev->wmask + addr, wmask & 0xffffffff);
         pci_set_long(pci_dev->cmask + addr, 0xffffffff);
     }
-}
-
-static void pci_update_vga(PCIDevice* pci_dev)
-{
-    uint16_t cmd;
-
-    if (!pci_dev->has_vga) { return; }
-
-    cmd = pci_get_word(pci_dev->config + PCI_COMMAND);
-
-    memory_region_set_enabled(pci_dev->vga_regions[QEMU_PCI_VGA_MEM], cmd & PCI_COMMAND_MEMORY);
-    memory_region_set_enabled(pci_dev->vga_regions[QEMU_PCI_VGA_IO_LO], cmd & PCI_COMMAND_IO);
-    memory_region_set_enabled(pci_dev->vga_regions[QEMU_PCI_VGA_IO_HI], cmd & PCI_COMMAND_IO);
-}
-
-void pci_register_vga(PCIDevice* pci_dev, MemoryRegion* mem, MemoryRegion* io_lo, MemoryRegion* io_hi)
-{
-    PCIBus* bus = pci_get_bus(pci_dev);
-
-    assert(!pci_dev->has_vga);
-
-    assert(memory_region_size(mem) == QEMU_PCI_VGA_MEM_SIZE);
-    pci_dev->vga_regions[QEMU_PCI_VGA_MEM] = mem;
-    memory_region_add_subregion_overlap(bus->address_space_mem, QEMU_PCI_VGA_MEM_BASE, mem, 1);
-
-    assert(memory_region_size(io_lo) == QEMU_PCI_VGA_IO_LO_SIZE);
-    pci_dev->vga_regions[QEMU_PCI_VGA_IO_LO] = io_lo;
-    memory_region_add_subregion_overlap(bus->address_space_io, QEMU_PCI_VGA_IO_LO_BASE, io_lo, 1);
-
-    assert(memory_region_size(io_hi) == QEMU_PCI_VGA_IO_HI_SIZE);
-    pci_dev->vga_regions[QEMU_PCI_VGA_IO_HI] = io_hi;
-    memory_region_add_subregion_overlap(bus->address_space_io, QEMU_PCI_VGA_IO_HI_BASE, io_hi, 1);
-    pci_dev->has_vga = true;
-
-    pci_update_vga(pci_dev);
-}
-
-void pci_unregister_vga(PCIDevice* pci_dev)
-{
-    PCIBus* bus = pci_get_bus(pci_dev);
-
-    if (!pci_dev->has_vga) { return; }
-
-    memory_region_del_subregion(bus->address_space_mem, pci_dev->vga_regions[QEMU_PCI_VGA_MEM]);
-    memory_region_del_subregion(bus->address_space_io, pci_dev->vga_regions[QEMU_PCI_VGA_IO_LO]);
-    memory_region_del_subregion(bus->address_space_io, pci_dev->vga_regions[QEMU_PCI_VGA_IO_HI]);
-    pci_dev->has_vga = false;
 }
 
 pcibus_t pci_get_bar_addr(PCIDevice* pci_dev, int region_num) { return pci_dev->io_regions[region_num].addr; }
@@ -1187,8 +1133,6 @@ static void pci_update_mappings(PCIDevice* d)
             memory_region_add_subregion_overlap(r->address_space, r->addr, r->memory, 1);
         }
     }
-
-    pci_update_vga(d);
 }
 
 int pci_irq_disabled(PCIDevice* d) { return pci_get_word(d->config + PCI_COMMAND) & PCI_COMMAND_INTX_DISABLE; }
@@ -2196,12 +2140,6 @@ void pci_setup_iommu(PCIBus* bus, const PCIIOMMUOps* ops, void* opaque)
  * Similar to pci_setup_iommu(), but sets iommu_per_bus to true,
  * indicating that the IOMMU is specific to this bus. This is used by
  * IOMMU implementations that are tied to a specific PCIe root complex.
- *
- * In QEMU, pxb-pcie behaves as a special root complex whose parent is
- * effectively the default root complex (pcie.0). The iommu_per_bus
- * is checked in pci_device_get_iommu_bus_devfn() to ensure the correct
- * IOMMU ops are returned, avoiding the use of the parent’s IOMMU when
- * it's not appropriate.
  */
 void pci_setup_iommu_per_bus(PCIBus* bus, const PCIIOMMUOps* ops, void* opaque)
 {

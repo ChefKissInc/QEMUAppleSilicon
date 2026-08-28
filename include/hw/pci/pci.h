@@ -161,14 +161,6 @@ typedef struct PCIIORegion
 #define PCI_ROM_SLOT    6
 #define PCI_NUM_REGIONS 7
 
-enum
-{
-    QEMU_PCI_VGA_MEM,
-    QEMU_PCI_VGA_IO_LO,
-    QEMU_PCI_VGA_IO_HI,
-    QEMU_PCI_VGA_NUM_REGIONS,
-};
-
 #define QEMU_PCI_VGA_MEM_BASE   0xa0000
 #define QEMU_PCI_VGA_MEM_SIZE   0x20000
 #define QEMU_PCI_VGA_IO_LO_BASE 0x3b0
@@ -246,8 +238,6 @@ typedef void (*MSIVectorReleaseNotifier)(PCIDevice* dev, unsigned int vector);
 typedef void (*MSIVectorPollNotifier)(PCIDevice* dev, unsigned int vector_start, unsigned int vector_end);
 
 void     pci_register_bar(PCIDevice* pci_dev, int region_num, uint8_t attr, MemoryRegion* memory);
-void     pci_register_vga(PCIDevice* pci_dev, MemoryRegion* mem, MemoryRegion* io_lo, MemoryRegion* io_hi);
-void     pci_unregister_vga(PCIDevice* pci_dev);
 pcibus_t pci_get_bar_addr(PCIDevice* pci_dev, int region_num);
 
 int pci_add_capability(PCIDevice* pdev, uint8_t cap_id, uint8_t offset, uint8_t size, Error** errp);

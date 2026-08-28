@@ -135,24 +135,6 @@ static void pci_bridge_init_alias(PCIBridge* bridge, MemoryRegion* alias, uint8_
     memory_region_add_subregion_overlap(parent_space, base, alias, 1);
 }
 
-static void pci_bridge_init_vga_aliases(PCIBridge* br, PCIBus* parent, MemoryRegion* alias_vga)
-{
-    PCIDevice* pd    = PCI_DEVICE(br);
-    uint16_t   brctl = pci_get_word(pd->config + PCI_BRIDGE_CONTROL);
-
-    memory_region_init_alias(&alias_vga[QEMU_PCI_VGA_IO_LO], OBJECT(br), "pci_bridge_vga_io_lo", &br->address_space_io,
-                             QEMU_PCI_VGA_IO_LO_BASE, QEMU_PCI_VGA_IO_LO_SIZE);
-    memory_region_init_alias(&alias_vga[QEMU_PCI_VGA_IO_HI], OBJECT(br), "pci_bridge_vga_io_hi", &br->address_space_io,
-                             QEMU_PCI_VGA_IO_HI_BASE, QEMU_PCI_VGA_IO_HI_SIZE);
-    memory_region_init_alias(&alias_vga[QEMU_PCI_VGA_MEM], OBJECT(br), "pci_bridge_vga_mem", &br->address_space_mem,
-                             QEMU_PCI_VGA_MEM_BASE, QEMU_PCI_VGA_MEM_SIZE);
-
-    if (brctl & PCI_BRIDGE_CTL_VGA) {
-        pci_register_vga(pd, &alias_vga[QEMU_PCI_VGA_MEM], &alias_vga[QEMU_PCI_VGA_IO_LO],
-                         &alias_vga[QEMU_PCI_VGA_IO_HI]);
-    }
-}
-
 static void pci_bridge_region_init(PCIBridge* br)
 {
     PCIDevice*        pd     = PCI_DEVICE(br);
@@ -166,8 +148,6 @@ static void pci_bridge_region_init(PCIBridge* br)
                           parent->address_space_mem, cmd & PCI_COMMAND_MEMORY);
     pci_bridge_init_alias(br, &w->alias_io, PCI_BASE_ADDRESS_SPACE_IO, "pci_bridge_io", &br->address_space_io,
                           parent->address_space_io, cmd & PCI_COMMAND_IO);
-
-    pci_bridge_init_vga_aliases(br, parent, w->alias_vga);
 }
 
 static void pci_bridge_region_del(PCIBridge* br, PCIBridgeWindows* w)
@@ -178,7 +158,6 @@ static void pci_bridge_region_del(PCIBridge* br, PCIBridgeWindows* w)
     memory_region_del_subregion(parent->address_space_io, &w->alias_io);
     memory_region_del_subregion(parent->address_space_mem, &w->alias_mem);
     memory_region_del_subregion(parent->address_space_mem, &w->alias_pref_mem);
-    pci_unregister_vga(pd);
 }
 
 static void pci_bridge_region_cleanup(PCIBridge* br, PCIBridgeWindows* w)
@@ -186,9 +165,6 @@ static void pci_bridge_region_cleanup(PCIBridge* br, PCIBridgeWindows* w)
     object_unparent(OBJECT(&w->alias_io));
     object_unparent(OBJECT(&w->alias_mem));
     object_unparent(OBJECT(&w->alias_pref_mem));
-    object_unparent(OBJECT(&w->alias_vga[QEMU_PCI_VGA_IO_LO]));
-    object_unparent(OBJECT(&w->alias_vga[QEMU_PCI_VGA_IO_HI]));
-    object_unparent(OBJECT(&w->alias_vga[QEMU_PCI_VGA_MEM]));
 }
 
 void pci_bridge_update_mappings(PCIBridge* br)
@@ -327,7 +303,7 @@ void pci_bridge_initfn(PCIDevice* dev, const char* typename)
     QLIST_INSERT_HEAD(&parent->child, sec_bus, sibling);
 
     /* For express secondary buses, secondary latency timer is RO 0 */
-    if (pci_bus_is_express(sec_bus) && !br->pcie_writeable_slt_bug) { dev->wmask[PCI_SEC_LATENCY_TIMER] = 0; }
+    if (pci_bus_is_express(sec_bus)) { dev->wmask[PCI_SEC_LATENCY_TIMER] = 0; }
 }
 
 /* default qdev clean up function for PCI-to-PCI bridge */
@@ -354,55 +330,7 @@ void pci_bridge_map_irq(PCIBridge* br, const char* bus_name, pci_map_irq_fn map_
     br->bus_name = bus_name;
 }
 
-int pci_bridge_qemu_reserve_cap_init(PCIDevice* dev, int cap_offset, PCIResReserve res_reserve, Error** errp)
-{
-    if (res_reserve.mem_pref_32 != (uint64_t)-1 && res_reserve.mem_pref_64 != (uint64_t)-1) {
-        error_setg(errp, "PCI resource reserve cap: PREF32 and PREF64 conflict");
-        return -EINVAL;
-    }
-
-    if (res_reserve.mem_non_pref != (uint64_t)-1 && res_reserve.mem_non_pref >= 4 * GiB) {
-        error_setg(errp, "PCI resource reserve cap: mem-reserve must be less than 4G");
-        return -EINVAL;
-    }
-
-    if (res_reserve.mem_pref_32 != (uint64_t)-1 && res_reserve.mem_pref_32 >= 4 * GiB) {
-        error_setg(errp, "PCI resource reserve cap: pref32-reserve  must be less than 4G");
-        return -EINVAL;
-    }
-
-    if (res_reserve.bus == (uint32_t)-1 && res_reserve.io == (uint64_t)-1 && res_reserve.mem_non_pref == (uint64_t)-1
-        && res_reserve.mem_pref_32 == (uint64_t)-1 && res_reserve.mem_pref_64 == (uint64_t)-1)
-    {
-        return 0;
-    }
-
-    size_t           cap_len = sizeof(PCIBridgeQemuCap);
-    PCIBridgeQemuCap cap     = {.len         = cap_len,
-                                .type        = REDHAT_PCI_CAP_RESOURCE_RESERVE,
-                                .bus_res     = cpu_to_le32(res_reserve.bus),
-                                .io          = cpu_to_le64(res_reserve.io),
-                                .mem         = cpu_to_le32(res_reserve.mem_non_pref),
-                                .mem_pref_32 = cpu_to_le32(res_reserve.mem_pref_32),
-                                .mem_pref_64 = cpu_to_le64(res_reserve.mem_pref_64)};
-
-    int offset = pci_add_capability(dev, PCI_CAP_ID_VNDR, cap_offset, cap_len, errp);
-    if (offset < 0) { return offset; }
-
-    memcpy(dev->config + offset + PCI_CAP_FLAGS, (char*)&cap + PCI_CAP_FLAGS, cap_len - PCI_CAP_FLAGS);
-    return 0;
-}
-
-static const Property pci_bridge_properties[] = {
-    DEFINE_PROP_BOOL("x-pci-express-writeable-slt-bug", PCIBridge, pcie_writeable_slt_bug, false),
-};
-
-static void pci_bridge_class_init(ObjectClass* klass, const void* data)
-{
-    DeviceClass* k = DEVICE_CLASS(klass);
-
-    device_class_set_props(k, pci_bridge_properties);
-}
+static void pci_bridge_class_init(ObjectClass* klass, const void* data) { }
 
 static const TypeInfo pci_bridge_type_info = {
     .name          = TYPE_PCI_BRIDGE,

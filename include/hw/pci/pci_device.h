@@ -91,10 +91,6 @@ struct PCIDevice
     PCIConfigReadFunc*  config_read;
     PCIConfigWriteFunc* config_write;
 
-    /* Legacy PCI VGA regions */
-    MemoryRegion* vga_regions[QEMU_PCI_VGA_NUM_REGIONS];
-    bool          has_vga;
-
     /* Current IRQ levels.  Used internally by the generic PCI code.  */
     uint8_t irq_state;
 

@@ -41,13 +41,6 @@ struct PCIBridgeWindows
     MemoryRegion alias_pref_mem;
     MemoryRegion alias_mem;
     MemoryRegion alias_io;
-    /*
-     * When bridge control VGA forwarding is enabled, bridges will
-     * provide positive decode on the PCI VGA defined I/O port and
-     * MMIO ranges.  When enabled forwarding is only qualified on the
-     * I/O and memory enable bits in the bridge command register.
-     */
-    MemoryRegion alias_vga[QEMU_PCI_VGA_NUM_REGIONS];
 };
 
 #define TYPE_PCI_BRIDGE "base-pci-bridge"
@@ -79,49 +72,7 @@ struct PCIBridge
 
     pci_map_irq_fn map_irq;
     const char*    bus_name;
-
-    /* SLT is RO for PCIE to PCIE bridges, but old QEMU versions had it RW */
-    bool pcie_writeable_slt_bug;
 };
-
-#define PCI_BRIDGE_DEV_PROP_CHASSIS_NR "chassis_nr"
-#define PCI_BRIDGE_DEV_PROP_MSI        "msi"
-#define PCI_BRIDGE_DEV_PROP_SHPC       "shpc"
-typedef struct CXLHost CXLHost;
-
-typedef struct PXBDev
-{
-    /*< private >*/
-    PCIDevice parent_obj;
-    /*< public >*/
-
-    uint8_t bus_nr;
-    bool    bypass_iommu;
-} PXBDev;
-
-typedef struct PXBPCIEDev
-{
-    /*< private >*/
-    PXBDev parent_obj;
-} PXBPCIEDev;
-
-#define TYPE_PXB_PCIE_BUS "pxb-pcie-bus"
-#define TYPE_PXB_CXL_BUS  "pxb-cxl-bus"
-#define TYPE_PXB_DEV      "pxb"
-OBJECT_DECLARE_SIMPLE_TYPE(PXBDev, PXB_DEV)
-
-typedef struct PXBCXLDev
-{
-    /*< private >*/
-    PXBPCIEDev parent_obj;
-    /*< public >*/
-
-    bool     hdm_for_passthrough;
-    CXLHost* cxl_host_bridge; /* Pointer to a CXLHost */
-} PXBCXLDev;
-
-#define TYPE_PXB_CXL_DEV "pxb-cxl"
-OBJECT_DECLARE_SIMPLE_TYPE(PXBCXLDev, PXB_CXL_DEV)
 
 int pci_bridge_ssvid_init(PCIDevice* dev, uint8_t offset, uint16_t svid, uint16_t ssid, Error** errp);
 
@@ -151,50 +102,7 @@ void pci_bridge_dev_unplug_request_cb(HotplugHandler* hotplug_dev, DeviceState* 
 void pci_bridge_map_irq(PCIBridge* br, const char* bus_name, pci_map_irq_fn map_irq);
 
 /* TODO: add this define to pci_regs.h in linux and then in qemu. */
-#define PCI_BRIDGE_CTL_VGA_16BIT      0x10  /* VGA 16-bit decode */
 #define PCI_BRIDGE_CTL_DISCARD        0x100 /* Primary discard timer */
 #define PCI_BRIDGE_CTL_SEC_DISCARD    0x200 /* Secondary discard timer */
 #define PCI_BRIDGE_CTL_DISCARD_STATUS 0x400 /* Discard timer status */
 #define PCI_BRIDGE_CTL_DISCARD_SERR   0x800 /* Discard timer SERR# enable */
-
-typedef struct PCIBridgeQemuCap
-{
-    uint8_t id;   /* Standard PCI capability header field */
-    uint8_t next; /* Standard PCI capability header field */
-    uint8_t len;  /* Standard PCI vendor-specific capability header field */
-    uint8_t type; /* Red Hat vendor-specific capability type.
-                     Types are defined with REDHAT_PCI_CAP_ prefix */
-
-    uint32_t bus_res; /* Minimum number of buses to reserve */
-    uint64_t io;      /* IO space to reserve */
-    uint32_t mem;     /* Non-prefetchable memory to reserve */
-    /* At most one of the following two fields may be set to a value
-     * different from -1 */
-    uint32_t mem_pref_32; /* Prefetchable memory to reserve (32-bit MMIO) */
-    uint64_t mem_pref_64; /* Prefetchable memory to reserve (64-bit MMIO) */
-} PCIBridgeQemuCap;
-
-#define REDHAT_PCI_CAP_TYPE_OFFSET      3
-#define REDHAT_PCI_CAP_RESOURCE_RESERVE 1
-
-/*
- * PCI BUS/IO/MEM/PREFMEM additional resources recorded as a
- * capability in PCI configuration space to reserve on firmware init.
- */
-typedef struct PCIResReserve
-{
-    uint32_t bus;
-    uint64_t io;
-    uint64_t mem_non_pref;
-    uint64_t mem_pref_32;
-    uint64_t mem_pref_64;
-} PCIResReserve;
-
-#define REDHAT_PCI_CAP_RES_RESERVE_BUS_RES     4
-#define REDHAT_PCI_CAP_RES_RESERVE_IO          8
-#define REDHAT_PCI_CAP_RES_RESERVE_MEM         16
-#define REDHAT_PCI_CAP_RES_RESERVE_PREF_MEM_32 20
-#define REDHAT_PCI_CAP_RES_RESERVE_PREF_MEM_64 24
-#define REDHAT_PCI_CAP_RES_RESERVE_CAP_SIZE    32
-
-int pci_bridge_qemu_reserve_cap_init(PCIDevice* dev, int cap_offset, PCIResReserve res_reserve, Error** errp);
