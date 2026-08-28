@@ -416,9 +416,9 @@ static const MemoryRegionOps apple_spi_reg_ops = {
     .endianness            = DEVICE_LITTLE_ENDIAN,
 };
 
-static void apple_spi_reset(DeviceState* dev)
+static void apple_spi_reset_enter(Object* obj, ResetType type)
 {
-    AppleSPIState* spi = APPLE_SPI(dev);
+    AppleSPIState* spi = APPLE_SPI(obj);
 
     memset(spi->regs, 0, sizeof(spi->regs));
     fifo32_reset(&spi->tx_fifo);
@@ -496,11 +496,12 @@ static void apple_spi_instance_init(Object* obj)
 
 static void apple_spi_class_init(ObjectClass* klass, const void* data)
 {
-    DeviceClass* dc = DEVICE_CLASS(klass);
+    ResettableClass* rc = RESETTABLE_CLASS(klass);
+    DeviceClass*     dc = DEVICE_CLASS(klass);
 
-    dc->desc = "Apple Samsung SPI Controller";
+    rc->phases.enter = apple_spi_reset_enter;
 
-    device_class_set_legacy_reset(dc, apple_spi_reset);
+    dc->desc    = "Apple Samsung SPI Controller";
     dc->realize = apple_spi_realize;
 }
 
