@@ -717,7 +717,7 @@ static USBDevice* ehci_find_device(EHCIState* ehci, uint8_t addr)
 }
 
 /* 4.1 host controller initialization */
-void ehci_reset(void* opaque)
+void usb_ehci_reset(void* opaque)
 {
     EHCIState* s = opaque;
     int        i;
@@ -876,7 +876,7 @@ static void ehci_opreg_write(void* ptr, hwaddr addr, uint64_t val, unsigned size
     switch (addr) {
         case USBCMD:
             if (val & USBCMD_HCRESET) {
-                ehci_reset(s);
+                usb_ehci_reset(s);
                 val = s->usbcmd;
                 break;
             }
@@ -1515,8 +1515,7 @@ static int ehci_state_fetchsitd(EHCIState* ehci, int async)
     if (get_dwords(ehci, NLPTR_GET(entry), (uint32_t*)&sitd, sizeof(EHCIsitd) >> 2) < 0) { return 0; }
     ehci_trace_sitd(ehci, entry, &sitd);
 
-    if (!(sitd.results & SITD_RESULTS_ACTIVE)) {
-        /* siTD is not active, nothing to do */
+    if (!(sitd.results & SITD_RESULTS_ACTIVE)) { /* siTD is not active, nothing to do */
     }
     else {
         /* TODO: split transfers are not implemented */
@@ -1865,7 +1864,7 @@ static void ehci_advance_state(EHCIState* ehci, int async)
         if (again < 0 || itd_count > 16) {
             /* TODO: notify guest (raise HSE irq?) */
             fprintf(stderr, "processing error - resetting ehci HC\n");
-            ehci_reset(ehci);
+            usb_ehci_reset(ehci);
             again = 0;
         }
     }

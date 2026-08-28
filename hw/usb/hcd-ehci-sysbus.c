@@ -24,6 +24,14 @@ static const Property ehci_sysbus_properties[] = {
     DEFINE_PROP_BOOL("companion-enable", EHCISysBusState, ehci.companion_enable, false),
 };
 
+static void usb_ehci_sysbus_reset_hold(Object* obj, ResetType type)
+{
+    EHCISysBusState* i = SYS_BUS_EHCI(obj);
+    EHCIState*       s = &i->ehci;
+
+    usb_ehci_reset(s);
+}
+
 static void usb_ehci_sysbus_realize(DeviceState* dev, Error** errp)
 {
     SysBusDevice*    d = SYS_BUS_DEVICE(dev);
@@ -32,15 +40,6 @@ static void usb_ehci_sysbus_realize(DeviceState* dev, Error** errp)
 
     usb_ehci_realize(s, dev, errp);
     sysbus_init_irq(d, &s->irq);
-}
-
-static void usb_ehci_sysbus_reset(DeviceState* dev)
-{
-    SysBusDevice*    d = SYS_BUS_DEVICE(dev);
-    EHCISysBusState* i = SYS_BUS_EHCI(d);
-    EHCIState*       s = &i->ehci;
-
-    ehci_reset(s);
 }
 
 static void ehci_sysbus_init(Object* obj)
@@ -70,16 +69,18 @@ static void ehci_sysbus_finalize(Object* obj)
 
 static void ehci_sysbus_class_init(ObjectClass* klass, const void* data)
 {
+    ResettableClass* rc  = RESETTABLE_CLASS(klass);
     DeviceClass*     dc  = DEVICE_CLASS(klass);
     SysBusEHCIClass* sec = SYS_BUS_EHCI_CLASS(klass);
 
-    sec->portscbase = 0x44;
-    sec->portnr     = EHCI_PORTS;
+    rc->phases.hold = usb_ehci_sysbus_reset_hold;
 
     dc->realize = usb_ehci_sysbus_realize;
     device_class_set_props(dc, ehci_sysbus_properties);
-    device_class_set_legacy_reset(dc, usb_ehci_sysbus_reset);
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
+
+    sec->portscbase = 0x44;
+    sec->portnr     = EHCI_PORTS;
 }
 
 static const TypeInfo ehci_sysbus_types[] = {
