@@ -20,7 +20,8 @@
 
 #include "qemu/osdep.h"
 #include "exec/cputlb.h"
-#include "exec/tb-flush.h"
+#include "qemu/log.h"
+#include "qemu/main-loop.h"
 #include "hw/arm/a13.h"
 #include "hw/arm/sep/private.h"
 #include "system/address-spaces.h"
@@ -28,6 +29,13 @@
 #include "system/tcg.h"
 
 #define BOOT_MONITOR_REG_SIZE (0x4000)    // ?
+
+#define BOOT_MONITOR_REG_STATUS          (0x04)
+#define BOOT_MONITOR_REG_ERROR           (0x0C)
+#define BOOT_MONITOR_REG_LOAD_ADDR       (0x20)
+#define BOOT_MONITOR_REG_RANDOMNESS_LO   (0x48)
+#define BOOT_MONITOR_REG_RANDOMNESS_HI   (0x4C)
+#define BOOT_MONITOR_REG_RANDOMNESS_LOCK (0x50)
 
 struct AppleSEPBootMonitorState
 {
@@ -38,6 +46,40 @@ struct AppleSEPBootMonitorState
     uint8_t        boot_monitor_regs[BOOT_MONITOR_REG_SIZE];
 };
 
+static uint32_t boot_monitor_reg_get(AppleSEPBootMonitorState* s, hwaddr addr)
+{
+    assert_cmphex(addr + sizeof(uint32_t), <=, BOOT_MONITOR_REG_SIZE);
+    return ldl_le_p(&s->boot_monitor_regs[addr]);
+}
+
+static void boot_monitor_reg_set(AppleSEPBootMonitorState* s, hwaddr addr, uint32_t value)
+{
+    assert_cmphex(addr + sizeof(uint32_t), <=, BOOT_MONITOR_REG_SIZE);
+    stl_le_p(&s->boot_monitor_regs[addr], value);
+}
+
+static hwaddr boot_monitor_reg_get_64(AppleSEPBootMonitorState* s, hwaddr addr)
+{
+    assert_cmphex(addr + sizeof(uint64_t), <=, BOOT_MONITOR_REG_SIZE);
+    return ldq_le_p(&s->boot_monitor_regs[addr]);
+}
+
+static bool boot_monitor_randomness_locked(AppleSEPBootMonitorState* s)
+{ return (boot_monitor_reg_get(s, BOOT_MONITOR_REG_RANDOMNESS_LOCK) & BIT(0)) != 0; }
+
+/*
+ *   0x08: maybe some command0?
+ *         0x2: something about PKA; 0x3: ?; 0x4: during resume;
+ *         0x10: during first/cold boot; 0x11: ?; 0x12: ?
+ *   0x10: maybe some command1?
+ *   0x20/0x24: load address  (0x0000000340000000)
+ *   0x28/0x2C: end address   (0x0000000340010000, middle of kernel __text)
+ *   0x30/0x34: unknown1 addr (0x000000034004C000 == base of SEPD)
+ *   0x38/0x3C: unknown2 addr (0x00000003403D0000 == SEPOS+0xC000, middle of
+ *                             __text; 0x0000000340464000 == SEPOS+0x1C000,
+ *                             middle of __cstring)
+ *   0x40/0x44: unknown0 addr (0x0000000000000000)
+ */
 static void boot_monitor_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     AppleSEPBootMonitorState* s = opaque;
@@ -45,79 +87,48 @@ static void boot_monitor_reg_write(void* opaque, hwaddr addr, uint64_t data, uns
 #ifdef ENABLE_CPU_DUMP_STATE
     cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
+
     switch (addr) {
-        case 0x04:              // some status flag, bit0
-            data &= ~BIT(0);    // reset bit0 for read
-            QEMU_FALLTHROUGH;
-        case 0x08:    // maybe some command0?
-                      // 0x2: something about PKA
-                      // 0x3: ?
-                      // 0x4: during resume
-                      // 0x10: during first/cold boot
-                      // 0x11: ?
-                      // 0x12: ?
-        case 0x10:    // maybe some command1?
-        case 0x14:    // ?
-        case 0x20:    // load address low
-        case 0x24:    // load address high
-                      // 0x0000000340000000
-        case 0x28:    // end address low
-        case 0x2C:    // end address high
-                      // 0x0000000340010000, middle of kernel __text
-        case 0x30:    // unknown1 address low
-        case 0x34:    // unknown1 address high
-                      // 0x000000034004c000 == base of SEPD
-        case 0x38:    // unknown2 address low
-        case 0x3C:    // unknown2 address high
-                      // 0x00000003403d0000 == 0xc000 of SEPOS, middle of __text
-                      // 0x0000000340464000 == 0x1c000 of SEPOS, middle of __cstring
-        case 0x40:    // unknown0 address low
-        case 0x44:    // unknown0 address high
-            // 0x0000000000000000
-            goto jump_default;
-        case 0x48:      // randomness low
-        case 0x4C:      // randomness high
-        case 0x50: {    // randomness lock
-            bool randomness_locked = (((uint32_t*)s->boot_monitor_regs)[0x50 / 4] & BIT(0)) != 0;
-            if (randomness_locked) {
+        case BOOT_MONITOR_REG_STATUS:
+            // Some status flag; bit0 always reads back clear.
+            data &= ~BIT(0);
+            break;
+        case BOOT_MONITOR_REG_RANDOMNESS_LO:
+        case BOOT_MONITOR_REG_RANDOMNESS_HI:
+        case BOOT_MONITOR_REG_RANDOMNESS_LOCK:
+            if (boot_monitor_randomness_locked(s)) {
                 DPRINTF("SEP Boot Monitor: Locked write at 0x" HWADDR_FMT_plx " with value 0x%" PRIX64 "\n", addr,
                         data);
-                break;
+                return;
             }
-            QEMU_FALLTHROUGH;
-        }
+            break;
         default:
-        jump_default:
             DPRINTF("SEP Boot Monitor: Unknown write at 0x" HWADDR_FMT_plx " with value 0x%" PRIX64 "\n", addr, data);
-            memcpy(&s->boot_monitor_regs[addr], &data, size);
             break;
     }
+
+    boot_monitor_reg_set(s, addr, (uint32_t)data);
 }
 
 static uint64_t boot_monitor_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
-    AppleSEPBootMonitorState* s   = opaque;
-    uint64_t                  ret = 0;
+    AppleSEPBootMonitorState* s = opaque;
 
 #ifdef ENABLE_CPU_DUMP_STATE
     cpu_dump_state(CPU(s->sep->cpu), stderr, CPU_DUMP_CODE);
 #endif
+
     switch (addr) {
-        case 0x04:    // some status flag, bit0, maybe "is active"
-            goto jump_default;
-        case 0x0C:    // must return 0x0
-            // other possible values: 0x1/0x2/0x3, maybe even 0x4
-            // maybe error codes?
-            ret = 0x0;
-            return ret;
-        default:
-            DPRINTF("SEP Boot Monitor: Unknown read at 0x" HWADDR_FMT_plx "\n", addr);
-        jump_default:
-            memcpy(&ret, &s->boot_monitor_regs[addr], size);
+        case BOOT_MONITOR_REG_STATUS:    // Some status flag, bit0, maybe "is active".
             break;
+        case BOOT_MONITOR_REG_ERROR:
+            // Must return 0x0. Other possible values: 0x1/0x2/0x3, maybe 0x4.
+            // Maybe error codes?
+            return 0;
+        default: DPRINTF("SEP Boot Monitor: Unknown read at 0x" HWADDR_FMT_plx "\n", addr); break;
     }
 
-    return ret;
+    return boot_monitor_reg_get(s, addr);
 }
 
 static const MemoryRegionOps boot_monitor_reg_ops = {
@@ -131,6 +142,7 @@ static const MemoryRegionOps boot_monitor_reg_ops = {
     .valid.unaligned       = false,
 };
 
+// fully resetting the CPU doesn't work, observed list of registers from real hardware
 static void apple_sep_cpu_moni_reset_regs(CPUState* cpu, hwaddr load_addr, hwaddr pwr_dn_save)
 {
     ARMCPU*        arm_cpu                   = container_of(cpu, ARMCPU, parent_obj);
@@ -163,38 +175,29 @@ static void apple_sep_cpu_moni_reset_regs(CPUState* cpu, hwaddr load_addr, hwadd
 }
 
 static hwaddr apple_sep_boot_monitor_load_addr(AppleSEPBootMonitorState* s)
-{ return ((hwaddr*)s->boot_monitor_regs)[0x20 / 8]; }
+{ return boot_monitor_reg_get_64(s, BOOT_MONITOR_REG_LOAD_ADDR); }
 
-// some race conditions might happen before, during and/or after the jump.
-static void apple_sep_cpu_moni_jump(CPUState* cpu, run_on_cpu_data data)
+static void apple_sep_boot_monitor_jump_work(CPUState* cpu, run_on_cpu_data data)
 {
-    ARMCPU*                   arm_cpu = container_of(cpu, ARMCPU, parent_obj);
-    AppleSEPBootMonitorState* s       = data.host_ptr;
+    AppleA13State* acpu      = APPLE_A13(cpu);
+    hwaddr         load_addr = data.target_ptr;
+    hwaddr         pwr_dn_save;
 
-    hwaddr load_addr = apple_sep_boot_monitor_load_addr(s);
+    assert(bql_locked());
 
-    DPRINTF("%s: have load_addr 0x" HWADDR_FMT_plx "\n", __func__, load_addr);
+    pwr_dn_save = acpu->A13_CPREG_VAR_NAME(SYS_ACC_PWR_DN_SAVE);
 
-    if (load_addr == 0) { return; }
+    DPRINTF("%s: entering image at 0x" HWADDR_FMT_plx "\n", __func__, load_addr);
 
-    // some specific, non currently used(?), cpu_ functions will require bql
-    // BQL_LOCK_GUARD();
-
-    DPRINTF("%s: before cpu_set_pc: base=0x%" VADDR_PRIX "\n", __func__, load_addr);
-
-    AppleA13State* acpu        = container_of(arm_cpu, AppleA13State, parent_obj);
-    hwaddr         pwr_dn_save = acpu->A13_CPREG_VAR_NAME(SYS_ACC_PWR_DN_SAVE);
-    cpu_pause(cpu);
     apple_sep_cpu_moni_reset_regs(cpu, load_addr, pwr_dn_save);
 
-    // possible workaround for intermittent sep boot errors
-    // does it matter whether a tlb_flush happens before or after a write?
+#ifdef CONFIG_TCG
     if (tcg_enabled()) {
-        arm_rebuild_hflags(&arm_cpu->env);
-        tb_flush__exclusive_or_serial();
+        arm_rebuild_hflags(&acpu->parent_obj.env);
         tlb_flush(cpu);
     }
-    cpu_resume(cpu);
+#endif
+
     // using qemu_irq_raise ARM_CPU_IRQ here will cause a7iop atomic sigsegv
 }
 
@@ -212,13 +215,28 @@ static void disable_aslr_SYS_ACC_PWR_DN_SAVE(AppleSEPState* s)
 void apple_sep_boot_monitor_jump(AppleSEPBootMonitorState* s)
 {
     AppleSEPState* sep = s->sep;
+    hwaddr         load_addr;
 
-    if (sep->modern) {
-#ifdef SEP_DISABLE_ASLR
-        if (apple_sep_boot_monitor_load_addr(s) != 0) { disable_aslr_SYS_ACC_PWR_DN_SAVE(sep); }
-#endif
-        async_safe_run_on_cpu(CPU(sep->cpu), apple_sep_cpu_moni_jump, RUN_ON_CPU_HOST_PTR(s));
+    assert(bql_locked());
+
+    if (!sep->modern) { return; }
+
+    load_addr = apple_sep_boot_monitor_load_addr(s);
+    if (load_addr == 0) {
+        DPRINTF("%s: no load address programmed\n", __func__);
+        return;
     }
+
+    if (!QEMU_IS_ALIGNED(load_addr, 4)) {
+        qemu_log_mask(LOG_GUEST_ERROR, "%s: unaligned load address 0x" HWADDR_FMT_plx "\n", __func__, load_addr);
+        return;
+    }
+
+#ifdef SEP_DISABLE_ASLR
+    disable_aslr_SYS_ACC_PWR_DN_SAVE(sep);
+#endif
+
+    async_run_on_cpu(CPU(sep->cpu), apple_sep_boot_monitor_jump_work, RUN_ON_CPU_TARGET_PTR(load_addr));
 }
 
 static void apple_sep_boot_monitor_reset_enter(Object* obj, ResetType type)
