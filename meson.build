@@ -1276,7 +1276,11 @@ if not get_option('bzip2').auto() or have_block
 endif
 
 if host_os == 'darwin'
-  brew_inc_dirs = include_directories('/opt/homebrew/include/', '/usr/local/include/')
+  if host_arch == 'aarch64'
+    brew_inc_dirs = include_directories('/opt/homebrew/include/', is_system: true)
+  else
+    brew_inc_dirs = include_directories('/usr/local/include/', is_system: true)
+  endif
   raw_liblzfse = cc.find_library('lzfse',
     dirs: ['/opt/homebrew/lib/', '/usr/local/lib/'],
     header_include_directories: brew_inc_dirs,
