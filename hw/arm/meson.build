@@ -5,11 +5,11 @@ arm_common_ss.add(when: 'CONFIG_APPLE_SOC', if_true: tasn1)
 arm_common_ss.add(when: 'CONFIG_APPLE_DART', if_true: files('dart.c'),
                                              if_false: files('dart-stub.c'))
 arm_common_ss.add(when: 'CONFIG_APPLE_SART', if_true: files('sart.c'))
-arm_common_ss.add(when: 'CONFIG_APPLE_SOC', if_true: files(
+arm_common_ss.add(when: 'CONFIG_APPLE_SOC', if_true: [liblzfse, files(
     'a13.c',
     'a13_gxf.c',
     'a9.c',
-    'boot.c',
+    'boot.c', # needs liblzfse
     'dt.c',
     'mem.c',
     'patcher.c',
@@ -17,7 +17,7 @@ arm_common_ss.add(when: 'CONFIG_APPLE_SOC', if_true: files(
     'lm-backlight.c',
     's8000.c',
     't8030.c',
-))
+)])
 
 subdir('sep')
 

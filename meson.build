@@ -1275,20 +1275,27 @@ if not get_option('bzip2').auto() or have_block
   endif
 endif
 
-liblzfse = not_found
-if not get_option('lzfse').auto() or have_block
-  liblzfse = cc.find_library('lzfse', has_headers: ['lzfse.h'],
-                             required: get_option('lzfse'))
+if host_os == 'darwin'
+  brew_inc_dirs = include_directories('/opt/homebrew/include/', '/usr/local/include/')
+  raw_liblzfse = cc.find_library('lzfse',
+    dirs: ['/opt/homebrew/lib/', '/usr/local/lib/'],
+    header_include_directories: brew_inc_dirs,
+    has_headers: ['lzfse.h'],
+    required: true
+  )
+  liblzfse = declare_dependency(
+    dependencies: raw_liblzfse,
+    include_directories: brew_inc_dirs
+  )
+else
+  liblzfse = cc.find_library('lzfse', has_headers: ['lzfse.h'], required: true)
 endif
 if liblzfse.found() and not cc.links('''
    #include <lzfse.h>
-   int main(void) { lzfse_decode_scratch_size(); return 0; }''', dependencies: liblzfse)
-  liblzfse = not_found
-  if get_option('lzfse').enabled()
-    error('could not link liblzfse')
-  else
-    warning('could not link liblzfse, disabling')
-  endif
+   int main(void) { lzfse_decode_scratch_size(); return 0; }''',
+   dependencies: liblzfse)
+
+  error('could not link liblzfse')
 endif
 
 oss = not_found
@@ -3477,7 +3484,6 @@ summary_info += {'libssh support':    libssh}
 summary_info += {'lzo support':       lzo}
 summary_info += {'snappy support':    snappy}
 summary_info += {'bzip2 support':     libbzip2}
-summary_info += {'lzfse support':     liblzfse}
 summary_info += {'zstd support':      zstd}
 summary_info += {'libpmem support':   libpmem}
 summary_info += {'libdaxctl support': libdaxctl}

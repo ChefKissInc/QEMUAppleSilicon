@@ -29,8 +29,8 @@
 #include "qemu/guest-random.h"
 #include "system/memory.h"
 #include "img4.h"
-#include "lzfse.h"
 #include "lzss.h"
+#include <lzfse.h>
 
 #if 0
     #define DINFO(fmt, ...) info_report(fmt, ##__VA_ARGS__)

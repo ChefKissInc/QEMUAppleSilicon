@@ -47,6 +47,5 @@ jobs:
           brew install libtool meson ninja pkgconf glib gnutls jpeg-turbo libpng libslirp libssh libusb lzo ncurses nettle pixman snappy vde zstd lzfse
       - name: Build
         run: |
-          BREW_PREFIX=$(brew --prefix)
-          LIBTOOL="glibtool" meson setup build . -Dsdl=disabled -Dgtk=disabled -Dcocoa=enabled -Dc_args="-DNCURSES_WIDECHAR=1 -I$BREW_PREFIX/include" -Dc_link_args="-L$BREW_PREFIX/lib"
+          LIBTOOL="glibtool" meson setup build . -Dsdl=disabled -Dgtk=disabled -Dcocoa=enabled -Dc_args="-DNCURSES_WIDECHAR=1"
           meson compile -C build
