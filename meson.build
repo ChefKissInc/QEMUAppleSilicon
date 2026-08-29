@@ -3502,21 +3502,12 @@ if host_arch == 'unknown'
   warning('UNSUPPORTED HOST CPU')
   message()
   message('Support for CPU host architecture ' + cpu + ' is not currently')
-  message('maintained. The QEMU project does not guarantee that QEMU will')
-  message('compile or work on this host CPU. You can help by volunteering')
-  message('to maintain it and providing a build host for our continuous')
-  message('integration setup.')
+  message('maintained.')
   if have_tcg
     message()
     message('configure has succeeded and you can continue to build, but')
     message('QEMU will use a slow interpreter to emulate the target CPU.')
   endif
-elif host_long_bits < 64
-  message()
-  warning('DEPRECATED HOST CPU')
-  message()
-  message('Support for 32-bit CPU host architecture ' + cpu + ' is going')
-  message('to be dropped in a future QEMU release.')
 endif
 
 if not supported_oses.contains(host_os)
@@ -3524,18 +3515,7 @@ if not supported_oses.contains(host_os)
   warning('UNSUPPORTED HOST OS')
   message()
   message('Support for host OS ' + host_os + 'is not currently maintained.')
-  message('configure has succeeded and you can continue to build, but')
-  message('the QEMU project does not guarantee that QEMU will compile or')
-  message('work on this operating system. You can help by volunteering')
-  message('to maintain it and providing a build host for our continuous')
-  message('integration setup. This will ensure that future versions of QEMU')
-  message('will keep working on ' + host_os + '.')
-endif
-
-if host_arch == 'unknown' or not supported_oses.contains(host_os)
-  message()
-  message('If you want to help supporting QEMU on this platform, please')
-  message('contact the developers at qemu-devel@nongnu.org.')
+  message('although configure has succeeded and you can continue to build.')
 endif
 
 actually_reloc = get_option('relocatable')
