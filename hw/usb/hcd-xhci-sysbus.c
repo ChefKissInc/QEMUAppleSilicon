@@ -27,6 +27,7 @@ static void xhci_sysbus_realize(DeviceState* dev, Error** errp)
 {
     XHCISysbusState* s = XHCI_SYSBUS(dev);
 
+    object_property_set_link(OBJECT(&s->xhci), "host", OBJECT(s), NULL);
     if (!qdev_realize(DEVICE(&s->xhci), NULL, errp)) { return; }
     s->irq = g_new0(qemu_irq, s->xhci.numintrs);
     qdev_init_gpio_out_named(dev, s->irq, SYSBUS_DEVICE_GPIO_IRQ, s->xhci.numintrs);

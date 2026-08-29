@@ -24,5 +24,3 @@ typedef struct XHCISysbusState
     XHCIState xhci;
     qemu_irq* irq;
 } XHCISysbusState;
-
-void xhci_sysbus_reset(DeviceState* dev);
