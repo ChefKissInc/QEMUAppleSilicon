@@ -22,11 +22,11 @@
 #include "qemu/osdep.h"
 #include "hw/usb.h"
 #include "hw/usb/tcp-usb.h"
+#include "io/channel.h"
 
 typedef struct USBTCPInflightPacket
 {
     USBPacket* p;
-    uint64_t   handled;
     QTAILQ_ENTRY(USBTCPInflightPacket) queue;
     uint8_t addr;
 } USBTCPInflightPacket;
@@ -38,34 +38,40 @@ typedef struct USBTCPCompletedPacket
     uint8_t addr;
 } USBTCPCompletedPacket;
 
+typedef struct USBTCPRemoteMsg
+{
+    QTAILQ_ENTRY(USBTCPRemoteMsg) queue;
+    size_t  len;
+    uint8_t data[];
+} USBTCPRemoteMsg;
+
 struct USBTCPRemoteState
 {
     USBDevice parent_obj;
-
-    QemuThread thread;
-    QemuThread read_thread;
-    QemuCond   cond;
-    QemuMutex  thr_mutex;
-    QemuMutex  request_mutex;
 
     QemuMutex queue_mutex;
     QTAILQ_HEAD(, USBTCPInflightPacket) queue;
 
     QemuMutex completed_queue_mutex;
-    QemuCond  completed_queue_cond;
     QTAILQ_HEAD(, USBTCPCompletedPacket) completed_queue;
+
+    QemuMutex send_mutex;
+    QTAILQ_HEAD(, USBTCPRemoteMsg) send_queue;
+
     QEMUBH* completed_bh;
     QEMUBH* addr_bh;
     QEMUBH* cleanup_bh;
+    QEMUBH* send_bh;
 
     USBTCPRemoteConnType conn_type;
     char*                conn_addr;
     uint16_t             conn_port;
     int                  socket;
-    int                  fd;
+    QIOChannel*          ioc;
     uint8_t              addr;
     bool                 closed;
     bool                 stopped;
+    bool                 sending;
 };
 
 #define TYPE_USB_TCP_REMOTE "usb-tcp-remote"
