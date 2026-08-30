@@ -22,6 +22,7 @@
 #include "qemu/osdep.h"
 #include "hw/sysbus.h"
 #include "hw/usb.h"
+#include "qemu/timer.h"
 #include "hw/usb/tcp-usb.h"
 #include "io/channel.h"
 #include "qemu/coroutine.h"
@@ -45,6 +46,8 @@ struct USBTCPHostState
 
     USBBus               bus;
     USBPort              ports[3];
+    QEMUTimer*           retry_timer;
+    QEMUBH*              reset_bh;
     QIOChannel*          ioc;
     CoMutex              write_mutex;
     bool                 closed;
