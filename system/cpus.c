@@ -223,12 +223,7 @@ void generic_handle_interrupt(CPUState* cpu, int mask)
     if (!qemu_cpu_is_self(cpu)) { qemu_cpu_kick(cpu); }
 }
 
-void cpu_interrupt(CPUState* cpu, int mask)
-{
-    assert(bql_locked());
-
-    cpus_accel->handle_interrupt(cpu, mask);
-}
+void cpu_interrupt(CPUState* cpu, int mask) { cpus_accel->handle_interrupt(cpu, mask); }
 
 /*
  * True if the vm was previously suspended, and has not been woken or reset.
