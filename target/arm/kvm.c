@@ -2126,9 +2126,9 @@ void arm_cpu_kvm_set_irq(void* arm_cpu, int irq, int level)
         default: assert_not_reached();
     }
 
-    if (level) { env->irq_line_state |= linestate_bit; }
+    if (level) { qatomic_or(&env->irq_line_state, linestate_bit); }
     else {
-        env->irq_line_state &= ~linestate_bit;
+        qatomic_and(&env->irq_line_state, ~linestate_bit);
     }
     kvm_arm_set_irq(cs->cpu_index, KVM_ARM_IRQ_TYPE_CPU, irq_id, !!level);
 }

@@ -240,7 +240,7 @@ void arm_cpu_update_virq(ARMCPU* cpu)
     CPUState*    cs  = CPU(cpu);
 
     bool new_state = ((arm_hcr_el2_eff(env) & HCR_VI) && !(arm_hcrx_el2_eff(env) & HCRX_VINMI))
-                     || (env->irq_line_state & CPU_INTERRUPT_VIRQ);
+                     || (qatomic_read(&env->irq_line_state) & CPU_INTERRUPT_VIRQ);
 
     if (new_state != cpu_test_interrupt(cs, CPU_INTERRUPT_VIRQ)) {
         if (new_state) { cpu_interrupt(cs, CPU_INTERRUPT_VIRQ); }
@@ -260,7 +260,7 @@ void arm_cpu_update_vfiq(ARMCPU* cpu)
     CPUState*    cs  = CPU(cpu);
 
     bool new_state = ((arm_hcr_el2_eff(env) & HCR_VF) && !(arm_hcrx_el2_eff(env) & HCRX_VFNMI))
-                     || (env->irq_line_state & CPU_INTERRUPT_VFIQ);
+                     || (qatomic_read(&env->irq_line_state) & CPU_INTERRUPT_VFIQ);
 
     if (new_state != cpu_test_interrupt(cs, CPU_INTERRUPT_VFIQ)) {
         if (new_state) { cpu_interrupt(cs, CPU_INTERRUPT_VFIQ); }
@@ -280,7 +280,7 @@ void arm_cpu_update_vinmi(ARMCPU* cpu)
     CPUState*    cs  = CPU(cpu);
 
     bool new_state = ((arm_hcr_el2_eff(env) & HCR_VI) && (arm_hcrx_el2_eff(env) & HCRX_VINMI))
-                     || (env->irq_line_state & CPU_INTERRUPT_VINMI);
+                     || (qatomic_read(&env->irq_line_state) & CPU_INTERRUPT_VINMI);
 
     if (new_state != cpu_test_interrupt(cs, CPU_INTERRUPT_VINMI)) {
         if (new_state) { cpu_interrupt(cs, CPU_INTERRUPT_VINMI); }

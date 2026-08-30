@@ -403,9 +403,9 @@ static void arm_cpu_set_irq(void* opaque, int irq, int level)
         return;
     }
 
-    if (level) { env->irq_line_state |= mask[irq]; }
+    if (level) { qatomic_or(&env->irq_line_state, mask[irq]); }
     else {
-        env->irq_line_state &= ~mask[irq];
+        qatomic_and(&env->irq_line_state, ~mask[irq]);
     }
 
     switch (irq) {
