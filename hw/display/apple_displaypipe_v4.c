@@ -87,6 +87,8 @@
  * 9 | ?
  */
 
+#define ADP_V4_PANEL_HZ (60)
+
 /* 2 GenPipes, 2 Layers per GenPipe */
 #define ADP_V4_GP_COUNT    (2)
 #define ADP_V4_LAYER_COUNT (2)
@@ -139,6 +141,8 @@ struct AppleDisplayPipeV4State
     qemu_irq            irqs[9];
     uint32_t            int_status;
     uint32_t            int_enable;
+    QEMUTimer*          vsync_timer;
+    uint64_t            next_vsync_ns;
     ADPV4GenPipe        genpipe[ADP_V4_GP_COUNT];
     ADPV4BlendUnitState blend_unit;
     QemuConsole*        console;
@@ -540,6 +544,29 @@ static const MemoryRegionOps adp_v4_reg_ops = {
 
 static void adp_v4_invalidate(void* opaque) { }
 
+static void adp_v4_vsync_tick(void* opaque)
+{
+    AppleDisplayPipeV4State* adp    = opaque;
+    uint64_t                 now    = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+    uint64_t                 period = NANOSECONDS_PER_SECOND / ADP_V4_PANEL_HZ;
+
+    qatomic_or(&adp->int_status, R_CONTROL_INT_OUTPUT_READY_MASK);
+    adp_v4_update_irqs(adp);
+
+    adp->next_vsync_ns += period;
+    if (adp->next_vsync_ns <= now) { adp->next_vsync_ns = now + period; }
+
+    timer_mod_ns(adp->vsync_timer, adp->next_vsync_ns);
+}
+
+static void adp_v4_vsync_start(AppleDisplayPipeV4State* adp)
+{
+    uint64_t period = NANOSECONDS_PER_SECOND / ADP_V4_PANEL_HZ;
+
+    adp->next_vsync_ns = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + period;
+    timer_mod_ns(adp->vsync_timer, adp->next_vsync_ns);
+}
+
 static void adp_v4_gfx_update(void* opaque)
 {
     AppleDisplayPipeV4State* adp = opaque;
@@ -562,9 +589,6 @@ static void adp_v4_gfx_update(void* opaque)
     }
     if (ys != -1U) { dpy_gfx_update(adp->console, 0, ys, adp->width, y - ys); }
     g_free(snap);
-
-    qatomic_or(&adp->int_status, R_CONTROL_INT_OUTPUT_READY_MASK);
-    adp_v4_update_irqs(adp);
 }
 
 static const GraphicHwOps adp_v4_ops = {
@@ -730,7 +754,10 @@ static void adp_v4_realize(DeviceState* dev, Error** errp)
 {
     AppleDisplayPipeV4State* adp = APPLE_DISPLAY_PIPE_V4(dev);
 
-    adp->console = graphic_console_init(dev, 0, &adp_v4_ops, adp);
+    adp->console     = graphic_console_init(dev, 0, &adp_v4_ops, adp);
+    adp->vsync_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, adp_v4_vsync_tick, adp);
+
+    adp_v4_vsync_start(adp);
 }
 
 static const Property adp_v4_props[] = {
