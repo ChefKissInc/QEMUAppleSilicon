@@ -71,9 +71,6 @@ util_ss.add(files('lockcnt.c'))
 
 if have_system
   util_ss.add(files('crc-ccitt.c'))
-  if host_os == 'linux'
-    util_ss.add(files('userfaultfd.c'))
-  endif
 endif
 
 if have_block or have_ga

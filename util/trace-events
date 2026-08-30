@@ -77,13 +77,3 @@ socket_listen(int num) "backlog: %d"
 qemu_mutex_lock(void *mutex, const char *file, const int line) "waiting on mutex %p (%s:%d)"
 qemu_mutex_locked(void *mutex, const char *file, const int line) "taken mutex %p (%s:%d)"
 qemu_mutex_unlock(void *mutex, const char *file, const int line) "released mutex %p (%s:%d)"
-
-#userfaultfd.c
-uffd_detect_open_mode(int mode) "%d"
-uffd_query_features_nosys(int err) "errno: %i"
-uffd_query_features_api_failed(int err) "errno: %i"
-uffd_create_fd_nosys(int err) "errno: %i"
-uffd_create_fd_api_failed(int err) "errno: %i"
-uffd_create_fd_api_noioctl(uint64_t ioctl_req, uint64_t ioctl_supp) "ioctl_req: 0x%" PRIx64 "ioctl_supp: 0x%" PRIx64
-uffd_register_memory_failed(void *addr, uint64_t length, uint64_t mode, int err) "addr: %p length: %" PRIu64 " mode: 0x%" PRIx64 " errno: %i"
-uffd_unregister_memory_failed(void *addr, uint64_t length, int err) "addr: %p length: %" PRIu64 " errno: %i"
