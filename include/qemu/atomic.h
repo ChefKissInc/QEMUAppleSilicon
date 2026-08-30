@@ -167,6 +167,22 @@
         qatomic_xchg__nocheck(ptr, i);                      \
     })
 
+#define qatomic_xchg_acquire__nocheck(ptr, i) ({ __atomic_exchange_n(ptr, (i), __ATOMIC_ACQUIRE); })
+
+#define qatomic_xchg_acquire(ptr, i)                        \
+    ({                                                      \
+        qemu_build_assert(sizeof(*ptr) <= ATOMIC_REG_SIZE); \
+        qatomic_xchg_acquire__nocheck(ptr, i);              \
+    })
+
+#define qatomic_xchg_release__nocheck(ptr, i) ({ __atomic_exchange_n(ptr, (i), __ATOMIC_RELEASE); })
+
+#define qatomic_xchg_release(ptr, i)                        \
+    ({                                                      \
+        qemu_build_assert(sizeof(*ptr) <= ATOMIC_REG_SIZE); \
+        qatomic_xchg_release__nocheck(ptr, i);              \
+    })
+
 /* Returns the old value of '*ptr' (whether the cmpxchg failed or not) */
 #define qatomic_cmpxchg__nocheck(ptr, old, new)                                                        \
     ({                                                                                                 \
@@ -181,32 +197,104 @@
         qatomic_cmpxchg__nocheck(ptr, old, new);            \
     })
 
+#define qatomic_cmpxchg_acquire__nocheck(ptr, old, new)                                                \
+    ({                                                                                                 \
+        typeof_strip_qual(*ptr) _old = (old);                                                          \
+        (void)__atomic_compare_exchange_n(ptr, &_old, new, false, __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE); \
+        _old;                                                                                          \
+    })
+
+#define qatomic_cmpxchg_acquire(ptr, old, new)              \
+    ({                                                      \
+        qemu_build_assert(sizeof(*ptr) <= ATOMIC_REG_SIZE); \
+        qatomic_cmpxchg_acquire__nocheck(ptr, old, new);    \
+    })
+
+#define qatomic_cmpxchg_release__nocheck(ptr, old, new)                                                \
+    ({                                                                                                 \
+        typeof_strip_qual(*ptr) _old = (old);                                                          \
+        (void)__atomic_compare_exchange_n(ptr, &_old, new, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED); \
+        _old;                                                                                          \
+    })
+
+#define qatomic_cmpxchg_release(ptr, old, new)              \
+    ({                                                      \
+        qemu_build_assert(sizeof(*ptr) <= ATOMIC_REG_SIZE); \
+        qatomic_cmpxchg_release__nocheck(ptr, old, new);    \
+    })
+
 /* Provide shorter names for GCC atomic builtins, return old value */
-#define qatomic_fetch_inc(ptr) __atomic_fetch_add(ptr, 1, __ATOMIC_SEQ_CST)
-#define qatomic_fetch_dec(ptr) __atomic_fetch_sub(ptr, 1, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_inc(ptr)         __atomic_fetch_add(ptr, 1, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_dec(ptr)         __atomic_fetch_sub(ptr, 1, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_inc_release(ptr) __atomic_fetch_add(ptr, 1, __ATOMIC_RELEASE)
+#define qatomic_fetch_dec_release(ptr) __atomic_fetch_sub(ptr, 1, __ATOMIC_RELEASE)
 
-#define qatomic_fetch_add(ptr, n) __atomic_fetch_add(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_fetch_sub(ptr, n) __atomic_fetch_sub(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_fetch_and(ptr, n) __atomic_fetch_and(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_fetch_or(ptr, n)  __atomic_fetch_or(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_fetch_xor(ptr, n) __atomic_fetch_xor(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_inc_acquire(ptr) __atomic_fetch_add(ptr, 1, __ATOMIC_ACQUIRE)
+#define qatomic_fetch_dec_acquire(ptr) __atomic_fetch_sub(ptr, 1, __ATOMIC_ACQUIRE)
 
-#define qatomic_inc_fetch(ptr)    __atomic_add_fetch(ptr, 1, __ATOMIC_SEQ_CST)
-#define qatomic_dec_fetch(ptr)    __atomic_sub_fetch(ptr, 1, __ATOMIC_SEQ_CST)
-#define qatomic_add_fetch(ptr, n) __atomic_add_fetch(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_sub_fetch(ptr, n) __atomic_sub_fetch(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_and_fetch(ptr, n) __atomic_and_fetch(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_or_fetch(ptr, n)  __atomic_or_fetch(ptr, n, __ATOMIC_SEQ_CST)
-#define qatomic_xor_fetch(ptr, n) __atomic_xor_fetch(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_add_acquire(ptr, n) __atomic_fetch_add(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_fetch_sub_acquire(ptr, n) __atomic_fetch_sub(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_fetch_and_acquire(ptr, n) __atomic_fetch_and(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_fetch_or_acquire(ptr, n)  __atomic_fetch_or(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_fetch_xor_acquire(ptr, n) __atomic_fetch_xor(ptr, n, __ATOMIC_ACQUIRE)
+
+#define qatomic_fetch_add(ptr, n)         __atomic_fetch_add(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_sub(ptr, n)         __atomic_fetch_sub(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_and(ptr, n)         __atomic_fetch_and(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_or(ptr, n)          __atomic_fetch_or(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_xor(ptr, n)         __atomic_fetch_xor(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_fetch_add_release(ptr, n) __atomic_fetch_add(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_fetch_sub_release(ptr, n) __atomic_fetch_sub(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_fetch_and_release(ptr, n) __atomic_fetch_and(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_fetch_or_release(ptr, n)  __atomic_fetch_or(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_fetch_xor_release(ptr, n) __atomic_fetch_xor(ptr, n, __ATOMIC_RELEASE)
+
+#define qatomic_inc_fetch(ptr)            __atomic_add_fetch(ptr, 1, __ATOMIC_SEQ_CST)
+#define qatomic_dec_fetch(ptr)            __atomic_sub_fetch(ptr, 1, __ATOMIC_SEQ_CST)
+#define qatomic_add_fetch(ptr, n)         __atomic_add_fetch(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_sub_fetch(ptr, n)         __atomic_sub_fetch(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_and_fetch(ptr, n)         __atomic_and_fetch(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_or_fetch(ptr, n)          __atomic_or_fetch(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_xor_fetch(ptr, n)         __atomic_xor_fetch(ptr, n, __ATOMIC_SEQ_CST)
+#define qatomic_inc_fetch_release(ptr)    __atomic_add_fetch(ptr, 1, __ATOMIC_RELEASE)
+#define qatomic_dec_fetch_release(ptr)    __atomic_sub_fetch(ptr, 1, __ATOMIC_RELEASE)
+#define qatomic_add_fetch_release(ptr, n) __atomic_add_fetch(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_sub_fetch_release(ptr, n) __atomic_sub_fetch(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_and_fetch_release(ptr, n) __atomic_and_fetch(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_or_fetch_release(ptr, n)  __atomic_or_fetch(ptr, n, __ATOMIC_RELEASE)
+#define qatomic_xor_fetch_release(ptr, n) __atomic_xor_fetch(ptr, n, __ATOMIC_RELEASE)
+
+#define qatomic_inc_fetch_acquire(ptr)    __atomic_add_fetch(ptr, 1, __ATOMIC_ACQUIRE)
+#define qatomic_dec_fetch_acquire(ptr)    __atomic_sub_fetch(ptr, 1, __ATOMIC_ACQUIRE)
+#define qatomic_add_fetch_acquire(ptr, n) __atomic_add_fetch(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_sub_fetch_acquire(ptr, n) __atomic_sub_fetch(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_and_fetch_acquire(ptr, n) __atomic_and_fetch(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_or_fetch_acquire(ptr, n)  __atomic_or_fetch(ptr, n, __ATOMIC_ACQUIRE)
+#define qatomic_xor_fetch_acquire(ptr, n) __atomic_xor_fetch(ptr, n, __ATOMIC_ACQUIRE)
 
 /* And even shorter names that return void.  */
-#define qatomic_inc(ptr)    ((void)__atomic_fetch_add(ptr, 1, __ATOMIC_SEQ_CST))
-#define qatomic_dec(ptr)    ((void)__atomic_fetch_sub(ptr, 1, __ATOMIC_SEQ_CST))
-#define qatomic_add(ptr, n) ((void)__atomic_fetch_add(ptr, n, __ATOMIC_SEQ_CST))
-#define qatomic_sub(ptr, n) ((void)__atomic_fetch_sub(ptr, n, __ATOMIC_SEQ_CST))
-#define qatomic_and(ptr, n) ((void)__atomic_fetch_and(ptr, n, __ATOMIC_SEQ_CST))
-#define qatomic_or(ptr, n)  ((void)__atomic_fetch_or(ptr, n, __ATOMIC_SEQ_CST))
-#define qatomic_xor(ptr, n) ((void)__atomic_fetch_xor(ptr, n, __ATOMIC_SEQ_CST))
+#define qatomic_inc(ptr)            ((void)__atomic_fetch_add(ptr, 1, __ATOMIC_SEQ_CST))
+#define qatomic_dec(ptr)            ((void)__atomic_fetch_sub(ptr, 1, __ATOMIC_SEQ_CST))
+#define qatomic_add(ptr, n)         ((void)__atomic_fetch_add(ptr, n, __ATOMIC_SEQ_CST))
+#define qatomic_sub(ptr, n)         ((void)__atomic_fetch_sub(ptr, n, __ATOMIC_SEQ_CST))
+#define qatomic_and(ptr, n)         ((void)__atomic_fetch_and(ptr, n, __ATOMIC_SEQ_CST))
+#define qatomic_or(ptr, n)          ((void)__atomic_fetch_or(ptr, n, __ATOMIC_SEQ_CST))
+#define qatomic_xor(ptr, n)         ((void)__atomic_fetch_xor(ptr, n, __ATOMIC_SEQ_CST))
+#define qatomic_inc_release(ptr)    ((void)__atomic_fetch_add(ptr, 1, __ATOMIC_RELEASE))
+#define qatomic_dec_release(ptr)    ((void)__atomic_fetch_sub(ptr, 1, __ATOMIC_RELEASE))
+#define qatomic_add_release(ptr, n) ((void)__atomic_fetch_add(ptr, n, __ATOMIC_RELEASE))
+#define qatomic_sub_release(ptr, n) ((void)__atomic_fetch_sub(ptr, n, __ATOMIC_RELEASE))
+#define qatomic_and_release(ptr, n) ((void)__atomic_fetch_and(ptr, n, __ATOMIC_RELEASE))
+#define qatomic_or_release(ptr, n)  ((void)__atomic_fetch_or(ptr, n, __ATOMIC_RELEASE))
+#define qatomic_xor_release(ptr, n) ((void)__atomic_fetch_xor(ptr, n, __ATOMIC_RELEASE))
+
+#define qatomic_inc_acquire(ptr)    ((void)__atomic_fetch_add(ptr, 1, __ATOMIC_ACQUIRE))
+#define qatomic_dec_acquire(ptr)    ((void)__atomic_fetch_sub(ptr, 1, __ATOMIC_ACQUIRE))
+#define qatomic_add_acquire(ptr, n) ((void)__atomic_fetch_add(ptr, n, __ATOMIC_ACQUIRE))
+#define qatomic_sub_acquire(ptr, n) ((void)__atomic_fetch_sub(ptr, n, __ATOMIC_ACQUIRE))
+#define qatomic_and_acquire(ptr, n) ((void)__atomic_fetch_and(ptr, n, __ATOMIC_ACQUIRE))
+#define qatomic_or_acquire(ptr, n)  ((void)__atomic_fetch_or(ptr, n, __ATOMIC_ACQUIRE))
+#define qatomic_xor_acquire(ptr, n) ((void)__atomic_fetch_xor(ptr, n, __ATOMIC_ACQUIRE))
 
 #define smp_wmb() smp_mb_release()
 #define smp_rmb() smp_mb_acquire()
