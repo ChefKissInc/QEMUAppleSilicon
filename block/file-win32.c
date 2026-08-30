@@ -326,7 +326,7 @@ static int raw_open(BlockDriverState* bs, QDict* options, int flags, Error** err
             error_setg(errp, "locking=on is not supported on Windows");
             ret = -EINVAL;
             goto fail;
-        case ON_OFF_AUTO_OFF:
+        case ON_OFF_AUTO_OFF :
         case ON_OFF_AUTO_AUTO: break;
         default              : assert_not_reached();
     }

@@ -1152,8 +1152,8 @@ static int coroutine_fn GRAPH_RDLOCK qed_aio_write_data(void* opaque, int ret, u
     switch (ret) {
         case QED_CLUSTER_FOUND: return qed_aio_write_inplace(acb, offset, len);
 
-        case QED_CLUSTER_L2:
-        case QED_CLUSTER_L1:
+        case QED_CLUSTER_L2  :
+        case QED_CLUSTER_L1  :
         case QED_CLUSTER_ZERO: return qed_aio_write_alloc(acb, len);
 
         default: assert_not_reached();

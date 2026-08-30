@@ -842,8 +842,8 @@ static void vnc_update_throttle_offset(VncState* vs)
     if (vs->audio_cap) {
         int bps;
         switch (vs->as.fmt) {
-            default:
-            case AUDIO_FORMAT_U8:
+            default              :
+            case AUDIO_FORMAT_U8 :
             case AUDIO_FORMAT_S8 : bps = 1; break;
             case AUDIO_FORMAT_U16:
             case AUDIO_FORMAT_S16: bps = 2; break;
@@ -1858,7 +1858,7 @@ static void set_pixel_format(VncState* vs, int bits_per_pixel, int big_endian_fl
     }
 
     switch (bits_per_pixel) {
-        case 8:
+        case 8 :
         case 16:
         case 32: break;
         default: vnc_client_error(vs); return;
@@ -2056,8 +2056,8 @@ static int protocol_client_msg(VncState* vs, uint8_t* data, size_t len)
                 switch (action) {
                     case VNC_XVP_ACTION_SHUTDOWN: qemu_system_powerdown_request(); break;
                     case VNC_XVP_ACTION_REBOOT  : send_xvp_message(vs, VNC_XVP_CODE_FAIL); break;
-                    case VNC_XVP_ACTION_RESET   : qemu_system_reset_request(SHUTDOWN_CAUSE_HOST_QMP_SYSTEM_RESET); break;
-                    default                     : send_xvp_message(vs, VNC_XVP_CODE_FAIL); break;
+                    case VNC_XVP_ACTION_RESET: qemu_system_reset_request(SHUTDOWN_CAUSE_HOST_QMP_SYSTEM_RESET); break;
+                    default                  : send_xvp_message(vs, VNC_XVP_CODE_FAIL); break;
                 }
             }
             break;

@@ -93,8 +93,8 @@ static inline TCGCond tcg_tst_ltge_cond(TCGCond c) { return is_tst_cond(c) ? (TC
 static inline TCGCond tcg_high_cond(TCGCond c)
 {
     switch (c) {
-        case TCG_COND_GE:
-        case TCG_COND_LE:
+        case TCG_COND_GE :
+        case TCG_COND_LE :
         case TCG_COND_GEU:
         case TCG_COND_LEU: return (TCGCond)(c ^ (4 | 1));
         default          : return c;

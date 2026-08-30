@@ -32,7 +32,8 @@
 #include "system/system.h"
 #include "system/rtc.h"
 
-static enum {
+static enum
+{
     RTC_BASE_UTC,
     RTC_BASE_LOCALTIME,
     RTC_BASE_DATETIME,
@@ -67,7 +68,7 @@ void qemu_get_timedate(struct tm* tm, time_t offset)
     ti += offset;
 
     switch (rtc_base_type) {
-        case RTC_BASE_DATETIME:
+        case RTC_BASE_DATETIME :
         case RTC_BASE_UTC      : gmtime_r(&ti, tm); break;
         case RTC_BASE_LOCALTIME: localtime_r(&ti, tm); break;
     }
@@ -78,7 +79,7 @@ time_t qemu_timedate_diff(struct tm* tm)
     time_t seconds;
 
     switch (rtc_base_type) {
-        case RTC_BASE_DATETIME:
+        case RTC_BASE_DATETIME :
         case RTC_BASE_UTC      : seconds = mktimegm(tm); break;
         case RTC_BASE_LOCALTIME: {
             struct tm tmp = *tm;

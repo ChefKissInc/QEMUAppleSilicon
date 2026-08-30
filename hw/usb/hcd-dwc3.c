@@ -1185,20 +1185,20 @@ static void usb_dwc3_glbreg_write(void* opaque, hwaddr addr, int index, uint64_t
             /* clearing Write to Clear bits */
             val = old & ~val;
             break;
-        case GSNPSID:
-        case GGPIO:
-        case GBUSERRADDR0:
-        case GBUSERRADDR1:
-        case GPRTBIMAP1:
-        case GHWPARAMS0:
-        case GHWPARAMS1:
-        case GHWPARAMS2:
-        case GHWPARAMS3:
-        case GHWPARAMS4:
-        case GHWPARAMS5:
-        case GHWPARAMS6:
-        case GHWPARAMS7:
-        case GHWPARAMS8:
+        case GSNPSID      :
+        case GGPIO        :
+        case GBUSERRADDR0 :
+        case GBUSERRADDR1 :
+        case GPRTBIMAP1   :
+        case GHWPARAMS0   :
+        case GHWPARAMS1   :
+        case GHWPARAMS2   :
+        case GHWPARAMS3   :
+        case GHWPARAMS4   :
+        case GHWPARAMS5   :
+        case GHWPARAMS6   :
+        case GHWPARAMS7   :
+        case GHWPARAMS8   :
         case GPRTBIMAP_HS1:
         case GPRTBIMAP_FS1: val = old; break;
         case GPRTBIMAP0   :

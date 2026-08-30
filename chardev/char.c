@@ -62,7 +62,7 @@ void qemu_chr_be_event(Chardev* s, QEMUChrEvent event)
     switch (event) {
         case CHR_EVENT_OPENED: s->be_open = 1; break;
         case CHR_EVENT_CLOSED: s->be_open = 0; break;
-        case CHR_EVENT_BREAK:
+        case CHR_EVENT_BREAK :
         case CHR_EVENT_MUX_IN:
         case CHR_EVENT_MUX_OUT:
             /* Ignore */

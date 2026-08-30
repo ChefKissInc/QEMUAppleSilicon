@@ -125,6 +125,4 @@ struct QCryptoSecret
 };
 
 struct QCryptoSecretClass
-{
-    QCryptoSecretCommonClass parent_class;
-};
+{ QCryptoSecretCommonClass parent_class; };

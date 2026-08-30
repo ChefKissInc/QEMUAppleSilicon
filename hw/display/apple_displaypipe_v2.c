@@ -78,7 +78,7 @@ static uint64_t frontend_read(void* opaque, hwaddr addr, unsigned size)
 
     switch (addr) {
         case REG_SPDS_VERSION: qemu_log_mask(LOG_GUEST_ERROR, "disp0: REG_SPDS_VERSION -> 0x13\n"); return 0x13;
-        default              : qemu_log_mask(LOG_UNIMP, "disp0: /frontend/ 0x" HWADDR_FMT_plx " -> 0x0\n", addr); return 0;
+        default: qemu_log_mask(LOG_UNIMP, "disp0: /frontend/ 0x" HWADDR_FMT_plx " -> 0x0\n", addr); return 0;
     }
 }
 

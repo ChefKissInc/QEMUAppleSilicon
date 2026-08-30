@@ -290,7 +290,7 @@ static bool usb_tcp_remote_read_one(USBTCPRemoteState* s)
         }
 
         case TCP_USB_REQUEST:
-        case TCP_USB_RESET:
+        case TCP_USB_RESET  :
         default:
             // "Invalid header type: 0x0" can happen upon closing the connection
             DPRINTF("%s: Invalid header type: 0x%x\n", __func__, hdr.type);

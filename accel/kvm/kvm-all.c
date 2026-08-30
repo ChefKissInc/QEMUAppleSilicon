@@ -3497,18 +3497,18 @@ static StatsList* add_kvmstat_entry(struct kvm_stats_desc* pdesc, uint64_t* stat
 
     /* Only add stats that we understand.  */
     switch (pdesc->flags & KVM_STATS_TYPE_MASK) {
-        case KVM_STATS_TYPE_CUMULATIVE:
-        case KVM_STATS_TYPE_INSTANT:
-        case KVM_STATS_TYPE_PEAK:
+        case KVM_STATS_TYPE_CUMULATIVE :
+        case KVM_STATS_TYPE_INSTANT    :
+        case KVM_STATS_TYPE_PEAK       :
         case KVM_STATS_TYPE_LINEAR_HIST:
         case KVM_STATS_TYPE_LOG_HIST   : break;
         default                        : return stats_list;
     }
 
     switch (pdesc->flags & KVM_STATS_UNIT_MASK) {
-        case KVM_STATS_UNIT_NONE:
-        case KVM_STATS_UNIT_BYTES:
-        case KVM_STATS_UNIT_CYCLES:
+        case KVM_STATS_UNIT_NONE   :
+        case KVM_STATS_UNIT_BYTES  :
+        case KVM_STATS_UNIT_CYCLES :
         case KVM_STATS_UNIT_SECONDS:
         case KVM_STATS_UNIT_BOOLEAN: break;
         default                    : return stats_list;

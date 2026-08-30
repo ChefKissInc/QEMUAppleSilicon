@@ -209,9 +209,7 @@ void qemu_thread_atexit_remove(struct Notifier* notifier);
 #endif
 
 struct QemuSpin
-{
-    int value;
-};
+{ int value; };
 
 static inline void qemu_spin_init(QemuSpin* spin)
 {

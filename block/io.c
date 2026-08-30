@@ -1804,7 +1804,8 @@ static int coroutine_fn GRAPH_RDLOCK bdrv_aligned_pwritev(BdrvChild* child, Bdrv
         flags &= ~BDRV_REQ_REGISTERED_BUF;
     }
 
-    if (ret < 0) { /* Do nothing, write notifier decided to fail this request */ }
+    if (ret < 0) { /* Do nothing, write notifier decided to fail this request */
+    }
     else if (flags & BDRV_REQ_ZERO_WRITE) {
         bdrv_co_debug_event(bs, BLKDBG_PWRITEV_ZERO);
         ret = bdrv_co_do_pwrite_zeroes(bs, offset, bytes, flags);

@@ -699,7 +699,7 @@ static void dump_qdict(int indentation, QDict* dict)
 static bool qobject_is_empty_dump(const QObject* obj)
 {
     switch (qobject_type(obj)) {
-        case QTYPE_QNUM:
+        case QTYPE_QNUM   :
         case QTYPE_QSTRING:
         case QTYPE_QBOOL  : return false;
 

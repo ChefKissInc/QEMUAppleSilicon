@@ -529,10 +529,10 @@ static QObject* qdict_crumple_for_keyval_qiv(QDict* src, Error** errp)
     for (ent = qdict_first(src); ent; ent = qdict_next(src, ent)) {
         buf = NULL;
         switch (qobject_type(ent->value)) {
-            case QTYPE_QNULL:
+            case QTYPE_QNULL  :
             case QTYPE_QSTRING: continue;
             case QTYPE_QNUM   : s = buf = qnum_to_string(qobject_to(QNum, ent->value)); break;
-            case QTYPE_QDICT:
+            case QTYPE_QDICT  :
             case QTYPE_QLIST:
                 /* @src isn't flat; qdict_crumple() will fail */
                 continue;

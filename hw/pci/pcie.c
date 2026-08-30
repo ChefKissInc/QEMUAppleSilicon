@@ -49,7 +49,7 @@ static bool pcie_sltctl_powered_off(uint16_t sltctl)
 static const char* pcie_led_state_to_str(uint16_t value)
 {
     switch (value) {
-        case PCI_EXP_SLTCTL_PWR_IND_ON:
+        case PCI_EXP_SLTCTL_PWR_IND_ON    :
         case PCI_EXP_SLTCTL_ATTN_IND_ON   : return "on";
         case PCI_EXP_SLTCTL_PWR_IND_BLINK :
         case PCI_EXP_SLTCTL_ATTN_IND_BLINK: return "blink";

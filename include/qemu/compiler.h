@@ -67,9 +67,7 @@
 
 #define QEMU_BUILD_BUG_ON_STRUCT(x) \
     struct                          \
-    {                               \
-        int : (x) ? -1 : 1;         \
-    }
+    { int : (x) ? -1 : 1; }
 
 #define QEMU_BUILD_BUG_MSG(x, msg) _Static_assert(!(x), msg)
 

@@ -330,7 +330,8 @@ static uint64_t pauth_addpac(CPUARMState* env, uint64_t ptr, uint64_t modifier, 
      */
     test = sextract64(ptr, bot_bit, top_bit - bot_bit);
     if (test != 0 && test != -1) {
-        if (pauth_feature >= PauthFeat_2) { /* No action required */ }
+        if (pauth_feature >= PauthFeat_2) { /* No action required */
+        }
         else if (pauth_feature == PauthFeat_EPAC) {
             pac = 0;
         }

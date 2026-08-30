@@ -514,8 +514,8 @@ static XHCIPort* xhci_lookup_port(XHCIState* xhci, struct USBPort* uport)
 
     if (!uport->dev) { return NULL; }
     switch (uport->dev->speed) {
-        case USB_SPEED_LOW:
-        case USB_SPEED_FULL:
+        case USB_SPEED_LOW  :
+        case USB_SPEED_FULL :
         case USB_SPEED_HIGH : index = uport->index + xhci->numports_3; break;
         case USB_SPEED_SUPER: index = uport->index; break;
         default             : return NULL;
@@ -1367,7 +1367,7 @@ static void xhci_xfer_report(XHCITransfer* xfer)
                 chunk = trb->status & 0x1ffff;
                 if (chunk > 8) { chunk = 8; }
                 break;
-            case TR_DATA:
+            case TR_DATA  :
             case TR_NORMAL:
             case TR_ISOCH:
                 chunk = trb->status & 0x1ffff;
@@ -2390,7 +2390,7 @@ static void xhci_port_reset(XHCIPort* port, bool warm_reset)
         case USB_SPEED_SUPER:
             if (warm_reset) { port->portsc |= PORTSC_WRC; }
             /* fall through */
-        case USB_SPEED_LOW:
+        case USB_SPEED_LOW :
         case USB_SPEED_FULL:
         case USB_SPEED_HIGH:
             set_field(&port->portsc, PLS_U0, PORTSC_PLS);

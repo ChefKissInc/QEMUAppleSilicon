@@ -1404,24 +1404,24 @@ static unsigned decode_pred_count(unsigned fullsz, int pattern, int esz)
     unsigned bound;
 
     switch (pattern) {
-        case 0x0: /* POW2 */ return pow2floor(elements);
-        case 0x1: /* VL1 */
-        case 0x2: /* VL2 */
-        case 0x3: /* VL3 */
-        case 0x4: /* VL4 */
-        case 0x5: /* VL5 */
-        case 0x6: /* VL6 */
-        case 0x7: /* VL7 */
-        case 0x8: /* VL8 */ bound = pattern; break;
-        case 0x9: /* VL16 */
-        case 0xa: /* VL32 */
-        case 0xb: /* VL64 */
-        case 0xc: /* VL128 */
-        case 0xd: /* VL256 */ bound = 16 << (pattern - 9); break;
+        case 0x0 : /* POW2 */ return pow2floor(elements);
+        case 0x1 : /* VL1 */
+        case 0x2 : /* VL2 */
+        case 0x3 : /* VL3 */
+        case 0x4 : /* VL4 */
+        case 0x5 : /* VL5 */
+        case 0x6 : /* VL6 */
+        case 0x7 : /* VL7 */
+        case 0x8 : /* VL8 */ bound = pattern; break;
+        case 0x9 : /* VL16 */
+        case 0xa : /* VL32 */
+        case 0xb : /* VL64 */
+        case 0xc : /* VL128 */
+        case 0xd : /* VL256 */ bound = 16 << (pattern - 9); break;
         case 0x1d: /* MUL4 */ return elements - elements % 4;
         case 0x1e: /* MUL3 */ return elements - elements % 3;
         case 0x1f: /* ALL */ return elements;
-        default: /* #uimm5 */ return 0;
+        default  : /* #uimm5 */ return 0;
     }
     return elements >= bound ? bound : 0;
 }

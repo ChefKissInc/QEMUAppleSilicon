@@ -1252,7 +1252,7 @@ static SocketAddress* socket_sockaddr_to_address_vsock(struct sockaddr_storage* 
 SocketAddress* socket_sockaddr_to_address(struct sockaddr_storage* sa, socklen_t salen, Error** errp)
 {
     switch (sa->ss_family) {
-        case AF_INET:
+        case AF_INET :
         case AF_INET6: return socket_sockaddr_to_address_inet(sa, salen, errp);
 
         case AF_UNIX: return socket_sockaddr_to_address_unix(sa, salen, errp);

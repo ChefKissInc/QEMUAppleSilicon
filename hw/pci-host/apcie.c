@@ -799,8 +799,8 @@ static uint64_t apple_pcie_port_config_read(void* opaque, hwaddr addr, unsigned 
     is_port_enabled = (port->port_cfg_port_config & 1) != 0;
 
     switch (addr) {
-        case 0x80: val = port->port_ltssm_enable; break;
-        case 0x8c: val = port->port_pme_to_ack; break;
+        case 0x80 : val = port->port_ltssm_enable; break;
+        case 0x8c : val = port->port_pme_to_ack; break;
         case 0x100:    // pcielint/getPortInterrupts
             // val = 0xdeadbeef;
             // val |= 0xf; // legacy interrupts. not on t8030
@@ -851,7 +851,7 @@ static uint64_t apple_pcie_port_config_read(void* opaque, hwaddr addr, unsigned 
             // val1 = ((val >> 16) & 0xffff) / 0x8
             break;
         case 0x13c: val = port->port_hotreset; break;
-        case 0x88:     // S800x linksts
+        case 0x88 :    // S800x linksts
         case 0x208:    // T8030 linksts ; for getLinkUp/isLinkInL2.
             if (addr == 0x88 && (port->host->pcie->chip_id == 0x8000 || port->host->pcie->chip_id == 0x8003)) {
                 port->is_link_up = (port->port_ltssm_enable & 1) != 0;

@@ -919,7 +919,7 @@ static uint16_t nvme_map_sgl(NvmeCtrl* n, NvmeSg* sg, NvmeSglDescriptor sgl, siz
 
     for (;;) {
         switch (NVME_SGL_TYPE(sgld->type)) {
-            case NVME_SGL_DESCR_TYPE_SEGMENT:
+            case NVME_SGL_DESCR_TYPE_SEGMENT     :
             case NVME_SGL_DESCR_TYPE_LAST_SEGMENT: break;
             default                              : return NVME_INVALID_SGL_SEG_DESCR | NVME_DNR;
         }
@@ -1523,7 +1523,7 @@ static uint16_t nvme_check_zone_state_for_write(NvmeZone* zone)
     uint64_t zslba = zone->d.zslba;
 
     switch (nvme_get_zone_state(zone)) {
-        case NVME_ZONE_STATE_EMPTY:
+        case NVME_ZONE_STATE_EMPTY          :
         case NVME_ZONE_STATE_IMPLICITLY_OPEN:
         case NVME_ZONE_STATE_EXPLICITLY_OPEN:
         case NVME_ZONE_STATE_CLOSED         : return NVME_SUCCESS;
@@ -1570,14 +1570,14 @@ static uint16_t nvme_check_zone_write(NvmeNamespace* ns, NvmeZone* zone, uint64_
 static uint16_t nvme_check_zone_state_for_read(NvmeZone* zone)
 {
     switch (nvme_get_zone_state(zone)) {
-        case NVME_ZONE_STATE_EMPTY:
+        case NVME_ZONE_STATE_EMPTY          :
         case NVME_ZONE_STATE_IMPLICITLY_OPEN:
         case NVME_ZONE_STATE_EXPLICITLY_OPEN:
-        case NVME_ZONE_STATE_FULL:
-        case NVME_ZONE_STATE_CLOSED:
+        case NVME_ZONE_STATE_FULL           :
+        case NVME_ZONE_STATE_CLOSED         :
         case NVME_ZONE_STATE_READ_ONLY      : return NVME_SUCCESS;
-        case NVME_ZONE_STATE_OFFLINE        : trace_pci_nvme_err_zone_is_offline(zone->d.zslba); return NVME_ZONE_OFFLINE;
-        default                             : assert_not_reached();
+        case NVME_ZONE_STATE_OFFLINE: trace_pci_nvme_err_zone_is_offline(zone->d.zslba); return NVME_ZONE_OFFLINE;
+        default                     : assert_not_reached();
     }
 
     return NVME_INTERNAL_DEV_ERROR;
@@ -1837,7 +1837,7 @@ void nvme_rw_complete_cb(void* opaque, int ret)
         switch (req->cmd.opcode) {
             case NVME_CMD_READ: req->status = NVME_UNRECOVERED_READ; break;
 
-            case NVME_CMD_WRITE:
+            case NVME_CMD_WRITE       :
             case NVME_CMD_WRITE_ZEROES:
             case NVME_CMD_ZONE_APPEND : req->status = NVME_WRITE_FAULT; break;
 
@@ -3552,7 +3552,7 @@ static void nvme_zone_reset_cb(void* opaque, int ret)
 
             case NVME_ZONE_STATE_EXPLICITLY_OPEN:
             case NVME_ZONE_STATE_IMPLICITLY_OPEN:
-            case NVME_ZONE_STATE_CLOSED:
+            case NVME_ZONE_STATE_CLOSED         :
             case NVME_ZONE_STATE_FULL           : iocb->zone = zone; break;
 
             default: continue;
@@ -4654,10 +4654,10 @@ static uint16_t nvme_get_log(NvmeCtrl* n, NvmeRequest* req)
         case NVME_LOG_CMD_EFFECTS                         : return nvme_cmd_effects(n, csi, len, off, req);
         case NVME_LOG_ENDGRP                              : return nvme_endgrp_info(n, rae, len, off, req);
         case NVME_LOG_FDP_CONFS                           : return nvme_fdp_confs(n, lspi, len, off, req);
-        case NVME_LOG_FDP_RUH_USAGE                       : return nvme_fdp_ruh_usage(n, lspi, dw10, dw12, len, off, req);
-        case NVME_LOG_FDP_STATS                           : return nvme_fdp_stats(n, lspi, len, off, req);
-        case NVME_LOG_FDP_EVENTS                          : return nvme_fdp_events(n, lspi, len, off, req);
-        default                                           : trace_pci_nvme_err_invalid_log_page(nvme_cid(req), lid); return NVME_INVALID_FIELD | NVME_DNR;
+        case NVME_LOG_FDP_RUH_USAGE: return nvme_fdp_ruh_usage(n, lspi, dw10, dw12, len, off, req);
+        case NVME_LOG_FDP_STATS    : return nvme_fdp_stats(n, lspi, len, off, req);
+        case NVME_LOG_FDP_EVENTS   : return nvme_fdp_events(n, lspi, len, off, req);
+        default: trace_pci_nvme_err_invalid_log_page(nvme_cid(req), lid); return NVME_INVALID_FIELD | NVME_DNR;
     }
 }
 
@@ -5152,7 +5152,7 @@ static uint16_t nvme_identify(NvmeCtrl* n, NvmeRequest* req)
         case NVME_ID_CNS_CS_NS_PRESENT_LIST   : return nvme_identify_nslist_csi(n, req, false);
         case NVME_ID_CNS_NS_DESCR_LIST        : return nvme_identify_ns_descr_list(n, req);
         case NVME_ID_CNS_IO_COMMAND_SET       : return nvme_identify_cmd_set(n, req);
-        default                               : trace_pci_nvme_err_invalid_identify_cns(le32_to_cpu(c->cns)); return NVME_INVALID_FIELD | NVME_DNR;
+        default: trace_pci_nvme_err_invalid_identify_cns(le32_to_cpu(c->cns)); return NVME_INVALID_FIELD | NVME_DNR;
     }
 }
 

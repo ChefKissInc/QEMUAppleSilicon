@@ -1032,8 +1032,8 @@ static TCGCond tcg_out_cmp2(TCGContext* s, TCGCond cond, TCGReg al, TCGReg ah, T
                             bool const_bh)
 {
     switch (cond) {
-        case TCG_COND_EQ:
-        case TCG_COND_NE:
+        case TCG_COND_EQ :
+        case TCG_COND_NE :
         case TCG_COND_LTU:
         case TCG_COND_LEU:
         case TCG_COND_GTU:
@@ -2727,21 +2727,21 @@ static void tcg_out_vec_op(TCGContext* s, TCGOpcode opc, unsigned vecl, unsigned
 int tcg_can_emit_vec_op(TCGOpcode opc, TCGType type, unsigned vece)
 {
     switch (opc) {
-        case INDEX_op_add_vec:
-        case INDEX_op_sub_vec:
-        case INDEX_op_and_vec:
-        case INDEX_op_andc_vec:
-        case INDEX_op_or_vec:
-        case INDEX_op_orc_vec:
-        case INDEX_op_xor_vec:
-        case INDEX_op_not_vec:
-        case INDEX_op_shli_vec:
-        case INDEX_op_shri_vec:
-        case INDEX_op_sari_vec:
-        case INDEX_op_ssadd_vec:
-        case INDEX_op_sssub_vec:
-        case INDEX_op_usadd_vec:
-        case INDEX_op_ussub_vec:
+        case INDEX_op_add_vec   :
+        case INDEX_op_sub_vec   :
+        case INDEX_op_and_vec   :
+        case INDEX_op_andc_vec  :
+        case INDEX_op_or_vec    :
+        case INDEX_op_orc_vec   :
+        case INDEX_op_xor_vec   :
+        case INDEX_op_not_vec   :
+        case INDEX_op_shli_vec  :
+        case INDEX_op_shri_vec  :
+        case INDEX_op_sari_vec  :
+        case INDEX_op_ssadd_vec :
+        case INDEX_op_sssub_vec :
+        case INDEX_op_usadd_vec :
+        case INDEX_op_ussub_vec :
         case INDEX_op_bitsel_vec: return 1;
         case INDEX_op_abs_vec   :
         case INDEX_op_cmp_vec   :

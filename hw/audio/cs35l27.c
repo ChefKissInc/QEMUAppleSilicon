@@ -63,19 +63,19 @@ static uint8_t apple_cs35l27_rx(I2CSlave* i2c)
     s = APPLE_CS35L27(i2c);
 
     switch (s->addr) {
-        case DEVID_SFT_RESET_DEVICE_ID_REG:
+        case DEVID_SFT_RESET_DEVICE_ID_REG    :
         case DEVID_SFT_RESET_DEVICE_ID_REG + 1:
         case DEVID_SFT_RESET_DEVICE_ID_REG + 2:
         case DEVID_SFT_RESET_DEVICE_ID_REG + 3:
             ret = (cpu_to_be32(0x0035A270) >> ((s->addr - DEVID_SFT_RESET_DEVICE_ID_REG) * 8)) & 0xFF;
             break;
-        case VPBR_PAC_INT_INT_REGISTER_2:
+        case VPBR_PAC_INT_INT_REGISTER_2    :
         case VPBR_PAC_INT_INT_REGISTER_2 + 1:
         case VPBR_PAC_INT_INT_REGISTER_2 + 2:
         case VPBR_PAC_INT_INT_REGISTER_2 + 3:
             ret = (cpu_to_be32(BIT(12)) >> ((s->addr - VPBR_PAC_INT_INT_REGISTER_2) * 8)) & 0xFF;
             break;
-        case VPBR_PAC_INT_INT_REGISTER_6:
+        case VPBR_PAC_INT_INT_REGISTER_6    :
         case VPBR_PAC_INT_INT_REGISTER_6 + 1:
         case VPBR_PAC_INT_INT_REGISTER_6 + 2:
         case VPBR_PAC_INT_INT_REGISTER_6 + 3:

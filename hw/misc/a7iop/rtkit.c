@@ -89,9 +89,7 @@ typedef union
             uint32_t ep;
         } epstart;
         struct
-        {
-            uint32_t state;
-        } power;
+        { uint32_t state; } power;
         struct
         {
             uint32_t mask;
@@ -100,9 +98,7 @@ typedef union
             uint32_t end   : 1;
         } rollcall_v11;
         struct
-        {
-            uint64_t mask : 52;
-        } rollcall_v10;
+        { uint64_t mask : 52; } rollcall_v10;
     };
     struct
     {
@@ -307,9 +303,9 @@ static void apple_rtkit_mgmt_handle_msg(void* opaque, uint8_t ep, uint64_t messa
             break;
         case MSG_TYPE_REQ_POWER:
             switch (MSG_GET_PSTATE(msg->raw)) {
-                case PSTATE_ON: apple_a7iop_cpu_start(a7iop, true); break;
+                case PSTATE_ON   : apple_a7iop_cpu_start(a7iop, true); break;
                 case PSTATE_SLEEP:
-                case PSTATE_OFF:
+                case PSTATE_OFF  :
                 case PSTATE_PWRGATE:
                     apple_a7iop_set_cpu_status(a7iop, apple_a7iop_get_cpu_status(a7iop) | CPU_STATUS_IDLE);
                     m.type        = MSG_TYPE_POWER_ACK;

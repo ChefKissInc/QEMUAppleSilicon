@@ -207,8 +207,8 @@ static inline bool cpu_physical_memory_get_dirty_flag(ram_addr_t addr, unsigned 
 
 static inline bool cpu_physical_memory_is_clean(ram_addr_t addr)
 {
-    bool vga       = cpu_physical_memory_get_dirty_flag(addr, DIRTY_MEMORY_VGA);
-    bool code      = cpu_physical_memory_get_dirty_flag(addr, DIRTY_MEMORY_CODE);
+    bool vga  = cpu_physical_memory_get_dirty_flag(addr, DIRTY_MEMORY_VGA);
+    bool code = cpu_physical_memory_get_dirty_flag(addr, DIRTY_MEMORY_CODE);
     return !(vga && code);
 }
 
@@ -334,8 +334,8 @@ static inline uint64_t cpu_physical_memory_set_dirty_lebitmap(unsigned long* bit
          */
         for (i = 0; i < len; i++) {
             if (bitmap[i] != 0) {
-                c     = leul_to_cpu(bitmap[i]);
-                nbits = ctpopl(c);
+                c          = leul_to_cpu(bitmap[i]);
+                nbits      = ctpopl(c);
                 num_dirty += nbits;
                 do {
                     j            = ctzl(c);

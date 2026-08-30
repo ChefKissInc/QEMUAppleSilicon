@@ -15,9 +15,7 @@
 #include "qobject/qobject.h"
 
 struct QNull
-{
-    struct QObjectBase_ base;
-};
+{ struct QObjectBase_ base; };
 
 extern QNull qnull_;
 

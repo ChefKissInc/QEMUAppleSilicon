@@ -2047,9 +2047,9 @@ void qemu_init(int argc, char** argv)
                     /* hw initialization will check this */
                     cpu_option = optarg;
                     break;
-                case QEMU_OPTION_hda:
-                case QEMU_OPTION_hdb:
-                case QEMU_OPTION_hdc:
+                case QEMU_OPTION_hda     :
+                case QEMU_OPTION_hdb     :
+                case QEMU_OPTION_hdc     :
                 case QEMU_OPTION_hdd     : drive_add(IF_DEFAULT, popt->index - QEMU_OPTION_hda, optarg, HD_OPTS); break;
                 case QEMU_OPTION_blockdev: {
                     Visitor*                   v;

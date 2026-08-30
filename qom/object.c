@@ -99,9 +99,7 @@ static void type_construct(TypeImpl* ti, const TypeInfo* info)
     ti->abstract = info->abstract;
 
     if (info->interfaces) {
-        for (i = 0; info->interfaces[i].type; ++i) {
-            ti->interfaces[i].typename = info->interfaces[i].type;
-        }
+        for (i = 0; info->interfaces[i].type; ++i) { ti->interfaces[i].typename = info->interfaces[i].type; }
         ti->num_interfaces = i;
     }
 }

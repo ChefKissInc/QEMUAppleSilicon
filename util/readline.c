@@ -379,7 +379,7 @@ void readline_handle_byte(ReadLineState* rs, int ch)
             break;
         case IS_CSI:
             switch (ch) {
-                case 'A': /* fallthrough */
+                case 'A'        : /* fallthrough */
                 case 'F'        : readline_up_char(rs); break;
                 case 'B'        : /* fallthrough */
                 case 'E'        : readline_down_char(rs); break;

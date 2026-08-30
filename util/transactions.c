@@ -33,9 +33,7 @@ typedef struct TransactionAction
 } TransactionAction;
 
 struct Transaction
-{
-    QSLIST_HEAD(, TransactionAction) actions;
-};
+{ QSLIST_HEAD(, TransactionAction) actions; };
 
 Transaction* tran_new(void)
 {

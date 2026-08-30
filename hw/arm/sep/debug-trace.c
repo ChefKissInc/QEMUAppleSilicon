@@ -81,8 +81,8 @@ void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
         uint64_t size;                  // aligned
         uint8_t  access_permissions;    // 0x04/0x06/0x16 // (arg5 & 1) != 0
                                         // create_object panic? ;; maybe permissions
-        uint8_t arg6;                   // 0x00/0x02/0x06 // >= 0x03 create_object panic?
-        uint8_t arg7;                   // 0x01/0x02/0x03/0x04/0x05/0x0D/0x0E/0x0F/0x10 // if
+        uint8_t  arg6;                  // 0x00/0x02/0x06 // >= 0x03 create_object panic?
+        uint8_t  arg7;                  // 0x01/0x02/0x03/0x04/0x05/0x0D/0x0E/0x0F/0x10 // if
                                         // (arg7 != 0) create_object data_346d0 checking block ;;
                                         // maybe module_index
         uint8_t  pad0;
@@ -104,8 +104,8 @@ void apple_sep_debug_trace_enable(AppleSEPDebugTraceState* s)
         uint64_t size;                  // aligned
         uint8_t  access_permissions;    // 0x04/0x06/0x16 // (arg5 & 1) != 0
                                         // create_object panic? ;; maybe permissions
-        uint8_t arg6;                   // 0x00/0x02/0x06 // >= 0x03 create_object panic?
-        uint8_t arg7;                   // 0x01/0x02/0x03/0x04/0x05/0x0D/0x0E/0x0F/0x10 // if
+        uint8_t  arg6;                  // 0x00/0x02/0x06 // >= 0x03 create_object panic?
+        uint8_t  arg7;                  // 0x01/0x02/0x03/0x04/0x05/0x0D/0x0E/0x0F/0x10 // if
                                         // (arg7 != 0) create_object data_346d0 checking block ;;
                                         // maybe module_index
         uint8_t  pad0;
@@ -860,10 +860,10 @@ static uint64_t debug_trace_reg_read(void* opaque, hwaddr addr, unsigned size)
         return 0;
     }
     switch (addr) {
-        case 0x0: return 0xFFFFFFFF;    // negated trace exclusion mask for wrapper
-        case 0x4:                       // some index
-        case 0x18:                      // unknown0
-        case 0x40:                      // unknown1
+        case 0x0 : return 0xFFFFFFFF;    // negated trace exclusion mask for wrapper
+        case 0x4 :                       // some index
+        case 0x18:                       // unknown0
+        case 0x40:                       // unknown1
             goto jump_default;
         case 0x1C: return 0x0;           // disable trace mask for inner function
         case 0x20: return 0xFFFFFFFF;    // trace mask for inner function

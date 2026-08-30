@@ -45,7 +45,7 @@ static void apple_a7iop_v2_mailbox_reg_write(void* opaque, hwaddr addr, const ui
         case REG_INT_MASK_CLR: apple_a7iop_mailbox_clear_int_mask(s, (uint32_t)data); break;
         case REG_IOP_CTRL    : apple_a7iop_mailbox_set_iop_ctrl(s, (uint32_t)data); break;
         case REG_AP_CTRL     : apple_a7iop_mailbox_set_ap_ctrl(s, (uint32_t)data); break;
-        case REG_IOP_SEND0:
+        case REG_IOP_SEND0   :
         case REG_IOP_SEND1:
             qemu_mutex_lock(&s->lock);
             memcpy(s->iop_send_reg + (addr - REG_IOP_SEND0), &data, size);

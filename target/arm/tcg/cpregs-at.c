@@ -315,7 +315,7 @@ static void ats_write64(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value
             mmu_idx = regime_e20 ? (guarded ? ARMMMUIdx_GE20_2 : ARMMMUIdx_E20_2) :
                                    (guarded ? ARMMMUIdx_GE10_1 : ARMMMUIdx_E10_1);
             break;
-        case 6: /* AT S12E0R, AT S12E0W */ mmu_idx = regime_e20 ? ARMMMUIdx_E20_0 : ARMMMUIdx_E10_0; break;
+        case 6 : /* AT S12E0R, AT S12E0W */ mmu_idx = regime_e20 ? ARMMMUIdx_E20_0 : ARMMMUIdx_E10_0; break;
         default: assert_not_reached();
     }
 

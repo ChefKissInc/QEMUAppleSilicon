@@ -103,13 +103,9 @@ typedef struct BlkdebugRule
             int64_t  offset;
         } inject;
         struct
-        {
-            int new_state;
-        } set_state;
+        { int new_state; } set_state;
         struct
-        {
-            char* tag;
-        } suspend;
+        { char* tag; } suspend;
     } options;
 
     /* List entries protected BDRVBlkdebugState's lock */

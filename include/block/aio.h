@@ -313,7 +313,6 @@ void aio_bh_schedule_oneshot_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque,
  */
 QEMUBH* aio_bh_new_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const char* name);
 
-
 /**
  * aio_bh_new: Allocate a new bottom half structure
  *

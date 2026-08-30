@@ -38,9 +38,7 @@ struct keysym2code
 };
 
 struct kbd_layout_t
-{
-    GHashTable* hash;
-};
+{ GHashTable* hash; };
 
 static int get_keysym(const name2keysym_t* table, const char* name)
 {
@@ -117,7 +115,8 @@ static int parse_keyboard_layout(kbd_layout_t* k, const name2keysym_t* table, co
             if (strlen(keyname)) {
                 int keysym;
                 keysym = get_keysym(table, keyname);
-                if (keysym == 0) { /* warn_report("unknown keysym %s", line);*/ }
+                if (keysym == 0) { /* warn_report("unknown keysym %s", line);*/
+                }
                 else {
                     const char* rest    = line + offset + 1;
                     int         keycode = strtol(rest, NULL, 0);
@@ -216,8 +215,8 @@ int keysym_is_numlock(kbd_layout_t* k, int keysym)
 {
     switch (keysym) {
         case 0xffb0 ... 0xffb9: /* KP_0 .. KP_9 */
-        case 0xffac:            /* KP_Separator */
-        case 0xffae: /* KP_Decimal   */ return true;
+        case 0xffac           : /* KP_Separator */
+        case 0xffae           : /* KP_Decimal   */ return true;
     }
     return false;
 }

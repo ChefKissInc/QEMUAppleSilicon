@@ -418,7 +418,7 @@ static void apple_sep_sim_handle_arts_msg(AppleSEPSimState* s, SEPMessage* msg)
 {
     switch (msg->op) {
         case ART_STORAGE_OP_RECEIVED: qemu_log_mask(LOG_GUEST_ERROR, "EP_ART_STORAGE: ART_RECEIVED\n"); break;
-        default                     : qemu_log_mask(LOG_GUEST_ERROR, "EP_ART_STORAGE: Unknown opcode %d\n", msg->op); break;
+        default: qemu_log_mask(LOG_GUEST_ERROR, "EP_ART_STORAGE: Unknown opcode %d\n", msg->op); break;
     }
 }
 
@@ -935,10 +935,10 @@ static void apple_sep_sim_handle_messages(void* opaque)
             case EP_XART_SLAVE : apple_sep_sim_handle_xart_msg(s, true, sep_msg); break;
             case EP_KEYSTORE   : apple_sep_sim_handle_keystore_msg(s, (KeystoreMessage*)sep_msg); break;
             case EP_XART_MASTER: apple_sep_sim_handle_xart_msg(s, false, sep_msg); break;
-            case EP_DISCOVERY  : qemu_log_mask(LOG_GUEST_ERROR, "EP_DISCOVERY: Unknown opcode %d\n", sep_msg->op); break;
-            case EP_L4INFO     : apple_sep_sim_handle_l4info(s, (L4InfoMessage*)sep_msg); break;
-            case EP_BOOTSTRAP  : apple_sep_sim_handle_bootstrap_msg(s, sep_msg); break;
-            default            : qemu_log_mask(LOG_GUEST_ERROR, "UNKNOWN_%d_OP_%d\n", sep_msg->ep, sep_msg->op); break;
+            case EP_DISCOVERY: qemu_log_mask(LOG_GUEST_ERROR, "EP_DISCOVERY: Unknown opcode %d\n", sep_msg->op); break;
+            case EP_L4INFO   : apple_sep_sim_handle_l4info(s, (L4InfoMessage*)sep_msg); break;
+            case EP_BOOTSTRAP: apple_sep_sim_handle_bootstrap_msg(s, sep_msg); break;
+            default          : qemu_log_mask(LOG_GUEST_ERROR, "UNKNOWN_%d_OP_%d\n", sep_msg->ep, sep_msg->op); break;
         }
 
         g_free(msg);
@@ -1014,9 +1014,9 @@ static void apple_sep_sim_reset_hold(Object* obj, ResetType type)
                 s->ool_info[apple_sep_sim_eps[i]].out_max_pages = 1;
                 s->ool_info[apple_sep_sim_eps[i]].out_min_pages = 1;
                 break;
-            case EP_ART_STORAGE:
+            case EP_ART_STORAGE :
             case EP_ART_REQUESTS:
-            case EP_DEBUG:
+            case EP_DEBUG       :
             case EP_UNIT_TESTING:
                 s->ool_info[apple_sep_sim_eps[i]].in_max_pages  = 1;
                 s->ool_info[apple_sep_sim_eps[i]].in_min_pages  = 1;

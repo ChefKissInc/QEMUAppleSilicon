@@ -18,9 +18,7 @@
 #define NET_BUFSIZE (4096 + 65536)
 
 struct MACAddr
-{
-    uint8_t a[6];
-};
+{ uint8_t a[6]; };
 
 /* qdev nic properties */
 
@@ -122,10 +120,10 @@ typedef QTAILQ_HEAD(NetClientStateList, NetClientState) NetClientStateList;
 
 typedef struct NICState
 {
-    NetClientState*     ncs;
-    NICConf*            conf;
-    void*               opaque;
-    bool                peer_deleted;
+    NetClientState* ncs;
+    NICConf*        conf;
+    void*           opaque;
+    bool            peer_deleted;
 } NICState;
 
 struct SocketReadState

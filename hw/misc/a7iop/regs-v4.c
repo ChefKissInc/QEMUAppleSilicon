@@ -81,7 +81,7 @@ static void apple_a7iop_v4_reg_write(void* opaque, hwaddr addr, const uint64_t d
     //               s->role, addr, data);
 
     switch (addr) {
-        case REG_CPU_CTRL: apple_a7iop_set_cpu_ctrl(s, (uint32_t)data); break;
+        case REG_CPU_CTRL                             : apple_a7iop_set_cpu_ctrl(s, (uint32_t)data); break;
         case REG_SEP_AKF_DISABLE_INTERRUPT_BASE + 0x00:    // group 0
         case REG_SEP_AKF_DISABLE_INTERRUPT_BASE + 0x04:    // group 1
         case REG_SEP_AKF_DISABLE_INTERRUPT_BASE + 0x08:    // group 2

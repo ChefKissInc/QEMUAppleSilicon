@@ -54,7 +54,7 @@ static inline bool tcg_target_sextract_valid(TCGType type, unsigned ofs, unsigne
 {
     if (ofs == 0) {
         switch (len) {
-            case 8:
+            case 8 :
             case 16: return use_mips32r2_instructions;
             case 32: return type == TCG_TYPE_I64;
         }

@@ -142,9 +142,7 @@ struct SDCardClass
 OBJECT_DECLARE_TYPE(SDBus, SDBusClass, SD_BUS)
 
 struct SDBus
-{
-    BusState qbus;
-};
+{ BusState qbus; };
 
 struct SDBusClass
 {

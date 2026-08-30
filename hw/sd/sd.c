@@ -582,7 +582,7 @@ static void sd_set_rca(SDState* sd, uint16_t value)
 static uint16_t sd_req_get_rca(SDState* s, SDRequest req)
 {
     switch (s->proto->cmd[req.cmd].type) {
-        case sd_ac:
+        case sd_ac  :
         case sd_adtc: return req.arg >> 16;
         case sd_spi :
         default     : assert_not_reached();
@@ -657,7 +657,7 @@ static int sd_req_crc_validate(SDRequest* req)
 static size_t sd_response_size(SDState* sd, sd_rsp_type_t rtype)
 {
     switch (rtype) {
-        case sd_r1:
+        case sd_r1 :
         case sd_r1b: return sd_is_spi(sd) ? 1 : 4;
 
         case spi_r2: assert(sd_is_spi(sd)); return 2;
@@ -670,7 +670,7 @@ static size_t sd_response_size(SDState* sd, sd_rsp_type_t rtype)
 
         case sd_r6: assert(!sd_is_spi(sd)); return 4;
 
-        case sd_r0:
+        case sd_r0     :
         case sd_illegal: return sd_is_spi(sd) ? 1 : 0;
 
         default: assert_not_reached();
@@ -1379,11 +1379,11 @@ static sd_rsp_type_t sd_cmd_SEND_STATUS(SDState* sd, SDRequest req)
     if (sd_mode(sd) != sd_data_transfer_mode) { return sd_invalid_mode_for_cmd(sd, req); }
 
     switch (sd->state) {
-        case sd_standby_state:
-        case sd_transfer_state:
-        case sd_sendingdata_state:
+        case sd_standby_state      :
+        case sd_transfer_state     :
+        case sd_sendingdata_state  :
         case sd_receivingdata_state:
-        case sd_programming_state:
+        case sd_programming_state  :
         case sd_disconnect_state   : break;
         default                    : return sd_invalid_state_for_cmd(sd, req);
     }
@@ -1398,11 +1398,11 @@ static sd_rsp_type_t sd_cmd_GO_INACTIVE_STATE(SDState* sd, SDRequest req)
 {
     if (sd_mode(sd) != sd_data_transfer_mode) { return sd_invalid_mode_for_cmd(sd, req); }
     switch (sd->state) {
-        case sd_standby_state:
-        case sd_transfer_state:
-        case sd_sendingdata_state:
+        case sd_standby_state      :
+        case sd_transfer_state     :
+        case sd_sendingdata_state  :
         case sd_receivingdata_state:
-        case sd_programming_state:
+        case sd_programming_state  :
         case sd_disconnect_state   : break;
         default                    : return sd_invalid_state_for_cmd(sd, req);
     }
@@ -1574,9 +1574,9 @@ static sd_rsp_type_t sd_cmd_LOCK_UNLOCK(SDState* sd, SDRequest req) { return sd_
 static sd_rsp_type_t sd_cmd_APP_CMD(SDState* sd, SDRequest req)
 {
     switch (sd->state) {
-        case sd_ready_state:
+        case sd_ready_state         :
         case sd_identification_state:
-        case sd_inactive_state:
+        case sd_inactive_state      :
         case sd_sleep_state         : return sd_invalid_state_for_cmd(sd, req);
         case sd_idle_state:
             if (!sd_is_spi(sd) && sd_req_get_rca(sd, req) != 0x0000) {
@@ -1886,7 +1886,7 @@ send_response:
     assert(rsplen <= respsz);
 
     switch (rtype) {
-        case sd_r1:
+        case sd_r1 :
         case sd_r1b: sd_response_r1_make(sd, response); break;
 
         case spi_r2: spi_response_r2_make(sd, response); break;
@@ -2095,9 +2095,9 @@ static uint8_t sd_read_byte(SDState* sd)
 
     trace_sdcard_read_data(sd->proto->name, sd->last_cmd_name, sd->current_cmd, sd->data_offset, sd->data_size, io_len);
     switch (sd->current_cmd) {
-        case 6:  /* CMD6:   SWITCH_FUNCTION */
-        case 8:  /* CMD8:   SEND_EXT_CSD */
-        case 9:  /* CMD9:   SEND_CSD */
+        case 6 : /* CMD6:   SWITCH_FUNCTION */
+        case 8 : /* CMD8:   SEND_EXT_CSD */
+        case 9 : /* CMD9:   SEND_CSD */
         case 10: /* CMD10:  SEND_CID */
         case 13: /* ACMD13: SD_STATUS */
         case 17: /* CMD17:  READ_SINGLE_BLOCK */
@@ -2321,7 +2321,7 @@ static void sd_realize(DeviceState* dev, Error** errp)
 
     switch (sd->spec_version) {
         case SD_PHY_SPECv2_00_VERS ... SD_PHY_SPECv3_01_VERS: break;
-        default                                             : error_setg(errp, "Invalid SD card Spec version: %u", sd->spec_version); return;
+        default: error_setg(errp, "Invalid SD card Spec version: %u", sd->spec_version); return;
     }
 
     if (sd->blk) {

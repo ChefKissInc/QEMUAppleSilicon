@@ -36,9 +36,7 @@ OBJECT_DECLARE_TYPE(QAuthZ, QAuthZClass, QAUTHZ)
  */
 
 struct QAuthZ
-{
-    Object parent_obj;
-};
+{ Object parent_obj; };
 
 struct QAuthZClass
 {

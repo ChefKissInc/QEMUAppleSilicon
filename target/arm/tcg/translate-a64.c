@@ -108,7 +108,7 @@ static int get_a64_user_mem_index(DisasContext* s, bool unpriv)
          * which we do not know the corresponding user mmu_idx.
          */
         switch (useridx) {
-            case ARMMMUIdx_E10_1:
+            case ARMMMUIdx_E10_1    :
             case ARMMMUIdx_E10_1_PAN: useridx = ARMMMUIdx_E10_0; break;
             case ARMMMUIdx_E20_2    :
             case ARMMMUIdx_E20_2_PAN: useridx = ARMMMUIdx_E20_0; break;
@@ -1798,8 +1798,8 @@ static bool trans_DSB_DMB(DisasContext* s, arg_DSB_DMB* a)
     TCGBar bar;
 
     switch (a->types) {
-        case 1: /* MBReqTypes_Reads */ bar = TCG_BAR_SC | TCG_MO_LD_LD | TCG_MO_LD_ST; break;
-        case 2: /* MBReqTypes_Writes */ bar = TCG_BAR_SC | TCG_MO_ST_ST; break;
+        case 1 : /* MBReqTypes_Reads */ bar = TCG_BAR_SC | TCG_MO_LD_LD | TCG_MO_LD_ST; break;
+        case 2 : /* MBReqTypes_Writes */ bar = TCG_BAR_SC | TCG_MO_ST_ST; break;
         default: /* MBReqTypes_All */ bar = TCG_BAR_SC | TCG_MO_ALL; break;
     }
     tcg_gen_mb(bar);
@@ -7014,7 +7014,7 @@ static bool do_crc32(DisasContext* s, arg_rrr_e* a, bool crc32c)
     TCGv_i32 tcg_bytes;
 
     switch (a->esz) {
-        case MO_8:
+        case MO_8 :
         case MO_16:
         case MO_32:
             tcg_val = tcg_temp_new_i64();
@@ -9085,16 +9085,16 @@ static void aarch64_tr_tb_stop(DisasContextBase* dcbase, CPUState* cpu)
             default:
                 gen_a64_update_pc(dc, 4);
                 /* fall through */
-            case DISAS_EXIT:
+            case DISAS_EXIT    :
             case DISAS_JUMP    : gen_step_complete_exception(dc); break;
             case DISAS_NORETURN: break;
         }
     }
     else {
         switch (dc->base.is_jmp) {
-            case DISAS_NEXT:
+            case DISAS_NEXT    :
             case DISAS_TOO_MANY: gen_goto_tb(dc, 1, 4); break;
-            default:
+            default            :
             case DISAS_UPDATE_EXIT:
                 gen_a64_update_pc(dc, 4);
                 /* fall through */

@@ -2438,7 +2438,7 @@ static void parts_float_to_float_narrow(FloatParts64* a, FloatParts128* b, float
             float_raise(float_flag_input_denormal_used, s);
             /* fall through */
         case float_class_normal: frac_truncjam(a, b); break;
-        case float_class_snan:
+        case float_class_snan  :
         case float_class_qnan:
             /* Discard the low bits of the NaN. */
             a->frac = b->frac_hi;

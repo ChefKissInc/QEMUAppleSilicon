@@ -168,8 +168,8 @@ static int audio_validate_settings(struct audsettings* as)
     invalid |= as->endianness != 0 && as->endianness != 1;
 
     switch (as->fmt) {
-        case AUDIO_FORMAT_S8:
-        case AUDIO_FORMAT_U8:
+        case AUDIO_FORMAT_S8 :
+        case AUDIO_FORMAT_U8 :
         case AUDIO_FORMAT_S16:
         case AUDIO_FORMAT_U16:
         case AUDIO_FORMAT_S32:

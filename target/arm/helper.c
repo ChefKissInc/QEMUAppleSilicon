@@ -1288,7 +1288,7 @@ static CPAccessResult gt_stimer_access(CPUARMState* env, const ARMCPRegInfo* ri,
             if (arm_is_el2_enabled(env)) { return CP_ACCESS_UNDEFINED; }
             if (!(env->cp15.scr_el3 & SCR_ST)) { return CP_ACCESS_TRAP_EL3; }
             return CP_ACCESS_OK;
-        case 0:
+        case 0 :
         case 2 : return CP_ACCESS_UNDEFINED;
         case 3 : return CP_ACCESS_OK;
         default: assert_not_reached();
@@ -1436,9 +1436,9 @@ uint64_t gt_direct_access_timer_offset(CPUARMState* env, int timeridx)
                     break;
             }
             return env->cp15.cntvoff_el2;
-        case GTIMER_HYP:
-        case GTIMER_SEC:
-        case GTIMER_HYPVIRT:
+        case GTIMER_HYP       :
+        case GTIMER_SEC       :
+        case GTIMER_HYPVIRT   :
         case GTIMER_S_EL2_PHYS:
         case GTIMER_S_EL2_VIRT: return 0;
         default               : assert_not_reached();
@@ -1586,10 +1586,10 @@ static void gt_phys_ctl_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t
 static int gt_phys_redir_timeridx(CPUARMState* env)
 {
     switch (arm_mmu_idx(env)) {
-        case ARMMMUIdx_E20_0:
-        case ARMMMUIdx_E20_2:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_GE20_2:
+        case ARMMMUIdx_E20_0     :
+        case ARMMMUIdx_E20_2     :
+        case ARMMMUIdx_E20_2_PAN :
+        case ARMMMUIdx_GE20_2    :
         case ARMMMUIdx_GE20_2_PAN: return GTIMER_HYP;
         default                  : return GTIMER_PHYS;
     }
@@ -1598,10 +1598,10 @@ static int gt_phys_redir_timeridx(CPUARMState* env)
 static int gt_virt_redir_timeridx(CPUARMState* env)
 {
     switch (arm_mmu_idx(env)) {
-        case ARMMMUIdx_E20_0:
-        case ARMMMUIdx_E20_2:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_GE20_2:
+        case ARMMMUIdx_E20_0     :
+        case ARMMMUIdx_E20_2     :
+        case ARMMMUIdx_E20_2_PAN :
+        case ARMMMUIdx_GE20_2    :
         case ARMMMUIdx_GE20_2_PAN: return GTIMER_HYPVIRT;
         default                  : return GTIMER_VIRT;
     }
@@ -9481,7 +9481,7 @@ static void arm_cpu_do_interrupt_aarch32(CPUState* cs)
 
     /* If this is a debug exception we must update the DBGDSCR.MOE bits */
     switch (syn_get_ec(env->exception.syndrome)) {
-        case EC_BREAKPOINT:
+        case EC_BREAKPOINT        :
         case EC_BREAKPOINT_SAME_EL: moe = 1; break;
         case EC_WATCHPOINT        :
         case EC_WATCHPOINT_SAME_EL: moe = 10; break;
@@ -9495,11 +9495,11 @@ static void arm_cpu_do_interrupt_aarch32(CPUState* cs)
     if (env->exception.target_el == 2) {
         /* Debug exceptions are reported differently on AArch32 */
         switch (syn_get_ec(env->exception.syndrome)) {
-            case EC_BREAKPOINT:
+            case EC_BREAKPOINT        :
             case EC_BREAKPOINT_SAME_EL:
-            case EC_AA32_BKPT:
-            case EC_VECTORCATCH       : env->exception.syndrome = syn_insn_abort(arm_current_el(env) == 2, 0, 0, 0x22); break;
-            case EC_WATCHPOINT        : env->exception.syndrome = syn_set_ec(env->exception.syndrome, EC_DATAABORT); break;
+            case EC_AA32_BKPT         :
+            case EC_VECTORCATCH: env->exception.syndrome = syn_insn_abort(arm_current_el(env) == 2, 0, 0, 0x22); break;
+            case EC_WATCHPOINT : env->exception.syndrome = syn_set_ec(env->exception.syndrome, EC_DATAABORT); break;
             case EC_WATCHPOINT_SAME_EL:
                 env->exception.syndrome = syn_set_ec(env->exception.syndrome, EC_DATAABORT_SAME_EL);
                 break;
@@ -9707,9 +9707,9 @@ static bool syndrome_is_sync_extabt(uint32_t syndrome)
 {
     /* Return true if this syndrome value is a synchronous external abort */
     switch (syn_get_ec(syndrome)) {
-        case EC_INSNABORT:
+        case EC_INSNABORT        :
         case EC_INSNABORT_SAME_EL:
-        case EC_DATAABORT:
+        case EC_DATAABORT        :
         case EC_DATAABORT_SAME_EL:
             /* Look at fault status code for all the synchronous ext abort cases */
             switch (syndrome & 0x3f) {
@@ -9804,10 +9804,10 @@ static void arm_cpu_do_interrupt_aarch64(CPUState* cs)
                 qemu_log_mask(CPU_LOG_INT, "...with FAR 0x%" PRIx64 "\n", env->cp15.far_el[new_el]);
             }
             /* fall through */
-        case EXCP_BKPT:
-        case EXCP_UDEF:
-        case EXCP_SWI:
-        case EXCP_HVC:
+        case EXCP_BKPT    :
+        case EXCP_UDEF    :
+        case EXCP_SWI     :
+        case EXCP_HVC     :
         case EXCP_HYP_TRAP:
         case EXCP_SMC:
             switch (syn_get_ec(env->exception.syndrome)) {
@@ -9851,9 +9851,9 @@ static void arm_cpu_do_interrupt_aarch64(CPUState* cs)
                 env->cp15.esr_el[new_el] = env->exception.syndrome;
             }
             break;
-        case EXCP_IRQ:
-        case EXCP_VIRQ:
-        case EXCP_NMI:
+        case EXCP_IRQ  :
+        case EXCP_VIRQ :
+        case EXCP_NMI  :
         case EXCP_VINMI: addr += 0x80; break;
         case EXCP_FIQ  :
         case EXCP_VFIQ :

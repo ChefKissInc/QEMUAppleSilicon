@@ -33,7 +33,8 @@ static GDBSyscallState gdbserver_syscall_state;
  */
 static bool gdb_attached(void) { return gdbserver_state.init && gdbserver_state.c_cpu; }
 
-static enum {
+static enum
+{
     GDB_SYS_UNKNOWN,
     GDB_SYS_ENABLED,
     GDB_SYS_DISABLED,

@@ -212,41 +212,41 @@ static bool regime_translation_disabled(CPUARMState* env, ARMMMUIdx mmu_idx, ARM
             hcr_el2 = arm_hcr_el2_eff_secstate(env, space);
             return (hcr_el2 & (HCR_DC | HCR_VM)) == 0;
 
-        case ARMMMUIdx_E10_0:
-        case ARMMMUIdx_E10_1:
+        case ARMMMUIdx_E10_0    :
+        case ARMMMUIdx_E10_1    :
         case ARMMMUIdx_E10_1_PAN:
-        case ARMMMUIdx_GE10_1:
+        case ARMMMUIdx_GE10_1   :
         case ARMMMUIdx_GE10_1_PAN:
             /* TGE means that EL0/1 act as if SCTLR_EL1.M is zero */
             hcr_el2 = arm_hcr_el2_eff_secstate(env, space);
             if (hcr_el2 & HCR_TGE) { return true; }
             break;
 
-        case ARMMMUIdx_Stage1_E0:
-        case ARMMMUIdx_Stage1_E1:
+        case ARMMMUIdx_Stage1_E0    :
+        case ARMMMUIdx_Stage1_E1    :
         case ARMMMUIdx_Stage1_E1_PAN:
-        case ARMMMUIdx_Stage1_GE1:
+        case ARMMMUIdx_Stage1_GE1   :
         case ARMMMUIdx_Stage1_GE1_PAN:
             /* HCR.DC means SCTLR_EL1.M behaves as 0 */
             hcr_el2 = arm_hcr_el2_eff_secstate(env, space);
             if (hcr_el2 & HCR_DC) { return true; }
             break;
 
-        case ARMMMUIdx_E20_0:
-        case ARMMMUIdx_E20_2:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_E2:
-        case ARMMMUIdx_E3:
-        case ARMMMUIdx_E30_0:
-        case ARMMMUIdx_E30_3_PAN:
-        case ARMMMUIdx_GE20_2:
+        case ARMMMUIdx_E20_0     :
+        case ARMMMUIdx_E20_2     :
+        case ARMMMUIdx_E20_2_PAN :
+        case ARMMMUIdx_E2        :
+        case ARMMMUIdx_E3        :
+        case ARMMMUIdx_E30_0     :
+        case ARMMMUIdx_E30_3_PAN :
+        case ARMMMUIdx_GE20_2    :
         case ARMMMUIdx_GE20_2_PAN:
-        case ARMMMUIdx_GE2:
-        case ARMMMUIdx_GE3:
+        case ARMMMUIdx_GE2       :
+        case ARMMMUIdx_GE3       :
         case ARMMMUIdx_GE30_3_PAN: break;
 
-        case ARMMMUIdx_Phys_S:
-        case ARMMMUIdx_Phys_NS:
+        case ARMMMUIdx_Phys_S   :
+        case ARMMMUIdx_Phys_NS  :
         case ARMMMUIdx_Phys_Root:
         case ARMMMUIdx_Phys_Realm:
             /* No translation for physical address spaces. */
@@ -303,7 +303,7 @@ static bool granule_protection_check(CPUARMState* env, uint64_t paddress, ARMSec
         case 0b00: /* 4KB */ pgs = 12; break;
         case 0b01: /* 64KB */ pgs = 16; break;
         case 0b10: /* 16KB */ pgs = 14; break;
-        default: /* reserved */ goto fault_walk;
+        default  : /* reserved */ goto fault_walk;
     }
 
     /* Note this field is read-only and fixed at reset. */
@@ -1270,9 +1270,9 @@ static int get_S1prot(CPUARMState* env, ARMMMUIdx mmu_idx, bool is_aa64, int use
                  * happens during any stage2 translation.
                  */
                 switch (mmu_idx) {
-                    case ARMMMUIdx_E2:
-                    case ARMMMUIdx_E20_0:
-                    case ARMMMUIdx_E20_2:
+                    case ARMMMUIdx_E2        :
+                    case ARMMMUIdx_E20_0     :
+                    case ARMMMUIdx_E20_2     :
                     case ARMMMUIdx_E20_2_PAN : return prot_rw;
                     case ARMMMUIdx_GE2       :
                     case ARMMMUIdx_GE20_2    :
@@ -1878,7 +1878,7 @@ restart_atomic_update:
                     case ARMMMUIdx_Stage1_E1_PAN:
                         /* I_CZPRF: For Realm EL1&0 stage1, NS bit is RES0. */
                         break;
-                    case ARMMMUIdx_E2:
+                    case ARMMMUIdx_E2   :
                     case ARMMMUIdx_E20_0:
                     case ARMMMUIdx_E20_2:
                     case ARMMMUIdx_E20_2_PAN:
@@ -1888,10 +1888,10 @@ restart_atomic_update:
                          */
                         if (ns) { out_space = ARMSS_NonSecure; }
                         break;
-                    case ARMMMUIdx_Stage1_GE1:
+                    case ARMMMUIdx_Stage1_GE1    :
                     case ARMMMUIdx_Stage1_GE1_PAN:
-                    case ARMMMUIdx_GE2:
-                    case ARMMMUIdx_GE20_2:
+                    case ARMMMUIdx_GE2           :
+                    case ARMMMUIdx_GE20_2        :
                     case ARMMMUIdx_GE20_2_PAN    : assert_not_reached();
                     default                      : assert_not_reached();
                 }
@@ -2281,11 +2281,11 @@ static bool get_phys_addr_disabled(CPUARMState* env, S1Translate* ptw, vaddr add
     int       r_el;
 
     switch (mmu_idx) {
-        case ARMMMUIdx_Stage2:
-        case ARMMMUIdx_Stage2_S:
-        case ARMMMUIdx_Phys_S:
-        case ARMMMUIdx_Phys_NS:
-        case ARMMMUIdx_Phys_Root:
+        case ARMMMUIdx_Stage2    :
+        case ARMMMUIdx_Stage2_S  :
+        case ARMMMUIdx_Phys_S    :
+        case ARMMMUIdx_Phys_NS   :
+        case ARMMMUIdx_Phys_Root :
         case ARMMMUIdx_Phys_Realm: break;
 
         default:
@@ -2453,17 +2453,17 @@ static bool get_phys_addr_nogpc(CPUARMState* env, S1Translate* ptw, vaddr addres
     result->f.attrs.secure = arm_space_is_secure(ptw->in_space);
 
     switch (mmu_idx) {
-        case ARMMMUIdx_Phys_S:
-        case ARMMMUIdx_Phys_NS:
+        case ARMMMUIdx_Phys_S   :
+        case ARMMMUIdx_Phys_NS  :
         case ARMMMUIdx_Phys_Root:
         case ARMMMUIdx_Phys_Realm:
             /* Checking Phys early avoids special casing later vs regime_el. */
             return get_phys_addr_disabled(env, ptw, address, access_type, result, fi);
 
-        case ARMMMUIdx_Stage1_E0:
-        case ARMMMUIdx_Stage1_E1:
+        case ARMMMUIdx_Stage1_E0    :
+        case ARMMMUIdx_Stage1_E1    :
         case ARMMMUIdx_Stage1_E1_PAN:
-        case ARMMMUIdx_Stage1_GE1:
+        case ARMMMUIdx_Stage1_GE1   :
         case ARMMMUIdx_Stage1_GE1_PAN:
             /*
              * First stage lookup uses second stage for ptw; only
@@ -2570,21 +2570,21 @@ static ARMSecuritySpace arm_mmu_idx_to_security_space(CPUARMState* env, ARMMMUId
     ARMSecuritySpace ss;
 
     switch (mmu_idx) {
-        case ARMMMUIdx_E10_0:
-        case ARMMMUIdx_E10_1:
-        case ARMMMUIdx_E10_1_PAN:
-        case ARMMMUIdx_E20_0:
-        case ARMMMUIdx_E20_2:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_Stage1_E0:
-        case ARMMMUIdx_Stage1_E1:
-        case ARMMMUIdx_Stage1_E1_PAN:
-        case ARMMMUIdx_E2:
-        case ARMMMUIdx_GE10_1:
-        case ARMMMUIdx_GE10_1_PAN:
-        case ARMMMUIdx_GE20_2:
-        case ARMMMUIdx_GE20_2_PAN:
-        case ARMMMUIdx_Stage1_GE1:
+        case ARMMMUIdx_E10_0         :
+        case ARMMMUIdx_E10_1         :
+        case ARMMMUIdx_E10_1_PAN     :
+        case ARMMMUIdx_E20_0         :
+        case ARMMMUIdx_E20_2         :
+        case ARMMMUIdx_E20_2_PAN     :
+        case ARMMMUIdx_Stage1_E0     :
+        case ARMMMUIdx_Stage1_E1     :
+        case ARMMMUIdx_Stage1_E1_PAN :
+        case ARMMMUIdx_E2            :
+        case ARMMMUIdx_GE10_1        :
+        case ARMMMUIdx_GE10_1_PAN    :
+        case ARMMMUIdx_GE20_2        :
+        case ARMMMUIdx_GE20_2_PAN    :
+        case ARMMMUIdx_Stage1_GE1    :
         case ARMMMUIdx_Stage1_GE1_PAN:
         case ARMMMUIdx_GE2           : ss = arm_security_space_below_el3(env); break;
         case ARMMMUIdx_Stage2:
@@ -2595,13 +2595,13 @@ static ARMSecuritySpace arm_mmu_idx_to_security_space(CPUARMState* env, ARMMMUId
             ss = arm_security_space_below_el3(env);
             if (ss == ARMSS_Secure) { ss = ARMSS_NonSecure; }
             break;
-        case ARMMMUIdx_Phys_NS : ss = ARMSS_NonSecure; break;
-        case ARMMMUIdx_Stage2_S:
-        case ARMMMUIdx_Phys_S  : ss = ARMSS_Secure; break;
-        case ARMMMUIdx_E3:
-        case ARMMMUIdx_E30_0:
+        case ARMMMUIdx_Phys_NS  : ss = ARMSS_NonSecure; break;
+        case ARMMMUIdx_Stage2_S :
+        case ARMMMUIdx_Phys_S   : ss = ARMSS_Secure; break;
+        case ARMMMUIdx_E3       :
+        case ARMMMUIdx_E30_0    :
         case ARMMMUIdx_E30_3_PAN:
-        case ARMMMUIdx_GE3:
+        case ARMMMUIdx_GE3      :
         case ARMMMUIdx_GE30_3_PAN:
             if (arm_feature(env, ARM_FEATURE_AARCH64) && cpu_isar_feature(aa64_rme, env_archcpu(env))) {
                 ss = ARMSS_Root;
@@ -2664,9 +2664,9 @@ hwaddr arm_cpu_get_phys_page_attrs_debug(CPUState* cs, vaddr addr, MemTxAttrs* a
      * unprivileged mmu idx, so we need to try with it.
      */
     switch (mmu_idx) {
-        case ARMMMUIdx_E10_1:
-        case ARMMMUIdx_E10_1_PAN:
-        case ARMMMUIdx_GE10_1:
+        case ARMMMUIdx_E10_1     :
+        case ARMMMUIdx_E10_1_PAN :
+        case ARMMMUIdx_GE10_1    :
         case ARMMMUIdx_GE10_1_PAN: return arm_cpu_get_phys_page(env, addr, attrs, ARMMMUIdx_E10_0);
         case ARMMMUIdx_E20_2     :
         case ARMMMUIdx_E20_2_PAN :

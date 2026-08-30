@@ -141,8 +141,8 @@ void arm_handle_psci_call(ARMCPU* cpu)
             ret        = arm_set_cpu_on(mpidr, entry, context_id, target_el, target_aarch64);
             break;
         }
-        case QEMU_PSCI_0_1_FN_CPU_OFF:
-        case QEMU_PSCI_0_2_FN_CPU_OFF: goto cpu_off;
+        case QEMU_PSCI_0_1_FN_CPU_OFF    :
+        case QEMU_PSCI_0_2_FN_CPU_OFF    : goto cpu_off;
         case QEMU_PSCI_0_1_FN_CPU_SUSPEND:
         case QEMU_PSCI_0_2_FN_CPU_SUSPEND:
         case QEMU_PSCI_0_2_FN64_CPU_SUSPEND:
@@ -160,20 +160,20 @@ void arm_handle_psci_call(ARMCPU* cpu)
             break;
         case QEMU_PSCI_1_0_FN_PSCI_FEATURES:
             switch (param[1]) {
-                case QEMU_PSCI_0_2_FN_PSCI_VERSION:
+                case QEMU_PSCI_0_2_FN_PSCI_VERSION     :
                 case QEMU_PSCI_0_2_FN_MIGRATE_INFO_TYPE:
-                case QEMU_PSCI_0_2_FN_AFFINITY_INFO:
-                case QEMU_PSCI_0_2_FN64_AFFINITY_INFO:
-                case QEMU_PSCI_0_2_FN_SYSTEM_RESET:
-                case QEMU_PSCI_0_2_FN_SYSTEM_OFF:
-                case QEMU_PSCI_0_1_FN_CPU_ON:
-                case QEMU_PSCI_0_2_FN_CPU_ON:
-                case QEMU_PSCI_0_2_FN64_CPU_ON:
-                case QEMU_PSCI_0_1_FN_CPU_OFF:
-                case QEMU_PSCI_0_2_FN_CPU_OFF:
-                case QEMU_PSCI_0_1_FN_CPU_SUSPEND:
-                case QEMU_PSCI_0_2_FN_CPU_SUSPEND:
-                case QEMU_PSCI_0_2_FN64_CPU_SUSPEND:
+                case QEMU_PSCI_0_2_FN_AFFINITY_INFO    :
+                case QEMU_PSCI_0_2_FN64_AFFINITY_INFO  :
+                case QEMU_PSCI_0_2_FN_SYSTEM_RESET     :
+                case QEMU_PSCI_0_2_FN_SYSTEM_OFF       :
+                case QEMU_PSCI_0_1_FN_CPU_ON           :
+                case QEMU_PSCI_0_2_FN_CPU_ON           :
+                case QEMU_PSCI_0_2_FN64_CPU_ON         :
+                case QEMU_PSCI_0_1_FN_CPU_OFF          :
+                case QEMU_PSCI_0_2_FN_CPU_OFF          :
+                case QEMU_PSCI_0_1_FN_CPU_SUSPEND      :
+                case QEMU_PSCI_0_2_FN_CPU_SUSPEND      :
+                case QEMU_PSCI_0_2_FN64_CPU_SUSPEND    :
                 case QEMU_PSCI_1_0_FN_PSCI_FEATURES:
                     if (!(param[1] & QEMU_PSCI_0_2_64BIT) || is_a64(env)) {
                         ret = 0;

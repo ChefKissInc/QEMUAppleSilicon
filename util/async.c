@@ -66,7 +66,7 @@ struct QEMUBH
     QEMUBHFunc* cb;
     void*       opaque;
     QSLIST_ENTRY(QEMUBH) next;
-    unsigned            flags;
+    unsigned flags;
 };
 
 /* Called concurrently from any thread */
@@ -132,18 +132,15 @@ QEMUBH* aio_bh_new_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const cha
     QEMUBH* bh;
     bh  = g_new(QEMUBH, 1);
     *bh = (QEMUBH){
-        .ctx              = ctx,
-        .cb               = cb,
-        .opaque           = opaque,
-        .name             = name,
+        .ctx    = ctx,
+        .cb     = cb,
+        .opaque = opaque,
+        .name   = name,
     };
     return bh;
 }
 
-void aio_bh_call(QEMUBH* bh)
-{
-    bh->cb(bh->opaque);
-}
+void aio_bh_call(QEMUBH* bh) { bh->cb(bh->opaque); }
 
 /* Multiple occurrences of aio_bh_poll cannot be called concurrently. */
 int aio_bh_poll(AioContext* ctx)
@@ -465,8 +462,8 @@ static bool aio_context_notifier_poll(void* opaque)
     return qatomic_read(&ctx->notified);
 }
 
-static void aio_context_notifier_poll_ready(EventNotifier* e)
-{ /* Do nothing, we just wanted to kick the event loop */ }
+static void aio_context_notifier_poll_ready(EventNotifier* e) { /* Do nothing, we just wanted to kick the event loop */
+}
 
 static void co_schedule_bh_cb(void* opaque)
 {

@@ -396,7 +396,7 @@ static void usb_desc_setdefaults(USBDevice* dev)
 
     assert(desc != NULL);
     switch (dev->speed) {
-        case USB_SPEED_LOW:
+        case USB_SPEED_LOW  :
         case USB_SPEED_FULL : dev->device = desc->full; break;
         case USB_SPEED_HIGH : dev->device = desc->high; break;
         case USB_SPEED_SUPER: dev->device = desc->super; break;

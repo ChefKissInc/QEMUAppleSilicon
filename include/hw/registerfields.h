@@ -96,9 +96,7 @@
 #define REG_FIELD_DP8(_storage, _reg, _field, _val)                                                  \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            unsigned int v : R_##_reg##_##_field##_LENGTH;                                           \
-        } _v = {_val};                                                                               \
+        { unsigned int v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                              \
         uint8_t _d;                                                                                  \
         _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -106,9 +104,7 @@
 #define REG_FIELD_DP16(_storage, _reg, _field, _val)                                                 \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            unsigned int v : R_##_reg##_##_field##_LENGTH;                                           \
-        } _v = {_val};                                                                               \
+        { unsigned int v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                              \
         uint16_t _d;                                                                                 \
         _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -116,9 +112,7 @@
 #define REG_FIELD_DP32(_storage, _reg, _field, _val)                                                 \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            unsigned int v : R_##_reg##_##_field##_LENGTH;                                           \
-        } _v = {_val};                                                                               \
+        { unsigned int v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                              \
         uint32_t _d;                                                                                 \
         _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -126,9 +120,7 @@
 #define REG_FIELD_DP64(_storage, _reg, _field, _val)                                                 \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            uint64_t v : R_##_reg##_##_field##_LENGTH;                                               \
-        } _v = {_val};                                                                               \
+        { uint64_t v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                                  \
         uint64_t _d;                                                                                 \
         _d = deposit64((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -137,9 +129,7 @@
 #define REG_FIELD_SDP8(_storage, _reg, _field, _val)                                                 \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            signed int v : R_##_reg##_##_field##_LENGTH;                                             \
-        } _v = {_val};                                                                               \
+        { signed int v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                                \
         uint8_t _d;                                                                                  \
         _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -147,9 +137,7 @@
 #define REG_FIELD_SDP16(_storage, _reg, _field, _val)                                                \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            signed int v : R_##_reg##_##_field##_LENGTH;                                             \
-        } _v = {_val};                                                                               \
+        { signed int v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                                \
         uint16_t _d;                                                                                 \
         _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -157,9 +145,7 @@
 #define REG_FIELD_SDP32(_storage, _reg, _field, _val)                                                \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            signed int v : R_##_reg##_##_field##_LENGTH;                                             \
-        } _v = {_val};                                                                               \
+        { signed int v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                                \
         uint32_t _d;                                                                                 \
         _d = deposit32((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -167,9 +153,7 @@
 #define REG_FIELD_SDP64(_storage, _reg, _field, _val)                                                \
     ({                                                                                               \
         struct                                                                                       \
-        {                                                                                            \
-            int64_t v : R_##_reg##_##_field##_LENGTH;                                                \
-        } _v = {_val};                                                                               \
+        { int64_t v : R_##_reg##_##_field##_LENGTH; } _v = {_val};                                   \
         uint64_t _d;                                                                                 \
         _d = deposit64((_storage), R_##_reg##_##_field##_SHIFT, R_##_reg##_##_field##_LENGTH, _v.v); \
         _d;                                                                                          \
@@ -205,9 +189,7 @@
 #define SHARED_REG_FIELD_DP8(_storage, _field, _val)                       \
     ({                                                                     \
         struct                                                             \
-        {                                                                  \
-            unsigned int v : _field##_LENGTH;                              \
-        } _v = {_val};                                                     \
+        { unsigned int v : _field##_LENGTH; } _v = {_val};                 \
         uint8_t _d;                                                        \
         _d = deposit32((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
         _d;                                                                \
@@ -215,9 +197,7 @@
 #define SHARED_REG_FIELD_DP16(_storage, _field, _val)                      \
     ({                                                                     \
         struct                                                             \
-        {                                                                  \
-            unsigned int v : _field##_LENGTH;                              \
-        } _v = {_val};                                                     \
+        { unsigned int v : _field##_LENGTH; } _v = {_val};                 \
         uint16_t _d;                                                       \
         _d = deposit32((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
         _d;                                                                \
@@ -225,9 +205,7 @@
 #define SHARED_REG_FIELD_DP32(_storage, _field, _val)                      \
     ({                                                                     \
         struct                                                             \
-        {                                                                  \
-            unsigned int v : _field##_LENGTH;                              \
-        } _v = {_val};                                                     \
+        { unsigned int v : _field##_LENGTH; } _v = {_val};                 \
         uint32_t _d;                                                       \
         _d = deposit32((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
         _d;                                                                \
@@ -235,9 +213,7 @@
 #define SHARED_REG_FIELD_DP64(_storage, _field, _val)                      \
     ({                                                                     \
         struct                                                             \
-        {                                                                  \
-            uint64_t v : _field##_LENGTH;                                  \
-        } _v = {_val};                                                     \
+        { uint64_t v : _field##_LENGTH; } _v = {_val};                     \
         uint64_t _d;                                                       \
         _d = deposit64((_storage), _field##_SHIFT, _field##_LENGTH, _v.v); \
         _d;                                                                \

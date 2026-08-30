@@ -81,8 +81,8 @@ static int usbmon_status(USBPacket* p)
 {
     switch (p->status) {
         case USB_RET_SUCCESS: return 0;
-        case USB_RET_NODEV  : return -19; /* -ENODEV */
-        default             : return -121;             /* -EREMOTEIO */
+        case USB_RET_NODEV  : return -19;  /* -ENODEV */
+        default             : return -121; /* -EREMOTEIO */
     }
 }
 

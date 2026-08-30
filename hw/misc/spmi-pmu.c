@@ -166,9 +166,9 @@ static int apple_spmi_pmu_command(SPMISlave* slave, uint8_t opcode, uint16_t add
     pmu->addr              = addr;
 
     switch (opcode) {
-        case SPMI_CMD_EXT_READ:
-        case SPMI_CMD_EXT_READL:
-        case SPMI_CMD_EXT_WRITE:
+        case SPMI_CMD_EXT_READ  :
+        case SPMI_CMD_EXT_READL :
+        case SPMI_CMD_EXT_WRITE :
         case SPMI_CMD_EXT_WRITEL: return 0;
         default                 : return 1;
     }

@@ -32,14 +32,14 @@ bool should_mlock(MlockState state) { return state == MLOCK_ON || state == MLOCK
 
 bool is_mlock_on_fault(MlockState state) { return state == MLOCK_ON_FAULT; }
 
-const char*   keyboard_layout;
-MlockState    mlock_state;
-bool          enable_cpu_pm;
-int           autostart = 1;
-const char*   qemu_name;
-unsigned int  nb_prom_envs;
-const char*   prom_envs[MAX_PROM_ENVS];
-uint8_t*      boot_splash_filedata;
+const char*  keyboard_layout;
+MlockState   mlock_state;
+bool         enable_cpu_pm;
+int          autostart = 1;
+const char*  qemu_name;
+unsigned int nb_prom_envs;
+const char*  prom_envs[MAX_PROM_ENVS];
+uint8_t*     boot_splash_filedata;
 
 /* The bytes in qemu_uuid are in the order specified by RFC4122, _not_ in the
  * little-endian "wire format" described in the SMBIOS 2.6 specification.

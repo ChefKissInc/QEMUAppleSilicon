@@ -61,9 +61,7 @@ struct barrierVersion
 };
 
 struct barrierMouseButton
-{
-    int8_t buttonid;
-};
+{ int8_t buttonid; };
 
 struct barrierEnter
 {

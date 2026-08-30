@@ -1459,8 +1459,8 @@ static void init_call_layout(TCGHelperInfo* info)
     typecode = typemask & 7;
     switch (typecode) {
         case dh_typecode_void: info->nr_out = 0; break;
-        case dh_typecode_i32:
-        case dh_typecode_s32:
+        case dh_typecode_i32 :
+        case dh_typecode_s32 :
         case dh_typecode_ptr:
             info->nr_out   = 1;
             info->out_kind = TCG_CALL_RET_NORMAL;
@@ -1507,7 +1507,7 @@ static void init_call_layout(TCGHelperInfo* info)
 
         typecode = typemask & 7;
         switch (typecode) {
-            case dh_typecode_i32:
+            case dh_typecode_i32 :
             case dh_typecode_s32 : type = TCG_TYPE_I32; break;
             case dh_typecode_i64 :
             case dh_typecode_s64 : type = TCG_TYPE_I64; break;
@@ -1588,7 +1588,7 @@ static void init_call_layout(TCGHelperInfo* info)
             for (int i = cum.info_in_idx - 1; i >= 0; --i) {
                 TCGCallArgumentLoc* loc = &info->in[i];
                 switch (loc->kind) {
-                    case TCG_CALL_ARG_BY_REF:
+                    case TCG_CALL_ARG_BY_REF  :
                     case TCG_CALL_ARG_BY_REF_N: loc->ref_slot += ref_base; break;
                     default                   : break;
                 }
@@ -1910,8 +1910,8 @@ TCGTemp* tcg_temp_new_internal(TCGType type, TCGTempKind kind)
     }
 
     switch (type) {
-        case TCG_TYPE_I32:
-        case TCG_TYPE_V64:
+        case TCG_TYPE_I32 :
+        case TCG_TYPE_V64 :
         case TCG_TYPE_V128:
         case TCG_TYPE_V256: n = 1; break;
         case TCG_TYPE_I64 : n = 64 / TCG_TARGET_REG_BITS; break;
@@ -2131,14 +2131,14 @@ bool tcg_op_supported(TCGOpcode op, TCGType type, unsigned flags)
     }
 
     switch (op) {
-        case INDEX_op_discard:
-        case INDEX_op_set_label:
-        case INDEX_op_call:
-        case INDEX_op_br:
-        case INDEX_op_mb:
+        case INDEX_op_discard   :
+        case INDEX_op_set_label :
+        case INDEX_op_call      :
+        case INDEX_op_br        :
+        case INDEX_op_mb        :
         case INDEX_op_insn_start:
-        case INDEX_op_exit_tb:
-        case INDEX_op_goto_tb:
+        case INDEX_op_exit_tb   :
+        case INDEX_op_goto_tb   :
         case INDEX_op_goto_ptr  : return true;
 
         case INDEX_op_qemu_ld:
@@ -2153,48 +2153,48 @@ bool tcg_op_supported(TCGOpcode op, TCGType type, unsigned flags)
             tcg_debug_assert(type == TCG_TYPE_I128);
             goto do_lookup;
 
-        case INDEX_op_add:
-        case INDEX_op_and:
-        case INDEX_op_brcond:
-        case INDEX_op_deposit:
-        case INDEX_op_extract:
-        case INDEX_op_ld8u:
-        case INDEX_op_ld8s:
-        case INDEX_op_ld16u:
-        case INDEX_op_ld16s:
-        case INDEX_op_ld:
-        case INDEX_op_mov:
-        case INDEX_op_movcond:
+        case INDEX_op_add       :
+        case INDEX_op_and       :
+        case INDEX_op_brcond    :
+        case INDEX_op_deposit   :
+        case INDEX_op_extract   :
+        case INDEX_op_ld8u      :
+        case INDEX_op_ld8s      :
+        case INDEX_op_ld16u     :
+        case INDEX_op_ld16s     :
+        case INDEX_op_ld        :
+        case INDEX_op_mov       :
+        case INDEX_op_movcond   :
         case INDEX_op_negsetcond:
-        case INDEX_op_or:
-        case INDEX_op_setcond:
-        case INDEX_op_sextract:
-        case INDEX_op_st8:
-        case INDEX_op_st16:
-        case INDEX_op_st:
+        case INDEX_op_or        :
+        case INDEX_op_setcond   :
+        case INDEX_op_sextract  :
+        case INDEX_op_st8       :
+        case INDEX_op_st16      :
+        case INDEX_op_st        :
         case INDEX_op_xor       : return has_type;
 
-        case INDEX_op_brcond2_i32:
+        case INDEX_op_brcond2_i32 :
         case INDEX_op_setcond2_i32: return TCG_TARGET_REG_BITS == 32;
 
-        case INDEX_op_ld32u:
-        case INDEX_op_ld32s:
-        case INDEX_op_st32:
-        case INDEX_op_ext_i32_i64:
-        case INDEX_op_extu_i32_i64:
+        case INDEX_op_ld32u        :
+        case INDEX_op_ld32s        :
+        case INDEX_op_st32         :
+        case INDEX_op_ext_i32_i64  :
+        case INDEX_op_extu_i32_i64 :
         case INDEX_op_extrl_i64_i32:
         case INDEX_op_extrh_i64_i32: return TCG_TARGET_REG_BITS == 64;
 
-        case INDEX_op_mov_vec:
-        case INDEX_op_dup_vec:
-        case INDEX_op_dupm_vec:
-        case INDEX_op_ld_vec:
-        case INDEX_op_st_vec:
-        case INDEX_op_add_vec:
-        case INDEX_op_sub_vec:
-        case INDEX_op_and_vec:
-        case INDEX_op_or_vec:
-        case INDEX_op_xor_vec:
+        case INDEX_op_mov_vec   :
+        case INDEX_op_dup_vec   :
+        case INDEX_op_dupm_vec  :
+        case INDEX_op_ld_vec    :
+        case INDEX_op_st_vec    :
+        case INDEX_op_add_vec   :
+        case INDEX_op_sub_vec   :
+        case INDEX_op_and_vec   :
+        case INDEX_op_or_vec    :
+        case INDEX_op_xor_vec   :
         case INDEX_op_cmp_vec   : return has_type;
         case INDEX_op_dup2_vec  : return has_type && TCG_TARGET_REG_BITS == 32;
         case INDEX_op_not_vec   : return has_type && TCG_TARGET_HAS_not_vec;
@@ -2308,8 +2308,8 @@ static void tcg_gen_callN(void* func, TCGHelperInfo* info, TCGTemp* ret, TCGTemp
         TCGTemp*                  ts  = args[loc->arg_idx] + loc->tmp_subindex;
 
         switch (loc->kind) {
-            case TCG_CALL_ARG_NORMAL:
-            case TCG_CALL_ARG_BY_REF:
+            case TCG_CALL_ARG_NORMAL  :
+            case TCG_CALL_ARG_BY_REF  :
             case TCG_CALL_ARG_BY_REF_N: op->args[pi++] = temp_arg(ts); break;
 
             case TCG_CALL_ARG_EXTEND_U:
@@ -2413,7 +2413,7 @@ static char* tcg_get_arg_str_ptr(TCGContext* s, char* buf, int buf_size, TCGTemp
     int idx = temp_idx(ts);
 
     switch (ts->kind) {
-        case TEMP_FIXED:
+        case TEMP_FIXED :
         case TEMP_GLOBAL: pstrcpy(buf, buf_size, ts->name); break;
         case TEMP_TB    : snprintf(buf, buf_size, "loc%d", idx - s->nb_globals); break;
         case TEMP_EBB   : snprintf(buf, buf_size, "tmp%d", idx - s->nb_globals); break;
@@ -2423,7 +2423,7 @@ static char* tcg_get_arg_str_ptr(TCGContext* s, char* buf, int buf_size, TCGTemp
 #if TCG_TARGET_REG_BITS > 32
                 case TCG_TYPE_I64: snprintf(buf, buf_size, "$0x%" PRIx64, ts->val); break;
 #endif
-                case TCG_TYPE_V64:
+                case TCG_TYPE_V64 :
                 case TCG_TYPE_V128:
                 case TCG_TYPE_V256:
                     snprintf(buf, buf_size, "v%d$0x%" PRIx64, 64 << (ts->type - TCG_TYPE_V64), ts->val);
@@ -2561,13 +2561,13 @@ void tcg_dump_ops(TCGContext* s, FILE* f, bool have_prefs)
                 col             += ne_fprintf(f, "%s%s", sep, tcg_get_arg_str(s, buf, sizeof(buf), op->args[k++]));
             }
             switch (c) {
-                case INDEX_op_brcond:
-                case INDEX_op_setcond:
-                case INDEX_op_negsetcond:
-                case INDEX_op_movcond:
-                case INDEX_op_brcond2_i32:
+                case INDEX_op_brcond      :
+                case INDEX_op_setcond     :
+                case INDEX_op_negsetcond  :
+                case INDEX_op_movcond     :
+                case INDEX_op_brcond2_i32 :
                 case INDEX_op_setcond2_i32:
-                case INDEX_op_cmp_vec:
+                case INDEX_op_cmp_vec     :
                 case INDEX_op_cmpsel_vec:
                     if (op->args[k] < ARRAY_SIZE(cond_name) && cond_name[op->args[k]]) {
                         col += ne_fprintf(f, ",%s", cond_name[op->args[k++]]);
@@ -2577,8 +2577,8 @@ void tcg_dump_ops(TCGContext* s, FILE* f, bool have_prefs)
                     }
                     i = 1;
                     break;
-                case INDEX_op_qemu_ld:
-                case INDEX_op_qemu_st:
+                case INDEX_op_qemu_ld :
+                case INDEX_op_qemu_st :
                 case INDEX_op_qemu_ld2:
                 case INDEX_op_qemu_st2: {
                     const char *s_al, *s_op, *s_at;
@@ -2616,8 +2616,8 @@ void tcg_dump_ops(TCGContext* s, FILE* f, bool have_prefs)
             }
             switch (c) {
                 case INDEX_op_set_label:
-                case INDEX_op_br:
-                case INDEX_op_brcond:
+                case INDEX_op_br       :
+                case INDEX_op_brcond   :
                 case INDEX_op_brcond2_i32:
                     col += ne_fprintf(f, "%s$L%d", k ? "," : "", arg_label(op->args[k])->id);
                     i++, k++;
@@ -2861,10 +2861,10 @@ static void process_constraint_sets(void)
 
 #undef REGS
 #undef CONST
-                    default:
+                    default         :
                     case '0' ... '9':
-                    case '&':
-                    case 'p':
+                    case '&'        :
+                    case 'p'        :
                     case 'm':
                         /* Typo in TCGConstraintSet constraint. */
                         assert_not_reached();
@@ -3158,7 +3158,7 @@ static void __attribute__((noinline)) reachable_code_pass(TCGContext* s)
                 }
                 break;
 
-            case INDEX_op_br:
+            case INDEX_op_br     :
             case INDEX_op_exit_tb:
             case INDEX_op_goto_ptr:
                 /* Unconditional branches; everything following is dead.  */
@@ -3260,7 +3260,7 @@ static void la_bb_end(TCGContext* s, int ng, int nt)
         TCGTemp* ts = &s->temps[i];
 
         switch (ts->kind) {
-            case TEMP_FIXED:
+            case TEMP_FIXED :
             case TEMP_GLOBAL:
             case TEMP_TB:
                 ts->state = TS_DEAD | TS_MEM;
@@ -3312,7 +3312,7 @@ static void la_bb_sync(TCGContext* s, int ng, int nt)
                 ts->state = state | TS_MEM;
                 if (state != TS_DEAD) { continue; }
                 break;
-            case TEMP_EBB:
+            case TEMP_EBB  :
             case TEMP_CONST: continue;
             default        : assert_not_reached();
         }
@@ -3513,7 +3513,7 @@ static void __attribute__((noinline)) liveness_pass_1(TCGContext* s)
 
                         if (ts->state & TS_DEAD) {
                             switch (loc->kind) {
-                                case TCG_CALL_ARG_NORMAL:
+                                case TCG_CALL_ARG_NORMAL  :
                                 case TCG_CALL_ARG_EXTEND_U:
                                 case TCG_CALL_ARG_EXTEND_S:
                                     if (arg_slot_reg_p(loc->arg_slot)) {
@@ -3537,7 +3537,7 @@ static void __attribute__((noinline)) liveness_pass_1(TCGContext* s)
                         ts                            = arg_temp(op->args[nb_oargs + i]);
 
                         switch (loc->kind) {
-                            case TCG_CALL_ARG_NORMAL:
+                            case TCG_CALL_ARG_NORMAL  :
                             case TCG_CALL_ARG_EXTEND_U:
                             case TCG_CALL_ARG_EXTEND_S:
                                 if (arg_slot_reg_p(loc->arg_slot)) {
@@ -3874,7 +3874,8 @@ static bool __attribute__((noinline)) liveness_pass_2(TCGContext* s)
 
         /* Liveness analysis should ensure that the following are
            all correct, for call sites and basic block end points.  */
-        if (call_flags & TCG_CALL_NO_READ_GLOBALS) { /* Nothing to do */ }
+        if (call_flags & TCG_CALL_NO_READ_GLOBALS) { /* Nothing to do */
+        }
         else if (call_flags & TCG_CALL_NO_WRITE_GLOBALS) {
             for (i = 0; i < nb_globals; ++i) {
                 /* Liveness should see that globals are synced back,
@@ -3963,9 +3964,9 @@ static void temp_allocate_frame(TCGContext* s, TCGTemp* ts)
     /* When allocating an object, look at the full type. */
     size = tcg_type_size(ts->base_type);
     switch (ts->base_type) {
-        case TCG_TYPE_I32: align = 4; break;
-        case TCG_TYPE_I64:
-        case TCG_TYPE_V64: align = 8; break;
+        case TCG_TYPE_I32 : align = 4; break;
+        case TCG_TYPE_I64 :
+        case TCG_TYPE_V64 : align = 8; break;
         case TCG_TYPE_I128:
         case TCG_TYPE_V128:
         case TCG_TYPE_V256:
@@ -4860,30 +4861,30 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
         case INDEX_op_addc1o:
             tcg_out_set_carry(s);
             /* fall through */
-        case INDEX_op_add:
+        case INDEX_op_add   :
         case INDEX_op_addcio:
-        case INDEX_op_addco:
-        case INDEX_op_and:
-        case INDEX_op_andc:
-        case INDEX_op_clz:
-        case INDEX_op_ctz:
-        case INDEX_op_divs:
-        case INDEX_op_divu:
-        case INDEX_op_eqv:
-        case INDEX_op_mul:
-        case INDEX_op_mulsh:
-        case INDEX_op_muluh:
-        case INDEX_op_nand:
-        case INDEX_op_nor:
-        case INDEX_op_or:
-        case INDEX_op_orc:
-        case INDEX_op_rems:
-        case INDEX_op_remu:
-        case INDEX_op_rotl:
-        case INDEX_op_rotr:
-        case INDEX_op_sar:
-        case INDEX_op_shl:
-        case INDEX_op_shr:
+        case INDEX_op_addco :
+        case INDEX_op_and   :
+        case INDEX_op_andc  :
+        case INDEX_op_clz   :
+        case INDEX_op_ctz   :
+        case INDEX_op_divs  :
+        case INDEX_op_divu  :
+        case INDEX_op_eqv   :
+        case INDEX_op_mul   :
+        case INDEX_op_mulsh :
+        case INDEX_op_muluh :
+        case INDEX_op_nand  :
+        case INDEX_op_nor   :
+        case INDEX_op_or    :
+        case INDEX_op_orc   :
+        case INDEX_op_rems  :
+        case INDEX_op_remu  :
+        case INDEX_op_rotl  :
+        case INDEX_op_rotr  :
+        case INDEX_op_sar   :
+        case INDEX_op_shl   :
+        case INDEX_op_shr   :
         case INDEX_op_xor   : {
             const TCGOutOpBinary* out = container_of(all_outop[op->opc], TCGOutOpBinary, base);
 
@@ -4912,8 +4913,8 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
         case INDEX_op_subb1o:
             tcg_out_set_borrow(s);
             /* fall through */
-        case INDEX_op_addci:
-        case INDEX_op_subbi:
+        case INDEX_op_addci :
+        case INDEX_op_subbi :
         case INDEX_op_subbio:
         case INDEX_op_subbo : {
             const TCGOutOpAddSubCarry* out = container_of(all_outop[op->opc], TCGOutOpAddSubCarry, base);
@@ -4932,15 +4933,15 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
             }
         } break;
 
-        case INDEX_op_bswap64:
-        case INDEX_op_ext_i32_i64:
-        case INDEX_op_extu_i32_i64:
+        case INDEX_op_bswap64      :
+        case INDEX_op_ext_i32_i64  :
+        case INDEX_op_extu_i32_i64 :
         case INDEX_op_extrl_i64_i32:
         case INDEX_op_extrh_i64_i32:
             assert(TCG_TARGET_REG_BITS == 64);
             /* fall through */
         case INDEX_op_ctpop:
-        case INDEX_op_neg:
+        case INDEX_op_neg  :
         case INDEX_op_not  : {
             const TCGOutOpUnary* out = container_of(all_outop[op->opc], TCGOutOpUnary, base);
 
@@ -4985,7 +4986,7 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
             out->out_rr01r(s, type, new_args[0], new_args[1], new_args[4]);
         } break;
 
-        case INDEX_op_extract:
+        case INDEX_op_extract :
         case INDEX_op_sextract: {
             const TCGOutOpExtract* out = container_of(all_outop[op->opc], TCGOutOpExtract, base);
 
@@ -5001,8 +5002,8 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
             out->out_rrr(s, type, new_args[0], new_args[1], new_args[2], new_args[3]);
         } break;
 
-        case INDEX_op_ld8u:
-        case INDEX_op_ld8s:
+        case INDEX_op_ld8u :
+        case INDEX_op_ld8s :
         case INDEX_op_ld16u:
         case INDEX_op_ld16s:
         case INDEX_op_ld32u:
@@ -5027,8 +5028,8 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
             /* Use tcg_op_st w/ I32. */
             type = TCG_TYPE_I32;
             /* fall through */
-        case INDEX_op_st:
-        case INDEX_op_st8:
+        case INDEX_op_st  :
+        case INDEX_op_st8 :
         case INDEX_op_st16: {
             const TCGOutOpStore* out = container_of(all_outop[op->opc], TCGOutOpStore, base);
 
@@ -5073,7 +5074,7 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
                      new_args[4], const_args[4]);
         } break;
 
-        case INDEX_op_setcond:
+        case INDEX_op_setcond   :
         case INDEX_op_negsetcond: {
             const TCGOutOpSetcond* out  = container_of(all_outop[op->opc], TCGOutOpSetcond, base);
             TCGCond                cond = new_args[3];
@@ -5105,7 +5106,7 @@ static void tcg_reg_alloc_op(TCGContext* s, const TCGOp* op)
                      const_args[4]);
         } break;
 #else
-        case INDEX_op_brcond2_i32:
+        case INDEX_op_brcond2_i32 :
         case INDEX_op_setcond2_i32: assert_not_reached();
 #endif
 
@@ -5293,7 +5294,7 @@ static void tcg_reg_alloc_call(TCGContext* s, TCGOp* op)
         TCGTemp*                  ts  = arg_temp(op->args[nb_oargs + i]);
 
         switch (loc->kind) {
-            case TCG_CALL_ARG_NORMAL:
+            case TCG_CALL_ARG_NORMAL  :
             case TCG_CALL_ARG_EXTEND_U:
             case TCG_CALL_ARG_EXTEND_S: load_arg_normal(s, loc, ts, &allocated_regs); break;
             case TCG_CALL_ARG_BY_REF:
@@ -5319,7 +5320,8 @@ static void tcg_reg_alloc_call(TCGContext* s, TCGOp* op)
      * Save globals if they might be written by the helper,
      * sync them if they might be read.
      */
-    if (info->flags & TCG_CALL_NO_READ_GLOBALS) { /* Nothing to do */ }
+    if (info->flags & TCG_CALL_NO_READ_GLOBALS) { /* Nothing to do */
+    }
     else if (info->flags & TCG_CALL_NO_WRITE_GLOBALS) {
         sync_globals(s, allocated_regs);
     }
@@ -5422,7 +5424,8 @@ static TCGAtomAlign atom_and_align_for_opc(TCGContext* s, MemOp opc, MemOp host_
 
         case MO_ATOM_WITHIN16:
             atmax = size;
-            if (size == MO_128) { /* Misalignment implies !within16, and therefore no atomicity. */ }
+            if (size == MO_128) { /* Misalignment implies !within16, and therefore no atomicity. */
+            }
             else if (host_atom != MO_ATOM_WITHIN16) {
                 /* The host does not implement within16, so require alignment. */
                 align = MAX(align, size);
@@ -5585,7 +5588,7 @@ static void tcg_out_helper_load_common_args(TCGContext* s, const TCGLabelQemuLds
     loc  = &info->in[next_arg];
     type = TCG_TYPE_I32;
     switch (loc->kind) {
-        case TCG_CALL_ARG_NORMAL: break;
+        case TCG_CALL_ARG_NORMAL  : break;
         case TCG_CALL_ARG_EXTEND_U:
         case TCG_CALL_ARG_EXTEND_S:
             /* No extension required for MemOpIdx. */
@@ -5681,8 +5684,8 @@ static void tcg_out_ld_helper_args(TCGContext* s, const TCGLabelQemuLdst* ldst, 
     MemOp                     mop = get_memop(ldst->oi);
 
     switch (mop & MO_SIZE) {
-        case MO_8:
-        case MO_16:
+        case MO_8  :
+        case MO_16 :
         case MO_32 : info = &info_helper_ld32_mmu; break;
         case MO_64 : info = &info_helper_ld64_mmu; break;
         case MO_128: info = &info_helper_ld128_mmu; break;
@@ -5823,7 +5826,7 @@ static void tcg_out_st_helper_args(TCGContext* s, const TCGLabelQemuLdst* ldst, 
     MemOp                     mop = get_memop(ldst->oi);
 
     switch (mop & MO_SIZE) {
-        case MO_8:
+        case MO_8 :
         case MO_16:
         case MO_32:
             info      = &info_helper_st32_mmu;
@@ -5867,7 +5870,7 @@ static void tcg_out_st_helper_args(TCGContext* s, const TCGLabelQemuLdst* ldst, 
     /* Handle data argument. */
     loc = &info->in[next_arg];
     switch (loc->kind) {
-        case TCG_CALL_ARG_NORMAL:
+        case TCG_CALL_ARG_NORMAL  :
         case TCG_CALL_ARG_EXTEND_U:
         case TCG_CALL_ARG_EXTEND_S:
             n = tcg_out_helper_add_mov(mov + nmov, loc, data_type, ldst->type, ldst->datalo_reg, ldst->datahi_reg);
@@ -6022,7 +6025,7 @@ int tcg_gen_code(TCGContext* s, TranslationBlock* tb, uint64_t pc_start)
                     if (!IS_DEAD_ARG(0)) { goto do_default; }
                 }
                 /* fall through */
-            case INDEX_op_mov:
+            case INDEX_op_mov    :
             case INDEX_op_mov_vec: tcg_reg_alloc_mov(s, op); break;
             case INDEX_op_dup_vec: tcg_reg_alloc_dup(s, op); break;
             case INDEX_op_insn_start:
@@ -6301,7 +6304,7 @@ static void tcg_register_jit_int(const void* buf_ptr, size_t buf_size, const voi
                    ".symtab\0"
                    ".strtab\0"
                    "code_gen_buffer",
-        };
+    };
 
     /* We only need a single jit entry; statically allocate it.  */
     static struct jit_code_entry one_entry;
@@ -6351,7 +6354,8 @@ static void tcg_register_jit_int(const void* buf_ptr, size_t buf_size, const voi
         g_autofree char* jit = g_strdup_printf("%s/qemu.jit", g_get_tmp_dir());
         FILE*            f   = fopen(jit, "w+b");
         if (f) {
-            if (fwrite(img, img_size, 1, f) != img_size) { /* Avoid stupid unused return value warning for fwrite.  */ }
+            if (fwrite(img, img_size, 1, f) != img_size) { /* Avoid stupid unused return value warning for fwrite.  */
+            }
             fclose(f);
         }
     }

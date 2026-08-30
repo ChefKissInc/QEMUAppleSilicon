@@ -127,9 +127,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(QIODNSResolver, QIO_DNS_RESOLVER)
  * </example>
  */
 struct QIODNSResolver
-{
-    Object parent;
-};
+{ Object parent; };
 
 /**
  * qio_dns_resolver_get_instance:

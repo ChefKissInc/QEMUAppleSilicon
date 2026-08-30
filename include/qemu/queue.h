@@ -82,9 +82,7 @@
  */
 #define QLIST_HEAD(name, type)                     \
     struct name                                    \
-    {                                              \
-        struct type* lh_first; /* first element */ \
-    }
+    { struct type* lh_first; /* first element */ }
 
 #define QLIST_HEAD_INITIALIZER(head) {NULL}
 
@@ -185,17 +183,13 @@
  */
 #define QSLIST_HEAD(name, type)                     \
     struct name                                     \
-    {                                               \
-        struct type* slh_first; /* first element */ \
-    }
+    { struct type* slh_first; /* first element */ }
 
 #define QSLIST_HEAD_INITIALIZER(head) {NULL}
 
 #define QSLIST_ENTRY(type)                        \
     struct                                        \
-    {                                             \
-        struct type* sle_next; /* next element */ \
-    }
+    { struct type* sle_next; /* next element */ }
 
 /*
  * Singly-linked List functions.
@@ -290,9 +284,7 @@
 
 #define QSIMPLEQ_ENTRY(type)                      \
     struct                                        \
-    {                                             \
-        struct type* sqe_next; /* next element */ \
-    }
+    { struct type* sqe_next; /* next element */ }
 
 /*
  * Simple queue functions.
@@ -411,9 +403,9 @@ typedef struct QTailQLink
         QTailQLink   tqh_circ;  /* link for circular backwards list */ \
     }
 
-#define QTAILQ_HEAD_INITIALIZER(head)          \
-    {                                          \
-        .tqh_circ = { NULL, &(head).tqh_circ } \
+#define QTAILQ_HEAD_INITIALIZER(head)        \
+    {                                        \
+        .tqh_circ = {NULL, &(head).tqh_circ} \
     }
 
 #define QTAILQ_ENTRY(type)                                            \

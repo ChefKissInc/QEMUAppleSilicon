@@ -126,18 +126,14 @@ struct DWC2State
 #define DWC2_FSZREG_SIZE 0x04
         uint32_t fszreg[DWC2_FSZREG_SIZE / sizeof(uint32_t)];
         struct
-        {
-            uint32_t hptxfsiz; /* 100 */
-        };
+        { uint32_t hptxfsiz; /* 100 */ };
     };
     union
     {
 #define DWC2_DFSZREG_SIZE 0x3c
         uint32_t dfszreg[DWC2_DFSZREG_SIZE / sizeof(uint32_t)];
         struct
-        {
-            uint32_t dptxfsiz[DWC2_NB_EP]; /* 104 */
-        };
+        { uint32_t dptxfsiz[DWC2_NB_EP]; /* 104 */ };
     };
 
     union

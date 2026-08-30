@@ -178,11 +178,10 @@ struct SP804State
     qemu_irq         irq;
 };
 
-static const uint8_t sp804_ids[] = {
-    /* Timer ID */
-    0x04, 0x18, 0x14, 0,
-    /* PrimeCell ID */
-    0xd, 0xf0, 0x05, 0xb1};
+static const uint8_t sp804_ids[] = {/* Timer ID */
+                                    0x04, 0x18, 0x14, 0,
+                                    /* PrimeCell ID */
+                                    0xd, 0xf0, 0x05, 0xb1};
 
 /* Merge the IRQs from the two component devices.  */
 static void sp804_set_irq(void* opaque, int irq, int level)

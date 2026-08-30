@@ -4628,7 +4628,8 @@ static BlockMeasureInfo* qcow2_measure(QemuOpts* opts, BlockDriverState* in_bs, 
                     goto err;
                 }
 
-                if (ret & BDRV_BLOCK_ZERO) { /* Skip zero regions (safe with no backing file) */ }
+                if (ret & BDRV_BLOCK_ZERO) { /* Skip zero regions (safe with no backing file) */
+                }
                 else if ((ret & (BDRV_BLOCK_DATA | BDRV_BLOCK_ALLOCATED)) == (BDRV_BLOCK_DATA | BDRV_BLOCK_ALLOCATED)) {
                     /* Extend pnum to end of cluster for next iteration */
                     pnum = ROUND_UP(offset + pnum, cluster_size) - offset;
@@ -5061,7 +5062,8 @@ static int GRAPH_RDLOCK qcow2_amend_options(BlockDriverState* bs, QemuOpts* opts
 
         if (!strcmp(desc->name, BLOCK_OPT_COMPAT_LEVEL)) {
             compat = qemu_opt_get(opts, BLOCK_OPT_COMPAT_LEVEL);
-            if (!compat) { /* preserve default */ }
+            if (!compat) { /* preserve default */
+            }
             else if (!strcmp(compat, "0.10") || !strcmp(compat, "v2")) {
                 new_version = 2;
             }

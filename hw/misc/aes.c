@@ -397,13 +397,13 @@ static void aes_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned siz
     old  = *mmio;
 
     switch (addr) {
-        case REG_AES_VERSION:
-        case REG_AES_STATUS:
-        case REG_AES_KEY_ID:
-        case REG_AES_AXI_STATUS:
+        case REG_AES_VERSION            :
+        case REG_AES_STATUS             :
+        case REG_AES_KEY_ID             :
+        case REG_AES_AXI_STATUS         :
         case REG_AES_COMMAND_FIFO_STATUS:
-        case REG_AES_COMMAND_FIFO_COUNT:
-        case REG_AES_FLAG_COMMAND:
+        case REG_AES_COMMAND_FIFO_COUNT :
+        case REG_AES_FLAG_COMMAND       :
         case REG_AES_SKG_KEY:
             nowrite = true;
             val     = old;
@@ -420,7 +420,7 @@ static void aes_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned siz
                 case AES_BLK_CONTROL_STOP     : aes_stop(s); break;
                 case AES_BLK_CONTROL_RESET    : aes_empty_fifo(s); break;
                 case AES_BLK_CONTROL_RESET_AES: device_cold_reset(DEVICE(s)); break;
-                default                       : qemu_log_mask(LOG_GUEST_ERROR, "REG_AES_CONTROL: Invalid write: 0x%x\n", val); break;
+                default: qemu_log_mask(LOG_GUEST_ERROR, "REG_AES_CONTROL: Invalid write: 0x%x\n", val); break;
             }
             nowrite = true;
             val     = old;
@@ -538,7 +538,7 @@ static uint64_t aes_reg_read(void* opaque, hwaddr addr, unsigned size)
     mmio = &s->reg.raw[addr >> 2];
 
     switch (addr) {
-        case REG_AES_INT_STATUS:
+        case REG_AES_INT_STATUS         :
         case REG_AES_COMMAND_FIFO_STATUS:
         case REG_AES_FLAG_COMMAND       : val = qatomic_read(mmio); break;
         default                         : val = s->reg.raw[addr >> 2]; break;

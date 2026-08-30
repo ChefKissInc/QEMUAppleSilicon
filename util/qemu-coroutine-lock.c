@@ -84,7 +84,8 @@ bool coroutine_fn qemu_co_queue_next(CoQueue* queue)
 
 void qemu_co_enter_all_impl(CoQueue* queue, QemuLockable* lock)
 {
-    while (qemu_co_enter_next_impl(queue, lock)) { /* just loop */ }
+    while (qemu_co_enter_next_impl(queue, lock)) { /* just loop */
+    }
 }
 
 void coroutine_fn qemu_co_queue_restart_all(CoQueue* queue)

@@ -252,7 +252,8 @@ int ram_block_attributes_state_change(RamBlockAttributes* attr, uint64_t offset,
                                                            "mixture",
                                             to_discard ? "discarded" : "populated");
     if (to_discard) {
-        if (is_discarded) { /* Already private */ }
+        if (is_discarded) { /* Already private */
+        }
         else if (is_populated) {
             /* Completely shared */
             bitmap_clear(attr->bitmap, first_bit, nbits);
@@ -268,7 +269,8 @@ int ram_block_attributes_state_change(RamBlockAttributes* attr, uint64_t offset,
         }
     }
     else {
-        if (is_populated) { /* Already shared */ }
+        if (is_populated) { /* Already shared */
+        }
         else if (is_discarded) {
             /* Completely private */
             bitmap_set(attr->bitmap, first_bit, nbits);

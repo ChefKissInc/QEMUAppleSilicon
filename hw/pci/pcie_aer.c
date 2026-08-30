@@ -44,11 +44,11 @@
 static uint32_t pcie_aer_uncor_default_severity(uint32_t status)
 {
     switch (status) {
-        case PCI_ERR_UNC_INTN:
-        case PCI_ERR_UNC_DLP:
-        case PCI_ERR_UNC_SDN:
-        case PCI_ERR_UNC_RX_OVER:
-        case PCI_ERR_UNC_FCP:
+        case PCI_ERR_UNC_INTN           :
+        case PCI_ERR_UNC_DLP            :
+        case PCI_ERR_UNC_SDN            :
+        case PCI_ERR_UNC_RX_OVER        :
+        case PCI_ERR_UNC_FCP            :
         case PCI_ERR_UNC_MALF_TLP       : return PCI_ERR_ROOT_CMD_FATAL_EN;
         case PCI_ERR_UNC_POISON_TLP     :
         case PCI_ERR_UNC_ECRC           :

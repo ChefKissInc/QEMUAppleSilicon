@@ -1796,7 +1796,7 @@ static void abort_commit(void* opaque) { assert_not_reached(); /* this action ne
 static void transaction_action(TransactionAction* act, JobTxn* block_job_txn, Transaction* tran, Error** errp)
 {
     switch (act->type) {
-        case TRANSACTION_ACTION_KIND_BLOCKDEV_SNAPSHOT:
+        case TRANSACTION_ACTION_KIND_BLOCKDEV_SNAPSHOT     :
         case TRANSACTION_ACTION_KIND_BLOCKDEV_SNAPSHOT_SYNC: external_snapshot_action(act, tran, errp); return;
         case TRANSACTION_ACTION_KIND_DRIVE_BACKUP:
             drive_backup_action(act->u.drive_backup.data, block_job_txn, tran, errp);

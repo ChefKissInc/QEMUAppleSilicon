@@ -149,7 +149,8 @@ static void fallback_cache_info(int* isize, int* dsize)
 {
     /* If we can only find one of the two, assume they're the same.  */
     if (*isize) {
-        if (*dsize) { /* Success! */ }
+        if (*dsize) { /* Success! */
+        }
         else {
             *dsize = *isize;
         }

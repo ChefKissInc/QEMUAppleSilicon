@@ -97,9 +97,7 @@ struct QemuClipboardNotify
 {
     QemuClipboardNotifyType type;
     union
-    {
-        QemuClipboardInfo* info;
-    };
+    { QemuClipboardInfo* info; };
 };
 
 /**

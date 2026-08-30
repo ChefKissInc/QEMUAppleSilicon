@@ -296,9 +296,9 @@ NICState* qemu_new_nic(NetClientInfo* info, NICConf* conf, const char* model, co
     assert(info->type == NET_CLIENT_DRIVER_NIC);
     assert(info->size >= sizeof(NICState));
 
-    nic                   = g_malloc0(info->size + sizeof(NetClientState) * queues);
-    nic->ncs              = (void*)nic + info->size;
-    nic->conf             = conf;
+    nic         = g_malloc0(info->size + sizeof(NetClientState) * queues);
+    nic->ncs    = (void*)nic + info->size;
+    nic->conf   = conf;
     nic->opaque = opaque;
 
     for (i = 0; i < queues; i++) {

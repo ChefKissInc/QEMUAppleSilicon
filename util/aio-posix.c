@@ -525,7 +525,8 @@ static bool try_poll_mode(AioContext* ctx, AioHandlerList* ready_list, int64_t* 
 
 static void adjust_polling_time(AioContext* ctx, AioPolledEvent* poll, int64_t block_ns)
 {
-    if (block_ns <= poll->ns) { /* This is the sweet spot, no adjustment needed */ }
+    if (block_ns <= poll->ns) { /* This is the sweet spot, no adjustment needed */
+    }
     else if (block_ns > ctx->poll_max_ns) {
         /* We'd have to poll for too long, poll less */
         int64_t old = poll->ns;

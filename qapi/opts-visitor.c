@@ -215,7 +215,7 @@ static GenericList* opts_next_list(Visitor* v, GenericList* tail, size_t size)
     OptsVisitor* ov = to_ov(v);
 
     switch (ov->list_mode) {
-        case LM_TRAVERSED: return NULL;
+        case LM_TRAVERSED      : return NULL;
         case LM_SIGNED_INTERVAL:
         case LM_UNSIGNED_INTERVAL:
             if (ov->list_mode == LM_SIGNED_INTERVAL) {

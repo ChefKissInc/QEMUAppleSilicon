@@ -332,7 +332,7 @@ typedef enum
     OPC_SYNC_RMB     = OPC_SYNC | 0x13 << 6,
 
     /* Aliases for convenience.  */
-    ALIAS_PADD  = sizeof(void*) == 4 ? OPC_ADDU : OPC_DADDU,
+    ALIAS_PADD = sizeof(void*) == 4 ? OPC_ADDU : OPC_DADDU,
     ALIAS_PADDI = sizeof(void*) == 4 ? OPC_ADDIU : OPC_DADDIU,
 } MIPSInsn;
 
@@ -677,10 +677,10 @@ static int tcg_out_setcond_int(TCGContext* s, TCGCond cond, TCGReg ret, TCGReg a
     int flags = 0;
 
     switch (cond) {
-        case TCG_COND_EQ:  /* -> NE  */
-        case TCG_COND_GE:  /* -> LT  */
+        case TCG_COND_EQ : /* -> NE  */
+        case TCG_COND_GE : /* -> LT  */
         case TCG_COND_GEU: /* -> LTU */
-        case TCG_COND_LE:  /* -> GT  */
+        case TCG_COND_LE : /* -> GT  */
         case TCG_COND_LEU: /* -> GTU */
             cond   = tcg_invert_cond(cond);
             flags ^= SETCOND_INV;

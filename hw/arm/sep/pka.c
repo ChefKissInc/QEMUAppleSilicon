@@ -41,26 +41,26 @@ struct AppleSEPPKAState
     QemuMutex      lock;
     MemoryRegion   base_mr;
     MemoryRegion   tmm_mr;
-    uint32_t       command;                // 0x0
-    uint32_t       status0;                // 0x4
-    uint32_t       status_in0;             // 0x8
-    uint32_t       img4out_dgst_locked;    // 0x40
-    uint8_t        img4out_dgst[32];       // 0x60
-    uint8_t        output0[32];            // 0x60 ; read_cmd_0x2
-    uint8_t        input0[0x80];           // 0x80 ; write_cmd_0x0 ; SMRK_pub ; 1024 bits ;
-                                           // measurement==0x34_bytes
-    uint8_t public_key[32];                // 0x100 // for AESS ; read_cmd_0x0 ; read
-                                           // public_key ; status_in0 needs to be 0x1
-    uint8_t attest_hash[32];               // 0x180 ; read_cmd_0x3 ; read attest_hash ;
-                                           // status_in0 needs to be 0x1
-    uint8_t input1[0x20A];                 // 0x200 .. 0x40A (not inclusive) ; write_cmd_0x1 ;
-                                           // 4176 bits, maybe rsa input?
-    uint32_t chip_revision_locked;         // 0x800
-    uint32_t chip_revision;                // 0x820 ; mod_PKA_read buffer_id 0xd asks for that
-    uint32_t ecid_chipid_misc_locked;      // 0x840
-    uint32_t ecid_chipid_misc[5];          // 0x860
-    uint8_t  pka_base_regs[PKA_BASE_REG_SIZE];
-    uint8_t  pka_tmm_regs[PKA_TMM_REG_SIZE];
+    uint32_t       command;                    // 0x0
+    uint32_t       status0;                    // 0x4
+    uint32_t       status_in0;                 // 0x8
+    uint32_t       img4out_dgst_locked;        // 0x40
+    uint8_t        img4out_dgst[32];           // 0x60
+    uint8_t        output0[32];                // 0x60 ; read_cmd_0x2
+    uint8_t        input0[0x80];               // 0x80 ; write_cmd_0x0 ; SMRK_pub ; 1024 bits ;
+                                               // measurement==0x34_bytes
+    uint8_t        public_key[32];             // 0x100 // for AESS ; read_cmd_0x0 ; read
+                                               // public_key ; status_in0 needs to be 0x1
+    uint8_t        attest_hash[32];            // 0x180 ; read_cmd_0x3 ; read attest_hash ;
+                                               // status_in0 needs to be 0x1
+    uint8_t        input1[0x20A];              // 0x200 .. 0x40A (not inclusive) ; write_cmd_0x1 ;
+                                               // 4176 bits, maybe rsa input?
+    uint32_t       chip_revision_locked;       // 0x800
+    uint32_t       chip_revision;              // 0x820 ; mod_PKA_read buffer_id 0xd asks for that
+    uint32_t       ecid_chipid_misc_locked;    // 0x840
+    uint32_t       ecid_chipid_misc[5];        // 0x860
+    uint8_t        pka_base_regs[PKA_BASE_REG_SIZE];
+    uint8_t        pka_tmm_regs[PKA_TMM_REG_SIZE];
 };
 
 static void pka_handle_cmd(AppleSEPPKAState* s)

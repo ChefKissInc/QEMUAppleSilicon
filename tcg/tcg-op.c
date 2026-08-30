@@ -2447,7 +2447,7 @@ void tcg_gen_extract_i64(TCGv_i64 ret, TCGv_i64 arg, unsigned int ofs, unsigned 
        so that we get ext8u, ext16u, and ext32u.  */
     switch (len) {
         case 1 ... 8:
-        case 16:
+        case 16     :
         case 32:
             tcg_gen_shri_i64(ret, arg, ofs);
             tcg_gen_andi_i64(ret, ret, (1ull << len) - 1);

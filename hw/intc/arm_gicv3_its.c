@@ -110,7 +110,7 @@ static uint64_t baser_base_addr(uint64_t value, uint32_t page_sz)
     uint64_t result = 0;
 
     switch (page_sz) {
-        case GITS_PAGE_SIZE_4K:
+        case GITS_PAGE_SIZE_4K :
         case GITS_PAGE_SIZE_16K: result = REG_FIELD_EX64(value, GITS_BASER, PHYADDR) << 12; break;
 
         case GITS_PAGE_SIZE_64K:

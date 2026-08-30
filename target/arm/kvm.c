@@ -661,7 +661,7 @@ static uint64_t* kvm_arm_get_cpreg_ptr(ARMCPU* cpu, uint64_t regidx)
 static bool kvm_arm_reg_syncs_via_cpreg_list(uint64_t regidx)
 {
     switch (regidx & KVM_REG_ARM_COPROC_MASK) {
-        case KVM_REG_ARM_CORE:
+        case KVM_REG_ARM_CORE :
         case KVM_REG_ARM64_SVE: return false;
         default               : return true;
     }
@@ -754,7 +754,7 @@ static int kvm_arm_cpreg_level(uint64_t regidx)
      * with a state of either KVM_PUT_RESET_STATE or KVM_PUT_FULL_STATE.
      */
     switch (regidx) {
-        case KVM_REG_ARM_TIMER_CNT:
+        case KVM_REG_ARM_TIMER_CNT :
         case KVM_REG_ARM_PTIMER_CNT: return KVM_PUT_FULL_STATE;
     }
     return KVM_PUT_RUNTIME_STATE;

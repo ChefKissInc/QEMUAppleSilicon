@@ -390,9 +390,7 @@ typedef union
 {
     uint32_t raw;
     struct
-    {
-        uint32_t total : 32;
-    };
+    { uint32_t total : 32; };
 } aes_blk_command_fifo_count_t;
 
 typedef union
@@ -409,9 +407,7 @@ typedef union
 {
     uint32_t raw;
     struct
-    {
-        uint32_t count : 32;
-    };
+    { uint32_t count : 32; };
 } aes_blk_skg_key_t;
 
 #define AES_BLK_REG_SIZE (0x204)

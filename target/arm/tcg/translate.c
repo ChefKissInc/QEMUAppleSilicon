@@ -79,7 +79,7 @@ uint64_t asimd_imm_const(uint32_t imm, int cmode, int op)
         case 1:
             /* no-op */
             break;
-        case 2:
+        case 2 :
         case 3 : imm <<= 8; break;
         case 4 :
         case 5 : imm <<= 16; break;
@@ -198,10 +198,10 @@ static inline int get_a32_user_mem_index(DisasContext* s)
      *  otherwise, access as if at PL0.
      */
     switch (s->mmu_idx) {
-        case ARMMMUIdx_E3:
-        case ARMMMUIdx_E30_0:
-        case ARMMMUIdx_E30_3_PAN:
-        case ARMMMUIdx_GE3:
+        case ARMMMUIdx_E3        :
+        case ARMMMUIdx_E30_0     :
+        case ARMMMUIdx_E30_3_PAN :
+        case ARMMMUIdx_GE3       :
         case ARMMMUIdx_GE30_3_PAN: return arm_to_core_mmu_idx(ARMMMUIdx_E30_0);
         case ARMMMUIdx_E2        : /* this one is UNPREDICTABLE */
         case ARMMMUIdx_E10_0     :
@@ -972,7 +972,7 @@ static void gen_jmp_tb(DisasContext* s, target_long diff, int tbno)
         return;
     }
     switch (s->base.is_jmp) {
-        case DISAS_NEXT:
+        case DISAS_NEXT    :
         case DISAS_TOO_MANY:
         case DISAS_NORETURN:
             /*
@@ -1106,14 +1106,14 @@ static bool msr_banked_access_decode(DisasContext* s, int r, int sysm, int rn, i
     if (r) {
         /* SPSRs for other modes */
         switch (sysm) {
-            case 0xe: /* SPSR_fiq */ *tgtmode = ARM_CPU_MODE_FIQ; break;
+            case 0xe : /* SPSR_fiq */ *tgtmode = ARM_CPU_MODE_FIQ; break;
             case 0x10: /* SPSR_irq */ *tgtmode = ARM_CPU_MODE_IRQ; break;
             case 0x12: /* SPSR_svc */ *tgtmode = ARM_CPU_MODE_SVC; break;
             case 0x14: /* SPSR_abt */ *tgtmode = ARM_CPU_MODE_ABT; break;
             case 0x16: /* SPSR_und */ *tgtmode = ARM_CPU_MODE_UND; break;
             case 0x1c: /* SPSR_mon */ *tgtmode = ARM_CPU_MODE_MON; break;
             case 0x1e: /* SPSR_hyp */ *tgtmode = ARM_CPU_MODE_HYP; break;
-            default: /* unallocated */ goto undef;
+            default  : /* unallocated */ goto undef;
         }
         /* We arbitrarily assign SPSR a register number of 16. */
         *regno = 16;
@@ -1743,10 +1743,10 @@ static void gen_srs(DisasContext* s, uint32_t mode, uint32_t amode, bool writeba
     gen_update_pc(s, 0);
     gen_helper_get_r13_banked(addr, tcg_env, tcg_constant_i32(mode));
     switch (amode) {
-        case 0: /* DA */ offset = -4; break;
-        case 1: /* IA */ offset = 0; break;
-        case 2: /* DB */ offset = -8; break;
-        case 3: /* IB */ offset = 4; break;
+        case 0 : /* DA */ offset = -4; break;
+        case 1 : /* IA */ offset = 0; break;
+        case 2 : /* DB */ offset = -8; break;
+        case 3 : /* IB */ offset = 4; break;
         default: assert_not_reached();
     }
     tcg_gen_addi_i32(addr, addr, offset);
@@ -4811,8 +4811,8 @@ static void arm_tr_tb_stop(DisasContextBase* dcbase, CPUState* cpu)
                 gen_ss_advance(dc);
                 gen_exception_el(EXCP_SMC, syn_aa32_smc(), 3);
                 break;
-            case DISAS_NEXT:
-            case DISAS_TOO_MANY:
+            case DISAS_NEXT       :
+            case DISAS_TOO_MANY   :
             case DISAS_UPDATE_EXIT:
             case DISAS_UPDATE_NOCHAIN:
                 gen_update_pc(dc, curr_insn_len(dc));
@@ -4834,7 +4834,7 @@ static void arm_tr_tb_stop(DisasContextBase* dcbase, CPUState* cpu)
            Hardware breakpoints have already been handled and skip this code.
          */
         switch (dc->base.is_jmp) {
-            case DISAS_NEXT:
+            case DISAS_NEXT    :
             case DISAS_TOO_MANY: gen_goto_tb(dc, 1, curr_insn_len(dc)); break;
             case DISAS_UPDATE_NOCHAIN:
                 gen_update_pc(dc, curr_insn_len(dc));

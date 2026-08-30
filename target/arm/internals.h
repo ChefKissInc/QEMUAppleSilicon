@@ -807,8 +807,8 @@ static inline ARMMMUIdx core_to_aa64_mmu_idx(int mmu_idx)
 static inline int arm_mmu_idx_to_el(ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-        case ARMMMUIdx_E10_0:
-        case ARMMMUIdx_E20_0:
+        case ARMMMUIdx_E10_0     :
+        case ARMMMUIdx_E20_0     :
         case ARMMMUIdx_E30_0     : return 0;
         case ARMMMUIdx_E10_1     :
         case ARMMMUIdx_E10_1_PAN :
@@ -872,20 +872,20 @@ static inline void arm_call_el_change_hook(ARMCPU* cpu)
 static inline bool regime_has_2_ranges(ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-        case ARMMMUIdx_Stage1_E0:
-        case ARMMMUIdx_Stage1_E1:
-        case ARMMMUIdx_Stage1_E1_PAN:
-        case ARMMMUIdx_Stage1_GE1:
+        case ARMMMUIdx_Stage1_E0     :
+        case ARMMMUIdx_Stage1_E1     :
+        case ARMMMUIdx_Stage1_E1_PAN :
+        case ARMMMUIdx_Stage1_GE1    :
         case ARMMMUIdx_Stage1_GE1_PAN:
-        case ARMMMUIdx_E10_0:
-        case ARMMMUIdx_E10_1:
-        case ARMMMUIdx_E10_1_PAN:
-        case ARMMMUIdx_E20_0:
-        case ARMMMUIdx_E20_2:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_GE10_1:
-        case ARMMMUIdx_GE10_1_PAN:
-        case ARMMMUIdx_GE20_2:
+        case ARMMMUIdx_E10_0         :
+        case ARMMMUIdx_E10_1         :
+        case ARMMMUIdx_E10_1_PAN     :
+        case ARMMMUIdx_E20_0         :
+        case ARMMMUIdx_E20_2         :
+        case ARMMMUIdx_E20_2_PAN     :
+        case ARMMMUIdx_GE10_1        :
+        case ARMMMUIdx_GE10_1_PAN    :
+        case ARMMMUIdx_GE20_2        :
         case ARMMMUIdx_GE20_2_PAN    : return true;
         default                      : return false;
     }
@@ -894,13 +894,13 @@ static inline bool regime_has_2_ranges(ARMMMUIdx mmu_idx)
 static inline bool regime_is_pan(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-        case ARMMMUIdx_Stage1_E1_PAN:
+        case ARMMMUIdx_Stage1_E1_PAN :
         case ARMMMUIdx_Stage1_GE1_PAN:
-        case ARMMMUIdx_E10_1_PAN:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_E30_3_PAN:
-        case ARMMMUIdx_GE10_1_PAN:
-        case ARMMMUIdx_GE20_2_PAN:
+        case ARMMMUIdx_E10_1_PAN     :
+        case ARMMMUIdx_E20_2_PAN     :
+        case ARMMMUIdx_E30_3_PAN     :
+        case ARMMMUIdx_GE10_1_PAN    :
+        case ARMMMUIdx_GE20_2_PAN    :
         case ARMMMUIdx_GE30_3_PAN    : return true;
         default                      : return false;
     }
@@ -913,14 +913,14 @@ static inline bool regime_is_stage2(ARMMMUIdx mmu_idx)
 static inline uint32_t regime_el(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-        case ARMMMUIdx_E20_0:
-        case ARMMMUIdx_E20_2:
-        case ARMMMUIdx_E20_2_PAN:
-        case ARMMMUIdx_Stage2:
-        case ARMMMUIdx_Stage2_S:
-        case ARMMMUIdx_E2:
-        case ARMMMUIdx_GE20_2:
-        case ARMMMUIdx_GE20_2_PAN:
+        case ARMMMUIdx_E20_0         :
+        case ARMMMUIdx_E20_2         :
+        case ARMMMUIdx_E20_2_PAN     :
+        case ARMMMUIdx_Stage2        :
+        case ARMMMUIdx_Stage2_S      :
+        case ARMMMUIdx_E2            :
+        case ARMMMUIdx_GE20_2        :
+        case ARMMMUIdx_GE20_2_PAN    :
         case ARMMMUIdx_GE2           : return 2;
         case ARMMMUIdx_E3            :
         case ARMMMUIdx_E30_0         :
@@ -944,9 +944,9 @@ static inline uint32_t regime_el(CPUARMState* env, ARMMMUIdx mmu_idx)
 static inline bool regime_is_user(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-        case ARMMMUIdx_E10_0:
-        case ARMMMUIdx_E20_0:
-        case ARMMMUIdx_E30_0:
+        case ARMMMUIdx_E10_0     :
+        case ARMMMUIdx_E20_0     :
+        case ARMMMUIdx_E30_0     :
         case ARMMMUIdx_Stage1_E0 : return true;
         case ARMMMUIdx_E10_1     :
         case ARMMMUIdx_E10_1_PAN :
@@ -1138,10 +1138,10 @@ ARMMMUIdx arm_stage1_mmu_idx(CPUARMState* env);
 static inline bool arm_mmu_idx_is_stage1_of_2(ARMMMUIdx mmu_idx)
 {
     switch (mmu_idx) {
-        case ARMMMUIdx_Stage1_E0:
-        case ARMMMUIdx_Stage1_E1:
-        case ARMMMUIdx_Stage1_E1_PAN:
-        case ARMMMUIdx_Stage1_GE1:
+        case ARMMMUIdx_Stage1_E0     :
+        case ARMMMUIdx_Stage1_E1     :
+        case ARMMMUIdx_Stage1_E1_PAN :
+        case ARMMMUIdx_Stage1_GE1    :
         case ARMMMUIdx_Stage1_GE1_PAN: return true;
         default                      : return false;
     }

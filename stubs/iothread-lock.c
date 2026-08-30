@@ -1,7 +1,7 @@
 #include "qemu/osdep.h"
 #include "qemu/main-loop.h"
 
-static bool     bql_is_locked = false;
+static bool bql_is_locked = false;
 
 bool bql_locked(void) { return bql_is_locked; }
 

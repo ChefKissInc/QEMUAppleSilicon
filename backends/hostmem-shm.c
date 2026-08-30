@@ -19,9 +19,7 @@
 OBJECT_DECLARE_SIMPLE_TYPE(HostMemoryBackendShm, MEMORY_BACKEND_SHM)
 
 struct HostMemoryBackendShm
-{
-    HostMemoryBackend parent_obj;
-};
+{ HostMemoryBackend parent_obj; };
 
 static bool shm_backend_memory_alloc(HostMemoryBackend* backend, Error** errp)
 {

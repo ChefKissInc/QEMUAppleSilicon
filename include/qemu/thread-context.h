@@ -20,9 +20,7 @@
 OBJECT_DECLARE_TYPE(ThreadContext, ThreadContextClass, THREAD_CONTEXT)
 
 struct ThreadContextClass
-{
-    ObjectClass parent_class;
-};
+{ ObjectClass parent_class; };
 
 struct ThreadContext
 {

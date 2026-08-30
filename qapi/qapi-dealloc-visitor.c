@@ -18,9 +18,7 @@
 #include "qapi/visitor-impl.h"
 
 struct QapiDeallocVisitor
-{
-    Visitor visitor;
-};
+{ Visitor visitor; };
 
 static bool qapi_dealloc_start_struct(Visitor* v, const char* name, void** obj, size_t unused, Error** errp)
 { return true; }

@@ -1065,9 +1065,9 @@ static int coroutine_fn GRAPH_RDLOCK vhdx_co_readv(BlockDriverState* bs, int64_t
 
             /* check the payload block state */
             switch (s->bat[sinfo.bat_idx] & VHDX_BAT_STATE_BIT_MASK) {
-                case PAYLOAD_BLOCK_NOT_PRESENT: /* fall through */
-                case PAYLOAD_BLOCK_UNDEFINED:
-                case PAYLOAD_BLOCK_UNMAPPED:
+                case PAYLOAD_BLOCK_NOT_PRESENT  : /* fall through */
+                case PAYLOAD_BLOCK_UNDEFINED    :
+                case PAYLOAD_BLOCK_UNMAPPED     :
                 case PAYLOAD_BLOCK_UNMAPPED_v095:
                 case PAYLOAD_BLOCK_ZERO:
                     /* return zero */
@@ -1224,8 +1224,8 @@ static int coroutine_fn GRAPH_RDLOCK vhdx_co_writev(BlockDriverState* bs, int64_
                      * the rest of the buffer to zeroes */
                     use_zero_buffers = true;
                     /* fall through */
-                case PAYLOAD_BLOCK_NOT_PRESENT: /* fall through */
-                case PAYLOAD_BLOCK_UNMAPPED:
+                case PAYLOAD_BLOCK_NOT_PRESENT  : /* fall through */
+                case PAYLOAD_BLOCK_UNMAPPED     :
                 case PAYLOAD_BLOCK_UNMAPPED_v095:
                 case PAYLOAD_BLOCK_UNDEFINED:
                     bat_prior_offset = sinfo.file_offset;

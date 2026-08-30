@@ -55,7 +55,7 @@ static inline bool tcg_target_extract_valid(TCGType type, unsigned ofs, unsigned
 {
     if (use_armv7_instructions) { return true; /* SBFX or UBFX */ }
     switch (len) {
-        case 8: /* SXTB or UXTB */
+        case 8 : /* SXTB or UXTB */
         case 16: /* SXTH or UXTH */ return (ofs % 8) == 0;
     }
     return false;

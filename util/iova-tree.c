@@ -13,9 +13,7 @@
 #include "qemu/iova-tree.h"
 
 struct IOVATree
-{
-    GTree* tree;
-};
+{ GTree* tree; };
 
 /* Args to pass to iova_tree_alloc foreach function. */
 struct IOVATreeAllocArgs

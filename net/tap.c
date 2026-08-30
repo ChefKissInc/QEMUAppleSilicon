@@ -390,7 +390,8 @@ static void launch_script(const char* setup_script, const char* ifname, int fd, 
         _exit(1);
     }
     else {
-        while (waitpid(pid, &status, 0) != pid) { /* loop */ }
+        while (waitpid(pid, &status, 0) != pid) { /* loop */
+        }
 
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0) { return; }
         error_setg(errp, "network script %s failed with status %d", setup_script, status);
@@ -510,7 +511,8 @@ static int net_bridge_run_helper(const char* helper, const char* bridge, Error**
 
         close(sv[0]);
 
-        while (waitpid(pid, &status, 0) != pid) { /* loop */ }
+        while (waitpid(pid, &status, 0) != pid) { /* loop */
+        }
         sigprocmask(SIG_SETMASK, &oldmask, NULL);
         if (fd < 0) {
             error_setg_errno(errp, saved_errno, "failed to recv file descriptor");

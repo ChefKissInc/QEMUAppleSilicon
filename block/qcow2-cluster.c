@@ -566,7 +566,7 @@ int qcow2_get_host_offset(BlockDriverState* bs, uint64_t offset, unsigned int* b
             }
             *host_offset = l2_entry;
             break;
-        case QCOW2_SUBCLUSTER_ZERO_PLAIN:
+        case QCOW2_SUBCLUSTER_ZERO_PLAIN       :
         case QCOW2_SUBCLUSTER_UNALLOCATED_PLAIN: break;
         case QCOW2_SUBCLUSTER_ZERO_ALLOC       :
         case QCOW2_SUBCLUSTER_NORMAL           :
@@ -1034,7 +1034,7 @@ static int coroutine_fn GRAPH_RDLOCK calculate_l2_meta(BlockDriverState* bs, uin
     if (!keep_old) {
         switch (type) {
             case QCOW2_SUBCLUSTER_COMPRESSED: cow_start_from = 0; break;
-            case QCOW2_SUBCLUSTER_NORMAL:
+            case QCOW2_SUBCLUSTER_NORMAL    :
             case QCOW2_SUBCLUSTER_ZERO_ALLOC:
             case QCOW2_SUBCLUSTER_UNALLOCATED_ALLOC:
                 if (has_subclusters(s)) {
@@ -1046,7 +1046,7 @@ static int coroutine_fn GRAPH_RDLOCK calculate_l2_meta(BlockDriverState* bs, uin
                     cow_start_from = 0;
                 }
                 break;
-            case QCOW2_SUBCLUSTER_ZERO_PLAIN:
+            case QCOW2_SUBCLUSTER_ZERO_PLAIN       :
             case QCOW2_SUBCLUSTER_UNALLOCATED_PLAIN: cow_start_from = sc_index << s->subcluster_bits; break;
             default                                : assert_not_reached();
         }
@@ -1070,7 +1070,7 @@ static int coroutine_fn GRAPH_RDLOCK calculate_l2_meta(BlockDriverState* bs, uin
     if (!keep_old) {
         switch (type) {
             case QCOW2_SUBCLUSTER_COMPRESSED: cow_end_to = ROUND_UP(cow_end_from, s->cluster_size); break;
-            case QCOW2_SUBCLUSTER_NORMAL:
+            case QCOW2_SUBCLUSTER_NORMAL    :
             case QCOW2_SUBCLUSTER_ZERO_ALLOC:
             case QCOW2_SUBCLUSTER_UNALLOCATED_ALLOC:
                 cow_end_to = ROUND_UP(cow_end_from, s->cluster_size);
@@ -1081,7 +1081,7 @@ static int coroutine_fn GRAPH_RDLOCK calculate_l2_meta(BlockDriverState* bs, uin
                                              << s->subcluster_bits;
                 }
                 break;
-            case QCOW2_SUBCLUSTER_ZERO_PLAIN:
+            case QCOW2_SUBCLUSTER_ZERO_PLAIN       :
             case QCOW2_SUBCLUSTER_UNALLOCATED_PLAIN: cow_end_to = ROUND_UP(cow_end_from, s->subcluster_size); break;
             default                                : assert_not_reached();
         }
@@ -1136,7 +1136,7 @@ static bool GRAPH_RDLOCK cluster_needs_new_alloc(BlockDriverState* bs, uint64_t 
             if (l2_entry & QCOW_OFLAG_COPIED) { return false; }
             /* fallthrough */
         case QCOW2_CLUSTER_UNALLOCATED:
-        case QCOW2_CLUSTER_COMPRESSED:
+        case QCOW2_CLUSTER_COMPRESSED :
         case QCOW2_CLUSTER_ZERO_PLAIN : return true;
         default                       : abort();
     }
@@ -1849,7 +1849,7 @@ static int coroutine_fn GRAPH_RDLOCK zero_l2_subclusters(BlockDriverState* bs, u
         case QCOW2_CLUSTER_COMPRESSED:
             ret = -ENOTSUP; /* We cannot partially zeroize compressed clusters */
             goto out;
-        case QCOW2_CLUSTER_NORMAL:
+        case QCOW2_CLUSTER_NORMAL     :
         case QCOW2_CLUSTER_UNALLOCATED: break;
         default                       : assert_not_reached();
     }

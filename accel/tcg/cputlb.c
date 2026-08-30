@@ -1890,7 +1890,7 @@ static uint64_t do_ld_beN(CPUState* cpu, MMULookupPageData* p, uint64_t ret_be, 
             }
             /* fall through */
 
-        case MO_ATOM_IFALIGN:
+        case MO_ATOM_IFALIGN :
         case MO_ATOM_WITHIN16:
         case MO_ATOM_NONE    : return do_ld_bytes_beN(p, ret_be);
 
@@ -1932,7 +1932,7 @@ static Int128 do_ld16_beN(CPUState* cpu, MMULookupPageData* p, uint64_t a, int m
              * Since size > 8, both halves are misaligned,
              * and so neither is atomic.
              */
-        case MO_ATOM_IFALIGN:
+        case MO_ATOM_IFALIGN :
         case MO_ATOM_WITHIN16:
         case MO_ATOM_NONE:
             p->size = size - 8;
@@ -2235,7 +2235,7 @@ static uint64_t do_st_leN(CPUState* cpu, MMULookupPageData* p, uint64_t val_le, 
             }
             /* fall through */
 
-        case MO_ATOM_IFALIGN:
+        case MO_ATOM_IFALIGN :
         case MO_ATOM_WITHIN16:
         case MO_ATOM_NONE    : return store_bytes_leN(p->haddr, p->size, val_le);
 
@@ -2276,7 +2276,7 @@ static uint64_t do_st16_leN(CPUState* cpu, MMULookupPageData* p, Int128 val_le, 
              * Since size > 8, both halves are misaligned,
              * and so neither is atomic.
              */
-        case MO_ATOM_IFALIGN:
+        case MO_ATOM_IFALIGN :
         case MO_ATOM_WITHIN16:
         case MO_ATOM_NONE:
             stq_le_p(p->haddr, int128_getlo(val_le));

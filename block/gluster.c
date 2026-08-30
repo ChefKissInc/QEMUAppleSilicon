@@ -408,7 +408,7 @@ static struct glfs* qemu_gluster_glfs_init(BlockdevOptionsGluster* gconf, Error*
                 ret = glfs_set_volfile_server(glfs, "tcp", server->value->u.inet.host, (int)port);
                 break;
             case SOCKET_ADDRESS_TYPE_VSOCK:
-            case SOCKET_ADDRESS_TYPE_FD:
+            case SOCKET_ADDRESS_TYPE_FD   :
             default                       : abort();
         }
 

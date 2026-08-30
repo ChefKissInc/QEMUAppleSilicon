@@ -573,9 +573,9 @@ static bool round_to_inf(float_status* fpst, bool sign_bit)
 {
     switch (fpst->float_rounding_mode) {
         case float_round_nearest_even: /* Round to Nearest */ return true;
-        case float_round_up: /* Round to +Inf */ return !sign_bit;
-        case float_round_down: /* Round to -Inf */ return sign_bit;
-        case float_round_to_zero: /* Round to Zero */ return false;
+        case float_round_up          : /* Round to +Inf */ return !sign_bit;
+        case float_round_down        : /* Round to -Inf */ return sign_bit;
+        case float_round_to_zero     : /* Round to Zero */ return false;
         default                      : assert_not_reached();
     }
 }

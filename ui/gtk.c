@@ -897,7 +897,7 @@ static gboolean gd_touch_event(GtkWidget* widget, GdkEventTouch* touch, void* op
     switch (touch->type) {
         case GDK_TOUCH_BEGIN : type = INPUT_MULTI_TOUCH_TYPE_BEGIN; break;
         case GDK_TOUCH_UPDATE: type = INPUT_MULTI_TOUCH_TYPE_UPDATE; break;
-        case GDK_TOUCH_END:
+        case GDK_TOUCH_END   :
         case GDK_TOUCH_CANCEL:
             type =
 INPUT_MULTI_TOUCH_TYPE_END

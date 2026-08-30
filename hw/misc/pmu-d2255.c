@@ -376,7 +376,7 @@ static int pmu_d2255_tx(I2CSlave* i2c, uint8_t data)
             s->reg[s->address] = data;
 
             switch (s->address) {
-                case REG_RTC_CONTROL:
+                case REG_RTC_CONTROL                    :
                 case REG_RTC_ALARM_A ... REG_RTC_ALARM_D: pmu_d2255_set_alarm(s); break;
                 default                                 : break;
             }

@@ -50,9 +50,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(ApplePCIEState, APPLE_PCIE)
 #define APCIE_PORT_GPIO_PERST      "apcie-port-gpio-perst"
 
 struct ApplePCIERootBus
-{
-    PCIBus parent;
-};
+{ PCIBus parent; };
 
 #if 1
 typedef struct ApplePCIEMSIBank

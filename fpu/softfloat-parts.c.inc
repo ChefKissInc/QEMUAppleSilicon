@@ -1123,10 +1123,10 @@ static bool partsN(round_to_int_normal)(FloatPartsN* a, FloatRoundMode rmode, in
 static void partsN(round_to_int)(FloatPartsN* a, FloatRoundMode rmode, int scale, float_status* s, const FloatFmt* fmt)
 {
     switch (a->cls) {
-        case float_class_qnan:
-        case float_class_snan: parts_return_nan(a, s); break;
-        case float_class_zero:
-        case float_class_inf : break;
+        case float_class_qnan  :
+        case float_class_snan  : parts_return_nan(a, s); break;
+        case float_class_zero  :
+        case float_class_inf   : break;
         case float_class_normal:
         case float_class_denormal:
             if (parts_round_to_int_normal(a, rmode, scale, fmt->frac_size)) { float_raise(float_flag_inexact, s); }
@@ -1302,7 +1302,8 @@ static int64_t partsN(float_to_sint_modulo)(FloatPartsN* p, FloatRoundMode rmode
                  * we know frac_low is zero.
                  */
                 r = p->frac_hi >> (DECOMPOSED_BINARY_POINT - p->exp);
-                if (p->exp < bitsm1) { /* Result in range. */ }
+                if (p->exp < bitsm1) { /* Result in range. */
+                }
                 else if (p->exp == bitsm1) {
                     /* The only in-range value is INT_MIN. */
                     overflow = !p->sign || p->frac_hi != DECOMPOSED_IMPLICIT_BIT;
@@ -1435,14 +1436,14 @@ static FloatPartsN* partsN(minmax)(FloatPartsN* a, FloatPartsN* b, float_status*
 
     if (unlikely(!cmask_is_only_normals(ab_mask))) {
         switch (a->cls) {
-            case float_class_normal:
+            case float_class_normal  :
             case float_class_denormal: break;
             case float_class_inf     : a_exp = INT16_MAX; break;
             case float_class_zero    : a_exp = INT16_MIN; break;
             default                  : g_assert_not_reached();
         }
         switch (b->cls) {
-            case float_class_normal:
+            case float_class_normal  :
             case float_class_denormal: break;
             case float_class_inf     : b_exp = INT16_MAX; break;
             case float_class_zero    : b_exp = INT16_MIN; break;

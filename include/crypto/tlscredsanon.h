@@ -90,6 +90,4 @@ typedef struct QCryptoTLSCredsAnonClass QCryptoTLSCredsAnonClass;
  */
 
 struct QCryptoTLSCredsAnonClass
-{
-    QCryptoTLSCredsClass parent_class;
-};
+{ QCryptoTLSCredsClass parent_class; };

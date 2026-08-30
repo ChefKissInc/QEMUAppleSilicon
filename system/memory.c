@@ -434,7 +434,7 @@ static MemTxResult access_with_adjusted_size(hwaddr addr, uint64_t* value, unsig
     uint64_t    access_mask;
     unsigned    access_size;
     unsigned    i;
-    MemTxResult r                        = MEMTX_OK;
+    MemTxResult r = MEMTX_OK;
 
     if (!access_size_min) { access_size_min = 1; }
     if (!access_size_max) { access_size_max = 4; }
@@ -2028,10 +2028,7 @@ void memory_region_clear_flush_coalesced(MemoryRegion* mr)
     if (QTAILQ_EMPTY(&mr->coalesced)) { mr->flush_coalesced_mmio = false; }
 }
 
-void memory_region_enable_lockless_io(MemoryRegion* mr)
-{
-    mr->lockless_io = true;
-}
+void memory_region_enable_lockless_io(MemoryRegion* mr) { mr->lockless_io = true; }
 
 void memory_region_add_eventfd(MemoryRegion* mr, hwaddr addr, unsigned size, bool match_data, uint64_t data,
                                EventNotifier* e)

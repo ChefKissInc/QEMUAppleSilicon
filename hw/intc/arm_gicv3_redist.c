@@ -359,7 +359,7 @@ static MemTxResult gicr_readl(GICv3CPUState* cs, hwaddr offset, uint64_t* data, 
             return MEMTX_OK;
         }
         case GICR_ISACTIVER0:
-        case GICR_ICACTIVER0                           : *data = gicr_read_bitmap_reg(cs, attrs, cs->gicr_iactiver0); return MEMTX_OK;
+        case GICR_ICACTIVER0: *data = gicr_read_bitmap_reg(cs, attrs, cs->gicr_iactiver0); return MEMTX_OK;
         case GICR_IPRIORITYR ... GICR_IPRIORITYR + 0x1f: {
             int      i, irq = offset - GICR_IPRIORITYR;
             uint32_t value = 0;
@@ -473,12 +473,12 @@ static MemTxResult gicr_writel(GICv3CPUState* cs, hwaddr offset, uint64_t value,
             cs->gicr_igroupr0 = value;
             gicv3_redist_update(cs);
             return MEMTX_OK;
-        case GICR_ISENABLER0                           : gicr_write_set_bitmap_reg(cs, attrs, &cs->gicr_ienabler0, value); return MEMTX_OK;
-        case GICR_ICENABLER0                           : gicr_write_clear_bitmap_reg(cs, attrs, &cs->gicr_ienabler0, value); return MEMTX_OK;
-        case GICR_ISPENDR0                             : gicr_write_set_bitmap_reg(cs, attrs, &cs->gicr_ipendr0, value); return MEMTX_OK;
-        case GICR_ICPENDR0                             : gicr_write_clear_bitmap_reg(cs, attrs, &cs->gicr_ipendr0, value); return MEMTX_OK;
-        case GICR_ISACTIVER0                           : gicr_write_set_bitmap_reg(cs, attrs, &cs->gicr_iactiver0, value); return MEMTX_OK;
-        case GICR_ICACTIVER0                           : gicr_write_clear_bitmap_reg(cs, attrs, &cs->gicr_iactiver0, value); return MEMTX_OK;
+        case GICR_ISENABLER0: gicr_write_set_bitmap_reg(cs, attrs, &cs->gicr_ienabler0, value); return MEMTX_OK;
+        case GICR_ICENABLER0: gicr_write_clear_bitmap_reg(cs, attrs, &cs->gicr_ienabler0, value); return MEMTX_OK;
+        case GICR_ISPENDR0  : gicr_write_set_bitmap_reg(cs, attrs, &cs->gicr_ipendr0, value); return MEMTX_OK;
+        case GICR_ICPENDR0  : gicr_write_clear_bitmap_reg(cs, attrs, &cs->gicr_ipendr0, value); return MEMTX_OK;
+        case GICR_ISACTIVER0: gicr_write_set_bitmap_reg(cs, attrs, &cs->gicr_iactiver0, value); return MEMTX_OK;
+        case GICR_ICACTIVER0: gicr_write_clear_bitmap_reg(cs, attrs, &cs->gicr_iactiver0, value); return MEMTX_OK;
         case GICR_IPRIORITYR ... GICR_IPRIORITYR + 0x1f: {
             int i, irq = offset - GICR_IPRIORITYR;
 
@@ -529,7 +529,7 @@ static MemTxResult gicr_writel(GICv3CPUState* cs, hwaddr offset, uint64_t value,
             cs->gicr_nsacr = value;
             /* no update required as this only affects access permission checks */
             return MEMTX_OK;
-        case GICR_IIDR:
+        case GICR_IIDR :
         case GICR_TYPER:
         case GICR_IDREGS ... GICR_IDREGS + 0x2f:
             /* RO registers, ignore the write */
@@ -543,7 +543,7 @@ static MemTxResult gicr_writel(GICv3CPUState* cs, hwaddr offset, uint64_t value,
              */
         case GICR_VPROPBASER    : cs->gicr_vpropbaser = deposit64(cs->gicr_vpropbaser, 0, 32, value); return MEMTX_OK;
         case GICR_VPROPBASER + 4: cs->gicr_vpropbaser = deposit64(cs->gicr_vpropbaser, 32, 32, value); return MEMTX_OK;
-        case GICR_VPENDBASER    : gicr_write_vpendbaser(cs, deposit64(cs->gicr_vpendbaser, 0, 32, value)); return MEMTX_OK;
+        case GICR_VPENDBASER: gicr_write_vpendbaser(cs, deposit64(cs->gicr_vpendbaser, 0, 32, value)); return MEMTX_OK;
         case GICR_VPENDBASER + 4:
             gicr_write_vpendbaser(cs, deposit64(cs->gicr_vpendbaser, 32, 32, value));
             return MEMTX_OK;

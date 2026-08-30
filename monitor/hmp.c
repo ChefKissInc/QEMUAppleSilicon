@@ -359,7 +359,7 @@ static int64_t expr_prod(Monitor* mon)
         next();
         val2 = expr_unary(mon);
         switch (op) {
-            default:
+            default :
             case '*': val *= val2; break;
             case '/':
             case '%':
@@ -386,7 +386,7 @@ static int64_t expr_logic(Monitor* mon)
         next();
         val2 = expr_prod(mon);
         switch (op) {
-            default:
+            default :
             case '&': val &= val2; break;
             case '|': val |= val2; break;
             case '^': val ^= val2; break;

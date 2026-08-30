@@ -86,8 +86,8 @@ static GenericList* next_list(Visitor* v, GenericList* tail, size_t size)
     StringInputVisitor* siv = to_siv(v);
 
     switch (siv->lm) {
-        case LM_END: return NULL;
-        case LM_INT64_RANGE:
+        case LM_END         : return NULL;
+        case LM_INT64_RANGE :
         case LM_UINT64_RANGE:
         case LM_UNPARSED:
             /* we have an unparsed string or something left in a range */
@@ -104,7 +104,7 @@ static bool check_list(Visitor* v, Error** errp)
     const StringInputVisitor* siv = to_siv(v);
 
     switch (siv->lm) {
-        case LM_INT64_RANGE:
+        case LM_INT64_RANGE :
         case LM_UINT64_RANGE:
         case LM_UNPARSED    : error_setg(errp, "Fewer list elements expected"); return false;
         case LM_END         : return true;

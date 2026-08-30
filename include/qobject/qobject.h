@@ -42,9 +42,7 @@ struct QObjectBase_
 
 /* this struct must have no other members than base */
 struct QObject
-{
-    struct QObjectBase_ base;
-};
+{ struct QObjectBase_ base; };
 
 /*
  * Preprocessor sorcery ahead: use a different identifier for the

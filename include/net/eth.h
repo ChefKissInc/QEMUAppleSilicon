@@ -102,9 +102,7 @@ typedef struct ip_pseudo_header
 struct in6_address
 {
     union
-    {
-        uint8_t __u6_addr8[16];
-    } __in6_u;
+    { uint8_t __u6_addr8[16]; } __in6_u;
 };
 
 struct ip6_header
@@ -322,7 +320,7 @@ static inline uint16_t eth_get_pkt_tci(const void* p)
     uint16_t            proto = be16_to_cpu(PKT_GET_ETH_HDR(p)->h_proto);
     struct vlan_header* hvlan = PKT_GET_VLAN_HDR(p);
     switch (proto) {
-        case ETH_P_VLAN:
+        case ETH_P_VLAN :
         case ETH_P_DVLAN: return be16_to_cpu(hvlan->h_tci);
         default         : return 0;
     }

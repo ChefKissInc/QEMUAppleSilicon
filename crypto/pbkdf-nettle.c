@@ -27,11 +27,11 @@
 bool qcrypto_pbkdf2_supports(QCryptoHashAlgo hash)
 {
     switch (hash) {
-        case QCRYPTO_HASH_ALGO_SHA1:
-        case QCRYPTO_HASH_ALGO_SHA224:
-        case QCRYPTO_HASH_ALGO_SHA256:
-        case QCRYPTO_HASH_ALGO_SHA384:
-        case QCRYPTO_HASH_ALGO_SHA512:
+        case QCRYPTO_HASH_ALGO_SHA1     :
+        case QCRYPTO_HASH_ALGO_SHA224   :
+        case QCRYPTO_HASH_ALGO_SHA256   :
+        case QCRYPTO_HASH_ALGO_SHA384   :
+        case QCRYPTO_HASH_ALGO_SHA512   :
         case QCRYPTO_HASH_ALGO_RIPEMD160:
         case QCRYPTO_HASH_ALGO_SM3      : return true;
         default                         : return false;

@@ -40,7 +40,7 @@ static void check_size_align(uint32_t oprsz, uint32_t maxsz, uint32_t ofs)
     uint32_t max_align;
 
     switch (oprsz) {
-        case 8:
+        case 8 :
         case 16:
         case 32: tcg_debug_assert(oprsz <= maxsz); break;
         default: tcg_debug_assert(oprsz == maxsz); break;

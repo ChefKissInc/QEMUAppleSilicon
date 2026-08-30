@@ -369,7 +369,7 @@ static uint64_t apple_aic_read(void* opaque, hwaddr addr, unsigned size)
             }
             return kAIC_INT_SPURIOUS;
         }
-        case REG_AIC_IPI_MASK_SET:
+        case REG_AIC_IPI_MASK_SET                                  :
         case REG_AIC_IPI_MASK_CLR                                  : return o->ipi_mask;
         case REG_AIC_EIR_DEST(0)... REG_AIC_EIR_DEST(AIC_INT_COUNT): {
             uint32_t vector = (addr - REG_AIC_EIR_DEST(0)) / 4;

@@ -149,7 +149,8 @@ void aio_set_event_notifier(AioContext* ctx, EventNotifier* e, EventNotifierHand
 
 void aio_set_event_notifier_poll(AioContext* ctx, EventNotifier* notifier, EventNotifierHandler* io_poll_begin,
                                  EventNotifierHandler* io_poll_end)
-{ /* Not implemented */ }
+{ /* Not implemented */
+}
 
 bool aio_prepare(AioContext* ctx)
 {

@@ -286,11 +286,11 @@ uint32_t eth_calc_ip6_pseudo_hdr_csum(struct ip6_header* iphdr, uint16_t csl, ui
 static bool eth_is_ip6_extension_header_type(uint8_t hdr_type)
 {
     switch (hdr_type) {
-        case IP6_HOP_BY_HOP:
-        case IP6_ROUTING:
-        case IP6_FRAGMENT:
+        case IP6_HOP_BY_HOP    :
+        case IP6_ROUTING       :
+        case IP6_FRAGMENT      :
         case IP6_AUTHENTICATION:
-        case IP6_DESTINATON:
+        case IP6_DESTINATON    :
         case IP6_MOBILITY      : return true;
         default                : return false;
     }

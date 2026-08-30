@@ -382,17 +382,17 @@ struct MachineState
     MemoryRegion*      ram;
     DeviceMemoryState* device_memory;
 
-    ram_addr_t        ram_size;
-    ram_addr_t        maxram_size;
-    uint64_t          ram_slots;
-    char*             kernel_filename;
-    char*             kernel_cmdline;
-    char*             initrd_filename;
-    const char*       cpu_type;
-    AccelState*       accelerator;
-    CPUArchIdList*    possible_cpus;
-    CpuTopology       smp;
-    SmpCache          smp_cache;
+    ram_addr_t     ram_size;
+    ram_addr_t     maxram_size;
+    uint64_t       ram_slots;
+    char*          kernel_filename;
+    char*          kernel_cmdline;
+    char*          initrd_filename;
+    const char*    cpu_type;
+    AccelState*    accelerator;
+    CPUArchIdList* possible_cpus;
+    CpuTopology    smp;
+    SmpCache       smp_cache;
 };
 
 /*

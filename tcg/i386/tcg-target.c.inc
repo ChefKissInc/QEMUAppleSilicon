@@ -3571,60 +3571,60 @@ static void tcg_out_vec_op(TCGContext* s, TCGOpcode opc, unsigned vecl, unsigned
 static TCGConstraintSetIndex tcg_target_op_def(TCGOpcode op, TCGType type, unsigned flags)
 {
     switch (op) {
-        case INDEX_op_ld_vec:
+        case INDEX_op_ld_vec  :
         case INDEX_op_dupm_vec: return C_O1_I1(x, r);
 
         case INDEX_op_st_vec: return C_O0_I2(x, r);
 
-        case INDEX_op_add_vec:
-        case INDEX_op_sub_vec:
-        case INDEX_op_mul_vec:
-        case INDEX_op_and_vec:
-        case INDEX_op_or_vec:
-        case INDEX_op_xor_vec:
-        case INDEX_op_andc_vec:
-        case INDEX_op_orc_vec:
-        case INDEX_op_nand_vec:
-        case INDEX_op_nor_vec:
-        case INDEX_op_eqv_vec:
-        case INDEX_op_ssadd_vec:
-        case INDEX_op_usadd_vec:
-        case INDEX_op_sssub_vec:
-        case INDEX_op_ussub_vec:
-        case INDEX_op_smin_vec:
-        case INDEX_op_umin_vec:
-        case INDEX_op_smax_vec:
-        case INDEX_op_umax_vec:
-        case INDEX_op_shlv_vec:
-        case INDEX_op_shrv_vec:
-        case INDEX_op_sarv_vec:
-        case INDEX_op_rotlv_vec:
-        case INDEX_op_rotrv_vec:
-        case INDEX_op_shls_vec:
-        case INDEX_op_shrs_vec:
-        case INDEX_op_sars_vec:
-        case INDEX_op_cmp_vec:
-        case INDEX_op_x86_shufps_vec:
-        case INDEX_op_x86_blend_vec:
-        case INDEX_op_x86_packss_vec:
-        case INDEX_op_x86_packus_vec:
+        case INDEX_op_add_vec           :
+        case INDEX_op_sub_vec           :
+        case INDEX_op_mul_vec           :
+        case INDEX_op_and_vec           :
+        case INDEX_op_or_vec            :
+        case INDEX_op_xor_vec           :
+        case INDEX_op_andc_vec          :
+        case INDEX_op_orc_vec           :
+        case INDEX_op_nand_vec          :
+        case INDEX_op_nor_vec           :
+        case INDEX_op_eqv_vec           :
+        case INDEX_op_ssadd_vec         :
+        case INDEX_op_usadd_vec         :
+        case INDEX_op_sssub_vec         :
+        case INDEX_op_ussub_vec         :
+        case INDEX_op_smin_vec          :
+        case INDEX_op_umin_vec          :
+        case INDEX_op_smax_vec          :
+        case INDEX_op_umax_vec          :
+        case INDEX_op_shlv_vec          :
+        case INDEX_op_shrv_vec          :
+        case INDEX_op_sarv_vec          :
+        case INDEX_op_rotlv_vec         :
+        case INDEX_op_rotrv_vec         :
+        case INDEX_op_shls_vec          :
+        case INDEX_op_shrs_vec          :
+        case INDEX_op_sars_vec          :
+        case INDEX_op_cmp_vec           :
+        case INDEX_op_x86_shufps_vec    :
+        case INDEX_op_x86_blend_vec     :
+        case INDEX_op_x86_packss_vec    :
+        case INDEX_op_x86_packus_vec    :
         case INDEX_op_x86_vperm2i128_vec:
-        case INDEX_op_x86_punpckl_vec:
-        case INDEX_op_x86_punpckh_vec:
-        case INDEX_op_x86_vpshldi_vec:
+        case INDEX_op_x86_punpckl_vec   :
+        case INDEX_op_x86_punpckh_vec   :
+        case INDEX_op_x86_vpshldi_vec   :
         case INDEX_op_x86_vgf2p8affineqb_vec:
 #if TCG_TARGET_REG_BITS == 32
         case INDEX_op_dup2_vec:
 #endif
             return C_O1_I2(x, x, x);
 
-        case INDEX_op_abs_vec:
-        case INDEX_op_dup_vec:
-        case INDEX_op_not_vec:
-        case INDEX_op_shli_vec:
-        case INDEX_op_shri_vec:
-        case INDEX_op_sari_vec:
-        case INDEX_op_rotli_vec:
+        case INDEX_op_abs_vec       :
+        case INDEX_op_dup_vec       :
+        case INDEX_op_not_vec       :
+        case INDEX_op_shli_vec      :
+        case INDEX_op_shri_vec      :
+        case INDEX_op_sari_vec      :
+        case INDEX_op_rotli_vec     :
         case INDEX_op_x86_psrldq_vec: return C_O1_I1(x, x);
 
         case INDEX_op_x86_vpshldv_vec:
@@ -3640,17 +3640,17 @@ static TCGConstraintSetIndex tcg_target_op_def(TCGOpcode op, TCGType type, unsig
 int tcg_can_emit_vec_op(TCGOpcode opc, TCGType type, unsigned vece)
 {
     switch (opc) {
-        case INDEX_op_add_vec:
-        case INDEX_op_sub_vec:
-        case INDEX_op_and_vec:
-        case INDEX_op_or_vec:
-        case INDEX_op_xor_vec:
-        case INDEX_op_andc_vec:
-        case INDEX_op_orc_vec:
-        case INDEX_op_nand_vec:
-        case INDEX_op_nor_vec:
-        case INDEX_op_eqv_vec:
-        case INDEX_op_not_vec:
+        case INDEX_op_add_vec   :
+        case INDEX_op_sub_vec   :
+        case INDEX_op_and_vec   :
+        case INDEX_op_or_vec    :
+        case INDEX_op_xor_vec   :
+        case INDEX_op_andc_vec  :
+        case INDEX_op_orc_vec   :
+        case INDEX_op_nand_vec  :
+        case INDEX_op_nor_vec   :
+        case INDEX_op_eqv_vec   :
+        case INDEX_op_not_vec   :
         case INDEX_op_bitsel_vec: return 1;
         case INDEX_op_cmp_vec   :
         case INDEX_op_cmpsel_vec: return -1;

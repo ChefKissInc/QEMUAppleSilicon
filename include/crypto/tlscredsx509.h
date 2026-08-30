@@ -94,6 +94,4 @@ typedef struct QCryptoTLSCredsX509Class QCryptoTLSCredsX509Class;
  */
 
 struct QCryptoTLSCredsX509Class
-{
-    QCryptoTLSCredsClass parent_class;
-};
+{ QCryptoTLSCredsClass parent_class; };

@@ -979,7 +979,7 @@ void qcow2_free_any_cluster(BlockDriverState* bs, uint64_t l2_entry, enum qcow2_
                 qcow2_free_clusters(bs, l2_entry & L2E_OFFSET_MASK, s->cluster_size, type);
             }
             break;
-        case QCOW2_CLUSTER_ZERO_PLAIN:
+        case QCOW2_CLUSTER_ZERO_PLAIN :
         case QCOW2_CLUSTER_UNALLOCATED: break;
         default                       : abort();
     }
@@ -1122,7 +1122,7 @@ int qcow2_update_snapshot_refcount(BlockDriverState* bs, int64_t l1_table_offset
                             if (ret < 0) { goto fail; }
                             break;
 
-                        case QCOW2_CLUSTER_ZERO_PLAIN:
+                        case QCOW2_CLUSTER_ZERO_PLAIN :
                         case QCOW2_CLUSTER_UNALLOCATED: refcount = 0; break;
 
                         default: abort();

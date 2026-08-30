@@ -30,9 +30,7 @@
 OBJECT_DECLARE_SIMPLE_TYPE(GPIO_PWR_State, GPIOPWR)
 
 struct GPIO_PWR_State
-{
-    SysBusDevice parent_obj;
-};
+{ SysBusDevice parent_obj; };
 
 static void gpio_pwr_reset(void* opaque, int n, int level)
 {

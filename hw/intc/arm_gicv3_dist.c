@@ -708,7 +708,7 @@ static bool gicd_writel(GICv3State* s, hwaddr offset, uint64_t value, MemTxAttrs
             return true;
         }
         case GICD_IDREGS ... GICD_IDREGS + 0x2f:
-        case GICD_TYPER:
+        case GICD_TYPER                        :
         case GICD_IIDR:
             /* RO registers, ignore the write */
             qemu_log_mask(LOG_GUEST_ERROR, "%s: invalid guest write to RO register at offset " HWADDR_FMT_plx "\n",

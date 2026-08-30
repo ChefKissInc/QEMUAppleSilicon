@@ -599,8 +599,8 @@ static void apple_mt_spi_handle_fw(AppleMTSPIState* s)
 
     switch (packet_type) {
         case LL_PACKET_ERROR & 0xFF:
-        case LL_PACKET_ACK & 0xFF:
-        case LL_PACKET_NAK & 0xFF:
+        case LL_PACKET_ACK & 0xFF  :
+        case LL_PACKET_NAK & 0xFF  :
         case LL_PACKET_BUSY & 0xFF:
             if (apple_mt_spi_buf_get_pos(&s->rx) == sizeof(uint32_t)) {
                 apple_mt_spi_buf_push_dword(&s->tx, LL_PACKET_ACK);

@@ -162,9 +162,7 @@ QEMU_BUILD_BUG_ON(sizeof(struct qht_bucket) > QHT_BUCKET_ALIGN);
 #define QHT_TSAN_BUCKET_LOCKS      (1 << QHT_TSAN_BUCKET_LOCKS_BITS)
 
 struct qht_tsan_lock
-{
-    QemuSpin lock;
-} QEMU_ALIGNED(QHT_BUCKET_ALIGN);
+{ QemuSpin lock; } QEMU_ALIGNED(QHT_BUCKET_ALIGN);
 
 /**
  * struct qht_map - structure to track an array of buckets

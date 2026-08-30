@@ -39,11 +39,11 @@ static void start_auth_vencrypt_subauth(VncState* vs)
             start_client_init(vs);
             break;
 
-        case VNC_AUTH_VENCRYPT_TLSVNC:
+        case VNC_AUTH_VENCRYPT_TLSVNC :
         case VNC_AUTH_VENCRYPT_X509VNC: start_auth_vnc(vs); break;
 
 #ifdef CONFIG_VNC_SASL
-        case VNC_AUTH_VENCRYPT_TLSSASL:
+        case VNC_AUTH_VENCRYPT_TLSSASL :
         case VNC_AUTH_VENCRYPT_X509SASL: start_auth_sasl(vs); break;
 #endif /* CONFIG_VNC_SASL */
 

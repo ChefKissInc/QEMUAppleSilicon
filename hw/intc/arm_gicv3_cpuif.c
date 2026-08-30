@@ -954,8 +954,8 @@ void gicv3_cpuif_update(GICv3CPUState* cs)
         bool isfiq;
 
         switch (cs->hppi.grp) {
-            case GICV3_G0  : isfiq = true; break;
-            case GICV3_G1  : isfiq = (!arm_is_secure(env) || (arm_current_el(env) == 3 && arm_el_is_aa64(env, 3))); break;
+            case GICV3_G0: isfiq = true; break;
+            case GICV3_G1: isfiq = (!arm_is_secure(env) || (arm_current_el(env) == 3 && arm_el_is_aa64(env, 3))); break;
             case GICV3_G1NS: isfiq = arm_is_secure(env); break;
             default        : assert_not_reached();
         }

@@ -454,7 +454,7 @@ static void monitor_qmp_event(void* opaque, QEMUChrEvent event)
             json_message_parser_init(&mon->parser, handle_qmp_command, mon, NULL);
             monitor_fdsets_cleanup();
             break;
-        case CHR_EVENT_BREAK:
+        case CHR_EVENT_BREAK :
         case CHR_EVENT_MUX_IN:
         case CHR_EVENT_MUX_OUT:
             /* Ignore */

@@ -105,9 +105,9 @@ static bool report_as_gpc_exception(ARMCPU* cpu, int current_el, ARMMMUFaultInfo
     bool ret;
 
     switch (fi->gpcf) {
-        case GPCF_None: return false;
+        case GPCF_None       : return false;
         case GPCF_AddressSize:
-        case GPCF_Walk:
+        case GPCF_Walk       :
         case GPCF_EABT:
             /* R_PYTGX: GPT faults are reported as GPC. */
             ret = true;

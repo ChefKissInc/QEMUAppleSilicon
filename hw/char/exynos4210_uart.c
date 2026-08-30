@@ -372,7 +372,7 @@ static void exynos4210_uart_write(void* opaque, hwaddr offset, uint64_t val, uns
     trace_exynos_uart_write(s->channel, offset, exynos4210_uart_regname(offset), val);
 
     switch (offset) {
-        case ULCON:
+        case ULCON :
         case UBRDIV:
         case UFRACVAL:
             s->reg[I_(offset)] = val;
@@ -416,15 +416,15 @@ static void exynos4210_uart_write(void* opaque, hwaddr offset, uint64_t val, uns
             if (val & UTRSTAT_Rx_TIMEOUT) { s->reg[I_(UTRSTAT)] &= ~UTRSTAT_Rx_TIMEOUT; }
             break;
         case UERSTAT:
-        case UFSTAT:
-        case UMSTAT:
+        case UFSTAT :
+        case UMSTAT :
         case URXH   : trace_exynos_uart_ro_write(s->channel, exynos4210_uart_regname(offset), offset); break;
         case UINTSP : s->reg[I_(UINTSP)] &= ~val; break;
         case UINTM:
             s->reg[I_(UINTM)] = val;
             exynos4210_uart_update_irq(s);
             break;
-        case UCON:
+        case UCON :
         case UMCON:
         default   : s->reg[I_(offset)] = val; break;
     }

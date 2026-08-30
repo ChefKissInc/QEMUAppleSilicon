@@ -393,46 +393,46 @@ int hvf_arch_get_registers(CPUState* cpu)
         if (cpu->accel->guest_debug_enabled) {
             /* Handle debug registers */
             switch (hvf_id) {
-                case HV_SYS_REG_DBGBVR0_EL1:
-                case HV_SYS_REG_DBGBCR0_EL1:
-                case HV_SYS_REG_DBGWVR0_EL1:
-                case HV_SYS_REG_DBGWCR0_EL1:
-                case HV_SYS_REG_DBGBVR1_EL1:
-                case HV_SYS_REG_DBGBCR1_EL1:
-                case HV_SYS_REG_DBGWVR1_EL1:
-                case HV_SYS_REG_DBGWCR1_EL1:
-                case HV_SYS_REG_DBGBVR2_EL1:
-                case HV_SYS_REG_DBGBCR2_EL1:
-                case HV_SYS_REG_DBGWVR2_EL1:
-                case HV_SYS_REG_DBGWCR2_EL1:
-                case HV_SYS_REG_DBGBVR3_EL1:
-                case HV_SYS_REG_DBGBCR3_EL1:
-                case HV_SYS_REG_DBGWVR3_EL1:
-                case HV_SYS_REG_DBGWCR3_EL1:
-                case HV_SYS_REG_DBGBVR4_EL1:
-                case HV_SYS_REG_DBGBCR4_EL1:
-                case HV_SYS_REG_DBGWVR4_EL1:
-                case HV_SYS_REG_DBGWCR4_EL1:
-                case HV_SYS_REG_DBGBVR5_EL1:
-                case HV_SYS_REG_DBGBCR5_EL1:
-                case HV_SYS_REG_DBGWVR5_EL1:
-                case HV_SYS_REG_DBGWCR5_EL1:
-                case HV_SYS_REG_DBGBVR6_EL1:
-                case HV_SYS_REG_DBGBCR6_EL1:
-                case HV_SYS_REG_DBGWVR6_EL1:
-                case HV_SYS_REG_DBGWCR6_EL1:
-                case HV_SYS_REG_DBGBVR7_EL1:
-                case HV_SYS_REG_DBGBCR7_EL1:
-                case HV_SYS_REG_DBGWVR7_EL1:
-                case HV_SYS_REG_DBGWCR7_EL1:
-                case HV_SYS_REG_DBGBVR8_EL1:
-                case HV_SYS_REG_DBGBCR8_EL1:
-                case HV_SYS_REG_DBGWVR8_EL1:
-                case HV_SYS_REG_DBGWCR8_EL1:
-                case HV_SYS_REG_DBGBVR9_EL1:
-                case HV_SYS_REG_DBGBCR9_EL1:
-                case HV_SYS_REG_DBGWVR9_EL1:
-                case HV_SYS_REG_DBGWCR9_EL1:
+                case HV_SYS_REG_DBGBVR0_EL1 :
+                case HV_SYS_REG_DBGBCR0_EL1 :
+                case HV_SYS_REG_DBGWVR0_EL1 :
+                case HV_SYS_REG_DBGWCR0_EL1 :
+                case HV_SYS_REG_DBGBVR1_EL1 :
+                case HV_SYS_REG_DBGBCR1_EL1 :
+                case HV_SYS_REG_DBGWVR1_EL1 :
+                case HV_SYS_REG_DBGWCR1_EL1 :
+                case HV_SYS_REG_DBGBVR2_EL1 :
+                case HV_SYS_REG_DBGBCR2_EL1 :
+                case HV_SYS_REG_DBGWVR2_EL1 :
+                case HV_SYS_REG_DBGWCR2_EL1 :
+                case HV_SYS_REG_DBGBVR3_EL1 :
+                case HV_SYS_REG_DBGBCR3_EL1 :
+                case HV_SYS_REG_DBGWVR3_EL1 :
+                case HV_SYS_REG_DBGWCR3_EL1 :
+                case HV_SYS_REG_DBGBVR4_EL1 :
+                case HV_SYS_REG_DBGBCR4_EL1 :
+                case HV_SYS_REG_DBGWVR4_EL1 :
+                case HV_SYS_REG_DBGWCR4_EL1 :
+                case HV_SYS_REG_DBGBVR5_EL1 :
+                case HV_SYS_REG_DBGBCR5_EL1 :
+                case HV_SYS_REG_DBGWVR5_EL1 :
+                case HV_SYS_REG_DBGWCR5_EL1 :
+                case HV_SYS_REG_DBGBVR6_EL1 :
+                case HV_SYS_REG_DBGBCR6_EL1 :
+                case HV_SYS_REG_DBGWVR6_EL1 :
+                case HV_SYS_REG_DBGWCR6_EL1 :
+                case HV_SYS_REG_DBGBVR7_EL1 :
+                case HV_SYS_REG_DBGBCR7_EL1 :
+                case HV_SYS_REG_DBGWVR7_EL1 :
+                case HV_SYS_REG_DBGWCR7_EL1 :
+                case HV_SYS_REG_DBGBVR8_EL1 :
+                case HV_SYS_REG_DBGBCR8_EL1 :
+                case HV_SYS_REG_DBGWVR8_EL1 :
+                case HV_SYS_REG_DBGWCR8_EL1 :
+                case HV_SYS_REG_DBGBVR9_EL1 :
+                case HV_SYS_REG_DBGBCR9_EL1 :
+                case HV_SYS_REG_DBGWVR9_EL1 :
+                case HV_SYS_REG_DBGWCR9_EL1 :
                 case HV_SYS_REG_DBGBVR10_EL1:
                 case HV_SYS_REG_DBGBCR10_EL1:
                 case HV_SYS_REG_DBGWVR10_EL1:
@@ -529,46 +529,46 @@ int hvf_arch_put_registers(CPUState* cpu)
         if (cpu->accel->guest_debug_enabled) {
             /* Handle debug registers */
             switch (hvf_id) {
-                case HV_SYS_REG_DBGBVR0_EL1:
-                case HV_SYS_REG_DBGBCR0_EL1:
-                case HV_SYS_REG_DBGWVR0_EL1:
-                case HV_SYS_REG_DBGWCR0_EL1:
-                case HV_SYS_REG_DBGBVR1_EL1:
-                case HV_SYS_REG_DBGBCR1_EL1:
-                case HV_SYS_REG_DBGWVR1_EL1:
-                case HV_SYS_REG_DBGWCR1_EL1:
-                case HV_SYS_REG_DBGBVR2_EL1:
-                case HV_SYS_REG_DBGBCR2_EL1:
-                case HV_SYS_REG_DBGWVR2_EL1:
-                case HV_SYS_REG_DBGWCR2_EL1:
-                case HV_SYS_REG_DBGBVR3_EL1:
-                case HV_SYS_REG_DBGBCR3_EL1:
-                case HV_SYS_REG_DBGWVR3_EL1:
-                case HV_SYS_REG_DBGWCR3_EL1:
-                case HV_SYS_REG_DBGBVR4_EL1:
-                case HV_SYS_REG_DBGBCR4_EL1:
-                case HV_SYS_REG_DBGWVR4_EL1:
-                case HV_SYS_REG_DBGWCR4_EL1:
-                case HV_SYS_REG_DBGBVR5_EL1:
-                case HV_SYS_REG_DBGBCR5_EL1:
-                case HV_SYS_REG_DBGWVR5_EL1:
-                case HV_SYS_REG_DBGWCR5_EL1:
-                case HV_SYS_REG_DBGBVR6_EL1:
-                case HV_SYS_REG_DBGBCR6_EL1:
-                case HV_SYS_REG_DBGWVR6_EL1:
-                case HV_SYS_REG_DBGWCR6_EL1:
-                case HV_SYS_REG_DBGBVR7_EL1:
-                case HV_SYS_REG_DBGBCR7_EL1:
-                case HV_SYS_REG_DBGWVR7_EL1:
-                case HV_SYS_REG_DBGWCR7_EL1:
-                case HV_SYS_REG_DBGBVR8_EL1:
-                case HV_SYS_REG_DBGBCR8_EL1:
-                case HV_SYS_REG_DBGWVR8_EL1:
-                case HV_SYS_REG_DBGWCR8_EL1:
-                case HV_SYS_REG_DBGBVR9_EL1:
-                case HV_SYS_REG_DBGBCR9_EL1:
-                case HV_SYS_REG_DBGWVR9_EL1:
-                case HV_SYS_REG_DBGWCR9_EL1:
+                case HV_SYS_REG_DBGBVR0_EL1 :
+                case HV_SYS_REG_DBGBCR0_EL1 :
+                case HV_SYS_REG_DBGWVR0_EL1 :
+                case HV_SYS_REG_DBGWCR0_EL1 :
+                case HV_SYS_REG_DBGBVR1_EL1 :
+                case HV_SYS_REG_DBGBCR1_EL1 :
+                case HV_SYS_REG_DBGWVR1_EL1 :
+                case HV_SYS_REG_DBGWCR1_EL1 :
+                case HV_SYS_REG_DBGBVR2_EL1 :
+                case HV_SYS_REG_DBGBCR2_EL1 :
+                case HV_SYS_REG_DBGWVR2_EL1 :
+                case HV_SYS_REG_DBGWCR2_EL1 :
+                case HV_SYS_REG_DBGBVR3_EL1 :
+                case HV_SYS_REG_DBGBCR3_EL1 :
+                case HV_SYS_REG_DBGWVR3_EL1 :
+                case HV_SYS_REG_DBGWCR3_EL1 :
+                case HV_SYS_REG_DBGBVR4_EL1 :
+                case HV_SYS_REG_DBGBCR4_EL1 :
+                case HV_SYS_REG_DBGWVR4_EL1 :
+                case HV_SYS_REG_DBGWCR4_EL1 :
+                case HV_SYS_REG_DBGBVR5_EL1 :
+                case HV_SYS_REG_DBGBCR5_EL1 :
+                case HV_SYS_REG_DBGWVR5_EL1 :
+                case HV_SYS_REG_DBGWCR5_EL1 :
+                case HV_SYS_REG_DBGBVR6_EL1 :
+                case HV_SYS_REG_DBGBCR6_EL1 :
+                case HV_SYS_REG_DBGWVR6_EL1 :
+                case HV_SYS_REG_DBGWCR6_EL1 :
+                case HV_SYS_REG_DBGBVR7_EL1 :
+                case HV_SYS_REG_DBGBCR7_EL1 :
+                case HV_SYS_REG_DBGWVR7_EL1 :
+                case HV_SYS_REG_DBGWCR7_EL1 :
+                case HV_SYS_REG_DBGBVR8_EL1 :
+                case HV_SYS_REG_DBGBCR8_EL1 :
+                case HV_SYS_REG_DBGWVR8_EL1 :
+                case HV_SYS_REG_DBGWCR8_EL1 :
+                case HV_SYS_REG_DBGBVR9_EL1 :
+                case HV_SYS_REG_DBGBCR9_EL1 :
+                case HV_SYS_REG_DBGWVR9_EL1 :
+                case HV_SYS_REG_DBGWCR9_EL1 :
                 case HV_SYS_REG_DBGBVR10_EL1:
                 case HV_SYS_REG_DBGBCR10_EL1:
                 case HV_SYS_REG_DBGWVR10_EL1:
@@ -972,8 +972,8 @@ static bool hvf_handle_psci_call(CPUState* cpu)
             context_id = param[3];
             ret        = arm_set_cpu_on(mpidr, entry, context_id, target_el, target_aarch64);
             break;
-        case QEMU_PSCI_0_1_FN_CPU_OFF:
-        case QEMU_PSCI_0_2_FN_CPU_OFF: hvf_psci_cpu_off(arm_cpu); break;
+        case QEMU_PSCI_0_1_FN_CPU_OFF    :
+        case QEMU_PSCI_0_2_FN_CPU_OFF    : hvf_psci_cpu_off(arm_cpu); break;
         case QEMU_PSCI_0_1_FN_CPU_SUSPEND:
         case QEMU_PSCI_0_2_FN_CPU_SUSPEND:
         case QEMU_PSCI_0_2_FN64_CPU_SUSPEND:
@@ -990,20 +990,20 @@ static bool hvf_handle_psci_call(CPUState* cpu)
         case QEMU_PSCI_0_2_FN_MIGRATE: ret = QEMU_PSCI_RET_NOT_SUPPORTED; break;
         case QEMU_PSCI_1_0_FN_PSCI_FEATURES:
             switch (param[1]) {
-                case QEMU_PSCI_0_2_FN_PSCI_VERSION:
+                case QEMU_PSCI_0_2_FN_PSCI_VERSION     :
                 case QEMU_PSCI_0_2_FN_MIGRATE_INFO_TYPE:
-                case QEMU_PSCI_0_2_FN_AFFINITY_INFO:
-                case QEMU_PSCI_0_2_FN64_AFFINITY_INFO:
-                case QEMU_PSCI_0_2_FN_SYSTEM_RESET:
-                case QEMU_PSCI_0_2_FN_SYSTEM_OFF:
-                case QEMU_PSCI_0_1_FN_CPU_ON:
-                case QEMU_PSCI_0_2_FN_CPU_ON:
-                case QEMU_PSCI_0_2_FN64_CPU_ON:
-                case QEMU_PSCI_0_1_FN_CPU_OFF:
-                case QEMU_PSCI_0_2_FN_CPU_OFF:
-                case QEMU_PSCI_0_1_FN_CPU_SUSPEND:
-                case QEMU_PSCI_0_2_FN_CPU_SUSPEND:
-                case QEMU_PSCI_0_2_FN64_CPU_SUSPEND:
+                case QEMU_PSCI_0_2_FN_AFFINITY_INFO    :
+                case QEMU_PSCI_0_2_FN64_AFFINITY_INFO  :
+                case QEMU_PSCI_0_2_FN_SYSTEM_RESET     :
+                case QEMU_PSCI_0_2_FN_SYSTEM_OFF       :
+                case QEMU_PSCI_0_1_FN_CPU_ON           :
+                case QEMU_PSCI_0_2_FN_CPU_ON           :
+                case QEMU_PSCI_0_2_FN64_CPU_ON         :
+                case QEMU_PSCI_0_1_FN_CPU_OFF          :
+                case QEMU_PSCI_0_2_FN_CPU_OFF          :
+                case QEMU_PSCI_0_1_FN_CPU_SUSPEND      :
+                case QEMU_PSCI_0_2_FN_CPU_SUSPEND      :
+                case QEMU_PSCI_0_2_FN64_CPU_SUSPEND    :
                 case QEMU_PSCI_1_0_FN_PSCI_FEATURES    : ret = 0; break;
                 case QEMU_PSCI_0_1_FN_MIGRATE          :
                 case QEMU_PSCI_0_2_FN_MIGRATE          :
@@ -1101,7 +1101,7 @@ static int hvf_sysreg_read(CPUState* cpu, uint32_t reg, uint64_t* val)
             case SYSREG_PMCCFILTR_EL0 : *val = env->cp15.pmccfiltr_el0; return 0;
             case SYSREG_PMCNTENSET_EL0: *val = env->cp15.c9_pmcnten; return 0;
             case SYSREG_PMUSERENR_EL0 : *val = env->cp15.c9_pmuserenr; return 0;
-            case SYSREG_PMCEID0_EL0:
+            case SYSREG_PMCEID0_EL0   :
             case SYSREG_PMCEID1_EL0:
                 /* We can't really count anything yet, declare all events invalid */
                 *val = 0;
@@ -1117,45 +1117,45 @@ static int hvf_sysreg_read(CPUState* cpu, uint32_t reg, uint64_t* val)
         case SYSREG_OSDLR_EL1:
             /* Dummy register */
             return 0;
-        case SYSREG_ICC_AP0R0_EL1:
-        case SYSREG_ICC_AP0R1_EL1:
-        case SYSREG_ICC_AP0R2_EL1:
-        case SYSREG_ICC_AP0R3_EL1:
-        case SYSREG_ICC_AP1R0_EL1:
-        case SYSREG_ICC_AP1R1_EL1:
-        case SYSREG_ICC_AP1R2_EL1:
-        case SYSREG_ICC_AP1R3_EL1:
-        case SYSREG_ICC_ASGI1R_EL1:
-        case SYSREG_ICC_BPR0_EL1:
-        case SYSREG_ICC_BPR1_EL1:
-        case SYSREG_ICC_DIR_EL1:
-        case SYSREG_ICC_EOIR0_EL1:
-        case SYSREG_ICC_EOIR1_EL1:
-        case SYSREG_ICC_HPPIR0_EL1:
-        case SYSREG_ICC_HPPIR1_EL1:
-        case SYSREG_ICC_IAR0_EL1:
-        case SYSREG_ICC_IAR1_EL1:
+        case SYSREG_ICC_AP0R0_EL1  :
+        case SYSREG_ICC_AP0R1_EL1  :
+        case SYSREG_ICC_AP0R2_EL1  :
+        case SYSREG_ICC_AP0R3_EL1  :
+        case SYSREG_ICC_AP1R0_EL1  :
+        case SYSREG_ICC_AP1R1_EL1  :
+        case SYSREG_ICC_AP1R2_EL1  :
+        case SYSREG_ICC_AP1R3_EL1  :
+        case SYSREG_ICC_ASGI1R_EL1 :
+        case SYSREG_ICC_BPR0_EL1   :
+        case SYSREG_ICC_BPR1_EL1   :
+        case SYSREG_ICC_DIR_EL1    :
+        case SYSREG_ICC_EOIR0_EL1  :
+        case SYSREG_ICC_EOIR1_EL1  :
+        case SYSREG_ICC_HPPIR0_EL1 :
+        case SYSREG_ICC_HPPIR1_EL1 :
+        case SYSREG_ICC_IAR0_EL1   :
+        case SYSREG_ICC_IAR1_EL1   :
         case SYSREG_ICC_IGRPEN0_EL1:
         case SYSREG_ICC_IGRPEN1_EL1:
-        case SYSREG_ICC_PMR_EL1:
-        case SYSREG_ICC_RPR_EL1:
-        case SYSREG_ICC_SGI0R_EL1:
-        case SYSREG_ICC_SGI1R_EL1:
-        case SYSREG_ICC_SRE_EL1:
+        case SYSREG_ICC_PMR_EL1    :
+        case SYSREG_ICC_RPR_EL1    :
+        case SYSREG_ICC_SGI0R_EL1  :
+        case SYSREG_ICC_SGI1R_EL1  :
+        case SYSREG_ICC_SRE_EL1    :
         case SYSREG_ICC_CTLR_EL1:
             /* Call the TCG sysreg handler. This is only safe for GICv3 regs. */
             if (hvf_sysreg_read_cp(cpu, "GICv3", reg, val)) { return 0; }
             break;
-        case SYSREG_DBGBVR0_EL1:
-        case SYSREG_DBGBVR1_EL1:
-        case SYSREG_DBGBVR2_EL1:
-        case SYSREG_DBGBVR3_EL1:
-        case SYSREG_DBGBVR4_EL1:
-        case SYSREG_DBGBVR5_EL1:
-        case SYSREG_DBGBVR6_EL1:
-        case SYSREG_DBGBVR7_EL1:
-        case SYSREG_DBGBVR8_EL1:
-        case SYSREG_DBGBVR9_EL1:
+        case SYSREG_DBGBVR0_EL1 :
+        case SYSREG_DBGBVR1_EL1 :
+        case SYSREG_DBGBVR2_EL1 :
+        case SYSREG_DBGBVR3_EL1 :
+        case SYSREG_DBGBVR4_EL1 :
+        case SYSREG_DBGBVR5_EL1 :
+        case SYSREG_DBGBVR6_EL1 :
+        case SYSREG_DBGBVR7_EL1 :
+        case SYSREG_DBGBVR8_EL1 :
+        case SYSREG_DBGBVR9_EL1 :
         case SYSREG_DBGBVR10_EL1:
         case SYSREG_DBGBVR11_EL1:
         case SYSREG_DBGBVR12_EL1:
@@ -1371,31 +1371,31 @@ static int hvf_sysreg_write(CPUState* cpu, uint32_t reg, uint64_t val)
         case SYSREG_LORC_EL1:
             /* Dummy register */
             return 0;
-        case SYSREG_ICC_AP0R0_EL1:
-        case SYSREG_ICC_AP0R1_EL1:
-        case SYSREG_ICC_AP0R2_EL1:
-        case SYSREG_ICC_AP0R3_EL1:
-        case SYSREG_ICC_AP1R0_EL1:
-        case SYSREG_ICC_AP1R1_EL1:
-        case SYSREG_ICC_AP1R2_EL1:
-        case SYSREG_ICC_AP1R3_EL1:
-        case SYSREG_ICC_ASGI1R_EL1:
-        case SYSREG_ICC_BPR0_EL1:
-        case SYSREG_ICC_BPR1_EL1:
-        case SYSREG_ICC_CTLR_EL1:
-        case SYSREG_ICC_DIR_EL1:
-        case SYSREG_ICC_EOIR0_EL1:
-        case SYSREG_ICC_EOIR1_EL1:
-        case SYSREG_ICC_HPPIR0_EL1:
-        case SYSREG_ICC_HPPIR1_EL1:
-        case SYSREG_ICC_IAR0_EL1:
-        case SYSREG_ICC_IAR1_EL1:
+        case SYSREG_ICC_AP0R0_EL1  :
+        case SYSREG_ICC_AP0R1_EL1  :
+        case SYSREG_ICC_AP0R2_EL1  :
+        case SYSREG_ICC_AP0R3_EL1  :
+        case SYSREG_ICC_AP1R0_EL1  :
+        case SYSREG_ICC_AP1R1_EL1  :
+        case SYSREG_ICC_AP1R2_EL1  :
+        case SYSREG_ICC_AP1R3_EL1  :
+        case SYSREG_ICC_ASGI1R_EL1 :
+        case SYSREG_ICC_BPR0_EL1   :
+        case SYSREG_ICC_BPR1_EL1   :
+        case SYSREG_ICC_CTLR_EL1   :
+        case SYSREG_ICC_DIR_EL1    :
+        case SYSREG_ICC_EOIR0_EL1  :
+        case SYSREG_ICC_EOIR1_EL1  :
+        case SYSREG_ICC_HPPIR0_EL1 :
+        case SYSREG_ICC_HPPIR1_EL1 :
+        case SYSREG_ICC_IAR0_EL1   :
+        case SYSREG_ICC_IAR1_EL1   :
         case SYSREG_ICC_IGRPEN0_EL1:
         case SYSREG_ICC_IGRPEN1_EL1:
-        case SYSREG_ICC_PMR_EL1:
-        case SYSREG_ICC_RPR_EL1:
-        case SYSREG_ICC_SGI0R_EL1:
-        case SYSREG_ICC_SGI1R_EL1:
+        case SYSREG_ICC_PMR_EL1    :
+        case SYSREG_ICC_RPR_EL1    :
+        case SYSREG_ICC_SGI0R_EL1  :
+        case SYSREG_ICC_SGI1R_EL1  :
         case SYSREG_ICC_SRE_EL1:
             /* Call the TCG sysreg handler. This is only safe for GICv3 regs. */
             if (hvf_sysreg_write_cp(cpu, "GICv3", reg, val)) { return 0; }

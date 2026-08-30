@@ -218,9 +218,7 @@ typedef struct NvmeNamespaceParams
     uint64_t zrwafg;
 
     struct
-    {
-        char* ruhs;
-    } fdp;
+    { char* ruhs; } fdp;
 } NvmeNamespaceParams;
 
 typedef struct NvmeAtomic
@@ -277,9 +275,7 @@ typedef struct NvmeNamespace
     NvmeCtrl* ctrl;
 
     struct
-    {
-        uint32_t err_rec;
-    } features;
+    { uint32_t err_rec; } features;
 
     struct
     {
@@ -540,9 +536,7 @@ typedef struct NvmeParams
     bool     ocp;
 
     struct
-    {
-        bool mem;
-    } ctratt;
+    { bool mem; } ctratt;
 
     uint16_t atomic_awun;
     uint16_t atomic_awupf;

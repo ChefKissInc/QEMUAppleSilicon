@@ -235,9 +235,7 @@ typedef struct RawPosixAIOData
             BlockZoneDescriptor* zones;
         } zone_report;
         struct
-        {
-            unsigned long op;
-        } zone_mgmt;
+        { unsigned long op; } zone_mgmt;
     };
 } RawPosixAIOData;
 
@@ -1841,7 +1839,7 @@ static int handle_aiocb_write_zeroes_unmap(void* opaque)
     int ret = do_fallocate(s->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, aiocb->aio_offset, aiocb->aio_nbytes);
     switch (ret) {
         case -ENOTSUP:
-        case -EINVAL:
+        case -EINVAL :
         case -EBUSY  : break;
         default      : return ret;
     }

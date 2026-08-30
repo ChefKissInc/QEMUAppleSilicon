@@ -667,11 +667,11 @@ static void apple_sep_aess_base_reg_write(void* opaque, hwaddr addr, uint64_t da
             s->seed_bits_lock  = data;
             goto jump_log;
         case SEP_AESS_REGISTER_IV ... SEP_AESS_REGISTER_IV + 0xC:    // IV
-        case 0x100 ... 0x10C:                                        // IV T8015
+        case 0x100 ... 0x10C                                    :    // IV T8015
             memcpy(&s->iv[addr & 0xF], &data, 4);
             goto jump_log;
         case SEP_AESS_REGISTER_IN ... SEP_AESS_REGISTER_IN + 0xC:    // IN
-        case 0x110 ... 0x11C:                                        // IN T8015
+        case 0x110 ... 0x11C                                    :    // IN T8015
             memcpy(&s->in[addr & 0xF], &data, 4);
             goto jump_log;
         // AES engine?: case 0xA4: 0x40 bytes from TRNG
@@ -713,7 +713,7 @@ static uint64_t apple_sep_aess_base_reg_read(void* opaque, hwaddr addr, unsigned
             ret = s->reg_0x14_keywrap_iterations_counter;
             goto jump_log;
         case SEP_AESS_REGISTER_0x18_KEYDISABLE: ret = s->reg_0x18_keydisable; goto jump_log;
-        case SEP_AESS_REGISTER_SEED_BITS:    // seed_bits
+        case SEP_AESS_REGISTER_SEED_BITS      :    // seed_bits
             ret = s->seed_bits;
             goto jump_log;
         case SEP_AESS_REGISTER_SEED_BITS_LOCK:    // seed_bits_lock

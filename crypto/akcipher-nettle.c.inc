@@ -354,8 +354,8 @@ bool qcrypto_akcipher_supports(QCryptoAkCipherOptions* opts)
             switch (opts->u.rsa.padding_alg) {
                 case QCRYPTO_RSA_PADDING_ALGO_PKCS1:
                     switch (opts->u.rsa.hash_alg) {
-                        case QCRYPTO_HASH_ALGO_MD5:
-                        case QCRYPTO_HASH_ALGO_SHA1:
+                        case QCRYPTO_HASH_ALGO_MD5   :
+                        case QCRYPTO_HASH_ALGO_SHA1  :
                         case QCRYPTO_HASH_ALGO_SHA256:
                         case QCRYPTO_HASH_ALGO_SHA512: return true;
 

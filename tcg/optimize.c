@@ -312,9 +312,9 @@ static bool tcg_opt_gen_mov(OptContext* ctx, TCGOp* op, TCGArg dst, TCGArg src)
     si = ts_info(src_ts);
 
     switch (ctx->type) {
-        case TCG_TYPE_I32:
-        case TCG_TYPE_I64: new_op = INDEX_op_mov; break;
-        case TCG_TYPE_V64:
+        case TCG_TYPE_I32 :
+        case TCG_TYPE_I64 : new_op = INDEX_op_mov; break;
+        case TCG_TYPE_V64 :
         case TCG_TYPE_V128:
         case TCG_TYPE_V256:
             /* TCGOP_TYPE and TCGOP_VECE remain unchanged.  */
@@ -372,13 +372,13 @@ static uint64_t do_constant_folding_2(TCGOpcode op, TCGType type, uint64_t x, ui
 
         case INDEX_op_mul: return x * y;
 
-        case INDEX_op_and:
+        case INDEX_op_and    :
         case INDEX_op_and_vec: return x & y;
 
-        case INDEX_op_or:
+        case INDEX_op_or    :
         case INDEX_op_or_vec: return x | y;
 
-        case INDEX_op_xor:
+        case INDEX_op_xor    :
         case INDEX_op_xor_vec: return x ^ y;
 
         case INDEX_op_shl:
@@ -401,24 +401,24 @@ static uint64_t do_constant_folding_2(TCGOpcode op, TCGType type, uint64_t x, ui
             if (type == TCG_TYPE_I32) { return rol32(x, y & 31); }
             return rol64(x, y & 63);
 
-        case INDEX_op_not:
+        case INDEX_op_not    :
         case INDEX_op_not_vec: return ~x;
 
         case INDEX_op_neg: return -x;
 
-        case INDEX_op_andc:
+        case INDEX_op_andc    :
         case INDEX_op_andc_vec: return x & ~y;
 
-        case INDEX_op_orc:
+        case INDEX_op_orc    :
         case INDEX_op_orc_vec: return x | ~y;
 
-        case INDEX_op_eqv:
+        case INDEX_op_eqv    :
         case INDEX_op_eqv_vec: return ~(x ^ y);
 
-        case INDEX_op_nand:
+        case INDEX_op_nand    :
         case INDEX_op_nand_vec: return ~(x & y);
 
-        case INDEX_op_nor:
+        case INDEX_op_nor    :
         case INDEX_op_nor_vec: return ~(x | y);
 
         case INDEX_op_clz:
@@ -439,7 +439,7 @@ static uint64_t do_constant_folding_2(TCGOpcode op, TCGType type, uint64_t x, ui
 
         case INDEX_op_ext_i32_i64: return (int32_t)x;
 
-        case INDEX_op_extu_i32_i64:
+        case INDEX_op_extu_i32_i64 :
         case INDEX_op_extrl_i64_i32: return (uint32_t)x;
 
         case INDEX_op_extrh_i64_i32: return (uint64_t)x >> 32;
@@ -527,10 +527,10 @@ static bool do_constant_folding_cond_64(uint64_t x, uint64_t y, TCGCond c)
 static int do_constant_folding_cond_eq(TCGCond c)
 {
     switch (c) {
-        case TCG_COND_GT:
-        case TCG_COND_LTU:
-        case TCG_COND_LT:
-        case TCG_COND_GTU:
+        case TCG_COND_GT    :
+        case TCG_COND_LTU   :
+        case TCG_COND_LT    :
+        case TCG_COND_GTU   :
         case TCG_COND_NE    : return 0;
         case TCG_COND_GE    :
         case TCG_COND_GEU   :
@@ -568,7 +568,7 @@ static int do_constant_folding_cond(TCGType type, TCGArg x, TCGArg y, TCGCond c)
     }
     else if (arg_is_const_val(y, 0)) {
         switch (c) {
-            case TCG_COND_LTU:
+            case TCG_COND_LTU  :
             case TCG_COND_TSTNE: return 0;
             case TCG_COND_GEU  :
             case TCG_COND_TSTEQ: return 1;
@@ -718,7 +718,7 @@ static int do_constant_folding_cond2(OptContext* ctx, TCGOp* op, TCGArg* args)
 
         if (b == 0) {
             switch (c) {
-                case TCG_COND_LTU:
+                case TCG_COND_LTU  :
                 case TCG_COND_TSTNE: return 0;
                 case TCG_COND_GEU  :
                 case TCG_COND_TSTEQ: return 1;
@@ -964,7 +964,7 @@ static bool fold_to_not(OptContext* ctx, TCGOp* op, int idx)
             not_op   = INDEX_op_not;
             have_not = tcg_op_supported(INDEX_op_not, ctx->type, 0);
             break;
-        case TCG_TYPE_V64:
+        case TCG_TYPE_V64 :
         case TCG_TYPE_V128:
         case TCG_TYPE_V256:
             not_op   = INDEX_op_not_vec;
@@ -1273,7 +1273,7 @@ static bool fold_andc(OptContext* ctx, TCGOp* op)
     if (ti_is_const(t2)) {
         /* Fold andc r,x,i to and r,x,~i. */
         switch (ctx->type) {
-            case TCG_TYPE_I32:
+            case TCG_TYPE_I32 :
             case TCG_TYPE_I64 : op->opc = INDEX_op_and; break;
             case TCG_TYPE_V64 :
             case TCG_TYPE_V128:
@@ -1674,7 +1674,7 @@ static bool fold_eqv(OptContext* ctx, TCGOp* op)
     if (ti_is_const(t2)) {
         /* Fold eqv r,x,i to xor r,x,~i. */
         switch (ctx->type) {
-            case TCG_TYPE_I32:
+            case TCG_TYPE_I32 :
             case TCG_TYPE_I64 : op->opc = INDEX_op_xor; break;
             case TCG_TYPE_V64 :
             case TCG_TYPE_V128:
@@ -2010,7 +2010,7 @@ static bool fold_orc(OptContext* ctx, TCGOp* op)
     if (ti_is_const(t2)) {
         /* Fold orc r,x,i to or r,x,~i. */
         switch (ctx->type) {
-            case TCG_TYPE_I32:
+            case TCG_TYPE_I32 :
             case TCG_TYPE_I64 : op->opc = INDEX_op_or; break;
             case TCG_TYPE_V64 :
             case TCG_TYPE_V128:
@@ -2098,7 +2098,7 @@ static int fold_setcond_zmask(OptContext* ctx, TCGOp* op, bool neg)
         bool inv = false;
 
         switch (cond) {
-            case TCG_COND_NE:
+            case TCG_COND_NE :
             case TCG_COND_LEU:
             case TCG_COND_LTU:
                 inv = true;
@@ -2121,12 +2121,12 @@ static int fold_setcond_zmask(OptContext* ctx, TCGOp* op, bool neg)
             case TCG_COND_EQ:
                 inv = true;
                 /* fall through */
-            case TCG_COND_NE: convert = (b_val == 0); break;
+            case TCG_COND_NE : convert = (b_val == 0); break;
             case TCG_COND_LTU:
             case TCG_COND_TSTEQ:
                 inv = true;
                 /* fall through */
-            case TCG_COND_GEU:
+            case TCG_COND_GEU  :
             case TCG_COND_TSTNE: convert = (b_val == 1); break;
             default            : break;
         }
@@ -2380,7 +2380,7 @@ static bool fold_sub_to_neg(OptContext* ctx, TCGOp* op)
             neg_op   = INDEX_op_neg;
             have_neg = true;
             break;
-        case TCG_TYPE_V64:
+        case TCG_TYPE_V64 :
         case TCG_TYPE_V128:
         case TCG_TYPE_V256:
             neg_op   = INDEX_op_neg_vec;
@@ -2785,10 +2785,10 @@ void tcg_optimize(TCGContext* s)
             case INDEX_op_sub_vec      : done = fold_sub_vec(&ctx, op); break;
             case INDEX_op_xor          :
             case INDEX_op_xor_vec      : done = fold_xor(&ctx, op); break;
-            case INDEX_op_set_label:
-            case INDEX_op_br:
-            case INDEX_op_exit_tb:
-            case INDEX_op_goto_tb:
+            case INDEX_op_set_label    :
+            case INDEX_op_br           :
+            case INDEX_op_exit_tb      :
+            case INDEX_op_goto_tb      :
             case INDEX_op_goto_ptr:
                 finish_ebb(&ctx);
                 done = true;

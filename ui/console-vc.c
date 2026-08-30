@@ -421,7 +421,7 @@ static void vc_handle_escape(VCChardev* vc)
 
     for (i = 0; i < vc->nb_esc_params; i++) {
         switch (vc->esc_params[i]) {
-            case 0: /* reset all console attributes to default */ vc->t_attrib = TEXT_ATTRIBUTES_DEFAULT; break;
+            case 0 : /* reset all console attributes to default */ vc->t_attrib = TEXT_ATTRIBUTES_DEFAULT; break;
             case 1 : vc->t_attrib.bold = 1; break;
             case 4 : vc->t_attrib.uline = 1; break;
             case 5 : vc->t_attrib.blink = 1; break;

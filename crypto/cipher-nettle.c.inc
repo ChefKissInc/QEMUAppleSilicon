@@ -374,12 +374,12 @@ DEFINE_ECB(qcrypto_nettle_sm4, QCryptoNettleSm4, SM4_BLOCK_SIZE, sm4_encrypt_nat
 bool qcrypto_cipher_supports(QCryptoCipherAlgo alg, QCryptoCipherMode mode)
 {
     switch (alg) {
-        case QCRYPTO_CIPHER_ALGO_DES:
-        case QCRYPTO_CIPHER_ALGO_3DES:
-        case QCRYPTO_CIPHER_ALGO_AES_128:
-        case QCRYPTO_CIPHER_ALGO_AES_192:
-        case QCRYPTO_CIPHER_ALGO_AES_256:
-        case QCRYPTO_CIPHER_ALGO_CAST5_128:
+        case QCRYPTO_CIPHER_ALGO_DES        :
+        case QCRYPTO_CIPHER_ALGO_3DES       :
+        case QCRYPTO_CIPHER_ALGO_AES_128    :
+        case QCRYPTO_CIPHER_ALGO_AES_192    :
+        case QCRYPTO_CIPHER_ALGO_AES_256    :
+        case QCRYPTO_CIPHER_ALGO_CAST5_128  :
         case QCRYPTO_CIPHER_ALGO_SERPENT_128:
         case QCRYPTO_CIPHER_ALGO_SERPENT_192:
         case QCRYPTO_CIPHER_ALGO_SERPENT_256:

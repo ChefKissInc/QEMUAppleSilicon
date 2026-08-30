@@ -956,7 +956,8 @@ static BlockdevDetectZeroesOptions bdrv_parse_detect_zeroes(QemuOpts* opts, int 
  */
 int bdrv_parse_aio(const char* mode, int* flags)
 {
-    if (!strcmp(mode, "threads")) { /* do nothing, default */ }
+    if (!strcmp(mode, "threads")) { /* do nothing, default */
+    }
     else if (!strcmp(mode, "native")) {
         *flags |= BDRV_O_NATIVE_AIO;
 #ifdef CONFIG_LINUX_IO_URING
@@ -981,7 +982,8 @@ int bdrv_parse_discard_flags(const char* mode, int* flags)
 {
     *flags &= ~BDRV_O_UNMAP;
 
-    if (!strcmp(mode, "off") || !strcmp(mode, "ignore")) { /* do nothing */ }
+    if (!strcmp(mode, "off") || !strcmp(mode, "ignore")) { /* do nothing */
+    }
     else if (!strcmp(mode, "on") || !strcmp(mode, "unmap")) {
         *flags |= BDRV_O_UNMAP;
     }
@@ -3226,7 +3228,8 @@ int bdrv_open_backing_file(BlockDriverState* bs, QDict* parent_options, const ch
      * QString.
      */
     reference = qdict_get_try_str(parent_options, bdref_key);
-    if (reference || qdict_haskey(options, "file.filename")) { /* keep backing_filename NULL */ }
+    if (reference || qdict_haskey(options, "file.filename")) { /* keep backing_filename NULL */
+    }
     else if (bs->backing_file[0] == '\0' && qdict_size(options) == 0) {
         qobject_unref(options);
         goto free_exit;

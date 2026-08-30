@@ -306,7 +306,7 @@ static pa_sample_format_t audfmt_to_pa(AudioFormat afmt, int endianness)
     int format;
 
     switch (afmt) {
-        case AUDIO_FORMAT_S8:
+        case AUDIO_FORMAT_S8 :
         case AUDIO_FORMAT_U8 : format = PA_SAMPLE_U8; break;
         case AUDIO_FORMAT_S16:
         case AUDIO_FORMAT_U16: format = endianness ? PA_SAMPLE_S16BE : PA_SAMPLE_S16LE; break;
@@ -340,13 +340,13 @@ static void context_state_cb(pa_context* c, void* userdata)
     PAConnection* conn = userdata;
 
     switch (pa_context_get_state(c)) {
-        case PA_CONTEXT_READY:
+        case PA_CONTEXT_READY     :
         case PA_CONTEXT_TERMINATED:
         case PA_CONTEXT_FAILED    : pa_threaded_mainloop_signal(conn->mainloop, 0); break;
 
-        case PA_CONTEXT_UNCONNECTED:
-        case PA_CONTEXT_CONNECTING:
-        case PA_CONTEXT_AUTHORIZING:
+        case PA_CONTEXT_UNCONNECTED :
+        case PA_CONTEXT_CONNECTING  :
+        case PA_CONTEXT_AUTHORIZING :
         case PA_CONTEXT_SETTING_NAME: break;
     }
 }
@@ -357,8 +357,8 @@ static void stream_state_cb(pa_stream* s, void* userdata)
 
     switch (pa_stream_get_state(s)) {
 
-        case PA_STREAM_READY:
-        case PA_STREAM_FAILED:
+        case PA_STREAM_READY     :
+        case PA_STREAM_FAILED    :
         case PA_STREAM_TERMINATED: pa_threaded_mainloop_signal(c->mainloop, 0); break;
 
         case PA_STREAM_UNCONNECTED:

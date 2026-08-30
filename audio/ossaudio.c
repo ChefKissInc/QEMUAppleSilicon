@@ -636,7 +636,7 @@ static size_t oss_read(HWVoiceIn* hw, void* buf, size_t len)
 
         if (nread == -1) {
             switch (errno) {
-                case EINTR:
+                case EINTR :
                 case EAGAIN: break;
                 default    : oss_logerr(errno, "Failed to read %zu bytes of audio (to %p)\n", len, dst); break;
             }

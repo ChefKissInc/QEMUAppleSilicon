@@ -110,7 +110,7 @@ static void qemu_file_monitor_watch(void* arg)
          * DELETED and CREATED events
          */
         switch (iev) {
-            case IN_CREATE:
+            case IN_CREATE    :
             case IN_MOVED_TO  : qev = QFILE_MONITOR_EVENT_CREATED; break;
             case IN_MODIFY    : qev = QFILE_MONITOR_EVENT_MODIFIED; break;
             case IN_DELETE    :

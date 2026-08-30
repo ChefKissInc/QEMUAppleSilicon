@@ -326,7 +326,7 @@ static void apple_uart_write(void* opaque, hwaddr offset, uint64_t val, unsigned
     trace_apple_uart_write(s->channel, offset, apple_uart_regname(offset), val);
 
     switch (offset) {
-        case ULCON:
+        case ULCON :
         case UBRDIV:
         case UFRACVAL:
             s->reg[I_(offset)] = val;

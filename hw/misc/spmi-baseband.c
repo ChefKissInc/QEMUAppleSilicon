@@ -65,9 +65,9 @@ static int apple_spmi_baseband_command(SPMISlave* s, uint8_t opcode, uint16_t ad
     DPRINTF("%s: opcode 0x%x addr 0x%x\n", __func__, opcode, addr);
 
     switch (opcode) {
-        case SPMI_CMD_EXT_READ:
-        case SPMI_CMD_EXT_READL:
-        case SPMI_CMD_EXT_WRITE:
+        case SPMI_CMD_EXT_READ  :
+        case SPMI_CMD_EXT_READL :
+        case SPMI_CMD_EXT_WRITE :
         case SPMI_CMD_EXT_WRITEL: return 0;
         default                 : return 1;
     }

@@ -134,9 +134,7 @@ struct ObjectClass
 
 typedef struct InterfaceImpl InterfaceImpl;
 struct InterfaceImpl
-{
-    const char* typename;
-};
+{ const char* typename; };
 
 #define MAX_INTERFACES 32
 
@@ -622,9 +620,7 @@ struct TypeInfo
  * The information associated with an interface.
  */
 struct InterfaceInfo
-{
-    const char* type;
-};
+{ const char* type; };
 
 /**
  * struct InterfaceClass:

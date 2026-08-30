@@ -65,14 +65,14 @@ bool tcg_can_emit_vecop_list(const TCGOpcode* list, TCGType type, unsigned vece)
 
 #ifdef CONFIG_DEBUG_TCG
         switch (opc) {
-            case INDEX_op_and_vec:
-            case INDEX_op_or_vec:
-            case INDEX_op_xor_vec:
-            case INDEX_op_mov_vec:
-            case INDEX_op_dup_vec:
+            case INDEX_op_and_vec :
+            case INDEX_op_or_vec  :
+            case INDEX_op_xor_vec :
+            case INDEX_op_mov_vec :
+            case INDEX_op_dup_vec :
             case INDEX_op_dup2_vec:
-            case INDEX_op_ld_vec:
-            case INDEX_op_st_vec:
+            case INDEX_op_ld_vec  :
+            case INDEX_op_st_vec  :
             case INDEX_op_bitsel_vec:
                 /* These opcodes are mandatory and should not be listed.  */
                 assert_not_reached();
@@ -118,9 +118,9 @@ bool tcg_can_emit_vecop_list(const TCGOpcode* list, TCGType type, unsigned vece)
                 }
                 break;
             case INDEX_op_cmpsel_vec:
-            case INDEX_op_smin_vec:
-            case INDEX_op_smax_vec:
-            case INDEX_op_umin_vec:
+            case INDEX_op_smin_vec  :
+            case INDEX_op_smax_vec  :
+            case INDEX_op_umin_vec  :
             case INDEX_op_umax_vec:
                 if (tcg_can_emit_vec_op(INDEX_op_cmp_vec, type, vece)) { continue; }
                 break;

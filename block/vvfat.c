@@ -277,9 +277,7 @@ typedef struct mapping_t
          * - the next cluster of the directory for a directory
          */
         struct
-        {
-            uint32_t offset;
-        } file;
+        { uint32_t offset; } file;
         struct
         {
             int parent_mapping_index;
@@ -1482,22 +1480,16 @@ typedef struct commit_t
     union
     {
         struct
-        {
-            uint32_t cluster;
-        } rename;
+        { uint32_t cluster; } rename;
         struct
         {
             int      dir_index;
             uint32_t modified_offset;
         } writeout;
         struct
-        {
-            uint32_t first_cluster;
-        } new_file;
+        { uint32_t first_cluster; } new_file;
         struct
-        {
-            uint32_t cluster;
-        } mkdir;
+        { uint32_t cluster; } mkdir;
     } param;
     /* DELETEs and RMDIRs are handled differently: see handle_deletes() */
     enum

@@ -240,12 +240,12 @@ bool job_is_ready_locked(Job* job)
 {
     switch (job->status) {
         case JOB_STATUS_UNDEFINED:
-        case JOB_STATUS_CREATED:
-        case JOB_STATUS_RUNNING:
-        case JOB_STATUS_PAUSED:
-        case JOB_STATUS_WAITING:
-        case JOB_STATUS_PENDING:
-        case JOB_STATUS_ABORTING:
+        case JOB_STATUS_CREATED  :
+        case JOB_STATUS_RUNNING  :
+        case JOB_STATUS_PAUSED   :
+        case JOB_STATUS_WAITING  :
+        case JOB_STATUS_PENDING  :
+        case JOB_STATUS_ABORTING :
         case JOB_STATUS_CONCLUDED:
         case JOB_STATUS_NULL     : return false;
         case JOB_STATUS_READY    :
@@ -265,10 +265,10 @@ bool job_is_completed_locked(Job* job)
 {
     switch (job->status) {
         case JOB_STATUS_UNDEFINED:
-        case JOB_STATUS_CREATED:
-        case JOB_STATUS_RUNNING:
-        case JOB_STATUS_PAUSED:
-        case JOB_STATUS_READY:
+        case JOB_STATUS_CREATED  :
+        case JOB_STATUS_RUNNING  :
+        case JOB_STATUS_PAUSED   :
+        case JOB_STATUS_READY    :
         case JOB_STATUS_STANDBY  : return false;
         case JOB_STATUS_WAITING  :
         case JOB_STATUS_PENDING  :

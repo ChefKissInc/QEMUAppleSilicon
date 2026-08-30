@@ -11,9 +11,7 @@
 #include "qom/object.h"
 
 struct AccelState
-{
-    Object parent_obj;
-};
+{ Object parent_obj; };
 
 struct AccelClass
 {

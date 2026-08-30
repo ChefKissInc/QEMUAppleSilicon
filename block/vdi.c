@@ -345,7 +345,8 @@ static int vdi_probe(const uint8_t* buf, int buf_size, const char* filename)
 
     logout("\n");
 
-    if (buf_size < sizeof(*header)) { /* Header too small, no VDI. */ }
+    if (buf_size < sizeof(*header)) { /* Header too small, no VDI. */
+    }
     else if (le32_to_cpu(header->signature) == VDI_SIGNATURE) {
         ret = 100;
     }

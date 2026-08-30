@@ -412,8 +412,8 @@ static void arm_cpu_set_irq(void* opaque, int irq, int level)
         case ARM_CPU_VIRQ : arm_cpu_update_virq(cpu); break;
         case ARM_CPU_VFIQ : arm_cpu_update_vfiq(cpu); break;
         case ARM_CPU_VINMI: arm_cpu_update_vinmi(cpu); break;
-        case ARM_CPU_IRQ:
-        case ARM_CPU_FIQ:
+        case ARM_CPU_IRQ  :
+        case ARM_CPU_FIQ  :
         case ARM_CPU_NMI:
             if (level) { cpu_interrupt(cs, mask[irq]); }
             else {

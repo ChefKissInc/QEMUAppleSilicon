@@ -265,16 +265,16 @@ static bool tcg_target_const_match(int64_t sval, int ct, TCGType type, TCGCond c
 
     if (ct & TCG_CT_CONST_CMP) {
         switch (cond) {
-            case TCG_COND_EQ:
-            case TCG_COND_NE : ct |= TCG_CT_CONST_S16 | TCG_CT_CONST_U16; break;
-            case TCG_COND_LT :
-            case TCG_COND_GE :
-            case TCG_COND_LE :
-            case TCG_COND_GT : ct |= TCG_CT_CONST_S16; break;
-            case TCG_COND_LTU:
-            case TCG_COND_GEU:
-            case TCG_COND_LEU:
-            case TCG_COND_GTU: ct |= TCG_CT_CONST_U16; break;
+            case TCG_COND_EQ   :
+            case TCG_COND_NE   : ct |= TCG_CT_CONST_S16 | TCG_CT_CONST_U16; break;
+            case TCG_COND_LT   :
+            case TCG_COND_GE   :
+            case TCG_COND_LE   :
+            case TCG_COND_GT   : ct |= TCG_CT_CONST_S16; break;
+            case TCG_COND_LTU  :
+            case TCG_COND_GEU  :
+            case TCG_COND_LEU  :
+            case TCG_COND_GTU  : ct |= TCG_CT_CONST_U16; break;
             case TCG_COND_TSTEQ:
             case TCG_COND_TSTNE:
                 if ((uval & ~0xffff) == 0 || (uval & ~0xffff0000ull) == 0) { return 1; }
@@ -1265,7 +1265,7 @@ static void tcg_out_mem_long(TCGContext* s, int opi, int opx, TCGReg rt, TCGReg 
                 break;
             }
             break;
-        case LXSD:
+        case LXSD :
         case STXSD: align = 3; break;
         case LXV  :
         case STXV : align = 15; break;
@@ -1284,13 +1284,13 @@ static void tcg_out_mem_long(TCGContext* s, int opi, int opx, TCGReg rt, TCGReg 
          * while the 8LS:D insns use a different opcode space.
          */
         switch (opi) {
-            case LBZ:
-            case LHZ:
-            case LHA:
-            case LWZ:
-            case STB:
-            case STH:
-            case STW:
+            case LBZ  :
+            case LHZ  :
+            case LHA  :
+            case LWZ  :
+            case STB  :
+            case STH  :
+            case STW  :
             case ADDI : tcg_out_mls_d(s, opi, rt, base, offset, 0); return;
             case LWA  : tcg_out_8ls_d(s, PLWA, rt, base, offset, 0); return;
             case LD   : tcg_out_8ls_d(s, PLD, rt, base, offset, 0); return;
@@ -1908,10 +1908,10 @@ static void tcg_out_cmp2(TCGContext* s, TCGCond cond, TCGReg al, TCGReg ah, TCGA
             tcg_out32(s, OR | SAB(TCG_REG_R0, TCG_REG_R0, TCG_REG_TMP1) | 1);
             break;
 
-        case TCG_COND_LT:
-        case TCG_COND_LE:
-        case TCG_COND_GT:
-        case TCG_COND_GE:
+        case TCG_COND_LT :
+        case TCG_COND_LE :
+        case TCG_COND_GT :
+        case TCG_COND_GE :
         case TCG_COND_LTU:
         case TCG_COND_LEU:
         case TCG_COND_GTU:
@@ -3358,13 +3358,13 @@ static const TCGOutOpStore outop_st = {
 int tcg_can_emit_vec_op(TCGOpcode opc, TCGType type, unsigned vece)
 {
     switch (opc) {
-        case INDEX_op_and_vec:
-        case INDEX_op_or_vec:
-        case INDEX_op_xor_vec:
-        case INDEX_op_andc_vec:
-        case INDEX_op_not_vec:
-        case INDEX_op_nor_vec:
-        case INDEX_op_eqv_vec:
+        case INDEX_op_and_vec   :
+        case INDEX_op_or_vec    :
+        case INDEX_op_xor_vec   :
+        case INDEX_op_andc_vec  :
+        case INDEX_op_not_vec   :
+        case INDEX_op_nor_vec   :
+        case INDEX_op_eqv_vec   :
         case INDEX_op_nand_vec  : return 1;
         case INDEX_op_orc_vec   : return have_isa_2_07;
         case INDEX_op_add_vec   :
@@ -3390,7 +3390,7 @@ int tcg_can_emit_vec_op(TCGOpcode opc, TCGType type, unsigned vece)
         case INDEX_op_neg_vec   : return vece >= MO_32 && have_isa_3_00;
         case INDEX_op_mul_vec:
             switch (vece) {
-                case MO_8:
+                case MO_8 :
                 case MO_16: return -1;
                 case MO_32: return have_isa_2_07 ? 1 : -1;
                 case MO_64: return have_isa_3_10;
@@ -3540,13 +3540,13 @@ static bool tcg_out_cmp_vec_noinv(TCGContext* s, unsigned vece, TCGReg a0, TCGRe
     tcg_debug_assert(vece <= MO_32 || have_isa_2_07);
 
     switch (cond) {
-        case TCG_COND_EQ:
-        case TCG_COND_GT:
+        case TCG_COND_EQ :
+        case TCG_COND_GT :
         case TCG_COND_GTU: break;
         case TCG_COND_NE:
             if (have_isa_3_00 && vece <= MO_32) { break; }
             /* fall through */
-        case TCG_COND_LE:
+        case TCG_COND_LE :
         case TCG_COND_LEU: need_inv = true; break;
         case TCG_COND_LT :
         case TCG_COND_LTU: need_swap = true; break;
@@ -3789,36 +3789,36 @@ static TCGConstraintSetIndex tcg_target_op_def(TCGOpcode op, TCGType type, unsig
         case INDEX_op_qemu_st : return C_O0_I2(r, r);
         case INDEX_op_qemu_st2: return TCG_TARGET_REG_BITS == 64 ? C_O0_I3(o, m, r) : C_O0_I3(r, r, r);
 
-        case INDEX_op_add_vec:
-        case INDEX_op_sub_vec:
-        case INDEX_op_mul_vec:
-        case INDEX_op_and_vec:
-        case INDEX_op_or_vec:
-        case INDEX_op_xor_vec:
-        case INDEX_op_andc_vec:
-        case INDEX_op_orc_vec:
-        case INDEX_op_nor_vec:
-        case INDEX_op_eqv_vec:
-        case INDEX_op_nand_vec:
-        case INDEX_op_cmp_vec:
-        case INDEX_op_ssadd_vec:
-        case INDEX_op_sssub_vec:
-        case INDEX_op_usadd_vec:
-        case INDEX_op_ussub_vec:
-        case INDEX_op_smax_vec:
-        case INDEX_op_smin_vec:
-        case INDEX_op_umax_vec:
-        case INDEX_op_umin_vec:
-        case INDEX_op_shlv_vec:
-        case INDEX_op_shrv_vec:
-        case INDEX_op_sarv_vec:
-        case INDEX_op_rotlv_vec:
-        case INDEX_op_rotrv_vec:
-        case INDEX_op_ppc_mrgh_vec:
-        case INDEX_op_ppc_mrgl_vec:
+        case INDEX_op_add_vec      :
+        case INDEX_op_sub_vec      :
+        case INDEX_op_mul_vec      :
+        case INDEX_op_and_vec      :
+        case INDEX_op_or_vec       :
+        case INDEX_op_xor_vec      :
+        case INDEX_op_andc_vec     :
+        case INDEX_op_orc_vec      :
+        case INDEX_op_nor_vec      :
+        case INDEX_op_eqv_vec      :
+        case INDEX_op_nand_vec     :
+        case INDEX_op_cmp_vec      :
+        case INDEX_op_ssadd_vec    :
+        case INDEX_op_sssub_vec    :
+        case INDEX_op_usadd_vec    :
+        case INDEX_op_ussub_vec    :
+        case INDEX_op_smax_vec     :
+        case INDEX_op_smin_vec     :
+        case INDEX_op_umax_vec     :
+        case INDEX_op_umin_vec     :
+        case INDEX_op_shlv_vec     :
+        case INDEX_op_shrv_vec     :
+        case INDEX_op_sarv_vec     :
+        case INDEX_op_rotlv_vec    :
+        case INDEX_op_rotrv_vec    :
+        case INDEX_op_ppc_mrgh_vec :
+        case INDEX_op_ppc_mrgl_vec :
         case INDEX_op_ppc_muleu_vec:
         case INDEX_op_ppc_mulou_vec:
-        case INDEX_op_ppc_pkum_vec:
+        case INDEX_op_ppc_pkum_vec :
         case INDEX_op_dup2_vec     : return C_O1_I2(v, v, v);
 
         case INDEX_op_not_vec:
@@ -3826,12 +3826,12 @@ static TCGConstraintSetIndex tcg_target_op_def(TCGOpcode op, TCGType type, unsig
 
         case INDEX_op_dup_vec: return have_isa_3_00 ? C_O1_I1(v, vr) : C_O1_I1(v, v);
 
-        case INDEX_op_ld_vec:
+        case INDEX_op_ld_vec  :
         case INDEX_op_dupm_vec: return C_O1_I1(v, r);
 
         case INDEX_op_st_vec: return C_O0_I2(v, r);
 
-        case INDEX_op_bitsel_vec:
+        case INDEX_op_bitsel_vec  :
         case INDEX_op_ppc_msum_vec: return C_O1_I3(v, v, v, v);
         case INDEX_op_cmpsel_vec  : return C_O1_I4(v, v, v, vZM, v);
 

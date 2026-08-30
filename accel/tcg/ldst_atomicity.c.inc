@@ -389,7 +389,7 @@ static uint32_t load_atom_4(CPUState* cpu, uintptr_t ra, void* pv, MemOp memop)
 
     atmax = required_atomicity(cpu, pi, memop);
     switch (atmax) {
-        case MO_8:
+        case MO_8 :
         case MO_16:
         case -MO_16:
             /*
@@ -850,8 +850,8 @@ static void store_atom_4(CPUState* cpu, uintptr_t ra, void* pv, MemOp memop, uin
                     *(uint8_t*)pv = val_le;
                     store_whole_le4(pv + 1, s2, val_le >> 8);
                     break;
-                case 0: /* aligned */
-                case 2: /* atmax MO_16 */
+                case 0 : /* aligned */
+                case 2 : /* atmax MO_16 */
                 default: g_assert_not_reached();
             }
         }
@@ -913,8 +913,8 @@ static void store_atom_8(CPUState* cpu, uintptr_t ra, void* pv, MemOp memop, uin
                         val_le = store_bytes_leN(pv, s1, val_le);
                         store_whole_le8(pv + s1, s2, val_le);
                         break;
-                    case 0: /* aligned */
-                    case 4: /* atmax MO_32 */
+                    case 0 : /* aligned */
+                    case 4 : /* atmax MO_32 */
                     default: g_assert_not_reached();
                 }
                 return;
@@ -989,8 +989,8 @@ static void store_atom_16(CPUState* cpu, uintptr_t ra, void* pv, MemOp memop, In
                         val = int128_urshift(val, s1 * 8);
                         store_whole_le16(pv + s1, s2, val);
                         break;
-                    case 0: /* aligned */
-                    case 8: /* atmax MO_64 */
+                    case 0 : /* aligned */
+                    case 8 : /* atmax MO_64 */
                     default: g_assert_not_reached();
                 }
                 return;

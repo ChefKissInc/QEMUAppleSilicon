@@ -149,7 +149,7 @@ done:
         case 5 : tty.c_cflag |= CS5; break;
     }
     switch (parity) {
-        default:
+        default :
         case 'N': break;
         case 'E': tty.c_cflag |= PARENB; break;
         case 'O': tty.c_cflag |= PARENB | PARODD; break;

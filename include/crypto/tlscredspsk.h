@@ -86,6 +86,4 @@ typedef struct QCryptoTLSCredsPSKClass QCryptoTLSCredsPSKClass;
  */
 
 struct QCryptoTLSCredsPSKClass
-{
-    QCryptoTLSCredsClass parent_class;
-};
+{ QCryptoTLSCredsClass parent_class; };

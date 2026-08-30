@@ -1296,7 +1296,8 @@ static int img_compare(const img_cmd_t* ccmd, int argc, char** argv)
                 goto out;
             }
         }
-        if ((status1 & BDRV_BLOCK_ZERO) && (status2 & BDRV_BLOCK_ZERO)) { /* nothing to do */ }
+        if ((status1 & BDRV_BLOCK_ZERO) && (status2 & BDRV_BLOCK_ZERO)) { /* nothing to do */
+        }
         else if (allocated1 == allocated2) {
             if (allocated1) {
                 int64_t pnum;
@@ -3003,9 +3004,9 @@ static int img_snapshot(const img_cmd_t* ccmd, int argc, char** argv)
                 break;
             case 'f'              : fmt = optarg; break;
             case OPTION_IMAGE_OPTS: image_opts = true; break;
-            case SNAPSHOT_LIST:
-            case SNAPSHOT_APPLY:
-            case SNAPSHOT_CREATE:
+            case SNAPSHOT_LIST    :
+            case SNAPSHOT_APPLY   :
+            case SNAPSHOT_CREATE  :
             case SNAPSHOT_DELETE:
                 if (action) {
                     error_exit(argv[0], "Cannot mix '-l', '-a', '-c', '-d'");
@@ -3604,7 +3605,7 @@ static int img_resize(const img_cmd_t* ccmd, int argc, char** argv)
             case OPTION_SHRINK: shrink = true; break;
             case 'q'          : quiet = true; break;
             case OPTION_OBJECT: user_creatable_process_cmdline(optarg); break;
-            case 1: /* a non-optional argument */
+            case 1            : /* a non-optional argument */
                 if (!filename) {
                     filename = optarg;
                     /* see if we have -size (number) next to filename */

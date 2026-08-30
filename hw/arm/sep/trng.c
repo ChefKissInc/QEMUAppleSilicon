@@ -284,7 +284,7 @@ static uint64_t trng_regs_reg_read(void* opaque, hwaddr addr, unsigned size)
         case REG_TRNG_COUNTER_LOW: ret = extract64(s->counter, 0, 32); break;
         case REG_TRNG_COUNTER_HI : ret = extract64(s->counter, 32, 32); break;
         case REG_TRNG_UNKN5      : ret = s->offset_0x70; break;
-        case REG_TRNG_UNKN6:    // (value & 0x180000) == 0 == panic
+        case REG_TRNG_UNKN6      :    // (value & 0x180000) == 0 == panic
             ret = 0x180000;
             break;
         case REG_TRNG_UNKN7:

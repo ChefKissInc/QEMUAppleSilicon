@@ -509,7 +509,8 @@ static int net_socket_connect_init(NetClientState* peer, const char* model, cons
     for (;;) {
         ret = connect(fd, (struct sockaddr*)&saddr, sizeof(saddr));
         if (ret < 0) {
-            if (errno == EINTR || errno == EWOULDBLOCK) { /* continue */ }
+            if (errno == EINTR || errno == EWOULDBLOCK) { /* continue */
+            }
             else if (errno == EINPROGRESS || errno == EALREADY) {
                 break;
             }

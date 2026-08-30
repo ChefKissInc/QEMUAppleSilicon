@@ -201,10 +201,10 @@ static bool linked_bp_matches(ARMCPU* cpu, int lbn)
             }
             break;
 
-        case 7: /* linked contextidr_el1 match */ contextidr = env->cp15.contextidr_el[1]; break;
+        case 7 : /* linked contextidr_el1 match */ contextidr = env->cp15.contextidr_el[1]; break;
         case 13: /* linked contextidr_el2 match */ contextidr = env->cp15.contextidr_el[2]; break;
 
-        case 9:  /* linked VMID match (reserved if no EL2) */
+        case 9 : /* linked VMID match (reserved if no EL2) */
         case 11: /* linked context ID and VMID match (reserved if no EL2) */
         case 15: /* linked full context ID match */
         default:
@@ -626,14 +626,14 @@ void hw_breakpoint_update(ARMCPU* cpu, int n)
             if (bas == 0xc) { addr += 2; }
             break;
         }
-        case 2:  /* unlinked context ID match */
-        case 8:  /* unlinked VMID match (reserved if no EL2) */
+        case 2 : /* unlinked context ID match */
+        case 8 : /* unlinked VMID match (reserved if no EL2) */
         case 10: /* unlinked context ID and VMID match (reserved if no EL2) */
             qemu_log_mask(LOG_UNIMP, "arm: unlinked context breakpoint types not implemented\n");
             return;
-        case 9:  /* linked VMID match (reserved if no EL2) */
+        case 9 : /* linked VMID match (reserved if no EL2) */
         case 11: /* linked context ID and VMID match (reserved if no EL2) */
-        case 3:  /* linked context ID match */
+        case 3 : /* linked context ID match */
         default:
             /*
              * We must generate no events for Linked context matches (unless

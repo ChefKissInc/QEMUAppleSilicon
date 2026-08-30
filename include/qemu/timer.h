@@ -75,9 +75,7 @@ typedef enum
 typedef struct QEMUTimerList QEMUTimerList;
 
 struct QEMUTimerListGroup
-{
-    QEMUTimerList* tl[QEMU_CLOCK_MAX];
-};
+{ QEMUTimerList* tl[QEMU_CLOCK_MAX]; };
 
 typedef void QEMUTimerCB(void* opaque);
 typedef void QEMUTimerListNotifyCB(void* opaque, QEMUClockType type);

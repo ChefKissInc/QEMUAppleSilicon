@@ -111,8 +111,8 @@ static inline int spmi_data_length(uint32_t spmi_request)
 static inline int spmi_address(uint32_t spmi_request)
 {
     switch (spmi_opcode(spmi_request)) {
-        case SPMI_CMD_EXT_WRITE:
-        case SPMI_CMD_EXT_READ:
+        case SPMI_CMD_EXT_WRITE :
+        case SPMI_CMD_EXT_READ  :
         case SPMI_CMD_EXT_WRITEL:
         case SPMI_CMD_EXT_READL : return (spmi_request >> SPMI_REQ_ADDR_SHIFT) & 0xffff;
         default                 : return (spmi_request >> SPMI_REQ_ADDR_SHIFT) & 0xff;

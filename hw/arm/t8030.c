@@ -606,7 +606,7 @@ static void pmgr_unk_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
             pmgr_unk_e4800 = deposit64(pmgr_unk_e4800, 0, size * 8,
                                        data);    // 0x240002c00 and 0x2400037a4
             break;
-        case 0x3D2E4804: pmgr_unk_e4800 = deposit64(pmgr_unk_e4800, 32, 32, data); break;
+        case 0x3D2E4804               : pmgr_unk_e4800 = deposit64(pmgr_unk_e4800, 32, 32, data); break;
         case 0x3D2E4000 ... 0x3D2E417f:    // ???? 0x24000377c
             i                 = ((base + addr) - 0x3D2E4000) / 4;
             pmgr_unk_e4000[i] = extract64(data, 0, 32);    // 0x24000377c
@@ -639,8 +639,8 @@ static uint64_t pmgr_unk_reg_read(void* opaque, hwaddr addr, unsigned size)
     }
 #endif
 
-    uint32_t security_epoch = 1;    // On IMG4: Security Epoch ; On IMG3: Minimum
-                                    // Epoch, verified on SecureROM s5l8955xsi
+    uint32_t security_epoch          = 1;    // On IMG4: Security Epoch ; On IMG3: Minimum
+                                             // Epoch, verified on SecureROM s5l8955xsi
     bool     current_prod            = true;
     bool     current_secure_mode     = true;    // T8015 SEPOS Kernel also requires this.
     uint32_t security_domain         = 1;

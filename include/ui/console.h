@@ -118,9 +118,7 @@ void console_handle_touch_event(QemuConsole* con, struct touch_slot touch_slots[
 /* consoles */
 
 struct QemuConsoleClass
-{
-    ObjectClass parent_class;
-};
+{ ObjectClass parent_class; };
 
 typedef struct QemuUIInfo
 {

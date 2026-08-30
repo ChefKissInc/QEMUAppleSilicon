@@ -493,8 +493,8 @@ static bool trans_VMSR_VMRS(DisasContext* s, arg_VMSR_VMRS* a)
                     gen_helper_check_hcr_el2_trap(tcg_env, tcg_constant_i32(a->rt), tcg_constant_i32(a->reg));
                 }
                 /* fall through */
-            case ARM_VFP_FPEXC:
-            case ARM_VFP_FPINST:
+            case ARM_VFP_FPEXC  :
+            case ARM_VFP_FPINST :
             case ARM_VFP_FPINST2: tmp = load_cpu_field(vfp.xregs[a->reg]); break;
             case ARM_VFP_FPSCR:
                 if (a->rt == 15) {

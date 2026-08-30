@@ -47,8 +47,8 @@ typedef struct AppleA13Class
     ARMCPUClass base_class;
 
     /*< public >*/
-    DeviceRealize    parent_realize;
-    DeviceUnrealize  parent_unrealize;
+    DeviceRealize   parent_realize;
+    DeviceUnrealize parent_unrealize;
 } AppleA13Class;
 
 typedef struct AppleA13State

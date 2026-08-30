@@ -53,7 +53,7 @@ static bool sdhci_check_capab_freq_range(SDHCIState* s, const char* desc, uint8_
 {
     if (s->sd_spec_version >= 3) { return false; }
     switch (freq) {
-        case 0:
+        case 0        :
         case 10 ... 63: break;
         default:
             error_setg(errp,
@@ -1187,9 +1187,9 @@ static void sdhci_write(void* opaque, hwaddr offset, uint64_t val, unsigned size
             }
             break;
 
-        case SDHC_CAPAB:
+        case SDHC_CAPAB    :
         case SDHC_CAPAB + 4:
-        case SDHC_MAXCURR:
+        case SDHC_MAXCURR  :
         case SDHC_MAXCURR + 4:
             qemu_log_mask(LOG_GUEST_ERROR, "SDHC wr_%ub @0x%02" HWADDR_PRIx " <- 0x%08x read-only\n", size, offset,
                           value >> shift);
@@ -1460,10 +1460,10 @@ static void usdhc_write(void* opaque, hwaddr offset, uint64_t val, unsigned size
     uint32_t    value = (uint32_t)val;
 
     switch (offset) {
-        case USDHC_DLL_CTRL:
-        case USDHC_TUNE_CTRL_STATUS:
+        case USDHC_DLL_CTRL          :
+        case USDHC_TUNE_CTRL_STATUS  :
         case USDHC_UNDOCUMENTED_REG27:
-        case USDHC_TUNING_CTRL:
+        case USDHC_TUNING_CTRL       :
         case USDHC_WTMK_LVL          : break;
 
         case USDHC_VENDOR_SPEC:

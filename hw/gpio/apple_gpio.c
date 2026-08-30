@@ -167,7 +167,7 @@ static void apple_gpio_set(void* opaque, int pin, int level)
         irqgrp = (s->gpio_cfg[pin] & INT_MASKED) >> INTR_GRP_SHIFT;
 
         switch (s->gpio_cfg[pin] & CFG_MASK) {
-            case CFG_GP_IN:
+            case CFG_GP_IN :
             case CFG_GP_OUT: break;
 
             case CFG_INT_LVL_HI:
@@ -328,7 +328,7 @@ static uint64_t apple_gpio_reg_read(void* opaque, hwaddr addr, unsigned size)
             return apple_gpio_int_read(s, (addr - REG_GPIOINT(0, 0)) >> 6, addr);
         case REG_GPIO_NPL_IN_EN: return s->npl;
         case 0xC4C             : return 0xFF;
-        default                : qemu_log_mask(LOG_UNIMP, "%s: Bad offset 0x" HWADDR_FMT_plx "\n", __func__, addr); return 0;
+        default: qemu_log_mask(LOG_UNIMP, "%s: Bad offset 0x" HWADDR_FMT_plx "\n", __func__, addr); return 0;
     }
 }
 

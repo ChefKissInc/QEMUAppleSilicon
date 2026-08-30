@@ -197,7 +197,8 @@ static void vpc_parse_options(BlockDriverState* bs, QemuOpts* opts, Error** errp
 
     size_calc = qemu_opt_get(opts, VPC_OPT_SIZE_CALC);
 
-    if (!size_calc) { /* no override, use autodetect only */ }
+    if (!size_calc) { /* no override, use autodetect only */
+    }
     else if (!strcmp(size_calc, "current_size")) {
         s->force_use_sz = true;
     }

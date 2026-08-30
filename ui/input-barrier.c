@@ -252,17 +252,17 @@ static gboolean readcmd(InputBarrier* ib, struct barrierMsg* msg)
             msg->repeat.button = 0;
             if (len) { read_short(msg->repeat.button, p, len); }
             break;
-        case barrierCmdCInfoAck:
+        case barrierCmdCInfoAck     :
         case barrierCmdCResetOptions:
-        case barrierCmdCEnter:
-        case barrierCmdDClipboard:
-        case barrierCmdCKeepAlive:
-        case barrierCmdCLeave:
+        case barrierCmdCEnter       :
+        case barrierCmdDClipboard   :
+        case barrierCmdCKeepAlive   :
+        case barrierCmdCLeave       :
         case barrierCmdCClose       : break;
 
         /* Invalid from the server */
         case barrierCmdHelloBack:
-        case barrierCmdCNoop:
+        case barrierCmdCNoop    :
         case barrierCmdDInfo    : break;
 
         /* Error codes */
@@ -270,7 +270,7 @@ static gboolean readcmd(InputBarrier* ib, struct barrierMsg* msg)
             read_short(msg->version.major, p, len);
             read_short(msg->version.minor, p, len);
             break;
-        case barrierCmdEBusy:
+        case barrierCmdEBusy   :
         case barrierCmdEUnknown:
         case barrierCmdEBad    : break;
         default                : return G_SOURCE_REMOVE;

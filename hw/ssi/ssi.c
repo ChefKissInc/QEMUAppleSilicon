@@ -20,9 +20,7 @@
 #include "qom/object.h"
 
 struct SSIBus
-{
-    BusState parent_obj;
-};
+{ BusState parent_obj; };
 
 #define TYPE_SSI_BUS "SSI"
 OBJECT_DECLARE_SIMPLE_TYPE(SSIBus, SSI_BUS)

@@ -178,7 +178,8 @@ static int coroutine_fn stream_run(Job* job, Error** errp)
         WITH_GRAPH_RDLOCK_GUARD()
         {
             ret = bdrv_co_is_allocated(unfiltered_bs, offset, STREAM_CHUNK, &n);
-            if (ret == 1) { /* Allocated in the top, no need to copy.  */ }
+            if (ret == 1) { /* Allocated in the top, no need to copy.  */
+            }
             else if (ret >= 0) {
                 /*
                  * Copy if allocated in the intermediate images.  Limit to the

@@ -145,7 +145,7 @@ struct PCIDevice
     MSIVectorPollNotifier    msix_vector_poll_notifier;
 
     /* ID of standby device in net_failover pair */
-    char*    failover_pair_id;
+    char* failover_pair_id;
 
     /*
      * Indirect DMA region bounce buffer size as configured for the device. This

@@ -130,9 +130,7 @@ typedef struct DynamicGDBFeatureInfo
     union
     {
         struct
-        {
-            uint32_t* keys;
-        } cpregs;
+        { uint32_t* keys; } cpregs;
     } data;
 } DynamicGDBFeatureInfo;
 
@@ -426,9 +424,7 @@ typedef struct CPUArchState
                 uint64_t dacr_s;
             };
             struct
-            {
-                uint64_t dacr32_el2;
-            };
+            { uint64_t dacr32_el2; };
         };
         uint32_t pmsav5_data_ap; /* PMSAv5 MPU data access permissions */
         uint32_t pmsav5_insn_ap; /* PMSAv5 MPU insn access permissions */
@@ -443,9 +439,7 @@ typedef struct CPUArchState
                 uint64_t ifsr_s;
             };
             struct
-            {
-                uint64_t ifsr32_el2;
-            };
+            { uint64_t ifsr32_el2; };
         };
         union
         {

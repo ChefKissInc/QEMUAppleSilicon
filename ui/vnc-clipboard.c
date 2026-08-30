@@ -96,7 +96,7 @@ static uint8_t* deflate_buffer(uint8_t* in, uint32_t in_len, uint32_t* size)
     while (ret != Z_STREAM_END) {
         ret = deflate(&stream, Z_FINISH);
         switch (ret) {
-            case Z_OK:
+            case Z_OK        :
             case Z_STREAM_END: break;
             case Z_BUF_ERROR:
                 out_len <<= 1;

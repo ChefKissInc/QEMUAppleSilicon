@@ -68,7 +68,7 @@ static inline hwaddr sart_get_region_addr(AppleSARTState* s, int region)
     assert_cmpuint(region, <, SART_NUM_REGIONS);
 
     switch (s->version) {
-        case 1:
+        case 1 :
         case 2 : return (sart_get_reg(s, 0x40 + region * sizeof(uint32_t)) >> 0) & 0xFFFFFF;
         case 3 : return (sart_get_reg(s, 0x40 + region * sizeof(uint32_t)) >> 0) & 0x3FFFFFFF;
         default: assert_not_reached(); break;

@@ -314,15 +314,15 @@ static void json_lexer_feed_char(JSONLexer* lexer, char ch, bool flush)
         }
 
         switch (new_state) {
-            case JSON_LCURLY:
-            case JSON_RCURLY:
+            case JSON_LCURLY :
+            case JSON_RCURLY :
             case JSON_LSQUARE:
             case JSON_RSQUARE:
-            case JSON_COLON:
-            case JSON_COMMA:
-            case JSON_INTERP:
+            case JSON_COLON  :
+            case JSON_COMMA  :
+            case JSON_INTERP :
             case JSON_INTEGER:
-            case JSON_FLOAT:
+            case JSON_FLOAT  :
             case JSON_KEYWORD:
             case JSON_STRING:
                 json_message_process_token(lexer, lexer->token, new_state, lexer->x, lexer->y);

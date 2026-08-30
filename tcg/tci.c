@@ -315,7 +315,7 @@ uintptr_t QEMU_DISABLE_CFI tcg_qemu_tb_exec(CPUArchState* env, const void* v_tb_
                          */
                         memcpy(&regs[TCG_REG_R0], stack, 8);
                         break;
-                    case 3: /* Int128 */ memcpy(&regs[TCG_REG_R0], stack, 16); break;
+                    case 3 : /* Int128 */ memcpy(&regs[TCG_REG_R0], stack, 16); break;
                     default: assert_not_reached();
                 }
                 break;
@@ -781,7 +781,7 @@ int print_insn_tci(bfd_vma addr, disassemble_info* info)
     op_name = def->name;
 
     switch (op) {
-        case INDEX_op_br:
+        case INDEX_op_br     :
         case INDEX_op_exit_tb:
         case INDEX_op_goto_tb:
             tci_args_l(insn, tb_ptr, &ptr);
@@ -822,63 +822,63 @@ int print_insn_tci(bfd_vma addr, disassemble_info* info)
 
         case INDEX_op_tci_setcarry: info->fprintf_func(info->stream, "%-12s", op_name); break;
 
-        case INDEX_op_ld8u:
-        case INDEX_op_ld8s:
+        case INDEX_op_ld8u :
+        case INDEX_op_ld8s :
         case INDEX_op_ld16u:
         case INDEX_op_ld16s:
         case INDEX_op_ld32u:
-        case INDEX_op_ld:
-        case INDEX_op_st8:
-        case INDEX_op_st16:
-        case INDEX_op_st32:
+        case INDEX_op_ld   :
+        case INDEX_op_st8  :
+        case INDEX_op_st16 :
+        case INDEX_op_st32 :
         case INDEX_op_st:
             tci_args_rrs(insn, &r0, &r1, &s2);
             info->fprintf_func(info->stream, "%-12s  %s, %s, %d", op_name, str_r(r0), str_r(r1), s2);
             break;
 
-        case INDEX_op_bswap16:
-        case INDEX_op_bswap32:
-        case INDEX_op_ctpop:
-        case INDEX_op_mov:
-        case INDEX_op_neg:
-        case INDEX_op_not:
-        case INDEX_op_ext_i32_i64:
+        case INDEX_op_bswap16     :
+        case INDEX_op_bswap32     :
+        case INDEX_op_ctpop       :
+        case INDEX_op_mov         :
+        case INDEX_op_neg         :
+        case INDEX_op_not         :
+        case INDEX_op_ext_i32_i64 :
         case INDEX_op_extu_i32_i64:
         case INDEX_op_bswap64:
             tci_args_rr(insn, &r0, &r1);
             info->fprintf_func(info->stream, "%-12s  %s, %s", op_name, str_r(r0), str_r(r1));
             break;
 
-        case INDEX_op_add:
-        case INDEX_op_addci:
-        case INDEX_op_addcio:
-        case INDEX_op_addco:
-        case INDEX_op_and:
-        case INDEX_op_andc:
-        case INDEX_op_clz:
-        case INDEX_op_ctz:
-        case INDEX_op_divs:
-        case INDEX_op_divu:
-        case INDEX_op_eqv:
-        case INDEX_op_mul:
-        case INDEX_op_nand:
-        case INDEX_op_nor:
-        case INDEX_op_or:
-        case INDEX_op_orc:
-        case INDEX_op_rems:
-        case INDEX_op_remu:
-        case INDEX_op_rotl:
-        case INDEX_op_rotr:
-        case INDEX_op_sar:
-        case INDEX_op_shl:
-        case INDEX_op_shr:
-        case INDEX_op_sub:
-        case INDEX_op_subbi:
-        case INDEX_op_subbio:
-        case INDEX_op_subbo:
-        case INDEX_op_xor:
-        case INDEX_op_tci_ctz32:
-        case INDEX_op_tci_clz32:
+        case INDEX_op_add       :
+        case INDEX_op_addci     :
+        case INDEX_op_addcio    :
+        case INDEX_op_addco     :
+        case INDEX_op_and       :
+        case INDEX_op_andc      :
+        case INDEX_op_clz       :
+        case INDEX_op_ctz       :
+        case INDEX_op_divs      :
+        case INDEX_op_divu      :
+        case INDEX_op_eqv       :
+        case INDEX_op_mul       :
+        case INDEX_op_nand      :
+        case INDEX_op_nor       :
+        case INDEX_op_or        :
+        case INDEX_op_orc       :
+        case INDEX_op_rems      :
+        case INDEX_op_remu      :
+        case INDEX_op_rotl      :
+        case INDEX_op_rotr      :
+        case INDEX_op_sar       :
+        case INDEX_op_shl       :
+        case INDEX_op_shr       :
+        case INDEX_op_sub       :
+        case INDEX_op_subbi     :
+        case INDEX_op_subbio    :
+        case INDEX_op_subbo     :
+        case INDEX_op_xor       :
+        case INDEX_op_tci_ctz32 :
+        case INDEX_op_tci_clz32 :
         case INDEX_op_tci_divs32:
         case INDEX_op_tci_divu32:
         case INDEX_op_tci_rems32:
@@ -902,7 +902,7 @@ int print_insn_tci(bfd_vma addr, disassemble_info* info)
             break;
 
         case INDEX_op_tci_movcond32:
-        case INDEX_op_movcond:
+        case INDEX_op_movcond      :
         case INDEX_op_setcond2_i32:
             tci_args_rrrrrc(insn, &r0, &r1, &r2, &r3, &r4, &c);
             info->fprintf_func(info->stream, "%-12s  %s, %s, %s, %s, %s, %s", op_name, str_r(r0), str_r(r1), str_r(r2),

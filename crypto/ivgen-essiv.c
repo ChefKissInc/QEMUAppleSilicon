@@ -24,9 +24,7 @@
 
 typedef struct QCryptoIVGenESSIV QCryptoIVGenESSIV;
 struct QCryptoIVGenESSIV
-{
-    QCryptoCipher* cipher;
-};
+{ QCryptoCipher* cipher; };
 
 static int qcrypto_ivgen_essiv_init(QCryptoIVGen* ivgen, const uint8_t* key, size_t nkey, Error** errp)
 {

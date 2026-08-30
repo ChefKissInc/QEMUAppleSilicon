@@ -1472,8 +1472,8 @@ static void dwc2_dreg_write(void* ptr, hwaddr addr, int index, uint64_t val, uns
     old  = *mmio;
 
     switch (addr) {
-        case DIEPMSK:
-        case DOEPMSK:
+        case DIEPMSK :
+        case DOEPMSK :
         case DAINTMSK: iflg = 1; break;
         case DCFG    : {
             uint8_t devaddr = (val & DCFG_DEVADDR_MASK) >> DCFG_DEVADDR_SHIFT;
@@ -1516,8 +1516,8 @@ static void dwc2_dreg_write(void* ptr, hwaddr addr, int index, uint64_t val, uns
             }
             iflg = 1;
             break;
-        case DAINT:
-        case DSTS:
+        case DAINT  :
+        case DSTS   :
         case DTKNQR1:
         case DTKNQR2:
         case DTKNQR3:
