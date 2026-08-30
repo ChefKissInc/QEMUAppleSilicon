@@ -116,6 +116,8 @@ typedef struct DWC3State
     AddressSpace    dma_as;
     XHCISysbusState sysbus_xhci;
     DWC3DeviceState device;
+    uint8_t         pending_addr;
+    bool            addr_pending;
     qemu_irq        irq;
     QemuMutex       lock;
 

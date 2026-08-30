@@ -1302,8 +1302,10 @@ static void usb_dwc3_dreg_write(void* opaque, hwaddr addr, int index, uint64_t v
     switch (addr) {
         case DCFG: {
             int devaddr = DCFG_DEVADDR_GET(val);
-            if (devaddr != udev->addr) { udev->addr = devaddr; }
-            trace_usb_set_addr(devaddr);
+            if (devaddr != udev->addr) {
+                s->pending_addr = (uint8_t)devaddr;
+                s->addr_pending = true;
+            }
             break;
         }
         case DCTL:
@@ -1733,6 +1735,8 @@ static void usb_dwc3_init(Object* obj)
     for (int i = 0; i < DWC3_NUM_EPS; i++) { s->eps[i].epid = i; }
 }
 
+static void dwc3_device_apply_pending_addr(DWC3State* s, USBPacket* p);
+
 static void dwc3_process_packet(DWC3State* s, DWC3Endpoint* ep, USBPacket* p)
 {
     USBDevice*      udev     = &s->device.parent_obj;
@@ -1894,6 +1898,8 @@ complete:
             usb_packet_complete(udev, p);
         }
     }
+
+    dwc3_device_apply_pending_addr(s, p);
 }
 
 static void dwc3_usb_device_realize(USBDevice* dev, Error** errp)
@@ -1956,6 +1962,18 @@ static void dwc3_usb_device_cancel_packet(USBDevice* dev, USBPacket* p)
     /* TODO: complete td if packet partially complete */
     DPRINTF("%s: pid: 0x%x ep: %d id: 0x%" PRIx64 "\n", __func__, p->pid, p->ep->nr, p->id);
     // assert(p->actual_length == 0);
+}
+
+static void dwc3_device_apply_pending_addr(DWC3State* s, USBPacket* p)
+{
+    if (!s->addr_pending) { return; }
+    if (p->ep->nr != 0 || p->pid != USB_TOKEN_IN) { return; }
+    if (p->status != USB_RET_SUCCESS) { return; }
+    if (p->iov.size != 0) { return; }
+
+    s->addr_pending              = false;
+    USB_DEVICE(&s->device)->addr = s->pending_addr;
+    trace_usb_set_addr(s->pending_addr);
 }
 
 static void dwc3_usb_device_handle_packet(USBDevice* dev, USBPacket* p)
