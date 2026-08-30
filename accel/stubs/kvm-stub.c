@@ -15,10 +15,8 @@
 #include "hw/pci/msi.h"
 
 KVMState* kvm_state;
-bool      kvm_kernel_irqchip;
 bool      kvm_async_interrupts_allowed;
 bool      kvm_resamplefds_allowed;
-bool      kvm_msi_via_irqfd_allowed;
 bool      kvm_gsi_routing_allowed;
 bool      kvm_gsi_direct_mapping;
 bool      kvm_allowed;
@@ -33,25 +31,7 @@ int kvm_on_sigbus_vcpu(CPUState* cpu, int code, void* addr) { return 1; }
 
 int kvm_on_sigbus(int code, void* addr) { return 1; }
 
-int kvm_irqchip_add_msi_route(KVMRouteChange* c, int vector, PCIDevice* dev) { return -ENOSYS; }
-
 void kvm_init_irq_routing(KVMState* s) { }
-
-void kvm_irqchip_release_virq(KVMState* s, int virq) { }
-
-int kvm_irqchip_update_msi_route(KVMState* s, int virq, MSIMessage msg, PCIDevice* dev) { return -ENOSYS; }
-
-void kvm_irqchip_commit_routes(KVMState* s) { }
-
-void kvm_irqchip_add_change_notifier(Notifier* n) { }
-
-void kvm_irqchip_remove_change_notifier(Notifier* n) { }
-
-void kvm_irqchip_change_notify(void) { }
-
-int kvm_irqchip_add_irqfd_notifier_gsi(KVMState* s, EventNotifier* n, EventNotifier* rn, int virq) { return -ENOSYS; }
-
-int kvm_irqchip_remove_irqfd_notifier_gsi(KVMState* s, EventNotifier* n, int virq) { return -ENOSYS; }
 
 unsigned int kvm_get_max_memslots(void) { return 0; }
 

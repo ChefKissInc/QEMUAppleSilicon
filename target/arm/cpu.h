@@ -814,9 +814,6 @@ typedef struct CPUArchState
 
     /* Internal CPU feature flags.  */
     uint64_t features;
-
-    /* Store GICv3CPUState to access from this struct */
-    void* gicv3state;
 } CPUARMState;
 
 static inline void set_feature(CPUARMState* env, int feature) { env->features |= 1ULL << feature; }
@@ -961,8 +958,6 @@ struct ArchCPU
 
     /* GPIO outputs for generic timer */
     qemu_irq gt_timer_outputs[NUM_GTIMERS];
-    /* GPIO output for GICv3 maintenance interrupt signal */
-    qemu_irq gicv3_maintenance_interrupt;
     /* GPIO output for the PMU interrupt */
     qemu_irq pmu_interrupt;
 
@@ -1108,12 +1103,6 @@ struct ArchCPU
     uint8_t gm_blocksize;
 
     uint64_t rvbar_prop; /* Property/input signals.  */
-
-    /* Configurable aspects of GIC cpu interface (which is part of the CPU) */
-    int gic_num_lrs;  /* number of list registers */
-    int gic_vpribits; /* number of virtual priority bits */
-    int gic_vprebits; /* number of virtual preemption bits */
-    int gic_pribits;  /* number of physical priority bits */
 
     /* Whether the cfgend input is high (i.e. this CPU should reset into
      * big-endian mode).  This setting isn't used directly: instead it modifies
@@ -1990,7 +1979,6 @@ REG_FIELD(ID_PFR1, VIRTUALIZATION, 12, 4)
 REG_FIELD(ID_PFR1, GENTIMER, 16, 4)
 REG_FIELD(ID_PFR1, SEC_FRAC, 20, 4)
 REG_FIELD(ID_PFR1, VIRT_FRAC, 24, 4)
-REG_FIELD(ID_PFR1, GIC, 28, 4)
 
 REG_FIELD(ID_PFR2, CSV3, 0, 4)
 REG_FIELD(ID_PFR2, SSBS, 4, 4)
@@ -2051,7 +2039,6 @@ REG_FIELD(ID_AA64PFR0, EL2, 8, 4)
 REG_FIELD(ID_AA64PFR0, EL3, 12, 4)
 REG_FIELD(ID_AA64PFR0, FP, 16, 4)
 REG_FIELD(ID_AA64PFR0, ADVSIMD, 20, 4)
-REG_FIELD(ID_AA64PFR0, GIC, 24, 4)
 REG_FIELD(ID_AA64PFR0, RAS, 28, 4)
 REG_FIELD(ID_AA64PFR0, SVE, 32, 4)
 REG_FIELD(ID_AA64PFR0, SEL2, 36, 4)

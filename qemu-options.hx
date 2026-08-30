@@ -150,7 +150,6 @@ ERST
 DEF("accel", HAS_ARG, QEMU_OPTION_accel,
     "-accel [accel=]accelerator[,prop[=value][,...]]\n"
     "                select accelerator (kvm, hvf, whpx or tcg; use 'help' for a list)\n"
-    "                kernel-irqchip=on|off|split controls accelerated irqchip support (default=on)\n"
     "                kvm-shadow-mem=size of KVM shadow MMU in bytes\n"
     "                one-insn-per-tb=on|off (one guest instruction per TCG translation block)\n"
     "                split-wx=on|off (enable TCG split w^x mapping)\n"
@@ -166,10 +165,6 @@ SRST
     default, tcg is used. If there is more than one accelerator
     specified, the next one is used if the previous one fails to
     initialize.
-
-    ``kernel-irqchip=on|off|split``
-        Controls KVM in-kernel irqchip support. The default is full
-        acceleration of the interrupt controllers.
 
     ``kvm-shadow-mem=size``
         Defines the size of the KVM shadow MMU.

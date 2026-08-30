@@ -13,28 +13,6 @@
 #include "system/kvm.h"
 #include "target/arm/cpu-qom.h"
 
-#define KVM_ARM_VGIC_V2 (1 << 0)
-#define KVM_ARM_VGIC_V3 (1 << 1)
-
-/**
- * kvm_arm_register_device:
- * @mr: memory region for this device
- * @devid: the KVM device ID
- * @group: device control API group for setting addresses
- * @attr: device control API address type
- * @dev_fd: device control device file descriptor
- * @addr_ormask: value to be OR'ed with resolved address
- *
- * Remember the memory region @mr, and when it is mapped by the machine
- * model, tell the kernel that base address using the device control API.
- * @devid should be the ID of the device as defined by  the arm-vgic device
- * in the device control API.  The machine model may map and unmap the device
- * multiple times; the kernel will only be told the final address at the
- * point where machine init is complete.
- */
-void kvm_arm_register_device(MemoryRegion* mr, uint64_t devid, uint64_t group, uint64_t attr, int dev_fd,
-                             uint64_t addr_ormask);
-
 /**
  * write_list_to_kvmstate:
  * @cpu: ARMCPU
@@ -68,16 +46,6 @@ bool write_list_to_kvmstate(ARMCPU* cpu, int level);
  * reading all registers in the list.
  */
 bool write_kvmstate_to_list(ARMCPU* cpu);
-
-/**
- * kvm_arm_cpu_post_load:
- * @cpu: ARMCPU
- *
- * Called from cpu_post_load() to update KVM CPU state from the cpreg list.
- *
- * Returns: true on success, or false if write_list_to_kvmstate failed.
- */
-bool kvm_arm_cpu_post_load(ARMCPU* cpu);
 
 /**
  * kvm_arm_reset_vcpu:
@@ -196,8 +164,6 @@ bool kvm_arm_el2_supported(void);
  * Returns the number of bits in the IPA address space supported by KVM
  */
 int kvm_arm_get_max_vm_ipa_size(MachineState* ms, bool* fixed_ipa);
-
-int kvm_arm_vgic_probe(void);
 
 void kvm_arm_pmu_init(ARMCPU* cpu);
 void kvm_arm_pmu_set_irq(ARMCPU* cpu, int irq);

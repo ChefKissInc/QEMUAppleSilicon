@@ -234,7 +234,7 @@ void arm_cpu_update_virq(ARMCPU* cpu)
 {
     /*
      * Update the interrupt level for VIRQ, which is the logical OR of
-     * the HCR_EL2.VI bit and the input line level from the GIC.
+     * the HCR_EL2.VI bit and the input line level.
      */
     CPUARMState* env = &cpu->env;
     CPUState*    cs  = CPU(cpu);
@@ -254,7 +254,7 @@ void arm_cpu_update_vfiq(ARMCPU* cpu)
 {
     /*
      * Update the interrupt level for VFIQ, which is the logical OR of
-     * the HCR_EL2.VF bit and the input line level from the GIC.
+     * the HCR_EL2.VF bit and the input line level.
      */
     CPUARMState* env = &cpu->env;
     CPUState*    cs  = CPU(cpu);
@@ -274,7 +274,7 @@ void arm_cpu_update_vinmi(ARMCPU* cpu)
 {
     /*
      * Update the interrupt level for VINMI, which is the logical OR of
-     * the HCRX_EL2.VINMI bit and the input line level from the GIC.
+     * the HCRX_EL2.VINMI bit and the input line level.
      */
     CPUARMState* env = &cpu->env;
     CPUState*    cs  = CPU(cpu);

@@ -277,7 +277,6 @@ struct MachineClass
     const char*        hw_version;
     ram_addr_t         default_ram_size;
     const char*        default_cpu_type;
-    bool               default_kernel_irqchip_split;
     int                minimum_page_bits;
     bool               has_hotpluggable_cpus;
     bool               ignore_memory_transaction_failures;

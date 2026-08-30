@@ -639,10 +639,6 @@ static void aarch64_a57_initfn(Object* obj)
     /* 2048KB L2 cache */
     cpu->ccsidr[2]     = make_ccsidr(CCSIDR_FORMAT_LEGACY, 16, 64, 2 * MiB, 7);
     cpu->dcz_blocksize = 4; /* 64 bytes */
-    cpu->gic_num_lrs   = 4;
-    cpu->gic_vpribits  = 5;
-    cpu->gic_vprebits  = 5;
-    cpu->gic_pribits   = 5;
     define_cortex_a72_a57_a53_cp_reginfo(cpu);
 }
 

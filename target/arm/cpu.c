@@ -117,7 +117,7 @@ int arm_cpu_mmu_index(CPUState* cs, bool ifetch) { return arm_env_mmu_index(cpu_
 
 /*
  * With SCTLR_ELx.NMI == 0, IRQ with Superpriority is masked identically with
- * IRQ without Superpriority. Moreover, if the GIC is configured so that
+ * IRQ without Superpriority. Moreover, if the interrupt controller is configured so that
  * FEAT_GICv3_NMI is only set if FEAT_NMI is set, then we won't ever see
  * CPU_INTERRUPT_*NMI anyway. So we might as well accept NMI here
  * unconditionally.
@@ -396,7 +396,7 @@ static void arm_cpu_set_irq(void* opaque, int irq, int level)
 
     if (!arm_feature(env, ARM_FEATURE_EL2) && (irq == ARM_CPU_VIRQ || irq == ARM_CPU_VFIQ)) {
         /*
-         * The GIC might tell us about VIRQ and VFIQ state, but if we don't
+         * The interrupt controller might tell us about VIRQ and VFIQ state, but if we don't
          * have EL2 support we don't care. (Unless the guest is doing something
          * silly this will only be calls saying "level is still 0".)
          */
@@ -658,7 +658,6 @@ static void arm_cpu_initfn(Object* obj)
 
     qdev_init_gpio_out(DEVICE(cpu), cpu->gt_timer_outputs, ARRAY_SIZE(cpu->gt_timer_outputs));
 
-    qdev_init_gpio_out_named(DEVICE(cpu), &cpu->gicv3_maintenance_interrupt, "gicv3-maintenance-interrupt", 1);
     qdev_init_gpio_out_named(DEVICE(cpu), &cpu->pmu_interrupt, "pmu-interrupt", 1);
 
     /* DTB consumers generally don't in fact care what the 'compatible'

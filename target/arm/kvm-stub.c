@@ -40,8 +40,6 @@ void kvm_arm_add_vcpu_properties(ARMCPU* cpu) { assert_not_reached(); }
 
 int kvm_arm_get_max_vm_ipa_size(MachineState* ms, bool* fixed_ipa) { assert_not_reached(); }
 
-int kvm_arm_vgic_probe(void) { assert_not_reached(); }
-
 void kvm_arm_pmu_set_irq(ARMCPU* cpu, int irq) { assert_not_reached(); }
 
 void kvm_arm_pmu_init(ARMCPU* cpu) { assert_not_reached(); }

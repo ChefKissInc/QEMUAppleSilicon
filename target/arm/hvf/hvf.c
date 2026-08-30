@@ -818,7 +818,6 @@ int hvf_arch_init_vcpu(CPUState* cpu)
     CPUARMState* env             = &arm_cpu->env;
     uint32_t     sregs_match_len = ARRAY_SIZE(hvf_sreg_list);
     uint32_t     sregs_cnt       = 0;
-    uint64_t     pfr;
     hv_return_t  ret;
     int          i;
 
@@ -858,12 +857,6 @@ int hvf_arch_init_vcpu(CPUState* cpu)
     assert_hvf_ok(ret);
 
     ret = hv_vcpu_set_sys_reg(cpu->accel->fd, HV_SYS_REG_MPIDR_EL1, arm_cpu->mp_affinity);
-    assert_hvf_ok(ret);
-
-    ret = hv_vcpu_get_sys_reg(cpu->accel->fd, HV_SYS_REG_ID_AA64PFR0_EL1, &pfr);
-    assert_hvf_ok(ret);
-    pfr |= env->gicv3state ? (1 << 24) : 0;
-    ret  = hv_vcpu_set_sys_reg(cpu->accel->fd, HV_SYS_REG_ID_AA64PFR0_EL1, pfr);
     assert_hvf_ok(ret);
 
     /* We're limited to underlying hardware caps, override internal versions */
@@ -1143,8 +1136,7 @@ static int hvf_sysreg_read(CPUState* cpu, uint32_t reg, uint64_t* val)
         case SYSREG_ICC_SGI1R_EL1  :
         case SYSREG_ICC_SRE_EL1    :
         case SYSREG_ICC_CTLR_EL1:
-            /* Call the TCG sysreg handler. This is only safe for GICv3 regs. */
-            if (hvf_sysreg_read_cp(cpu, "GICv3", reg, val)) { return 0; }
+            if (hvf_sysreg_read_cp(cpu, "unknown", reg, val)) { return 0; }
             break;
         case SYSREG_DBGBVR0_EL1 :
         case SYSREG_DBGBVR1_EL1 :
@@ -1397,8 +1389,7 @@ static int hvf_sysreg_write(CPUState* cpu, uint32_t reg, uint64_t val)
         case SYSREG_ICC_SGI0R_EL1  :
         case SYSREG_ICC_SGI1R_EL1  :
         case SYSREG_ICC_SRE_EL1:
-            /* Call the TCG sysreg handler. This is only safe for GICv3 regs. */
-            if (hvf_sysreg_write_cp(cpu, "GICv3", reg, val)) { return 0; }
+            if (hvf_sysreg_write_cp(cpu, "unknown", reg, val)) { return 0; }
             break;
         case SYSREG_MDSCR_EL1   : env->cp15.mdscr_el1 = val; return 0;
         case SYSREG_DBGBVR0_EL1 :

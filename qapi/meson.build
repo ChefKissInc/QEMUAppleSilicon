@@ -53,7 +53,6 @@ if have_system
     'audio',
     'qdev',
     'pci',
-    'misc-arm',
   ]
 endif
 if have_system or have_tools

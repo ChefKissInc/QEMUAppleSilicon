@@ -86,12 +86,9 @@ struct KVMParkedVcpu
 };
 
 KVMState*       kvm_state;
-bool            kvm_kernel_irqchip;
-bool            kvm_split_irqchip;
 bool            kvm_async_interrupts_allowed;
 bool            kvm_halt_in_kernel_allowed;
 bool            kvm_resamplefds_allowed;
-bool            kvm_msi_via_irqfd_allowed;
 bool            kvm_gsi_routing_allowed;
 bool            kvm_gsi_direct_mapping;
 bool            kvm_allowed;
@@ -113,8 +110,6 @@ static const KVMCapabilityInfo kvm_required_capabilites[] = {KVM_CAP_INFO(USER_M
                                                              KVM_CAP_INFO(IOEVENTFD),
                                                              KVM_CAP_INFO(IOEVENTFD_ANY_LENGTH),
                                                              KVM_CAP_LAST_INFO};
-
-static NotifierList kvm_irqchip_change_notifiers = NOTIFIER_LIST_INITIALIZER(kvm_irqchip_change_notifiers);
 
 struct KVMResampleFd
 {
@@ -1819,20 +1814,6 @@ void kvm_init_irq_routing(KVMState* s)
     kvm_arch_init_irq_routing(s);
 }
 
-void kvm_irqchip_commit_routes(KVMState* s)
-{
-    int ret;
-
-    if (kvm_gsi_direct_mapping()) { return; }
-
-    if (!kvm_gsi_routing_enabled()) { return; }
-
-    s->irq_routes->flags = 0;
-    trace_kvm_irqchip_commit_routes();
-    ret = kvm_vm_ioctl(s, KVM_SET_GSI_ROUTING, s->irq_routes);
-    assert(ret == 0);
-}
-
 void kvm_add_routing_entry(KVMState* s, struct kvm_irq_routing_entry* entry)
 {
     struct kvm_irq_routing_entry* new;
@@ -1873,272 +1854,11 @@ static int kvm_update_routing_entry(KVMState* s, struct kvm_irq_routing_entry* n
     return -ESRCH;
 }
 
-void kvm_irqchip_add_irq_route(KVMState* s, int irq, int irqchip, int pin)
-{
-    struct kvm_irq_routing_entry e = {};
-
-    assert(pin < s->gsi_count);
-
-    e.gsi               = irq;
-    e.type              = KVM_IRQ_ROUTING_IRQCHIP;
-    e.flags             = 0;
-    e.u.irqchip.irqchip = irqchip;
-    e.u.irqchip.pin     = pin;
-    kvm_add_routing_entry(s, &e);
-}
-
-void kvm_irqchip_release_virq(KVMState* s, int virq)
-{
-    struct kvm_irq_routing_entry* e;
-    int                           i;
-
-    if (kvm_gsi_direct_mapping()) { return; }
-
-    for (i = 0; i < s->irq_routes->nr; i++) {
-        e = &s->irq_routes->entries[i];
-        if (e->gsi == virq) {
-            s->irq_routes->nr--;
-            *e = s->irq_routes->entries[s->irq_routes->nr];
-        }
-    }
-    clear_gsi(s, virq);
-    kvm_arch_release_virq_post(virq);
-    trace_kvm_irqchip_release_virq(virq);
-}
-
-void kvm_irqchip_add_change_notifier(Notifier* n) { notifier_list_add(&kvm_irqchip_change_notifiers, n); }
-
-void kvm_irqchip_remove_change_notifier(Notifier* n) { notifier_remove(n); }
-
-void kvm_irqchip_change_notify(void) { notifier_list_notify(&kvm_irqchip_change_notifiers, NULL); }
-
-int kvm_irqchip_get_virq(KVMState* s)
-{
-    int next_virq;
-
-    /* Return the lowest unused GSI in the bitmap */
-    next_virq = find_first_zero_bit(s->used_gsi_bitmap, s->gsi_count);
-    if (next_virq >= s->gsi_count) { return -ENOSPC; }
-    else {
-        return next_virq;
-    }
-}
-
-int kvm_irqchip_send_msi(KVMState* s, MSIMessage msg)
-{
-    struct kvm_msi msi;
-
-    msi.address_lo = (uint32_t)msg.address;
-    msi.address_hi = msg.address >> 32;
-    msi.data       = le32_to_cpu(msg.data);
-    msi.flags      = 0;
-    memset(msi.pad, 0, sizeof(msi.pad));
-
-    return kvm_vm_ioctl(s, KVM_SIGNAL_MSI, &msi);
-}
-
-int kvm_irqchip_add_msi_route(KVMRouteChange* c, int vector, PCIDevice* dev)
-{
-    struct kvm_irq_routing_entry kroute = {};
-    int                          virq;
-    KVMState*                    s   = c->s;
-    MSIMessage                   msg = {0, 0};
-
-    if (pci_available && dev) { msg = pci_get_msi_message(dev, vector); }
-
-    if (kvm_gsi_direct_mapping()) { return kvm_arch_msi_data_to_gsi(msg.data); }
-
-    if (!kvm_gsi_routing_enabled()) { return -ENOSYS; }
-
-    virq = kvm_irqchip_get_virq(s);
-    if (virq < 0) { return virq; }
-
-    kroute.gsi              = virq;
-    kroute.type             = KVM_IRQ_ROUTING_MSI;
-    kroute.flags            = 0;
-    kroute.u.msi.address_lo = (uint32_t)msg.address;
-    kroute.u.msi.address_hi = msg.address >> 32;
-    kroute.u.msi.data       = le32_to_cpu(msg.data);
-    if (pci_available && kvm_msi_devid_required()) {
-        kroute.flags       = KVM_MSI_VALID_DEVID;
-        kroute.u.msi.devid = pci_requester_id(dev);
-    }
-    if (kvm_arch_fixup_msi_route(&kroute, msg.address, msg.data, dev)) {
-        kvm_irqchip_release_virq(s, virq);
-        return -EINVAL;
-    }
-
-    if (s->irq_routes->nr < s->gsi_count) {
-        trace_kvm_irqchip_add_msi_route(dev ? dev->name : (char*)"N/A", vector, virq);
-
-        kvm_add_routing_entry(s, &kroute);
-        kvm_arch_add_msi_route_post(&kroute, vector, dev);
-        c->changes++;
-    }
-    else {
-        kvm_irqchip_release_virq(s, virq);
-        return -ENOSPC;
-    }
-
-    return virq;
-}
-
-int kvm_irqchip_update_msi_route(KVMState* s, int virq, MSIMessage msg, PCIDevice* dev)
-{
-    struct kvm_irq_routing_entry kroute = {};
-
-    if (kvm_gsi_direct_mapping()) { return 0; }
-
-    if (!kvm_irqchip_in_kernel()) { return -ENOSYS; }
-
-    kroute.gsi              = virq;
-    kroute.type             = KVM_IRQ_ROUTING_MSI;
-    kroute.flags            = 0;
-    kroute.u.msi.address_lo = (uint32_t)msg.address;
-    kroute.u.msi.address_hi = msg.address >> 32;
-    kroute.u.msi.data       = le32_to_cpu(msg.data);
-    if (pci_available && kvm_msi_devid_required()) {
-        kroute.flags       = KVM_MSI_VALID_DEVID;
-        kroute.u.msi.devid = pci_requester_id(dev);
-    }
-    if (kvm_arch_fixup_msi_route(&kroute, msg.address, msg.data, dev)) { return -EINVAL; }
-
-    trace_kvm_irqchip_update_msi_route(virq);
-
-    return kvm_update_routing_entry(s, &kroute);
-}
-
-static int kvm_irqchip_assign_irqfd(KVMState* s, EventNotifier* event, EventNotifier* resample, int virq, bool assign)
-{
-    int fd  = event_notifier_get_fd(event);
-    int rfd = resample ? event_notifier_get_fd(resample) : -1;
-
-    struct kvm_irqfd irqfd = {
-        .fd    = fd,
-        .gsi   = virq,
-        .flags = assign ? 0 : KVM_IRQFD_FLAG_DEASSIGN,
-    };
-
-    if (rfd != -1) {
-        assert(assign);
-        if (kvm_irqchip_is_split()) {
-            /*
-             * When the slow irqchip (e.g. IOAPIC) is in the
-             * userspace, KVM kernel resamplefd will not work because
-             * the EOI of the interrupt will be delivered to userspace
-             * instead, so the KVM kernel resamplefd kick will be
-             * skipped.  The userspace here mimics what the kernel
-             * provides with resamplefd, remember the resamplefd and
-             * kick it when we receive EOI of this IRQ.
-             *
-             * This is hackery because IOAPIC is mostly bypassed
-             * (except EOI broadcasts) when irqfd is used.  However
-             * this can bring much performance back for split irqchip
-             * with INTx IRQs (for VFIO, this gives 93% perf of the
-             * full fast path, which is 46% perf boost comparing to
-             * the INTx slow path).
-             */
-            kvm_resample_fd_insert(virq, resample);
-        }
-        else {
-            irqfd.flags      |= KVM_IRQFD_FLAG_RESAMPLE;
-            irqfd.resamplefd  = rfd;
-        }
-    }
-    else if (!assign) {
-        if (kvm_irqchip_is_split()) { kvm_resample_fd_remove(virq); }
-    }
-
-    return kvm_vm_ioctl(s, KVM_IRQFD, &irqfd);
-}
-
-#else  /* !KVM_CAP_IRQ_ROUTING */
+#else /* !KVM_CAP_IRQ_ROUTING */
 
 void kvm_init_irq_routing(KVMState* s) { }
 
-void kvm_irqchip_release_virq(KVMState* s, int virq) { }
-
-int kvm_irqchip_send_msi(KVMState* s, MSIMessage msg) { abort(); }
-
-int kvm_irqchip_add_msi_route(KVMRouteChange* c, int vector, PCIDevice* dev) { return -ENOSYS; }
-
-int kvm_irqchip_add_adapter_route(KVMState* s, AdapterInfo* adapter) { return -ENOSYS; }
-
-int kvm_irqchip_add_hv_sint_route(KVMState* s, uint32_t vcpu, uint32_t sint) { return -ENOSYS; }
-
-static int kvm_irqchip_assign_irqfd(KVMState* s, EventNotifier* event, EventNotifier* resample, int virq, bool assign)
-{ abort(); }
-
-int kvm_irqchip_update_msi_route(KVMState* s, int virq, MSIMessage msg) { return -ENOSYS; }
 #endif /* !KVM_CAP_IRQ_ROUTING */
-
-int kvm_irqchip_add_irqfd_notifier_gsi(KVMState* s, EventNotifier* n, EventNotifier* rn, int virq)
-{ return kvm_irqchip_assign_irqfd(s, n, rn, virq, true); }
-
-int kvm_irqchip_remove_irqfd_notifier_gsi(KVMState* s, EventNotifier* n, int virq)
-{ return kvm_irqchip_assign_irqfd(s, n, NULL, virq, false); }
-
-int kvm_irqchip_add_irqfd_notifier(KVMState* s, EventNotifier* n, EventNotifier* rn, qemu_irq irq)
-{
-    gpointer key, gsi;
-    gboolean found = g_hash_table_lookup_extended(s->gsimap, irq, &key, &gsi);
-
-    if (!found) { return -ENXIO; }
-    return kvm_irqchip_add_irqfd_notifier_gsi(s, n, rn, GPOINTER_TO_INT(gsi));
-}
-
-int kvm_irqchip_remove_irqfd_notifier(KVMState* s, EventNotifier* n, qemu_irq irq)
-{
-    gpointer key, gsi;
-    gboolean found = g_hash_table_lookup_extended(s->gsimap, irq, &key, &gsi);
-
-    if (!found) { return -ENXIO; }
-    return kvm_irqchip_remove_irqfd_notifier_gsi(s, n, GPOINTER_TO_INT(gsi));
-}
-
-void kvm_irqchip_set_qemuirq_gsi(KVMState* s, qemu_irq irq, int gsi)
-{ g_hash_table_insert(s->gsimap, irq, GINT_TO_POINTER(gsi)); }
-
-static void kvm_irqchip_create(KVMState* s)
-{
-    int ret;
-
-    assert(s->kernel_irqchip_split != ON_OFF_AUTO_AUTO);
-    if (!kvm_check_extension(s, KVM_CAP_IRQCHIP)) { return; }
-
-    if (kvm_check_extension(s, KVM_CAP_IRQFD) <= 0) {
-        fprintf(stderr, "kvm: irqfd not implemented\n");
-        exit(1);
-    }
-
-    /* First probe and see if there's a arch-specific hook to create the
-     * in-kernel irqchip for us */
-    ret = kvm_arch_irqchip_create(s);
-    if (ret == 0) {
-        if (s->kernel_irqchip_split == ON_OFF_AUTO_ON) {
-            error_report("Split IRQ chip mode not supported.");
-            exit(1);
-        }
-        else {
-            ret = kvm_vm_ioctl(s, KVM_CREATE_IRQCHIP);
-        }
-    }
-    if (ret < 0) {
-        fprintf(stderr, "Create kernel irqchip failed: %s\n", strerror(-ret));
-        exit(1);
-    }
-
-    kvm_kernel_irqchip = true;
-    /* If we have an in-kernel IRQ chip then we must have asynchronous
-     * interrupt delivery (though the reverse is not necessarily true)
-     */
-    kvm_async_interrupts_allowed = true;
-    kvm_halt_in_kernel_allowed   = true;
-
-    kvm_init_irq_routing(s);
-
-    s->gsimap = g_hash_table_new(NULL, NULL);
-}
 
 /* Find number of supported CPUs using the recommended
  * procedure from the kernel API documentation to cope with
@@ -2401,13 +2121,7 @@ static int kvm_init(AccelState* as, MachineState* ms)
                                       && (kvm_supported_memory_attributes & KVM_MEMORY_ATTRIBUTE_PRIVATE);
     kvm_pre_fault_memory_supported  = kvm_vm_check_extension(s, KVM_CAP_PRE_FAULT_MEMORY);
 
-    if (s->kernel_irqchip_split == ON_OFF_AUTO_AUTO) {
-        s->kernel_irqchip_split = mc->default_kernel_irqchip_split ? ON_OFF_AUTO_ON : ON_OFF_AUTO_OFF;
-    }
-
     qemu_register_reset(kvm_unpoison_all, NULL);
-
-    if (s->kernel_irqchip_allowed) { kvm_irqchip_create(s); }
 
     s->memory_listener.listener.eventfd_add      = kvm_mem_ioeventfd_add;
     s->memory_listener.listener.eventfd_del      = kvm_mem_ioeventfd_del;
@@ -3331,47 +3045,6 @@ static void kvm_set_kvm_shadow_mem(Object* obj, Visitor* v, const char* name, vo
     s->kvm_shadow_mem = value;
 }
 
-static void kvm_set_kernel_irqchip(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
-{
-    KVMState*  s = KVM_STATE(obj);
-    OnOffSplit mode;
-
-    if (s->fd != -1) {
-        error_setg(errp, "Cannot set properties after the accelerator has been initialized");
-        return;
-    }
-
-    if (!visit_type_OnOffSplit(v, name, &mode, errp)) { return; }
-    switch (mode) {
-        case ON_OFF_SPLIT_ON:
-            s->kernel_irqchip_allowed  = true;
-            s->kernel_irqchip_required = true;
-            s->kernel_irqchip_split    = ON_OFF_AUTO_OFF;
-            break;
-        case ON_OFF_SPLIT_OFF:
-            s->kernel_irqchip_allowed  = false;
-            s->kernel_irqchip_required = false;
-            s->kernel_irqchip_split    = ON_OFF_AUTO_OFF;
-            break;
-        case ON_OFF_SPLIT_SPLIT:
-            s->kernel_irqchip_allowed  = true;
-            s->kernel_irqchip_required = true;
-            s->kernel_irqchip_split    = ON_OFF_AUTO_ON;
-            break;
-        default:
-            /* The value was checked in visit_type_OnOffSplit() above. If
-             * we get here, then something is wrong in QEMU.
-             */
-            abort();
-    }
-}
-
-bool kvm_kernel_irqchip_allowed(void) { return kvm_state->kernel_irqchip_allowed; }
-
-bool kvm_kernel_irqchip_required(void) { return kvm_state->kernel_irqchip_required; }
-
-bool kvm_kernel_irqchip_split(void) { return kvm_state->kernel_irqchip_split == ON_OFF_AUTO_ON; }
-
 static void kvm_get_dirty_ring_size(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
 {
     KVMState* s     = KVM_STATE(obj);
@@ -3418,11 +3091,9 @@ static void kvm_accel_instance_init(Object* obj)
 {
     KVMState* s = KVM_STATE(obj);
 
-    s->fd                     = -1;
-    s->vmfd                   = -1;
-    s->kvm_shadow_mem         = -1;
-    s->kernel_irqchip_allowed = true;
-    s->kernel_irqchip_split   = ON_OFF_AUTO_AUTO;
+    s->fd             = -1;
+    s->vmfd           = -1;
+    s->kvm_shadow_mem = -1;
     /* KVM dirty ring is by default off */
     s->kvm_dirty_ring_size        = 0;
     s->kvm_dirty_ring_with_bitmap = false;
@@ -3447,9 +3118,6 @@ static void kvm_accel_class_init(ObjectClass* oc, const void* data)
     ac->has_memory                    = kvm_accel_has_memory;
     ac->allowed                       = &kvm_allowed;
     ac->gdbstub_supported_sstep_flags = kvm_gdbstub_sstep_flags;
-
-    object_class_property_add(oc, "kernel-irqchip", "on|off|split", NULL, kvm_set_kernel_irqchip, NULL, NULL);
-    object_class_property_set_description(oc, "kernel-irqchip", "Configure KVM in-kernel irqchip");
 
     object_class_property_add(oc, "kvm-shadow-mem", "int", kvm_get_kvm_shadow_mem, kvm_set_kvm_shadow_mem, NULL, NULL);
     object_class_property_set_description(oc, "kvm-shadow-mem", "KVM shadow MMU size");

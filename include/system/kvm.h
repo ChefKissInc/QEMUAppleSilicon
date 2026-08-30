@@ -32,12 +32,9 @@
 #ifdef CONFIG_KVM_IS_POSSIBLE
 
 extern bool kvm_allowed;
-extern bool kvm_kernel_irqchip;
-extern bool kvm_split_irqchip;
 extern bool kvm_async_interrupts_allowed;
 extern bool kvm_halt_in_kernel_allowed;
 extern bool kvm_resamplefds_allowed;
-extern bool kvm_msi_via_irqfd_allowed;
 extern bool kvm_gsi_routing_allowed;
 extern bool kvm_gsi_direct_mapping;
 extern bool kvm_readonly_mem_allowed;
@@ -45,28 +42,6 @@ extern bool kvm_msi_use_devid;
 extern bool kvm_pre_fault_memory_supported;
 
     #define kvm_enabled() (kvm_allowed)
-    /**
-     * kvm_irqchip_in_kernel:
-     *
-     * Returns: true if an in-kernel irqchip was created.
-     * What this actually means is architecture and machine model
-     * specific: on PC, for instance, it means that the LAPIC
-     * is in kernel.  This function should never be used from generic
-     * target-independent code: use one of the following functions or
-     * some other specific check instead.
-     */
-    #define kvm_irqchip_in_kernel() (kvm_kernel_irqchip)
-
-    /**
-     * kvm_irqchip_is_split:
-     *
-     * Returns: true if the irqchip implementation is split between
-     * user and kernel space.  The details are architecture and
-     * machine specific.  On PC, it means that the PIC, IOAPIC, and
-     * PIT are in user space while the LAPIC is in the kernel.
-     */
-    #define kvm_irqchip_is_split() (kvm_split_irqchip)
-
     /**
      * kvm_async_interrupts_enabled:
      *
@@ -84,17 +59,6 @@ extern bool kvm_pre_fault_memory_supported;
      * inside of kernel space. This only works if MP state is implemented.
      */
     #define kvm_halt_in_kernel() (kvm_halt_in_kernel_allowed)
-
-    /**
-     * kvm_irqfds_enabled:
-     *
-     * Returns: true if we can use irqfds to inject interrupts into
-     * a KVM CPU (ie the kernel supports irqfds and we are running
-     * with a configuration where it is meaningful to use them).
-     *
-     * Always available if running with in-kernel irqchip.
-     */
-    #define kvm_irqfds_enabled() kvm_irqchip_in_kernel()
 
     /**
      * kvm_resamplefds_enabled:
@@ -147,11 +111,8 @@ extern bool kvm_pre_fault_memory_supported;
 #else
 
     #define kvm_enabled()                  (0)
-    #define kvm_irqchip_in_kernel()        (false)
-    #define kvm_irqchip_is_split()         (false)
     #define kvm_async_interrupts_enabled() (false)
     #define kvm_halt_in_kernel()           (false)
-    #define kvm_irqfds_enabled()           (false)
     #define kvm_resamplefds_enabled()      (false)
     #define kvm_msi_via_irqfd_enabled()    (false)
     #define kvm_gsi_routing_allowed()      (false)
@@ -395,13 +356,6 @@ int kvm_arch_release_virq_post(int virq);
 int kvm_arch_msi_data_to_gsi(uint32_t data);
 
 int kvm_set_irq(KVMState* s, int irq, int level);
-int kvm_irqchip_send_msi(KVMState* s, MSIMessage msg);
-
-void kvm_irqchip_add_irq_route(KVMState* s, int gsi, int irqchip, int pin);
-
-void kvm_irqchip_add_change_notifier(Notifier* n);
-void kvm_irqchip_remove_change_notifier(Notifier* n);
-void kvm_irqchip_change_notify(void);
 
 struct kvm_guest_debug;
 struct kvm_debug_exit_arch;
@@ -464,59 +418,9 @@ void kvm_cpu_synchronize_state(CPUState* cpu);
 
 void kvm_init_cpu_signals(CPUState* cpu);
 
-/**
- * kvm_irqchip_add_msi_route - Add MSI route for specific vector
- * @c:      KVMRouteChange instance.
- * @vector: which vector to add. This can be either MSI/MSIX
- *          vector. The function will automatically detect whether
- *          MSI/MSIX is enabled, and fetch corresponding MSI
- *          message.
- * @dev:    Owner PCI device to add the route. If @dev is specified
- *          as @NULL, an empty MSI message will be inited.
- * @return: virq (>=0) when success, errno (<0) when failed.
- */
-int  kvm_irqchip_add_msi_route(KVMRouteChange* c, int vector, PCIDevice* dev);
-int  kvm_irqchip_update_msi_route(KVMState* s, int virq, MSIMessage msg, PCIDevice* dev);
-void kvm_irqchip_commit_routes(KVMState* s);
-
-static inline KVMRouteChange kvm_irqchip_begin_route_changes(KVMState* s)
-{ return (KVMRouteChange){.s = s, .changes = 0}; }
-
-static inline void kvm_irqchip_commit_route_changes(KVMRouteChange* c)
-{
-    if (c->changes) {
-        kvm_irqchip_commit_routes(c->s);
-        c->changes = 0;
-    }
-}
-
-int  kvm_irqchip_get_virq(KVMState* s);
-void kvm_irqchip_release_virq(KVMState* s, int virq);
-
 void kvm_add_routing_entry(KVMState* s, struct kvm_irq_routing_entry* entry);
 
-int  kvm_irqchip_add_irqfd_notifier_gsi(KVMState* s, EventNotifier* n, EventNotifier* rn, int virq);
-int  kvm_irqchip_remove_irqfd_notifier_gsi(KVMState* s, EventNotifier* n, int virq);
-int  kvm_irqchip_add_irqfd_notifier(KVMState* s, EventNotifier* n, EventNotifier* rn, qemu_irq irq);
-int  kvm_irqchip_remove_irqfd_notifier(KVMState* s, EventNotifier* n, qemu_irq irq);
-void kvm_irqchip_set_qemuirq_gsi(KVMState* s, qemu_irq irq, int gsi);
 void kvm_init_irq_routing(KVMState* s);
-
-bool kvm_kernel_irqchip_allowed(void);
-bool kvm_kernel_irqchip_required(void);
-bool kvm_kernel_irqchip_split(void);
-
-/**
- * kvm_arch_irqchip_create:
- * @KVMState: The KVMState pointer
- *
- * Allow architectures to create an in-kernel irq chip themselves.
- *
- * Returns: < 0: error
- *            0: irq chip was not created
- *          > 0: irq chip was created
- */
-int kvm_arch_irqchip_create(KVMState* s);
 
 /**
  * kvm_set_one_reg - set a register value in KVM via KVM_SET_ONE_REG ioctl

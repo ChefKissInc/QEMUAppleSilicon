@@ -102,14 +102,11 @@ struct KVMState
 #ifdef TARGET_KVM_HAVE_GUEST_DEBUG
     QTAILQ_HEAD(, kvm_sw_breakpoint) kvm_sw_breakpoints;
 #endif
-    int       max_nested_state_len;
-    int       kvm_shadow_mem;
-    bool      kernel_irqchip_allowed;
-    bool      kernel_irqchip_required;
-    OnOffAuto kernel_irqchip_split;
-    bool      sync_mmu;
-    bool      guest_state_protected;
-    uint64_t  manual_dirty_log_protect;
+    int      max_nested_state_len;
+    int      kvm_shadow_mem;
+    bool     sync_mmu;
+    bool     guest_state_protected;
+    uint64_t manual_dirty_log_protect;
     /*
      * Older POSIX says that ioctl numbers are signed int, but in
      * practice they are not. (Newer POSIX doesn't specify ioctl

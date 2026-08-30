@@ -3679,7 +3679,7 @@ static void do_hcr_write(CPUARMState* env, uint64_t value, uint64_t valid_mask)
     /*
      * Updates to VI and VF require us to update the status of
      * virtual interrupts, which are the logical OR of these bits
-     * and the state of the input lines from the GIC. (This requires
+     * and the state of the CPU interrupt input lines. (This requires
      * that we have the BQL, which is done by marking the
      * reginfo structs as ARM_CP_IO.)
      * Note that if a write to HCR pends a VIRQ or VFIQ or VINMI or
@@ -3836,7 +3836,7 @@ static void hcrx_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
     /*
      * Updates to VINMI and VFNMI require us to update the status of
      * virtual NMI, which are the logical OR of these bits
-     * and the state of the input lines from the GIC. (This requires
+     * and the state of the CPU interrupt input lines. (This requires
      * that we have the BQL, which is done by marking the
      * reginfo structs as ARM_CP_IO.)
      * Note that if a write to HCRX pends a VINMI or VFNMI it is never
@@ -5457,30 +5457,6 @@ static const ARMCPRegInfo nmi_reginfo[] = {
 };
 
 /*
- * We don't know until after realize whether there's a GICv3
- * attached, and that is what registers the gicv3 sysregs.
- * So we have to fill in the GIC fields in ID_PFR/ID_PFR1_EL1/ID_AA64PFR0_EL1
- * at runtime.
- */
-static uint64_t id_pfr1_read(CPUARMState* env, const ARMCPRegInfo* ri)
-{
-    ARMCPU*  cpu  = env_archcpu(env);
-    uint64_t pfr1 = GET_IDREG(&cpu->isar, ID_PFR1);
-
-    if (env->gicv3state) { pfr1 |= 1 << 28; }
-    return pfr1;
-}
-
-static uint64_t id_aa64pfr0_read(CPUARMState* env, const ARMCPRegInfo* ri)
-{
-    ARMCPU*  cpu  = env_archcpu(env);
-    uint64_t pfr0 = GET_IDREG(&cpu->isar, ID_AA64PFR0);
-
-    if (env->gicv3state) { pfr0 |= 1 << 24; }
-    return pfr0;
-}
-
-/*
  * Shared logic between LORID and the rest of the LOR* registers.
  * Secure state exclusion has already been dealt with.
  */
@@ -6792,25 +6768,17 @@ void register_cp_regs_for_features(ARMCPU* cpu)
              .type       = ARM_CP_CONST,
              .accessfn   = access_v7a_tid3,
              .resetvalue = GET_IDREG(isar, ID_PFR0)},
-            /*
-             * ID_PFR1 is not a plain ARM_CP_CONST because we don't know
-             * the value of the GIC field until after we define these regs.
-             */
-            {
-                .name     = "ID_PFR1",
-                .state    = ARM_CP_STATE_BOTH,
-                .opc0     = 3,
-                .opc1     = 0,
-                .crn      = 0,
-                .crm      = 1,
-                .opc2     = 1,
-                .access   = PL1_R,
-                .type     = ARM_CP_NO_RAW,
-                .type     = ARM_CP_NO_RAW,
-                .accessfn = access_v7a_tid3,
-                .readfn   = id_pfr1_read,
-                .writefn  = arm_cp_write_ignore,
-            },
+            {.name       = "ID_PFR1",
+             .state      = ARM_CP_STATE_BOTH,
+             .opc0       = 3,
+             .opc1       = 0,
+             .crn        = 0,
+             .crm        = 1,
+             .opc2       = 1,
+             .access     = PL1_R,
+             .type       = ARM_CP_CONST,
+             .accessfn   = access_v7a_tid3,
+             .resetvalue = GET_IDREG(isar, ID_PFR1)},
             {.name       = "ID_DFR0",
              .state      = ARM_CP_STATE_BOTH,
              .opc0       = 3,
@@ -7005,25 +6973,17 @@ void register_cp_regs_for_features(ARMCPU* cpu)
          */
         int          i;
         ARMCPRegInfo v8_idregs[] = {
-            /*
-             * ID_AA64PFR0_EL1 is not a plain ARM_CP_CONST in system
-             * emulation because we don't know the right value for the
-             * GIC field until after we define these regs.
-             */
-            {
-                .name     = "ID_AA64PFR0_EL1",
-                .state    = ARM_CP_STATE_AA64,
-                .opc0     = 3,
-                .opc1     = 0,
-                .crn      = 0,
-                .crm      = 4,
-                .opc2     = 0,
-                .access   = PL1_R,
-                .type     = ARM_CP_NO_RAW,
-                .accessfn = access_tid3,
-                .readfn   = id_aa64pfr0_read,
-                .writefn  = arm_cp_write_ignore,
-            },
+            {.name       = "ID_AA64PFR0_EL1",
+             .state      = ARM_CP_STATE_AA64,
+             .opc0       = 3,
+             .opc1       = 0,
+             .crn        = 0,
+             .crm        = 4,
+             .opc2       = 0,
+             .access     = PL1_R,
+             .type       = ARM_CP_CONST,
+             .accessfn   = access_tid3,
+             .resetvalue = GET_IDREG(isar, ID_AA64PFR0)},
             {.name       = "ID_AA64PFR1_EL1",
              .state      = ARM_CP_STATE_AA64,
              .opc0       = 3,

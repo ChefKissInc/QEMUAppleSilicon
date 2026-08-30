@@ -1062,7 +1062,7 @@ bool arm_cpu_exec_interrupt(CPUState* cs, int interrupt_request);
  * arm_cpu_update_virq: Update CPU_INTERRUPT_VIRQ bit in cs->interrupt_request
  *
  * Update the CPU_INTERRUPT_VIRQ bit in cs->interrupt_request, following
- * a change to either the input VIRQ line from the GIC or the HCR_EL2.VI bit.
+ * a change to either the input VIRQ line or the HCR_EL2.VI bit.
  * Must be called with the BQL held.
  */
 void arm_cpu_update_virq(ARMCPU* cpu);
@@ -1071,7 +1071,7 @@ void arm_cpu_update_virq(ARMCPU* cpu);
  * arm_cpu_update_vfiq: Update CPU_INTERRUPT_VFIQ bit in cs->interrupt_request
  *
  * Update the CPU_INTERRUPT_VFIQ bit in cs->interrupt_request, following
- * a change to either the input VFIQ line from the GIC or the HCR_EL2.VF bit.
+ * a change to either the input VFIQ line or the HCR_EL2.VF bit.
  * Must be called with the BQL held.
  */
 void arm_cpu_update_vfiq(ARMCPU* cpu);
@@ -1080,7 +1080,7 @@ void arm_cpu_update_vfiq(ARMCPU* cpu);
  * arm_cpu_update_vinmi: Update CPU_INTERRUPT_VINMI bit in cs->interrupt_request
  *
  * Update the CPU_INTERRUPT_VINMI bit in cs->interrupt_request, following
- * a change to either the input VNMI line from the GIC or the HCRX_EL2.VINMI.
+ * a change to either the input VNMI line or the HCRX_EL2.VINMI.
  * Must be called with the BQL held.
  */
 void arm_cpu_update_vinmi(ARMCPU* cpu);

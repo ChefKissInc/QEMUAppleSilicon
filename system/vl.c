@@ -1171,13 +1171,6 @@ static void qemu_apply_legacy_machine_options(QDict* qdict)
         qdict_del(qdict, "kvm-shadow-mem");
     }
 
-    value = qdict_get_try_str(qdict, "kernel-irqchip");
-    if (value) {
-        object_register_sugar_prop(ACCEL_CLASS_NAME("kvm"), "kernel-irqchip", value, false);
-        object_register_sugar_prop(ACCEL_CLASS_NAME("whpx"), "kernel-irqchip", value, false);
-        qdict_del(qdict, "kernel-irqchip");
-    }
-
     value = qdict_get_try_str(qdict, "memory-backend");
     if (value) {
         if (mem_path) {
@@ -2400,8 +2393,7 @@ void qemu_init(int argc, char** argv)
     phase_advance(PHASE_MACHINE_CREATED);
 
     /*
-     * Note: uses machine properties such as kernel-irqchip, must run
-     * after qemu_apply_machine_options.
+     * Note: must run after qemu_apply_machine_options.
      */
     configure_accelerators(argv[0]);
     phase_advance(PHASE_ACCEL_CREATED);

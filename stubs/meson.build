@@ -54,7 +54,6 @@ if have_system
   stub_ss.add(files('target-get-monitor-def.c'))
   stub_ss.add(files('target-monitor-defs.c'))
   stub_ss.add(files('win32-kbd-hook.c'))
-  stub_ss.add(files('monitor-arm-gic.c'))
   stub_ss.add(files('monitor-cpu.c'))
 endif
 

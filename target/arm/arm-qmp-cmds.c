@@ -23,58 +23,14 @@
 #include "qemu/osdep.h"
 #include "qemu/target-info.h"
 #include "hw/boards.h"
-#include "kvm_arm.h"
+#include "system/kvm.h"
 #include "qapi/error.h"
 #include "qapi/visitor.h"
 #include "qapi/qobject-input-visitor.h"
 #include "qapi/qapi-commands-machine.h"
-#include "qapi/qapi-commands-misc-arm.h"
 #include "qobject/qdict.h"
 #include "qom/qom-qobject.h"
 #include "cpu.h"
-
-static GICCapability* gic_cap_new(int version)
-{
-    GICCapability* cap = g_new0(GICCapability, 1);
-    cap->version       = version;
-    /* by default, support none */
-    cap->emulated = false;
-    cap->kernel   = false;
-    return cap;
-}
-
-static inline void gic_cap_kvm_probe(GICCapability* v2, GICCapability* v3)
-{
-#ifdef CONFIG_KVM
-    int fdarray[3];
-
-    if (!kvm_arm_create_scratch_host_vcpu(fdarray, NULL)) { return; }
-
-    /* Test KVM GICv2 */
-    if (kvm_device_supported(fdarray[1], KVM_DEV_TYPE_ARM_VGIC_V2)) { v2->kernel = true; }
-
-    /* Test KVM GICv3 */
-    if (kvm_device_supported(fdarray[1], KVM_DEV_TYPE_ARM_VGIC_V3)) { v3->kernel = true; }
-
-    kvm_arm_destroy_scratch_host_vcpu(fdarray);
-#endif
-}
-
-GICCapabilityList* qmp_query_gic_capabilities(Error** errp)
-{
-    GICCapabilityList* head = NULL;
-    GICCapability *    v2 = gic_cap_new(2), *v3 = gic_cap_new(3);
-
-    v2->emulated = true;
-    v3->emulated = true;
-
-    gic_cap_kvm_probe(v2, v3);
-
-    QAPI_LIST_PREPEND(head, v2);
-    QAPI_LIST_PREPEND(head, v3);
-
-    return head;
-}
 
 QEMU_BUILD_BUG_ON(ARM_MAX_VQ > 16);
 

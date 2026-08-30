@@ -57,7 +57,6 @@
 { 'include': 'machine.json' }
 { 'include': 'yank.json' }
 { 'include': 'misc.json' }
-{ 'include': 'misc-arm.json' }
 { 'include': 'audio.json' }
 { 'include': 'pci.json' }
 { 'include': 'stats.json' }
