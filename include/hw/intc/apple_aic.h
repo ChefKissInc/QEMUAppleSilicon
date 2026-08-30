@@ -38,19 +38,25 @@ typedef struct
     uint32_t       pendingIPI;
     uint32_t       deferredIPI;
     uint32_t       ipi_mask;
+    uint32_t       tmr_cfg;
+    uint32_t       tmr_isr;
+    uint32_t       tmr_state;
+    uint64_t       tmr_deadline;
+    QEMUTimer*     tmr;
 } AppleAICCPU;
 
 struct AppleAICState
 {
     SysBusDevice parent_obj;
     QEMUTimer*   timer;
-    QemuMutex    mutex;
     uint32_t     phandle;
     uint32_t     base_size;
     uint32_t     numEIR;
     uint32_t     numIRQ;
     uint32_t     numCPU;
     uint32_t     global_cfg;
+    uint32_t     pvt_stamp_cfg;
+    uint32_t     shared_stamp[16];
     uint32_t     time_base;
     uint32_t*    eir_mask;
     uint32_t*    eir_dest;

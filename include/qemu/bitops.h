@@ -331,6 +331,32 @@ static inline int test_and_set_bit32(long nr, uint32_t* addr)
 }
 
 /**
+ * test_and_set_bit32_atomic - Set a bit atomically and return its old value
+ * @nr: Bit to set
+ * @addr: Address to count from
+ */
+static inline int test_and_set_bit32_atomic(long nr, uint32_t* addr)
+{
+    uint32_t  mask = BIT32_MASK(nr);
+    uint32_t* p    = addr + BIT32_WORD(nr);
+
+    return (qatomic_fetch_or(p, mask) & mask) != 0;
+}
+
+/**
+ * test_and_set_bit32_acquire - Claim a bit and return its old value
+ * @nr: Bit to claim
+ * @addr: Address to count from
+ */
+static inline int test_and_set_bit32_acquire(long nr, uint32_t* addr)
+{
+    uint32_t  mask = BIT32_MASK(nr);
+    uint32_t* p    = addr + BIT32_WORD(nr);
+
+    return (qatomic_fetch_or_acquire(p, mask) & mask) != 0;
+}
+
+/**
  * test_and_clear_bit32 - Clear a bit and return its old value
  * @nr: Bit to clear
  * @addr: Address to count from
