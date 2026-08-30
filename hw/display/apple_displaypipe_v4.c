@@ -874,6 +874,7 @@ SysBusDevice* adp_v4_from_node(AppleDTNode* node, MemoryRegion* dma_mr)
     assert_nonnull(prop);
     reg = (uint64_t*)prop->data;
     memory_region_init_io(&adp->up_regs, OBJECT(sbd), &adp_v4_reg_ops, sbd, "up.regs", reg[1]);
+    memory_region_enable_lockless_io(&adp->up_regs);
     sysbus_init_mmio(sbd, &adp->up_regs);
     object_property_add_const_link(OBJECT(sbd), "up.regs", OBJECT(&adp->up_regs));
 
