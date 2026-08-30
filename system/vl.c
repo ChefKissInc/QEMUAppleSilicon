@@ -72,7 +72,6 @@
 #include "system/blockdev.h"
 #include "hw/block/block.h"
 #include "system/dma.h"
-#include "hw/audio/soundhw.h"
 #include "audio/audio.h"
 #include "system/cpus.h"
 #include "system/cpu-timers.h"
@@ -1910,8 +1909,6 @@ static void qemu_create_cli_devices(void)
 {
     DeviceOption* opt;
 
-    soundhw_init();
-
     /* init USB devices */
     if (machine_usb(current_machine)) { foreach_device_config_or_exit(DEV_USB, usb_parse); }
 
@@ -2110,40 +2107,6 @@ void qemu_init(int argc, char** argv)
                     default_audio = 0;
                     audio_parse_option(optarg);
                     break;
-                case QEMU_OPTION_audio: {
-                    bool      help;
-                    char*     model = NULL;
-                    Audiodev* dev   = NULL;
-                    Visitor*  v;
-                    QDict*    dict = keyval_parse(optarg, "driver", &help, &error_fatal);
-                    default_audio  = 0;
-                    if (help || (qdict_haskey(dict, "driver") && is_help_option(qdict_get_str(dict, "driver")))) {
-                        audio_help();
-                        exit(EXIT_SUCCESS);
-                    }
-                    if (!qdict_haskey(dict, "id")) { qdict_put_str(dict, "id", "audiodev0"); }
-                    if (qdict_haskey(dict, "model")) {
-                        model = g_strdup(qdict_get_str(dict, "model"));
-                        qdict_del(dict, "model");
-                        if (is_help_option(model)) {
-                            show_valid_soundhw();
-                            exit(0);
-                        }
-                    }
-                    v = qobject_input_visitor_new_keyval(QOBJECT(dict));
-                    qobject_unref(dict);
-                    visit_type_Audiodev(v, NULL, &dev, &error_fatal);
-                    visit_free(v);
-                    if (model) {
-                        audio_define(dev);
-                        select_soundhw(model, dev->id);
-                        g_free(model);
-                    }
-                    else {
-                        audio_define_default(dev, &error_fatal);
-                    }
-                    break;
-                }
                 case QEMU_OPTION_h: help(0); break;
                 case QEMU_OPTION_version:
                     version();
