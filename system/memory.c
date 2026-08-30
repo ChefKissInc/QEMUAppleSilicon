@@ -435,22 +435,9 @@ static MemTxResult access_with_adjusted_size(hwaddr addr, uint64_t* value, unsig
     unsigned    access_size;
     unsigned    i;
     MemTxResult r                        = MEMTX_OK;
-    bool        reentrancy_guard_applied = false;
 
     if (!access_size_min) { access_size_min = 1; }
     if (!access_size_max) { access_size_max = 4; }
-
-    /* Do not allow more than one simultaneous access to a device's IO Regions */
-    if (mr->dev && !mr->disable_reentrancy_guard && !mr->ram_device && !mr->ram && !mr->rom_device && !mr->readonly) {
-        if (mr->dev->mem_reentrancy_guard.engaged_in_io) {
-            warn_report_once("Blocked re-entrant IO on MemoryRegion: "
-                             "%s at addr: 0x%" HWADDR_PRIX,
-                             memory_region_name(mr), addr);
-            return MEMTX_ACCESS_ERROR;
-        }
-        mr->dev->mem_reentrancy_guard.engaged_in_io = true;
-        reentrancy_guard_applied                    = true;
-    }
 
     /* FIXME: support unaligned access? */
     access_size = MAX(MIN(size, access_size_max), access_size_min);
@@ -465,7 +452,6 @@ static MemTxResult access_with_adjusted_size(hwaddr addr, uint64_t* value, unsig
             r |= access_fn(mr, addr + i, value, access_size, i * 8, access_mask, attrs);
         }
     }
-    if (mr->dev && reentrancy_guard_applied) { mr->dev->mem_reentrancy_guard.engaged_in_io = false; }
     return r;
 }
 
@@ -2045,16 +2031,6 @@ void memory_region_clear_flush_coalesced(MemoryRegion* mr)
 void memory_region_enable_lockless_io(MemoryRegion* mr)
 {
     mr->lockless_io = true;
-    /*
-     * reentrancy_guard has per device scope, that when enabled
-     * will effectively prevent concurrent access to device's IO
-     * MemoryRegion(s) by not calling accessor callback.
-     *
-     * Turn it off for lock-less IO enabled devices, to allow
-     * concurrent IO.
-     * TODO: remove this when reentrancy_guard becomes per transaction.
-     */
-    mr->disable_reentrancy_guard = true;
 }
 
 void memory_region_add_eventfd(MemoryRegion* mr, hwaddr addr, unsigned size, bool match_data, uint64_t data,

@@ -67,7 +67,6 @@ struct QEMUBH
     void*       opaque;
     QSLIST_ENTRY(QEMUBH) next;
     unsigned            flags;
-    MemReentrancyGuard* reentrancy_guard;
 };
 
 /* Called concurrently from any thread */
@@ -128,8 +127,7 @@ void aio_bh_schedule_oneshot_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque,
     aio_bh_enqueue(bh, BH_SCHEDULED | BH_ONESHOT);
 }
 
-QEMUBH* aio_bh_new_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const char* name,
-                        MemReentrancyGuard* reentrancy_guard)
+QEMUBH* aio_bh_new_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const char* name)
 {
     QEMUBH* bh;
     bh  = g_new(QEMUBH, 1);
@@ -138,26 +136,13 @@ QEMUBH* aio_bh_new_full(AioContext* ctx, QEMUBHFunc* cb, void* opaque, const cha
         .cb               = cb,
         .opaque           = opaque,
         .name             = name,
-        .reentrancy_guard = reentrancy_guard,
     };
     return bh;
 }
 
 void aio_bh_call(QEMUBH* bh)
 {
-    bool last_engaged_in_io = false;
-
-    /* Make a copy of the guard-pointer as cb may free the bh */
-    MemReentrancyGuard* reentrancy_guard = bh->reentrancy_guard;
-    if (reentrancy_guard) {
-        last_engaged_in_io = reentrancy_guard->engaged_in_io;
-        if (reentrancy_guard->engaged_in_io) { trace_reentrant_aio(bh->ctx, bh->name); }
-        reentrancy_guard->engaged_in_io = true;
-    }
-
     bh->cb(bh->opaque);
-
-    if (reentrancy_guard) { reentrancy_guard->engaged_in_io = last_engaged_in_io; }
 }
 
 /* Multiple occurrences of aio_bh_poll cannot be called concurrently. */

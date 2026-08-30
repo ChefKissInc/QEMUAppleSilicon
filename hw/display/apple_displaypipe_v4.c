@@ -831,8 +831,7 @@ SysBusDevice* adp_v4_from_node(AppleDTNode* node, MemoryRegion* dma_mr)
     sbd = SYS_BUS_DEVICE(dev);
     adp = APPLE_DISPLAY_PIPE_V4(sbd);
 
-    adp->update_disp_image_bh =
-        aio_bh_new_guarded(qemu_get_aio_context(), adp_v4_update_disp_bh, adp, &dev->mem_reentrancy_guard);
+    adp->update_disp_image_bh = aio_bh_new(qemu_get_aio_context(), adp_v4_update_disp_bh, adp);
 
     apple_dt_set_prop_str(node, "display-target", "DisplayTarget5");
     apple_dt_set_prop(node, "display-timing-info", sizeof(adp_v4_timing_info), adp_v4_timing_info);

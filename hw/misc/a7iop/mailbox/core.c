@@ -522,8 +522,7 @@ AppleA7IOPMailbox* apple_a7iop_mailbox_new(const char* role, AppleA7IOPVersion v
     s->iop_mailbox = iop_mailbox ? iop_mailbox : s;
     s->ap_mailbox  = ap_mailbox ? ap_mailbox : s;
     if (handle_messages_func != NULL) {
-        s->handle_messages_bh =
-            aio_bh_new_guarded(qemu_get_aio_context(), handle_messages_func, opaque, &dev->mem_reentrancy_guard);
+        s->handle_messages_bh = aio_bh_new(qemu_get_aio_context(), handle_messages_func, opaque);
     }
     QTAILQ_INIT(&s->inbox);
     QTAILQ_INIT(&s->interrupt_status);

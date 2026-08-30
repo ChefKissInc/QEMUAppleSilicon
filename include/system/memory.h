@@ -771,9 +771,6 @@ struct MemoryRegion
     unsigned               ioeventfd_nb;
     MemoryRegionIoeventfd* ioeventfds;
     RamDiscardManager*     rdm; /* Only for RAM */
-
-    /* For devices designed to perform re-entrant IO into their own IO MRs */
-    bool disable_reentrancy_guard;
 };
 
 struct IOMMUMemoryRegion

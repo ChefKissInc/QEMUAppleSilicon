@@ -1001,7 +1001,7 @@ static void usb_host_nodev_bh(void* opaque)
 
 static void usb_host_nodev(USBHostDevice* s)
 {
-    if (!s->bh_nodev) { s->bh_nodev = qemu_bh_new_guarded(usb_host_nodev_bh, s, &DEVICE(s)->mem_reentrancy_guard); }
+    if (!s->bh_nodev) { s->bh_nodev = qemu_bh_new(usb_host_nodev_bh, s); }
     qemu_bh_schedule(s->bh_nodev);
 }
 

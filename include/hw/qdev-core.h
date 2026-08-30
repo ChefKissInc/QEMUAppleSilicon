@@ -197,11 +197,6 @@ struct NamedClockList
     QLIST_ENTRY(NamedClockList) node;
 };
 
-typedef struct
-{
-    bool engaged_in_io;
-} MemReentrancyGuard;
-
 typedef QLIST_HEAD(, NamedGPIOList) NamedGPIOListHead;
 typedef QLIST_HEAD(, NamedClockList) NamedClockListHead;
 typedef QLIST_HEAD(, BusState) BusStateHead;
@@ -283,12 +278,6 @@ struct DeviceState
      * @unplug_blockers: list of reasons to block unplugging of device
      */
     GSList* unplug_blockers;
-    /**
-     * @mem_reentrancy_guard: Is the device currently in mmio/pio/dma?
-     *
-     * Used to prevent re-entrancy confusing things.
-     */
-    MemReentrancyGuard mem_reentrancy_guard;
 };
 
 typedef struct DeviceListener DeviceListener;

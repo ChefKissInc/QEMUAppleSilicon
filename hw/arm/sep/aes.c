@@ -788,8 +788,7 @@ static void apple_sep_aess_init(Object* obj)
     AppleSEPAESSState* s = APPLE_SEP_AESS(obj);
 
     qemu_mutex_init(&s->lock);
-    s->command_bh =
-        aio_bh_new_guarded(qemu_get_aio_context(), apple_sep_aess_handle_cmd_bh, s, &DEVICE(s)->mem_reentrancy_guard);
+    s->command_bh = aio_bh_new(qemu_get_aio_context(), apple_sep_aess_handle_cmd_bh, s);
 }
 
 static void apple_sep_aess_realize(DeviceState* dev, Error** errp)
@@ -1063,8 +1062,7 @@ static void apple_sep_aesh_init(Object* obj)
     AppleSEPAESHState* s = APPLE_SEP_AESH(obj);
 
     qemu_mutex_init(&s->lock);
-    s->command_bh =
-        aio_bh_new_guarded(qemu_get_aio_context(), apple_sep_aesh_handle_cmd_bh, s, &DEVICE(s)->mem_reentrancy_guard);
+    s->command_bh = aio_bh_new(qemu_get_aio_context(), apple_sep_aesh_handle_cmd_bh, s);
 }
 
 static void apple_sep_aesh_realize(DeviceState* dev, Error** errp)

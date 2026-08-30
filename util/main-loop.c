@@ -522,8 +522,8 @@ void main_loop_wait(int nonblocking)
 
 /* Functions to operate on the main QEMU AioContext.  */
 
-QEMUBH* qemu_bh_new_full(QEMUBHFunc* cb, void* opaque, const char* name, MemReentrancyGuard* reentrancy_guard)
-{ return aio_bh_new_full(qemu_aio_context, cb, opaque, name, reentrancy_guard); }
+QEMUBH* qemu_bh_new_full(QEMUBHFunc* cb, void* opaque, const char* name)
+{ return aio_bh_new_full(qemu_aio_context, cb, opaque, name); }
 
 /*
  * Functions to operate on the I/O handler AioContext.

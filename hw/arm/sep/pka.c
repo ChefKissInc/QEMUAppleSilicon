@@ -314,7 +314,7 @@ static void apple_sep_pka_init(Object* obj)
     AppleSEPPKAState* s = APPLE_SEP_PKA(obj);
 
     qemu_mutex_init(&s->lock);
-    s->command_bh = aio_bh_new_guarded(qemu_get_aio_context(), pka_handle_cmd_bh, s, &DEVICE(s)->mem_reentrancy_guard);
+    s->command_bh = aio_bh_new(qemu_get_aio_context(), pka_handle_cmd_bh, s);
 }
 
 static void apple_sep_pka_class_init(ObjectClass* klass, const void* class_data)

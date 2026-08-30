@@ -124,7 +124,6 @@ typedef struct NICState
 {
     NetClientState*     ncs;
     NICConf*            conf;
-    MemReentrancyGuard* reentrancy_guard;
     void*               opaque;
     bool                peer_deleted;
 } NICState;
@@ -149,8 +148,7 @@ int             qemu_find_net_clients_except(const char* id, NetClientState** nc
 NetClientState* qemu_new_net_client(NetClientInfo* info, NetClientState* peer, const char* model, const char* name);
 NetClientState* qemu_new_net_control_client(NetClientInfo* info, NetClientState* peer, const char* model,
                                             const char* name);
-NICState*       qemu_new_nic(NetClientInfo* info, NICConf* conf, const char* model, const char* name,
-                             MemReentrancyGuard* reentrancy_guard, void* opaque);
+NICState*       qemu_new_nic(NetClientInfo* info, NICConf* conf, const char* model, const char* name, void* opaque);
 void            qemu_del_nic(NICState* nic);
 NetClientState* qemu_get_subqueue(NICState* nic, int queue_index);
 NetClientState* qemu_get_queue(NICState* nic);
