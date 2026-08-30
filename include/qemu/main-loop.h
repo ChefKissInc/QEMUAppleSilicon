@@ -353,12 +353,26 @@ static inline BQLLockAuto* bql_auto_lock(const char* file, int line)
     return (BQLLockAuto*)(uintptr_t)1;
 }
 
+static inline BQLLockAuto* bql_auto_lock_if(bool needed, const char* file, int line)
+{
+    if (!needed) { return NULL; }
+    return bql_auto_lock(file, line);
+}
+
 static inline void bql_auto_unlock(BQLLockAuto* l) { bql_unlock(); }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(BQLLockAuto, bql_auto_unlock)
 
 #define BQL_LOCK_GUARD()                                                                              \
     g_autoptr(BQLLockAuto) _bql_lock_auto __attribute__((unused)) = bql_auto_lock(__FILE__, __LINE__)
+
+/**
+ * BQL_LOCK_GUARD_IF
+ *
+ * As BQL_LOCK_GUARD, but only takes the lock when @needed is true.
+ */
+#define BQL_LOCK_GUARD_IF(needed)                                                                                  \
+    g_autoptr(BQLLockAuto) _bql_lock_auto __attribute__((unused)) = bql_auto_lock_if((needed), __FILE__, __LINE__)
 
 /*
  * qemu_cond_wait_bql: Wait on condition for the Big QEMU Lock (BQL)

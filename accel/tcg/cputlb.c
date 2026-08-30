@@ -1663,7 +1663,7 @@ stop_the_world:
  * @size: number of bytes
  * @mmu_idx: virtual address context
  * @ra: return address into tcg generated code, or 0
- * Context: BQL held
+ * Context: BQL held unless the target MemoryRegion opted into lockless I/O
  *
  * Load @size bytes from @addr, which is memory-mapped i/o.
  * The bytes are concatenated in big-endian order with @ret_be.
@@ -1708,7 +1708,7 @@ static uint64_t do_ld_mmio_beN(CPUState* cpu, CPUTLBEntryFull* full, uint64_t re
     section = io_prepare(&mr_offset, cpu, full, addr, ra);
     mr      = section->mr;
 
-    BQL_LOCK_GUARD();
+    BQL_LOCK_GUARD_IF(!mr->lockless_io);
     return int_ld_mmio_beN(cpu, full, ret_be, addr, size, mmu_idx, type, ra, mr, mr_offset);
 }
 
@@ -1725,7 +1725,7 @@ static Int128 do_ld16_mmio_beN(CPUState* cpu, CPUTLBEntryFull* full, uint64_t re
     section = io_prepare(&mr_offset, cpu, full, addr, ra);
     mr      = section->mr;
 
-    BQL_LOCK_GUARD();
+    BQL_LOCK_GUARD_IF(!mr->lockless_io);
     a = int_ld_mmio_beN(cpu, full, ret_be, addr, size - 8, mmu_idx, MMU_DATA_LOAD, ra, mr, mr_offset);
     b = int_ld_mmio_beN(cpu, full, ret_be, addr + size - 8, 8, mmu_idx, MMU_DATA_LOAD, ra, mr, mr_offset + size - 8);
     return int128_make128(b, a);
@@ -2132,7 +2132,7 @@ static Int128 do_ld16_mmu(CPUState* cpu, vaddr addr, MemOpIdx oi, uintptr_t ra)
  * @size: number of bytes
  * @mmu_idx: virtual address context
  * @ra: return address into tcg generated code, or 0
- * Context: BQL held
+ * Context: BQL held unless the target MemoryRegion opted into lockless I/O
  *
  * Store @size bytes at @addr, which is memory-mapped i/o.
  * The bytes to store are extracted in little-endian order from @val_le;
@@ -2177,7 +2177,7 @@ static uint64_t do_st_mmio_leN(CPUState* cpu, CPUTLBEntryFull* full, uint64_t va
     section = io_prepare(&mr_offset, cpu, full, addr, ra);
     mr      = section->mr;
 
-    BQL_LOCK_GUARD();
+    BQL_LOCK_GUARD_IF(!mr->lockless_io);
     return int_st_mmio_leN(cpu, full, val_le, addr, size, mmu_idx, ra, mr, mr_offset);
 }
 
@@ -2193,7 +2193,7 @@ static uint64_t do_st16_mmio_leN(CPUState* cpu, CPUTLBEntryFull* full, Int128 va
     section = io_prepare(&mr_offset, cpu, full, addr, ra);
     mr      = section->mr;
 
-    BQL_LOCK_GUARD();
+    BQL_LOCK_GUARD_IF(!mr->lockless_io);
     int_st_mmio_leN(cpu, full, int128_getlo(val_le), addr, 8, mmu_idx, ra, mr, mr_offset);
     return int_st_mmio_leN(cpu, full, int128_gethi(val_le), addr + 8, size - 8, mmu_idx, ra, mr, mr_offset + 8);
 }
