@@ -75,6 +75,8 @@ struct DWC2State
     USBBus bus;
     /* This device in device mode */
     DWC2DeviceState* device;
+    uint8_t          pending_addr;
+    bool             addr_pending;
     qemu_irq         irq;
     MemoryRegion*    dma_mr;
     AddressSpace     dma_as;

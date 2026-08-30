@@ -1064,6 +1064,18 @@ static void dwc2_update_out_ep(DWC2State* s, int ep)
     qemu_bh_schedule(s->device_async_bh);
 }
 
+static void dwc2_device_apply_pending_addr(DWC2State* s, USBPacket* p)
+{
+    if (!s->addr_pending) { return; }
+    if (p->ep->nr != 0 || p->pid != USB_TOKEN_IN) { return; }
+    if (p->status != USB_RET_SUCCESS) { return; }
+    if (p->iov.size != 0) { return; }
+
+    s->addr_pending             = false;
+    USB_DEVICE(s->device)->addr = s->pending_addr;
+    trace_usb_set_addr(s->pending_addr);
+}
+
 static void dwc2_device_process_packet(DWC2State* s, USBPacket* p)
 {
     int ep = p->ep->nr;
@@ -1384,6 +1396,8 @@ static void dwc2_device_process_packet(DWC2State* s, USBPacket* p)
         default: assert_not_reached(); break;
     }
     dwc2_update_ep_irq(s, ep);
+
+    dwc2_device_apply_pending_addr(s, p);
 }
 
 static void dwc2_device_process_async(DWC2State* s, USBEndpoint* ep)
@@ -1461,7 +1475,14 @@ static void dwc2_dreg_write(void* ptr, hwaddr addr, int index, uint64_t val, uns
         case DIEPMSK:
         case DOEPMSK:
         case DAINTMSK: iflg = 1; break;
-        case DCFG    : USB_DEVICE(s->device)->addr = (val & DCFG_DEVADDR_MASK) >> DCFG_DEVADDR_SHIFT; break;
+        case DCFG    : {
+            uint8_t devaddr = (val & DCFG_DEVADDR_MASK) >> DCFG_DEVADDR_SHIFT;
+            if (devaddr != USB_DEVICE(s->device)->addr) {
+                s->pending_addr = devaddr;
+                s->addr_pending = true;
+            }
+            break;
+        }
         case DCTL:
             /* don't allow setting of read-only bits */
             val &= ~(DCTL_GOUTNAKSTS | DCTL_GNPINNAKSTS);
@@ -1969,6 +1990,7 @@ static void dwc2_reset_exit(Object* obj, ResetType type)
     }
 
     USB_DEVICE(s->device)->addr = 0;
+    s->addr_pending             = false;
 }
 
 static void dwc2_realize(DeviceState* dev, Error** errp)
