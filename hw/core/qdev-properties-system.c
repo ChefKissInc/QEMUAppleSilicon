@@ -500,84 +500,6 @@ const PropertyInfo qdev_prop_blockdev_on_error = {
     .set_default_value = qdev_propinfo_set_default_value_enum,
 };
 
-/* --- Reserved Region --- */
-
-/*
- * Accepted syntax:
- *   <low address>:<high address>:<type>
- *   where low/high addresses are uint64_t in hexadecimal
- *   and type is a non-negative decimal integer
- */
-static void get_reserved_region(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
-{
-    const Property* prop = opaque;
-    ReservedRegion* rr   = object_field_prop_ptr(obj, prop);
-    char            buffer[64];
-    char*           p = buffer;
-    int             rc;
-
-    rc = snprintf(buffer, sizeof(buffer), "0x%" PRIx64 ":0x%" PRIx64 ":%u", range_lob(&rr->range),
-                  range_upb(&rr->range), rr->type);
-    assert(rc < sizeof(buffer));
-
-    visit_type_str(v, name, &p, errp);
-}
-
-static void set_reserved_region(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
-{
-    const Property* prop = opaque;
-    ReservedRegion* rr   = object_field_prop_ptr(obj, prop);
-    const char*     endptr;
-    uint64_t        lob, upb;
-    char*           str;
-    int             ret;
-
-    if (!visit_type_str(v, name, &str, errp)) { return; }
-
-    ret = qemu_strtou64(str, &endptr, 16, &lob);
-    if (ret) {
-        error_setg(errp,
-                   "start address of '%s'"
-                   " must be a hexadecimal integer",
-                   name);
-        goto out;
-    }
-    if (*endptr != ':') { goto separator_error; }
-
-    ret = qemu_strtou64(endptr + 1, &endptr, 16, &upb);
-    if (ret) {
-        error_setg(errp,
-                   "end address of '%s'"
-                   " must be a hexadecimal integer",
-                   name);
-        goto out;
-    }
-    if (*endptr != ':') { goto separator_error; }
-
-    range_set_bounds(&rr->range, lob, upb);
-
-    ret = qemu_strtoui(endptr + 1, &endptr, 10, &rr->type);
-    if (ret) {
-        error_setg(errp,
-                   "type of '%s'"
-                   " must be a non-negative decimal integer",
-                   name);
-    }
-    goto out;
-
-separator_error:
-    error_setg(errp, "reserved region fields must be separated with ':'");
-out:
-    g_free(str);
-}
-
-const PropertyInfo qdev_prop_reserved_region = {
-    .type        = "str",
-    .description = "Reserved Region, example: 0xFEE00000:0xFEEFFFFF:0",
-    .get         = get_reserved_region,
-    .set         = set_reserved_region,
-};
-
 /* --- pci address --- */
 
 /*
@@ -892,15 +814,4 @@ const PropertyInfo qdev_prop_uuid = {
     .get               = get_uuid,
     .set               = set_uuid,
     .set_default_value = set_default_uuid_auto,
-};
-
-/* --- Endian modes */
-
-const PropertyInfo qdev_prop_endian_mode = {
-    .type              = "EndianMode",
-    .description       = "Endian mode, big/little/unspecified",
-    .enum_table        = &EndianMode_lookup,
-    .get               = qdev_propinfo_get_enum,
-    .set               = qdev_propinfo_set_enum,
-    .set_default_value = qdev_propinfo_set_default_value_enum,
 };
