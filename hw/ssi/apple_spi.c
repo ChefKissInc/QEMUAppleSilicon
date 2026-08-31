@@ -89,6 +89,8 @@ struct AppleSPIState
     AppleSIODMAEndpoint* tx_chan;
     AppleSIODMAEndpoint* rx_chan;
 
+    qemu_irq  cs_line_pin;
+
     qemu_irq irq;
     qemu_irq cs_line;
 
@@ -221,13 +223,7 @@ static void apple_spi_update_irq(AppleSPIState* spi)
 
 static void apple_spi_update_cs(AppleSPIState* spi)
 {
-    BusState* b     = BUS(spi->ssi_bus);
-    BusChild* child = QTAILQ_FIRST(&b->children);
-    if (!child) { return; }
-    SSIPeripheralClass* spc = SSI_PERIPHERAL_GET_CLASS(child->child);
-    if (spc->cs_polarity == SSI_CS_NONE) { return; }
-    qemu_irq cs_pin = qdev_get_gpio_in_named(child->child, SSI_GPIO_CS, 0);
-    if (cs_pin) { qemu_set_irq(cs_pin, (REG(spi, REG_PIN) & REG_PIN_CS) != 0); }
+    if (spi->cs_line_pin != NULL) { qemu_set_irq(spi->cs_line_pin, (REG(spi, REG_PIN) & REG_PIN_CS) != 0); }
 }
 
 static void apple_spi_cs_set(void* opaque, int pin, int level)
@@ -237,6 +233,7 @@ static void apple_spi_cs_set(void* opaque, int pin, int level)
     else {
         REG(spi, REG_PIN) &= ~REG_PIN_CS;
     }
+
     apple_spi_update_cs(spi);
 }
 
@@ -418,11 +415,23 @@ static const MemoryRegionOps apple_spi_reg_ops = {
 
 static void apple_spi_reset_enter(Object* obj, ResetType type)
 {
-    AppleSPIState* spi = APPLE_SPI(obj);
+    AppleSPIState* spi   = APPLE_SPI(obj);
+    BusState*      b     = BUS(spi->ssi_bus);
+    BusChild*      child = QTAILQ_FIRST(&b->children);
 
     memset(spi->regs, 0, sizeof(spi->regs));
     fifo32_reset(&spi->tx_fifo);
     fifo32_reset(&spi->rx_fifo);
+
+    spi->cs_line_pin = NULL;
+
+    if (!child) { return; }
+
+    SSIPeripheralClass* spc = SSI_PERIPHERAL_GET_CLASS(child->child);
+
+    if (spc->cs_polarity == SSI_CS_NONE) { return; }
+
+    spi->cs_line_pin = qdev_get_gpio_in_named(child->child, SSI_GPIO_CS, 0);
 }
 
 SSIBus* apple_spi_get_bus(AppleSPIState* spi) { return spi->ssi_bus; }
