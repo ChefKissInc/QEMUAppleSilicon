@@ -468,13 +468,6 @@ static int GRAPH_RDLOCK raw_probe_blocksizes(BlockDriverState* bs, BlockSizes* b
     return 0;
 }
 
-static int GRAPH_RDLOCK raw_probe_geometry(BlockDriverState* bs, HDGeometry* geo)
-{
-    BDRVRawState* s = bs->opaque;
-    if (s->offset || s->has_size) { return -ENOTSUP; }
-    return bdrv_probe_geometry(bs->file->bs, geo);
-}
-
 static int coroutine_fn GRAPH_RDLOCK raw_co_copy_range_from(BlockDriverState* bs, BdrvChild* src, int64_t src_offset,
                                                             BdrvChild* dst, int64_t dst_offset, int64_t bytes,
                                                             BdrvRequestFlags read_flags, BdrvRequestFlags write_flags)
@@ -544,7 +537,6 @@ BlockDriver bdrv_raw = {
     .bdrv_co_get_info        = &raw_co_get_info,
     .bdrv_refresh_limits     = &raw_refresh_limits,
     .bdrv_probe_blocksizes   = &raw_probe_blocksizes,
-    .bdrv_probe_geometry     = &raw_probe_geometry,
     .bdrv_co_eject           = &raw_co_eject,
     .bdrv_co_lock_medium     = &raw_co_lock_medium,
     .create_opts             = &raw_create_opts,

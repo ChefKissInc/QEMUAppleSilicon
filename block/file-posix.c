@@ -1491,36 +1491,6 @@ static int hdev_probe_blocksizes(BlockDriverState* bs, BlockSizes* bsz)
     return probe_physical_blocksize(s->fd, &bsz->phys);
 }
 
-/**
- * Try to get @bs's geometry: cyls, heads, sectors.
- * On success, store them in @geo and return 0.
- * On failure return -errno.
- * (Allows block driver to assign default geometry values that guest sees)
- */
-#ifdef __linux__
-static int hdev_probe_geometry(BlockDriverState* bs, HDGeometry* geo)
-{
-    BDRVRawState*      s         = bs->opaque;
-    struct hd_geometry ioctl_geo = {0};
-
-    /* If DASD, get its geometry */
-    if (check_for_dasd(s->fd) < 0) { return -ENOTSUP; }
-    if (ioctl(s->fd, HDIO_GETGEO, &ioctl_geo) < 0) { return -errno; }
-    /* HDIO_GETGEO may return success even though geo contains zeros
-       (e.g. certain multipath setups) */
-    if (!ioctl_geo.heads || !ioctl_geo.sectors || !ioctl_geo.cylinders) { return -ENOTSUP; }
-    /* Do not return a geometry for partition */
-    if (ioctl_geo.start != 0) { return -ENOTSUP; }
-    geo->heads     = ioctl_geo.heads;
-    geo->sectors   = ioctl_geo.sectors;
-    geo->cylinders = ioctl_geo.cylinders;
-
-    return 0;
-}
-#else /* __linux__ */
-static int hdev_probe_geometry(BlockDriverState* bs, HDGeometry* geo) { return -ENOTSUP; }
-#endif
-
 static int handle_aiocb_flush(void* opaque)
 {
     RawPosixAIOData* aiocb = opaque;
@@ -3866,7 +3836,6 @@ static BlockDriver bdrv_host_device = {
     .bdrv_set_perm                   = raw_set_perm,
     .bdrv_abort_perm_update          = raw_abort_perm_update,
     .bdrv_probe_blocksizes           = hdev_probe_blocksizes,
-    .bdrv_probe_geometry             = hdev_probe_geometry,
 
 /* zoned device */
     #if defined(CONFIG_BLKZONED)

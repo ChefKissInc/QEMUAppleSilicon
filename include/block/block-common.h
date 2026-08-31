@@ -552,13 +552,6 @@ typedef struct BlockSizes
     uint32_t log;
 } BlockSizes;
 
-typedef struct HDGeometry
-{
-    uint32_t heads;
-    uint32_t sectors;
-    uint32_t cylinders;
-} HDGeometry;
-
 /*
  * Common functions that are neither I/O nor Global State.
  *

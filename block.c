@@ -689,28 +689,6 @@ int bdrv_probe_blocksizes(BlockDriverState* bs, BlockSizes* bsz)
     return -ENOTSUP;
 }
 
-/**
- * Try to get @bs's geometry (cyls, heads, sectors).
- * On success, store them in @geo struct and return 0.
- * On failure return -errno.
- * @bs must not be empty.
- */
-int bdrv_probe_geometry(BlockDriverState* bs, HDGeometry* geo)
-{
-    BlockDriver*      drv = bs->drv;
-    BlockDriverState* filtered;
-
-    GLOBAL_STATE_CODE();
-    GRAPH_RDLOCK_GUARD_MAINLOOP();
-
-    if (drv && drv->bdrv_probe_geometry) { return drv->bdrv_probe_geometry(bs, geo); }
-
-    filtered = bdrv_filter_bs(bs);
-    if (filtered) { return bdrv_probe_geometry(filtered, geo); }
-
-    return -ENOTSUP;
-}
-
 /*
  * Create a uniquely-named empty temporary file.
  * Return the actual file name used upon success, otherwise NULL.

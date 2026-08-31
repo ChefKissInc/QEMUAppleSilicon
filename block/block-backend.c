@@ -2224,14 +2224,6 @@ int blk_probe_blocksizes(BlockBackend* blk, BlockSizes* bsz)
     return bdrv_probe_blocksizes(blk_bs(blk), bsz);
 }
 
-int blk_probe_geometry(BlockBackend* blk, HDGeometry* geo)
-{
-    GLOBAL_STATE_CODE();
-    if (!blk_is_available(blk)) { return -ENOMEDIUM; }
-
-    return bdrv_probe_geometry(blk_bs(blk), geo);
-}
-
 /*
  * Updates the BlockBackendRootState object with data from the currently
  * attached BlockDriverState.

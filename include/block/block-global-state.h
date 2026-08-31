@@ -224,7 +224,6 @@ int GRAPH_RDLOCK   bdrv_try_change_aio_context_locked(BlockDriverState* bs, AioC
                                                       Error** errp);
 
 int GRAPH_RDLOCK bdrv_probe_blocksizes(BlockDriverState* bs, BlockSizes* bsz);
-int              bdrv_probe_geometry(BlockDriverState* bs, HDGeometry* geo);
 
 void GRAPH_WRLOCK bdrv_add_child(BlockDriverState* parent, BlockDriverState* child, Error** errp);
 

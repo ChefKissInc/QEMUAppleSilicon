@@ -365,14 +365,6 @@ struct BlockDriver
      * On failure, return negative errno.
      */
     int GRAPH_RDLOCK_PTR (*bdrv_probe_blocksizes)(BlockDriverState* bs, BlockSizes* bsz);
-    /**
-     * Try to get @bs's geometry (cyls, heads, sectors)
-     * On success, store them in @geo and return 0.
-     * On failure return -errno.
-     * Only drivers that want to override guest geometry implement this
-     * callback; see hd_geometry_guess().
-     */
-    int GRAPH_RDLOCK_PTR (*bdrv_probe_geometry)(BlockDriverState* bs, HDGeometry* geo);
 
     /**
      * Hot add a BDS's child. Used in combination with bdrv_del_child, so the

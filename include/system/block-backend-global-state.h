@@ -89,7 +89,6 @@ bool                   blk_get_detect_zeroes_from_root_state(BlockBackend* blk);
 int                    blk_get_open_flags_from_root_state(BlockBackend* blk);
 
 int blk_probe_blocksizes(BlockBackend* blk, BlockSizes* bsz);
-int blk_probe_geometry(BlockBackend* blk, HDGeometry* geo);
 
 void blk_set_force_allow_inactivate(BlockBackend* blk);
 

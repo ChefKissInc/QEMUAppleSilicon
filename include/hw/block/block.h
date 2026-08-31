@@ -76,8 +76,3 @@ bool blk_check_size_and_read_all(BlockBackend* blk, DeviceState* dev, void* buf,
 
 bool blkconf_blocksizes(BlockConf* conf, Error** errp);
 bool blkconf_apply_backend_options(BlockConf* conf, bool readonly, bool resizable, Error** errp);
-
-/* Hard disk geometry */
-
-void hd_geometry_guess(BlockBackend* blk, uint32_t* pcyls, uint32_t* pheads, uint32_t* psecs, int* ptrans);
-int  hd_bios_chs_auto_trans(uint32_t cyls, uint32_t heads, uint32_t secs);
