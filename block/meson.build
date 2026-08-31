@@ -38,48 +38,8 @@ block_ss.add(files(
   'write-threshold.c',
 ), zstd, zlib)
 
-if get_option('qcow1').allowed()
-  block_ss.add(files('qcow.c'))
-endif
-if get_option('vdi').allowed()
-  block_ss.add(files('vdi.c'))
-endif
-if get_option('vhdx').allowed()
-  block_ss.add(files(
-    'vhdx-endian.c',
-    'vhdx-log.c',
-    'vhdx.c'
-  ))
-endif
-if get_option('vmdk').allowed()
-  block_ss.add(files('vmdk.c'))
-endif
-if get_option('vpc').allowed()
-  block_ss.add(files('vpc.c'))
-endif
-if get_option('cloop').allowed()
-  block_ss.add(files('cloop.c'))
-endif
-if get_option('bochs').allowed()
-  block_ss.add(files('bochs.c'))
-endif
-if get_option('vvfat').allowed()
-  block_ss.add(files('vvfat.c'))
-endif
 if get_option('dmg').allowed()
   block_ss.add(files('dmg.c'))
-endif
-if get_option('qed').allowed()
-  block_ss.add(files(
-    'qed-check.c',
-    'qed-cluster.c',
-    'qed-l2-cache.c',
-    'qed-table.c',
-    'qed.c',
-  ))
-endif
-if get_option('parallels').allowed()
-  block_ss.add(files('parallels.c', 'parallels-ext.c'))
 endif
 
 if host_os == 'windows'

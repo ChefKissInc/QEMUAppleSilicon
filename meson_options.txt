@@ -199,28 +199,8 @@ option('pipewire', type: 'feature', value: 'auto',
 option('sndio', type: 'feature', value: 'auto',
        description: 'sndio sound support')
 
-option('bochs', type: 'feature', value: 'auto',
-       description: 'bochs image format support')
-option('cloop', type: 'feature', value: 'auto',
-       description: 'cloop image format support')
 option('dmg', type: 'feature', value: 'auto',
        description: 'dmg image format support')
-option('qcow1', type: 'feature', value: 'auto',
-       description: 'qcow1 image format support')
-option('vdi', type: 'feature', value: 'auto',
-       description: 'vdi image format support')
-option('vhdx', type: 'feature', value: 'auto',
-       description: 'vhdx image format support')
-option('vmdk', type: 'feature', value: 'auto',
-       description: 'vmdk image format support')
-option('vpc', type: 'feature', value: 'auto',
-       description: 'vpc image format support')
-option('vvfat', type: 'feature', value: 'auto',
-       description: 'vvfat image format support')
-option('qed', type: 'feature', value: 'auto',
-       description: 'qed image format support')
-option('parallels', type: 'feature', value: 'auto',
-       description: 'parallels image format support')
 option('block_drv_whitelist_in_tools', type: 'boolean', value: false,
        description: 'use block whitelist also in tools instead of only QEMU')
 option('rng_none', type: 'boolean', value: false,

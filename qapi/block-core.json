@@ -103,53 +103,6 @@
   } }
 
 ##
-# @ImageInfoSpecificVmdk:
-#
-# @create-type: The create type of VMDK image
-#
-# @cid: Content id of image
-#
-# @parent-cid: Parent VMDK image's cid
-#
-# @extents: List of extent files
-#
-# Since: 1.7
-##
-{ 'struct': 'ImageInfoSpecificVmdk',
-  'data': {
-      'create-type': 'str',
-      'cid': 'int',
-      'parent-cid': 'int',
-      'extents': ['VmdkExtentInfo']
-  } }
-
-##
-# @VmdkExtentInfo:
-#
-# Information about a VMDK extent file
-#
-# @filename: Name of the extent file
-#
-# @format: Extent type (e.g. FLAT or SPARSE)
-#
-# @virtual-size: Number of bytes covered by this extent
-#
-# @cluster-size: Cluster size in bytes (for non-flat extents)
-#
-# @compressed: Whether this extent contains compressed data
-#
-# Since: 8.0
-##
-{ 'struct': 'VmdkExtentInfo',
-  'data': {
-      'filename': 'str',
-      'format': 'str',
-      'virtual-size': 'int',
-      '*cluster-size': 'int',
-      '*compressed': 'bool'
-  } }
-
-##
 # @ImageInfoSpecificRbd:
 #
 # @encryption-format: Image encryption format. If encryption is enabled for the
@@ -192,7 +145,7 @@
 # Since: 1.7
 ##
 { 'enum': 'ImageInfoSpecificKind',
-  'data': [ 'qcow2', 'vmdk', 'luks', 'rbd', 'file' ] }
+  'data': [ 'qcow2', 'luks', 'rbd', 'file' ] }
 
 ##
 # @ImageInfoSpecificQCow2Wrapper:
@@ -203,16 +156,6 @@
 ##
 { 'struct': 'ImageInfoSpecificQCow2Wrapper',
   'data': { 'data': 'ImageInfoSpecificQCow2' } }
-
-##
-# @ImageInfoSpecificVmdkWrapper:
-#
-# @data: image information specific to VMDK
-#
-# Since: 6.1
-##
-{ 'struct': 'ImageInfoSpecificVmdkWrapper',
-  'data': { 'data': 'ImageInfoSpecificVmdk' } }
 
 ##
 # @ImageInfoSpecificLUKSWrapper:
@@ -262,7 +205,6 @@
   'discriminator': 'type',
   'data': {
       'qcow2': 'ImageInfoSpecificQCow2Wrapper',
-      'vmdk': 'ImageInfoSpecificVmdkWrapper',
       'luks': 'ImageInfoSpecificLUKSWrapper',
       'rbd': 'ImageInfoSpecificRbdWrapper',
       'file': 'ImageInfoSpecificFileWrapper'
@@ -487,13 +429,6 @@
 # @ro: true if the backing device was open read-only
 #
 # @drv: the name of the block format used to open the backing device.
-#     As of 0.14 this can be: 'blkdebug', 'bochs', 'cloop', 'cow',
-#     'dmg', 'file', 'file', 'ftp', 'ftps', 'host_cdrom',
-#     'host_device', 'http', 'https', 'luks', 'parallels',
-#     'qcow', 'qcow2', 'raw', 'vdi', 'vmdk', 'vpc', 'vvfat' 2.2:
-#     'archipelago' added, 'cow' dropped 2.3: 'host_floppy' deprecated
-#     2.5: 'host_floppy' dropped 2.6: 'luks' added 2.8: 'replication'
-#     added, 'tftp' dropped 2.9: 'archipelago' dropped
 #
 # @backing_file: the name of the backing file (for copy-on-write)
 #
@@ -3004,8 +2939,8 @@
 # Since: 2.9
 ##
 { 'enum': 'BlockdevDriver',
-  'data': [ 'blkdebug', 'blklogwrites', 'blkverify', 'bochs',
-            'cloop', 'compress', 'copy-before-write', 'copy-on-read', 'dmg',
+  'data': [ 'blkdebug', 'blklogwrites', 'blkverify',
+            'compress', 'copy-before-write', 'copy-on-read', 'dmg',
             'file', 'snapshot-access', 'ftp', 'ftps',
             {'name': 'gluster', 'features': [ 'deprecated' ] },
             {'name': 'host_cdrom', 'if': 'HAVE_HOST_BLOCK_DEVICE' },
@@ -3014,10 +2949,9 @@
             { 'name': 'io_uring', 'if': 'CONFIG_BLKIO' },
             'luks', 'nfs', 'null-aio', 'null-co', 'nvme',
             { 'name': 'nvme-io_uring', 'if': 'CONFIG_BLKIO' },
-            'parallels', 'preallocate', 'qcow', 'qcow2', 'qed', 'quorum',
+            'preallocate', 'qcow2', 'quorum',
             'raw', 'rbd',
-            'ssh', 'vdi', 'vhdx',
-            'vmdk', 'vpc', 'vvfat' ] }
+            'ssh' ] }
 
 ##
 # @BlockdevOptionsFile:
@@ -3116,31 +3050,6 @@
 ##
 { 'struct': 'BlockdevOptionsNVMe',
   'data': { 'device': 'str', 'namespace': 'int' } }
-
-##
-# @BlockdevOptionsVVFAT:
-#
-# Driver specific block device options for the vvfat protocol.
-#
-# @dir: directory to be exported as FAT image
-#
-# @fat-type: FAT type: 12, 16 or 32
-#
-# @floppy: whether to export a floppy image (true) or partitioned hard
-#     disk (false; default)
-#
-# @label: set the volume label, limited to 11 bytes.  FAT16 and FAT32
-#     traditionally have some restrictions on labels, which are
-#     ignored by most operating systems.  Defaults to "QEMU VVFAT".
-#     (since 2.4)
-#
-# @rw: whether to allow write operations (default: false)
-#
-# Since: 2.9
-##
-{ 'struct': 'BlockdevOptionsVVFAT',
-  'data': { 'dir': 'str', '*fat-type': 'int', '*floppy': 'bool',
-            '*label': 'str', '*rw': 'bool' } }
 
 ##
 # @BlockdevOptionsGenericFormat:
@@ -4295,8 +4204,6 @@
       'blkdebug':   'BlockdevOptionsBlkdebug',
       'blklogwrites':'BlockdevOptionsBlklogwrites',
       'blkverify':  'BlockdevOptionsBlkverify',
-      'bochs':      'BlockdevOptionsGenericFormat',
-      'cloop':      'BlockdevOptionsGenericFormat',
       'compress':   'BlockdevOptionsGenericFormat',
       'copy-before-write':'BlockdevOptionsCbw',
       'copy-on-read':'BlockdevOptionsCor',
@@ -4320,21 +4227,13 @@
       'nvme':       'BlockdevOptionsNVMe',
       'nvme-io_uring': { 'type': 'BlockdevOptionsNvmeIoUring',
                          'if': 'CONFIG_BLKIO' },
-      'parallels':  'BlockdevOptionsGenericFormat',
       'preallocate':'BlockdevOptionsPreallocate',
       'qcow2':      'BlockdevOptionsQcow2',
-      'qcow':       'BlockdevOptionsQcow',
-      'qed':        'BlockdevOptionsGenericCOWFormat',
       'quorum':     'BlockdevOptionsQuorum',
       'raw':        'BlockdevOptionsRaw',
       'rbd':        'BlockdevOptionsRbd',
       'snapshot-access': 'BlockdevOptionsGenericFormat',
-      'ssh':        'BlockdevOptionsSsh',
-      'vdi':        'BlockdevOptionsGenericFormat',
-      'vhdx':       'BlockdevOptionsGenericFormat',
-      'vmdk':       'BlockdevOptionsGenericCOWFormat',
-      'vpc':        'BlockdevOptionsGenericFormat',
-      'vvfat':      'BlockdevOptionsVVFAT'
+      'ssh':        'BlockdevOptionsSsh'
   } }
 
 ##
@@ -4620,24 +4519,6 @@
             'size':             'size' } }
 
 ##
-# @BlockdevCreateOptionsParallels:
-#
-# Driver specific image creation options for parallels.
-#
-# @file: Node to create the image format on
-#
-# @size: Size of the virtual disk in bytes
-#
-# @cluster-size: Cluster size in bytes (default: 1 MB)
-#
-# Since: 2.12
-##
-{ 'struct': 'BlockdevCreateOptionsParallels',
-  'data': { 'file':             'BlockdevRef',
-            'size':             'size',
-            '*cluster-size':    'size' } }
-
-##
 # @BlockdevCreateOptionsQcow:
 #
 # Driver specific image creation options for qcow.
@@ -4747,34 +4628,6 @@
             '*compression-type':'Qcow2CompressionType' } }
 
 ##
-# @BlockdevCreateOptionsQed:
-#
-# Driver specific image creation options for qed.
-#
-# @file: Node to create the image format on
-#
-# @size: Size of the virtual disk in bytes
-#
-# @backing-file: File name of the backing file if a backing file
-#     should be used
-#
-# @backing-fmt: Name of the block driver to use for the backing file
-#
-# @cluster-size: Cluster size in bytes (default: 65536)
-#
-# @table-size: L1/L2 table size (in clusters)
-#
-# Since: 2.12
-##
-{ 'struct': 'BlockdevCreateOptionsQed',
-  'data': { 'file':             'BlockdevRef',
-            'size':             'size',
-            '*backing-file':    'str',
-            '*backing-fmt':     'BlockdevDriver',
-            '*cluster-size':    'size',
-            '*table-size':      'int' } }
-
-##
 # @BlockdevCreateOptionsRbd:
 #
 # Driver specific image creation options for rbd/Ceph.
@@ -4797,89 +4650,6 @@
             '*encrypt' :        'RbdEncryptionCreateOptions' } }
 
 ##
-# @BlockdevVmdkSubformat:
-#
-# Subformat options for VMDK images
-#
-# @monolithicSparse: Single file image with sparse cluster allocation
-#
-# @monolithicFlat: Single flat data image and a descriptor file
-#
-# @twoGbMaxExtentSparse: Data is split into 2GB (per virtual LBA)
-#     sparse extent files, in addition to a descriptor file
-#
-# @twoGbMaxExtentFlat: Data is split into 2GB (per virtual LBA) flat
-#     extent files, in addition to a descriptor file
-#
-# @streamOptimized: Single file image sparse cluster allocation,
-#     optimized for streaming over network.
-#
-# Since: 4.0
-##
-{ 'enum': 'BlockdevVmdkSubformat',
-  'data': [ 'monolithicSparse', 'monolithicFlat', 'twoGbMaxExtentSparse',
-            'twoGbMaxExtentFlat', 'streamOptimized'] }
-
-##
-# @BlockdevVmdkAdapterType:
-#
-# Adapter type info for VMDK images
-#
-# Since: 4.0
-##
-{ 'enum': 'BlockdevVmdkAdapterType',
-  'data': [ 'ide', 'buslogic', 'lsilogic', 'legacyESX'] }
-
-##
-# @BlockdevCreateOptionsVmdk:
-#
-# Driver specific image creation options for VMDK.
-#
-# @file: Where to store the new image file.  This refers to the image
-#     file for monolithcSparse and streamOptimized format, or the
-#     descriptor file for other formats.
-#
-# @size: Size of the virtual disk in bytes
-#
-# @extents: Where to store the data extents.  Required for
-#     monolithcFlat, twoGbMaxExtentSparse and twoGbMaxExtentFlat
-#     formats.  For monolithicFlat, only one entry is required; for
-#     twoGbMaxExtent* formats, the number of entries required is
-#     calculated as extent_number = virtual_size / 2GB.  Providing
-#     more extents than will be used is an error.
-#
-# @subformat: The subformat of the VMDK image.  Default:
-#     "monolithicSparse".
-#
-# @backing-file: The path of backing file.  Default: no backing file
-#     is used.
-#
-# @adapter-type: The adapter type used to fill in the descriptor.
-#     Default: ide.
-#
-# @hwversion: Hardware version.  The meaningful options are "4" or
-#     "6".  Default: "4".
-#
-# @toolsversion: VMware guest tools version.  Default: "2147483647"
-#     (Since 6.2)
-#
-# @zeroed-grain: Whether to enable zeroed-grain feature for sparse
-#     subformats.  Default: false.
-#
-# Since: 4.0
-##
-{ 'struct': 'BlockdevCreateOptionsVmdk',
-  'data': { 'file':             'BlockdevRef',
-            'size':             'size',
-            '*extents':          ['BlockdevRef'],
-            '*subformat':       'BlockdevVmdkSubformat',
-            '*backing-file':    'str',
-            '*adapter-type':    'BlockdevVmdkAdapterType',
-            '*hwversion':       'str',
-            '*toolsversion':    'str',
-            '*zeroed-grain':    'bool' } }
-
-##
 # @BlockdevCreateOptionsSsh:
 #
 # Driver specific image creation options for SSH.
@@ -4893,104 +4663,6 @@
 { 'struct': 'BlockdevCreateOptionsSsh',
   'data': { 'location':         'BlockdevOptionsSsh',
             'size':             'size' } }
-
-##
-# @BlockdevCreateOptionsVdi:
-#
-# Driver specific image creation options for VDI.
-#
-# @file: Node to create the image format on
-#
-# @size: Size of the virtual disk in bytes
-#
-# @preallocation: Preallocation mode for the new image (default: off;
-#     allowed values: off, metadata)
-#
-# Since: 2.12
-##
-{ 'struct': 'BlockdevCreateOptionsVdi',
-  'data': { 'file':             'BlockdevRef',
-            'size':             'size',
-            '*preallocation':   'PreallocMode' } }
-
-##
-# @BlockdevVhdxSubformat:
-#
-# @dynamic: Growing image file
-#
-# @fixed: Preallocated fixed-size image file
-#
-# Since: 2.12
-##
-{ 'enum': 'BlockdevVhdxSubformat',
-  'data': [ 'dynamic', 'fixed' ] }
-
-##
-# @BlockdevCreateOptionsVhdx:
-#
-# Driver specific image creation options for vhdx.
-#
-# @file: Node to create the image format on
-#
-# @size: Size of the virtual disk in bytes
-#
-# @log-size: Log size in bytes, must be a multiple of 1 MB (default: 1
-#     MB)
-#
-# @block-size: Block size in bytes, must be a multiple of 1 MB and not
-#     larger than 256 MB (default: automatically choose a block size
-#     depending on the image size)
-#
-# @subformat: vhdx subformat (default: dynamic)
-#
-# @block-state-zero: Force use of payload blocks of type 'ZERO'.
-#     Non-standard, but default.  Do not set to 'off' when using
-#     'qemu-img convert' with subformat=dynamic.
-#
-# Since: 2.12
-##
-{ 'struct': 'BlockdevCreateOptionsVhdx',
-  'data': { 'file':                 'BlockdevRef',
-            'size':                 'size',
-            '*log-size':            'size',
-            '*block-size':          'size',
-            '*subformat':           'BlockdevVhdxSubformat',
-            '*block-state-zero':    'bool' } }
-
-##
-# @BlockdevVpcSubformat:
-#
-# @dynamic: Growing image file
-#
-# @fixed: Preallocated fixed-size image file
-#
-# Since: 2.12
-##
-{ 'enum': 'BlockdevVpcSubformat',
-  'data': [ 'dynamic', 'fixed' ] }
-
-##
-# @BlockdevCreateOptionsVpc:
-#
-# Driver specific image creation options for vpc (VHD).
-#
-# @file: Node to create the image format on
-#
-# @size: Size of the virtual disk in bytes
-#
-# @subformat: vhdx subformat (default: dynamic)
-#
-# @force-size: Force use of the exact byte size instead of rounding to
-#     the next size that can be represented in CHS geometry
-#     (default: false)
-#
-# Since: 2.12
-##
-{ 'struct': 'BlockdevCreateOptionsVpc',
-  'data': { 'file':                 'BlockdevRef',
-            'size':                 'size',
-            '*subformat':           'BlockdevVpcSubformat',
-            '*force-size':          'bool' } }
 
 ##
 # @BlockdevCreateOptions:
@@ -5010,16 +4682,9 @@
       'gluster':        'BlockdevCreateOptionsGluster',
       'luks':           'BlockdevCreateOptionsLUKS',
       'nfs':            'BlockdevCreateOptionsNfs',
-      'parallels':      'BlockdevCreateOptionsParallels',
-      'qcow':           'BlockdevCreateOptionsQcow',
       'qcow2':          'BlockdevCreateOptionsQcow2',
-      'qed':            'BlockdevCreateOptionsQed',
       'rbd':            'BlockdevCreateOptionsRbd',
-      'ssh':            'BlockdevCreateOptionsSsh',
-      'vdi':            'BlockdevCreateOptionsVdi',
-      'vhdx':           'BlockdevCreateOptionsVhdx',
-      'vmdk':           'BlockdevCreateOptionsVmdk',
-      'vpc':            'BlockdevCreateOptionsVpc'
+      'ssh':            'BlockdevCreateOptionsSsh'
   } }
 
 ##

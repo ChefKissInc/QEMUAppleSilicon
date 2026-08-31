@@ -43,7 +43,6 @@
         'BlockdevSnapshotInternalWrapper',
         'BlockdevSnapshotSyncWrapper',
         'BlockdevSnapshotWrapper',
-        'BlockdevVmdkAdapterType',
         'DisplayProtocol',
         'DriveBackupWrapper',
         'DummyBlockCoreForceArrays',
@@ -78,8 +77,6 @@
         'BlockInfo',                # query-block
         'BlockdevAioOptions',       # blockdev-add, -blockdev
         'BlockdevDriver',           # blockdev-add, query-blockstats, ...
-        'BlockdevVmdkAdapterType',  # blockdev-create (to match VMDK spec)
-        'BlockdevVmdkSubformat',    # blockdev-create (to match VMDK spec)
         'ColoCompareProperties',    # object_add, -object
         'FilterMirrorProperties',   # object_add, -object
         'FilterRedirectorProperties', # object_add, -object

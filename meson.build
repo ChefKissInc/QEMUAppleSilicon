@@ -3391,17 +3391,7 @@ if have_block
   summary_info += {'Block whitelist (rw)': get_option('block_drv_rw_whitelist')}
   summary_info += {'Block whitelist (ro)': get_option('block_drv_ro_whitelist')}
   summary_info += {'Use block whitelist in tools': get_option('block_drv_whitelist_in_tools')}
-  summary_info += {'bochs support':     get_option('bochs').allowed()}
-  summary_info += {'cloop support':     get_option('cloop').allowed()}
   summary_info += {'dmg support':       get_option('dmg').allowed()}
-  summary_info += {'qcow v1 support':   get_option('qcow1').allowed()}
-  summary_info += {'vdi support':       get_option('vdi').allowed()}
-  summary_info += {'vhdx support':      get_option('vhdx').allowed()}
-  summary_info += {'vmdk support':      get_option('vmdk').allowed()}
-  summary_info += {'vpc support':       get_option('vpc').allowed()}
-  summary_info += {'vvfat support':     get_option('vvfat').allowed()}
-  summary_info += {'qed support':       get_option('qed').allowed()}
-  summary_info += {'parallels support': get_option('parallels').allowed()}
   summary_info += {'FUSE exports':      fuse}
 endif
 summary(summary_info, bool_yn: true, section: 'Block layer support')
