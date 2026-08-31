@@ -19,7 +19,6 @@
  */
 
 #include "qemu/osdep.h"
-#include "block/aio.h"
 #include "hw/input/mt-spi.h"
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
@@ -63,9 +62,12 @@ struct AppleMTSPIState
     uint8_t    frame;
     QEMUTimer* timer;
     QEMUTimer* end_timer;
-    int16_t    prev_x;
-    int16_t    prev_y;
-    uint64_t   prev_ts;
+    int16_t    cur_x;
+    int16_t    cur_y;
+    int16_t    sent_x;
+    int16_t    sent_y;
+    uint64_t   sent_ts;
+    bool       touch_pending;
     uint16_t   path_flags;
     int32_t    btn_state;
     int32_t    prev_btn_state;
@@ -548,6 +550,8 @@ static void apple_mt_spi_handle_control(AppleMTSPIState* s)
     }
 }
 
+static void apple_mt_spi_send_path_update(AppleMTSPIState* s, uint8_t path_stage);
+
 static void apple_mt_spi_handle_fw_packet(AppleMTSPIState* s)
 {
     uint8_t             packet_type;
@@ -556,6 +560,8 @@ static void apple_mt_spi_handle_fw_packet(AppleMTSPIState* s)
 
     if (apple_mt_spi_buf_get_pos(&s->rx) == sizeof(uint32_t)) {
         apple_mt_spi_buf_set_capacity(&s->rx, LL_PACKET_LEN);
+
+        if (s->touch_pending && QTAILQ_EMPTY(&s->pending_fw)) { apple_mt_spi_send_path_update(s, PATH_STAGE_TOUCHING); }
 
         if (QTAILQ_EMPTY(&s->pending_fw)) { apple_mt_spi_push_no_data(&buf); }
         else {
@@ -630,7 +636,9 @@ static uint32_t apple_mt_spi_transfer(SSIPeripheral* dev, uint32_t val)
 
     ret = apple_mt_spi_buf_pop(&s->tx);
 
-    if (apple_mt_spi_buf_is_empty(&s->pending_hbpp) && QTAILQ_EMPTY(&s->pending_fw)) { qemu_irq_raise(s->irq); }
+    if (apple_mt_spi_buf_is_empty(&s->pending_hbpp) && QTAILQ_EMPTY(&s->pending_fw) && !s->touch_pending) {
+        qemu_irq_raise(s->irq);
+    }
     else {
         qemu_irq_lower(s->irq);
     }
@@ -673,23 +681,27 @@ static uint16_t apple_mt_spi_contact_density(int32_t mult, int32_t major, int32_
     return (uint16_t)(((int64_t)mult * 400) / sqr);
 }
 
-static void apple_mt_spi_send_path_update(AppleMTSPIState* s, uint64_t ts, uint8_t path_stage, int16_t x, int16_t y)
+static void apple_mt_spi_send_path_update(AppleMTSPIState* s, uint8_t path_stage)
 {
     AppleMTSPILLPacket* packet;
+    int16_t             x  = s->cur_x;
+    int16_t             y  = s->cur_y;
+    uint64_t            ts = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
     uint64_t            ts_delta;
     int32_t             x_delta;
     int32_t             y_delta;
 
-    s->prev_ts = ts;
-    s->prev_x  = x;
-    s->prev_y  = y;
+    if (path_stage == PATH_STAGE_TOUCHING) { s->touch_pending = false; }
 
-    ts_delta   = (ts - s->prev_ts) / SCALE_MS;
-    ts_delta   = MAX(ts_delta, 1);    // Prevent div-by-zero
-    s->prev_ts = ts;
+    ts_delta = (ts - s->sent_ts) / SCALE_MS;
+    ts_delta = MAX(ts_delta, 1);    // Prevent div-by-zero
 
-    x_delta = x - s->prev_x;
-    y_delta = y - s->prev_y;
+    x_delta = x - s->sent_x;
+    y_delta = y - s->sent_y;
+
+    s->sent_ts = ts;
+    s->sent_x  = x;
+    s->sent_y  = y;
 
     packet       = g_new0(AppleMTSPILLPacket, 1);
     packet->type = LL_PACKET_LOSSLESS_OUTPUT;
@@ -761,42 +773,20 @@ static void apple_mt_spi_send_path_update(AppleMTSPIState* s, uint64_t ts, uint8
     qemu_irq_lower(s->irq);
 }
 
-typedef struct
-{
-    AppleMTSPIState* s;
-    uint64_t         ts;
-    uint8_t          path_stage;
-    int16_t          x;
-    int16_t          y;
-} AppleMTSPITouchUpdate;
-
-static AppleMTSPITouchUpdate* apple_mt_spi_new_touch_update(AppleMTSPIState* s, uint8_t path_stage, int16_t x,
-                                                            int16_t y)
-{
-    AppleMTSPITouchUpdate* update = g_new(AppleMTSPITouchUpdate, 1);
-    update->s                     = s;
-    update->ts                    = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
-    update->path_stage            = path_stage;
-    update->x                     = x;
-    update->y                     = y;
-    return update;
-}
-
-static void apple_mt_spi_send_touch_update_bh(void* opaque)
-{
-    AppleMTSPITouchUpdate* update = opaque;
-
-    QEMU_LOCK_GUARD(&update->s->lock);
-
-    apple_mt_spi_send_path_update(update->s, update->ts, update->path_stage, update->x, update->y);
-
-    g_free(opaque);
-}
-
 static void apple_mt_spi_schedule_touch_update(AppleMTSPIState* s, uint8_t path_stage, int16_t x, int16_t y)
 {
-    aio_bh_schedule_oneshot(qemu_get_aio_context(), apple_mt_spi_send_touch_update_bh,
-                            apple_mt_spi_new_touch_update(s, path_stage, x, y));
+    s->cur_x = x;
+    s->cur_y = y;
+
+    if (path_stage == PATH_STAGE_TOUCHING) {
+        s->touch_pending = true;
+        qemu_irq_lower(s->irq);
+        return;
+    }
+
+    if (s->touch_pending) { apple_mt_spi_send_path_update(s, PATH_STAGE_TOUCHING); }
+
+    apple_mt_spi_send_path_update(s, path_stage);
 }
 
 static void apple_mt_spi_timer_tick(void* opaque)
@@ -807,7 +797,7 @@ static void apple_mt_spi_timer_tick(void* opaque)
 
     if ((s->btn_state & MOUSE_EVENT_LBUTTON) == 0) { return; }
 
-    apple_mt_spi_schedule_touch_update(s, PATH_STAGE_TOUCHING, s->prev_x, s->prev_y);
+    apple_mt_spi_schedule_touch_update(s, PATH_STAGE_TOUCHING, s->cur_x, s->cur_y);
 
     timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 10);
 }
@@ -818,12 +808,14 @@ static void apple_mt_spi_end_timer_tick(void* opaque)
 
     QEMU_LOCK_GUARD(&s->lock);
 
-    apple_mt_spi_schedule_touch_update(s, PATH_STAGE_LINGER_IN_RANGE, s->prev_x, s->prev_y);
-    apple_mt_spi_schedule_touch_update(s, PATH_STAGE_OUT_OF_RANGE, s->prev_x, s->prev_y);
+    apple_mt_spi_schedule_touch_update(s, PATH_STAGE_LINGER_IN_RANGE, s->cur_x, s->cur_y);
+    apple_mt_spi_schedule_touch_update(s, PATH_STAGE_OUT_OF_RANGE, s->cur_x, s->cur_y);
 
-    s->prev_ts    = 0;
-    s->prev_x     = 0;
-    s->prev_y     = 0;
+    s->cur_x      = 0;
+    s->cur_y      = 0;
+    s->sent_ts    = 0;
+    s->sent_x     = 0;
+    s->sent_y     = 0;
     s->path_flags = 0;
 }
 
@@ -900,9 +892,12 @@ static void apple_mt_spi_reset_enter(Object* obj, ResetType type)
 
     s->btn_state      = 0;
     s->prev_btn_state = 0;
-    s->prev_x         = 0;
-    s->prev_y         = 0;
-    s->prev_ts        = 0;
+    s->cur_x          = 0;
+    s->cur_y          = 0;
+    s->sent_x         = 0;
+    s->sent_y         = 0;
+    s->sent_ts        = 0;
+    s->touch_pending  = false;
     s->frame          = 0;
 
     apple_mt_spi_buf_free(&s->tx);
