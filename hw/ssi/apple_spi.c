@@ -27,6 +27,7 @@
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "qemu/fifo32.h"
+#include "qemu/lockable.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
 
@@ -89,6 +90,7 @@ struct AppleSPIState
     AppleSIODMAEndpoint* tx_chan;
     AppleSIODMAEndpoint* rx_chan;
 
+    QemuMutex lock;
     qemu_irq  cs_line_pin;
 
     qemu_irq irq;
@@ -229,6 +231,9 @@ static void apple_spi_update_cs(AppleSPIState* spi)
 static void apple_spi_cs_set(void* opaque, int pin, int level)
 {
     AppleSPIState* spi = opaque;
+
+    QEMU_LOCK_GUARD(&spi->lock);
+
     if (level) { REG(spi, REG_PIN) |= REG_PIN_CS; }
     else {
         REG(spi, REG_PIN) &= ~REG_PIN_CS;
@@ -308,12 +313,13 @@ static void apple_spi_run(AppleSPIState* spi)
 
 static void apple_spi_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
-    AppleSPIState* spi    = opaque;
-    uint32_t       value  = data;
-    uint32_t*      mmio   = &REG(spi, addr);
-    uint32_t       old    = *mmio;
-    bool           cs_flg = false;
-    bool           run    = false;
+    AppleSPIState* spi = opaque;
+    QEMU_LOCK_GUARD(&spi->lock);
+    uint32_t  value  = data;
+    uint32_t* mmio   = &REG(spi, addr);
+    uint32_t  old    = *mmio;
+    bool      cs_flg = false;
+    bool      run    = false;
 
     if (addr >= REG_MAX) {
         qemu_log_mask(LOG_UNIMP, "%s: reg WRITE @ 0x" HWADDR_FMT_plx " value: 0x" HWADDR_FMT_plx "\n", __func__, addr,
@@ -370,6 +376,8 @@ static uint64_t apple_spi_reg_read(void* opaque, hwaddr addr, unsigned size)
     uint32_t       r;
     bool           run = false;
 
+    QEMU_LOCK_GUARD(&spi->lock);
+
     if (addr >= REG_MAX) {
         qemu_log_mask(LOG_UNIMP, "%s: reg READ @ 0x" HWADDR_FMT_plx "\n", __func__, addr);
         return 0;
@@ -419,6 +427,8 @@ static void apple_spi_reset_enter(Object* obj, ResetType type)
     BusState*      b     = BUS(spi->ssi_bus);
     BusChild*      child = QTAILQ_FIRST(&b->children);
 
+    QEMU_LOCK_GUARD(&spi->lock);
+
     memset(spi->regs, 0, sizeof(spi->regs));
     fifo32_reset(&spi->tx_fifo);
     fifo32_reset(&spi->rx_fifo);
@@ -437,6 +447,8 @@ static void apple_spi_reset_enter(Object* obj, ResetType type)
 static void apple_spi_reset_hold(Object* obj, ResetType type)
 {
     AppleSPIState* spi = APPLE_SPI(obj);
+
+    QEMU_LOCK_GUARD(&spi->lock);
 
     apple_spi_update_cs(spi);
 }
@@ -508,6 +520,10 @@ static void apple_spi_instance_init(Object* obj)
 
     fifo32_create(&spi->tx_fifo, REG_FIFO_DEPTH);
     fifo32_create(&spi->rx_fifo, REG_FIFO_DEPTH);
+
+    qemu_mutex_init(&spi->lock);
+
+    memory_region_enable_lockless_io(&spi->iomem);
 }
 
 static void apple_spi_class_init(ObjectClass* klass, const void* data)
