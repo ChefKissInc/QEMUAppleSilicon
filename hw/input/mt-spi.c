@@ -723,8 +723,8 @@ static void apple_mt_spi_send_path_update(AppleMTSPIState* s, uint64_t ts, uint8
     apple_mt_spi_buf_push_byte(&packet->buf, 1);    // Hand ID
     apple_mt_spi_buf_push_word(&packet->buf, x);
     apple_mt_spi_buf_push_word(&packet->buf, y);
-    apple_mt_spi_buf_push_word(&packet->buf, ABS(x_delta) / ts_delta * 1000);
-    apple_mt_spi_buf_push_word(&packet->buf, ABS(y_delta) / ts_delta * 1000);
+    apple_mt_spi_buf_push_word(&packet->buf, ABS(x_delta) * 1000 / ts_delta);
+    apple_mt_spi_buf_push_word(&packet->buf, ABS(y_delta) * 1000 / ts_delta);
     int32_t rad_mult  = 100;
     int32_t rad_major = 660;
     int32_t rad_minor = 580;
