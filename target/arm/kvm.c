@@ -529,70 +529,712 @@ int kvm_arch_init(MachineState* ms, KVMState* s)
 
 unsigned long kvm_arch_vcpu_id(CPUState* cpu) { return cpu->cpu_index; }
 
-/* We track all the KVM devices which need their memory addresses
- * passing to the kernel in a list of these structures.
- * When board init is complete we run through the list and
- * tell the kernel the base addresses of the memory regions.
- * We use a MemoryListener to track mapping and unmapping of
- * the regions during board creation, so the board models don't
- * need to do anything special for the KVM case.
- *
- * Sometimes the address must be OR'ed with some other fields
- * (for example for KVM_VGIC_V3_ADDR_TYPE_REDIST_REGION).
- * @kda_addr_ormask aims at storing the value of those fields.
+
+/*
+ * cpreg_values are sorted in ascending order by KVM register ID
+ * (see kvm_arm_init_cpreg_list). This allows us to cheaply find
+ * the storage for a KVM register by ID with a binary search.
  */
-typedef struct KVMDevice
+static uint64_t* kvm_arm_get_cpreg_ptr(ARMCPU* cpu, uint64_t regidx)
 {
-    struct kvm_arm_device_addr kda;
-    struct kvm_device_attr     kdattr;
-    uint64_t                   kda_addr_ormask;
-    MemoryRegion*              mr;
-    QSLIST_ENTRY(KVMDevice) entries;
-    int dev_fd;
-} KVMDevice;
+    uint64_t* res;
 
-static QSLIST_HEAD(, KVMDevice) kvm_devices_head;
+    res = bsearch(&regidx, cpu->cpreg_indexes, cpu->cpreg_array_len, sizeof(uint64_t), compare_u64);
+    assert(res);
 
-static void kvm_arm_devlistener_add(MemoryListener* listener, MemoryRegionSection* section)
+    return &cpu->cpreg_values[res - cpu->cpreg_indexes];
+}
+
+/**
+ * kvm_arm_reg_syncs_via_cpreg_list:
+ * @regidx: KVM register index
+ *
+ * Return true if this KVM register should be synchronized via the
+ * cpreg list of arbitrary system registers, false if it is synchronized
+ * by hand using code in kvm_arch_get/put_registers().
+ */
+static bool kvm_arm_reg_syncs_via_cpreg_list(uint64_t regidx)
 {
-    KVMDevice* kd;
-
-    QSLIST_FOREACH (kd, &kvm_devices_head, entries) {
-        if (section->mr == kd->mr) { kd->kda.addr = section->offset_within_address_space; }
+    switch (regidx & KVM_REG_ARM_COPROC_MASK) {
+        case KVM_REG_ARM_CORE :
+        case KVM_REG_ARM64_SVE: return false;
+        default               : return true;
     }
 }
 
-static void kvm_arm_devlistener_del(MemoryListener* listener, MemoryRegionSection* section)
+/**
+ * kvm_arm_init_cpreg_list:
+ * @cpu: ARMCPU
+ *
+ * Initialize the ARMCPU cpreg list according to the kernel's
+ * definition of what CPU registers it knows about (and throw away
+ * the previous TCG-created cpreg list).
+ *
+ * Returns: 0 if success, else < 0 error code
+ */
+static int kvm_arm_init_cpreg_list(ARMCPU* cpu)
 {
-    KVMDevice* kd;
+    struct kvm_reg_list  rl;
+    struct kvm_reg_list* rlp;
+    int                  i, ret, arraylen;
+    CPUState*            cs = CPU(cpu);
 
-    QSLIST_FOREACH (kd, &kvm_devices_head, entries) {
-        if (section->mr == kd->mr) { kd->kda.addr = -1; }
+    rl.n = 0;
+    ret  = kvm_vcpu_ioctl(cs, KVM_GET_REG_LIST, &rl);
+    if (ret != -E2BIG) { return ret; }
+    rlp    = g_malloc(sizeof(struct kvm_reg_list) + rl.n * sizeof(uint64_t));
+    rlp->n = rl.n;
+    ret    = kvm_vcpu_ioctl(cs, KVM_GET_REG_LIST, rlp);
+    if (ret) { goto out; }
+    /* Sort the list we get back from the kernel, since cpreg_tuples
+     * must be in strictly ascending order.
+     */
+    qsort(&rlp->reg, rlp->n, sizeof(rlp->reg[0]), compare_u64);
+
+    for (i = 0, arraylen = 0; i < rlp->n; i++) {
+        if (!kvm_arm_reg_syncs_via_cpreg_list(rlp->reg[i])) { continue; }
+        switch (rlp->reg[i] & KVM_REG_SIZE_MASK) {
+            case KVM_REG_SIZE_U32:
+            case KVM_REG_SIZE_U64: break;
+            default:
+                fprintf(stderr, "Can't handle size of register in kernel list\n");
+                ret = -EINVAL;
+                goto out;
+        }
+
+        arraylen++;
+    }
+
+    cpu->cpreg_indexes           = g_renew(uint64_t, cpu->cpreg_indexes, arraylen);
+    cpu->cpreg_values            = g_renew(uint64_t, cpu->cpreg_values, arraylen);
+    cpu->cpreg_vmstate_indexes   = g_renew(uint64_t, cpu->cpreg_vmstate_indexes, arraylen);
+    cpu->cpreg_vmstate_values    = g_renew(uint64_t, cpu->cpreg_vmstate_values, arraylen);
+    cpu->cpreg_array_len         = arraylen;
+    cpu->cpreg_vmstate_array_len = arraylen;
+
+    for (i = 0, arraylen = 0; i < rlp->n; i++) {
+        uint64_t regidx = rlp->reg[i];
+        if (!kvm_arm_reg_syncs_via_cpreg_list(regidx)) { continue; }
+        cpu->cpreg_indexes[arraylen] = regidx;
+        arraylen++;
+    }
+    assert(cpu->cpreg_array_len == arraylen);
+
+    if (!write_kvmstate_to_list(cpu)) {
+        /* Shouldn't happen unless kernel is inconsistent about
+         * what registers exist.
+         */
+        fprintf(stderr, "Initial read of kernel register state failed\n");
+        ret = -EINVAL;
+        goto out;
+    }
+
+out:
+    g_free(rlp);
+    return ret;
+}
+
+/**
+ * kvm_arm_cpreg_level:
+ * @regidx: KVM register index
+ *
+ * Return the level of this coprocessor/system register.  Return value is
+ * either KVM_PUT_RUNTIME_STATE, KVM_PUT_RESET_STATE, or KVM_PUT_FULL_STATE.
+ */
+static int kvm_arm_cpreg_level(uint64_t regidx)
+{
+    /*
+     * All system registers are assumed to be level KVM_PUT_RUNTIME_STATE.
+     * If a register should be written less often, you must add it here
+     * with a state of either KVM_PUT_RESET_STATE or KVM_PUT_FULL_STATE.
+     */
+    switch (regidx) {
+        case KVM_REG_ARM_TIMER_CNT :
+        case KVM_REG_ARM_PTIMER_CNT: return KVM_PUT_FULL_STATE;
+    }
+    return KVM_PUT_RUNTIME_STATE;
+}
+
+bool write_kvmstate_to_list(ARMCPU* cpu)
+{
+    CPUState* cs = CPU(cpu);
+    int       i;
+    bool      ok = true;
+
+    for (i = 0; i < cpu->cpreg_array_len; i++) {
+        uint64_t regidx = cpu->cpreg_indexes[i];
+        uint32_t v32;
+        int      ret;
+
+        switch (regidx & KVM_REG_SIZE_MASK) {
+            case KVM_REG_SIZE_U32:
+                ret = kvm_get_one_reg(cs, regidx, &v32);
+                if (!ret) { cpu->cpreg_values[i] = v32; }
+                break;
+            case KVM_REG_SIZE_U64: ret = kvm_get_one_reg(cs, regidx, cpu->cpreg_values + i); break;
+            default              : assert_not_reached();
+        }
+        if (ret) { ok = false; }
+    }
+    return ok;
+}
+
+/* pretty-print a KVM register */
+#define CP_REG_ARM64_SYSREG_OP(_reg, _op)                                                       \
+    ((uint8_t)((_reg & CP_REG_ARM64_SYSREG_##_op##_MASK) >> CP_REG_ARM64_SYSREG_##_op##_SHIFT))
+
+static gchar* kvm_print_sve_register_name(uint64_t regidx)
+{
+    uint16_t sve_reg = regidx & 0x000000000000ffff;
+
+    if (regidx == KVM_REG_ARM64_SVE_VLS) { return g_strdup_printf("SVE VLS"); }
+    /* zreg, preg, ffr */
+    switch (sve_reg & 0xfc00) {
+        case 0   : return g_strdup_printf("SVE zreg n:%d slice:%d", (sve_reg & 0x03e0) >> 5, sve_reg & 0x001f);
+        case 0x04: return g_strdup_printf("SVE preg n:%d slice:%d", (sve_reg & 0x01e0) >> 5, sve_reg & 0x001f);
+        case 0x06: return g_strdup_printf("SVE ffr slice:%d", sve_reg & 0x001f);
+        default  : return g_strdup_printf("SVE ???");
     }
 }
 
-static MemoryListener devlistener = {
-    .name       = "kvm-arm",
-    .region_add = kvm_arm_devlistener_add,
-    .region_del = kvm_arm_devlistener_del,
-    .priority   = MEMORY_LISTENER_PRIORITY_MIN,
-};
-
-static void kvm_arm_set_device_addr(KVMDevice* kd)
+static gchar* kvm_print_register_name(uint64_t regidx)
 {
-    struct kvm_device_attr* attr = &kd->kdattr;
-    int                     ret;
-    uint64_t                addr = kd->kda.addr;
+    switch ((regidx & KVM_REG_ARM_COPROC_MASK)) {
+        case KVM_REG_ARM_CORE : return g_strdup_printf("core reg %" PRIx64, regidx);
+        case KVM_REG_ARM_DEMUX: return g_strdup_printf("demuxed reg %" PRIx64, regidx);
+        case KVM_REG_ARM64_SYSREG:
+            return g_strdup_printf("op0:%d op1:%d crn:%d crm:%d op2:%d", CP_REG_ARM64_SYSREG_OP(regidx, OP0),
+                                   CP_REG_ARM64_SYSREG_OP(regidx, OP1), CP_REG_ARM64_SYSREG_OP(regidx, CRN),
+                                   CP_REG_ARM64_SYSREG_OP(regidx, CRM), CP_REG_ARM64_SYSREG_OP(regidx, OP2));
+        case KVM_REG_ARM_FW          : return g_strdup_printf("fw reg %d", (int)(regidx & 0xffff));
+        case KVM_REG_ARM64_SVE       : return kvm_print_sve_register_name(regidx);
+        case KVM_REG_ARM_FW_FEAT_BMAP: return g_strdup_printf("fw feat reg %d", (int)(regidx & 0xffff));
+        default                      : return g_strdup_printf("%" PRIx64, regidx);
+    }
+}
 
-    addr       |= kd->kda_addr_ormask;
-    attr->addr  = (uintptr_t)&addr;
-    ret         = kvm_device_ioctl(kd->dev_fd, KVM_SET_DEVICE_ATTR, attr);
+bool write_list_to_kvmstate(ARMCPU* cpu, int level)
+{
+    CPUState* cs = CPU(cpu);
+    int       i;
+    bool      ok = true;
 
+    for (i = 0; i < cpu->cpreg_array_len; i++) {
+        uint64_t regidx = cpu->cpreg_indexes[i];
+        uint32_t v32;
+        int      ret;
+
+        if (kvm_arm_cpreg_level(regidx) > level) { continue; }
+
+        switch (regidx & KVM_REG_SIZE_MASK) {
+            case KVM_REG_SIZE_U32:
+                v32 = cpu->cpreg_values[i];
+                ret = kvm_set_one_reg(cs, regidx, &v32);
+                break;
+            case KVM_REG_SIZE_U64: ret = kvm_set_one_reg(cs, regidx, cpu->cpreg_values + i); break;
+            default              : assert_not_reached();
+        }
+        if (ret) {
+            gchar* reg_str = kvm_print_register_name(regidx);
+
+            /* We might fail for "unknown register" and also for
+             * "you tried to set a register which is constant with
+             * a different value from what it actually contains".
+             */
+            ok = false;
+            switch (ret) {
+                case -ENOENT: error_report("Could not set register %s: unknown to KVM", reg_str); break;
+                case -EINVAL:
+                    if ((regidx & KVM_REG_SIZE_MASK) == KVM_REG_SIZE_U32) {
+                        if (!kvm_get_one_reg(cs, regidx, &v32)) {
+                            error_report("Could not set register %s to %x (is %x)", reg_str,
+                                         (uint32_t)cpu->cpreg_values[i], v32);
+                        }
+                        else {
+                            error_report("Could not set register %s to %x", reg_str, (uint32_t)cpu->cpreg_values[i]);
+                        }
+                    }
+                    else /* U64 */ {
+                        uint64_t v64;
+
+                        if (!kvm_get_one_reg(cs, regidx, &v64)) {
+                            error_report("Could not set register %s to %" PRIx64 " (is %" PRIx64 ")", reg_str,
+                                         cpu->cpreg_values[i], v64);
+                        }
+                        else {
+                            error_report("Could not set register %s to %" PRIx64, reg_str, cpu->cpreg_values[i]);
+                        }
+                    }
+                    break;
+                default: error_report("Could not set register %s: %s", reg_str, strerror(-ret));
+            }
+            g_free(reg_str);
+        }
+    }
+    return ok;
+}
+
+void kvm_arm_reset_vcpu(ARMCPU* cpu)
+{
+    int ret;
+
+    /* Re-init VCPU so that all registers are set to
+     * their respective reset values.
+     */
+    ret = kvm_arm_vcpu_init(cpu);
     if (ret < 0) {
-        fprintf(stderr, "Failed to set device address: %s\n", strerror(-ret));
+        fprintf(stderr, "kvm_arm_vcpu_init failed: %s\n", strerror(-ret));
         abort();
     }
+    if (!write_kvmstate_to_list(cpu)) {
+        fprintf(stderr, "write_kvmstate_to_list failed\n");
+        abort();
+    }
+    /*
+     * Sync the reset values also into the CPUState. This is necessary
+     * because the next thing we do will be a kvm_arch_put_registers()
+     * which will update the list values from the CPUState before copying
+     * the list values back to KVM. It's OK to ignore failure returns here
+     * for the same reason we do so in kvm_arch_get_registers().
+     */
+    write_list_to_cpustate(cpu);
 }
+
+/*
+ * Update KVM's MP_STATE based on what QEMU thinks it is
+ */
+static int kvm_arm_sync_mpstate_to_kvm(ARMCPU* cpu)
+{
+    if (cap_has_mp_state) {
+        struct kvm_mp_state mp_state = {.mp_state = (cpu->power_state == PSCI_OFF) ? KVM_MP_STATE_STOPPED :
+                                                                                     KVM_MP_STATE_RUNNABLE};
+        return kvm_vcpu_ioctl(CPU(cpu), KVM_SET_MP_STATE, &mp_state);
+    }
+    return 0;
+}
+
+/*
+ * Sync the KVM MP_STATE into QEMU
+ */
+static int kvm_arm_sync_mpstate_to_qemu(ARMCPU* cpu)
+{
+    if (cap_has_mp_state) {
+        struct kvm_mp_state mp_state;
+        int                 ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_MP_STATE, &mp_state);
+        if (ret) { return ret; }
+        cpu->power_state = (mp_state.mp_state == KVM_MP_STATE_STOPPED) ? PSCI_OFF : PSCI_ON;
+    }
+    return 0;
+}
+
+/**
+ * kvm_arm_get_virtual_time:
+ * @cpu: ARMCPU
+ *
+ * Gets the VCPU's virtual counter and stores it in the KVM CPU state.
+ */
+static void kvm_arm_get_virtual_time(ARMCPU* cpu)
+{
+    int ret;
+
+    if (cpu->kvm_vtime_dirty) { return; }
+
+    ret = kvm_get_one_reg(CPU(cpu), KVM_REG_ARM_TIMER_CNT, &cpu->kvm_vtime);
+    if (ret) {
+        error_report("Failed to get KVM_REG_ARM_TIMER_CNT");
+        abort();
+    }
+
+    cpu->kvm_vtime_dirty = true;
+}
+
+/**
+ * kvm_arm_put_virtual_time:
+ * @cpu: ARMCPU
+ *
+ * Sets the VCPU's virtual counter to the value stored in the KVM CPU state.
+ */
+static void kvm_arm_put_virtual_time(ARMCPU* cpu)
+{
+    int ret;
+
+    if (!cpu->kvm_vtime_dirty) { return; }
+
+    ret = kvm_set_one_reg(CPU(cpu), KVM_REG_ARM_TIMER_CNT, &cpu->kvm_vtime);
+    if (ret) {
+        error_report("Failed to set KVM_REG_ARM_TIMER_CNT");
+        abort();
+    }
+
+    cpu->kvm_vtime_dirty = false;
+}
+
+/**
+ * kvm_put_vcpu_events:
+ * @cpu: ARMCPU
+ *
+ * Put VCPU related state to kvm.
+ *
+ * Returns: 0 if success else < 0 error code
+ */
+static int kvm_put_vcpu_events(ARMCPU* cpu)
+{
+    CPUARMState*           env = &cpu->env;
+    struct kvm_vcpu_events events;
+    int                    ret;
+
+    if (!kvm_has_vcpu_events()) { return 0; }
+
+    memset(&events, 0, sizeof(events));
+    events.exception.serror_pending = env->serror.pending;
+
+    /* Inject SError to guest with specified syndrome if host kernel
+     * supports it, otherwise inject SError without syndrome.
+     */
+    if (cap_has_inject_serror_esr) {
+        events.exception.serror_has_esr = env->serror.has_esr;
+        events.exception.serror_esr     = env->serror.esr;
+    }
+
+    ret = kvm_vcpu_ioctl(CPU(cpu), KVM_SET_VCPU_EVENTS, &events);
+    if (ret) { error_report("failed to put vcpu events"); }
+
+    return ret;
+}
+
+/**
+ * kvm_get_vcpu_events:
+ * @cpu: ARMCPU
+ *
+ * Get VCPU related state from kvm.
+ *
+ * Returns: 0 if success else < 0 error code
+ */
+static int kvm_get_vcpu_events(ARMCPU* cpu)
+{
+    CPUARMState*           env = &cpu->env;
+    struct kvm_vcpu_events events;
+    int                    ret;
+
+    if (!kvm_has_vcpu_events()) { return 0; }
+
+    memset(&events, 0, sizeof(events));
+    ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_VCPU_EVENTS, &events);
+    if (ret) {
+        error_report("failed to get vcpu events");
+        return ret;
+    }
+
+    env->serror.pending = events.exception.serror_pending;
+    env->serror.has_esr = events.exception.serror_has_esr;
+    env->serror.esr     = events.exception.serror_esr;
+
+    return 0;
+}
+
+#define ARM64_REG_ESR_EL1 ARM64_SYS_REG(3, 0, 5, 2, 0)
+#define ARM64_REG_TCR_EL1 ARM64_SYS_REG(3, 0, 2, 0, 2)
+
+/*
+ * ESR_EL1
+ * ISS encoding
+ * AARCH64: DFSC,   bits [5:0]
+ * AARCH32:
+ *      TTBCR.EAE == 0
+ *          FS[4]   - DFSR[10]
+ *          FS[3:0] - DFSR[3:0]
+ *      TTBCR.EAE == 1
+ *          FS, bits [5:0]
+ */
+#define ESR_DFSC(aarch64, lpae, v) ((aarch64 || (lpae)) ? ((v) & 0x3F) : (((v) >> 6) | ((v) & 0x1F)))
+
+#define ESR_DFSC_EXTABT(aarch64, lpae) ((aarch64) ? 0x10 : (lpae) ? 0x10 : 0x8)
+
+/**
+ * kvm_arm_verify_ext_dabt_pending:
+ * @cpu: ARMCPU
+ *
+ * Verify the fault status code wrt the Ext DABT injection
+ *
+ * Returns: true if the fault status code is as expected, false otherwise
+ */
+static bool kvm_arm_verify_ext_dabt_pending(ARMCPU* cpu)
+{
+    CPUState* cs = CPU(cpu);
+    uint64_t  dfsr_val;
+
+    if (!kvm_get_one_reg(cs, ARM64_REG_ESR_EL1, &dfsr_val)) {
+        CPUARMState* env          = &cpu->env;
+        int          aarch64_mode = arm_feature(env, ARM_FEATURE_AARCH64);
+        int          lpae         = 0;
+
+        if (!aarch64_mode) {
+            uint64_t ttbcr;
+
+            if (!kvm_get_one_reg(cs, ARM64_REG_TCR_EL1, &ttbcr)) {
+                lpae = arm_feature(env, ARM_FEATURE_LPAE) && (ttbcr & TTBCR_EAE);
+            }
+        }
+        /*
+         * The verification here is based on the DFSC bits
+         * of the ESR_EL1 reg only
+         */
+        return (ESR_DFSC(aarch64_mode, lpae, dfsr_val) == ESR_DFSC_EXTABT(aarch64_mode, lpae));
+    }
+    return false;
+}
+
+void kvm_arch_pre_run(CPUState* cs, struct kvm_run* run)
+{
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
+
+    if (unlikely(env->ext_dabt_raised)) {
+        /*
+         * Verifying that the ext DABT has been properly injected,
+         * otherwise risking indefinitely re-running the faulting instruction
+         * Covering a very narrow case for kernels 5.5..5.5.4
+         * when injected abort was misconfigured to be
+         * an IMPLEMENTATION DEFINED exception (for 32-bit EL1)
+         */
+        if (!arm_feature(env, ARM_FEATURE_AARCH64) && unlikely(!kvm_arm_verify_ext_dabt_pending(cpu))) {
+
+            error_report("Data abort exception with no valid ISS generated by "
+                         "guest memory access. KVM unable to emulate faulting "
+                         "instruction. Failed to inject an external data abort "
+                         "into the guest.");
+            abort();
+        }
+        /* Clear the status */
+        env->ext_dabt_raised = 0;
+    }
+}
+
+MemTxAttrs kvm_arch_post_run(CPUState* cs, struct kvm_run* run)
+{
+    ARMCPU*  cpu;
+    uint32_t switched_level;
+
+    cpu = ARM_CPU(cs);
+
+    /* Synchronize our shadowed in-kernel device irq lines with the kvm ones */
+    if (run->s.regs.device_irq_level != cpu->device_irq_level) {
+        switched_level = cpu->device_irq_level ^ run->s.regs.device_irq_level;
+
+        bql_lock();
+
+        if (switched_level & KVM_ARM_DEV_EL1_VTIMER) {
+            qemu_set_irq(cpu->gt_timer_outputs[GTIMER_VIRT], !!(run->s.regs.device_irq_level & KVM_ARM_DEV_EL1_VTIMER));
+            switched_level &= ~KVM_ARM_DEV_EL1_VTIMER;
+        }
+
+        if (switched_level & KVM_ARM_DEV_EL1_PTIMER) {
+            qemu_set_irq(cpu->gt_timer_outputs[GTIMER_PHYS], !!(run->s.regs.device_irq_level & KVM_ARM_DEV_EL1_PTIMER));
+            switched_level &= ~KVM_ARM_DEV_EL1_PTIMER;
+        }
+
+        if (switched_level & KVM_ARM_DEV_PMU) {
+            qemu_set_irq(cpu->pmu_interrupt, !!(run->s.regs.device_irq_level & KVM_ARM_DEV_PMU));
+            switched_level &= ~KVM_ARM_DEV_PMU;
+        }
+
+        if (switched_level) {
+            qemu_log_mask(LOG_UNIMP, "%s: unhandled in-kernel device IRQ %x\n", __func__, switched_level);
+        }
+
+        /* We also mark unknown levels as processed to not waste cycles */
+        cpu->device_irq_level = run->s.regs.device_irq_level;
+        bql_unlock();
+    }
+
+    return MEMTXATTRS_UNSPECIFIED;
+}
+
+static void kvm_arm_vm_state_change(void* opaque, bool running, RunState state)
+{
+    ARMCPU* cpu = opaque;
+
+    if (running) {
+        if (cpu->kvm_adjvtime) { kvm_arm_put_virtual_time(cpu); }
+    }
+    else {
+        if (cpu->kvm_adjvtime) { kvm_arm_get_virtual_time(cpu); }
+    }
+}
+
+/**
+ * kvm_arm_handle_dabt_nisv:
+ * @cpu: ARMCPU
+ * @esr_iss: ISS encoding (limited) for the exception from Data Abort
+ *           ISV bit set to '0b0' -> no valid instruction syndrome
+ * @fault_ipa: faulting address for the synchronous data abort
+ *
+ * Returns: 0 if the exception has been handled, < 0 otherwise
+ */
+static int kvm_arm_handle_dabt_nisv(ARMCPU* cpu, uint64_t esr_iss, uint64_t fault_ipa)
+{
+    CPUARMState* env = &cpu->env;
+    /*
+     * Request KVM to inject the external data abort into the guest
+     */
+    if (cap_has_inject_ext_dabt) {
+        struct kvm_vcpu_events events = {};
+        /*
+         * The external data abort event will be handled immediately by KVM
+         * using the address fault that triggered the exit on given VCPU.
+         * Requesting injection of the external data abort does not rely
+         * on any other VCPU state. Therefore, in this particular case, the VCPU
+         * synchronization can be exceptionally skipped.
+         */
+        events.exception.ext_dabt_pending = 1;
+        /* KVM_CAP_ARM_INJECT_EXT_DABT implies KVM_CAP_VCPU_EVENTS */
+        if (!kvm_vcpu_ioctl(CPU(cpu), KVM_SET_VCPU_EVENTS, &events)) {
+            env->ext_dabt_raised = 1;
+            return 0;
+        }
+    }
+    else {
+        error_report("Data abort exception triggered by guest memory access "
+                     "at physical address: 0x" TARGET_FMT_lx,
+                     (target_ulong)fault_ipa);
+        error_printf("KVM unable to emulate faulting instruction.\n");
+    }
+    return -1;
+}
+
+/**
+ * kvm_arm_handle_debug:
+ * @cpu: ARMCPU
+ * @debug_exit: debug part of the KVM exit structure
+ *
+ * Returns: TRUE if the debug exception was handled.
+ *
+ * See v8 ARM ARM D7.2.27 ESR_ELx, Exception Syndrome Register
+ *
+ * To minimise translating between kernel and user-space the kernel
+ * ABI just provides user-space with the full exception syndrome
+ * register value to be decoded in QEMU.
+ */
+static bool kvm_arm_handle_debug(ARMCPU* cpu, struct kvm_debug_exit_arch* debug_exit)
+{
+    int          hsr_ec = syn_get_ec(debug_exit->hsr);
+    CPUState*    cs     = CPU(cpu);
+    CPUARMState* env    = &cpu->env;
+
+    /* Ensure PC is synchronised */
+    kvm_cpu_synchronize_state(cs);
+
+    switch (hsr_ec) {
+        case EC_SOFTWARESTEP:
+            if (cs->singlestep_enabled) { return true; }
+            else {
+                /*
+                 * The kernel should have suppressed the guest's ability to
+                 * single step at this point so something has gone wrong.
+                 */
+                error_report("%s: guest single-step while debugging unsupported"
+                             " (%" PRIx64 ", %" PRIx32 ")",
+                             __func__, env->pc, debug_exit->hsr);
+                return false;
+            }
+            break;
+        case EC_AA64_BKPT:
+            if (kvm_find_sw_breakpoint(cs, env->pc)) { return true; }
+            break;
+        case EC_BREAKPOINT:
+            if (find_hw_breakpoint(cs, env->pc)) { return true; }
+            break;
+        case EC_WATCHPOINT: {
+            CPUWatchpoint* wp = find_hw_watchpoint(cs, debug_exit->far);
+            if (wp) {
+                cs->watchpoint_hit = wp;
+                return true;
+            }
+            break;
+        }
+        default:
+            error_report("%s: unhandled debug exit (%" PRIx32 ", %" PRIx64 ")", __func__, debug_exit->hsr, env->pc);
+    }
+
+    /* If we are not handling the debug exception it must belong to
+     * the guest. Let's re-use the existing TCG interrupt code to set
+     * everything up properly.
+     */
+    cs->exception_index      = EXCP_BKPT;
+    env->exception.syndrome  = debug_exit->hsr;
+    env->exception.vaddress  = debug_exit->far;
+    env->exception.target_el = 1;
+    bql_lock();
+    arm_cpu_do_interrupt(cs);
+    bql_unlock();
+
+    return false;
+}
+
+int kvm_arch_handle_exit(CPUState* cs, struct kvm_run* run)
+{
+    ARMCPU* cpu = ARM_CPU(cs);
+    int     ret = 0;
+
+    switch (run->exit_reason) {
+        case KVM_EXIT_DEBUG:
+            if (kvm_arm_handle_debug(cpu, &run->debug.arch)) { ret = EXCP_DEBUG; } /* otherwise return to guest */
+            break;
+        case KVM_EXIT_ARM_NISV:
+            /* External DABT with no valid iss to decode */
+            ret = kvm_arm_handle_dabt_nisv(cpu, run->arm_nisv.esr_iss, run->arm_nisv.fault_ipa);
+            break;
+        default: qemu_log_mask(LOG_UNIMP, "%s: un-handled exit reason %d\n", __func__, run->exit_reason); break;
+    }
+    return ret;
+}
+
+bool kvm_arch_stop_on_emulation_error(CPUState* cs) { return true; }
+
+int kvm_arch_process_async_events(CPUState* cs) { return 0; }
+
+/**
+ * kvm_arm_hw_debug_active:
+ * @cpu: ARMCPU
+ *
+ * Return: TRUE if any hardware breakpoints in use.
+ */
+static bool kvm_arm_hw_debug_active(ARMCPU* cpu) { return ((cur_hw_wps > 0) || (cur_hw_bps > 0)); }
+
+/**
+ * kvm_arm_copy_hw_debug_data:
+ * @ptr: kvm_guest_debug_arch structure
+ *
+ * Copy the architecture specific debug registers into the
+ * kvm_guest_debug ioctl structure.
+ */
+static void kvm_arm_copy_hw_debug_data(struct kvm_guest_debug_arch* ptr)
+{
+    int i;
+    memset(ptr, 0, sizeof(struct kvm_guest_debug_arch));
+
+    for (i = 0; i < max_hw_wps; i++) {
+        HWWatchpoint* wp = get_hw_wp(i);
+        ptr->dbg_wcr[i]  = wp->wcr;
+        ptr->dbg_wvr[i]  = wp->wvr;
+    }
+    for (i = 0; i < max_hw_bps; i++) {
+        HWBreakpoint* bp = get_hw_bp(i);
+        ptr->dbg_bcr[i]  = bp->bcr;
+        ptr->dbg_bvr[i]  = bp->bvr;
+    }
+}
+
+void kvm_arch_update_guest_debug(CPUState* cs, struct kvm_guest_debug* dbg)
+{
+    if (kvm_sw_breakpoints_active(cs)) { dbg->control |= KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_SW_BP; }
+    if (kvm_arm_hw_debug_active(ARM_CPU(cs))) {
+        dbg->control |= KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_HW;
+        kvm_arm_copy_hw_debug_data(&dbg->arch);
+    }
+}
+
+void kvm_arch_init_irq_routing(KVMState* s) { }
 
 int kvm_arm_set_irq(int cpu, int irqtype, int irq, int level)
 {
@@ -603,6 +1245,730 @@ int kvm_arm_set_irq(int cpu, int irqtype, int irq, int level)
     kvm_irq |= (cpu_idx1 << KVM_ARM_IRQ_VCPU_SHIFT) | (cpu_idx2 << KVM_ARM_IRQ_VCPU2_SHIFT);
 
     return kvm_set_irq(kvm_state, kvm_irq, !!level);
+}
+
+int kvm_arch_fixup_msi_route(struct kvm_irq_routing_entry* route, uint64_t address, uint32_t data, PCIDevice* dev)
+{
+    AddressSpace*       as = pci_device_iommu_address_space(dev);
+    hwaddr              xlat, len, doorbell_gpa;
+    MemoryRegionSection mrs;
+    MemoryRegion*       mr;
+
+    if (as == &address_space_memory) { return 0; }
+
+    /* MSI doorbell address is translated by an IOMMU */
+
+    RCU_READ_LOCK_GUARD();
+
+    mr = address_space_translate(as, address, &xlat, &len, true, MEMTXATTRS_UNSPECIFIED);
+
+    if (!mr) { return 1; }
+
+    mrs = memory_region_find(mr, xlat, 1);
+
+    if (!mrs.mr) { return 1; }
+
+    doorbell_gpa = mrs.offset_within_address_space;
+    memory_region_unref(mrs.mr);
+
+    route->u.msi.address_lo = doorbell_gpa;
+    route->u.msi.address_hi = doorbell_gpa >> 32;
+
+    trace_kvm_arm_fixup_msi_route(address, doorbell_gpa);
+
+    return 0;
+}
+
+int kvm_arch_add_msi_route_post(struct kvm_irq_routing_entry* route, int vector, PCIDevice* dev) { return 0; }
+
+int kvm_arch_release_virq_post(int virq) { return 0; }
+
+int kvm_arch_msi_data_to_gsi(uint32_t data) { return (data - 32) & 0xffff; }
+
+static void kvm_arch_get_eager_split_size(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
+{
+    KVMState* s     = KVM_STATE(obj);
+    uint64_t  value = s->kvm_eager_split_size;
+
+    visit_type_size(v, name, &value, errp);
+}
+
+static void kvm_arch_set_eager_split_size(Object* obj, Visitor* v, const char* name, void* opaque, Error** errp)
+{
+    KVMState* s = KVM_STATE(obj);
+    uint64_t  value;
+
+    if (s->fd != -1) {
+        error_setg(errp, "Unable to set early-split-size after KVM has been initialized");
+        return;
+    }
+
+    if (!visit_type_size(v, name, &value, errp)) { return; }
+
+    if (value && !is_power_of_2(value)) {
+        error_setg(errp, "early-split-size must be a power of two");
+        return;
+    }
+
+    s->kvm_eager_split_size = value;
+}
+
+void kvm_arch_accel_class_init(ObjectClass* oc)
+{
+    object_class_property_add(oc, "eager-split-size", "size", kvm_arch_get_eager_split_size,
+                              kvm_arch_set_eager_split_size, NULL, NULL);
+
+    object_class_property_set_description(oc, "eager-split-size",
+                                          "Eager Page Split chunk size for hugepages. (default: 0, disabled)");
+}
+
+int kvm_arch_insert_hw_breakpoint(vaddr addr, vaddr len, int type)
+{
+    switch (type) {
+        case GDB_BREAKPOINT_HW    : return insert_hw_breakpoint(addr); break;
+        case GDB_WATCHPOINT_READ  :
+        case GDB_WATCHPOINT_WRITE :
+        case GDB_WATCHPOINT_ACCESS: return insert_hw_watchpoint(addr, len, type);
+        default                   : return -ENOSYS;
+    }
+}
+
+int kvm_arch_remove_hw_breakpoint(vaddr addr, vaddr len, int type)
+{
+    switch (type) {
+        case GDB_BREAKPOINT_HW    : return delete_hw_breakpoint(addr);
+        case GDB_WATCHPOINT_READ  :
+        case GDB_WATCHPOINT_WRITE :
+        case GDB_WATCHPOINT_ACCESS: return delete_hw_watchpoint(addr, len, type);
+        default                   : return -ENOSYS;
+    }
+}
+
+void kvm_arch_remove_all_hw_breakpoints(void)
+{
+    if (cur_hw_wps > 0) { g_array_remove_range(hw_watchpoints, 0, cur_hw_wps); }
+    if (cur_hw_bps > 0) { g_array_remove_range(hw_breakpoints, 0, cur_hw_bps); }
+}
+
+static bool kvm_arm_set_device_attr(ARMCPU* cpu, struct kvm_device_attr* attr, const char* name)
+{
+    int err;
+
+    err = kvm_vcpu_ioctl(CPU(cpu), KVM_HAS_DEVICE_ATTR, attr);
+    if (err != 0) {
+        error_report("%s: KVM_HAS_DEVICE_ATTR: %s", name, strerror(-err));
+        return false;
+    }
+
+    err = kvm_vcpu_ioctl(CPU(cpu), KVM_SET_DEVICE_ATTR, attr);
+    if (err != 0) {
+        error_report("%s: KVM_SET_DEVICE_ATTR: %s", name, strerror(-err));
+        return false;
+    }
+
+    return true;
+}
+
+void kvm_arm_pmu_init(ARMCPU* cpu)
+{
+    struct kvm_device_attr attr = {
+        .group = KVM_ARM_VCPU_PMU_V3_CTRL,
+        .attr  = KVM_ARM_VCPU_PMU_V3_INIT,
+    };
+
+    if (!cpu->has_pmu) { return; }
+    if (!kvm_arm_set_device_attr(cpu, &attr, "PMU")) {
+        error_report("failed to init PMU");
+        abort();
+    }
+}
+
+void kvm_arm_pmu_set_irq(ARMCPU* cpu, int irq)
+{
+    struct kvm_device_attr attr = {
+        .group = KVM_ARM_VCPU_PMU_V3_CTRL,
+        .addr  = (intptr_t)&irq,
+        .attr  = KVM_ARM_VCPU_PMU_V3_IRQ,
+    };
+
+    if (!cpu->has_pmu) { return; }
+    if (!kvm_arm_set_device_attr(cpu, &attr, "PMU")) {
+        error_report("failed to set irq for PMU");
+        abort();
+    }
+}
+
+void kvm_arm_pvtime_init(ARMCPU* cpu, uint64_t ipa)
+{
+    struct kvm_device_attr attr = {
+        .group = KVM_ARM_VCPU_PVTIME_CTRL,
+        .attr  = KVM_ARM_VCPU_PVTIME_IPA,
+        .addr  = (uint64_t)&ipa,
+    };
+
+    if (cpu->kvm_steal_time == ON_OFF_AUTO_OFF) { return; }
+    if (!kvm_arm_set_device_attr(cpu, &attr, "PVTIME IPA")) {
+        error_report("failed to init PVTIME IPA");
+        abort();
+    }
+}
+
+void kvm_arm_steal_time_finalize(ARMCPU* cpu, Error** errp)
+{
+    bool has_steal_time = kvm_check_extension(kvm_state, KVM_CAP_STEAL_TIME);
+
+    if (cpu->kvm_steal_time == ON_OFF_AUTO_AUTO) {
+        if (!has_steal_time || !arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) { cpu->kvm_steal_time = ON_OFF_AUTO_OFF; }
+        else {
+            cpu->kvm_steal_time = ON_OFF_AUTO_ON;
+        }
+    }
+    else if (cpu->kvm_steal_time == ON_OFF_AUTO_ON) {
+        if (!has_steal_time) {
+            error_setg(errp, "'kvm-steal-time' cannot be enabled "
+                             "on this host");
+            return;
+        }
+        else if (!arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
+            /*
+             * DEN0057A chapter 2 says "This specification only covers
+             * systems in which the Execution state of the hypervisor
+             * as well as EL1 of virtual machines is AArch64.". And,
+             * to ensure that, the smc/hvc calls are only specified as
+             * smc64/hvc64.
+             */
+            error_setg(errp, "'kvm-steal-time' cannot be enabled "
+                             "for AArch32 guests");
+            return;
+        }
+    }
+}
+
+bool kvm_arm_aarch32_supported(void) { return kvm_check_extension(kvm_state, KVM_CAP_ARM_EL1_32BIT); }
+
+bool kvm_arm_el2_supported(void) { return kvm_check_extension(kvm_state, KVM_CAP_ARM_EL2); }
+
+bool kvm_arm_sve_supported(void) { return kvm_check_extension(kvm_state, KVM_CAP_ARM_SVE); }
+
+bool kvm_arm_mte_supported(void) { return kvm_check_extension(kvm_state, KVM_CAP_ARM_MTE); }
+
+QEMU_BUILD_BUG_ON(KVM_ARM64_SVE_VQ_MIN != 1);
+
+uint32_t kvm_arm_sve_get_vls(ARMCPU* cpu)
+{
+    /* Only call this function if kvm_arm_sve_supported() returns true. */
+    static uint64_t vls[KVM_ARM64_SVE_VLS_WORDS];
+    static bool     probed;
+    uint32_t        vq = 0;
+    int             i;
+
+    /*
+     * KVM ensures all host CPUs support the same set of vector lengths.
+     * So we only need to create the scratch VCPUs once and then cache
+     * the results.
+     */
+    if (!probed) {
+        struct kvm_vcpu_init init = {
+            .target      = -1,
+            .features[0] = (1 << KVM_ARM_VCPU_SVE),
+        };
+        struct kvm_one_reg reg = {
+            .id   = KVM_REG_ARM64_SVE_VLS,
+            .addr = (uint64_t)&vls[0],
+        };
+        int fdarray[3], ret;
+
+        probed = true;
+
+        if (!kvm_arm_create_scratch_host_vcpu(fdarray, &init)) {
+            error_report("failed to create scratch VCPU with SVE enabled");
+            abort();
+        }
+        ret = ioctl(fdarray[2], KVM_GET_ONE_REG, &reg);
+        kvm_arm_destroy_scratch_host_vcpu(fdarray);
+        if (ret) {
+            error_report("failed to get KVM_REG_ARM64_SVE_VLS: %s", strerror(errno));
+            abort();
+        }
+
+        for (i = KVM_ARM64_SVE_VLS_WORDS - 1; i >= 0; --i) {
+            if (vls[i]) {
+                vq = 64 - clz64(vls[i]) + i * 64;
+                break;
+            }
+        }
+        if (vq > ARM_MAX_VQ) {
+            warn_report("KVM supports vector lengths larger than "
+                        "QEMU can enable");
+            vls[0] &= MAKE_64BIT_MASK(0, ARM_MAX_VQ);
+        }
+    }
+
+    return vls[0];
+}
+
+static int kvm_arm_sve_set_vls(ARMCPU* cpu)
+{
+    uint64_t vls[KVM_ARM64_SVE_VLS_WORDS] = {cpu->sve_vq.map};
+
+    assert(cpu->sve_max_vq <= KVM_ARM64_SVE_VQ_MAX);
+
+    return kvm_set_one_reg(CPU(cpu), KVM_REG_ARM64_SVE_VLS, &vls[0]);
+}
+
+#define ARM_CPU_ID_MPIDR 3, 0, 0, 0, 5
+
+int kvm_arch_pre_create_vcpu(CPUState* cpu, Error** errp) { return 0; }
+
+int kvm_arch_init_vcpu(CPUState* cs)
+{
+    int          ret;
+    uint64_t     mpidr;
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
+    uint64_t     psciver;
+
+    if (cpu->kvm_target == QEMU_KVM_ARM_TARGET_NONE) {
+        error_report("KVM is not supported for this guest CPU type");
+        return -EINVAL;
+    }
+
+    qemu_add_vm_change_state_handler(kvm_arm_vm_state_change, cpu);
+
+    /* Determine init features for this CPU */
+    memset(cpu->kvm_init_features, 0, sizeof(cpu->kvm_init_features));
+    if (cs->start_powered_off) { cpu->kvm_init_features[0] |= 1 << KVM_ARM_VCPU_POWER_OFF; }
+    if (kvm_check_extension(cs->kvm_state, KVM_CAP_ARM_PSCI_0_2)) {
+        cpu->psci_version          = QEMU_PSCI_VERSION_0_2;
+        cpu->kvm_init_features[0] |= 1 << KVM_ARM_VCPU_PSCI_0_2;
+    }
+    if (!arm_feature(env, ARM_FEATURE_AARCH64)) { cpu->kvm_init_features[0] |= 1 << KVM_ARM_VCPU_EL1_32BIT; }
+    if (cpu->has_pmu) { cpu->kvm_init_features[0] |= 1 << KVM_ARM_VCPU_PMU_V3; }
+    if (cpu_isar_feature(aa64_sve, cpu)) {
+        assert(kvm_arm_sve_supported());
+        cpu->kvm_init_features[0] |= 1 << KVM_ARM_VCPU_SVE;
+    }
+    if (cpu_isar_feature(aa64_pauth, cpu)) {
+        cpu->kvm_init_features[0] |= (1 << KVM_ARM_VCPU_PTRAUTH_ADDRESS | 1 << KVM_ARM_VCPU_PTRAUTH_GENERIC);
+    }
+    if (cpu->has_el2 && kvm_arm_el2_supported()) { cpu->kvm_init_features[0] |= 1 << KVM_ARM_VCPU_HAS_EL2; }
+
+    /* Do KVM_ARM_VCPU_INIT ioctl */
+    ret = kvm_arm_vcpu_init(cpu);
+    if (ret) { return ret; }
+
+    if (cpu_isar_feature(aa64_sve, cpu)) {
+        ret = kvm_arm_sve_set_vls(cpu);
+        if (ret) { return ret; }
+        ret = kvm_arm_vcpu_finalize(cpu, KVM_ARM_VCPU_SVE);
+        if (ret) { return ret; }
+    }
+
+    /*
+     * KVM reports the exact PSCI version it is implementing via a
+     * special sysreg. If it is present, use its contents to determine
+     * what to report to the guest in the dtb (it is the PSCI version,
+     * in the same 15-bits major 16-bits minor format that PSCI_VERSION
+     * returns).
+     */
+    if (!kvm_get_one_reg(cs, KVM_REG_ARM_PSCI_VERSION, &psciver)) { cpu->psci_version = psciver; }
+
+    /*
+     * When KVM is in use, PSCI is emulated in-kernel and not by qemu.
+     * Currently KVM has its own idea about MPIDR assignment, so we
+     * override our defaults with what we get from KVM.
+     */
+    ret = kvm_get_one_reg(cs, ARM64_SYS_REG(ARM_CPU_ID_MPIDR), &mpidr);
+    if (ret) { return ret; }
+    cpu->mp_affinity = mpidr & ARM64_AFFINITY_MASK;
+
+    return kvm_arm_init_cpreg_list(cpu);
+}
+
+int kvm_arch_destroy_vcpu(CPUState* cs) { return 0; }
+
+/* Callers must hold the iothread mutex lock */
+static void kvm_inject_arm_sea(CPUState* c)
+{
+    ARMCPU*      cpu = ARM_CPU(c);
+    CPUARMState* env = &cpu->env;
+    uint32_t     esr;
+    bool         same_el;
+
+    c->exception_index       = EXCP_DATA_ABORT;
+    env->exception.target_el = 1;
+
+    /*
+     * Set the DFSC to synchronous external abort and set FnV to not valid,
+     * this will tell guest the FAR_ELx is UNKNOWN for this abort.
+     */
+    same_el = arm_current_el(env) == env->exception.target_el;
+    esr     = syn_data_abort_no_iss(same_el, 1, 0, 0, 0, 0, 0x10);
+
+    env->exception.syndrome = esr;
+
+    arm_cpu_do_interrupt(c);
+}
+
+#define AARCH64_CORE_REG(x) (KVM_REG_ARM64 | KVM_REG_SIZE_U64 | KVM_REG_ARM_CORE | KVM_REG_ARM_CORE_REG(x))
+
+#define AARCH64_SIMD_CORE_REG(x) (KVM_REG_ARM64 | KVM_REG_SIZE_U128 | KVM_REG_ARM_CORE | KVM_REG_ARM_CORE_REG(x))
+
+#define AARCH64_SIMD_CTRL_REG(x) (KVM_REG_ARM64 | KVM_REG_SIZE_U32 | KVM_REG_ARM_CORE | KVM_REG_ARM_CORE_REG(x))
+
+static int kvm_arch_put_fpsimd(CPUState* cs)
+{
+    CPUARMState* env = &ARM_CPU(cs)->env;
+    int          i, ret;
+
+    for (i = 0; i < 32; i++) {
+        uint64_t* q = aa64_vfp_qreg(env, i);
+#if HOST_BIG_ENDIAN
+        uint64_t fp_val[2] = {q[1], q[0]};
+        ret                = kvm_set_one_reg(cs, AARCH64_SIMD_CORE_REG(fp_regs.vregs[i]), fp_val);
+#else
+        ret = kvm_set_one_reg(cs, AARCH64_SIMD_CORE_REG(fp_regs.vregs[i]), q);
+#endif
+        if (ret) { return ret; }
+    }
+
+    return 0;
+}
+
+/*
+ * KVM SVE registers come in slices where ZREGs have a slice size of 2048 bits
+ * and PREGS and the FFR have a slice size of 256 bits. However we simply hard
+ * code the slice index to zero for now as it's unlikely we'll need more than
+ * one slice for quite some time.
+ */
+static int kvm_arch_put_sve(CPUState* cs)
+{
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
+    uint64_t     tmp[ARM_MAX_VQ * 2];
+    uint64_t*    r;
+    int          n, ret;
+
+    for (n = 0; n < KVM_ARM64_SVE_NUM_ZREGS; ++n) {
+        r   = sve_bswap64(tmp, &env->vfp.zregs[n].d[0], cpu->sve_max_vq * 2);
+        ret = kvm_set_one_reg(cs, KVM_REG_ARM64_SVE_ZREG(n, 0), r);
+        if (ret) { return ret; }
+    }
+
+    for (n = 0; n < KVM_ARM64_SVE_NUM_PREGS; ++n) {
+        r   = sve_bswap64(tmp, r = &env->vfp.pregs[n].p[0], DIV_ROUND_UP(cpu->sve_max_vq * 2, 8));
+        ret = kvm_set_one_reg(cs, KVM_REG_ARM64_SVE_PREG(n, 0), r);
+        if (ret) { return ret; }
+    }
+
+    r   = sve_bswap64(tmp, &env->vfp.pregs[FFR_PRED_NUM].p[0], DIV_ROUND_UP(cpu->sve_max_vq * 2, 8));
+    ret = kvm_set_one_reg(cs, KVM_REG_ARM64_SVE_FFR(0), r);
+    if (ret) { return ret; }
+
+    return 0;
+}
+
+int kvm_arch_put_registers(CPUState* cs, int level, Error** errp)
+{
+    uint64_t     val;
+    uint32_t     fpr;
+    int          i, ret;
+    unsigned int el;
+
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
+
+    /* If we are in AArch32 mode then we need to copy the AArch32 regs to the
+     * AArch64 registers before pushing them out to 64-bit KVM.
+     */
+    if (!is_a64(env)) { aarch64_sync_32_to_64(env); }
+
+    for (i = 0; i < 31; i++) {
+        ret = kvm_set_one_reg(cs, AARCH64_CORE_REG(regs.regs[i]), &env->xregs[i]);
+        if (ret) { return ret; }
+    }
+
+    /* KVM puts SP_EL0 in regs.sp and SP_EL1 in regs.sp_el1. On the
+     * QEMU side we keep the current SP in xregs[31] as well.
+     */
+    aarch64_save_sp(env, 1);
+
+    ret = kvm_set_one_reg(cs, AARCH64_CORE_REG(regs.sp), &env->sp_el[0]);
+    if (ret) { return ret; }
+
+    ret = kvm_set_one_reg(cs, AARCH64_CORE_REG(sp_el1), &env->sp_el[1]);
+    if (ret) { return ret; }
+
+    /* Note that KVM thinks pstate is 64 bit but we use a uint32_t */
+    if (is_a64(env)) { val = pstate_read(env); }
+    else {
+        val = cpsr_read(env);
+    }
+    ret = kvm_set_one_reg(cs, AARCH64_CORE_REG(regs.pstate), &val);
+    if (ret) { return ret; }
+
+    ret = kvm_set_one_reg(cs, AARCH64_CORE_REG(regs.pc), &env->pc);
+    if (ret) { return ret; }
+
+    ret = kvm_set_one_reg(cs, AARCH64_CORE_REG(elr_el1), &env->elr_el[1]);
+    if (ret) { return ret; }
+
+    /* Saved Program State Registers
+     *
+     * Before we restore from the banked_spsr[] array we need to
+     * ensure that any modifications to env->spsr are correctly
+     * reflected in the banks.
+     */
+    el = arm_current_el(env);
+    if (el > 0 && !is_a64(env)) {
+        i                   = bank_number(env->uncached_cpsr & CPSR_M);
+        env->banked_spsr[i] = env->spsr;
+    }
+
+    /* KVM 0-4 map to QEMU banks 1-5 */
+    for (i = 0; i < KVM_NR_SPSR; i++) {
+        ret = kvm_set_one_reg(cs, AARCH64_CORE_REG(spsr[i]), &env->banked_spsr[i + 1]);
+        if (ret) { return ret; }
+    }
+
+    if (cpu_isar_feature(aa64_sve, cpu)) { ret = kvm_arch_put_sve(cs); }
+    else {
+        ret = kvm_arch_put_fpsimd(cs);
+    }
+    if (ret) { return ret; }
+
+    fpr = vfp_get_fpsr(env);
+    ret = kvm_set_one_reg(cs, AARCH64_SIMD_CTRL_REG(fp_regs.fpsr), &fpr);
+    if (ret) { return ret; }
+
+    fpr = vfp_get_fpcr(env);
+    ret = kvm_set_one_reg(cs, AARCH64_SIMD_CTRL_REG(fp_regs.fpcr), &fpr);
+    if (ret) { return ret; }
+
+    write_cpustate_to_list(cpu, true);
+
+    if (!write_list_to_kvmstate(cpu, level)) { return -EINVAL; }
+
+    /*
+     * Setting VCPU events should be triggered after syncing the registers
+     * to avoid overwriting potential changes made by KVM upon calling
+     * KVM_SET_VCPU_EVENTS ioctl
+     */
+    ret = kvm_put_vcpu_events(cpu);
+    if (ret) { return ret; }
+
+    return kvm_arm_sync_mpstate_to_kvm(cpu);
+}
+
+static int kvm_arch_get_fpsimd(CPUState* cs)
+{
+    CPUARMState* env = &ARM_CPU(cs)->env;
+    int          i, ret;
+
+    for (i = 0; i < 32; i++) {
+        uint64_t* q = aa64_vfp_qreg(env, i);
+        ret         = kvm_get_one_reg(cs, AARCH64_SIMD_CORE_REG(fp_regs.vregs[i]), q);
+        if (ret) { return ret; }
+        else {
+#if HOST_BIG_ENDIAN
+            uint64_t t;
+            t = q[0], q[0] = q[1], q[1] = t;
+#endif
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * KVM SVE registers come in slices where ZREGs have a slice size of 2048 bits
+ * and PREGS and the FFR have a slice size of 256 bits. However we simply hard
+ * code the slice index to zero for now as it's unlikely we'll need more than
+ * one slice for quite some time.
+ */
+static int kvm_arch_get_sve(CPUState* cs)
+{
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
+    uint64_t*    r;
+    int          n, ret;
+
+    for (n = 0; n < KVM_ARM64_SVE_NUM_ZREGS; ++n) {
+        r   = &env->vfp.zregs[n].d[0];
+        ret = kvm_get_one_reg(cs, KVM_REG_ARM64_SVE_ZREG(n, 0), r);
+        if (ret) { return ret; }
+        sve_bswap64(r, r, cpu->sve_max_vq * 2);
+    }
+
+    for (n = 0; n < KVM_ARM64_SVE_NUM_PREGS; ++n) {
+        r   = &env->vfp.pregs[n].p[0];
+        ret = kvm_get_one_reg(cs, KVM_REG_ARM64_SVE_PREG(n, 0), r);
+        if (ret) { return ret; }
+        sve_bswap64(r, r, DIV_ROUND_UP(cpu->sve_max_vq * 2, 8));
+    }
+
+    r   = &env->vfp.pregs[FFR_PRED_NUM].p[0];
+    ret = kvm_get_one_reg(cs, KVM_REG_ARM64_SVE_FFR(0), r);
+    if (ret) { return ret; }
+    sve_bswap64(r, r, DIV_ROUND_UP(cpu->sve_max_vq * 2, 8));
+
+    return 0;
+}
+
+int kvm_arch_get_registers(CPUState* cs, Error** errp)
+{
+    uint64_t     val;
+    unsigned int el;
+    uint32_t     fpr;
+    int          i, ret;
+
+    ARMCPU*      cpu = ARM_CPU(cs);
+    CPUARMState* env = &cpu->env;
+
+    for (i = 0; i < 31; i++) {
+        ret = kvm_get_one_reg(cs, AARCH64_CORE_REG(regs.regs[i]), &env->xregs[i]);
+        if (ret) { return ret; }
+    }
+
+    ret = kvm_get_one_reg(cs, AARCH64_CORE_REG(regs.sp), &env->sp_el[0]);
+    if (ret) { return ret; }
+
+    ret = kvm_get_one_reg(cs, AARCH64_CORE_REG(sp_el1), &env->sp_el[1]);
+    if (ret) { return ret; }
+
+    ret = kvm_get_one_reg(cs, AARCH64_CORE_REG(regs.pstate), &val);
+    if (ret) { return ret; }
+
+    env->aarch64 = ((val & PSTATE_nRW) == 0);
+    if (is_a64(env)) { pstate_write(env, val); }
+    else {
+        cpsr_write(env, val, 0xffffffff, CPSRWriteRaw);
+    }
+
+    /* KVM puts SP_EL0 in regs.sp and SP_EL1 in regs.sp_el1. On the
+     * QEMU side we keep the current SP in xregs[31] as well.
+     */
+    aarch64_restore_sp(env, 1);
+
+    ret = kvm_get_one_reg(cs, AARCH64_CORE_REG(regs.pc), &env->pc);
+    if (ret) { return ret; }
+
+    /* If we are in AArch32 mode then we need to sync the AArch32 regs with the
+     * incoming AArch64 regs received from 64-bit KVM.
+     * We must perform this after all of the registers have been acquired from
+     * the kernel.
+     */
+    if (!is_a64(env)) { aarch64_sync_64_to_32(env); }
+
+    ret = kvm_get_one_reg(cs, AARCH64_CORE_REG(elr_el1), &env->elr_el[1]);
+    if (ret) { return ret; }
+
+    /* Fetch the SPSR registers
+     *
+     * KVM SPSRs 0-4 map to QEMU banks 1-5
+     */
+    for (i = 0; i < KVM_NR_SPSR; i++) {
+        ret = kvm_get_one_reg(cs, AARCH64_CORE_REG(spsr[i]), &env->banked_spsr[i + 1]);
+        if (ret) { return ret; }
+    }
+
+    el = arm_current_el(env);
+    if (el > 0 && !is_a64(env)) {
+        i         = bank_number(env->uncached_cpsr & CPSR_M);
+        env->spsr = env->banked_spsr[i];
+    }
+
+    if (cpu_isar_feature(aa64_sve, cpu)) { ret = kvm_arch_get_sve(cs); }
+    else {
+        ret = kvm_arch_get_fpsimd(cs);
+    }
+    if (ret) { return ret; }
+
+    ret = kvm_get_one_reg(cs, AARCH64_SIMD_CTRL_REG(fp_regs.fpsr), &fpr);
+    if (ret) { return ret; }
+    vfp_set_fpsr(env, fpr);
+
+    ret = kvm_get_one_reg(cs, AARCH64_SIMD_CTRL_REG(fp_regs.fpcr), &fpr);
+    if (ret) { return ret; }
+    vfp_set_fpcr(env, fpr);
+
+    ret = kvm_get_vcpu_events(cpu);
+    if (ret) { return ret; }
+
+    if (!write_kvmstate_to_list(cpu)) { return -EINVAL; }
+    /* Note that it's OK to have registers which aren't in CPUState,
+     * so we can ignore a failure return here.
+     */
+    write_list_to_cpustate(cpu);
+
+    ret = kvm_arm_sync_mpstate_to_qemu(cpu);
+
+    /* TODO: other registers */
+    return ret;
+}
+
+void kvm_arch_on_sigbus_vcpu(CPUState* c, int code, void* addr)
+{
+    ram_addr_t ram_addr;
+    hwaddr     paddr;
+
+    assert(code == BUS_MCEERR_AR || code == BUS_MCEERR_AO);
+
+    if (code == BUS_MCEERR_AR) {
+        error_report("Hardware memory error!");
+        exit(1);
+    }
+}
+
+/* C6.6.29 BRK instruction */
+static const uint32_t brk_insn = 0xd4200000;
+
+int kvm_arch_insert_sw_breakpoint(CPUState* cs, struct kvm_sw_breakpoint* bp)
+{
+    if (cpu_memory_rw_debug(cs, bp->pc, (uint8_t*)&bp->saved_insn, 4, 0)
+        || cpu_memory_rw_debug(cs, bp->pc, (uint8_t*)&brk_insn, 4, 1))
+    {
+        return -EINVAL;
+    }
+    return 0;
+}
+
+int kvm_arch_remove_sw_breakpoint(CPUState* cs, struct kvm_sw_breakpoint* bp)
+{
+    static uint32_t brk;
+
+    if (cpu_memory_rw_debug(cs, bp->pc, (uint8_t*)&brk, 4, 0) || brk != brk_insn
+        || cpu_memory_rw_debug(cs, bp->pc, (uint8_t*)&bp->saved_insn, 4, 1))
+    {
+        return -EINVAL;
+    }
+    return 0;
+}
+
+void kvm_arm_enable_mte(Object* cpuobj, Error** errp)
+{
+    static bool tried_to_enable;
+    static bool succeeded_to_enable;
+    ARMCPU*     cpu = ARM_CPU(cpuobj);
+    int         ret;
+
+    if (!tried_to_enable) {
+        /*
+         * MTE on KVM is enabled on a per-VM basis (and retrying doesn't make
+         * sense), and we only want a single migration blocker as well.
+         */
+        tried_to_enable = true;
+
+        ret = kvm_vm_enable_cap(kvm_state, KVM_CAP_ARM_MTE, 0);
+        if (ret) {
+            error_setg_errno(errp, -ret, "Failed to enable KVM_CAP_ARM_MTE");
+            return;
+        }
+
+        succeeded_to_enable = true;
+    }
+
+    if (succeeded_to_enable) { cpu->kvm_mte = true; }
 }
 
 void arm_cpu_kvm_set_irq(void* arm_cpu, int irq, int level)
@@ -632,20 +1998,3 @@ void arm_cpu_kvm_set_irq(void* arm_cpu, int irq, int level)
 
     kvm_arm_set_irq(cs->cpu_index, KVM_ARM_IRQ_TYPE_CPU, irq_id, !!level);
 }
-
-static void kvm_arm_machine_init_done(Notifier* notifier, void* data)
-{
-    KVMDevice *kd, *tkd;
-
-    QSLIST_FOREACH_SAFE (kd, &kvm_devices_head, entries, tkd) {
-        if (kd->kda.addr != -1) { kvm_arm_set_device_addr(kd); }
-        memory_region_unref(kd->mr);
-        QSLIST_REMOVE_HEAD(&kvm_devices_head, entries);
-        g_free(kd);
-    }
-    memory_listener_unregister(&devlistener);
-}
-
-static Notifier notify = {
-    .notify = kvm_arm_machine_init_done,
-};
