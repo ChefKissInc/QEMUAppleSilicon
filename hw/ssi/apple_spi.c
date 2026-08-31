@@ -434,6 +434,13 @@ static void apple_spi_reset_enter(Object* obj, ResetType type)
     spi->cs_line_pin = qdev_get_gpio_in_named(child->child, SSI_GPIO_CS, 0);
 }
 
+static void apple_spi_reset_hold(Object* obj, ResetType type)
+{
+    AppleSPIState* spi = APPLE_SPI(obj);
+
+    apple_spi_update_cs(spi);
+}
+
 SSIBus* apple_spi_get_bus(AppleSPIState* spi) { return spi->ssi_bus; }
 
 static void apple_spi_realize(DeviceState* dev, struct Error** errp)
@@ -509,6 +516,7 @@ static void apple_spi_class_init(ObjectClass* klass, const void* data)
     DeviceClass*     dc = DEVICE_CLASS(klass);
 
     rc->phases.enter = apple_spi_reset_enter;
+    rc->phases.hold  = apple_spi_reset_hold;
 
     dc->desc    = "Apple Samsung SPI Controller";
     dc->realize = apple_spi_realize;
