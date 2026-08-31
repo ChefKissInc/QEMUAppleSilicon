@@ -42,6 +42,11 @@
         while (0)
 #endif
 
+#define DART_TLB_ENTRIES     (256)
+#define DART_TLB_VALID       BIT_ULL(63)
+#define DART_TLB_GEN_SHIFT   (48)
+#define DART_TLB_GEN_MASK    (0x7FFFULL)
+#define DART_TLB_IOVA_MASK   (BIT_ULL(DART_TLB_GEN_SHIFT) - 1)
 #define DART_MAX_STREAMS     (16)
 #define DART_MAX_TTBR        (4)
 #define DART_MAX_VA_BITS     (38)
@@ -175,7 +180,7 @@ typedef struct
     uint32_t error_status;
     uint64_t error_address;
     uint32_t config;
-    uint8_t  sid_remap[DART_MAX_STREAMS];
+    uint32_t sid_remap[DART_MAX_STREAMS / 4];
     uint32_t sid_config[DART_MAX_STREAMS];
     uint32_t ttbr[DART_MAX_STREAMS][DART_MAX_TTBR];
 } AppleDARTDARTRegs;
@@ -183,17 +188,24 @@ typedef struct
 typedef struct
 {
     MemoryRegion    iomem;
-    QemuMutex       mutex;
     AppleDARTState* dart;
     uint32_t        id;
     dart_instance_t type;
 } AppleDARTInstance;
+
+typedef struct
+{
+    uint64_t val;
+    uint64_t tag;
+} AppleDARTTLBEntry;
 
 struct AppleDARTMapperInstance
 {
     AppleDARTInstance           common;
     AppleDARTIOMMUMemoryRegion* iommus[DART_MAX_STREAMS];
     AppleDARTDARTRegs           regs;
+    uint32_t                    tlb_gen[DART_MAX_STREAMS];
+    AppleDARTTLBEntry           tlb[DART_MAX_STREAMS][DART_TLB_ENTRIES];
 };
 
 struct AppleDARTState
@@ -253,6 +265,79 @@ static void apple_dart_update_irq(AppleDARTState* dart)
     qemu_irq_lower(dart->irq);
 }
 
+static uint8_t apple_dart_sid_remap(AppleDARTMapperInstance* mapper, uint32_t sid)
+{ return extract32(qatomic_read(&mapper->regs.sid_remap[sid / 4]), (sid % 4) * 8, 8); }
+
+static void apple_dart_tlb_flush_sid(AppleDARTMapperInstance* mapper, uint32_t sid)
+{
+    uint32_t gen;
+
+    if (sid >= DART_MAX_STREAMS) { return; }
+
+    gen = qatomic_fetch_inc(&mapper->tlb_gen[sid]) + 1;
+
+    if ((gen & DART_TLB_GEN_MASK) == 0) {
+        uint32_t i;
+
+        for (i = 0; i < DART_TLB_ENTRIES; i++) { qatomic_set__nocheck(&mapper->tlb[sid][i].tag, 0); }
+    }
+}
+
+static void apple_dart_tlb_flush_all(AppleDARTMapperInstance* mapper)
+{
+    uint32_t sid;
+
+    for (sid = 0; sid < DART_MAX_STREAMS; sid++) { apple_dart_tlb_flush_sid(mapper, sid); }
+}
+
+static uint64_t apple_dart_tlb_tag(uint32_t gen, hwaddr iova)
+{ return DART_TLB_VALID | (((uint64_t)gen & DART_TLB_GEN_MASK) << DART_TLB_GEN_SHIFT) | (iova & DART_TLB_IOVA_MASK); }
+
+static bool apple_dart_tlb_lookup(AppleDARTMapperInstance* mapper, uint32_t sid, hwaddr iova, uint32_t gen,
+                                  IOMMUTLBEntry* tlb_entry)
+{
+    AppleDARTTLBEntry* e   = &mapper->tlb[sid][iova & (DART_TLB_ENTRIES - 1)];
+    uint64_t           tag = apple_dart_tlb_tag(gen, iova);
+    uint64_t           val;
+
+    if (qatomic_load_acquire(&e->tag) != tag) { return false; }
+
+    val = qatomic_read__nocheck(&e->val);
+
+    smp_rmb();
+
+    if (qatomic_read__nocheck(&e->tag) != tag) { return false; }
+
+    tlb_entry->translated_addr = val & ~mapper->common.dart->page_bits;
+    tlb_entry->perm            = val & IOMMU_RW;
+
+    return true;
+}
+
+static void apple_dart_tlb_insert(AppleDARTMapperInstance* mapper, uint32_t sid, hwaddr iova, uint32_t gen,
+                                  const IOMMUTLBEntry* tlb_entry)
+{
+    AppleDARTTLBEntry* e = &mapper->tlb[sid][iova & (DART_TLB_ENTRIES - 1)];
+    uint64_t           val;
+    uint64_t           tag;
+
+    val = (tlb_entry->translated_addr & ~mapper->common.dart->page_bits) | (tlb_entry->perm & IOMMU_RW);
+
+    qatomic_set__nocheck(&e->tag, 0);
+
+    smp_wmb();
+
+    qatomic_set__nocheck(&e->val, val);
+
+    tag = apple_dart_tlb_tag(gen, iova);
+
+    qatomic_store_release(&e->tag, tag);
+
+    smp_mb();
+
+    if (qatomic_read(&mapper->tlb_gen[sid]) != gen) { qatomic_cmpxchg__nocheck(&e->tag, tag, 0); }
+}
+
 static void apple_dart_mapper_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
     AppleDARTMapperInstance* mapper = opaque;
@@ -278,13 +363,10 @@ static void apple_dart_mapper_reg_write(void* opaque, hwaddr addr, uint64_t data
 
             set_index = REG_FIELD_EX32(val, DART_TLB_OP, SET_INDEX);
 
-            WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
-            {
-                for (i = 0; i < DART_MAX_TLB_OP_SETS; ++i) {
-                    if ((set_index & BIT_ULL(i)) == 0) { continue; }
+            for (i = 0; i < DART_MAX_TLB_OP_SETS; ++i) {
+                if ((set_index & BIT_ULL(i)) == 0) { continue; }
 
-                    sid_mask |= mapper->regs.tlb_op_set[i] & mapper->common.dart->sid_mask;
-                }
+                sid_mask |= qatomic_read__nocheck(&mapper->regs.tlb_op_set[i]) & mapper->common.dart->sid_mask;
             }
 
             if (sid_mask != 0) {
@@ -297,6 +379,7 @@ static void apple_dart_mapper_reg_write(void* opaque, hwaddr addr, uint64_t data
                     event.entry.perm      = IOMMU_NONE;
                     event.entry.addr_mask = HWADDR_MAX;
 
+                    apple_dart_tlb_flush_sid(mapper, apple_dart_sid_remap(mapper, i));
                     memory_region_notify_iommu(&mapper->iommus[i]->iommu, 0, event);
                 }
             }
@@ -305,39 +388,35 @@ static void apple_dart_mapper_reg_write(void* opaque, hwaddr addr, uint64_t data
             break;
         case R_DART_TLB_OP_SET_0_LOW:
             if (!REG_FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) {
-                mapper->regs.tlb_op_set[0] = deposit64(mapper->regs.tlb_op_set[0], 0, 32, val);
+                qatomic_set__nocheck(&mapper->regs.tlb_op_set[0],
+                                     deposit64(qatomic_read__nocheck(&mapper->regs.tlb_op_set[0]), 0, 32, val));
             }
             break;
         case R_DART_TLB_OP_SET_0_HIGH:
             if (!REG_FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) {
-                mapper->regs.tlb_op_set[0] = deposit64(mapper->regs.tlb_op_set[0], 32, 32, val);
+                qatomic_set__nocheck(&mapper->regs.tlb_op_set[0],
+                                     deposit64(qatomic_read__nocheck(&mapper->regs.tlb_op_set[0]), 32, 32, val));
             }
             break;
         case R_DART_ERROR_STATUS:
-            mapper->regs.error_status &= ~val;
+            qatomic_and(&mapper->regs.error_status, ~val);
             apple_dart_update_irq(mapper->common.dart);
             break;
-        case R_DART_CONFIG: mapper->regs.config = val; break;
+        case R_DART_CONFIG: qatomic_set(&mapper->regs.config, val); break;
         case R_DART_SID_REMAP(0)...(R_DART_SID_REMAP(DART_MAX_STREAMS) - 1):
-            WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
-            {
-                i                                      = addr - A_DART_SID_REMAP(0);
-                *(uint32_t*)&mapper->regs.sid_remap[i] = val;
-            }
+            i = (addr >> 2) - R_DART_SID_REMAP(0);
+            qatomic_set(&mapper->regs.sid_remap[i], val);
+            apple_dart_tlb_flush_all(mapper);
             break;
         case R_DART_SID_CONFIG(0)...(R_DART_SID_CONFIG(DART_MAX_STREAMS) - 1):
-            WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
-            {
-                i                          = (addr >> 2) - R_DART_SID_CONFIG(0);
-                mapper->regs.sid_config[i] = val;
-            }
+            i = (addr >> 2) - R_DART_SID_CONFIG(0);
+            qatomic_set(&mapper->regs.sid_config[i], val);
+            apple_dart_tlb_flush_sid(mapper, i);
             break;
         case R_DART_TTBR(0, 0)...(R_DART_TTBR(DART_MAX_STREAMS, DART_MAX_TTBR) - 1):
-            WITH_QEMU_LOCK_GUARD(&mapper->common.mutex)
-            {
-                i                                 = (addr >> 2) - R_DART_TTBR(0, 0);
-                ((uint32_t*)mapper->regs.ttbr)[i] = val;
-            }
+            i = (addr >> 2) - R_DART_TTBR(0, 0);
+            qatomic_set(&((uint32_t*)mapper->regs.ttbr)[i], val);
+            apple_dart_tlb_flush_sid(mapper, i / DART_MAX_TTBR);
             break;
         default: break;
     }
@@ -355,21 +434,21 @@ static uint64_t apple_dart_mapper_reg_read(void* opaque, hwaddr addr, unsigned s
         case R_DART_PARAMS1           : return mapper->regs.params1;
         case R_DART_PARAMS2           : return mapper->regs.params2;
         case R_DART_TLB_OP            : return qatomic_read(&mapper->regs.tlb_op);
-        case R_DART_TLB_OP_SET_0_LOW  : return extract64(mapper->regs.tlb_op_set[0], 0, 32);
-        case R_DART_TLB_OP_SET_0_HIGH : return extract64(mapper->regs.tlb_op_set[0], 32, 32);
-        case R_DART_ERROR_STATUS      : return mapper->regs.error_status;
-        case R_DART_ERROR_ADDRESS_LOW : return extract64(mapper->regs.error_address, 0, 32);
-        case R_DART_ERROR_ADDRESS_HIGH: return extract64(mapper->regs.error_address, 32, 32);
-        case R_DART_CONFIG            : return mapper->regs.config;
+        case R_DART_TLB_OP_SET_0_LOW  : return extract64(qatomic_read__nocheck(&mapper->regs.tlb_op_set[0]), 0, 32);
+        case R_DART_TLB_OP_SET_0_HIGH : return extract64(qatomic_read__nocheck(&mapper->regs.tlb_op_set[0]), 32, 32);
+        case R_DART_ERROR_STATUS      : return qatomic_read(&mapper->regs.error_status);
+        case R_DART_ERROR_ADDRESS_LOW : return extract64(qatomic_read__nocheck(&mapper->regs.error_address), 0, 32);
+        case R_DART_ERROR_ADDRESS_HIGH: return extract64(qatomic_read__nocheck(&mapper->regs.error_address), 32, 32);
+        case R_DART_CONFIG            : return qatomic_read(&mapper->regs.config);
         case R_DART_SID_REMAP(0)...(R_DART_SID_REMAP(DART_MAX_STREAMS) - 1):
-            i = addr - A_DART_SID_REMAP(0);
-            return *(uint32_t*)&mapper->regs.sid_remap[i];
+            i = (addr >> 2) - R_DART_SID_REMAP(0);
+            return qatomic_read(&mapper->regs.sid_remap[i]);
         case R_DART_SID_CONFIG(0)...(R_DART_SID_CONFIG(DART_MAX_STREAMS) - 1):
             i = (addr >> 2) - R_DART_SID_CONFIG(0);
-            return mapper->regs.sid_config[i];
+            return qatomic_read(&mapper->regs.sid_config[i]);
         case R_DART_TTBR(0, 0)...(R_DART_TTBR(DART_MAX_STREAMS, DART_MAX_TTBR) - 1):
             i = (addr >> 2) - R_DART_TTBR(0, 0);
-            return ((uint32_t*)mapper->regs.ttbr)[i];
+            return qatomic_read(&((uint32_t*)mapper->regs.ttbr)[i]);
         default: return 0;
     }
 }
@@ -387,9 +466,7 @@ static const MemoryRegionOps apple_dart_mapper_reg_ops = {
 
 static void apple_dart_dummy_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigned size)
 {
-    AppleDARTInstance* instance = opaque;
-
-    QEMU_LOCK_GUARD(&instance->mutex);
+    G_GNUC_UNUSED AppleDARTInstance* instance = opaque;
 
     DPRINTF("%s[%d]: (%s) 0x" HWADDR_FMT_plx " <- 0x" HWADDR_FMT_plx "\n", instance->dart->parent_obj.parent_obj.id,
             instance->id, dart_instance_name[instance->type], addr, data);
@@ -397,9 +474,7 @@ static void apple_dart_dummy_reg_write(void* opaque, hwaddr addr, uint64_t data,
 
 static uint64_t apple_dart_dummy_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
-    AppleDARTInstance* instance = opaque;
-
-    QEMU_LOCK_GUARD(&instance->mutex);
+    G_GNUC_UNUSED AppleDARTInstance* instance = opaque;
 
     DPRINTF("%s[%d]: (%s) 0x" HWADDR_FMT_plx "\n", instance->dart->parent_obj.parent_obj.id, instance->id,
             dart_instance_name[instance->type], addr);
@@ -418,6 +493,21 @@ static const MemoryRegionOps apple_dart_dummy_reg_ops = {
     .valid.unaligned       = false,
 };
 
+static void apple_dart_mapper_set_error(AppleDARTMapperInstance* mapper, hwaddr addr, uint32_t status, uint32_t sid)
+{
+    uint32_t old;
+
+    qatomic_set__nocheck(&mapper->regs.error_address, addr);
+
+    do {
+        old = qatomic_read(&mapper->regs.error_status);
+    }
+    while (qatomic_cmpxchg(&mapper->regs.error_status, old, REG_FIELD_DP32(old | status, DART_ERROR_STATUS, SID, sid))
+           != old);
+
+    apple_dart_raise_irq(mapper->common.dart);
+}
+
 static inline uint32_t apple_dart_mapper_ptw(AppleDARTMapperInstance* mapper, uint32_t sid, hwaddr iova,
                                              IOMMUTLBEntry* tlb_entry)
 {
@@ -429,14 +519,17 @@ static inline uint32_t apple_dart_mapper_ptw(AppleDARTMapperInstance* mapper, ui
     int         level;
     MemTxResult res;
 
-    if (sid >= DART_MAX_STREAMS || (dart->sid_mask & BIT_ULL(sid)) == 0 || idx >= DART_MAX_TTBR
-        || !REG_FIELD_EX32(mapper->regs.ttbr[sid][idx], DART_TTBR, VALID))
-    {
+    if (sid >= DART_MAX_STREAMS || (dart->sid_mask & BIT_ULL(sid)) == 0 || idx >= DART_MAX_TTBR) {
         return REG_FIELD_DP32(REG_FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1), DART_ERROR_STATUS, TTBR_INVLD, 1);
     }
 
-    pte = mapper->regs.ttbr[sid][idx];
-    pa  = (pte & DART_TTBR_MASK) << DART_TTBR_SHIFT;
+    pte = qatomic_read(&mapper->regs.ttbr[sid][idx]);
+
+    if (!REG_FIELD_EX32(pte, DART_TTBR, VALID)) {
+        return REG_FIELD_DP32(REG_FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1), DART_ERROR_STATUS, TTBR_INVLD, 1);
+    }
+
+    pa = (pte & DART_TTBR_MASK) << DART_TTBR_SHIFT;
 
     for (level = 1; level < 3; level++) {
         idx  = (iova & (dart->l_mask[level])) >> dart->l_shift[level];
@@ -469,6 +562,8 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion* mr, hwaddr a
     AppleDARTMapperInstance*    mapper = iommu->mapper;
     AppleDARTState*             dart   = mapper->common.dart;
     uint32_t                    sid    = iommu->sid;
+    uint32_t                    sid_config;
+    uint32_t                    gen;
     uint64_t                    iova;
 
     IOMMUTLBEntry entry = {
@@ -480,47 +575,41 @@ static IOMMUTLBEntry apple_dart_mapper_translate(IOMMUMemoryRegion* mr, hwaddr a
 
     if (REG_FIELD_EX32(qatomic_read(&mapper->regs.tlb_op), DART_TLB_OP, BUSY)) { return entry; }
 
-    QEMU_LOCK_GUARD(&mapper->common.mutex);
+    sid = apple_dart_sid_remap(mapper, sid);
 
-    sid = mapper->regs.sid_remap[sid];
+    sid_config = qatomic_read(&mapper->regs.sid_config[sid]);
 
     // Disabled translation means bypass, not error (?)
-    if (REG_FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG, TRANSLATION_ENABLE) == 0
-        || REG_FIELD_EX32(mapper->regs.sid_config[sid], DART_SID_CONFIG, FULL_BYPASS) != 0)
+    if (REG_FIELD_EX32(sid_config, DART_SID_CONFIG, TRANSLATION_ENABLE) == 0
+        || REG_FIELD_EX32(sid_config, DART_SID_CONFIG, FULL_BYPASS) != 0)
     {
         // TODO
         goto end;
     }
 
     iova = addr >> dart->page_shift;
+    gen  = qatomic_read(&mapper->tlb_gen[sid]);
 
-    uint32_t status = apple_dart_mapper_ptw(mapper, sid, iova, &entry);
-    if (status != 0) {
-        mapper->regs.error_address = addr;
-        mapper->regs.error_status =
-            REG_FIELD_DP32(mapper->regs.error_status | status, DART_ERROR_STATUS, SID, iommu->sid);
-        apple_dart_raise_irq(dart);
-        goto end;
+    if (!apple_dart_tlb_lookup(mapper, sid, iova, gen, &entry)) {
+        uint32_t status = apple_dart_mapper_ptw(mapper, sid, iova, &entry);
+
+        if (status != 0) {
+            apple_dart_mapper_set_error(mapper, addr, status, iommu->sid);
+            goto end;
+        }
+
+        apple_dart_tlb_insert(mapper, sid, iova, gen, &entry);
     }
 
     entry.translated_addr |= addr & entry.addr_mask;
 
-    if ((flag & IOMMU_WO) != 0 && (entry.perm & IOMMU_WO) == 0) {
-        mapper->regs.error_address = addr;
-        mapper->regs.error_status =
-            REG_FIELD_DP32(REG_FIELD_DP32(REG_FIELD_DP32(mapper->regs.error_status, DART_ERROR_STATUS, FLAG, 1),
-                                          DART_ERROR_STATUS, WRITE_PROT, 1),
-                           DART_ERROR_STATUS, SID, iommu->sid);
-        apple_dart_raise_irq(dart);
-    }
-
-    if ((flag & IOMMU_RO) != 0 && (entry.perm & IOMMU_RO) == 0) {
-        mapper->regs.error_address = addr;
-        mapper->regs.error_status =
-            REG_FIELD_DP32(REG_FIELD_DP32(REG_FIELD_DP32(mapper->regs.error_status, DART_ERROR_STATUS, FLAG, 1),
-                                          DART_ERROR_STATUS, WRITE_PROT, 1),
-                           DART_ERROR_STATUS, SID, iommu->sid);
-        apple_dart_raise_irq(dart);
+    if (((flag & IOMMU_WO) != 0 && (entry.perm & IOMMU_WO) == 0)
+        || ((flag & IOMMU_RO) != 0 && (entry.perm & IOMMU_RO) == 0))
+    {
+        apple_dart_mapper_set_error(
+            mapper, addr,
+            REG_FIELD_DP32(REG_FIELD_DP32(0, DART_ERROR_STATUS, FLAG, 1), DART_ERROR_STATUS, WRITE_PROT, 1),
+            iommu->sid);
     }
 
 end:
@@ -543,17 +632,37 @@ static void apple_dart_reset_enter(Object* obj, ResetType type)
             case DART_DART: {
                 mapper = container_of(dart->instances[i], AppleDARTMapperInstance, common);
 
-                QEMU_LOCK_GUARD(&mapper->common.mutex);
-                mapper->regs = (AppleDARTDARTRegs){0};
+                uint32_t params1 = REG_FIELD_DP32(0, DART_PARAMS1, PAGE_SHIFT, dart->page_shift);
 
-                mapper->regs.params1 = REG_FIELD_DP32(0, DART_PARAMS1, PAGE_SHIFT, dart->page_shift);
                 // TODO: added hack against panic
-                mapper->regs.params1 = REG_FIELD_DP32(mapper->regs.params1, DART_PARAMS1, ACCESS_REGION_PROTECTION,
-                                                      (dart->dart_options & BIT(1)) != 0);
+                params1 =
+                    REG_FIELD_DP32(params1, DART_PARAMS1, ACCESS_REGION_PROTECTION, (dart->dart_options & BIT(1)) != 0);
 
+                qatomic_set(&mapper->regs.tlb_op, 0);
+                qatomic_set(&mapper->regs.error_status, 0);
+                qatomic_set__nocheck(&mapper->regs.error_address, 0);
+                qatomic_set(&mapper->regs.config, 0);
+
+                for (j = 0; j < DART_MAX_TLB_OP_SETS; j++) { qatomic_set__nocheck(&mapper->regs.tlb_op_set[j], 0); }
+
+                for (j = 0; j < DART_MAX_STREAMS; j++) {
+                    uint32_t k;
+
+                    qatomic_set(&mapper->regs.sid_config[j], 0);
+                    if ((j % 4) == 0) {
+                        qatomic_set(&mapper->regs.sid_remap[j / 4],
+                                    j | ((j + 1) << 8) | ((j + 2) << 16) | ((j + 3) << 24));
+                    }
+
+                    for (k = 0; k < DART_MAX_TTBR; k++) { qatomic_set(&mapper->regs.ttbr[j][k], 0); }
+
+                    qatomic_set(&mapper->tlb_gen[j], 1);
+
+                    for (k = 0; k < DART_TLB_ENTRIES; k++) { qatomic_set__nocheck(&mapper->tlb[j][k].tag, 0); }
+                }
+
+                mapper->regs.params1 = params1;
                 mapper->regs.params2 = REG_FIELD_DP32(0, DART_PARAMS2, BYPASS_SUPPORT, 1);
-
-                for (j = 0; j < DART_MAX_STREAMS; j++) { mapper->regs.sid_remap[j] = j; }
                 break;
             }
             default: break;
@@ -702,7 +811,6 @@ AppleDARTState* apple_dart_from_node(AppleDTNode* node)
                                       TYPE_APPLE_DART ".reg", reg[(i * 2) + 1]);
                 break;
         }
-        qemu_mutex_init(&instance->mutex);
         instance->id       = i;
         instance->dart     = dart;
         dart->instances[i] = instance;
@@ -785,7 +893,7 @@ void hmp_info_dart(Monitor* mon, const QDict* qdict)
 
         for (int sid = 0; sid < DART_MAX_STREAMS; sid++) {
             if (dart->sid_mask & BIT_ULL(sid)) {
-                uint8_t remap = mapper->regs.sid_remap[sid];
+                uint8_t remap = apple_dart_sid_remap(mapper, sid);
                 if (sid != remap) {
                     monitor_printf(mon, "\t\tSID %d: Remapped to %d\n", sid, remap);
                     continue;
