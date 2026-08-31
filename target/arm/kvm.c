@@ -468,9 +468,7 @@ int kvm_arch_get_default_type(MachineState* ms)
 int kvm_arch_init(MachineState* ms, KVMState* s)
 {
     int ret = 0;
-    /* For ARM interrupt delivery is always asynchronous,
-     * the state of the CPU interrupt lines.
-     */
+    /* For ARM interrupt delivery is always asynchronous. */
     kvm_async_interrupts_allowed = true;
 
     /*
