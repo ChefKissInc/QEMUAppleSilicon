@@ -52,7 +52,7 @@
 #include "system/runstate.h"
 #include "system/runstate-action.h"
 #include "system/system.h"
-#include "gdbstub/syscalls.h"
+#include "gdbstub/exit.h"
 #include "trace.h"
 
 static NotifierList exit_notifiers = NOTIFIER_LIST_INITIALIZER(exit_notifiers);

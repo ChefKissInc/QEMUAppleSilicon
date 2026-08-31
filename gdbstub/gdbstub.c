@@ -32,7 +32,7 @@
 #include "trace.h"
 #include "exec/gdbstub.h"
 #include "gdbstub/commands.h"
-#include "gdbstub/syscalls.h"
+#include "gdbstub/exit.h"
 #include "hw/cpu/cluster.h"
 #include "hw/boards.h"
 #include "hw/core/cpu.h"
@@ -887,7 +887,6 @@ static void handle_detach(GArray* params, void* user_ctx)
 
     if (!gdbserver_state.c_cpu) {
         /* No more process attached */
-        gdb_disable_syscalls();
         gdb_continue();
     }
     gdb_put_packet("OK");
@@ -1676,13 +1675,6 @@ static int gdb_handle_packet(const char* line_buf)
                                                                .allow_stop_reply = true,
                                                                .schema           = "o0"};
             cmd_parser                                      = &backward_cmd_desc;
-        } break;
-        case 'F': {
-            static const GdbCmdParseEntry file_io_cmd_desc = {.handler        = gdb_handle_file_io,
-                                                              .cmd            = "F",
-                                                              .cmd_startswith = true,
-                                                              .schema         = "L,L,o0"};
-            cmd_parser                                     = &file_io_cmd_desc;
         } break;
         case 'g': {
             static const GdbCmdParseEntry read_all_regs_cmd_desc = {.handler        = handle_read_all_regs,

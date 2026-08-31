@@ -15,7 +15,7 @@
 #include "qemu/error-report.h"
 #include "qemu/cutils.h"
 #include "exec/gdbstub.h"
-#include "gdbstub/syscalls.h"
+#include "gdbstub/exit.h"
 #include "gdbstub/commands.h"
 #include "exec/hwaddr.h"
 #include "accel/accel-ops.h"
@@ -95,20 +95,6 @@ static void gdb_chr_event(void* opaque, QEMUChrEvent event)
     }
 }
 
-/*
- * In system-mode we stop the VM and wait to send the syscall packet
- * until notification that the CPU has stopped. This must be done
- * because if the packet is sent now the reply from the syscall
- * request could be received while the CPU is still in the running
- * state, which can cause packets to be dropped and state transition
- * 'T' packets to be sent while the syscall is still being processed.
- */
-void gdb_syscall_handling(const char* syscall_packet)
-{
-    vm_stop(RUN_STATE_DEBUG);
-    qemu_cpu_kick(gdbserver_state.c_cpu);
-}
-
 static void gdb_vm_state_change(void* opaque, bool running, RunState state)
 {
     CPUState* cpu          = gdbserver_state.c_cpu;
@@ -118,9 +104,6 @@ static void gdb_vm_state_change(void* opaque, bool running, RunState state)
     int         ret;
 
     if (running || gdbserver_state.state == RS_INACTIVE) { return; }
-
-    /* Is there a GDB syscall waiting to be sent?  */
-    if (gdb_handled_syscall()) { return; }
 
     if (cpu == NULL) {
         /* No process attached */
@@ -367,7 +350,6 @@ bool gdbserver_start(const char* device, Error** errp)
     }
     gdbserver_state.state          = chr ? RS_IDLE : RS_INACTIVE;
     gdbserver_system_state.mon_chr = mon_chr;
-    gdb_syscall_reset();
 
     return true;
 }

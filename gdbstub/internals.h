@@ -159,11 +159,8 @@ unsigned int gdb_get_max_cpus(void); /* both */
 
 void gdb_create_default_process(GDBState* s);
 
-/* signal mapping, common for system, specialised for user-mode */
+/* signal mapping */
 int gdb_signal_to_target(int sig);
-int gdb_target_signal_to_gdb(int sig);
-
-int gdb_get_char(void); /* user only */
 
 /**
  * gdb_continue() - handle continue in mode specific way.
@@ -175,48 +172,20 @@ void gdb_continue(void);
  */
 int gdb_continue_partial(char* newstates);
 
-/*
- * Helpers with separate system and user implementations
- */
 void gdb_put_buffer(const uint8_t* buf, int len);
 
 /*
- * Command handlers - either specialised or system or user only
+ * Command handlers
  */
 void gdb_init_gdbserver_state(void);
 
-void gdb_handle_query_rcmd(GArray* params, void* ctx);                /* system */
-void gdb_handle_query_offsets(GArray* params, void* user_ctx);        /* user */
-void gdb_handle_query_xfer_auxv(GArray* params, void* user_ctx);      /*user */
-void gdb_handle_query_xfer_siginfo(GArray* params, void* user_ctx);   /*user */
-void gdb_handle_v_file_open(GArray* params, void* user_ctx);          /* user */
-void gdb_handle_v_file_close(GArray* params, void* user_ctx);         /* user */
-void gdb_handle_v_file_pread(GArray* params, void* user_ctx);         /* user */
-void gdb_handle_v_file_readlink(GArray* params, void* user_ctx);      /* user */
-void gdb_handle_query_xfer_exec_file(GArray* params, void* user_ctx); /* user */
-void gdb_handle_set_catch_syscalls(GArray* params, void* user_ctx);   /* user */
-void gdb_handle_query_supported_user(const char* gdb_supported);      /* user */
-bool gdb_handle_set_thread_user(uint32_t pid, uint32_t tid);          /* user */
-bool gdb_handle_detach_user(uint32_t pid);                            /* user */
-
-void gdb_handle_query_attached(GArray* params, void* ctx); /* both */
-
-/* system only */
+void gdb_handle_query_rcmd(GArray* params, void* ctx);
+void gdb_handle_query_attached(GArray* params, void* ctx);
 void gdb_handle_query_qemu_phy_mem_mode(GArray* params, void* ctx);
 void gdb_handle_set_qemu_phy_mem_mode(GArray* params, void* ctx);
 
-/* sycall handling */
-void gdb_handle_file_io(GArray* params, void* user_ctx);
-bool gdb_handled_syscall(void);
-void gdb_disable_syscalls(void);
-void gdb_syscall_reset(void);
-
-/* user/system specific syscall handling */
-void gdb_syscall_handling(const char* syscall_packet);
-
 /*
- * Break/Watch point support - there is an implementation for system
- * and user mode.
+ * Break/Watch point support
  */
 bool gdb_supports_guest_debug(void);
 int  gdb_breakpoint_insert(CPUState* cs, int type, vaddr addr, vaddr len);

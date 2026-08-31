@@ -6,6 +6,5 @@
 
 system_ss.add(files(
   'gdbstub.c',
-  'syscalls.c',
   'system.c'
 ))
