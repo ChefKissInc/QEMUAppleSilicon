@@ -17,16 +17,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef UTIL_MLIB_H
+#pragma once
 
-    // Speed up compilation and runtime speed.
-    #ifdef NDEBUG
-        #define M_ASSERT(expr)      (void)0
-        #define M_ASSERT_SLOW(expr) (void)0
-    #endif
+// Speed up compilation and runtime speed.
+#ifdef NDEBUG
+    #define M_ASSERT(expr)      (void)0
+    #define M_ASSERT_SLOW(expr) (void)0
+#endif
 
-    #include "mlib/m-algo.h"
-    #include "mlib/m-array.h"
-    #include "mlib/m-dict.h"
-
-#endif /* UTIL_MLIB_H */
+#include "mlib/m-algo.h"
+#include "mlib/m-array.h"
+#include "mlib/m-dict.h"
