@@ -243,6 +243,12 @@ struct CPUTLBEntryFull
     uint8_t slow_flags[MMU_ACCESS_COUNT];
 
     /*
+     * @asid_tagged is true when the translation is only valid for the
+     * address space id that was current when it was filled.
+     */
+    bool asid_tagged;
+
+    /*
      * Allow target-specific additions to this structure.
      * This may be used to cache items from the guest cpu
      * page tables for later use by the implementation.

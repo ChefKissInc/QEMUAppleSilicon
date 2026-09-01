@@ -1252,6 +1252,20 @@ static inline bool allocation_tag_access_enabled(CPUARMState* env, int el, uint6
     return sctlr != 0;
 }
 
+static inline int vae1_tlbmask(CPUARMState* env)
+{
+    uint64_t hcr = arm_hcr_el2_eff(env);
+
+    assert(arm_feature(env, ARM_FEATURE_AARCH64));
+
+    if ((hcr & (HCR_E2H | HCR_TGE)) == (HCR_E2H | HCR_TGE)) {
+        return ARMMMUIdxBit_E20_2 | ARMMMUIdxBit_E20_2_PAN | ARMMMUIdxBit_GE20_2 | ARMMMUIdxBit_GE20_2_PAN
+               | ARMMMUIdxBit_E20_0;
+    }
+    return ARMMMUIdxBit_E10_1 | ARMMMUIdxBit_E10_1_PAN | ARMMMUIdxBit_GE10_1 | ARMMMUIdxBit_GE10_1_PAN
+           | ARMMMUIdxBit_E10_0;
+}
+
 /* Security attributes for an address, as returned by v8m_security_lookup. */
 typedef struct V8M_SAttributes
 {

@@ -527,7 +527,6 @@ int kvm_arch_init(MachineState* ms, KVMState* s)
 
 unsigned long kvm_arch_vcpu_id(CPUState* cpu) { return cpu->cpu_index; }
 
-
 /*
  * cpreg_values are sorted in ascending order by KVM register ID
  * (see kvm_arm_init_cpreg_list). This allows us to cheaply find

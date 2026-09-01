@@ -305,6 +305,9 @@ void tlb_destroy(CPUState* cpu)
     }
 }
 
+static bool tlb_cpu_has_dirty(CPUState* cpu, MMUIdxMap idxmap)
+{ return (qatomic_read(&cpu->neg.tlb.c.dirty) & idxmap) != 0; }
+
 /* flush_all_helper: run fn across all cpus
  *
  * If the wait flag is set then the src cpu's helper will be queued as
@@ -312,12 +315,12 @@ void tlb_destroy(CPUState* cpu)
  * where all queued work will be finished before execution starts
  * again.
  */
-static void flush_all_helper(CPUState* src, run_on_cpu_func fn, run_on_cpu_data d)
+static void flush_all_helper(CPUState* src, run_on_cpu_func fn, run_on_cpu_data d, MMUIdxMap idxmap)
 {
     CPUState* cpu;
 
     CPU_FOREACH (cpu) {
-        if (cpu != src) { async_run_on_cpu(cpu, fn, d); }
+        if (cpu != src && tlb_cpu_has_dirty(cpu, idxmap)) { async_run_on_cpu(cpu, fn, d); }
     }
 }
 
@@ -345,7 +348,7 @@ static void tlb_flush_by_mmuidx_async_work(CPUState* cpu, run_on_cpu_data data)
 
     qemu_spin_unlock(&cpu->neg.tlb.c.lock);
 
-    tcg_flush_jmp_cache(cpu);
+    if (to_clean != 0) { tcg_flush_jmp_cache(cpu); }
 
     if (to_clean == ALL_MMUIDX_BITS) {
         qatomic_set(&cpu->neg.tlb.c.full_flush_count, cpu->neg.tlb.c.full_flush_count + 1);
@@ -376,7 +379,7 @@ void tlb_flush_by_mmuidx_all_cpus_synced(CPUState* src_cpu, MMUIdxMap idxmap)
 
     tlb_debug("mmu_idx: 0x%" PRIx32 "\n", idxmap);
 
-    flush_all_helper(src_cpu, fn, RUN_ON_CPU_HOST_INT(idxmap));
+    flush_all_helper(src_cpu, fn, RUN_ON_CPU_HOST_INT(idxmap), idxmap);
     async_safe_run_on_cpu(src_cpu, fn, RUN_ON_CPU_HOST_INT(idxmap));
 }
 
@@ -428,6 +431,49 @@ static void tlb_flush_vtlb_page_mask_locked(CPUState* cpu, int mmu_idx, vaddr pa
 
 static inline void tlb_flush_vtlb_page_locked(CPUState* cpu, int mmu_idx, vaddr page)
 { tlb_flush_vtlb_page_mask_locked(cpu, mmu_idx, page, -1); }
+
+static bool tlb_entry_is_asid_tagged(const CPUTLBEntry* te, const CPUTLBEntryFull* full)
+{ return !tlb_entry_is_empty(te) && full->asid_tagged; }
+
+static void tlb_flush_asid_tagged_locked(CPUState* cpu, int midx)
+{
+    CPUTLBDesc*     desc = &cpu->neg.tlb.d[midx];
+    CPUTLBDescFast* fast = cpu_tlb_fast(cpu, midx);
+    unsigned int    n    = tlb_n_entries(fast);
+    unsigned int    i;
+
+    for (i = 0; i < n; i++) {
+        if (tlb_entry_is_asid_tagged(&fast->table[i], &desc->fulltlb[i])) {
+            memset(&fast->table[i], -1, sizeof(CPUTLBEntry));
+            tlb_n_used_entries_dec(cpu, midx);
+        }
+    }
+
+    for (i = 0; i < CPU_VTLB_SIZE; i++) {
+        if (tlb_entry_is_asid_tagged(&desc->vtable[i], &desc->vfulltlb[i])) {
+            memset(&desc->vtable[i], -1, sizeof(CPUTLBEntry));
+            tlb_n_used_entries_dec(cpu, midx);
+        }
+    }
+}
+
+void tlb_flush_asid_tagged_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap)
+{
+    MMUIdxMap todo, work;
+
+    assert_cpu_is_self(cpu);
+
+    tlb_debug("mmu_idx: 0x%" PRIx32 "\n", idxmap);
+
+    qemu_spin_lock(&cpu->neg.tlb.c.lock);
+
+    todo = idxmap & cpu->neg.tlb.c.dirty;
+    for (work = todo; work != 0; work &= work - 1) { tlb_flush_asid_tagged_locked(cpu, ctz32(work)); }
+
+    qemu_spin_unlock(&cpu->neg.tlb.c.lock);
+
+    if (todo != 0) { tcg_flush_jmp_cache(cpu); }
+}
 
 static void tlb_flush_page_locked(CPUState* cpu, int midx, vaddr page)
 {
@@ -545,7 +591,7 @@ void tlb_flush_page_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, MMU
      * See tlb_flush_page_by_mmuidx for details.
      */
     if (idxmap < TARGET_PAGE_SIZE) {
-        flush_all_helper(src_cpu, tlb_flush_page_by_mmuidx_async_1, RUN_ON_CPU_TARGET_PTR(addr | idxmap));
+        flush_all_helper(src_cpu, tlb_flush_page_by_mmuidx_async_1, RUN_ON_CPU_TARGET_PTR(addr | idxmap), idxmap);
         async_safe_run_on_cpu(src_cpu, tlb_flush_page_by_mmuidx_async_1, RUN_ON_CPU_TARGET_PTR(addr | idxmap));
     }
     else {
@@ -554,7 +600,7 @@ void tlb_flush_page_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, MMU
 
         /* Allocate a separate data block for each destination cpu.  */
         CPU_FOREACH (dst_cpu) {
-            if (dst_cpu != src_cpu) {
+            if (dst_cpu != src_cpu && tlb_cpu_has_dirty(dst_cpu, idxmap)) {
                 d         = g_new(TLBFlushPageByMMUIdxData, 1);
                 d->addr   = addr;
                 d->idxmap = idxmap;
@@ -727,7 +773,7 @@ void tlb_flush_range_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, va
 
     /* Allocate a separate data block for each destination cpu.  */
     CPU_FOREACH (dst_cpu) {
-        if (dst_cpu != src_cpu) {
+        if (dst_cpu != src_cpu && tlb_cpu_has_dirty(dst_cpu, idxmap)) {
             p = g_memdup(&d, sizeof(d));
             async_run_on_cpu(dst_cpu, tlb_flush_range_by_mmuidx_async_1, RUN_ON_CPU_HOST_PTR(p));
         }

@@ -183,6 +183,17 @@ void tlb_flush_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap);
 void tlb_flush_by_mmuidx_all_cpus_synced(CPUState* cpu, MMUIdxMap idxmap);
 
 /**
+ * tlb_flush_asid_tagged_by_mmuidx:
+ * @cpu: CPU whose TLB should be flushed
+ * @idxmap: bitmap of MMU indexes to flush
+ *
+ * For each mmuidx in @idxmap, flush only those entries that were filled
+ * from a translation carrying CPUTLBEntryFull.asid_tagged, leaving
+ * entries valid for every address space id in place.
+ */
+void tlb_flush_asid_tagged_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap);
+
+/**
  * tlb_flush_page_bits_by_mmuidx
  * @cpu: CPU whose TLB should be flushed
  * @addr: virtual address of page to be flushed
@@ -221,6 +232,7 @@ static inline void tlb_flush_page_by_mmuidx(CPUState* cpu, vaddr addr, MMUIdxMap
 static inline void tlb_flush_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap) { }
 static inline void tlb_flush_page_by_mmuidx_all_cpus_synced(CPUState* cpu, vaddr addr, MMUIdxMap idxmap) { }
 static inline void tlb_flush_by_mmuidx_all_cpus_synced(CPUState* cpu, MMUIdxMap idxmap) { }
+static inline void tlb_flush_asid_tagged_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap) { }
 static inline void tlb_flush_page_bits_by_mmuidx(CPUState* cpu, vaddr addr, MMUIdxMap idxmap, unsigned bits) { }
 static inline void tlb_flush_page_bits_by_mmuidx_all_cpus_synced(CPUState* cpu, vaddr addr, MMUIdxMap idxmap,
                                                                  unsigned bits)

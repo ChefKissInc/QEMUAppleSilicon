@@ -2394,7 +2394,10 @@ static void vmsa_ttbr_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t v
     /* If the ASID changes (with a 64-bit write), we must flush the TLB.  */
     if (cpreg_field_is_64bit(ri) && extract64(raw_read(env, ri) ^ value, 48, 16) != 0) {
         ARMCPU* cpu = env_archcpu(env);
-        tlb_flush(CPU(cpu));
+        if (ri->state == ARM_CP_STATE_AA64) { tlb_flush_asid_tagged_by_mmuidx(CPU(cpu), vae1_tlbmask(env)); }
+        else {
+            tlb_flush(CPU(cpu));
+        }
     }
     raw_write(env, ri, value);
 }

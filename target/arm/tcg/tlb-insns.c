@@ -183,25 +183,6 @@ static void tlbiall_hyp_is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint6
  * Page D4-1736 (DDI0487A.b)
  */
 
-static int vae1_tlbmask(CPUARMState* env)
-{
-    uint64_t hcr = arm_hcr_el2_eff(env);
-    uint32_t mask;
-
-    assert(arm_feature(env, ARM_FEATURE_AARCH64));
-
-    if ((hcr & (HCR_E2H | HCR_TGE)) == (HCR_E2H | HCR_TGE)) {
-        mask = ARMMMUIdxBit_E20_2 | ARMMMUIdxBit_E20_2_PAN | ARMMMUIdxBit_GE20_2 | ARMMMUIdxBit_GE20_2_PAN
-               | ARMMMUIdxBit_E20_0;
-    }
-    else {
-        /* This is AArch64 only, so we don't need to touch the EL30_x TLBs */
-        mask = ARMMMUIdxBit_E10_1 | ARMMMUIdxBit_E10_1_PAN | ARMMMUIdxBit_GE10_1 | ARMMMUIdxBit_GE10_1_PAN
-               | ARMMMUIdxBit_E10_0;
-    }
-    return mask;
-}
-
 static int vae2_tlbmask(CPUARMState* env)
 {
     uint64_t hcr = arm_hcr_el2_eff(env);

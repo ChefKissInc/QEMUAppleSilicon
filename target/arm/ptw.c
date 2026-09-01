@@ -1958,7 +1958,9 @@ restart_atomic_update:
         if (aarch64 && cpu_isar_feature(aa64_bti, cpu)) {
             result->f.extra.arm.guarded = extract64(attrs, 50, 1); /* GP */
         }
-        device = S1_attrs_are_device(result->cacheattrs.attrs);
+
+        result->f.asid_tagged = regime_has_2_ranges(mmu_idx) && extract64(attrs, 11, 1);
+        device                = S1_attrs_are_device(result->cacheattrs.attrs);
     }
 
     /*
@@ -2353,7 +2355,7 @@ static bool get_phys_addr_twostage(CPUARMState* env, S1Translate* ptw, vaddr add
     hwaddr           ipa;
     int              s1_prot, s1_lgpgsz;
     ARMSecuritySpace in_space = ptw->in_space;
-    bool             ret, ipa_secure, s1_guarded;
+    bool             ret, ipa_secure, s1_guarded, s1_asid_tagged;
     ARMCacheAttrs    cacheattrs1;
     ARMSecuritySpace ipa_space;
     uint64_t         hcr;
@@ -2376,10 +2378,11 @@ static bool get_phys_addr_twostage(CPUARMState* env, S1Translate* ptw, vaddr add
      * S1 is done, now do S2 translation.
      * Save the stage1 results so that we may merge prot and cacheattrs later.
      */
-    s1_prot     = result->f.prot;
-    s1_lgpgsz   = result->f.lg_page_size;
-    s1_guarded  = result->f.extra.arm.guarded;
-    cacheattrs1 = result->cacheattrs;
+    s1_prot        = result->f.prot;
+    s1_lgpgsz      = result->f.lg_page_size;
+    s1_guarded     = result->f.extra.arm.guarded;
+    s1_asid_tagged = result->f.asid_tagged;
+    cacheattrs1    = result->cacheattrs;
     memset(result, 0, sizeof(*result));
 
     ret        = get_phys_addr_nogpc(env, ptw, ipa, access_type, memop, result, fi);
@@ -2424,6 +2427,7 @@ static bool get_phys_addr_twostage(CPUARMState* env, S1Translate* ptw, vaddr add
 
     /* No BTI GP information in stage 2, we just use the S1 value */
     result->f.extra.arm.guarded = s1_guarded;
+    result->f.asid_tagged       = s1_asid_tagged;
 
     /*
      * Check if IPA translates to secure or non-secure PA space.
