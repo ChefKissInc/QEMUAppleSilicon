@@ -1488,14 +1488,18 @@ static void gt_recalc_timer(ARMCPU* cpu, int timeridx)
             }
         }
 
-        timer_mod_ns(cpu->gt_timer[timeridx], next_ns);
-        trace_arm_gt_recalc(timeridx, next_ns);
+        if (timer_expire_time_ns(cpu->gt_timer[timeridx]) != next_ns) {
+            timer_mod_ns(cpu->gt_timer[timeridx], next_ns);
+            trace_arm_gt_recalc(timeridx, next_ns);
+        }
     }
     else {
         /* Timer disabled: ISTATUS and timer output always clear */
         gt->ctl &= ~4;
-        timer_del(cpu->gt_timer[timeridx]);
-        trace_arm_gt_recalc_disabled(timeridx);
+        if (timer_pending(cpu->gt_timer[timeridx])) {
+            timer_del(cpu->gt_timer[timeridx]);
+            trace_arm_gt_recalc_disabled(timeridx);
+        }
     }
 
     gt_update_irq(cpu, timeridx);
