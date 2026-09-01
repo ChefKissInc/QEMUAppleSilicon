@@ -29,6 +29,8 @@
 #define TYPE_APPLE_A7IOP_MAILBOX "apple-a7iop-mailbox"
 OBJECT_DECLARE_SIMPLE_TYPE(AppleA7IOPMailbox, APPLE_A7IOP_MAILBOX)
 
+#define A7IOP_MAX_MESSAGES (15)
+
 #define IOP_EMPTY    BIT(0)
 #define IOP_NONEMPTY BIT(4)
 #define AP_EMPTY     BIT(8)
@@ -72,7 +74,6 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleA7IOPMailbox, APPLE_A7IOP_MAILBOX)
 typedef struct AppleA7IOPMessage
 {
     uint8_t data[16];
-    QTAILQ_ENTRY(AppleA7IOPMessage) next;
 } AppleA7IOPMessage;
 
 typedef struct AppleA7IOPInterruptStatusMessage
@@ -90,21 +91,23 @@ struct AppleA7IOPMailbox
     QemuMutex    lock;
     MemoryRegion mmio;
     QEMUBH*      handle_messages_bh;
-    QTAILQ_HEAD(, AppleA7IOPMessage) inbox;
+    AppleA7IOPMessage inbox[A7IOP_MAX_MESSAGES];
     QTAILQ_HEAD(, AppleA7IOPInterruptStatusMessage) interrupt_status;
-    uint32_t           count;
     AppleA7IOPMailbox* iop_mailbox;
     AppleA7IOPMailbox* ap_mailbox;
     qemu_irq           irqs[APPLE_A7IOP_IRQ_MAX];
     qemu_irq           sep_cpu_irq;
-    bool               iop_dir_en;
-    bool               ap_dir_en;
-    bool               underflow;
+    uint8_t inbox_head : 4;
+    uint8_t inbox_count : 4;
+    uint8_t               iop_dir_en : 1;
+    uint8_t               ap_dir_en : 1;
+    uint8_t               underflow : 1;
+    uint8_t               overflow : 1;
     uint32_t           int_mask;
-    uint8_t            iop_recv_reg[16];
-    uint8_t            ap_recv_reg[16];
-    uint8_t            iop_send_reg[16];
-    uint8_t            ap_send_reg[16];
+    AppleA7IOPMessage            iop_recv_reg;
+    AppleA7IOPMessage            ap_recv_reg;
+    AppleA7IOPMessage            iop_send_reg;
+    AppleA7IOPMessage            ap_send_reg;
     uint32_t           interrupts_enabled[4];
     bool               iop_nonempty;
     bool               iop_empty;
@@ -119,16 +122,16 @@ struct AppleA7IOPMailbox
     uint32_t           sep_timer_level;
 };
 
-void               apple_a7iop_mailbox_update_irq_status(AppleA7IOPMailbox* s);
-void               apple_a7iop_mailbox_update_irq(AppleA7IOPMailbox* s);
-bool               apple_a7iop_mailbox_is_empty(AppleA7IOPMailbox* s);
-void               apple_a7iop_mailbox_send_ap(AppleA7IOPMailbox* s, AppleA7IOPMessage* msg);
-void               apple_a7iop_mailbox_send_iop(AppleA7IOPMailbox* s, AppleA7IOPMessage* msg);
-uint32_t           apple_a7iop_mailbox_read_interrupt_status(AppleA7IOPMailbox* s);
-AppleA7IOPMessage* apple_a7iop_inbox_peek(AppleA7IOPMailbox* s);
-void               apple_a7iop_interrupt_status_push(AppleA7IOPMailbox* s, uint32_t status);
-AppleA7IOPMessage* apple_a7iop_mailbox_recv_iop(AppleA7IOPMailbox* s);
-AppleA7IOPMessage* apple_a7iop_mailbox_recv_ap(AppleA7IOPMailbox* s);
+void               apple_a7iop_mailbox_update_irq_status(AppleA7IOPMailbox* mailbox);
+void               apple_a7iop_mailbox_update_irq(AppleA7IOPMailbox* mailbox);
+bool               apple_a7iop_mailbox_is_empty(AppleA7IOPMailbox* mailbox);
+bool               apple_a7iop_mailbox_send_ap(AppleA7IOPMailbox* mailbox, const AppleA7IOPMessage* msg);
+bool               apple_a7iop_mailbox_send_iop(AppleA7IOPMailbox* mailbox, const AppleA7IOPMessage* msg);
+uint32_t           apple_a7iop_mailbox_read_interrupt_status(AppleA7IOPMailbox* mailbox);
+bool apple_a7iop_inbox_peek(AppleA7IOPMailbox* mailbox, AppleA7IOPMessage* message);
+void               apple_a7iop_interrupt_status_push(AppleA7IOPMailbox* mailbox, uint32_t status);
+bool apple_a7iop_mailbox_recv_iop(AppleA7IOPMailbox* mailbox, AppleA7IOPMessage* message);
+bool apple_a7iop_mailbox_recv_ap(AppleA7IOPMailbox* mailbox, AppleA7IOPMessage* message);
 AppleA7IOPMailbox* apple_a7iop_mailbox_new(const char* role, AppleA7IOPVersion version, AppleA7IOPMailbox* iop_mailbox,
                                            AppleA7IOPMailbox* ap_mailbox, void* opaque,
                                            QEMUBHFunc* handle_messages_func);

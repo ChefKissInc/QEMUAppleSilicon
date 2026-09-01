@@ -52,14 +52,14 @@ struct AppleA7IOP
     uint32_t             cpu_ctrl;
 };
 
-void               apple_a7iop_send_ap(AppleA7IOP* s, AppleA7IOPMessage* msg);
-AppleA7IOPMessage* apple_a7iop_recv_ap(AppleA7IOP* s);
-void               apple_a7iop_send_iop(AppleA7IOP* s, AppleA7IOPMessage* msg);
-AppleA7IOPMessage* apple_a7iop_recv_iop(AppleA7IOP* s);
-void               apple_a7iop_cpu_start(AppleA7IOP* s, bool wake);
-uint32_t           apple_a7iop_get_cpu_status(AppleA7IOP* s);
-void               apple_a7iop_set_cpu_status(AppleA7IOP* s, uint32_t value);
-uint32_t           apple_a7iop_get_cpu_ctrl(AppleA7IOP* s);
-void               apple_a7iop_set_cpu_ctrl(AppleA7IOP* s, uint32_t value);
-void               apple_a7iop_init(AppleA7IOP* s, const char* role, uint64_t mmio_size, AppleA7IOPVersion version,
+bool               apple_a7iop_send_ap(AppleA7IOP* a7iop, const AppleA7IOPMessage* message);
+bool apple_a7iop_recv_ap(AppleA7IOP* a7iop, AppleA7IOPMessage* message);
+bool               apple_a7iop_send_iop(AppleA7IOP* a7iop, const AppleA7IOPMessage* message);
+bool apple_a7iop_recv_iop(AppleA7IOP* a7iop, AppleA7IOPMessage* message);
+void               apple_a7iop_cpu_start(AppleA7IOP* a7iop, bool wake);
+uint32_t           apple_a7iop_get_cpu_status(AppleA7IOP* a7iop);
+void               apple_a7iop_set_cpu_status(AppleA7IOP* a7iop, uint32_t value);
+uint32_t           apple_a7iop_get_cpu_ctrl(AppleA7IOP* a7iop);
+void               apple_a7iop_set_cpu_ctrl(AppleA7IOP* a7iop, uint32_t value);
+void               apple_a7iop_init(AppleA7IOP* a7iop, const char* role, uint64_t mmio_size, AppleA7IOPVersion version,
                                     const AppleA7IOPOps* ops, QEMUBHFunc* handle_messages_func);

@@ -120,19 +120,16 @@ static void progress_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
 #endif
                 // g_free(sep_fw);
             }
-#if 1
+#ifdef SEP_ENABLE_TRACE_BUFFER
             // if (data == 0x6A5D128D && (s->chip_id == 0x8015))
             if (data == 0x6A5D128D) {
-                AppleA7IOPMessage* msg = apple_a7iop_inbox_peek(s->sep->mailbox);
-                if (msg != NULL) {
-                    memcpy(&sep_msg, msg->data, sizeof(sep_msg));
+                if (apple_a7iop_inbox_peek(s->sep->mailbox, &sep_msg.raw)) {
                     uint64_t shmbuf_base = (uint64_t)sep_msg.data << 12;
                     DPRINTF("%s: SHMBUF_TEST0: trace_data8:0x%" PRIX64 ": "
                             "shmbuf=0x" HWADDR_FMT_plx ": ep=0x%02x, tag=0x%02x, opcode=0x%02x(%u), "
                             "param=0x%02x, data=0x%08x\n",
                             s->mailbox->role, data, shmbuf_base, sep_msg.ep, sep_msg.tag, sep_msg.op, sep_msg.op,
                             sep_msg.param, sep_msg.data);
-    #ifdef SEP_ENABLE_TRACE_BUFFER
                     int debug_trace_mmio_index = -1;
                     if (s->sep->chip_id == 0x8015) { debug_trace_mmio_index = 11; }
                     else if (s->sep->chip_id >= 0x8020) {
@@ -148,7 +145,6 @@ static void progress_reg_write(void* opaque, hwaddr addr, uint64_t data, unsigne
                         // probably still should.
                         // _endif
                     }
-    #endif
                 }
             }
 #endif

@@ -25,7 +25,6 @@
 
 #define EP_MANAGEMENT (0)
 #define EP_CRASHLOG   (1)
-#define EP_USER_START (32)
 
 #define EP0_IDLE          (0)
 #define EP0_WAIT_HELLO    (1)
@@ -116,32 +115,33 @@ enum
     RTKIT_MAX_VERSION           = 12,
 };
 
-static AppleA7IOPMessage* apple_rtkit_construct_msg(uint8_t ep, uint64_t data)
+static void apple_rtkit_construct_msg(AppleA7IOPMessage* message, const uint8_t ep, const uint64_t data)
 {
-    AppleA7IOPMessage* msg;
-    AppleRTKitMessage* rtk_msg;
+    AppleRTKitMessage* rtk_message;
 
-    msg               = g_new0(AppleA7IOPMessage, 1);
-    rtk_msg           = (AppleRTKitMessage*)msg->data;
-    rtk_msg->endpoint = ep;
-    rtk_msg->msg      = data;
-
-    return msg;
+    rtk_message           = (AppleRTKitMessage*)message->data;
+    rtk_message->endpoint = ep;
+    rtk_message->msg      = data;
 }
 
 static void apple_rtkit_send_msg(AppleRTKit* s, uint8_t ep, uint64_t data)
-{ apple_a7iop_send_ap(&s->parent_obj, apple_rtkit_construct_msg(ep, data)); }
+{
+    AppleA7IOPMessage message;
+
+    apple_rtkit_construct_msg(&message, ep, data);
+    apple_a7iop_send_ap(&s->parent_obj, &message);
+}
 
 void apple_rtkit_send_control_msg(AppleRTKit* s, uint8_t ep, uint64_t data)
 {
-    assert_cmpuint(ep, <, EP_USER_START);
+    assert_cmpuint(ep, <, RTKIT_EP_USER_START);
     apple_rtkit_send_msg(s, ep, data);
 }
 
 void apple_rtkit_send_user_msg(AppleRTKit* s, uint8_t ep, uint64_t data)
 {
-    assert_cmpuint(ep, <, 256 - EP_USER_START);
-    apple_rtkit_send_msg(s, ep + EP_USER_START, data);
+    assert_cmpuint(ep, <, 256 - RTKIT_EP_USER_START);
+    apple_rtkit_send_msg(s, ep + RTKIT_EP_USER_START, data);
 }
 
 static void apple_rtkit_register_ep(AppleRTKit* s, uint8_t ep, void* opaque, AppleRTKitEPHandler* handler, bool user)
@@ -158,28 +158,28 @@ static void apple_rtkit_register_ep(AppleRTKit* s, uint8_t ep, void* opaque, App
 
 void apple_rtkit_register_control_ep(AppleRTKit* s, uint8_t ep, void* opaque, AppleRTKitEPHandler* handler)
 {
-    assert_cmpuint(ep, <, EP_USER_START);
+    assert_cmpuint(ep, <, RTKIT_EP_USER_START);
     apple_rtkit_register_ep(s, ep, opaque, handler, false);
 }
 
 void apple_rtkit_register_user_ep(AppleRTKit* s, uint8_t ep, void* opaque, AppleRTKitEPHandler* handler)
 {
-    assert_cmpuint(ep, <, 256 - EP_USER_START);
-    apple_rtkit_register_ep(s, ep + EP_USER_START, opaque, handler, true);
+    assert_cmpuint(ep, <, 256 - RTKIT_EP_USER_START);
+    apple_rtkit_register_ep(s, ep + RTKIT_EP_USER_START, opaque, handler, true);
 }
 
 static void apple_rtkit_unregister_ep(AppleRTKit* s, uint8_t ep) { AppleRTKitEPTable_erase(s->endpoints, ep); }
 
 void apple_rtkit_unregister_control_ep(AppleRTKit* s, uint8_t ep)
 {
-    assert_cmpuint(ep, <, EP_USER_START);
+    assert_cmpuint(ep, <, RTKIT_EP_USER_START);
     apple_rtkit_unregister_ep(s, ep);
 }
 
 void apple_rtkit_unregister_user_ep(AppleRTKit* s, uint8_t ep)
 {
-    assert_cmpuint(ep, <, 256 - EP_USER_START);
-    apple_rtkit_unregister_ep(s, ep + EP_USER_START);
+    assert_cmpuint(ep, <, 256 - RTKIT_EP_USER_START);
+    apple_rtkit_unregister_ep(s, ep + RTKIT_EP_USER_START);
 }
 
 static void apple_rtkit_mgmt_send_hello_msg(AppleRTKit* s, uint16_t min_version, uint16_t max_version)
@@ -214,47 +214,46 @@ static void apple_rtkit_mgmt_rollcall_v10(AppleRTKit* s)
     apple_rtkit_send_control_msg(s, EP_MANAGEMENT, msg.raw);
 }
 
+static void apple_rtkit_mgmt_reset_rollcall(AppleRTKit* s)
+{
+    s->rollcall_head  = 0;
+    s->rollcall_count = 0;
+}
+
 static void apple_rtkit_mgmt_rollcall_v11(AppleRTKit* s)
 {
-    AppleA7IOP*                      a7iop = &s->parent_obj;
-    AppleA7IOPMessage*               msg;
+    AppleA7IOP*                      a7iop    = &s->parent_obj;
     AppleRTKitManagementMessage      mgmt_msg = {0};
     AppleRTKitEPTable_it_t           it;
     const AppleRTKitEPTable_pair_ct* cref;
-    uint32_t                         ep;
-    uint32_t                         mask       = 0;
-    uint32_t                         last_block = 0;
+    uint32_t                         masks[RTKIT_ROLLCALL_BLOCKS] = {0};
+    uint32_t                         ep, block, last_block = 0;
 
-    assert_true(QTAILQ_EMPTY(&s->rollcall));
+    assert_cmphex(s->rollcall_head, ==, 0);
+    assert_cmphex(s->rollcall_count, ==, 0);
 
     for (AppleRTKitEPTable_it(it, s->endpoints); !AppleRTKitEPTable_end_p(it); AppleRTKitEPTable_next(it)) {
         cref = AppleRTKitEPTable_cref(it);
         ep   = cref->key;
 
-        if (ep / EP_USER_START != last_block && mask != 0) {
-            mgmt_msg.type               = MSG_TYPE_ROLLCALL;
-            mgmt_msg.rollcall_v11.mask  = mask;
-            mgmt_msg.rollcall_v11.block = last_block;
-            mgmt_msg.rollcall_v11.end   = false;
-            msg                         = apple_rtkit_construct_msg(EP_MANAGEMENT, mgmt_msg.raw);
-            QTAILQ_INSERT_TAIL(&s->rollcall, msg, next);
-            mask = 0;
-        }
-
-        last_block  = ep / EP_USER_START;
-        mask       |= BIT(ep % EP_USER_START);
+        masks[ep / RTKIT_EP_USER_START] |= BIT(ep % RTKIT_EP_USER_START);
     }
 
-    mgmt_msg.type               = MSG_TYPE_ROLLCALL;
-    mgmt_msg.rollcall_v11.mask  = mask;
-    mgmt_msg.rollcall_v11.block = last_block;
-    mgmt_msg.rollcall_v11.end   = true;
-    msg                         = apple_rtkit_construct_msg(EP_MANAGEMENT, mgmt_msg.raw);
-    QTAILQ_INSERT_TAIL(&s->rollcall, msg, next);
+    for (block = 0; block < RTKIT_ROLLCALL_BLOCKS; block++) {
+        if (masks[block] != 0) { last_block = block; }
+    }
 
-    msg = QTAILQ_FIRST(&s->rollcall);
-    QTAILQ_REMOVE(&s->rollcall, msg, next);
-    apple_a7iop_send_ap(a7iop, msg);
+    for (block = 0; block <= last_block; block++) {
+        if (masks[block] == 0) { continue; }
+
+        mgmt_msg.type               = MSG_TYPE_ROLLCALL;
+        mgmt_msg.rollcall_v11.mask  = masks[block];
+        mgmt_msg.rollcall_v11.block = block;
+        mgmt_msg.rollcall_v11.end   = block == last_block;
+        apple_rtkit_construct_msg(&s->rollcall[s->rollcall_count++], EP_MANAGEMENT, mgmt_msg.raw);
+    }
+
+    apple_a7iop_send_ap(a7iop, &s->rollcall[s->rollcall_head++]);
 }
 
 static void apple_rtkit_mgmt_handle_msg(void* opaque, uint8_t ep, uint64_t message)
@@ -318,7 +317,9 @@ static void apple_rtkit_mgmt_handle_msg(void* opaque, uint8_t ep, uint64_t messa
         case MSG_TYPE_ROLLCALL:
             assert_cmphex(s->ep0_status, ==, EP0_WAIT_ROLLCALL);
 
-            if (QTAILQ_EMPTY(&s->rollcall)) {
+            if (s->rollcall_head >= s->rollcall_count) {
+                apple_rtkit_mgmt_reset_rollcall(s);
+
                 m.type        = MSG_TYPE_POWER_ACK;
                 m.power.state = 32;
                 s->ep0_status = EP0_IDLE;
@@ -328,9 +329,7 @@ static void apple_rtkit_mgmt_handle_msg(void* opaque, uint8_t ep, uint64_t messa
                 if (s->ops != NULL && s->ops->boot_done != NULL) { s->ops->boot_done(s->opaque); }
             }
             else {
-                AppleA7IOPMessage* m2 = QTAILQ_FIRST(&s->rollcall);
-                QTAILQ_REMOVE(&s->rollcall, m2, next);
-                apple_a7iop_send_ap(a7iop, m2);
+                apple_a7iop_send_ap(a7iop, &s->rollcall[s->rollcall_head++]);
             }
             break;
         default: break;
@@ -364,20 +363,19 @@ static void apple_rtkit_handle_messages_bh(void* opaque)
     AppleRTKit*        s     = opaque;
     AppleA7IOP*        a7iop = opaque;
     AppleRTKitEPData*  data;
-    AppleA7IOPMessage* msg;
+    AppleA7IOPMessage  message;
     AppleRTKitMessage* rtk_msg;
 
     QEMU_LOCK_GUARD(&s->lock);
 
     while (!apple_a7iop_mailbox_is_empty(a7iop->iop_mailbox)) {
-        msg     = apple_a7iop_recv_iop(a7iop);
-        rtk_msg = (AppleRTKitMessage*)msg->data;
+        if (!apple_a7iop_recv_iop(a7iop, &message)) { break; }
+        rtk_msg = (AppleRTKitMessage*)message.data;
         data    = AppleRTKitEPTable_get(s->endpoints, rtk_msg->endpoint);
         if (data != NULL && data->handler != NULL) {
-            data->handler(data->opaque, data->user ? rtk_msg->endpoint - EP_USER_START : rtk_msg->endpoint,
+            data->handler(data->opaque, data->user ? rtk_msg->endpoint - RTKIT_EP_USER_START : rtk_msg->endpoint,
                           rtk_msg->msg);
         }
-        g_free(msg);
     }
 }
 
@@ -396,7 +394,6 @@ void apple_rtkit_init(AppleRTKit* s, void* opaque, const char* role, uint64_t mm
     s->opaque = opaque ? opaque : s;
     AppleRTKitEPTable_init(s->endpoints);
     s->ops = ops;
-    QTAILQ_INIT(&s->rollcall);
     qemu_mutex_init(&s->lock);
 
     apple_rtkit_register_control_ep(s, EP_MANAGEMENT, s, apple_rtkit_mgmt_handle_msg);
@@ -417,10 +414,8 @@ AppleRTKit* apple_rtkit_new(void* opaque, const char* role, uint64_t mmio_size, 
 
 static void apple_rtkit_reset_enter(Object* obj, ResetType type)
 {
-    AppleRTKit*        s;
-    AppleRTKitClass*   rtkc;
-    AppleA7IOPMessage* msg;
-    AppleA7IOPMessage* msg_next;
+    AppleRTKit*      s;
+    AppleRTKitClass* rtkc;
 
     s    = APPLE_RTKIT(obj);
     rtkc = APPLE_RTKIT_GET_CLASS(obj);
@@ -431,11 +426,7 @@ static void apple_rtkit_reset_enter(Object* obj, ResetType type)
 
     s->ep0_status       = EP0_IDLE;
     s->protocol_version = 0;
-
-    QTAILQ_FOREACH_SAFE (msg, &s->rollcall, next, msg_next) {
-        QTAILQ_REMOVE(&s->rollcall, msg, next);
-        g_free(msg);
-    }
+    apple_rtkit_mgmt_reset_rollcall(s);
 }
 
 static void apple_rtkit_class_init(ObjectClass* klass, const void* data)

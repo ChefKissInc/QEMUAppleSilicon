@@ -19,12 +19,17 @@
  */
 
 #include "qemu/osdep.h"
+#include "hw/misc/a7iop/mailbox/core.h"
 
-typedef struct
+typedef union SEPMessage
 {
-    uint8_t  ep;
-    uint8_t  tag;
-    uint8_t  op;
-    uint8_t  param;
-    uint32_t data;
+    struct
+    {
+        uint8_t  ep;
+        uint8_t  tag;
+        uint8_t  op;
+        uint8_t  param;
+        uint32_t data;
+    };
+    AppleA7IOPMessage raw;
 } QEMU_PACKED SEPMessage;

@@ -38,7 +38,6 @@
 static void apple_a7iop_v2_mailbox_reg_write(void* opaque, hwaddr addr, const uint64_t data, unsigned size)
 {
     AppleA7IOPMailbox* s = opaque;
-    AppleA7IOPMessage* msg;
 
     switch (addr) {
         case REG_INT_MASK_SET: apple_a7iop_mailbox_set_int_mask(s, (uint32_t)data); break;
@@ -47,31 +46,13 @@ static void apple_a7iop_v2_mailbox_reg_write(void* opaque, hwaddr addr, const ui
         case REG_AP_CTRL     : apple_a7iop_mailbox_set_ap_ctrl(s, (uint32_t)data); break;
         case REG_IOP_SEND0   :
         case REG_IOP_SEND1:
-            qemu_mutex_lock(&s->lock);
-            memcpy(s->iop_send_reg + (addr - REG_IOP_SEND0), &data, size);
-            if (addr + size - 4 == REG_IOP_SEND1) {
-                msg = g_new0(AppleA7IOPMessage, 1);
-                memcpy(msg->data, s->iop_send_reg, sizeof(msg->data));
-                qemu_mutex_unlock(&s->lock);
-                apple_a7iop_mailbox_send_iop(s, msg);
-            }
-            else {
-                qemu_mutex_unlock(&s->lock);
-            }
+            WITH_QEMU_LOCK_GUARD(&s->lock) { memcpy(s->iop_send_reg.data + (addr - REG_IOP_SEND0), &data, size); }
+            if (addr + size - 4 == REG_IOP_SEND1) { apple_a7iop_mailbox_send_iop(s, &s->iop_send_reg); }
             break;
         case REG_AP_SEND0:
         case REG_AP_SEND1:
-            qemu_mutex_lock(&s->lock);
-            memcpy(s->ap_send_reg + (addr - REG_AP_SEND0), &data, size);
-            if (addr + size - 4 == REG_AP_SEND1) {
-                msg = g_new0(AppleA7IOPMessage, 1);
-                memcpy(msg->data, s->ap_send_reg, sizeof(msg->data));
-                qemu_mutex_unlock(&s->lock);
-                apple_a7iop_mailbox_send_ap(s, msg);
-            }
-            else {
-                qemu_mutex_unlock(&s->lock);
-            }
+            WITH_QEMU_LOCK_GUARD(&s->lock) { memcpy(s->ap_send_reg.data + (addr - REG_AP_SEND0), &data, size); }
+            if (addr + size - 4 == REG_AP_SEND1) { apple_a7iop_mailbox_send_ap(s, &s->ap_send_reg); }
             break;
         default:
             qemu_log_mask(LOG_UNIMP, "%s unknown @ 0x" HWADDR_FMT_plx " value 0x%" PRIx64 "\n", __FUNCTION__, addr,
@@ -82,8 +63,7 @@ static void apple_a7iop_v2_mailbox_reg_write(void* opaque, hwaddr addr, const ui
 
 static uint64_t apple_a7iop_v2_mailbox_reg_read(void* opaque, hwaddr addr, unsigned size)
 {
-    AppleA7IOPMailbox* s = opaque;
-    AppleA7IOPMessage* msg;
+    AppleA7IOPMailbox* s   = opaque;
     uint64_t           ret = 0;
 
     switch (addr) {
@@ -92,34 +72,20 @@ static uint64_t apple_a7iop_v2_mailbox_reg_read(void* opaque, hwaddr addr, unsig
         case REG_IOP_CTRL    : return apple_a7iop_mailbox_get_iop_ctrl(s);
         case REG_AP_CTRL     : return apple_a7iop_mailbox_get_ap_ctrl(s);
         case REG_IOP_RECV0:
-            msg = apple_a7iop_mailbox_recv_iop(s);
-            WITH_QEMU_LOCK_GUARD(&s->lock)
-            {
-                if (msg == NULL) { memset(s->iop_recv_reg, 0, sizeof(s->iop_recv_reg)); }
-                else {
-                    memcpy(s->iop_recv_reg, msg->data, sizeof(s->iop_recv_reg));
-                    g_free(msg);
-                }
+            if (!apple_a7iop_mailbox_recv_iop(s, &s->iop_recv_reg)) {
+                WITH_QEMU_LOCK_GUARD(&s->lock) { memset(&s->iop_recv_reg, 0, sizeof(s->iop_recv_reg)); }
             }
             QEMU_FALLTHROUGH;
         case REG_IOP_RECV1:
-            WITH_QEMU_LOCK_GUARD(&s->lock) { memcpy(&ret, s->iop_recv_reg + (addr - REG_IOP_RECV0), size); }
+            WITH_QEMU_LOCK_GUARD(&s->lock) { memcpy(&ret, s->iop_recv_reg.data + (addr - REG_IOP_RECV0), size); }
             break;
         case REG_AP_RECV0:
-            msg = apple_a7iop_mailbox_recv_ap(s);
-            WITH_QEMU_LOCK_GUARD(&s->lock)
-            {
-                if (msg) {
-                    memcpy(s->ap_recv_reg, msg->data, sizeof(s->ap_recv_reg));
-                    g_free(msg);
-                }
-                else {
-                    memset(s->ap_recv_reg, 0, sizeof(s->ap_recv_reg));
-                }
+            if (!apple_a7iop_mailbox_recv_ap(s, &s->ap_recv_reg)) {
+                WITH_QEMU_LOCK_GUARD(&s->lock) { memset(&s->ap_recv_reg, 0, sizeof(s->ap_recv_reg)); }
             }
             QEMU_FALLTHROUGH;
         case REG_AP_RECV1:
-            WITH_QEMU_LOCK_GUARD(&s->lock) { memcpy(&ret, s->ap_recv_reg + (addr - REG_AP_RECV0), size); }
+            WITH_QEMU_LOCK_GUARD(&s->lock) { memcpy(&ret, s->ap_recv_reg.data + (addr - REG_AP_RECV0), size); }
             break;
         default: qemu_log_mask(LOG_UNIMP, "%s unknown @ 0x" HWADDR_FMT_plx "\n", __FUNCTION__, addr); break;
     }

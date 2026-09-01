@@ -25,13 +25,17 @@
 #include "qemu/bitops.h"
 #include "qemu/lockable.h"
 
-void apple_a7iop_send_ap(AppleA7IOP* s, AppleA7IOPMessage* msg) { apple_a7iop_mailbox_send_ap(s->iop_mailbox, msg); }
+bool apple_a7iop_send_ap(AppleA7IOP* a7iop, const AppleA7IOPMessage* message)
+{ return apple_a7iop_mailbox_send_ap(a7iop->iop_mailbox, message); }
 
-AppleA7IOPMessage* apple_a7iop_recv_ap(AppleA7IOP* s) { return apple_a7iop_mailbox_recv_ap(s->iop_mailbox); }
+bool apple_a7iop_recv_ap(AppleA7IOP* a7iop, AppleA7IOPMessage* message)
+{ return apple_a7iop_mailbox_recv_ap(a7iop->iop_mailbox, message); }
 
-void apple_a7iop_send_iop(AppleA7IOP* s, AppleA7IOPMessage* msg) { apple_a7iop_mailbox_send_iop(s->ap_mailbox, msg); }
+bool apple_a7iop_send_iop(AppleA7IOP* a7iop, const AppleA7IOPMessage* message)
+{ return apple_a7iop_mailbox_send_iop(a7iop->ap_mailbox, message); }
 
-AppleA7IOPMessage* apple_a7iop_recv_iop(AppleA7IOP* s) { return apple_a7iop_mailbox_recv_iop(s->ap_mailbox); }
+bool apple_a7iop_recv_iop(AppleA7IOP* a7iop, AppleA7IOPMessage* message)
+{ return apple_a7iop_mailbox_recv_iop(a7iop->ap_mailbox, message); }
 
 void apple_a7iop_cpu_start(AppleA7IOP* s, bool wake)
 {

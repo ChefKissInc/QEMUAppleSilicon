@@ -912,36 +912,34 @@ static void apple_sep_sim_handle_keystore_msg(AppleSEPSimState* s, KeystoreMessa
 
 static void apple_sep_sim_handle_messages(void* opaque)
 {
-    AppleSEPSimState*  s     = opaque;
-    AppleA7IOP*        a7iop = opaque;
-    AppleA7IOPMessage* msg;
-    SEPMessage*        sep_msg;
+    AppleSEPSimState* s     = opaque;
+    AppleA7IOP*       a7iop = opaque;
+    SEPMessage        sep_message;
 
     QEMU_LOCK_GUARD(&s->lock);
 
     while (!apple_a7iop_mailbox_is_empty(a7iop->iop_mailbox)) {
-        msg     = apple_a7iop_recv_iop(a7iop);
-        sep_msg = (SEPMessage*)msg->data;
+        if (!apple_a7iop_recv_iop(a7iop, &sep_message.raw)) { break; }
 
-        switch (sep_msg->ep) {
-            case EP_CONTROL    : apple_sep_sim_handle_control_msg(s, sep_msg); break;
-            case EP_ART_STORAGE: apple_sep_sim_handle_arts_msg(s, sep_msg); break;
+        switch (sep_message.ep) {
+            case EP_CONTROL    : apple_sep_sim_handle_control_msg(s, &sep_message); break;
+            case EP_ART_STORAGE: apple_sep_sim_handle_arts_msg(s, &sep_message); break;
             case EP_ART_REQUESTS:
-                qemu_log_mask(LOG_GUEST_ERROR, "EP_ART_REQUESTS: Unknown opcode %d\n", sep_msg->op);
+                qemu_log_mask(LOG_GUEST_ERROR, "EP_ART_REQUESTS: Unknown opcode %d\n", sep_message.op);
                 break;
             case EP_SECURE_CREDENTIALS:
-                qemu_log_mask(LOG_GUEST_ERROR, "EP_SECURE_CREDENTIALS: Unknown opcode %d\n", sep_msg->op);
+                qemu_log_mask(LOG_GUEST_ERROR, "EP_SECURE_CREDENTIALS: Unknown opcode %d\n", sep_message.op);
                 break;
-            case EP_XART_SLAVE : apple_sep_sim_handle_xart_msg(s, true, sep_msg); break;
-            case EP_KEYSTORE   : apple_sep_sim_handle_keystore_msg(s, (KeystoreMessage*)sep_msg); break;
-            case EP_XART_MASTER: apple_sep_sim_handle_xart_msg(s, false, sep_msg); break;
-            case EP_DISCOVERY: qemu_log_mask(LOG_GUEST_ERROR, "EP_DISCOVERY: Unknown opcode %d\n", sep_msg->op); break;
-            case EP_L4INFO   : apple_sep_sim_handle_l4info(s, (L4InfoMessage*)sep_msg); break;
-            case EP_BOOTSTRAP: apple_sep_sim_handle_bootstrap_msg(s, sep_msg); break;
-            default          : qemu_log_mask(LOG_GUEST_ERROR, "UNKNOWN_%d_OP_%d\n", sep_msg->ep, sep_msg->op); break;
+            case EP_XART_SLAVE : apple_sep_sim_handle_xart_msg(s, true, &sep_message); break;
+            case EP_KEYSTORE   : apple_sep_sim_handle_keystore_msg(s, (KeystoreMessage*)&sep_message); break;
+            case EP_XART_MASTER: apple_sep_sim_handle_xart_msg(s, false, &sep_message); break;
+            case EP_DISCOVERY:
+                qemu_log_mask(LOG_GUEST_ERROR, "EP_DISCOVERY: Unknown opcode %d\n", sep_message.op);
+                break;
+            case EP_L4INFO   : apple_sep_sim_handle_l4info(s, (L4InfoMessage*)&sep_message); break;
+            case EP_BOOTSTRAP: apple_sep_sim_handle_bootstrap_msg(s, &sep_message); break;
+            default: qemu_log_mask(LOG_GUEST_ERROR, "UNKNOWN_%d_OP_%d\n", sep_message.ep, sep_message.op); break;
         }
-
-        g_free(msg);
     }
 }
 
