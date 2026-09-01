@@ -204,9 +204,7 @@ static uint32_t apple_mca_dma_into_ring(AppleMCAState* s, uint32_t want)
 {
     uint32_t done = 0;
 
-    want = MIN(want, MCA_RING_SIZE);
-
-    if (want > MCA_RING_SIZE - s->ring_used) {
+    if (want > (MCA_RING_SIZE - s->ring_used)) {
         uint32_t drop  = want - (MCA_RING_SIZE - s->ring_used);
         drop           = ROUND_UP(drop, MCA_FRAME_BYTES);
         drop           = MIN(drop, s->ring_used);
