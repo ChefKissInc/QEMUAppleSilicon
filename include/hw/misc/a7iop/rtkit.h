@@ -62,7 +62,7 @@ struct AppleRTKitClass
     ResettablePhases parent_phases;
 };
 
-#define RTKIT_EP_USER_START (32)
+#define RTKIT_EP_USER_START   (32)
 #define RTKIT_ROLLCALL_BLOCKS (256 / RTKIT_EP_USER_START)
 
 struct AppleRTKit
@@ -77,9 +77,9 @@ struct AppleRTKit
     uint8_t              ep0_status;
     uint32_t             protocol_version;
     AppleRTKitEPTable_t  endpoints;
-    AppleA7IOPMessage rollcall[RTKIT_ROLLCALL_BLOCKS];
-    uint8_t           rollcall_head;
-    uint8_t           rollcall_count;
+    AppleA7IOPMessage    rollcall[RTKIT_ROLLCALL_BLOCKS];
+    uint8_t              rollcall_head;
+    uint8_t              rollcall_count;
 };
 
 void apple_rtkit_send_control_msg(AppleRTKit* s, uint8_t ep, uint64_t data);
