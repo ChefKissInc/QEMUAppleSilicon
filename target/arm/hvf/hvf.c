@@ -359,6 +359,7 @@ int hvf_arch_get_registers(CPUState* cpu)
     uint64_t             val;
     hv_simd_fp_uchar16_t fpval;
     int                  i, n;
+    bool                 success;
 
     for (i = 0; i < ARRAY_SIZE(hvf_reg_match); i++) {
         ret = hv_vcpu_get_reg(cpu->accel->fd, hvf_reg_match[i].reg, &val);
@@ -482,7 +483,8 @@ int hvf_arch_get_registers(CPUState* cpu)
 
         arm_cpu->cpreg_values[i] = val;
     }
-    assert(write_list_to_cpustate(arm_cpu));
+    success = write_list_to_cpustate(arm_cpu);
+    assert(success);
 
     aarch64_restore_sp(env, arm_current_el(env));
 
@@ -497,6 +499,7 @@ int hvf_arch_put_registers(CPUState* cpu)
     uint64_t             val;
     hv_simd_fp_uchar16_t fpval;
     int                  i, n;
+    bool                 success;
 
     for (i = 0; i < ARRAY_SIZE(hvf_reg_match); i++) {
         val = *(uint64_t*)((void*)env + hvf_reg_match[i].offset);
@@ -521,7 +524,8 @@ int hvf_arch_put_registers(CPUState* cpu)
 
     aarch64_save_sp(env, arm_current_el(env));
 
-    assert(write_cpustate_to_list(arm_cpu, false));
+    success = write_cpustate_to_list(arm_cpu, false);
+    assert(success);
     for (i = 0, n = arm_cpu->cpreg_array_len; i < n; i++) {
         uint64_t kvm_id = arm_cpu->cpreg_indexes[i];
         int      hvf_id = KVMID_TO_HVF(kvm_id);
@@ -820,6 +824,7 @@ int hvf_arch_init_vcpu(CPUState* cpu)
     uint32_t     sregs_cnt       = 0;
     hv_return_t  ret;
     int          i;
+    bool         success;
 
     env->aarch64 = true;
     asm volatile("mrs %0, cntfrq_el0" : "=r"(arm_cpu->gt_cntfrq_hz));
@@ -850,7 +855,8 @@ int hvf_arch_init_vcpu(CPUState* cpu)
     /* cpreg tuples must be in strictly ascending order */
     qsort(arm_cpu->cpreg_indexes, sregs_cnt, sizeof(uint64_t), compare_u64);
 
-    assert(write_cpustate_to_list(arm_cpu, false));
+    success = write_cpustate_to_list(arm_cpu, false);
+    assert(success);
 
     /* Set CP_NO_RAW system registers on init */
     ret = hv_vcpu_set_sys_reg(cpu->accel->fd, HV_SYS_REG_MIDR_EL1, arm_cpu->midr);
