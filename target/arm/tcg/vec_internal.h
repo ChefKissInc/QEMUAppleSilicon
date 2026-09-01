@@ -197,10 +197,87 @@ static inline int64_t do_suqrshl_d(int64_t src, int64_t shift, bool round, uint3
     return do_uqrshl_d(src, shift, round, sat);
 }
 
-int8_t  do_sqrdmlah_b(int8_t, int8_t, int8_t, bool, bool);
-int16_t do_sqrdmlah_h(int16_t, int16_t, int16_t, bool, bool, uint32_t*);
-int32_t do_sqrdmlah_s(int32_t, int32_t, int32_t, bool, bool, uint32_t*);
-int64_t do_sqrdmlah_d(int64_t, int64_t, int64_t, bool, bool);
+/* Signed saturating rounding doubling multiply-accumulate high half, 8-bit */
+static inline int8_t do_sqrdmlah_b(int8_t src1, int8_t src2, int8_t src3, bool neg, bool round)
+{
+    /*
+     * Simplify:
+     * = ((a3 << 8) + ((e1 * e2) << 1) + (round << 7)) >> 8
+     * = ((a3 << 7) + (e1 * e2) + (round << 6)) >> 7
+     */
+    int32_t ret = (int32_t)src1 * src2;
+    if (neg) { ret = -ret; }
+    ret  += ((int32_t)src3 << 7) + (round << 6);
+    ret >>= 7;
+
+    if (ret != (int8_t)ret) { ret = (ret < 0 ? INT8_MIN : INT8_MAX); }
+    return ret;
+}
+
+/* Signed saturating rounding doubling multiply-accumulate high half, 16-bit */
+static inline int16_t do_sqrdmlah_h(int16_t src1, int16_t src2, int16_t src3, bool neg, bool round, uint32_t* sat)
+{
+    /* Simplify similarly to do_sqrdmlah_b above.  */
+    int32_t ret = (int32_t)src1 * src2;
+    if (neg) { ret = -ret; }
+    ret  += ((int32_t)src3 << 15) + (round << 14);
+    ret >>= 15;
+
+    if (ret != (int16_t)ret) {
+        *sat = 1;
+        ret  = (ret < 0 ? INT16_MIN : INT16_MAX);
+    }
+    return ret;
+}
+
+/* Signed saturating rounding doubling multiply-accumulate high half, 32-bit */
+static inline int32_t do_sqrdmlah_s(int32_t src1, int32_t src2, int32_t src3, bool neg, bool round, uint32_t* sat)
+{
+    /* Simplify similarly to do_sqrdmlah_b above.  */
+    int64_t ret = (int64_t)src1 * src2;
+    if (neg) { ret = -ret; }
+    ret  += ((int64_t)src3 << 31) + (round << 30);
+    ret >>= 31;
+
+    if (ret != (int32_t)ret) {
+        *sat = 1;
+        ret  = (ret < 0 ? INT32_MIN : INT32_MAX);
+    }
+    return ret;
+}
+
+/* Signed saturating rounding doubling multiply-accumulate high half, 64-bit */
+static inline int64_t do_sat128_d(Int128 r)
+{
+    int64_t ls = int128_getlo(r);
+    int64_t hs = int128_gethi(r);
+
+    if (unlikely(hs != (ls >> 63))) { return hs < 0 ? INT64_MIN : INT64_MAX; }
+    return ls;
+}
+
+static inline int64_t do_sqrdmlah_d(int64_t n, int64_t m, int64_t a, bool neg, bool round)
+{
+    uint64_t l, h;
+    Int128   r, t;
+
+    /* As in do_sqrdmlah_b, but with 128-bit arithmetic. */
+    muls64(&l, &h, m, n);
+    r = int128_make128(l, h);
+    if (neg) { r = int128_neg(r); }
+    if (a) {
+        t = int128_exts64(a);
+        t = int128_lshift(t, 63);
+        r = int128_add(r, t);
+    }
+    if (round) {
+        t = int128_exts64(1ll << 62);
+        r = int128_add(r, t);
+    }
+    r = int128_rshift(r, 63);
+
+    return do_sat128_d(r);
+}
 
 #define do_ssat_b(val) MIN(MAX(val, INT8_MIN), INT8_MAX)
 #define do_ssat_h(val) MIN(MAX(val, INT16_MIN), INT16_MAX)

@@ -116,23 +116,6 @@ const uint64_t expand_pred_h_data[0x55 + 1] = {
     [0x51] = 0xffffffff0000ffff, [0x54] = 0xffffffffffff0000, [0x55] = 0xffffffffffffffff,
 };
 
-/* Signed saturating rounding doubling multiply-accumulate high half, 8-bit */
-int8_t do_sqrdmlah_b(int8_t src1, int8_t src2, int8_t src3, bool neg, bool round)
-{
-    /*
-     * Simplify:
-     * = ((a3 << 8) + ((e1 * e2) << 1) + (round << 7)) >> 8
-     * = ((a3 << 7) + (e1 * e2) + (round << 6)) >> 7
-     */
-    int32_t ret = (int32_t)src1 * src2;
-    if (neg) { ret = -ret; }
-    ret  += ((int32_t)src3 << 7) + (round << 6);
-    ret >>= 7;
-
-    if (ret != (int8_t)ret) { ret = (ret < 0 ? INT8_MIN : INT8_MAX); }
-    return ret;
-}
-
 void HELPER(sve2_sqrdmlah_b)(void* vd, void* vn, void* vm, void* va, uint32_t desc)
 {
     intptr_t i, opr_sz = simd_oprsz(desc);
@@ -163,22 +146,6 @@ void HELPER(sve2_sqrdmulh_b)(void* vd, void* vn, void* vm, uint32_t desc)
     int8_t * d = vd, *n = vn, *m = vm;
 
     for (i = 0; i < opr_sz; ++i) { d[i] = do_sqrdmlah_b(n[i], m[i], 0, false, true); }
-}
-
-/* Signed saturating rounding doubling multiply-accumulate high half, 16-bit */
-int16_t do_sqrdmlah_h(int16_t src1, int16_t src2, int16_t src3, bool neg, bool round, uint32_t* sat)
-{
-    /* Simplify similarly to do_sqrdmlah_b above.  */
-    int32_t ret = (int32_t)src1 * src2;
-    if (neg) { ret = -ret; }
-    ret  += ((int32_t)src3 << 15) + (round << 14);
-    ret >>= 15;
-
-    if (ret != (int16_t)ret) {
-        *sat = 1;
-        ret  = (ret < 0 ? INT16_MIN : INT16_MAX);
-    }
-    return ret;
 }
 
 uint32_t HELPER(neon_qrdmlah_s16)(CPUARMState* env, uint32_t src1, uint32_t src2, uint32_t src3)
@@ -361,22 +328,6 @@ void HELPER(sve2_sqrdmulh_idx_h)(void* vd, void* vn, void* vm, uint32_t desc)
     }
 }
 
-/* Signed saturating rounding doubling multiply-accumulate high half, 32-bit */
-int32_t do_sqrdmlah_s(int32_t src1, int32_t src2, int32_t src3, bool neg, bool round, uint32_t* sat)
-{
-    /* Simplify similarly to do_sqrdmlah_b above.  */
-    int64_t ret = (int64_t)src1 * src2;
-    if (neg) { ret = -ret; }
-    ret  += ((int64_t)src3 << 31) + (round << 30);
-    ret >>= 31;
-
-    if (ret != (int32_t)ret) {
-        *sat = 1;
-        ret  = (ret < 0 ? INT32_MIN : INT32_MAX);
-    }
-    return ret;
-}
-
 uint32_t HELPER(neon_qrdmlah_s32)(CPUARMState* env, int32_t src1, int32_t src2, int32_t src3)
 {
     uint32_t* sat = &env->vfp.qc[0];
@@ -551,39 +502,6 @@ void HELPER(sve2_sqrdmulh_idx_s)(void* vd, void* vn, void* vm, uint32_t desc)
         int32_t mm = m[i];
         for (j = 0; j < 16 / 4; ++j) { d[i + j] = do_sqrdmlah_s(n[i + j], mm, 0, false, true, &discard); }
     }
-}
-
-/* Signed saturating rounding doubling multiply-accumulate high half, 64-bit */
-static int64_t do_sat128_d(Int128 r)
-{
-    int64_t ls = int128_getlo(r);
-    int64_t hs = int128_gethi(r);
-
-    if (unlikely(hs != (ls >> 63))) { return hs < 0 ? INT64_MIN : INT64_MAX; }
-    return ls;
-}
-
-int64_t do_sqrdmlah_d(int64_t n, int64_t m, int64_t a, bool neg, bool round)
-{
-    uint64_t l, h;
-    Int128   r, t;
-
-    /* As in do_sqrdmlah_b, but with 128-bit arithmetic. */
-    muls64(&l, &h, m, n);
-    r = int128_make128(l, h);
-    if (neg) { r = int128_neg(r); }
-    if (a) {
-        t = int128_exts64(a);
-        t = int128_lshift(t, 63);
-        r = int128_add(r, t);
-    }
-    if (round) {
-        t = int128_exts64(1ll << 62);
-        r = int128_add(r, t);
-    }
-    r = int128_rshift(r, 63);
-
-    return do_sat128_d(r);
 }
 
 void HELPER(sve2_sqrdmlah_d)(void* vd, void* vn, void* vm, void* va, uint32_t desc)
