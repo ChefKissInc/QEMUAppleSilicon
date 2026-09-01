@@ -799,7 +799,7 @@ static void apple_mt_spi_timer_tick(void* opaque)
 
     apple_mt_spi_schedule_touch_update(s, PATH_STAGE_TOUCHING, s->cur_x, s->cur_y);
 
-    timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 10);
+    timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 60);
 }
 
 static void apple_mt_spi_end_timer_tick(void* opaque)
@@ -845,19 +845,19 @@ static void apple_mt_spi_mouse_event(void* opaque, int dx, int dy, int dz, int b
         apple_mt_spi_schedule_touch_update(s, PATH_STAGE_MAKE_TOUCH, x, y);
 
         timer_del(s->end_timer);
-        timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 10);
+        timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 60);
     }
     else if ((s->prev_btn_state & MOUSE_EVENT_LBUTTON) != 0 && (s->btn_state & MOUSE_EVENT_LBUTTON) == 0) {
         apple_mt_spi_schedule_touch_update(s, PATH_STAGE_BREAK_TOUCH, x, y);
 
         timer_del(s->timer);
-        timer_mod(s->end_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 10);
+        timer_mod(s->end_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 60);
     }
     else if ((s->btn_state & MOUSE_EVENT_LBUTTON) != 0) {
         apple_mt_spi_schedule_touch_update(s, PATH_STAGE_TOUCHING, x, y);
 
         timer_del(s->end_timer);
-        timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 10);
+        timer_mod(s->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + NANOSECONDS_PER_SECOND / 60);
         return;
     }
 }
