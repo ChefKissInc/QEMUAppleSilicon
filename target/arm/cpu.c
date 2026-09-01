@@ -756,12 +756,42 @@ static void aarch64_cpu_set_aarch64(Object* obj, bool value, Error** errp)
     }
 }
 
+static uint64_t gt_gcd(uint64_t a, uint64_t b)
+{
+    while (b != 0) {
+        uint64_t t = a % b;
+
+        a = b;
+        b = t;
+    }
+    return a;
+}
+
+void gt_derive_tick_ratio(ARMCPU* cpu)
+{
+    uint64_t g = gt_gcd(cpu->gt_cntfrq_hz, NANOSECONDS_PER_SECOND);
+
+    cpu->gt_tick_num = cpu->gt_cntfrq_hz / g;
+    cpu->gt_tick_den = NANOSECONDS_PER_SECOND / g;
+}
+
+uint64_t gt_ns_to_ticks(ARMCPU* cpu, uint64_t ns)
+{
+    if (ns <= UINT64_MAX / cpu->gt_tick_num) { return ns * cpu->gt_tick_num / cpu->gt_tick_den; }
+    return muldiv64(ns, cpu->gt_cntfrq_hz, NANOSECONDS_PER_SECOND);
+}
+
+uint64_t gt_ticks_to_ns(ARMCPU* cpu, uint64_t ticks)
+{
+    if (ticks <= UINT64_MAX / cpu->gt_tick_den) { return ticks * cpu->gt_tick_den / cpu->gt_tick_num; }
+    return muldiv64(ticks, NANOSECONDS_PER_SECOND, cpu->gt_cntfrq_hz);
+}
+
 int64_t gt_ticks_to_ns_ceil(ARMCPU* cpu, uint64_t ticks)
 {
-    uint64_t freq = cpu->gt_cntfrq_hz;
-    uint64_t ns   = muldiv64(ticks, NANOSECONDS_PER_SECOND, freq);
+    uint64_t ns = gt_ticks_to_ns(cpu, ticks);
 
-    if (muldiv64(ns, freq, NANOSECONDS_PER_SECOND) < ticks) { ns++; }
+    if (gt_ns_to_ticks(cpu, ns) < ticks) { ns++; }
     return ns > INT64_MAX ? INT64_MAX : ns;
 }
 
@@ -1060,6 +1090,8 @@ static void arm_cpu_realizefn(DeviceState* dev, Error** errp)
         error_setg(errp, "The CPU has no GTimer frequency set.");
         return;
     }
+
+    gt_derive_tick_ratio(cpu);
 
     {
         cpu->gt_timer[GTIMER_PHYS]       = timer_new_ns(QEMU_CLOCK_VIRTUAL, arm_gt_ptimer_cb, cpu);

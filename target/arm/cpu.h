@@ -1128,6 +1128,8 @@ struct ArchCPU
 
     /* Generic timer counter frequency, in Hz */
     uint64_t gt_cntfrq_hz;
+    uint64_t gt_tick_num;
+    uint64_t gt_tick_den;
 
     /* Apple PAC boot diversifier */
     uint64_t m_key_lo;
@@ -1167,8 +1169,11 @@ void arm_gt_hvtimer_cb(void* opaque);
 void arm_gt_sel2timer_cb(void* opaque);
 void arm_gt_sel2vtimer_cb(void* opaque);
 
-int64_t gt_ticks_to_ns_ceil(ARMCPU* cpu, uint64_t ticks);
-void    gt_rme_post_el_change(ARMCPU* cpu, void* opaque);
+int64_t  gt_ticks_to_ns_ceil(ARMCPU* cpu, uint64_t ticks);
+uint64_t gt_ns_to_ticks(ARMCPU* cpu, uint64_t ns);
+uint64_t gt_ticks_to_ns(ARMCPU* cpu, uint64_t ticks);
+void     gt_derive_tick_ratio(ARMCPU* cpu);
+void     gt_rme_post_el_change(ARMCPU* cpu, void* opaque);
 
 #define ARM_AFF0_SHIFT               0
 #define ARM_AFF0_MASK                (0xFFULL << ARM_AFF0_SHIFT)

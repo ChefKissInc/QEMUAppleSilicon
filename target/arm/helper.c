@@ -1331,11 +1331,7 @@ static CPAccessResult gt_sel2timer_access(CPUARMState* env, const ARMCPRegInfo* 
 }
 
 uint64_t gt_get_countervalue(CPUARMState* env)
-{
-    ARMCPU* cpu = env_archcpu(env);
-
-    return muldiv64(qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL), cpu->gt_cntfrq_hz, NANOSECONDS_PER_SECOND);
-}
+{ return gt_ns_to_ticks(env_archcpu(env), qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL)); }
 
 static void gt_update_irq(ARMCPU* cpu, int timeridx)
 {
