@@ -1448,7 +1448,7 @@ uint64_t gt_direct_access_timer_offset(CPUARMState* env, int timeridx)
     }
 }
 
-static void gt_recalc_timer(ARMCPU* cpu, int timeridx)
+static void gt_recalc_timer_count(ARMCPU* cpu, int timeridx, uint64_t count)
 {
     ARMGenericTimer* gt = &cpu->env.cp15.c14_timer[timeridx];
 
@@ -1458,7 +1458,6 @@ static void gt_recalc_timer(ARMCPU* cpu, int timeridx)
          * reset timer to when ISTATUS next has to change
          */
         uint64_t offset  = gt_indirect_access_timer_offset(&cpu->env, timeridx);
-        uint64_t count   = gt_get_countervalue(&cpu->env);
         int      istatus = count - offset >= gt->cval;
         uint64_t next_ns;
 
@@ -1505,6 +1504,9 @@ static void gt_recalc_timer(ARMCPU* cpu, int timeridx)
     gt_update_irq(cpu, timeridx);
 }
 
+static void gt_recalc_timer(ARMCPU* cpu, int timeridx)
+{ gt_recalc_timer_count(cpu, timeridx, gt_get_countervalue(&cpu->env)); }
+
 static void gt_timer_reset(CPUARMState* env, const ARMCPRegInfo* ri, int timeridx)
 {
     ARMCPU* cpu = env_archcpu(env);
@@ -1543,9 +1545,11 @@ static uint64_t gt_tval_read(CPUARMState* env, const ARMCPRegInfo* ri, int timer
 
 static void do_tval_write(CPUARMState* env, int timeridx, uint64_t value, uint64_t offset)
 {
+    uint64_t count = gt_get_countervalue(env);
+
     trace_arm_gt_tval_write(timeridx, value);
-    env->cp15.c14_timer[timeridx].cval = gt_get_countervalue(env) - offset + sextract64(value, 0, 32);
-    gt_recalc_timer(env_archcpu(env), timeridx);
+    env->cp15.c14_timer[timeridx].cval = count - offset + sextract64(value, 0, 32);
+    gt_recalc_timer_count(env_archcpu(env), timeridx, count);
 }
 
 static void gt_tval_write(CPUARMState* env, const ARMCPRegInfo* ri, int timeridx, uint64_t value)
