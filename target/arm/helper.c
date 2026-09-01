@@ -1356,6 +1356,9 @@ static void gt_update_irq(ARMCPU* cpu, int timeridx)
         irqstate = 0;
     }
 
+    if (qatomic_xchg(&cpu->gt_irqstate[timeridx], irqstate) == irqstate) { return; }
+
+    BQL_LOCK_GUARD();
     qemu_set_irq(cpu->gt_timer_outputs[timeridx], irqstate);
     trace_arm_gt_update_irq(timeridx, irqstate);
 }

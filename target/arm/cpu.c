@@ -34,6 +34,7 @@
 #include "internals.h"
 #include "cpu-features.h"
 #include "exec/target_page.h"
+#include "hw/irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/boards.h"
 #ifdef CONFIG_TCG
@@ -204,6 +205,11 @@ static void arm_cpu_reset_hold(Object* obj, ResetType type)
     if (acc->parent_phases.hold) { acc->parent_phases.hold(obj, type); }
 
     memset(env, 0, offsetof(CPUARMState, end_reset_fields));
+
+    for (int i = 0; i < NUM_GTIMERS; i++) {
+        cpu->gt_irqstate[i] = 0;
+        qemu_set_irq(cpu->gt_timer_outputs[i], 0);
+    }
 
     for (ARMCPRegTable_it(it, cpu->cp_regs); !ARMCPRegTable_end_p(it); ARMCPRegTable_next(it)) {
         ref = ARMCPRegTable_ref(it);
