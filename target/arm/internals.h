@@ -35,6 +35,7 @@
 #include "system/memory.h"
 #include "syndrome.h"
 #include "cpu-features.h"
+#include "qemu/main-loop.h"
 #include "mmuidx-internal.h"
 
 /* register banks for CPU modes */
@@ -827,11 +828,19 @@ void arm_cpu_do_transaction_failed(CPUState* cs, hwaddr physaddr, vaddr addr, un
 static inline void arm_call_pre_el_change_hook(ARMCPU* cpu)
 {
     ARMELChangeHook *hook, *next;
+
+    if (QLIST_EMPTY(&cpu->pre_el_change_hooks)) { return; }
+
+    BQL_LOCK_GUARD();
     QLIST_FOREACH_SAFE (hook, &cpu->pre_el_change_hooks, node, next) { hook->hook(cpu, hook->opaque); }
 }
 static inline void arm_call_el_change_hook(ARMCPU* cpu)
 {
     ARMELChangeHook *hook, *next;
+
+    if (QLIST_EMPTY(&cpu->el_change_hooks)) { return; }
+
+    BQL_LOCK_GUARD();
     QLIST_FOREACH_SAFE (hook, &cpu->el_change_hooks, node, next) { hook->hook(cpu, hook->opaque); }
 }
 

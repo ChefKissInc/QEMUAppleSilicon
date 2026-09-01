@@ -601,9 +601,7 @@ void HELPER(exception_return)(CPUARMState* env, uint64_t new_pc)
 
     if (new_el == 1 && (arm_hcr_el2_eff(env) & HCR_TGE)) { goto illegal_return; }
 
-    bql_lock();
     arm_call_pre_el_change_hook(cpu);
-    bql_unlock();
 
     if (!return_to_aa64) {
         env->aarch64 = false;
@@ -665,9 +663,7 @@ void HELPER(exception_return)(CPUARMState* env, uint64_t new_pc)
      */
     aarch64_sve_change_el(env, cur_el, new_el, return_to_aa64);
 
-    bql_lock();
     arm_call_el_change_hook(cpu);
-    bql_unlock();
 
     return;
 
