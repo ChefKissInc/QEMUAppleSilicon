@@ -366,6 +366,25 @@ void apple_a7iop_interrupt_status_push(AppleA7IOPMailbox* s, uint32_t status)
     apple_a7iop_mailbox_update_irq(s);
 }
 
+static void apple_a7iop_interrupt_status_remove(AppleA7IOPMailbox* s, uint32_t status)
+{
+    AppleA7IOPInterruptStatusMessage *msg, *next;
+
+    QTAILQ_FOREACH_SAFE (msg, &s->interrupt_status, entry, next) {
+        if (msg->status == status) {
+            QTAILQ_REMOVE(&s->interrupt_status, msg, entry);
+            g_free(msg);
+        }
+    }
+}
+
+static bool apple_a7iop_sep_timer_asserted(AppleA7IOPMailbox* s, uint32_t status)
+{
+    if (status == IRQ_SEP_TIMER0) { return (s->sep_timer_level & BIT(0)) != 0; }
+    if (status == IRQ_SEP_TIMER1) { return (s->sep_timer_level & BIT(1)) != 0; }
+    return false;
+}
+
 uint32_t apple_a7iop_interrupt_status_pop(AppleA7IOPMailbox* s)
 {
     uint32_t                          ret = 0;
@@ -390,7 +409,16 @@ uint32_t apple_a7iop_interrupt_status_pop(AppleA7IOPMailbox* s)
     if (preferred_msg) {
         QTAILQ_REMOVE(&s->interrupt_status, preferred_msg, entry);
         ret = preferred_msg->status;
-        g_free(preferred_msg);
+        /*
+         * The generic timer output is a level. Consuming the status does not
+         * make the source stop asserting, so put it back and let the caller's
+         * masking of the source decide when it becomes deliverable again. It
+         * is dropped for real when the line goes low.
+         */
+        if (apple_a7iop_sep_timer_asserted(s, ret)) { QTAILQ_INSERT_TAIL(&s->interrupt_status, preferred_msg, entry); }
+        else {
+            g_free(preferred_msg);
+        }
     }
 
     apple_a7iop_mailbox_update_irq(s);
@@ -474,34 +502,32 @@ uint32_t apple_a7iop_mailbox_read_interrupt_status(AppleA7IOPMailbox* s)
     return interrupt_status;
 }
 
+static void apple_a7iop_gpio_timer(AppleA7IOPMailbox* s, uint32_t status, uint32_t bit, int level)
+{
+    QEMU_LOCK_GUARD(&s->lock);
+
+    if (level) {
+        s->sep_timer_level |= bit;
+        // DON'T also do the checks here, only do them in interrupt_status_pop
+        apple_a7iop_interrupt_status_push(s, status);
+    }
+    else {
+        s->sep_timer_level &= ~bit;
+        apple_a7iop_interrupt_status_remove(s, status);
+        apple_a7iop_mailbox_update_irq(s);
+    }
+}
+
 static void apple_a7iop_gpio_timer0(void* opaque, int n, int level)
 {
-    AppleA7IOPMailbox* s   = opaque;
-    bool               val = !!level;
     assert(n == 0);
-    // fprintf(stderr, "%s: level: %d\n", __func__, level);
-    // val can and will be false, keep that in mind. no idea what to do then.
-    // maybe that's qemu's way of saying that the hardware can't keep up, that
-    // it's not confirming the interrupts fast enough.
-    if (!val) { return; }
-    QEMU_LOCK_GUARD(&s->lock);
-    // DON'T also do the checks here, only do them in interrupt_status_pop
-    apple_a7iop_interrupt_status_push(s, IRQ_SEP_TIMER0);
+    apple_a7iop_gpio_timer(opaque, IRQ_SEP_TIMER0, BIT(0), level);
 }
 
 static void apple_a7iop_gpio_timer1(void* opaque, int n, int level)
 {
-    AppleA7IOPMailbox* s   = opaque;
-    bool               val = !!level;
     assert(n == 0);
-    // fprintf(stderr, "%s: level: %d\n", __func__, level);
-    // val can and will be false, keep that in mind. no idea what to do then.
-    // maybe that's qemu's way of saying that the hardware can't keep up, that
-    // it's not confirming the interrupts fast enough.
-    if (!val) { return; }
-    QEMU_LOCK_GUARD(&s->lock);
-    // DON'T also do the checks here, only do them in interrupt_status_pop
-    apple_a7iop_interrupt_status_push(s, IRQ_SEP_TIMER1);
+    apple_a7iop_gpio_timer(opaque, IRQ_SEP_TIMER1, BIT(1), level);
 }
 
 AppleA7IOPMailbox* apple_a7iop_mailbox_new(const char* role, AppleA7IOPVersion version, AppleA7IOPMailbox* iop_mailbox,
