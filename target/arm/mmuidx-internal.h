@@ -1,0 +1,92 @@
+/*
+ * QEMU Arm software mmu index internal definitions
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
+
+#pragma once
+
+#include "hw/registerfields.h"
+#include "tcg/debug-assert.h"
+#include "target/arm/mmuidx.h"
+
+REG_FIELD(MMUIDXINFO, EL, 0, 2)
+REG_FIELD(MMUIDXINFO, ELVALID, 2, 1)
+REG_FIELD(MMUIDXINFO, REL, 3, 2)
+REG_FIELD(MMUIDXINFO, RELVALID, 5, 1)
+REG_FIELD(MMUIDXINFO, 2RANGES, 6, 1)
+REG_FIELD(MMUIDXINFO, PAN, 7, 1)
+REG_FIELD(MMUIDXINFO, USER, 8, 1)
+REG_FIELD(MMUIDXINFO, STAGE1, 9, 1)
+REG_FIELD(MMUIDXINFO, STAGE2, 10, 1)
+
+extern const uint32_t arm_mmuidx_table[ARM_MMU_IDX_NOTLB + 8];
+
+#define arm_mmuidx_is_valid(x) ((unsigned)(x) < ARRAY_SIZE(arm_mmuidx_table))
+
+/* Return the exception level associated with this mmu index. */
+static inline int arm_mmu_idx_to_el(ARMMMUIdx idx)
+{
+    tcg_debug_assert(arm_mmuidx_is_valid(idx));
+    tcg_debug_assert(REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, ELVALID));
+    return REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, EL);
+}
+
+/*
+ * Return the exception level for the address translation regime
+ * associated with this mmu index.
+ */
+static inline uint32_t regime_el(ARMMMUIdx idx)
+{
+    tcg_debug_assert(arm_mmuidx_is_valid(idx));
+    tcg_debug_assert(REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, RELVALID));
+    return REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, REL);
+}
+
+/*
+ * Return true if this address translation regime has two ranges.
+ * Note that this will not return the correct answer for AArch32
+ * Secure PL1&0 (i.e. mmu indexes E3, E30_0, E30_3_PAN), but it is
+ * never called from a context where EL3 can be AArch32. (The
+ * correct return value for ARMMMUIdx_E3 would be different for
+ * that case, so we can't just make the function return the
+ * correct value anyway; we would need an extra "bool e3_is_aarch32"
+ * argument which all the current callsites would pass as 'false'.)
+ */
+static inline bool regime_has_2_ranges(ARMMMUIdx idx)
+{
+    tcg_debug_assert(arm_mmuidx_is_valid(idx));
+    return REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, 2RANGES);
+}
+
+/* Return true if Privileged Access Never is enabled for this mmu index. */
+static inline bool regime_is_pan(ARMMMUIdx idx)
+{
+    tcg_debug_assert(arm_mmuidx_is_valid(idx));
+    return REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, PAN);
+}
+
+/*
+ * Return true if the exception level associated with this mmu index is 0.
+ * Differs from arm_mmu_idx_to_el(idx) == 0 in that this allows querying
+ * Stage1 and Stage2 mmu indexes.
+ */
+static inline bool regime_is_user(ARMMMUIdx idx)
+{
+    tcg_debug_assert(arm_mmuidx_is_valid(idx));
+    return REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, USER);
+}
+
+/* Return true if this mmu index is stage 1 of a 2-stage translation. */
+static inline bool arm_mmu_idx_is_stage1_of_2(ARMMMUIdx idx)
+{
+    tcg_debug_assert(arm_mmuidx_is_valid(idx));
+    return REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, STAGE1);
+}
+
+/* Return true if this mmu index is stage 2 of a 2-stage translation. */
+static inline bool regime_is_stage2(ARMMMUIdx idx)
+{
+    tcg_debug_assert(arm_mmuidx_is_valid(idx));
+    return REG_FIELD_EX32(arm_mmuidx_table[idx], MMUIDXINFO, STAGE2);
+}

@@ -35,6 +35,7 @@
 #include "system/memory.h"
 #include "syndrome.h"
 #include "cpu-features.h"
+#include "mmuidx-internal.h"
 
 /* register banks for CPU modes */
 #define BANK_USRSYS 0
@@ -803,31 +804,6 @@ static inline ARMMMUIdx core_to_aa64_mmu_idx(int mmu_idx)
     return mmu_idx | ARM_MMU_IDX_A;
 }
 
-/* Return the exception level we're running at if this is our mmu_idx */
-static inline int arm_mmu_idx_to_el(ARMMMUIdx mmu_idx)
-{
-    switch (mmu_idx) {
-        case ARMMMUIdx_E10_0     :
-        case ARMMMUIdx_E20_0     :
-        case ARMMMUIdx_E30_0     : return 0;
-        case ARMMMUIdx_E10_1     :
-        case ARMMMUIdx_E10_1_PAN :
-        case ARMMMUIdx_GE10_1    :
-        case ARMMMUIdx_GE10_1_PAN: return 1;
-        case ARMMMUIdx_E2        :
-        case ARMMMUIdx_E20_2     :
-        case ARMMMUIdx_E20_2_PAN :
-        case ARMMMUIdx_GE2       :
-        case ARMMMUIdx_GE20_2    :
-        case ARMMMUIdx_GE20_2_PAN: return 2;
-        case ARMMMUIdx_E3        :
-        case ARMMMUIdx_E30_3_PAN :
-        case ARMMMUIdx_GE3       :
-        case ARMMMUIdx_GE30_3_PAN: return 3;
-        default                  : tcg_debug_assert_not_reached();
-    }
-}
-
 static inline bool arm_mmu_idx_is_guarded(ARMMMUIdx mmu_idx) { return (mmu_idx & ARM_MMU_IDX_A_GXF) != 0; }
 
 /*
@@ -859,106 +835,9 @@ static inline void arm_call_el_change_hook(ARMCPU* cpu)
     QLIST_FOREACH_SAFE (hook, &cpu->el_change_hooks, node, next) { hook->hook(cpu, hook->opaque); }
 }
 
-/*
- * Return true if this address translation regime has two ranges.
- * Note that this will not return the correct answer for AArch32
- * Secure PL1&0 (i.e. mmu indexes E3, E30_0, E30_3_PAN), but it is
- * never called from a context where EL3 can be AArch32. (The
- * correct return value for ARMMMUIdx_E3 would be different for
- * that case, so we can't just make the function return the
- * correct value anyway; we would need an extra "bool e3_is_aarch32"
- * argument which all the current callsites would pass as 'false'.)
- */
-static inline bool regime_has_2_ranges(ARMMMUIdx mmu_idx)
-{
-    switch (mmu_idx) {
-        case ARMMMUIdx_Stage1_E0     :
-        case ARMMMUIdx_Stage1_E1     :
-        case ARMMMUIdx_Stage1_E1_PAN :
-        case ARMMMUIdx_Stage1_GE1    :
-        case ARMMMUIdx_Stage1_GE1_PAN:
-        case ARMMMUIdx_E10_0         :
-        case ARMMMUIdx_E10_1         :
-        case ARMMMUIdx_E10_1_PAN     :
-        case ARMMMUIdx_E20_0         :
-        case ARMMMUIdx_E20_2         :
-        case ARMMMUIdx_E20_2_PAN     :
-        case ARMMMUIdx_GE10_1        :
-        case ARMMMUIdx_GE10_1_PAN    :
-        case ARMMMUIdx_GE20_2        :
-        case ARMMMUIdx_GE20_2_PAN    : return true;
-        default                      : return false;
-    }
-}
-
-static inline bool regime_is_pan(CPUARMState* env, ARMMMUIdx mmu_idx)
-{
-    switch (mmu_idx) {
-        case ARMMMUIdx_Stage1_E1_PAN :
-        case ARMMMUIdx_Stage1_GE1_PAN:
-        case ARMMMUIdx_E10_1_PAN     :
-        case ARMMMUIdx_E20_2_PAN     :
-        case ARMMMUIdx_E30_3_PAN     :
-        case ARMMMUIdx_GE10_1_PAN    :
-        case ARMMMUIdx_GE20_2_PAN    :
-        case ARMMMUIdx_GE30_3_PAN    : return true;
-        default                      : return false;
-    }
-}
-
-static inline bool regime_is_stage2(ARMMMUIdx mmu_idx)
-{ return mmu_idx == ARMMMUIdx_Stage2 || mmu_idx == ARMMMUIdx_Stage2_S; }
-
-/* Return the exception level which controls this address translation regime */
-static inline uint32_t regime_el(CPUARMState* env, ARMMMUIdx mmu_idx)
-{
-    switch (mmu_idx) {
-        case ARMMMUIdx_E20_0         :
-        case ARMMMUIdx_E20_2         :
-        case ARMMMUIdx_E20_2_PAN     :
-        case ARMMMUIdx_Stage2        :
-        case ARMMMUIdx_Stage2_S      :
-        case ARMMMUIdx_E2            :
-        case ARMMMUIdx_GE20_2        :
-        case ARMMMUIdx_GE20_2_PAN    :
-        case ARMMMUIdx_GE2           : return 2;
-        case ARMMMUIdx_E3            :
-        case ARMMMUIdx_E30_0         :
-        case ARMMMUIdx_E30_3_PAN     :
-        case ARMMMUIdx_GE3           :
-        case ARMMMUIdx_GE30_3_PAN    : return 3;
-        case ARMMMUIdx_E10_0         :
-        case ARMMMUIdx_Stage1_E0     :
-        case ARMMMUIdx_Stage1_E1     :
-        case ARMMMUIdx_Stage1_E1_PAN :
-        case ARMMMUIdx_Stage1_GE1    :
-        case ARMMMUIdx_Stage1_GE1_PAN:
-        case ARMMMUIdx_E10_1         :
-        case ARMMMUIdx_E10_1_PAN     :
-        case ARMMMUIdx_GE10_1        :
-        case ARMMMUIdx_GE10_1_PAN    : return 1;
-        default                      : assert_not_reached();
-    }
-}
-
-static inline bool regime_is_user(CPUARMState* env, ARMMMUIdx mmu_idx)
-{
-    switch (mmu_idx) {
-        case ARMMMUIdx_E10_0     :
-        case ARMMMUIdx_E20_0     :
-        case ARMMMUIdx_E30_0     :
-        case ARMMMUIdx_Stage1_E0 : return true;
-        case ARMMMUIdx_E10_1     :
-        case ARMMMUIdx_E10_1_PAN :
-        case ARMMMUIdx_GE10_1    :
-        case ARMMMUIdx_GE10_1_PAN: assert_not_reached();
-        default                  : return false;
-    }
-}
-
 /* Return the SCTLR value which controls this address translation regime */
 static inline uint64_t regime_sctlr(CPUARMState* env, ARMMMUIdx mmu_idx)
-{ return env->cp15.sctlr_el[regime_el(env, mmu_idx)]; }
+{ return env->cp15.sctlr_el[regime_el(mmu_idx)]; }
 
 /*
  * These are the fields in VTCR_EL2 which affect both the Secure stage 2
@@ -986,13 +865,13 @@ static inline uint64_t regime_tcr(CPUARMState* env, ARMMMUIdx mmu_idx)
         v          |= env->cp15.vtcr_el2 & VTCR_SHARED_FIELD_MASK;
         return v;
     }
-    return env->cp15.tcr_el[regime_el(env, mmu_idx)];
+    return env->cp15.tcr_el[regime_el(mmu_idx)];
 }
 
 /* Return true if the translation regime is using LPAE format page tables */
 static inline bool regime_using_lpae_format(CPUARMState* env, ARMMMUIdx mmu_idx)
 {
-    int el = regime_el(env, mmu_idx);
+    int el = regime_el(mmu_idx);
     if (el == 2 || arm_el_is_aa64(env, el)) { return true; }
     if (arm_feature(env, ARM_FEATURE_LPAE) && (regime_tcr(env, mmu_idx) & TTBCR_EAE)) { return true; }
     return false;
@@ -1127,25 +1006,6 @@ ARMMMUIdx arm_mmu_idx(CPUARMState* env);
  */
 ARMMMUIdx stage_1_mmu_idx(ARMMMUIdx mmu_idx);
 ARMMMUIdx arm_stage1_mmu_idx(CPUARMState* env);
-
-/**
- * arm_mmu_idx_is_stage1_of_2:
- * @mmu_idx: The ARMMMUIdx to test
- *
- * Return true if @mmu_idx is a NOTLB mmu_idx that is the
- * first stage of a two stage regime.
- */
-static inline bool arm_mmu_idx_is_stage1_of_2(ARMMMUIdx mmu_idx)
-{
-    switch (mmu_idx) {
-        case ARMMMUIdx_Stage1_E0     :
-        case ARMMMUIdx_Stage1_E1     :
-        case ARMMMUIdx_Stage1_E1_PAN :
-        case ARMMMUIdx_Stage1_GE1    :
-        case ARMMMUIdx_Stage1_GE1_PAN: return true;
-        default                      : return false;
-    }
-}
 
 static inline uint32_t aarch32_cpsr_valid_mask(uint64_t features, const ARMISARegisters* id)
 {

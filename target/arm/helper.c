@@ -10131,7 +10131,7 @@ ARMVAParameters aa64_va_parameters(CPUARMState* env, uint64_t va, ARMMMUIdx mmu_
         hd = extract64(tcr, 40, 1) && cpu_isar_feature(aa64_hdbs, cpu);
         ds = extract64(tcr, 59, 1);
 
-        if (e0pd && cpu_isar_feature(aa64_e0pd, cpu) && regime_is_user(env, mmu_idx)) { epd = true; }
+        if (e0pd && cpu_isar_feature(aa64_e0pd, cpu) && regime_is_user(mmu_idx)) { epd = true; }
     }
 
     gran = sanitize_gran_size(cpu, gran, stage2);

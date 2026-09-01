@@ -194,9 +194,9 @@ static uint64_t regime_ttbr(CPUARMState* env, ARMMMUIdx mmu_idx, int ttbrn)
 {
     if (mmu_idx == ARMMMUIdx_Stage2) { return env->cp15.vttbr_el2; }
     if (mmu_idx == ARMMMUIdx_Stage2_S) { return env->cp15.vsttbr_el2; }
-    if (ttbrn == 0) { return env->cp15.ttbr0_el[regime_el(env, mmu_idx)]; }
+    if (ttbrn == 0) { return env->cp15.ttbr0_el[regime_el(mmu_idx)]; }
     else {
-        return env->cp15.ttbr1_el[regime_el(env, mmu_idx)];
+        return env->cp15.ttbr1_el[regime_el(mmu_idx)];
     }
 }
 
@@ -819,7 +819,7 @@ static int ap_to_rw_prot_is_user(CPUARMState* env, ARMMMUIdx mmu_idx, int ap, in
  * @domain_prot: The 2-bit domain access permissions
  */
 static int ap_to_rw_prot(CPUARMState* env, ARMMMUIdx mmu_idx, int ap, int domain_prot)
-{ return ap_to_rw_prot_is_user(env, mmu_idx, ap, domain_prot, regime_is_user(env, mmu_idx)); }
+{ return ap_to_rw_prot_is_user(env, mmu_idx, ap, domain_prot, regime_is_user(mmu_idx)); }
 
 /*
  * Translate section/page access permissions to page R/W protection flags.
@@ -837,8 +837,8 @@ static int simple_ap_to_rw_prot_is_user(int ap, bool is_user)
     }
 }
 
-static int simple_ap_to_rw_prot(CPUARMState* env, ARMMMUIdx mmu_idx, int ap)
-{ return simple_ap_to_rw_prot_is_user(ap, regime_is_user(env, mmu_idx)); }
+static int simple_ap_to_rw_prot(ARMMMUIdx mmu_idx, int ap)
+{ return simple_ap_to_rw_prot_is_user(ap, regime_is_user(mmu_idx)); }
 
 /* Translate section/page attributes to page
  * R/W/X protection flags.
@@ -935,7 +935,7 @@ static bool get_phys_addr_v5(CPUARMState* env, S1Translate* ptw, uint32_t addres
     if (fi->type != ARMFault_None) { goto do_fault; }
     type   = (desc & 3);
     domain = (desc >> 5) & 0x0f;
-    if (regime_el(env, ptw->in_mmu_idx) == 1) { dacr = env->cp15.dacr_ns; }
+    if (regime_el(ptw->in_mmu_idx) == 1) { dacr = env->cp15.dacr_ns; }
     else {
         dacr = env->cp15.dacr_s;
     }
@@ -1064,7 +1064,7 @@ static bool get_phys_addr_v6(CPUARMState* env, S1Translate* ptw, uint32_t addres
         /* Page or Section.  */
         domain = (desc >> 5) & 0x0f;
     }
-    if (regime_el(env, mmu_idx) == 1) { dacr = env->cp15.dacr_ns; }
+    if (regime_el(mmu_idx) == 1) { dacr = env->cp15.dacr_ns; }
     else {
         dacr = env->cp15.dacr_s;
     }
@@ -1140,7 +1140,7 @@ static bool get_phys_addr_v6(CPUARMState* env, S1Translate* ptw, uint32_t addres
                 fi->type = ARMFault_AccessFlag;
                 goto do_fault;
             }
-            prot_rw = simple_ap_to_rw_prot(env, mmu_idx, ap >> 1);
+            prot_rw = simple_ap_to_rw_prot(mmu_idx, ap >> 1);
             user_rw = simple_ap_to_rw_prot_is_user(ap >> 1, 1);
         }
         else {
@@ -1229,7 +1229,7 @@ static int get_S1prot(CPUARMState* env, ARMMMUIdx mmu_idx, bool is_aa64, int use
                       ARMSecuritySpace in_pa, ARMSecuritySpace out_pa)
 {
     ARMCPU* cpu     = env_archcpu(env);
-    bool    is_user = regime_is_user(env, mmu_idx);
+    bool    is_user = regime_is_user(mmu_idx);
     bool    have_wxn;
     int     wxn = 0;
 
@@ -1247,8 +1247,8 @@ static int get_S1prot(CPUARMState* env, ARMMMUIdx mmu_idx, bool is_aa64, int use
          * We make the IMPDEF choices that SCR_EL3.SIF and Realm EL2&0
          * do not affect EPAN.
          */
-        if (user_rw && regime_is_pan(env, mmu_idx)) { prot_rw = 0; }
-        else if (cpu_isar_feature(aa64_pan3, cpu) && is_aa64 && regime_is_pan(env, mmu_idx)
+        if (user_rw && regime_is_pan(mmu_idx)) { prot_rw = 0; }
+        else if (cpu_isar_feature(aa64_pan3, cpu) && is_aa64 && regime_is_pan(mmu_idx)
                  && (regime_sctlr(env, mmu_idx) & SCTLR_EPAN) && !xn)
         {
             prot_rw = 0;
@@ -1304,7 +1304,7 @@ static int get_S1prot(CPUARMState* env, ARMMMUIdx mmu_idx, bool is_aa64, int use
         if (regime_has_2_ranges(mmu_idx) && !is_user) { xn = pxn || (user_rw & PAGE_WRITE); }
     }
     else if (arm_feature(env, ARM_FEATURE_V7)) {
-        switch (regime_el(env, mmu_idx)) {
+        switch (regime_el(mmu_idx)) {
             case 1:
             case 3:
                 if (is_user) { xn = xn || !(user_rw & PAGE_READ); }
@@ -1328,7 +1328,7 @@ static int get_S1prot(CPUARMState* env, ARMMMUIdx mmu_idx, bool is_aa64, int use
 static ARMVAParameters aa32_va_parameters(CPUARMState* env, uint32_t va, ARMMMUIdx mmu_idx)
 {
     uint64_t tcr = regime_tcr(env, mmu_idx);
-    uint32_t el  = regime_el(env, mmu_idx);
+    uint32_t el  = regime_el(mmu_idx);
     int      select, tsz;
     bool     epd, hpd;
 
@@ -1531,7 +1531,7 @@ static bool get_phys_addr_lpae(CPUARMState* env, S1Translate* ptw, uint64_t addr
     int              addrsize, inputsize, outputsize;
     uint64_t         tcr = regime_tcr(env, mmu_idx);
     int              ap, xn, pxn;
-    uint32_t         el = regime_el(env, mmu_idx);
+    uint32_t         el = regime_el(mmu_idx);
     uint64_t         descaddrmask;
     bool             aarch64 = arm_el_is_aa64(env, el);
     uint64_t         descriptor, new_descriptor;
@@ -1949,7 +1949,7 @@ restart_atomic_update:
 
         /* Index into MAIR registers for cache attributes */
         attrindx = extract32(attrs, 2, 3);
-        mair     = env->cp15.mair_el[regime_el(env, mmu_idx)];
+        mair     = env->cp15.mair_el[regime_el(mmu_idx)];
         assert(attrindx <= 7);
         result->cacheattrs.is_s2_format = false;
         result->cacheattrs.attrs        = extract64(mair, attrindx * 8, 8);
@@ -2291,7 +2291,7 @@ static bool get_phys_addr_disabled(CPUARMState* env, S1Translate* ptw, vaddr add
         case ARMMMUIdx_Phys_Realm: break;
 
         default:
-            r_el = regime_el(env, mmu_idx);
+            r_el = regime_el(mmu_idx);
             if (arm_el_is_aa64(env, r_el)) {
                 int      pamax = arm_pamax(env_archcpu(env));
                 uint64_t tcr   = env->cp15.tcr_el[r_el];
@@ -2511,14 +2511,14 @@ static bool get_phys_addr_nogpc(CPUARMState* env, S1Translate* ptw, vaddr addres
             break;
     }
 
-    result->f.attrs.user = regime_is_user(env, mmu_idx);
+    result->f.attrs.user = regime_is_user(mmu_idx);
 
     /*
      * Fast Context Switch Extension. This doesn't exist at all in v8.
      * In v7 and earlier it affects all stage 1 translations.
      */
     if (address < 0x02000000 && mmu_idx != ARMMMUIdx_Stage2 && !arm_feature(env, ARM_FEATURE_V8)) {
-        if (regime_el(env, mmu_idx) == 3) { address += env->cp15.fcseidr_s; }
+        if (regime_el(mmu_idx) == 3) { address += env->cp15.fcseidr_s; }
         else {
             address += env->cp15.fcseidr_ns;
         }
