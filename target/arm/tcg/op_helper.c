@@ -329,6 +329,12 @@ void HELPER(wfi)(CPUARMState* env, uint32_t insn_len)
         raise_exception(env, excp, syn_wfx(1, 0xe, 0, insn_len == 2), target_el);
     }
 
+    /*
+     * Nothing bounds how long we stay halted, so do not leave invalidations
+     * for other cpus sitting in the batch waiting for a DSB we may never run.
+     */
+    arm_tlbi_batch_drain(env);
+
     cs->exception_index = EXCP_HLT;
     cs->halted          = 1;
     cpu_loop_exit(cs);

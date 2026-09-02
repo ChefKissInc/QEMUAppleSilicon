@@ -204,6 +204,12 @@ static void arm_cpu_reset_hold(Object* obj, ResetType type)
 
     if (acc->parent_phases.hold) { acc->parent_phases.hold(obj, type); }
 
+    /*
+     * Batched invalidations target the other cpus too, and they keep running
+     * across our reset, so issue them before the batch is cleared below.
+     */
+    arm_tlbi_batch_drain(env);
+
     memset(env, 0, offsetof(CPUARMState, end_reset_fields));
 
     for (int i = 0; i < NUM_GTIMERS; i++) {

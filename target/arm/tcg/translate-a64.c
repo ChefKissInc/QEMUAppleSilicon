@@ -1792,9 +1792,25 @@ static bool trans_CLREX(DisasContext* s, arg_CLREX* a)
     return true;
 }
 
+/*
+ * A TLBI is only architecturally complete once a DSB has completed, so runs of
+ * them are accumulated and applied here rather than one cross-CPU round each.
+ * The inline test keeps a DSB with nothing pending down to a load and a branch.
+ */
+static void gen_tlbi_drain(DisasContext* s)
+{
+    TCGv_i32  pending = tcg_temp_new_i32();
+    TCGLabel* done    = gen_new_label();
+
+    tcg_gen_ld_i32(pending, tcg_env, offsetof(CPUARMState, tlbi_batch.pending));
+    tcg_gen_brcondi_i32(TCG_COND_EQ, pending, 0, done);
+    gen_helper_tlbi_drain(tcg_env);
+    gen_set_label(done);
+}
+
 static bool trans_DSB_DMB(DisasContext* s, arg_DSB_DMB* a)
 {
-    /* We handle DSB and DMB the same way */
+    /* We handle DSB and DMB the same way, apart from TLBI completion */
     TCGBar bar;
 
     switch (a->types) {
@@ -1803,6 +1819,9 @@ static bool trans_DSB_DMB(DisasContext* s, arg_DSB_DMB* a)
         default: /* MBReqTypes_All */ bar = TCG_BAR_SC | TCG_MO_ALL; break;
     }
     tcg_gen_mb(bar);
+
+    if (!a->dmb) { gen_tlbi_drain(s); }
+
     return true;
 }
 
@@ -1810,6 +1829,7 @@ static bool trans_DSB_nXS(DisasContext* s, arg_DSB_nXS* a)
 {
     if (!dc_isar_feature(aa64_xs, s)) { return false; }
     tcg_gen_mb(TCG_BAR_SC | TCG_MO_ALL);
+    gen_tlbi_drain(s);
     return true;
 }
 
@@ -1821,6 +1841,7 @@ static bool trans_ISB(DisasContext* s, arg_ISB* a)
      * any pending interrupts immediately.
      */
     reset_btype(s);
+    gen_tlbi_drain(s);
     gen_goto_tb(s, 0, 4);
     return true;
 }

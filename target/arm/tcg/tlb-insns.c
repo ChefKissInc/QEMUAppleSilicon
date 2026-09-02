@@ -14,6 +14,9 @@
 #include "cpu-features.h"
 #include "cpregs.h"
 
+#define HELPER_H "tcg/helper.h"
+#include "exec/helper-proto.h.inc"
+
 /* Check for traps from EL1 due to HCR_EL2.TTLB. */
 static CPAccessResult access_ttlb(CPUARMState* env, const ARMCPRegInfo* ri, bool isread)
 {
@@ -128,10 +131,9 @@ static void tlbimva_hyp_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t
 
 static void tlbimva_hyp_is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    CPUState* cs       = env_cpu(env);
     uint64_t  pageaddr = value & ~MAKE_64BIT_MASK(0, 12);
 
-    tlb_flush_page_by_mmuidx_all_cpus_synced(cs, pageaddr, ARMMMUIdxBit_E2 | ARMMMUIdxBit_GE2);
+    arm_tlbi_batch_add(env, pageaddr, ARMMMUIdxBit_E2 | ARMMMUIdxBit_GE2, target_long_bits());
 }
 
 static void tlbiipas2_hyp_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
@@ -144,10 +146,9 @@ static void tlbiipas2_hyp_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64
 
 static void tlbiipas2is_hyp_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    CPUState* cs       = env_cpu(env);
     uint64_t  pageaddr = (value & MAKE_64BIT_MASK(0, 28)) << 12;
 
-    tlb_flush_page_by_mmuidx_all_cpus_synced(cs, pageaddr, ARMMMUIdxBit_Stage2);
+    arm_tlbi_batch_add(env, pageaddr, ARMMMUIdxBit_Stage2, target_long_bits());
 }
 
 static void tlbiall_nsnh_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
@@ -344,14 +345,43 @@ static void tlbi_aa64_vae3_write(CPUARMState* env, const ARMCPRegInfo* ri, uint6
     tlb_flush_page_by_mmuidx(cs, pageaddr, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3);
 }
 
+void arm_tlbi_batch_drain(CPUARMState* env)
+{
+    const uint32_t n = env->tlbi_batch.pending;
+
+    if (n == 0) { return; }
+
+    env->tlbi_batch.pending = 0;
+
+    tlb_flush_pages_by_mmuidx_all_cpus_synced(env_cpu(env), env->tlbi_batch.pages, n, env->tlbi_batch.idxmap);
+
+    env->tlbi_batch.idxmap = 0;
+}
+
+void arm_tlbi_batch_add(CPUARMState* env, vaddr addr, MMUIdxMap idxmap, unsigned bits)
+{
+    TLBFlushPage* page;
+
+    if (env->tlbi_batch.pending == ARM_TLBI_BATCH_MAX) { arm_tlbi_batch_drain(env); }
+
+    page = &env->tlbi_batch.pages[env->tlbi_batch.pending++];
+
+    page->addr   = addr;
+    page->idxmap = idxmap;
+    page->bits   = bits;
+
+    env->tlbi_batch.idxmap |= idxmap;
+}
+
+void HELPER(tlbi_drain)(CPUARMState* env) { arm_tlbi_batch_drain(env); }
+
 static void tlbi_aa64_vae1is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    CPUState* cs       = env_cpu(env);
     int       mask     = vae1_tlbmask(env);
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
     int       bits     = vae1_tlbbits(env, pageaddr);
 
-    tlb_flush_page_bits_by_mmuidx_all_cpus_synced(cs, pageaddr, mask, bits);
+    arm_tlbi_batch_add(env, pageaddr, mask, bits);
 }
 
 static void tlbi_aa64_vae1_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
@@ -367,7 +397,7 @@ static void tlbi_aa64_vae1_write(CPUARMState* env, const ARMCPRegInfo* ri, uint6
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
     int       bits     = vae1_tlbbits(env, pageaddr);
 
-    if (tlb_force_broadcast(env)) { tlb_flush_page_bits_by_mmuidx_all_cpus_synced(cs, pageaddr, mask, bits); }
+    if (tlb_force_broadcast(env)) { arm_tlbi_batch_add(env, pageaddr, mask, bits); }
     else {
         tlb_flush_page_bits_by_mmuidx(cs, pageaddr, mask, bits);
     }
@@ -375,21 +405,19 @@ static void tlbi_aa64_vae1_write(CPUARMState* env, const ARMCPRegInfo* ri, uint6
 
 static void tlbi_aa64_vae2is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    CPUState* cs       = env_cpu(env);
     int       mask     = vae2_tlbmask(env);
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
     int       bits     = vae2_tlbbits(env, pageaddr);
 
-    tlb_flush_page_bits_by_mmuidx_all_cpus_synced(cs, pageaddr, mask, bits);
+    arm_tlbi_batch_add(env, pageaddr, mask, bits);
 }
 
 static void tlbi_aa64_vae3is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    CPUState* cs       = env_cpu(env);
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
     int       bits     = tlbbits_for_regime(env, ARMMMUIdx_E3, pageaddr);
 
-    tlb_flush_page_bits_by_mmuidx_all_cpus_synced(cs, pageaddr, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3, bits);
+    arm_tlbi_batch_add(env, pageaddr, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3, bits);
 }
 
 static int ipas2e1_tlbmask(CPUARMState* env, int64_t value)
@@ -409,7 +437,7 @@ static void tlbi_aa64_ipas2e1_write(CPUARMState* env, const ARMCPRegInfo* ri, ui
     int       mask     = ipas2e1_tlbmask(env, value);
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
 
-    if (tlb_force_broadcast(env)) { tlb_flush_page_by_mmuidx_all_cpus_synced(cs, pageaddr, mask); }
+    if (tlb_force_broadcast(env)) { arm_tlbi_batch_add(env, pageaddr, mask, target_long_bits()); }
     else {
         tlb_flush_page_by_mmuidx(cs, pageaddr, mask);
     }
@@ -417,11 +445,10 @@ static void tlbi_aa64_ipas2e1_write(CPUARMState* env, const ARMCPRegInfo* ri, ui
 
 static void tlbi_aa64_ipas2e1is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    CPUState* cs       = env_cpu(env);
     int       mask     = ipas2e1_tlbmask(env, value);
     uint64_t  pageaddr = sextract64(value << 12, 0, 56);
 
-    tlb_flush_page_by_mmuidx_all_cpus_synced(cs, pageaddr, mask);
+    arm_tlbi_batch_add(env, pageaddr, mask, target_long_bits());
 }
 
 static const ARMCPRegInfo tlbi_not_v7_cp_reginfo[] = {

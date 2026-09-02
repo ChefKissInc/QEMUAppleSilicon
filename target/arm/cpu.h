@@ -34,6 +34,10 @@
 #include "target/arm/cpu-sysregs.h"
 #include "target/arm/cpregs.h"
 #include "target/arm/mmuidx.h"
+#include "exec/cputlb.h"
+
+/* Maximum number of page invalidations deferred to the next DSB. */
+#define ARM_TLBI_BATCH_MAX (64)
 
 #define EXCP_UDEF           1 /* undefined instruction */
 #define EXCP_SWI            2 /* software interrupt */
@@ -805,6 +809,21 @@ typedef struct CPUArchState
 
     /* Optional fault info across tlb lookup. */
     ARMMMUFaultInfo* tlb_fi;
+
+    /*
+     * Broadcast TLB invalidations issued since the last DSB. The architecture
+     * only requires a TLBI to have completed once a DSB has completed, so a run
+     * of them is accumulated here and applied in one go, turning an N
+     * instruction sequence into a single round of cross-CPU work. @pending is
+     * nonzero whenever there is anything to drain, and is the only field the
+     * translator looks at.
+     */
+    struct
+    {
+        uint32_t     pending;
+        MMUIdxMap    idxmap;
+        TLBFlushPage pages[ARM_TLBI_BATCH_MAX];
+    } tlbi_batch;
 
     /* Fields up to this point are cleared by a CPU reset */
     struct

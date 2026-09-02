@@ -1121,6 +1121,24 @@ static inline bool allocation_tag_access_enabled(CPUARMState* env, int el, uint6
     return sctlr != 0;
 }
 
+#ifdef CONFIG_TCG
+/*
+ * Record a broadcast page invalidation, to be applied at the next DSB. Flushes
+ * only ever remove TLB entries, so deferring one past other flushes is safe;
+ * the only ordering that matters is flush against fill, and the architecture
+ * permits a fill to use a stale translation until the DSB completes.
+ */
+void arm_tlbi_batch_add(CPUARMState* env, vaddr addr, MMUIdxMap idxmap, unsigned bits);
+
+/*
+ * Apply and clear any invalidations recorded by arm_tlbi_batch_add. Callable
+ * from any thread holding the BQL; @env's cpu need not be the caller's.
+ */
+void arm_tlbi_batch_drain(CPUARMState* env);
+#else
+static inline void arm_tlbi_batch_drain(CPUARMState* env) { }
+#endif /* CONFIG_TCG */
+
 static inline int vae1_tlbmask(CPUARMState* env)
 {
     uint64_t hcr = arm_hcr_el2_eff(env);

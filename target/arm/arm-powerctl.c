@@ -227,6 +227,10 @@ static void arm_set_cpu_off_async_work(CPUState* target_cpu_state, run_on_cpu_da
     ARMCPU* target_cpu = container_of(target_cpu_state, ARMCPU, parent_obj);
 
     assert(bql_locked());
+
+    /* Runs on the target cpu, which is about to stop executing for good. */
+    arm_tlbi_batch_drain(&target_cpu->env);
+
     target_cpu->power_state           = PSCI_OFF;
     target_cpu_state->halted          = 1;
     target_cpu_state->exception_index = EXCP_HLT;

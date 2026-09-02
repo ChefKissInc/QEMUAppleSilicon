@@ -259,7 +259,7 @@ WFIT            1101 0101 0000 0011 0001 0000 001 rd:5
 # Barriers
 
 CLREX           1101 0101 0000 0011 0011 ---- 010 11111
-DSB_DMB         1101 0101 0000 0011 0011 domain:2 types:2 10- 11111
+DSB_DMB         1101 0101 0000 0011 0011 domain:2 types:2 10 dmb:1 11111
 # For the DSB nXS variant, types always equals MBReqTypes_All and we ignore the
 # domain bits.
 DSB_nXS         1101 0101 0000 0011 0011 -- 10 001 11111

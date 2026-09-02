@@ -12,6 +12,8 @@ DEF_HELPER_FLAGS_3(sdiv, TCG_CALL_NO_RWG, s32, env, s32, s32)
 DEF_HELPER_FLAGS_3(udiv, TCG_CALL_NO_RWG, i32, env, i32, i32)
 DEF_HELPER_FLAGS_1(rbit, TCG_CALL_NO_RWG_SE, i32, i32)
 
+DEF_HELPER_1(tlbi_drain, void, env)
+
 #define PAS_OP(pfx)                                \
     DEF_HELPER_3(pfx##add8, i32, i32, i32, ptr)    \
     DEF_HELPER_3(pfx##sub8, i32, i32, i32, ptr)    \
