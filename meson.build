@@ -1,6 +1,6 @@
 project('qemu', ['c'], meson_version: '>=1.5.0',
-        default_options: ['warning_level=1', 'c_std=gnu11', 'cpp_std=gnu++11', 'b_colorout=auto',
-                          'b_staticpic=false', 'stdsplit=false', 'optimization=2', 'b_pie=true'],
+        default_options: ['warning_level=2', 'c_std=gnu11', 'cpp_std=gnu++11',
+                          'b_staticpic=false', 'b_pie=true', 'buildtype=debugoptimized', 'b_ndebug=if-release'],
         version: files('VERSION'))
 
 meson.add_devenv({ 'MESON_BUILD_ROOT' : meson.project_build_root() })
@@ -186,9 +186,9 @@ qemu_common_flags = [
   '-D_GNU_SOURCE', '-D_FILE_OFFSET_BITS=64', '-D_LARGEFILE_SOURCE',
   '-fno-strict-aliasing', '-fno-common', '-fwrapv' ]
 if get_option('debug')
-  qemu_common_flags += ['-DDEBUG', '-fno-omit-frame-pointer']
+  qemu_common_flags += ['-fno-omit-frame-pointer']
 else
-  qemu_common_flags += ['-DG_DISABLE_ASSERT', '-DNDEBUG', '-D__OPTIMIZE__']
+  qemu_common_flags += ['-DG_DISABLE_ASSERT']
 endif
 qemu_cflags = []
 qemu_ldflags = []

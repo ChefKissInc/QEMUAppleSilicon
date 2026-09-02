@@ -178,7 +178,7 @@ option('fuse', type: 'feature', value: 'auto',
 option('fuse_lseek', type : 'feature', value : 'auto',
        description: 'SEEK_HOLE/SEEK_DATA support for FUSE exports')
 
-option('trace_backends', type: 'array', value: ['log'],
+option('trace_backends', type: 'array', value: ['nop'],
        choices: ['dtrace', 'ftrace', 'log', 'nop', 'simple', 'syslog', 'ust'],
        description: 'Set available tracing backends')
 
