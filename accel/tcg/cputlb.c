@@ -336,13 +336,19 @@ static bool tlb_cpu_has_dirty(CPUState* cpu, MMUIdxMap idxmap)
  * where all queued work will be finished before execution starts
  * again.
  */
-static void flush_all_helper(CPUState* src, run_on_cpu_func fn, run_on_cpu_data d, MMUIdxMap idxmap)
+static bool flush_all_helper(CPUState* src, run_on_cpu_func fn, run_on_cpu_data d, MMUIdxMap idxmap)
 {
     CPUState* cpu;
+    bool      queued = false;
 
     CPU_FOREACH (cpu) {
-        if (cpu != src && tlb_cpu_has_dirty(cpu, idxmap)) { async_run_on_cpu(cpu, fn, d); }
+        if (cpu != src && tlb_cpu_has_dirty(cpu, idxmap)) {
+            async_run_on_cpu(cpu, fn, d);
+            queued = true;
+        }
     }
+
+    return queued;
 }
 
 static void tlb_flush_by_mmuidx_async_work(CPUState* cpu, run_on_cpu_data data)
@@ -397,11 +403,16 @@ void tlb_flush(CPUState* cpu) { tlb_flush_by_mmuidx(cpu, ALL_MMUIDX_BITS); }
 void tlb_flush_by_mmuidx_all_cpus_synced(CPUState* src_cpu, MMUIdxMap idxmap)
 {
     const run_on_cpu_func fn = tlb_flush_by_mmuidx_async_work;
+    const run_on_cpu_data d  = RUN_ON_CPU_HOST_INT(idxmap);
 
     tlb_debug("mmu_idx: 0x%" PRIx32 "\n", idxmap);
 
-    flush_all_helper(src_cpu, fn, RUN_ON_CPU_HOST_INT(idxmap), idxmap);
-    async_safe_run_on_cpu(src_cpu, fn, RUN_ON_CPU_HOST_INT(idxmap));
+    if (flush_all_helper(src_cpu, fn, d, idxmap) || !qemu_cpu_is_self(src_cpu)) {
+        async_safe_run_on_cpu(src_cpu, fn, d);
+    }
+    else {
+        fn(src_cpu, d);
+    }
 }
 
 void tlb_flush_all_cpus_synced(CPUState* src_cpu) { tlb_flush_by_mmuidx_all_cpus_synced(src_cpu, ALL_MMUIDX_BITS); }
@@ -612,12 +623,19 @@ void tlb_flush_page_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, MMU
      * See tlb_flush_page_by_mmuidx for details.
      */
     if (idxmap < TARGET_PAGE_SIZE) {
-        flush_all_helper(src_cpu, tlb_flush_page_by_mmuidx_async_1, RUN_ON_CPU_TARGET_PTR(addr | idxmap), idxmap);
-        async_safe_run_on_cpu(src_cpu, tlb_flush_page_by_mmuidx_async_1, RUN_ON_CPU_TARGET_PTR(addr | idxmap));
+        const run_on_cpu_data d = RUN_ON_CPU_TARGET_PTR(addr | idxmap);
+
+        if (flush_all_helper(src_cpu, tlb_flush_page_by_mmuidx_async_1, d, idxmap) || !qemu_cpu_is_self(src_cpu)) {
+            async_safe_run_on_cpu(src_cpu, tlb_flush_page_by_mmuidx_async_1, d);
+        }
+        else {
+            tlb_flush_page_by_mmuidx_async_1(src_cpu, d);
+        }
     }
     else {
         CPUState*                 dst_cpu;
         TLBFlushPageByMMUIdxData* d;
+        bool                      queued = false;
 
         /* Allocate a separate data block for each destination cpu.  */
         CPU_FOREACH (dst_cpu) {
@@ -626,13 +644,20 @@ void tlb_flush_page_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, MMU
                 d->addr   = addr;
                 d->idxmap = idxmap;
                 async_run_on_cpu(dst_cpu, tlb_flush_page_by_mmuidx_async_2, RUN_ON_CPU_HOST_PTR(d));
+                queued = true;
             }
         }
 
         d         = g_new(TLBFlushPageByMMUIdxData, 1);
         d->addr   = addr;
         d->idxmap = idxmap;
-        async_safe_run_on_cpu(src_cpu, tlb_flush_page_by_mmuidx_async_2, RUN_ON_CPU_HOST_PTR(d));
+
+        if (queued || !qemu_cpu_is_self(src_cpu)) {
+            async_safe_run_on_cpu(src_cpu, tlb_flush_page_by_mmuidx_async_2, RUN_ON_CPU_HOST_PTR(d));
+        }
+        else {
+            tlb_flush_page_by_mmuidx_async_2(src_cpu, RUN_ON_CPU_HOST_PTR(d));
+        }
     }
 }
 
@@ -771,6 +796,7 @@ void tlb_flush_range_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, va
 {
     TLBFlushRangeData d, *p;
     CPUState*         dst_cpu;
+    bool              queued = false;
 
     /* If no page bits are significant, this devolves to tlb_flush. */
     if (bits < TARGET_PAGE_BITS) {
@@ -797,11 +823,18 @@ void tlb_flush_range_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, va
         if (dst_cpu != src_cpu && tlb_cpu_has_dirty(dst_cpu, idxmap)) {
             p = g_memdup(&d, sizeof(d));
             async_run_on_cpu(dst_cpu, tlb_flush_range_by_mmuidx_async_1, RUN_ON_CPU_HOST_PTR(p));
+            queued = true;
         }
     }
 
     p = g_memdup(&d, sizeof(d));
-    async_safe_run_on_cpu(src_cpu, tlb_flush_range_by_mmuidx_async_1, RUN_ON_CPU_HOST_PTR(p));
+
+    if (queued || !qemu_cpu_is_self(src_cpu)) {
+        async_safe_run_on_cpu(src_cpu, tlb_flush_range_by_mmuidx_async_1, RUN_ON_CPU_HOST_PTR(p));
+    }
+    else {
+        tlb_flush_range_by_mmuidx_async_1(src_cpu, RUN_ON_CPU_HOST_PTR(p));
+    }
 }
 
 void tlb_flush_page_bits_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, MMUIdxMap idxmap, unsigned bits)
