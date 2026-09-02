@@ -183,6 +183,35 @@ void tlb_flush_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap);
 void tlb_flush_by_mmuidx_all_cpus_synced(CPUState* cpu, MMUIdxMap idxmap);
 
 /**
+ * TLBFlushPage: one page-granule invalidation within a batch.
+ * @addr: virtual address of the page
+ * @idxmap: bitmap of MMU indexes this entry applies to
+ * @bits: number of significant bits of @addr, as for
+ *        tlb_flush_page_bits_by_mmuidx
+ */
+typedef struct TLBFlushPage
+{
+    vaddr     addr;
+    MMUIdxMap idxmap;
+    unsigned  bits;
+} TLBFlushPage;
+
+/**
+ * tlb_flush_pages_by_mmuidx_all_cpus_synced:
+ * @src_cpu: CPU issuing the invalidations
+ * @pages: the pages to invalidate
+ * @n: number of entries in @pages
+ * @idxmap: union of the idxmaps of every entry in @pages
+ *
+ * Apply a batch of page invalidations to every CPU with a single round of
+ * queued work, rather than one round per page. Equivalent to calling
+ * tlb_flush_page_bits_by_mmuidx_all_cpus_synced for each entry in turn, except
+ * that the entries are not ordered with respect to one another.
+ */
+void tlb_flush_pages_by_mmuidx_all_cpus_synced(CPUState* src_cpu, const TLBFlushPage* pages, unsigned n,
+                                               MMUIdxMap idxmap);
+
+/**
  * tlb_flush_asid_tagged_by_mmuidx:
  * @cpu: CPU whose TLB should be flushed
  * @idxmap: bitmap of MMU indexes to flush
@@ -233,6 +262,9 @@ static inline void tlb_flush_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap) { }
 static inline void tlb_flush_page_by_mmuidx_all_cpus_synced(CPUState* cpu, vaddr addr, MMUIdxMap idxmap) { }
 static inline void tlb_flush_by_mmuidx_all_cpus_synced(CPUState* cpu, MMUIdxMap idxmap) { }
 static inline void tlb_flush_asid_tagged_by_mmuidx(CPUState* cpu, MMUIdxMap idxmap) { }
+static inline void tlb_flush_pages_by_mmuidx_all_cpus_synced(CPUState* cpu, const TLBFlushPage* pages, unsigned n,
+                                                             MMUIdxMap idxmap)
+{ }
 static inline void tlb_flush_page_bits_by_mmuidx(CPUState* cpu, vaddr addr, MMUIdxMap idxmap, unsigned bits) { }
 static inline void tlb_flush_page_bits_by_mmuidx_all_cpus_synced(CPUState* cpu, vaddr addr, MMUIdxMap idxmap,
                                                                  unsigned bits)

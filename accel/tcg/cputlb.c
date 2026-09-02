@@ -840,6 +840,66 @@ void tlb_flush_range_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, va
 void tlb_flush_page_bits_by_mmuidx_all_cpus_synced(CPUState* src_cpu, vaddr addr, MMUIdxMap idxmap, unsigned bits)
 { tlb_flush_range_by_mmuidx_all_cpus_synced(src_cpu, addr, TARGET_PAGE_SIZE, idxmap, bits); }
 
+typedef struct TLBFlushPagesData
+{
+    unsigned     n;
+    TLBFlushPage pages[];
+} TLBFlushPagesData;
+
+static void tlb_flush_pages_by_mmuidx_async_0(CPUState* cpu, run_on_cpu_data data)
+{
+    TLBFlushPagesData* d = data.host_ptr;
+    unsigned           i;
+
+    for (i = 0; i < d->n; i++) {
+        const TLBFlushRangeData r = {
+            .addr   = d->pages[i].addr,
+            .len    = TARGET_PAGE_SIZE,
+            .idxmap = d->pages[i].idxmap,
+            .bits   = d->pages[i].bits,
+        };
+
+        tlb_flush_range_by_mmuidx_async_0(cpu, r);
+    }
+
+    g_free(d);
+}
+
+static TLBFlushPagesData* tlb_flush_pages_dup(const TLBFlushPage* pages, unsigned n)
+{
+    TLBFlushPagesData* d = g_malloc(sizeof(TLBFlushPagesData) + n * sizeof(TLBFlushPage));
+
+    d->n = n;
+    memcpy(d->pages, pages, n * sizeof(TLBFlushPage));
+
+    return d;
+}
+
+void tlb_flush_pages_by_mmuidx_all_cpus_synced(CPUState* src_cpu, const TLBFlushPage* pages, unsigned n,
+                                               MMUIdxMap idxmap)
+{
+    CPUState* dst_cpu;
+    bool      queued = false;
+
+    if (n == 0) { return; }
+
+    CPU_FOREACH (dst_cpu) {
+        if (dst_cpu != src_cpu && tlb_cpu_has_dirty(dst_cpu, idxmap)) {
+            async_run_on_cpu(dst_cpu, tlb_flush_pages_by_mmuidx_async_0,
+                             RUN_ON_CPU_HOST_PTR(tlb_flush_pages_dup(pages, n)));
+            queued = true;
+        }
+    }
+
+    if (queued || !qemu_cpu_is_self(src_cpu)) {
+        async_safe_run_on_cpu(src_cpu, tlb_flush_pages_by_mmuidx_async_0,
+                              RUN_ON_CPU_HOST_PTR(tlb_flush_pages_dup(pages, n)));
+    }
+    else {
+        tlb_flush_pages_by_mmuidx_async_0(src_cpu, RUN_ON_CPU_HOST_PTR(tlb_flush_pages_dup(pages, n)));
+    }
+}
+
 /* update the TLBs so that writes to code in the virtual page 'addr'
    can be detected */
 void tlb_protect_code(ram_addr_t ram_addr)
