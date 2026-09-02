@@ -308,8 +308,11 @@ typedef struct CPUTLBCommon
     QemuSpin lock;
     /*
      * Within dirty, for each bit N, modifications have been made to
-     * mmu_idx N since the last time that mmu_idx was flushed.
-     * Protected by tlb_c.lock.
+     * mmu_idx N since the last time that mmu_idx was flushed. Set before the
+     * page table walk that fills an entry, cleared when that mmu_idx is
+     * flushed. Only the owning cpu writes it; other cpus read it to decide
+     * whether a broadcast flush has anything to do here, so all accesses go
+     * through qatomic_*.
      */
     MMUIdxMap dirty;
     /*

@@ -286,7 +286,7 @@ void tlb_init(CPUState* cpu)
     qemu_spin_init(&cpu->neg.tlb.c.lock);
 
     /* All tlbs are initialized flushed. */
-    cpu->neg.tlb.c.dirty = 0;
+    qatomic_set(&cpu->neg.tlb.c.dirty, 0);
 
     for (i = 0; i < NB_MMU_MODES; i++) { tlb_mmu_init(&cpu->neg.tlb.d[i], cpu_tlb_fast(cpu, i), now); }
 }
@@ -305,8 +305,29 @@ void tlb_destroy(CPUState* cpu)
     }
 }
 
+/*
+ * Publish the dirty bit before the page table walk that fills the entry, so a
+ * remote cpu broadcasting a TLBI cannot observe this mmu index as clean while
+ * the walk is still able to read pre-invalidation page tables. qatomic_or is
+ * seq_cst, which orders the store ahead of the walk's loads; the matching fence
+ * on the reader side lives in tlb_cpu_has_dirty. Only the owning cpu writes the
+ * field, so the fast path is a relaxed load of its own last store.
+ */
+static void tlb_mark_dirty(CPUState* cpu, int mmu_idx)
+{
+    const MMUIdxMap bit = (MMUIdxMap)1 << mmu_idx;
+
+    if ((qatomic_read(&cpu->neg.tlb.c.dirty) & bit) != 0) { return; }
+
+    qatomic_or(&cpu->neg.tlb.c.dirty, bit);
+}
+
 static bool tlb_cpu_has_dirty(CPUState* cpu, MMUIdxMap idxmap)
-{ return (qatomic_read(&cpu->neg.tlb.c.dirty) & idxmap) != 0; }
+{
+    smp_mb();
+
+    return (qatomic_read(&cpu->neg.tlb.c.dirty) & idxmap) != 0;
+}
 
 /* flush_all_helper: run fn across all cpus
  *
@@ -336,10 +357,10 @@ static void tlb_flush_by_mmuidx_async_work(CPUState* cpu, run_on_cpu_data data)
 
     qemu_spin_lock(&cpu->neg.tlb.c.lock);
 
-    all_dirty             = cpu->neg.tlb.c.dirty;
-    to_clean              = asked & all_dirty;
-    all_dirty            &= ~to_clean;
-    cpu->neg.tlb.c.dirty  = all_dirty;
+    all_dirty   = cpu->neg.tlb.c.dirty;
+    to_clean    = asked & all_dirty;
+    all_dirty  &= ~to_clean;
+    qatomic_set(&cpu->neg.tlb.c.dirty, all_dirty);
 
     for (work = to_clean; work != 0; work &= work - 1) {
         int mmu_idx = ctz32(work);
@@ -1013,10 +1034,10 @@ void tlb_set_page_full(CPUState* cpu, int mmu_idx, vaddr addr, CPUTLBEntryFull* 
      * a longer critical section, but this is not a concern since the TLB lock
      * is unlikely to be contended.
      */
-    qemu_spin_lock(&tlb->c.lock);
-
     /* Note that the tlb is no longer clean.  */
-    tlb->c.dirty |= 1 << mmu_idx;
+    tlb_mark_dirty(cpu, mmu_idx);
+
+    qemu_spin_lock(&tlb->c.lock);
 
     /* Make sure there's no cached translation for the new page.  */
     tlb_flush_vtlb_page_locked(cpu, mmu_idx, addr_page);
@@ -1113,6 +1134,8 @@ static bool tlb_fill_align(CPUState* cpu, vaddr addr, MMUAccessType type, int mm
 {
     const TCGCPUOps* ops = cpu->cc->tcg_ops;
     CPUTLBEntryFull  full;
+
+    tlb_mark_dirty(cpu, mmu_idx);
 
     if (ops->tlb_fill_align) {
         if (ops->tlb_fill_align(cpu, &full, addr, type, mmu_idx, memop, size, probe, ra)) {
