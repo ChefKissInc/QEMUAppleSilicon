@@ -49,12 +49,6 @@ static inline bool isar_feature_aa32_thumb_div(const ARMISARegisters* id)
 static inline bool isar_feature_aa32_arm_div(const ARMISARegisters* id)
 { return FIELD_EX32_IDREG(id, ID_ISAR0, DIVIDE) > 1; }
 
-static inline bool isar_feature_aa32_lob(const ARMISARegisters* id)
-{
-    /* (M-profile) low-overhead loops and branch future */
-    return FIELD_EX32_IDREG(id, ID_ISAR0, CMPBRANCH) >= 3;
-}
-
 static inline bool isar_feature_aa32_jazelle(const ARMISARegisters* id)
 { return FIELD_EX32_IDREG(id, ID_ISAR1, JAZELLE) != 0; }
 

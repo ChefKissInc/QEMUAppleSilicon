@@ -46,41 +46,21 @@
 #define EXCP_IRQ            5
 #define EXCP_FIQ            6
 #define EXCP_BKPT           7
-#define EXCP_EXCEPTION_EXIT 8  /* Return from v7M exception.  */
-#define EXCP_KERNEL_TRAP    9  /* Jumped to kernel code page.  */
-#define EXCP_HVC            11 /* HyperVisor Call */
-#define EXCP_HYP_TRAP       12
-#define EXCP_SMC            13 /* Secure Monitor Call */
-#define EXCP_VIRQ           14
-#define EXCP_VFIQ           15
-#define EXCP_NOCP           17 /* v7M NOCP UsageFault */
-#define EXCP_INVSTATE       18 /* v7M INVSTATE UsageFault */
-#define EXCP_STKOF          19 /* v8M STKOF UsageFault */
-#define EXCP_LAZYFP         20 /* v7M fault during lazy FP stacking */
-#define EXCP_LSERR          21 /* v8M LSERR SecureFault */
-#define EXCP_UNALIGNED      22 /* v7M UNALIGNED UsageFault */
-#define EXCP_DIVBYZERO      23 /* v7M DIVBYZERO UsageFault */
-#define EXCP_VSERR          24
-#define EXCP_GPC            25 /* v9 Granule Protection Check Fault */
-#define EXCP_NMI            26
-#define EXCP_VINMI          27
-#define EXCP_VFNMI          28
-#define EXCP_MON_TRAP       29 /* AArch32 trap to Monitor mode */
-#define EXCP_GENTER         30
-#define EXCP_GXF_ABORT      31
+#define EXCP_KERNEL_TRAP    8  /* Jumped to kernel code page.  */
+#define EXCP_HVC            9 /* HyperVisor Call */
+#define EXCP_HYP_TRAP       10
+#define EXCP_SMC            11 /* Secure Monitor Call */
+#define EXCP_VIRQ           12
+#define EXCP_VFIQ           13
+#define EXCP_VSERR          14
+#define EXCP_GPC            15 /* v9 Granule Protection Check Fault */
+#define EXCP_NMI            16
+#define EXCP_VINMI          17
+#define EXCP_VFNMI          18
+#define EXCP_MON_TRAP       19 /* AArch32 trap to Monitor mode */
+#define EXCP_GENTER         20
+#define EXCP_GXF_ABORT      21
 /* NB: add new EXCP_ defines to the array in arm_log_exception() too */
-
-#define ARMV7M_EXCP_RESET   1
-#define ARMV7M_EXCP_NMI     2
-#define ARMV7M_EXCP_HARD    3
-#define ARMV7M_EXCP_MEM     4
-#define ARMV7M_EXCP_BUS     5
-#define ARMV7M_EXCP_USAGE   6
-#define ARMV7M_EXCP_SECURE  7
-#define ARMV7M_EXCP_SVC     11
-#define ARMV7M_EXCP_DEBUG   12
-#define ARMV7M_EXCP_PENDSV  14
-#define ARMV7M_EXCP_SYSTICK 15
 
 /* ARM-specific interrupt pending bits.  */
 #define CPU_INTERRUPT_FIQ   CPU_INTERRUPT_TGT_EXT_1
@@ -989,9 +969,6 @@ struct ArchCPU
     MemoryRegion* tag_memory;
     MemoryRegion* secure_tag_memory;
 
-    /* For v8M, pointer to the IDAU interface provided by board/SoC */
-    Object* idau;
-
     /* 'compatible' string for this CPU for Linux device trees */
     const char* dtb_compatible;
 
@@ -1821,12 +1798,6 @@ enum arm_cpu_mode
 #define ARM_VFP_FPEXC   8
 #define ARM_VFP_FPINST  9
 #define ARM_VFP_FPINST2 10
-/* These ones are M-profile only */
-#define ARM_VFP_FPSCR_NZCVQC 2
-#define ARM_VFP_VPR          12
-#define ARM_VFP_P0           13
-#define ARM_VFP_FPCXT_NS     14
-#define ARM_VFP_FPCXT_S      15
 
 /* QEMU-internal value meaning "FPSCR, but we care only about NZCV" */
 #define QEMU_VFP_FPSCR_NZCV 0xffff
@@ -2241,8 +2212,6 @@ REG_FIELD(MVFR1, SIMDLS, 8, 4)   /* A-profile only */
 REG_FIELD(MVFR1, SIMDINT, 12, 4) /* A-profile only */
 REG_FIELD(MVFR1, SIMDSP, 16, 4)  /* A-profile only */
 REG_FIELD(MVFR1, SIMDHP, 20, 4)  /* A-profile only */
-REG_FIELD(MVFR1, MVE, 8, 4)      /* M-profile only */
-REG_FIELD(MVFR1, FP16, 20, 4)    /* M-profile only */
 REG_FIELD(MVFR1, FPHP, 24, 4)
 REG_FIELD(MVFR1, SIMDFMAC, 28, 4)
 

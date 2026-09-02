@@ -318,18 +318,6 @@ static void gen_singlestep_exception(DisasContext* s)
     s->base.is_jmp = DISAS_NORETURN;
 }
 
-void clear_eci_state(DisasContext* s)
-{
-    /*
-     * Clear any ECI/ICI state: used when a load multiple/store
-     * multiple insn executes.
-     */
-    if (s->eci) {
-        store_cpu_field_constant(0, condexec_bits);
-        s->eci = 0;
-    }
-}
-
 static void gen_smul_dual(TCGv_i32 a, TCGv_i32 b)
 {
     TCGv_i32 tmp1 = tcg_temp_new_i32();
@@ -2620,8 +2608,6 @@ static bool trans_HLT(DisasContext* s, arg_HLT* a)
 static bool trans_BKPT(DisasContext* s, arg_BKPT* a)
 {
     if (!ENABLE_ARCH_5) { return false; }
-    /* BKPT is OK with ECI set and leaves it untouched */
-    s->eci_handled = true;
     gen_exception_bkpt_insn(s, syn_aa32_bkpt(a->imm, false));
     return true;
 }
@@ -3827,8 +3813,6 @@ static bool op_stm(DisasContext* s, arg_ldst_block* a)
         return true;
     }
 
-    s->eci_handled = true;
-
     addr    = op_addr_block_pre(s, a, n);
     mem_idx = get_mem_index(s);
 
@@ -3849,7 +3833,6 @@ static bool op_stm(DisasContext* s, arg_ldst_block* a)
     }
 
     op_addr_block_post(s, a, addr, n);
-    clear_eci_state(s);
     return true;
 }
 
@@ -3907,8 +3890,6 @@ static bool do_ldm(DisasContext* s, arg_ldst_block* a)
         return true;
     }
 
-    s->eci_handled = true;
-
     addr        = op_addr_block_pre(s, a, n);
     mem_idx     = get_mem_index(s);
     loaded_base = false;
@@ -3950,7 +3931,6 @@ static bool do_ldm(DisasContext* s, arg_ldst_block* a)
         /* Must exit loop to check un-masked IRQs */
         s->base.is_jmp = DISAS_EXIT;
     }
-    clear_eci_state(s);
     return true;
 }
 
@@ -4427,17 +4407,9 @@ static void arm_tr_init_disas_context(DisasContextBase* dcbase, CPUState* cs)
     condexec    = EX_TBFLAG_A32(tb_flags, CONDEXEC);
     /*
      * the CONDEXEC TB flags are CPSR bits [15:10][26:25]. On A-profile this
-     * is always the IT bits. On M-profile, some of the reserved encodings
-     * of IT are used instead to indicate either ICI or ECI, which
-     * indicate partial progress of a restartable insn that was interrupted
-     * partway through by an exception:
-     *  * if CONDEXEC[3:0] != 0b0000 : CONDEXEC is IT bits
-     *  * if CONDEXEC[3:0] == 0b0000 : CONDEXEC is ICI or ECI bits
-     * In all cases CONDEXEC == 0 means "not in IT block or restartable
-     * insn, behave normally".
+     * is always the IT bits.
      */
-    dc->eci = dc->condexec_mask = dc->condexec_cond = 0;
-    dc->eci_handled                                 = false;
+    dc->condexec_mask = dc->condexec_cond = 0;
     if (condexec & 0xf) {
         dc->condexec_mask = (condexec & 0xf) << 1;
         dc->condexec_cond = condexec >> 4;
@@ -4546,10 +4518,7 @@ static void arm_tr_insn_start(DisasContextBase* dcbase, CPUState* cpu)
     target_ulong pc_arg = dc->base.pc_next;
 
     if (tb_cflags(dcbase->tb) & CF_PCREL) { pc_arg &= ~TARGET_PAGE_MASK; }
-    if (dc->eci) { condexec_bits = dc->eci << 4; }
-    else {
-        condexec_bits = (dc->condexec_cond << 4) | (dc->condexec_mask >> 1);
-    }
+    condexec_bits = (dc->condexec_cond << 4) | (dc->condexec_mask >> 1);
     tcg_gen_insn_start(pc_arg, condexec_bits, 0);
     dc->insn_start_updated = false;
 }
@@ -4697,41 +4666,6 @@ static void thumb_tr_translate_insn(DisasContextBase* dcbase, CPUState* cpu)
         return;
     }
 
-    if (dc->eci) {
-        /*
-         * For M-profile continuable instructions, ECI/ICI handling
-         * falls into these cases:
-         *  - interrupt-continuable instructions
-         *     These are the various load/store multiple insns (both
-         *     integer and fp). The ICI bits indicate the register
-         *     where the load/store can resume. We make the IMPDEF
-         *     choice to always do "instruction restart", ie ignore
-         *     the ICI value and always execute the ldm/stm from the
-         *     start. So all we need to do is zero PSR.ICI if the
-         *     insn executes.
-         *  - MVE instructions subject to beat-wise execution
-         *     Here the ECI bits indicate which beats have already been
-         *     executed, and we must honour this. Each insn of this
-         *     type will handle it correctly. We will update PSR.ECI
-         *     in the helper function for the insn (some ECI values
-         *     mean that the following insn also has been partially
-         *     executed).
-         *  - Special cases which don't advance ECI
-         *     The insns LE, LETP and BKPT leave the ECI/ICI state
-         *     bits untouched.
-         *  - all other insns (the common case)
-         *     Non-zero ECI/ICI means an INVSTATE UsageFault.
-         *     We place a rewind-marker here. Insns in the previous
-         *     three categories will set a flag in the DisasContext.
-         *     If the flag isn't set after we call disas_thumb_insn()
-         *     or disas_thumb2_insn() then we know we have a "some other
-         *     insn" case. We will rewind to the marker (ie throwing away
-         *     all the generated code) and instead emit "take exception".
-         */
-        insn_eci_rewind  = tcg_last_op();
-        insn_eci_pc_save = dc->pc_save;
-    }
-
     if (dc->condexec_mask && !thumb_insn_is_unconditional(dc, insn)) {
         uint32_t cond = dc->condexec_cond;
 
@@ -4752,17 +4686,6 @@ static void thumb_tr_translate_insn(DisasContextBase* dcbase, CPUState* cpu)
         dc->condexec_cond = ((dc->condexec_cond & 0xe) | ((dc->condexec_mask >> 4) & 1));
         dc->condexec_mask = (dc->condexec_mask << 1) & 0x1f;
         if (dc->condexec_mask == 0) { dc->condexec_cond = 0; }
-    }
-
-    if (dc->eci && !dc->eci_handled) {
-        /*
-         * Insn wasn't valid for ECI/ICI at all: undo what we
-         * just generated and instead emit an exception
-         */
-        tcg_remove_ops_after(insn_eci_rewind);
-        dc->pc_save = insn_eci_pc_save;
-        dc->condjmp = 0;
-        gen_exception_insn(dc, 0, EXCP_INVSTATE, syn_uncategorized());
     }
 
     arm_post_translate_insn(dc);

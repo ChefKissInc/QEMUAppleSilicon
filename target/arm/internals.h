@@ -56,7 +56,7 @@ static inline bool excp_is_internal(int excp)
      * exception that will not be passed to the guest.
      */
     return excp == EXCP_INTERRUPT || excp == EXCP_HLT || excp == EXCP_DEBUG || excp == EXCP_HALTED
-           || excp == EXCP_EXCEPTION_EXIT || excp == EXCP_KERNEL_TRAP;
+           || excp == EXCP_KERNEL_TRAP;
 }
 
 /*
@@ -1325,18 +1325,6 @@ static inline bool tcma_check(uint32_t desc, int bit55, int ptr_tag)
     bool tcma  = (desc >> (R_MTEDESC_TCMA_SHIFT + bit55)) & 1;
     return tcma && match;
 }
-
-/* Values for M-profile PSR.ECI for MVE insns */
-enum MVEECIState
-{
-    ECI_NONE = 0, /* No completed beats */
-    ECI_A0   = 1, /* Completed: A0 */
-    ECI_A0A1 = 2, /* Completed: A0, A1 */
-    /* 3 is reserved */
-    ECI_A0A1A2   = 4, /* Completed: A0, A1, A2 */
-    ECI_A0A1A2B0 = 5, /* Completed: A0, A1, A2, B0 */
-    /* All other values reserved */
-};
 
 /* Definitions for the PMU registers */
 #define PMCRN_MASK  0xf800

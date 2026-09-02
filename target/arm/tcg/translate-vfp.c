@@ -785,8 +785,6 @@ static bool trans_VLDM_VSTM_sp(DisasContext* s, arg_VLDM_VSTM_sp* a)
         return false;
     }
 
-    s->eci_handled = true;
-
     if (!vfp_access_check(s)) { return true; }
 
     /* For thumb, use of PC is UNPREDICTABLE.  */
@@ -820,7 +818,6 @@ static bool trans_VLDM_VSTM_sp(DisasContext* s, arg_VLDM_VSTM_sp* a)
         store_reg(s, a->rn, addr);
     }
 
-    clear_eci_state(s);
     return true;
 }
 
@@ -850,8 +847,6 @@ static bool trans_VLDM_VSTM_dp(DisasContext* s, arg_VLDM_VSTM_dp* a)
 
     /* UNDEF accesses to D16-D31 if they don't exist */
     if (!dc_isar_feature(aa32_simd_r32, s) && (a->vd + n) > 16) { return false; }
-
-    s->eci_handled = true;
 
     if (!vfp_access_check(s)) { return true; }
 
@@ -891,7 +886,6 @@ static bool trans_VLDM_VSTM_dp(DisasContext* s, arg_VLDM_VSTM_dp* a)
         store_reg(s, a->rn, addr);
     }
 
-    clear_eci_state(s);
     return true;
 }
 

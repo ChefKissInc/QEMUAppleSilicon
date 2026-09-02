@@ -17,7 +17,6 @@
 #include "cpu.h"
 #include "internals.h"
 #include "cpu-features.h"
-#include "idau.h"
 
 typedef struct S1Translate
 {
