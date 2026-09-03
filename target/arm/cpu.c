@@ -671,13 +671,8 @@ static void arm_cpu_initfn(Object* obj)
 
     qdev_init_gpio_out_named(DEVICE(cpu), &cpu->pmu_interrupt, "pmu-interrupt", 1);
 
-    /* DTB consumers generally don't in fact care what the 'compatible'
-     * string is, so always provide some string and trust that a hypothetical
-     * picky DTB consumer will also provide a helpful error message.
-     */
-    cpu->dtb_compatible = "qemu,unknown";
-    cpu->psci_version   = QEMU_PSCI_VERSION_0_1; /* By default assume PSCI v0.1 */
-    cpu->kvm_target     = QEMU_KVM_ARM_TARGET_NONE;
+    cpu->psci_version = QEMU_PSCI_VERSION_0_1; /* By default assume PSCI v0.1 */
+    cpu->kvm_target   = QEMU_KVM_ARM_TARGET_NONE;
 
     if (tcg_enabled() || hvf_enabled()) {
         /* TCG and HVF implement PSCI 1.1 */
@@ -1458,9 +1453,6 @@ static const Property arm_cpu_properties[] = {
     DEFINE_PROP_UINT64("midr", ARMCPU, midr, 0),
     DEFINE_PROP_UINT64("mp-affinity", ARMCPU, mp_affinity, ARM64_AFFINITY_INVALID),
     DEFINE_PROP_INT32("core-count", ARMCPU, core_count, -1),
-    /* True to default to the backward-compat old CNTFRQ rather than 1Ghz */
-    DEFINE_PROP_BOOL("backcompat-cntfrq", ARMCPU, backcompat_cntfrq, false),
-    DEFINE_PROP_BOOL("backcompat-pauth-default-use-qarma5", ARMCPU, backcompat_pauth_default_use_qarma5, false),
 };
 
 static const gchar* arm_gdb_arch_name(CPUState* cs)

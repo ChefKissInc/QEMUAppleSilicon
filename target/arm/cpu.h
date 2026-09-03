@@ -46,7 +46,7 @@
 #define EXCP_IRQ            5
 #define EXCP_FIQ            6
 #define EXCP_BKPT           7
-#define EXCP_KERNEL_TRAP    8  /* Jumped to kernel code page.  */
+#define EXCP_KERNEL_TRAP    8 /* Jumped to kernel code page.  */
 #define EXCP_HVC            9 /* HyperVisor Call */
 #define EXCP_HYP_TRAP       10
 #define EXCP_SMC            11 /* Secure Monitor Call */
@@ -969,9 +969,6 @@ struct ArchCPU
     MemoryRegion* tag_memory;
     MemoryRegion* secure_tag_memory;
 
-    /* 'compatible' string for this CPU for Linux device trees */
-    const char* dtb_compatible;
-
     /* PSCI version for this CPU
      * Bits[31:16] = Major Version
      * Bits[15:0] = Minor Version
@@ -1027,12 +1024,6 @@ struct ArchCPU
      * and the probe failed (so we need to report the error in realize)
      */
     bool host_cpu_probe_failed;
-
-    /* QOM property to indicate we should use the back-compat CNTFRQ default */
-    bool backcompat_cntfrq;
-
-    /* QOM property to indicate we should use the back-compat QARMA5 default */
-    bool backcompat_pauth_default_use_qarma5;
 
     /* Specify the number of cores in this CPU cluster. Used for the L2CTLR
      * register.

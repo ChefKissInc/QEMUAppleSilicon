@@ -123,7 +123,6 @@ static void arm_max_initfn(Object* obj)
     ARMISARegisters* isar = &cpu->isar;
 
     /* aarch64_a57_initfn, advertising none of the aarch64 features */
-    cpu->dtb_compatible = "arm,cortex-a57";
     set_feature(&cpu->env, ARM_FEATURE_V8);
     set_feature(&cpu->env, ARM_FEATURE_NEON);
     set_feature(&cpu->env, ARM_FEATURE_GENERIC_TIMER);

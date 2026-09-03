@@ -54,7 +54,7 @@ typedef struct ARMHostCPUFeatures
     ARMISARegisters isar;
     uint64_t        features;
     uint32_t        target;
-    const char*     dtb_compatible;
+    bool            valid;
 } ARMHostCPUFeatures;
 
 static ARMHostCPUFeatures arm_host_cpu_features;
@@ -261,9 +261,9 @@ static bool kvm_arm_get_host_cpu_features(ARMHostCPUFeatures* ahcf)
 
     if (!kvm_arm_create_scratch_host_vcpu(fdarray, &init)) { return false; }
 
-    ahcf->target         = init.target;
-    ahcf->dtb_compatible = "arm,armv8";
-    int fd               = fdarray[2];
+    ahcf->target = init.target;
+    ahcf->valid  = true;
+    int fd       = fdarray[2];
 
     err = get_host_cpu_reg(fd, ahcf, ID_AA64PFR0_EL1_IDX);
     if (unlikely(err < 0)) {
@@ -399,7 +399,7 @@ void kvm_arm_set_cpu_features_from_host(ARMCPU* cpu)
 {
     CPUARMState* env = &cpu->env;
 
-    if (!arm_host_cpu_features.dtb_compatible) {
+    if (!arm_host_cpu_features.valid) {
         if (!kvm_enabled() || !kvm_arm_get_host_cpu_features(&arm_host_cpu_features)) {
             /* We can't report this error yet, so flag that we need to
              * in arm_cpu_realizefn().
@@ -410,10 +410,9 @@ void kvm_arm_set_cpu_features_from_host(ARMCPU* cpu)
         }
     }
 
-    cpu->kvm_target     = arm_host_cpu_features.target;
-    cpu->dtb_compatible = arm_host_cpu_features.dtb_compatible;
-    cpu->isar           = arm_host_cpu_features.isar;
-    env->features       = arm_host_cpu_features.features;
+    cpu->kvm_target = arm_host_cpu_features.target;
+    cpu->isar       = arm_host_cpu_features.isar;
+    env->features   = arm_host_cpu_features.features;
 }
 
 static bool kvm_no_adjvtime_get(Object* obj, Error** errp) { return !ARM_CPU(obj)->kvm_adjvtime; }

@@ -485,8 +485,6 @@ void arm_cpu_pauth_finalize(ARMCPU* cpu, Error** errp)
                 return;
             }
 
-            bool use_default = !cpu->prop_pauth_qarma5 && !cpu->prop_pauth_qarma3 && !cpu->prop_pauth_impdef;
-
             if (cpu->prop_pauth_noop) { /* NOOP PAC */
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
@@ -495,7 +493,7 @@ void arm_cpu_pauth_finalize(ARMCPU* cpu, Error** errp)
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, PauthFeat_NOOP);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 1);
             }
-            else if (cpu->prop_pauth_qarma5 || (use_default && cpu->backcompat_pauth_default_use_qarma5)) {
+            else if (cpu->prop_pauth_qarma5) {
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, features);
@@ -511,7 +509,7 @@ void arm_cpu_pauth_finalize(ARMCPU* cpu, Error** errp)
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, API, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, GPI, 0);
             }
-            else if (cpu->prop_pauth_impdef || (use_default && !cpu->backcompat_pauth_default_use_qarma5)) {
+            else if (cpu->prop_pauth_impdef) {
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
                 isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
                 isar1 = REG_FIELD_DP64(isar1, ID_AA64ISAR1, APA, 0);
@@ -590,7 +588,6 @@ static void aarch64_a57_initfn(Object* obj)
     ARMCPU*          cpu  = ARM_CPU(obj);
     ARMISARegisters* isar = &cpu->isar;
 
-    cpu->dtb_compatible = "arm,cortex-a57";
     set_feature(&cpu->env, ARM_FEATURE_V8);
     set_feature(&cpu->env, ARM_FEATURE_NEON);
     set_feature(&cpu->env, ARM_FEATURE_GENERIC_TIMER);

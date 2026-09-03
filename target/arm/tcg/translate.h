@@ -49,8 +49,8 @@ typedef struct DisasContext
     /* The label that will be jumped to when the instruction is skipped.  */
     DisasLabel condlabel;
     /* Thumb-2 conditional execution bits.  */
-    int condexec_mask;
-    int condexec_cond;
+    int       condexec_mask;
+    int       condexec_cond;
     int       sctlr_b;
     MemOp     be_data;
     int       user;

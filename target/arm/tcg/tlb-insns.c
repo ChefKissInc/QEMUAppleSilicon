@@ -131,7 +131,7 @@ static void tlbimva_hyp_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t
 
 static void tlbimva_hyp_is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    uint64_t  pageaddr = value & ~MAKE_64BIT_MASK(0, 12);
+    uint64_t pageaddr = value & ~MAKE_64BIT_MASK(0, 12);
 
     arm_tlbi_batch_add(env, pageaddr, ARMMMUIdxBit_E2 | ARMMMUIdxBit_GE2, target_long_bits());
 }
@@ -146,7 +146,7 @@ static void tlbiipas2_hyp_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64
 
 static void tlbiipas2is_hyp_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    uint64_t  pageaddr = (value & MAKE_64BIT_MASK(0, 28)) << 12;
+    uint64_t pageaddr = (value & MAKE_64BIT_MASK(0, 28)) << 12;
 
     arm_tlbi_batch_add(env, pageaddr, ARMMMUIdxBit_Stage2, target_long_bits());
 }
@@ -377,9 +377,9 @@ void HELPER(tlbi_drain)(CPUARMState* env) { arm_tlbi_batch_drain(env); }
 
 static void tlbi_aa64_vae1is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    int       mask     = vae1_tlbmask(env);
-    uint64_t  pageaddr = sextract64(value << 12, 0, 56);
-    int       bits     = vae1_tlbbits(env, pageaddr);
+    int      mask     = vae1_tlbmask(env);
+    uint64_t pageaddr = sextract64(value << 12, 0, 56);
+    int      bits     = vae1_tlbbits(env, pageaddr);
 
     arm_tlbi_batch_add(env, pageaddr, mask, bits);
 }
@@ -405,17 +405,17 @@ static void tlbi_aa64_vae1_write(CPUARMState* env, const ARMCPRegInfo* ri, uint6
 
 static void tlbi_aa64_vae2is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    int       mask     = vae2_tlbmask(env);
-    uint64_t  pageaddr = sextract64(value << 12, 0, 56);
-    int       bits     = vae2_tlbbits(env, pageaddr);
+    int      mask     = vae2_tlbmask(env);
+    uint64_t pageaddr = sextract64(value << 12, 0, 56);
+    int      bits     = vae2_tlbbits(env, pageaddr);
 
     arm_tlbi_batch_add(env, pageaddr, mask, bits);
 }
 
 static void tlbi_aa64_vae3is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    uint64_t  pageaddr = sextract64(value << 12, 0, 56);
-    int       bits     = tlbbits_for_regime(env, ARMMMUIdx_E3, pageaddr);
+    uint64_t pageaddr = sextract64(value << 12, 0, 56);
+    int      bits     = tlbbits_for_regime(env, ARMMMUIdx_E3, pageaddr);
 
     arm_tlbi_batch_add(env, pageaddr, ARMMMUIdxBit_E3 | ARMMMUIdxBit_GE3, bits);
 }
@@ -445,8 +445,8 @@ static void tlbi_aa64_ipas2e1_write(CPUARMState* env, const ARMCPRegInfo* ri, ui
 
 static void tlbi_aa64_ipas2e1is_write(CPUARMState* env, const ARMCPRegInfo* ri, uint64_t value)
 {
-    int       mask     = ipas2e1_tlbmask(env, value);
-    uint64_t  pageaddr = sextract64(value << 12, 0, 56);
+    int      mask     = ipas2e1_tlbmask(env, value);
+    uint64_t pageaddr = sextract64(value << 12, 0, 56);
 
     arm_tlbi_batch_add(env, pageaddr, mask, target_long_bits());
 }
