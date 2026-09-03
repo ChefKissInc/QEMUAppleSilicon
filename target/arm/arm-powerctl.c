@@ -15,6 +15,7 @@
 #include "arm-powerctl.h"
 #include "qemu/log.h"
 #include "qemu/main-loop.h"
+#include "system/hw_accel.h"
 #include "system/tcg.h"
 #include "target/arm/multiprocessing.h"
 
@@ -84,6 +85,7 @@ static void arm_set_cpu_on_async_work(CPUState* target_cpu_state, run_on_cpu_dat
     /* Finally set the power status */
     assert(bql_locked());
     target_cpu->power_state = PSCI_ON;
+    cpu_synchronize_post_reset(target_cpu_state);
 }
 
 int arm_set_cpu_on(uint64_t cpuid, uint64_t entry, uint64_t context_id, uint32_t target_el, bool target_aa64)
@@ -183,6 +185,7 @@ static void arm_set_cpu_on_and_reset_async_work(CPUState* target_cpu_state, run_
     /* Finally set the power status */
     assert(bql_locked());
     target_cpu->power_state = PSCI_ON;
+    cpu_synchronize_post_reset(target_cpu_state);
 }
 
 int arm_set_cpu_on_and_reset(uint64_t cpuid)
@@ -264,6 +267,7 @@ static void arm_reset_cpu_async_work(CPUState* target_cpu_state, run_on_cpu_data
 {
     /* Reset the cpu */
     cpu_reset(target_cpu_state);
+    cpu_synchronize_post_reset(target_cpu_state);
 }
 
 int arm_reset_cpu(uint64_t cpuid)
