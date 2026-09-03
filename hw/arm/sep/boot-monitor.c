@@ -25,6 +25,7 @@
 #include "hw/arm/a13.h"
 #include "hw/arm/sep/private.h"
 #include "system/address-spaces.h"
+#include "system/hw_accel.h"
 #include "system/memory.h"
 #include "system/tcg.h"
 
@@ -184,6 +185,8 @@ static void apple_sep_boot_monitor_jump_work(CPUState* cpu, run_on_cpu_data data
     hwaddr         pwr_dn_save;
 
     assert(bql_locked());
+
+    cpu_synchronize_state(cpu);
 
     pwr_dn_save = acpu->A13_CPREG_VAR_NAME(SYS_ACC_PWR_DN_SAVE);
 

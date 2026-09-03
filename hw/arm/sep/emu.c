@@ -33,6 +33,7 @@
 #include "system/blockdev.h"
 #include "trace.h"
 #include "hw/arm/sep/core.h"
+#include "system/hw_accel.h"
 
 /*
  * Interrupts 0x100...:
@@ -322,6 +323,7 @@ static void apple_sep_cpu_reset_work(CPUState* cpu, run_on_cpu_data data)
     cpu_reset(cpu);
     DPRINTF("apple_sep_cpu_reset_work: before cpu_set_pc: base=0x%" VADDR_PRIX "\n", s->base);
     cpu_set_pc(cpu, s->base);
+    cpu_synchronize_post_reset(cpu);
 }
 
 static void apple_sep_realize(DeviceState* dev, Error** errp)
