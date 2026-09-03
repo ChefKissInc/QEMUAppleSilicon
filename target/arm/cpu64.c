@@ -538,7 +538,7 @@ static const Property arm_cpu_pauth_impdef_property =
 static const Property arm_cpu_pauth_qarma3_property =
     DEFINE_PROP_BOOL("pauth-qarma3", ARMCPU, prop_pauth_qarma3, false);
 static Property arm_cpu_pauth_qarma5_property = DEFINE_PROP_BOOL("pauth-qarma5", ARMCPU, prop_pauth_qarma5, false);
-static Property arm_cpu_pauth_noop_property   = DEFINE_PROP_BOOL("pauth-noop", ARMCPU, prop_pauth_noop, true);
+static Property arm_cpu_pauth_noop_property   = DEFINE_PROP_BOOL("pauth-noop", ARMCPU, prop_pauth_noop, false);
 
 void aarch64_add_pauth_properties(Object* obj)
 {
