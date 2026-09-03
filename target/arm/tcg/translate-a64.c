@@ -8836,62 +8836,49 @@ static bool btype_destination_ok(uint32_t insn, bool bt, int btype)
     return false;
 }
 
-static bool disas_apple_insn(DisasContext* s, uint32_t insn)
+/* C3.1 A64 instruction index by encoding */
+static bool do_wkdm(DisasContext* s, arg_rr* a, bool decompress)
 {
-    TCGv_i64     tcg_rd;
-    unsigned int opcode, rn, rd;
-    opcode = extract32(insn, 10, 6);
-    rn     = extract32(insn, 5, 5);
-    rd     = extract32(insn, 0, 5);
+    TCGv_i64 tcg_rd;
 
     if (s->current_el == 0) { return false; }
 
-    switch (opcode) {
-        case 2:    // WKdmC
-            tcg_rd = cpu_reg_sp(s, rd);
-            gen_helper_wkdmc(tcg_rd, tcg_env, tcg_rd, cpu_reg_sp(s, rn));
-            return true;
-        case 3:    // WKdmD
-            tcg_rd = cpu_reg_sp(s, rd);
-            gen_helper_wkdmd(tcg_rd, tcg_env, tcg_rd, cpu_reg_sp(s, rn));
-            return true;
-        case 5:
-            if (!s->gxf_active) { return false; }
-            switch (rn) {
-                case 1:    // GENTER
-                    if (s->guarded) {
-                        qemu_log_mask(LOG_UNIMP, "%s: used GENTER while still guarded.\n", __func__);
-                        return false;
-                    }
-                    gen_a64_update_pc(s, 0);
-                    gen_ss_advance(s);
-                    gen_exception_insn(s, 4, EXCP_GENTER, syn_aa64_genter(rd));
-                    return true;
-                case 0:    // GEXIT
-                    if (!s->guarded) {
-                        qemu_log_mask(LOG_UNIMP, "%s: used GEXIT while not guarded.\n", __func__);
-                        return false;
-                    }
-                    gen_helper_gexit(tcg_env);
-                    s->base.is_jmp = DISAS_EXIT;
-                    return true;
-                default: break;
-            }
-            break;
-        default: break;
+    tcg_rd = cpu_reg_sp(s, a->rd);
+    if (decompress) {
+        gen_helper_wkdmd(tcg_rd, tcg_env, tcg_rd, cpu_reg_sp(s, a->rn));
+    } else {
+        gen_helper_wkdmc(tcg_rd, tcg_env, tcg_rd, cpu_reg_sp(s, a->rn));
     }
-    return false;
+    return true;
 }
 
-/* C3.1 A64 instruction index by encoding */
-static void disas_a64_legacy(DisasContext* s, uint32_t insn)
+static bool trans_WKDMC(DisasContext* s, arg_rr* a) { return do_wkdm(s, a, false); }
+
+static bool trans_WKDMD(DisasContext* s, arg_rr* a) { return do_wkdm(s, a, true); }
+
+static bool trans_GENTER(DisasContext* s, arg_rr* a)
 {
-    switch (extract32(insn, 25, 4)) {
-        case 0x0:
-            if (!extract32(insn, 31, 1) && !disas_apple_insn(s, insn)) { unallocated_encoding(s); }
-            break;
-        default: unallocated_encoding(s); break;
+    if (s->current_el == 0 || !s->gxf_active) { return false; }
+    if (s->guarded) {
+        qemu_log_mask(LOG_UNIMP, "%s: used GENTER while still guarded.\n", __func__);
+        return false;
     }
+    gen_a64_update_pc(s, 0);
+    gen_ss_advance(s);
+    gen_exception_insn(s, 4, EXCP_GENTER, syn_aa64_genter(a->rd));
+    return true;
+}
+
+static bool trans_GEXIT(DisasContext* s, arg_rr* a)
+{
+    if (s->current_el == 0 || !s->gxf_active) { return false; }
+    if (!s->guarded) {
+        qemu_log_mask(LOG_UNIMP, "%s: used GEXIT while not guarded.\n", __func__);
+        return false;
+    }
+    gen_helper_gexit(tcg_env);
+    s->base.is_jmp = DISAS_EXIT;
+    return true;
 }
 
 static void aarch64_tr_init_disas_context(DisasContextBase* dcbase, CPUState* cpu)
@@ -9083,7 +9070,7 @@ static void aarch64_tr_translate_insn(DisasContextBase* dcbase, CPUState* cpu)
     s->is_nonstreaming = false;
     if (s->sme_trap_nonstreaming) { disas_sme_fa64(s, insn); }
 
-    if (!disas_a64(s, insn) && !disas_sme(s, insn) && !disas_sve(s, insn)) { disas_a64_legacy(s, insn); }
+    if (!disas_a64(s, insn) && !disas_sme(s, insn) && !disas_sve(s, insn)) { unallocated_encoding(s); }
 
     /*
      * After execution of most insns, btype is reset to 0.
