@@ -2,15 +2,12 @@
 
 hxtoh()
 {
-    flag=1
     while read -r str; do
         case $str in
             HXCOMM*)
             ;;
-            SRST*|ERST*) flag=$(($flag^1))
-            ;;
             *)
-            test $flag -eq 1 && printf "%s\n" "$str"
+            printf "%s\n" "$str"
             ;;
         esac
     done

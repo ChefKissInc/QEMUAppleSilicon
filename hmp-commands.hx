@@ -1,9 +1,6 @@
-HXCOMM See docs/devel/docs.rst for the format of this file.
-HXCOMM
 HXCOMM This file defines the contents of an array of HMPCommand structs
 HXCOMM which specify the name, behaviour and help text for HMP commands.
-HXCOMM Text between SRST and ERST is rST format documentation.
-HXCOMM HXCOMM can be used for comments, discarded from both rST and C.
+HXCOMM HXCOMM can be used for comments.
 
 
     {
@@ -15,10 +12,6 @@ HXCOMM HXCOMM can be used for comments, discarded from both rST and C.
         .flags      = "p",
     },
 
-SRST
-``help`` or ``?`` [*cmd*]
-  Show the help for all commands or just for command *cmd*.
-ERST
 
     {
         .name       = "commit",
@@ -28,16 +21,6 @@ ERST
         .cmd        = hmp_commit,
     },
 
-SRST
-``commit``
-  Commit changes to the disk images (if -snapshot is used) or backing files.
-  If the backing file is smaller than the snapshot, then the backing file
-  will be resized to be the same size as the snapshot.  If the snapshot is
-  smaller than the backing file, the backing file will not be truncated.
-  If you want the backing file to match the size of the smaller snapshot,
-  you can safely truncate it yourself once the commit operation successfully
-  completes.
-ERST
 
     {
         .name       = "quit|q",
@@ -48,10 +31,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``quit`` or ``q``
-  Quit the emulator.
-ERST
 
     {
         .name       = "exit_preconfig",
@@ -62,14 +41,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``exit_preconfig``
-  This command makes QEMU exit the preconfig state and proceed with
-  VM initialization using configuration data provided on the command line
-  and via the QMP monitor during the preconfig state. The command is only
-  available during the preconfig state (i.e. when the --preconfig command
-  line option was in use).
-ERST
 
     {
         .name       = "block_resize",
@@ -81,13 +52,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``block_resize``
-  Resize a block image while a guest is running.  Usually requires guest
-  action to see the updated size.  Resize to a lower size is supported,
-  but should be used with extreme caution.  Note that this command only
-  resizes image files, it can not resize block devices like LVM volumes.
-ERST
 
     {
         .name       = "block_stream",
@@ -98,10 +62,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``block_stream``
-  Copy data from a backing file into a block device.
-ERST
 
     {
         .name       = "block_job_cancel",
@@ -114,10 +74,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``block_job_cancel``
-  Stop an active background block operation (streaming, mirroring).
-ERST
 
     {
         .name       = "block_job_complete",
@@ -128,11 +84,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``block_job_complete``
-  Manually trigger completion of an active background block operation.
-  For mirroring, this will switch the device to the destination path.
-ERST
 
     {
         .name       = "block_job_pause",
@@ -143,10 +94,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``block_job_pause``
-  Pause an active block streaming operation.
-ERST
 
     {
         .name       = "block_job_resume",
@@ -157,10 +104,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``block_job_resume``
-  Resume a paused block streaming operation.
-ERST
 
     {
         .name       = "eject",
@@ -170,10 +113,6 @@ ERST
         .cmd        = hmp_eject,
     },
 
-SRST
-``eject [-f]`` *device*
-  Eject a removable medium (use -f to force it).
-ERST
 
     {
         .name       = "drive_del",
@@ -183,15 +122,6 @@ ERST
         .cmd        = hmp_drive_del,
     },
 
-SRST
-``drive_del`` *device*
-  Remove host block device.  The result is that guest generated IO is no longer
-  submitted against the host device underlying the disk.  Once a drive has
-  been deleted, the QEMU Block layer returns -EIO which results in IO
-  errors in the guest for applications that are reading/writing to the device.
-  These errors are always reported to the guest, regardless of the drive's error
-  actions (drive options rerror, werror).
-ERST
 
     {
         .name       = "change",
@@ -201,42 +131,6 @@ ERST
         .cmd        = hmp_change,
     },
 
-SRST
-``change`` *device* *setting*
-  Change the configuration of a device.
-
-  ``change`` *diskdevice* [-f] *filename* [*format* [*read-only-mode*]]
-    Change the medium for a removable disk device to point to *filename*. eg::
-
-      (qemu) change ide1-cd0 /path/to/some.iso
-
-    ``-f``
-      forces the operation even if the guest has locked the tray.
-
-    *format* is optional.
-
-    *read-only-mode* may be used to change the read-only status of the device.
-    It accepts the following values:
-
-    retain
-      Retains the current status; this is the default.
-
-    read-only
-      Makes the device read-only.
-
-    read-write
-      Makes the device writable.
-
-  ``change vnc password`` [*password*]
-
-    Change the password associated with the VNC server. If the new password
-    is not supplied, the monitor will prompt for it to be entered. VNC
-    passwords are only significant up to 8 letters. eg::
-
-      (qemu) change vnc password
-      Password: ********
-
-ERST
 
 #ifdef CONFIG_PIXMAN
     {
@@ -250,10 +144,6 @@ ERST
         .coroutine  = true,
     },
 
-SRST
-``screendump`` *filename*
-  Save screen into PPM image *filename*.
-ERST
 #endif
 
     {
@@ -264,10 +154,6 @@ ERST
         .cmd        = hmp_logfile,
     },
 
-SRST
-``logfile`` *filename*
-  Output logs to *filename*.
-ERST
 
     {
         .name       = "trace-event",
@@ -279,10 +165,6 @@ ERST
         .command_completion = trace_event_completion,
     },
 
-SRST
-``trace-event``
-  changes status of a trace event
-ERST
 
 #if defined(CONFIG_TRACE_SIMPLE)
     {
@@ -293,11 +175,6 @@ ERST
         .cmd        = hmp_trace_file,
     },
 
-SRST
-``trace-file on|off|flush``
-  Open, close, or flush the trace file.  If no argument is given, the
-  status of the trace file is displayed.
-ERST
 #endif
 
     {
@@ -308,10 +185,6 @@ ERST
         .cmd        = hmp_log,
     },
 
-SRST
-``log`` *item1*\ [,...]
-  Activate logging of the specified items.
-ERST
 
     {
         .name       = "one-insn-per-tb",
@@ -321,15 +194,6 @@ ERST
         .cmd        = hmp_one_insn_per_tb,
     },
 
-SRST
-``one-insn-per-tb [off]``
-  Run the emulation with one guest instruction per translation block.
-  This slows down emulation a lot, but can be useful in some situations,
-  such as when trying to analyse the logs produced by the ``-d`` option.
-  This only has an effect when using TCG, not with KVM or other accelerators.
-
-  If called with option off, the emulation returns to normal mode.
-ERST
 
     {
         .name       = "stop|s",
@@ -339,10 +203,6 @@ ERST
         .cmd        = hmp_stop,
     },
 
-SRST
-``stop`` or ``s``
-  Stop emulation.
-ERST
 
     {
         .name       = "cont|c",
@@ -352,10 +212,6 @@ ERST
         .cmd        = hmp_cont,
     },
 
-SRST
-``cont`` or ``c``
-  Resume emulation.
-ERST
 
     {
         .name       = "system_wakeup",
@@ -365,10 +221,6 @@ ERST
         .cmd        = hmp_system_wakeup,
     },
 
-SRST
-``system_wakeup``
-  Wakeup guest from suspend.
-ERST
 
     {
         .name       = "gdbserver",
@@ -378,10 +230,6 @@ ERST
         .cmd        = hmp_gdbserver,
     },
 
-SRST
-``gdbserver`` [*port*]
-  Start gdbserver session (default *port*\=1234)
-ERST
 
     {
         .name       = "x",
@@ -391,10 +239,6 @@ ERST
         .cmd        = hmp_memory_dump,
     },
 
-SRST
-``x/``\ *fmt* *addr*
-  Virtual memory dump starting at *addr*.
-ERST
 
     {
         .name       = "xp",
@@ -404,54 +248,6 @@ ERST
         .cmd        = hmp_physical_memory_dump,
     },
 
-SRST
-``xp /``\ *fmt* *addr*
-  Physical memory dump starting at *addr*.
-
-  *fmt* is a format which tells the command how to format the
-  data. Its syntax is: ``/{count}{format}{size}``
-
-  *count*
-    is the number of items to be dumped.
-  *format*
-    can be x (hex), d (signed decimal), u (unsigned decimal), o (octal),
-    c (char) or i (asm instruction).
-  *size*
-    can be b (8 bits), h (16 bits), w (32 bits) or g (64 bits). On x86,
-    ``h`` or ``w`` can be specified with the ``i`` format to
-    respectively select 16 or 32 bit code instruction size.
-
-  Examples:
-
-  Dump 10 instructions at the current instruction pointer::
-
-    (qemu) x/10i $eip
-    0x90107063:  ret
-    0x90107064:  sti
-    0x90107065:  lea    0x0(%esi,1),%esi
-    0x90107069:  lea    0x0(%edi,1),%edi
-    0x90107070:  ret
-    0x90107071:  jmp    0x90107080
-    0x90107073:  nop
-    0x90107074:  nop
-    0x90107075:  nop
-    0x90107076:  nop
-
-  Dump 80 16 bit values at the start of the video memory::
-
-    (qemu) xp/80hx 0xb8000
-    0x000b8000: 0x0b50 0x0b6c 0x0b65 0x0b78 0x0b38 0x0b36 0x0b2f 0x0b42
-    0x000b8010: 0x0b6f 0x0b63 0x0b68 0x0b73 0x0b20 0x0b56 0x0b47 0x0b41
-    0x000b8020: 0x0b42 0x0b69 0x0b6f 0x0b73 0x0b20 0x0b63 0x0b75 0x0b72
-    0x000b8030: 0x0b72 0x0b65 0x0b6e 0x0b74 0x0b2d 0x0b63 0x0b76 0x0b73
-    0x000b8040: 0x0b20 0x0b30 0x0b35 0x0b20 0x0b4e 0x0b6f 0x0b76 0x0b20
-    0x000b8050: 0x0b32 0x0b30 0x0b30 0x0b33 0x0720 0x0720 0x0720 0x0720
-    0x000b8060: 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720
-    0x000b8070: 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720
-    0x000b8080: 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720
-    0x000b8090: 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720 0x0720
-
-ERST
 
     {
         .name       = "gpa2hva",
@@ -461,11 +257,6 @@ ERST
         .cmd        = hmp_gpa2hva,
     },
 
-SRST
-``gpa2hva`` *addr*
-  Print the host virtual address at which the guest's physical address *addr*
-  is mapped.
-ERST
 
 #ifdef CONFIG_LINUX
     {
@@ -477,11 +268,6 @@ ERST
     },
 #endif
 
-SRST
-``gpa2hpa`` *addr*
-  Print the host physical address at which the guest's physical address *addr*
-  is mapped.
-ERST
 
     {
         .name       = "gva2gpa",
@@ -491,11 +277,6 @@ ERST
         .cmd        = hmp_gva2gpa,
     },
 
-SRST
-``gva2gpa`` *addr*
-  Print the guest physical address at which the guest's virtual address *addr*
-  is mapped based on the mapping for the current CPU.
-ERST
 
     {
         .name       = "print|p",
@@ -505,11 +286,6 @@ ERST
         .cmd        = hmp_print,
     },
 
-SRST
-``print`` or ``p/``\ *fmt* *expr*
-  Print expression value. Only the *format* part of *fmt* is
-  used.
-ERST
 
     {
         .name       = "i",
@@ -519,10 +295,6 @@ ERST
         .cmd        = hmp_ioport_read,
     },
 
-SRST
-``i/``\ *fmt* *addr* [.\ *index*\ ]
-  Read I/O port.
-ERST
 
     {
         .name       = "o",
@@ -532,10 +304,6 @@ ERST
         .cmd        = hmp_ioport_write,
     },
 
-SRST
-``o/``\ *fmt* *addr* *val*
-  Write to I/O port.
-ERST
 
     {
         .name       = "sendkey",
@@ -546,17 +314,6 @@ ERST
         .command_completion = sendkey_completion,
     },
 
-SRST
-``sendkey`` *keys*
-  Send *keys* to the guest. *keys* could be the name of the
-  key or the raw value in hexadecimal format. Use ``-`` to press
-  several keys simultaneously. Example::
-
-    sendkey ctrl-alt-f1
-
-  This command is useful to send keys that your graphical user interface
-  intercepts at low level, such as ``ctrl-alt-f1`` in X Window.
-ERST
     {
         .name       = "sync-profile",
         .args_type  = "op:s?",
@@ -566,11 +323,6 @@ ERST
         .cmd        = hmp_sync_profile,
     },
 
-SRST
-``sync-profile [on|off|reset]``
-  Enable, disable or reset synchronization profiling. With no arguments, prints
-  whether profiling is on or off.
-ERST
 
     {
         .name       = "system_reset",
@@ -580,10 +332,6 @@ ERST
         .cmd        = hmp_system_reset,
     },
 
-SRST
-``system_reset``
-  Reset the system.
-ERST
 
     {
         .name       = "system_powerdown",
@@ -593,10 +341,6 @@ ERST
         .cmd        = hmp_system_powerdown,
     },
 
-SRST
-``system_powerdown``
-  Power down the system (if supported).
-ERST
 
     {
         .name       = "sum",
@@ -606,10 +350,6 @@ ERST
         .cmd        = hmp_sum,
     },
 
-SRST
-``sum`` *addr* *size*
-  Compute the checksum of a memory region.
-ERST
 
     {
         .name       = "device_add",
@@ -620,10 +360,6 @@ ERST
         .command_completion = device_add_completion,
     },
 
-SRST
-``device_add`` *config*
-  Add device.
-ERST
 
     {
         .name       = "device_del",
@@ -634,11 +370,6 @@ ERST
         .command_completion = device_del_completion,
     },
 
-SRST
-``device_del`` *id*
-  Remove device *id*. *id* may be a short ID
-  or a QOM object path.
-ERST
 
     {
         .name       = "cpu",
@@ -648,10 +379,6 @@ ERST
         .cmd        = hmp_cpu,
     },
 
-SRST
-``cpu`` *index*
-  Set the default CPU.
-ERST
 
     {
         .name       = "mouse_move",
@@ -661,11 +388,6 @@ ERST
         .cmd        = hmp_mouse_move,
     },
 
-SRST
-``mouse_move`` *dx* *dy* [*dz*]
-  Move the active mouse to the specified coordinates *dx* *dy*
-  with optional scroll axis *dz*.
-ERST
 
     {
         .name       = "mouse_button",
@@ -675,10 +397,6 @@ ERST
         .cmd        = hmp_mouse_button,
     },
 
-SRST
-``mouse_button`` *val*
-  Change the active mouse button state *val* (1=L, 2=M, 4=R).
-ERST
 
     {
         .name       = "mouse_set",
@@ -688,14 +406,6 @@ ERST
         .cmd        = hmp_mouse_set,
     },
 
-SRST
-``mouse_set`` *index*
-  Set which mouse device receives events at given *index*, index
-  can be obtained with::
-
-    info mice
-
-ERST
 
     {
         .name       = "wavcapture",
@@ -704,18 +414,6 @@ ERST
         .help       = "capture audio to a wave file (default frequency=48000 bits=16 channels=2)",
         .cmd        = hmp_wavcapture,
     },
-SRST
-``wavcapture`` *filename* *audiodev* [*frequency* [*bits* [*channels*]]]
-  Capture audio into *filename* from *audiodev*, using sample rate
-  *frequency* bits per sample *bits* and number of channels
-  *channels*.
-
-  Defaults:
-
-  - Sample rate = 48000 Hz - DVD quality
-  - Bits = 16
-  - Number of channels = 2 - Stereo
-ERST
 
     {
         .name       = "stopcapture",
@@ -724,13 +422,6 @@ ERST
         .help       = "stop capture",
         .cmd        = hmp_stopcapture,
     },
-SRST
-``stopcapture`` *index*
-  Stop capture with a given *index*, index can be obtained with::
-
-    info capture
-
-ERST
 
     {
         .name       = "memsave",
@@ -740,10 +431,6 @@ ERST
         .cmd        = hmp_memsave,
     },
 
-SRST
-``memsave`` *addr* *size* *file*
-  save to disk virtual memory dump starting at *addr* of size *size*.
-ERST
 
     {
         .name       = "pmemsave",
@@ -753,10 +440,6 @@ ERST
         .cmd        = hmp_pmemsave,
     },
 
-SRST
-``pmemsave`` *addr* *size* *file*
-  save to disk physical memory dump starting at *addr* of size *size*.
-ERST
 
     {
         .name       = "nmi",
@@ -765,10 +448,6 @@ ERST
         .help       = "inject an NMI",
         .cmd        = hmp_nmi,
     },
-SRST
-``nmi`` *cpu*
-  Inject an NMI on the default CPU (x86).
-ERST
 
     {
         .name       = "ringbuf_write",
@@ -779,11 +458,6 @@ ERST
         .command_completion = ringbuf_write_completion,
     },
 
-SRST
-``ringbuf_write`` *device* *data*
-  Write *data* to ring buffer character device *device*.
-  *data* must be a UTF-8 string.
-ERST
 
     {
         .name       = "ringbuf_read",
@@ -794,16 +468,6 @@ ERST
         .command_completion = ringbuf_write_completion,
     },
 
-SRST
-``ringbuf_read`` *device*
-  Read and print up to *size* bytes from ring buffer character
-  device *device*.
-  Certain non-printable characters are printed ``\uXXXX``, where ``XXXX`` is the
-  character code in hexadecimal.  Character ``\`` is printed ``\\``.
-  Bug: can screw up when the buffer contains invalid UTF-8 sequences,
-  NUL characters, after the ring buffer lost data, and when reading
-  stops because the size limit is reached.
-ERST
 
     {
         .name       = "snapshot_blkdev",
@@ -820,10 +484,6 @@ ERST
         .cmd        = hmp_snapshot_blkdev,
     },
 
-SRST
-``snapshot_blkdev``
-  Snapshot device, using snapshot file as target if provided
-ERST
 
     {
         .name       = "snapshot_blkdev_internal",
@@ -835,10 +495,6 @@ ERST
         .cmd        = hmp_snapshot_blkdev_internal,
     },
 
-SRST
-``snapshot_blkdev_internal``
-  Take an internal snapshot on device if it support
-ERST
 
     {
         .name       = "snapshot_delete_blkdev_internal",
@@ -852,10 +508,6 @@ ERST
         .cmd        = hmp_snapshot_delete_blkdev_internal,
     },
 
-SRST
-``snapshot_delete_blkdev_internal``
-  Delete an internal snapshot on device if it support
-ERST
 
     {
         .name       = "drive_mirror",
@@ -871,11 +523,6 @@ ERST
                       "so that the result does not need a backing file.\n\t\t\t",
         .cmd        = hmp_drive_mirror,
     },
-SRST
-``drive_mirror``
-  Start mirroring a block device's writes to a new destination,
-  using the specified target.
-ERST
 
     {
         .name       = "drive_backup",
@@ -893,10 +540,6 @@ ERST
                       "(if the target format supports it).\n\t\t\t",
         .cmd        = hmp_drive_backup,
     },
-SRST
-``drive_backup``
-  Start a point-in-time copy of a block device to a specified target.
-ERST
 
     {
         .name       = "drive_add",
@@ -910,10 +553,6 @@ ERST
         .cmd        = hmp_drive_add,
     },
 
-SRST
-``drive_add``
-  Add drive to PCI storage controller.
-ERST
 
     {
         .name       = "pcie_aer_inject_error",
@@ -933,10 +572,6 @@ ERST
         .cmd        = hmp_pcie_aer_inject_error,
     },
 
-SRST
-``pcie_aer_inject_error``
-  Inject PCIe AER error
-ERST
 
     {
         .name       = "netdev_add",
@@ -952,10 +587,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``netdev_add``
-  Add host network device.
-ERST
 
     {
         .name       = "netdev_del",
@@ -967,10 +598,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``netdev_del``
-  Remove host network device.
-ERST
 
     {
         .name       = "object_add",
@@ -982,10 +609,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``object_add``
-  Create QOM object.
-ERST
 
     {
         .name       = "object_del",
@@ -997,10 +620,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``object_del``
-  Destroy QOM object.
-ERST
 
 #ifdef CONFIG_SLIRP
     {
@@ -1011,10 +630,6 @@ ERST
         .cmd        = hmp_hostfwd_add,
     },
 #endif
-SRST
-``hostfwd_add``
-  Redirect TCP or UDP connections from host to guest (requires -net user).
-ERST
 
 #ifdef CONFIG_SLIRP
     {
@@ -1026,15 +641,7 @@ ERST
     },
 
 #endif
-SRST
-``hostfwd_remove``
-  Remove host-to-guest TCP or UDP redirection.
-ERST
 
-SRST
-``set_link`` *name* ``[on|off]``
-  Switch link *name* on (i.e. up) or off (i.e. down).
-ERST
 
     {
         .name       = "watchdog_action",
@@ -1045,10 +652,6 @@ ERST
         .command_completion = watchdog_action_completion,
     },
 
-SRST
-``watchdog_action``
-  Change watchdog action.
-ERST
 
 #ifdef CONFIG_POSIX
     {
@@ -1060,12 +663,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``getfd`` *fdname*
-  If a file descriptor is passed alongside this command using the SCM_RIGHTS
-  mechanism on unix sockets, it is stored using the name *fdname* for
-  later use by other monitor commands.
-ERST
 #endif
 
     {
@@ -1077,12 +674,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``closefd`` *fdname*
-  Close the file descriptor previously assigned to *fdname* using the
-  ``getfd`` command. This is only needed if the file descriptor was never
-  used by another monitor command.
-ERST
 
     {
         .name       = "set_password",
@@ -1092,15 +683,6 @@ ERST
         .cmd        = hmp_set_password,
     },
 
-SRST
-``set_password [ vnc ] password [ -d display ] [ action-if-connected ]``
-  Change vnc password.  *display* can be used with 'vnc' to specify
-  which display to set the password on.  *action-if-connected* specifies
-  what should happen in case a connection is established: *fail* makes
-  the password change fail.  *disconnect* changes the password and
-  disconnects the client.  *keep* changes the password and keeps the
-  connection up.  *keep* is the default.
-ERST
 
     {
         .name       = "expire_password",
@@ -1110,23 +692,6 @@ ERST
         .cmd        = hmp_expire_password,
     },
 
-SRST
-``expire_password [ vnc ] expire-time [ -d display ]``
-  Specify when a password for vnc becomes invalid.
-  *display* behaves the same as in ``set_password``.
-  *expire-time* accepts:
-
-  ``now``
-    Invalidate password instantly.
-  ``never``
-    Password stays valid forever.
-  ``+``\ *nsec*
-    Password stays valid for *nsec* seconds starting now.
-  *nsec*
-    Password is invalidated at the given time.  *nsec* are the seconds
-    passed since 1970, i.e. unix epoch.
-
-ERST
 
     {
         .name       = "chardev-add",
@@ -1137,10 +702,6 @@ ERST
         .command_completion = chardev_add_completion,
     },
 
-SRST
-``chardev-add`` *args*
-  chardev-add accepts the same parameters as the -chardev command line switch.
-ERST
 
     {
         .name       = "chardev-change",
@@ -1150,11 +711,6 @@ ERST
         .cmd        = hmp_chardev_change,
     },
 
-SRST
-``chardev-change`` *args*
-  chardev-change accepts existing chardev *id* and then the same arguments
-  as the -chardev command line switch (except for "id").
-ERST
 
     {
         .name       = "chardev-remove",
@@ -1165,10 +721,6 @@ ERST
         .command_completion = chardev_remove_completion,
     },
 
-SRST
-``chardev-remove`` *id*
-  Removes the chardev *id*.
-ERST
 
     {
         .name       = "chardev-send-break",
@@ -1179,10 +731,6 @@ ERST
         .command_completion = chardev_remove_completion,
     },
 
-SRST
-``chardev-send-break`` *id*
-  Send a break on the chardev *id*.
-ERST
 
     {
         .name       = "qom-list",
@@ -1193,10 +741,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``qom-list`` [*path*]
-  Print QOM properties of object at location *path*
-ERST
 
     {
         .name       = "qom-get",
@@ -1207,10 +751,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``qom-get`` *path* *property*
-  Print QOM property *property* of object at location *path*
-ERST
 
     {
         .name       = "qom-set",
@@ -1222,10 +762,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-``qom-set`` *path* *property* *value*
-  Set QOM property *property* of object at location *path* to value *value*
-ERST
 
     {
         .name       = "info",

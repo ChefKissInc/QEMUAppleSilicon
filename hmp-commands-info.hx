@@ -1,21 +1,7 @@
-HXCOMM See docs/devel/docs.rst for the format of this file.
-HXCOMM
 HXCOMM This file defines the contents of an array of HMPCommand structs
 HXCOMM which specify the name, behaviour and help text for HMP commands.
-HXCOMM Text between SRST and ERST is rST format documentation.
-HXCOMM HXCOMM can be used for comments, discarded from both rST and C.
-HXCOMM
-HXCOMM In this file, generally SRST fragments should have two extra
-HXCOMM spaces of indent, so that the documentation list item for "info foo"
-HXCOMM appears inside the documentation list item for the top level
-HXCOMM "info" documentation entry. The exception is the first SRST
-HXCOMM fragment that defines that top level entry.
+HXCOMM HXCOMM can be used for comments.
 
-SRST
-``info`` *subcommand*
-  Show various information about the system state.
-
-ERST
 
     {
         .name       = "version",
@@ -26,10 +12,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info version``
-    Show the version of QEMU.
-ERST
 
     {
         .name       = "network",
@@ -39,10 +21,6 @@ ERST
         .cmd        = hmp_info_network,
     },
 
-SRST
-  ``info network``
-    Show the network state.
-ERST
 
     {
         .name       = "chardev",
@@ -53,10 +31,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info chardev``
-    Show the character devices.
-ERST
 
     {
         .name       = "block",
@@ -67,10 +41,6 @@ ERST
         .cmd        = hmp_info_block,
     },
 
-SRST
-  ``info block``
-    Show info of one block device or all block devices.
-ERST
 
     {
         .name       = "blockstats",
@@ -80,10 +50,6 @@ ERST
         .cmd        = hmp_info_blockstats,
     },
 
-SRST
-  ``info blockstats``
-    Show block device statistics.
-ERST
 
     {
         .name       = "block-jobs",
@@ -93,10 +59,6 @@ ERST
         .cmd        = hmp_info_block_jobs,
     },
 
-SRST
-  ``info block-jobs``
-    Show progress of ongoing block device operations.
-ERST
 
     {
         .name       = "registers",
@@ -108,10 +70,6 @@ ERST
         .cmd        = hmp_info_registers,
     },
 
-SRST
-  ``info registers``
-    Show the cpu registers.
-ERST
 
     {
         .name       = "cpus",
@@ -121,10 +79,6 @@ ERST
         .cmd        = hmp_info_cpus,
     },
 
-SRST
-  ``info cpus``
-    Show infos for each CPU.
-ERST
 
     {
         .name       = "history",
@@ -135,10 +89,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info history``
-    Show the command line history.
-ERST
 
     {
         .name       = "irq",
@@ -148,10 +98,6 @@ ERST
         .cmd_info_hrt = qmp_x_query_irq,
     },
 
-SRST
-  ``info irq``
-    Show the interrupts statistics (if available).
-ERST
 
     {
         .name       = "pic",
@@ -161,10 +107,6 @@ ERST
         .cmd_info_hrt = qmp_x_query_interrupt_controllers,
     },
 
-SRST
-  ``info pic``
-    Show PIC state.
-ERST
 
     {
         .name       = "pci",
@@ -174,10 +116,6 @@ ERST
         .cmd        = hmp_info_pci,
     },
 
-SRST
-  ``info pci``
-    Show PCI information.
-ERST
 
     {
         .name       = "mtree",
@@ -190,10 +128,6 @@ ERST
         .cmd        = hmp_info_mtree,
     },
 
-SRST
-  ``info mtree``
-    Show memory tree.
-ERST
 
 #if defined(CONFIG_TCG)
     {
@@ -204,10 +138,6 @@ ERST
     },
 #endif
 
-SRST
-  ``info jit``
-    Show dynamic compiler info.
-ERST
 
     {
         .name       = "sync-profile",
@@ -227,25 +157,7 @@ ERST
         .help       = "show accelerator info",
     },
 
-SRST
-  ``info accel``
-    Show accelerator info.
-ERST
 
-SRST
-  ``info sync-profile [-m|-n]`` [*max*]
-    Show synchronization profiling info, up to *max* entries (default: 10),
-    sorted by total wait time.
-
-    ``-m``
-      sort by mean wait time
-    ``-n``
-      do not coalesce objects with the same call site
-
-    When different objects that share the same call site are coalesced,
-    the "Object" field shows---enclosed in brackets---the number of objects
-    being coalesced.
-ERST
 
     {
         .name       = "kvm",
@@ -255,15 +167,7 @@ ERST
         .cmd        = hmp_info_kvm,
     },
 
-SRST
-  ``info kvm``
-    Show KVM information.
-ERST
 
-SRST
-  ``info usb``
-    Show guest USB devices.
-ERST
 
     {
         .name       = "usbhost",
@@ -272,10 +176,6 @@ ERST
         .help       = "show host USB devices",
     },
 
-SRST
-  ``info usbhost``
-    Show host USB devices.
-ERST
 
     {
         .name       = "capture",
@@ -285,10 +185,6 @@ ERST
         .cmd        = hmp_info_capture,
     },
 
-SRST
-  ``info capture``
-    Show capture information.
-ERST
 
     {
         .name       = "snapshots",
@@ -298,10 +194,6 @@ ERST
         .cmd        = hmp_info_snapshots,
     },
 
-SRST
-  ``info snapshots``
-    Show the currently saved VM snapshots.
-ERST
 
     {
         .name       = "status",
@@ -312,10 +204,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info status``
-    Show the current VM status (running|paused).
-ERST
 
     {
         .name       = "mice",
@@ -325,10 +213,6 @@ ERST
         .cmd        = hmp_info_mice,
     },
 
-SRST
-  ``info mice``
-    Show which guest mouse is receiving events.
-ERST
 
 #if defined(CONFIG_VNC)
     {
@@ -340,10 +224,6 @@ ERST
     },
 #endif
 
-SRST
-  ``info vnc``
-    Show the vnc server status.
-ERST
 
     {
         .name       = "name",
@@ -354,10 +234,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info name``
-    Show the current VM name.
-ERST
 
     {
         .name       = "uuid",
@@ -368,10 +244,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info uuid``
-    Show the current VM UUID.
-ERST
 
 #if defined(CONFIG_SLIRP)
     {
@@ -383,10 +255,6 @@ ERST
     },
 #endif
 
-SRST
-  ``info usernet``
-    Show user network stack connection states.
-ERST
 
     {
         .name       = "qtree",
@@ -396,10 +264,6 @@ ERST
         .cmd        = hmp_info_qtree,
     },
 
-SRST
-  ``info qtree``
-    Show device tree.
-ERST
 
     {
         .name       = "qdm",
@@ -409,10 +273,6 @@ ERST
         .cmd        = hmp_info_qdm,
     },
 
-SRST
-  ``info qdm``
-    Show qdev device model list.
-ERST
 
     {
         .name       = "qom-tree",
@@ -423,10 +283,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info qom-tree``
-    Show QOM composition tree.
-ERST
 
     {
         .name       = "trace-events",
@@ -438,10 +294,6 @@ ERST
         .command_completion = info_trace_events_completion,
     },
 
-SRST
-  ``info trace-events``
-    Show available trace-events & their state.
-ERST
 
     {
         .name       = "memdev",
@@ -452,15 +304,7 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info memdev``
-    Show memory backends
-ERST
 
-SRST
-  ``info iothreads``
-    Show iothread's identifiers.
-ERST
 
     {
         .name       = "ramblock",
@@ -470,10 +314,6 @@ ERST
         .cmd_info_hrt = qmp_x_query_ramblock,
     },
 
-SRST
-  ``info ramblock``
-    Dump all the ramblocks of the system.
-ERST
 
     {
         .name       = "hotpluggable-cpus",
@@ -484,10 +324,6 @@ ERST
         .flags      = "p",
     },
 
-SRST
-  ``info hotpluggable-cpus``
-    Show information about hotpluggable CPUs
-ERST
 
     {
         .name       = "memory_size_summary",
@@ -498,11 +334,6 @@ ERST
         .cmd        = hmp_info_memory_size_summary,
     },
 
-SRST
-  ``info memory_size_summary``
-    Display the amount of initially allocated and present hotpluggable (if
-    enabled) memory in bytes.
-ERST
 
 #if defined(TARGET_AARCH64)
     {
@@ -514,10 +345,6 @@ ERST
     },
 #endif
 
-SRST
-  ``info dart``
-    Show guest Apple DART IOMMUs.
-ERST
 
     {
         .name       = "stats",
@@ -528,7 +355,3 @@ ERST
         .cmd        = hmp_info_stats,
     },
 
-SRST
-  ``info stats``
-    Show runtime-collected statistics
-ERST
