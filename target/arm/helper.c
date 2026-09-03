@@ -1333,6 +1333,15 @@ static CPAccessResult gt_sel2timer_access(CPUARMState* env, const ARMCPRegInfo* 
 uint64_t gt_get_countervalue(CPUARMState* env)
 { return gt_ns_to_ticks(env_archcpu(env), qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL)); }
 
+void arm_gt_set_irq(ARMCPU* cpu, int timeridx, int irqstate)
+{
+    if (qatomic_xchg(&cpu->gt_irqstate[timeridx], irqstate) == irqstate) { return; }
+
+    BQL_LOCK_GUARD();
+    qemu_set_irq(cpu->gt_timer_outputs[timeridx], irqstate);
+    trace_arm_gt_update_irq(timeridx, irqstate);
+}
+
 static void gt_update_irq(ARMCPU* cpu, int timeridx)
 {
     CPUARMState*     env     = &cpu->env;
@@ -1352,11 +1361,7 @@ static void gt_update_irq(ARMCPU* cpu, int timeridx)
         irqstate = 0;
     }
 
-    if (qatomic_xchg(&cpu->gt_irqstate[timeridx], irqstate) == irqstate) { return; }
-
-    BQL_LOCK_GUARD();
-    qemu_set_irq(cpu->gt_timer_outputs[timeridx], irqstate);
-    trace_arm_gt_update_irq(timeridx, irqstate);
+    arm_gt_set_irq(cpu, timeridx, irqstate);
 }
 
 void gt_rme_post_el_change(ARMCPU* cpu, void* ignored)

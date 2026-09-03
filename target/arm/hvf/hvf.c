@@ -1301,6 +1301,8 @@ static int hvf_sysreg_write(CPUState* cpu, uint32_t reg, uint64_t val)
     trace_hvf_sysreg_write(reg, SYSREG_OP0(reg), SYSREG_OP1(reg), SYSREG_CRN(reg), SYSREG_CRM(reg), SYSREG_OP2(reg),
                            val);
 
+    cpu_synchronize_state(cpu);
+
     if (arm_feature(env, ARM_FEATURE_PMU)) {
         switch (reg) {
             case SYSREG_PMCCNTR_EL0:
@@ -1355,13 +1357,6 @@ static int hvf_sysreg_write(CPUState* cpu, uint32_t reg, uint64_t val)
 
     switch (reg) {
         case SYSREG_OSLAR_EL1: env->cp15.oslsr_el1 = val & 1; return 0;
-        case SYSREG_CNTP_CTL_EL0:
-            /*
-             * Guests should not rely on the physical counter, but macOS emits
-             * disable writes to it. Let it do so, but ignore the requests.
-             */
-            qemu_log_mask(LOG_UNIMP, "Unsupported write to CNTP_CTL_EL0\n");
-            return 0;
         case SYSREG_OSDLR_EL1:
             /* Dummy register */
             return 0;
@@ -1466,7 +1461,6 @@ static int hvf_sysreg_write(CPUState* cpu, uint32_t reg, uint64_t val)
             break;
     }
 
-    cpu_synchronize_state(cpu);
     trace_hvf_unhandled_sysreg_write(env->pc, reg, SYSREG_OP0(reg), SYSREG_OP1(reg), SYSREG_CRN(reg), SYSREG_CRM(reg),
                                      SYSREG_OP2(reg));
     hvf_raise_exception(cpu, EXCP_UDEF, syn_uncategorized(), 1);
@@ -1520,52 +1514,76 @@ static void hvf_wait_for_ipi(CPUState* cpu, struct timespec* ts)
     bql_lock();
 }
 
+static int64_t hvf_vtimer_deadline_ns(CPUState* cpu)
+{
+    ARMCPU*     arm_cpu = ARM_CPU(cpu);
+    hv_return_t r;
+    uint64_t    ctl;
+    uint64_t    cval;
+    uint64_t    freq;
+    uint64_t    seconds;
+    int64_t     ticks_to_sleep;
+
+    r = hv_vcpu_get_sys_reg(cpu->accel->fd, HV_SYS_REG_CNTV_CTL_EL0, &ctl);
+    assert_hvf_ok(r);
+
+    if (!(ctl & TMR_CTL_ENABLE) || (ctl & TMR_CTL_IMASK)) { return INT64_MAX; }
+
+    r = hv_vcpu_get_sys_reg(cpu->accel->fd, HV_SYS_REG_CNTV_CVAL_EL0, &cval);
+    assert_hvf_ok(r);
+
+    ticks_to_sleep = cval - hvf_vtimer_val();
+    if (ticks_to_sleep <= 0) { return 0; }
+
+    freq    = arm_cpu->gt_cntfrq_hz;
+    seconds = ticks_to_sleep / freq;
+    if (seconds >= INT64_MAX / NANOSECONDS_PER_SECOND) { return INT64_MAX; }
+
+    return seconds * NANOSECONDS_PER_SECOND + muldiv64(ticks_to_sleep % freq, NANOSECONDS_PER_SECOND, freq);
+}
+
+static int64_t hvf_ptimer_deadline_ns(CPUState* cpu)
+{
+    ARMCPU* arm_cpu = ARM_CPU(cpu);
+    int64_t expire;
+    int64_t now;
+
+    expire = timer_expire_time_ns(arm_cpu->gt_timer[GTIMER_PHYS]);
+    if (expire < 0) { return INT64_MAX; }
+
+    now = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+    return expire <= now ? 0 : expire - now;
+}
+
 static void hvf_wfi(CPUState* cpu)
 {
-    ARMCPU*         arm_cpu = ARM_CPU(cpu);
     struct timespec ts;
-    hv_return_t     r;
-    uint64_t        ctl;
-    uint64_t        cval;
-    int64_t         ticks_to_sleep;
-    uint64_t        freq;
-    uint64_t        seconds;
-    uint64_t        nanos;
-    uint64_t        rem_ticks;
+    int64_t         nanos;
+    int64_t         deadline;
 
     if (cpu_test_interrupt(cpu, CPU_INTERRUPT_HARD | CPU_INTERRUPT_FIQ)) {
         /* Interrupt pending, no need to wait */
         return;
     }
 
-    r = hv_vcpu_get_sys_reg(cpu->accel->fd, HV_SYS_REG_CNTV_CTL_EL0, &ctl);
-    assert_hvf_ok(r);
+    nanos    = hvf_vtimer_deadline_ns(cpu);
+    deadline = hvf_ptimer_deadline_ns(cpu);
+    if (deadline < nanos) { nanos = deadline; }
 
-    if (!(ctl & 1) || (ctl & 2)) {
-        /* Timer disabled or masked, just wait for an IPI. */
+    if (nanos == INT64_MAX) {
+        /* No timer armed, just wait for an IPI. */
         hvf_wait_for_ipi(cpu, NULL);
         return;
     }
-
-    r = hv_vcpu_get_sys_reg(cpu->accel->fd, HV_SYS_REG_CNTV_CVAL_EL0, &cval);
-    assert_hvf_ok(r);
-
-    ticks_to_sleep = cval - hvf_vtimer_val();
-    if (ticks_to_sleep < 0) { return; }
-
-    freq      = arm_cpu->gt_cntfrq_hz;
-    seconds   = ticks_to_sleep / freq;
-    rem_ticks = ticks_to_sleep % freq;
-    nanos     = seconds * NANOSECONDS_PER_SECOND + muldiv64(rem_ticks, NANOSECONDS_PER_SECOND, freq);
 
     /*
      * Don't sleep for less than the time a context switch would take,
      * so that we can satisfy fast timer requests on the same CPU.
      * Measurements on M1 show the sweet spot to be ~2ms.
      */
-    if (!seconds && nanos < (2 * SCALE_MS)) { return; }
+    if (nanos < (2 * SCALE_MS)) { return; }
 
-    ts = (struct timespec){seconds, nanos};
+    ts = (struct timespec){nanos / NANOSECONDS_PER_SECOND, nanos % NANOSECONDS_PER_SECOND};
     hvf_wait_for_ipi(cpu, &ts);
 }
 
@@ -1586,7 +1604,7 @@ static void hvf_sync_vtimer(CPUState* cpu)
     assert_hvf_ok(r);
 
     irq_state = (ctl & (TMR_CTL_ENABLE | TMR_CTL_IMASK | TMR_CTL_ISTATUS)) == (TMR_CTL_ENABLE | TMR_CTL_ISTATUS);
-    qemu_set_irq(arm_cpu->gt_timer_outputs[GTIMER_VIRT], irq_state);
+    arm_gt_set_irq(arm_cpu, GTIMER_VIRT, irq_state);
 
     if (!irq_state) {
         /* Timer no longer asserting, we can unmask it */
@@ -1800,7 +1818,7 @@ static int hvf_handle_vmexit(CPUState* cpu, hv_vcpu_exit_t* exit)
             ret = hvf_handle_exception(cpu, &exit->exception);
             break;
         case HV_EXIT_REASON_VTIMER_ACTIVATED:
-            qemu_set_irq(arm_cpu->gt_timer_outputs[GTIMER_VIRT], 1);
+            arm_gt_set_irq(arm_cpu, GTIMER_VIRT, 1);
             cpu->accel->vtimer_masked = true;
             break;
         case HV_EXIT_REASON_CANCELED:
