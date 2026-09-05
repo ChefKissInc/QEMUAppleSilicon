@@ -73,7 +73,7 @@ bool arm_aarch64_fallback_emu_single(CPUState* cpu, AddressSpace* as, ArmAarch64
             else {
                 success = false;
             }
-            fprintf(stderr, "%s: LDP, success=%s\n", __func__, success ? "true" : "false");
+            if (!success) { fprintf(stderr, "%s: LDP, success=%s\n", __func__, success ? "true" : "false"); }
             break;
         }
         case 0x29000000: {    // stp signed offset
@@ -95,7 +95,7 @@ bool arm_aarch64_fallback_emu_single(CPUState* cpu, AddressSpace* as, ArmAarch64
             success = address_space_write(as, arm_aarch64_fallback_emu_vtop(cpu, addr), MEMTXATTRS_UNSPECIFIED, data,
                                           reg_size * 2)
                       == MEMTX_OK;
-            fprintf(stderr, "%s: STP, success=%s\n", __func__, success ? "true" : "false");
+            if (!success) { fprintf(stderr, "%s: STP, success=%s\n", __func__, success ? "true" : "false"); }
             break;
         }
         default:
@@ -114,8 +114,8 @@ bool arm_aarch64_fallback_emu_single(CPUState* cpu, AddressSpace* as, ArmAarch64
                     success = address_space_write(as, arm_aarch64_fallback_emu_vtop(cpu, addr), MEMTXATTRS_UNSPECIFIED,
                                                   &src, reg_size)
                               == MEMTX_OK;
-                    fprintf(stderr, "%s: STR x%d, 0x%llX, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, base, src, off,
-                            reg_size, addr, success ? "true" : "false");
+                    if (!success) { fprintf(stderr, "%s: STR x%d, 0x%llX, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, base, src, off,
+                            reg_size, addr, success ? "true" : "false"); }
                     set_reg(cpu, base, addr + (post ? off : 0));
                     break;
                 }
@@ -128,8 +128,8 @@ bool arm_aarch64_fallback_emu_single(CPUState* cpu, AddressSpace* as, ArmAarch64
                     success = address_space_write(as, arm_aarch64_fallback_emu_vtop(cpu, addr), MEMTXATTRS_UNSPECIFIED,
                                                   &src, reg_size)
                               == MEMTX_OK;
-                    fprintf(stderr, "%s: STR 0x%llX, 0x%llX, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, base, src,
-                            off, reg_size, addr, success ? "true" : "false");
+                    if (!success) { fprintf(stderr, "%s: STR 0x%llX, 0x%llX, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, base, src,
+                            off, reg_size, addr, success ? "true" : "false"); }
                     break;
                 }
                 case 0xB9400000: {    // ldr unsigned offset
@@ -148,8 +148,8 @@ bool arm_aarch64_fallback_emu_single(CPUState* cpu, AddressSpace* as, ArmAarch64
                     else {
                         success = false;
                     }
-                    fprintf(stderr, "%s: LDR x%d, 0x%llX, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, dst, base, off,
-                            reg_size, addr, success ? "true" : "false");
+                    if (!success) { fprintf(stderr, "%s: LDR x%d, 0x%llX, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, dst, base, off,
+                            reg_size, addr, success ? "true" : "false"); }
                     break;
                 }
                 case 0xB8400000: {    // ldr pre/post index
@@ -174,8 +174,8 @@ bool arm_aarch64_fallback_emu_single(CPUState* cpu, AddressSpace* as, ArmAarch64
                     else {
                         success = false;
                     }
-                    fprintf(stderr, "%s: LDR x%d, x%d, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, dst, base, off,
-                            reg_size, addr, success ? "true" : "false");
+                    if (!success) { fprintf(stderr, "%s: LDR x%d, x%d, 0x%llX, 0x%X, 0x%llX, success=%s\n", __func__, dst, base, off,
+                            reg_size, addr, success ? "true" : "false"); }
                     break;
                 }
                 default: fprintf(stderr, "%s: inst(0x%X) does not match\n", __func__, inst); return false;
