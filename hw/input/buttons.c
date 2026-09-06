@@ -85,20 +85,20 @@ static void apple_buttons_handle_event(DeviceState* dev, QemuConsole* src, Input
     }
 }
 
-#define BUTTON_READER(_btn, _op, _enum)                                                                              \
+#define BUTTON_READER(_btn, _enum)                                                                              \
     static SMCResult apple_buttons_smc_read_##_btn(SMCKey* key, SMCKeyData* data, const void* in, uint8_t in_length) \
     {                                                                                                                \
         AppleButtonsState* s = key->opaque;                                                                          \
                                                                                                                      \
-        stl_le_p(data->data, (s->states & BIT32(SMC_HID_BUTTON_##_enum)) _op 0);                                     \
+        stl_le_p(data->data, (s->states & BIT32(SMC_HID_BUTTON_##_enum)) != 0);                                     \
                                                                                                                      \
         return SMC_RESULT_SUCCESS;                                                                                   \
     }
 
-BUTTON_READER(vol_up, ==, VOL_UP);
-BUTTON_READER(vol_down, ==, VOL_DOWN);
-BUTTON_READER(hold, ==, HOLD);
-BUTTON_READER(ringer, !=, RINGER);
+BUTTON_READER(vol_up, VOL_UP);
+BUTTON_READER(vol_down, VOL_DOWN);
+BUTTON_READER(hold, HOLD);
+BUTTON_READER(ringer, RINGER);
 
 SysBusDevice* apple_buttons_create(AppleDTNode* node)
 {
