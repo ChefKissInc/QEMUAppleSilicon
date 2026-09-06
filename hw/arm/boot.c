@@ -799,7 +799,7 @@ static void apple_boot_setup_bootargs_rev2(AddressSpace* as, hwaddr addr, vaddr 
     args.device_tree_ptr    = dtb_va;
     args.device_tree_length = dtb_size;
     if (cmdline != NULL) { g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline)); }
-    args.boot_flags      = BOOT_FLAGS_DARK_BOOT;
+    args.boot_flags      = 0;
     args.mem_size_actual = mem_size_actual;
 
     // iOS 13: mem_size_actual is not a thing
@@ -824,7 +824,7 @@ static void apple_boot_setup_bootargs_rev3(AddressSpace* as, hwaddr addr, vaddr 
     args.device_tree_ptr    = dtb_va;
     args.device_tree_length = dtb_size;
     if (cmdline != NULL) { g_strlcpy(args.cmdline, cmdline, sizeof(args.cmdline)); }
-    args.boot_flags      = BOOT_FLAGS_DARK_BOOT;
+    args.boot_flags      = 0;
     args.mem_size_actual = mem_size_actual;
 
     address_space_rw(as, addr, MEMTXATTRS_UNSPECIFIED, &args, sizeof(args), true);
