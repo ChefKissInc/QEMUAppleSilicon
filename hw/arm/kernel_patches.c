@@ -745,20 +745,20 @@ static void ck_kp_virt_boot_sctlr_patch(CKPatcherRange* range)
 {
     unsigned matches = 0;
 
-    static const uint8_t jop_sctlr_pattern[] = {
+    static const uint8_t pattern[] = {
         0x00, 0x00, 0xE0, 0xF2,    // movk x?, #0, lsl #0x30
         0x00, 0x00, 0xC0, 0xF2,    // movk x?, #0, lsl #0x20
         0x00, 0x00, 0xA0, 0xF2,    // movk x?, #?, lsl #0x10
         0x00, 0x00, 0x80, 0xF2,    // movk x?, #?
         0x00, 0x00, 0x62, 0xB2,    // orr x?, x?, #0x40000000
     };
-    static const uint8_t jop_sctlr_mask[] = {
+    static const uint8_t mask[] = {
         0xE0, 0xFF, 0xFF, 0xFF, 0xE0, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
         0xE0, 0xFF, 0x00, 0x00, 0xE0, 0xFF, 0x00, 0xFC, 0xFF, 0xFF,
     };
-    QEMU_BUILD_BUG_ON(sizeof(jop_sctlr_pattern) != sizeof(jop_sctlr_mask));
-    ck_patcher_find_callback_ctx(range, "enable all PAC keys in the boot SCTLR_EL1", jop_sctlr_pattern, jop_sctlr_mask,
-                                 sizeof(jop_sctlr_pattern), sizeof(uint32_t), &matches, ck_kp_virt_boot_sctlr_callback);
+    QEMU_BUILD_BUG_ON(sizeof(pattern) != sizeof(mask));
+    ck_patcher_find_callback_ctx(range, "enable all PAC keys in the boot SCTLR_EL1", pattern, mask, sizeof(pattern),
+                                 sizeof(uint32_t), &matches, ck_kp_virt_boot_sctlr_callback);
 }
 
 static bool ck_kp_pac_jop_toggle_callback(void* ctx, uint8_t* buffer)
@@ -836,14 +836,13 @@ void ck_patch_virt(MachoHeader64* hdr, const bool enable_pac)
     g_autofree CKPatcherRange* kernel_text    = NULL;
     g_autofree CKPatcherRange* kernel_ppltext = NULL;
 
-    if (enable_pac) {
-        kernel_text = ck_kp_get_kernel_section(hdr, "__TEXT_EXEC", "__text");
-        if (kernel_text == NULL) {
-            error_report("Failed to find `__TEXT_EXEC.__text`.");
-            return;
-        }
-        ck_kp_virt_boot_sctlr_patch(kernel_text);
+    kernel_text = ck_kp_get_kernel_section(hdr, "__TEXT_EXEC", "__text");
+    if (kernel_text == NULL) {
+        error_report("Failed to find `__TEXT_EXEC.__text`.");
+        return;
     }
+
+    if (enable_pac) { ck_kp_virt_boot_sctlr_patch(kernel_text); }
 
     kernel_ppltext = ck_kp_find_section_range(hdr, "__PPLTEXT", "__text");
     ck_kp_virt_jop_toggle_patch(kernel_ppltext == NULL ? kernel_text : kernel_ppltext);
