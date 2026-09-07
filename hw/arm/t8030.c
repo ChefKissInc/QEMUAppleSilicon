@@ -71,6 +71,7 @@
 #include "qemu/guest-random.h"
 #include "qemu/log.h"
 #include "qemu/units.h"
+#include "system/hw_accel.h"
 #include "system/reset.h"
 #include "system/runstate.h"
 #include "system/system.h"
@@ -218,7 +219,15 @@ static void t8030_create_s3c_uart(const AppleT8030MachineState* t8030, uint32_t 
     dev->id = g_strdup(name);
 }
 
-static void t8030_patch_kernel(MachoHeader64* header, uint32_t build_version) { ck_patch_kernel(header); }
+static void t8030_patch_kernel(MachoHeader64* header, uint32_t build_version, const bool enable_pac)
+{
+    ck_patch_kernel(header);
+
+    if (hwaccel_enabled()) { ck_patch_virt(header, enable_pac); }
+    else if (enable_pac) {
+        error_report("You have specified the PAC enablement property on TCG.");
+    }
+}
 
 static bool t8030_check_panic(AppleT8030MachineState* t8030)
 {
@@ -2511,7 +2520,7 @@ static void t8030_init(MachineState* machine)
 
         g_phys_base = (hwaddr)apple_boot_get_macho_buffer(t8030->kernel);
 
-        t8030_patch_kernel(t8030->kernel, build_version);
+        t8030_patch_kernel(t8030->kernel, build_version, t8030->enable_pac);
 
         t8030->trustcache =
             apple_boot_load_trustcache_file(t8030->trustcache_filename, &t8030->boot_info.trustcache_size);
@@ -2726,6 +2735,7 @@ PROP_STR_GETTER_SETTER(mlb_serial_number);
 PROP_STR_GETTER_SETTER(regulatory_model);
 PROP_VISIT_GETTER_SETTER(uint32, disp_width);
 PROP_VISIT_GETTER_SETTER(uint32, disp_height);
+PROP_GETTER_SETTER(bool, enable_pac);
 
 static void t8030_class_init(ObjectClass* klass, const void* data)
 {
@@ -2795,6 +2805,9 @@ static void t8030_class_init(ObjectClass* klass, const void* data)
     oprop = object_class_property_add(klass, "disp-height", "uint32", t8030_get_disp_height, t8030_set_disp_height,
                                       NULL, NULL);
     object_property_set_default_uint(oprop, 1792);
+    object_class_property_add_bool(klass, "enable-pac", t8030_get_enable_pac, t8030_set_enable_pac);
+    object_class_property_set_description(klass, "enable-pac",
+                                          "Enable PAC with virtualisation (supports arm64e binaries only).");
 }
 
 static const TypeInfo t8030_info = {

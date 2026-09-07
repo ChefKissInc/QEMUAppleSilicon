@@ -84,4 +84,5 @@ typedef struct
     char*                regulatory_model;
     uint32_t             disp_width;
     uint32_t             disp_height;
+    bool                 enable_pac;
 } AppleT8030MachineState;

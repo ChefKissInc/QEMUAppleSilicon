@@ -27,6 +27,7 @@
 #define MOV_W0_0  (0x52800000)
 #define NOP_BYTES 0x1F, 0x20, 0x03, 0xD5
 #define RET       (0xD65F03C0)
+#define RET_BYTES 0xC0, 0x03, 0x5F, 0xD6
 #define RETAB     (0xD65F0FFF)
 #define PACIBSP   (0xD503237F)
 
@@ -709,4 +710,143 @@ void ck_patch_kernel(MachoHeader64* hdr)
         ck_kp_tc_patch(kernel_ppltext);
         ck_kp_pmap_cs_enforce_patch(kernel_ppltext);
     }
+}
+
+#define MOVK_IMM16_SHIFT 5
+
+static bool ck_kp_virt_boot_sctlr_callback(void* ctx, uint8_t* buffer)
+{
+    unsigned* matches = ctx;
+    uint32_t  insns[5];
+    uint32_t  reg;
+    size_t    i;
+
+    for (i = 0; i < ARRAY_SIZE(insns); ++i) { insns[i] = ldl_le_p(buffer + i * sizeof(uint32_t)); }
+
+    reg = insns[0] & 0x1F;
+    for (i = 1; i < ARRAY_SIZE(insns); ++i) {
+        if ((insns[i] & 0x1F) != reg) { return false; }
+    }
+    if (extract32(insns[4], 5, 5) != reg) { return false; }
+
+    insns[2] |= (uint32_t)0xC800 << MOVK_IMM16_SHIFT;    // SCTLR_EL1.EnIA (31), .EnIB (30) and .EnDA (27)
+    insns[3] |= (uint32_t)0x2000 << MOVK_IMM16_SHIFT;    // SCTLR_EL1.EnDB (13)
+    stl_le_p(buffer + 2 * sizeof(uint32_t), insns[2]);
+    stl_le_p(buffer + 3 * sizeof(uint32_t), insns[3]);
+
+    /*
+     * `common_start` builds the value twice: once for `msr sctlr_el1` and once
+     * to compare the result against, spinning forever on a mismatch.
+     */
+    return ++*matches == 2;
+}
+
+static void ck_kp_virt_boot_sctlr_patch(CKPatcherRange* range)
+{
+    unsigned matches = 0;
+
+    static const uint8_t jop_sctlr_pattern[] = {
+        0x00, 0x00, 0xE0, 0xF2,    // movk x?, #0, lsl #0x30
+        0x00, 0x00, 0xC0, 0xF2,    // movk x?, #0, lsl #0x20
+        0x00, 0x00, 0xA0, 0xF2,    // movk x?, #?, lsl #0x10
+        0x00, 0x00, 0x80, 0xF2,    // movk x?, #?
+        0x00, 0x00, 0x62, 0xB2,    // orr x?, x?, #0x40000000
+    };
+    static const uint8_t jop_sctlr_mask[] = {
+        0xE0, 0xFF, 0xFF, 0xFF, 0xE0, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
+        0xE0, 0xFF, 0x00, 0x00, 0xE0, 0xFF, 0x00, 0xFC, 0xFF, 0xFF,
+    };
+    QEMU_BUILD_BUG_ON(sizeof(jop_sctlr_pattern) != sizeof(jop_sctlr_mask));
+    ck_patcher_find_callback_ctx(range, "enable all PAC keys in the boot SCTLR_EL1", jop_sctlr_pattern, jop_sctlr_mask,
+                                 sizeof(jop_sctlr_pattern), sizeof(uint32_t), &matches, ck_kp_virt_boot_sctlr_callback);
+}
+
+static bool ck_kp_pac_jop_toggle_callback(void* ctx, uint8_t* buffer)
+{
+    // msr sctlr_el1, x?
+    void* msr = ck_patcher_find_next_insn(buffer, 24, 0xD5181000, 0xFFFFFFE0, 0);
+    if (msr == NULL) {
+        error_report("%s: failed to find the SCTLR_EL1 write", __func__);
+        return false;
+    }
+
+    stl_le_p(msr, NOP);
+
+    return true;
+}
+
+static void ck_kp_virt_jop_toggle_patch(CKPatcherRange* range)
+{
+    // in pmap_switch_user_ttb_internal
+    static const uint8_t pattern[] = {
+        0x00, 0x00, 0x84, 0x52,    // mov w?, #0x2000
+        0x00, 0x00, 0xB1, 0x72,    // movk w?, #0x8800, lsl #0x10
+        0x00, 0x10, 0x38, 0xD5,    // mrs x?, sctlr_el1
+    };
+    static const uint8_t mask[] = {0xE0, 0xFF, 0xFF, 0xFF, 0xE0, 0xFF, 0xFF, 0xFF, 0xE0, 0xFF, 0xFF, 0xFF};
+    QEMU_BUILD_BUG_ON(sizeof(pattern) != sizeof(mask));
+    ck_patcher_find_callback(range, "keep the per-pmap JOP toggle from disabling PAC keys", pattern, mask,
+                             sizeof(pattern), sizeof(uint32_t), ck_kp_pac_jop_toggle_callback);
+}
+
+static bool ck_kp_disable_ppl_locked_down(void* ctx, uint8_t* buffer)
+{
+    // mov w?, #1
+    void* mov = ck_patcher_find_next_insn(buffer + 8 + sizeof(uint32_t), 2, 0x52800020, 0xFFFFFFE0, 0);
+    if (mov == NULL) { return false; }
+
+    // str w?, pmap_ppl_locked_down
+    void* str = ck_patcher_find_next_insn(mov + sizeof(uint32_t), 2, 0xB9000000, 0xFF000000, 0);
+    if (str == NULL) { return false; }
+
+    // bl #?
+    if ((ldl_le_p(str + sizeof(uint32_t)) & 0xFC000000) != 0x94000000) { return false; }
+
+    stl_le_p(str, NOP);
+    return true;
+}
+
+static void ck_kp_disable_ppl(CKPatcherRange* range)
+{
+    static const uint8_t gxf_pattern[] = {
+        0x20, 0x00, 0x80, 0xD2,    // mov x0, #1
+        0x40, 0xF1, 0x1E, 0xD5,    // msr gxf_config_el1, x0
+    };
+    static const uint8_t gxf_replace[] = {
+        RET_BYTES,
+    };
+    if (ck_patcher_find_replace(range, "neutralise gxf_enable", gxf_pattern, NULL, sizeof(gxf_pattern),
+                                sizeof(uint32_t), gxf_replace, NULL, 0, sizeof(gxf_replace)))
+    {
+        static const uint8_t ppl_pattern[] = {
+            0x00, 0x00, 0x38, 0x37,    // tbnz w?, 0x7, ?
+            0xDF, 0x47, 0x03, 0xD5,    // msr daifset, #7
+        };
+        static const uint8_t ppl_pattern_mask[] = {0x00, 0x00, 0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        QEMU_BUILD_BUG_ON(sizeof(ppl_pattern) != sizeof(ppl_pattern_mask));
+        ck_patcher_find_callback(range, "neutralise pmap_ppl_locked_down", ppl_pattern, ppl_pattern_mask,
+                                 sizeof(ppl_pattern), sizeof(uint32_t), ck_kp_disable_ppl_locked_down);
+        ck_patcher_find_callback(range, "neutralise pmap_ppl_locked_down (inlined)", ppl_pattern, ppl_pattern_mask,
+                                 sizeof(ppl_pattern), sizeof(uint32_t), ck_kp_disable_ppl_locked_down);
+    }
+}
+
+void ck_patch_virt(MachoHeader64* hdr, const bool enable_pac)
+{
+    g_autofree CKPatcherRange* kernel_text    = NULL;
+    g_autofree CKPatcherRange* kernel_ppltext = NULL;
+
+    if (enable_pac) {
+        kernel_text = ck_kp_get_kernel_section(hdr, "__TEXT_EXEC", "__text");
+        if (kernel_text == NULL) {
+            error_report("Failed to find `__TEXT_EXEC.__text`.");
+            return;
+        }
+        ck_kp_virt_boot_sctlr_patch(kernel_text);
+    }
+
+    kernel_ppltext = ck_kp_find_section_range(hdr, "__PPLTEXT", "__text");
+    ck_kp_virt_jop_toggle_patch(kernel_ppltext == NULL ? kernel_text : kernel_ppltext);
+
+    ck_kp_disable_ppl(kernel_text);
 }

@@ -22,3 +22,4 @@
 #include "hw/arm/boot.h"
 
 void ck_patch_kernel(MachoHeader64* hdr);
+void ck_patch_virt(MachoHeader64* hdr, bool enable_pac);
