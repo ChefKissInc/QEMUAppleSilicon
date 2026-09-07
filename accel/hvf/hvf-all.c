@@ -29,7 +29,7 @@ struct mac_slot
     uint64_t gva;
 };
 
-struct mac_slot mac_slots[32];
+struct mac_slot mac_slots[HVF_MAX_SLOTS];
 
 const char* hvf_return_string(hv_return_t ret)
 {
@@ -146,7 +146,7 @@ static void hvf_set_phys_mem(MemoryRegionSection* section, bool add)
     }
 
     if (x == hvf_state->num_slots) {
-        error_report("No free slots");
+        error_report("No free slots (%d in use); raise HVF_MAX_SLOTS", hvf_state->num_slots);
         abort();
     }
 

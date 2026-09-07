@@ -37,5 +37,6 @@ OBJECT_DECLARE_SIMPLE_TYPE(AppleDARTIOMMUMemoryRegion, APPLE_DART_IOMMU_MEMORY_R
 #define DART_DART_SELF         "dart-dart_self"
 
 IOMMUMemoryRegion* apple_dart_iommu_mr(AppleDARTState* dart, uint32_t sid);
+void               apple_dart_iommu_table_pages(IOMMUMemoryRegion* mr, GArray* out);
 IOMMUMemoryRegion* apple_dart_instance_iommu_mr(AppleDARTState* s, uint32_t instance, uint32_t sid);
 AppleDARTState*    apple_dart_from_node(AppleDTNode* node);

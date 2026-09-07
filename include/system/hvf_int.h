@@ -46,11 +46,13 @@ typedef struct hvf_vcpu_caps
     uint64_t vmx_cap_preemption_timer;
 } hvf_vcpu_caps;
 
+#define HVF_MAX_SLOTS (512)
+
 struct HVFState
 {
     AccelState parent_obj;
 
-    hvf_slot slots[32];
+    hvf_slot slots[HVF_MAX_SLOTS];
     int      num_slots;
 
     hvf_vcpu_caps* hvf_caps;

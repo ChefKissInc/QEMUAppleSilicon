@@ -386,6 +386,11 @@ static void t8030_load_kernelcache(AppleT8030MachineState* t8030, const char* cm
         AMCC_WREG32(t8030, AMCC_PLANE_TZ0_LOCK(i), 1);
         AMCC_WREG32(t8030, AMCC_PLANE_BLK_MCC_CHANNEL_DEC(i), 0x2F);
     }
+
+    if (t8030->sep_rom_filename != NULL || t8030->sep_fw_filename != NULL) {
+        apple_sep_setup_tz0(APPLE_SEP(object_property_get_link(OBJECT(t8030), "sep", &error_fatal)), machine->ram,
+                            info->tz0_addr - info->dram_base, info->tz0_size);
+    }
 }
 
 static void t8030_rtkit_seg_prop_setup(AppleDTNode* iop_nub, hwaddr base, uint32_t size)
@@ -2450,10 +2455,6 @@ static void t8030_init(MachineState* machine)
 
     if (t8030->sep_rom_filename != NULL) {
         allocate_ram(get_system_memory(), "SEPROM", SEPROM_BASE, SEPROM_SIZE, 0);
-        // 0x4000000 is too low
-        allocate_ram(get_system_memory(), "DRAM_30", 0x300000000ULL, 0x8000000ULL, 0);
-        // 0x1000000 is too low
-        allocate_ram(get_system_memory(), "DRAM_34", 0x340000000ULL, SEP_DMA_MAPPING_SIZE, 0);
         // SEP_UNKN0 is now MISC0
         allocate_ram(get_system_memory(), "SEP_UNKN1", 0x242200000ULL, 0x24000, 0);
         // for last_jump
@@ -2474,8 +2475,6 @@ static void t8030_init(MachineState* machine)
         // dram_scr address 0x23D2C0000 size 0x8000 inside pmgr-unk-reg-2
         // dram_pln0 address 0x200000000 size 0x8000, inside amcc
     }
-
-    if (t8030->sep_fw_filename != NULL) { allocate_ram(get_system_memory(), "SEPFW_", 0x0, SEP_DMA_MAPPING_SIZE, 0); }
 
     t8030->device_tree = apple_boot_load_dt_file(machine->dtb);
     if (t8030->device_tree == NULL) {

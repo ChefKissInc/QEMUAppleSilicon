@@ -32,6 +32,13 @@ OBJECT_DECLARE_TYPE(AppleSEPState, AppleSEPClass, APPLE_SEP)
 #define SEPFW_MAPPING_SIZE   (16 * MiB)
 #define SEP_DMA_MAPPING_SIZE (SEPFW_MAPPING_SIZE * 2)
 
+#define SEP_OPCODE17_INTEGRITY_TREE_SIZE (0x8000)
+#define SEP_APERTURE_REGION3             (0x300000000ULL)
+#define SEP_APERTURE_REGION2             (0x340000000ULL)
+#define SEP_REGION2_SIZE                 ((((uint64_t)SEP_OPCODE17_INTEGRITY_TREE_SIZE) << 10) & 0xFFFFC000ULL)
+#define SEP_DMA_IOVA_SIZE                (0x100000000ULL)
+#define SEP_DART_PAGE_SIZE               (16 * KiB)
+
 typedef enum AppleSEPMMIOIndex
 {
     SEP_MMIO_INDEX_PMGR,
@@ -61,4 +68,5 @@ AppleSEPState* apple_sep_from_node(AppleDTNode* node, MemoryRegion* ool_mr, vadd
 bool           apple_sep_get_fuse_changer_bit(AppleSEPState* s, uint8_t bit);
 void           apple_sep_set_fw(AppleSEPState* s, hwaddr sep_fw_addr, gchar* fw_data, gsize sep_fw_size);
 void           apple_sep_map_mmio(AppleSEPState* s, AppleSEPMMIOIndex mmio_index, hwaddr addr);
+void           apple_sep_setup_tz0(AppleSEPState* s, MemoryRegion* dram, hwaddr tz0_off, hwaddr tz0_size);
 ARMCPU*        apple_sep_get_cpu(AppleSEPState* s);    // FIXME: remove
