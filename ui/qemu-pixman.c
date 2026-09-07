@@ -134,7 +134,6 @@ int qemu_pixman_get_type(int rshift, int gshift, int bshift, int endian)
     return type;
 }
 
-#ifdef CONFIG_PIXMAN
 pixman_format_code_t qemu_pixman_get_format(PixelFormat* pf, int endian)
 {
     pixman_format_code_t format;
@@ -145,7 +144,6 @@ pixman_format_code_t qemu_pixman_get_format(PixelFormat* pf, int endian)
     if (!pixman_format_supported_source(format)) { return 0; }
     return format;
 }
-#endif
 
 /*
  * Return true for known-good pixman conversions.
@@ -171,7 +169,6 @@ bool qemu_pixman_check_format(DisplayChangeListener* dcl, pixman_format_code_t f
     }
 }
 
-#ifdef CONFIG_PIXMAN
 pixman_image_t* qemu_pixman_linebuf_create(pixman_format_code_t format, int width)
 {
     pixman_image_t* image = pixman_image_create_bits(format, width, 1, NULL, 0);
@@ -188,7 +185,6 @@ pixman_image_t* qemu_pixman_mirror_create(pixman_format_code_t format, pixman_im
     return pixman_image_create_bits(format, pixman_image_get_width(image), pixman_image_get_height(image), NULL,
                                     pixman_image_get_stride(image));
 }
-#endif
 
 void qemu_pixman_image_unref(pixman_image_t* image)
 {
@@ -196,7 +192,6 @@ void qemu_pixman_image_unref(pixman_image_t* image)
     pixman_image_unref(image);
 }
 
-#ifdef CONFIG_PIXMAN
 pixman_image_t* qemu_pixman_glyph_from_vgafont(int height, const uint8_t* font, unsigned int ch)
 {
     pixman_image_t* glyph;
@@ -228,7 +223,6 @@ void qemu_pixman_glyph_render(pixman_image_t* glyph, pixman_image_t* surface, pi
     pixman_image_unref(ifg);
     pixman_image_unref(ibg);
 }
-#endif /* CONFIG_PIXMAN */
 
 static void* qemu_pixman_shareable_alloc(const char* name, size_t size, qemu_pixman_shareable* handle, Error** errp)
 {

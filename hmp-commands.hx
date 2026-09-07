@@ -131,8 +131,6 @@ HXCOMM HXCOMM can be used for comments.
         .cmd        = hmp_change,
     },
 
-
-#ifdef CONFIG_PIXMAN
     {
         .name       = "screendump",
         .args_type  = "filename:F,format:-fs,device:s?,head:i?",
@@ -143,8 +141,6 @@ HXCOMM HXCOMM can be used for comments.
          .cmd        = hmp_screendump,
         .coroutine  = true,
     },
-
-#endif
 
     {
         .name       = "logfile",

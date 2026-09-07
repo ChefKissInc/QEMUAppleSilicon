@@ -126,7 +126,6 @@ void qmp_display_update(DisplayUpdateOptions* arg, Error** errp)
     }
 }
 
-#ifdef CONFIG_PIXMAN
     #ifdef CONFIG_PNG
 /**
  * png_save: Take a screenshot as PNG
@@ -291,4 +290,3 @@ void coroutine_fn qmp_screendump(const char* filename, const char* device, bool 
         if (!ppm_save(fd, image, errp)) { qemu_unlink(filename); }
     }
 }
-#endif /* CONFIG_PIXMAN */

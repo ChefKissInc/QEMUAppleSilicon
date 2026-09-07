@@ -314,7 +314,6 @@ void sendkey_completion(ReadLineState* rs, int nb_args, const char* str)
     }
 }
 
-#ifdef CONFIG_PIXMAN
 void coroutine_fn hmp_screendump(Monitor* mon, const QDict* qdict)
 {
     const char* filename     = qdict_get_str(qdict, "filename");
@@ -331,4 +330,3 @@ void coroutine_fn hmp_screendump(Monitor* mon, const QDict* qdict)
 end:
     hmp_handle_error(mon, err);
 }
-#endif

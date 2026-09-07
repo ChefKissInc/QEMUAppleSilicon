@@ -28,12 +28,7 @@
 #include "qemu/log.h"
 #include "system/dma.h"
 #include "ui/console.h"
-
-#ifdef CONFIG_PIXMAN
-    #include "pixman.h"
-#else
-    #error "Pixman support is required"
-#endif
+#include "pixman.h"
 
 #ifdef CONFIG_PNG
     #include <png.h>

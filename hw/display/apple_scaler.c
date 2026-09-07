@@ -25,12 +25,7 @@
 #include "qemu/lockable.h"
 #include "qemu/thread.h"
 #include "system/dma.h"
-
-#ifdef CONFIG_PIXMAN
-    #include "pixman.h"
-#else
-    #error "Pixman support is required"
-#endif
+#include "pixman.h"
 
 #if 0
     #define SCALER_INFO(fmt, ...) fprintf(stderr, "%s: " fmt "\n", __func__, ##__VA_ARGS__)

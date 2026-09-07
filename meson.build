@@ -817,11 +817,9 @@ if 'ust' in get_option('trace_backends')
   lttng = dependency('lttng-ust', required: true, version: '>= 2.1',
                      method: 'pkg-config')
 endif
-pixman = not_found
-if not get_option('pixman').auto() or have_system or have_tools
-  pixman = dependency('pixman-1', required: get_option('pixman'), version:'>=0.21.8',
-                      method: 'pkg-config')
-endif
+
+pixman = dependency('pixman-1', required: true, version: '>=0.21.8',
+                    method: 'pkg-config')
 
 zlib = dependency('zlib', required: true)
 
@@ -1384,8 +1382,6 @@ have_gtk_clipboard = get_option('gtk_clipboard').enabled()
 
 if get_option('gtk') \
              .disable_auto_if(not have_system) \
-             .require(pixman.found(),
-                      error_message: 'cannot enable GTK if pixman is not available') \
              .allowed()
   gtk = dependency('gtk+-3.0', version: '>=3.22.0',
                    method: 'pkg-config',
@@ -1419,8 +1415,6 @@ jpeg = not_found
 sasl = not_found
 if get_option('vnc') \
              .disable_auto_if(not have_system) \
-             .require(pixman.found(),
-                      error_message: 'cannot enable VNC if pixman is not available') \
              .allowed()
   vnc = declare_dependency() # dummy dependency
   jpeg = dependency('libjpeg', required: get_option('vnc_jpeg'),
@@ -1739,7 +1733,6 @@ config_host_data.set('CONFIG_SECCOMP', seccomp.found())
 if seccomp.found()
   config_host_data.set('CONFIG_SECCOMP_SYSRAWRC', seccomp_has_sysrawrc)
 endif
-config_host_data.set('CONFIG_PIXMAN', pixman.found())
 config_host_data.set('CONFIG_SLIRP', slirp.found())
 config_host_data.set('CONFIG_SNAPPY', snappy.found())
 config_host_data.set('CONFIG_SOLARIS', host_os == 'sunos')
@@ -2397,7 +2390,6 @@ config_target_mak = {}
 config_base_arch_mak = {}
 
 host_kconfig = \
-  (pixman.found() ? ['CONFIG_PIXMAN=y'] : []) + \
   (libcbor.found() ? ['CONFIG_LIBCBOR=y'] : []) + \
   (gnutls.found() ? ['CONFIG_GNUTLS=y'] : []) + \
   (x11.found() ? ['CONFIG_X11=y'] : []) + \
@@ -3426,7 +3418,6 @@ endif
 summary_info += {'SDL support':       sdl}
 summary_info += {'SDL image support': sdl_image}
 summary_info += {'GTK support':       gtk}
-summary_info += {'pixman':            pixman}
 summary_info += {'VTE support':       vte}
 summary_info += {'PNG support':       png}
 summary_info += {'VNC support':       vnc}

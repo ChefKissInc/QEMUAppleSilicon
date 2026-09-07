@@ -198,8 +198,7 @@
 { 'command': 'screendump',
   'data': {'filename': 'str', '*device': 'str', '*head': 'int',
            '*format': 'ImageFormat'},
-  'coroutine': true,
-  'if': 'CONFIG_PIXMAN' }
+  'coroutine': true }
 
 ##
 # VNC
