@@ -606,6 +606,15 @@ add_project_arguments('-iquote', '.',
                       '-iquote', meson.current_source_dir() / 'include',
                       language: all_languages)
 
+mlib_wrap = subproject('mlib')
+mlib_include_dir = meson.current_build_dir() / 'mlib-include'
+run_command(python, files('scripts/mksymlink.py'),
+            mlib_wrap.get_variable('mlib_source_dir'),
+            mlib_include_dir / 'mlib',
+            check: true)
+add_project_arguments('-isystem', mlib_include_dir,
+                      language: all_languages)
+
 # If a host-specific include directory exists, list that first...
 host_include = meson.current_source_dir() / 'host/include/'
 if fs.is_dir(host_include / host_arch)
