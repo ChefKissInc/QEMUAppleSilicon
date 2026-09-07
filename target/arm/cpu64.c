@@ -24,6 +24,7 @@
 #include "cpregs.h"
 #include "qemu/module.h"
 #include "qemu/units.h"
+#include "system/hw_accel.h"
 #include "system/kvm.h"
 #include "system/hvf.h"
 #include "system/tcg.h"
@@ -454,7 +455,7 @@ void arm_cpu_pauth_finalize(ARMCPU* cpu, Error** errp)
     isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, APA3, 0);
     isar2 = REG_FIELD_DP64(isar2, ID_AA64ISAR2, GPA3, 0);
 
-    if (kvm_enabled() || hvf_enabled()) {
+    if (hwaccel_enabled()) {
         /*
          * Exit early if PAuth is enabled and fall through to disable it.
          * The algorithm selection properties are not present.
@@ -546,7 +547,7 @@ void aarch64_add_pauth_properties(Object* obj)
 
     /* Default to PAUTH on, with the architected algorithm on TCG. */
     qdev_property_add_static(DEVICE(obj), &arm_cpu_pauth_property);
-    if (kvm_enabled() || hvf_enabled()) {
+    if (hwaccel_enabled()) {
         /*
          * Mirror PAuth support from the probed sysregs back into the
          * property for KVM or hvf. Is it just a bit backward? Yes it is!
@@ -659,8 +660,8 @@ static void aarch64_host_initfn(Object* obj)
 
 static void aarch64_max_initfn(Object* obj)
 {
-    if (kvm_enabled() || hvf_enabled()) {
-        /* With KVM or HVF, '-cpu max' is identical to '-cpu host' */
+    if (hwaccel_enabled()) {
+        /* With hwaccel, '-cpu max' is identical to '-cpu host' */
         aarch64_host_initfn(obj);
         return;
     }
