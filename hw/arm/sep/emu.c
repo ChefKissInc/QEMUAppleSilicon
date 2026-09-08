@@ -220,7 +220,7 @@ static void apple_sep_shadow_add(AppleSEPState* s, hwaddr pa)
     memory_region_add_subregion_overlap(get_system_memory(), pa, &page->mr, 2);
 
     g_hash_table_insert(s->dma_shadow_pages, GUINT_TO_POINTER(pa), page);
-    info_report("sep dma: shadowing dart table page 0x%" HWADDR_PRIx, pa);
+    // info_report("sep dma: shadowing dart table page 0x%" HWADDR_PRIx, pa);
 }
 
 static void apple_sep_dma_shadow_tables(AppleSEPState* s)
@@ -304,19 +304,19 @@ static void apple_sep_dma_build_windows(AppleSEPState* s)
         section = memory_region_find(get_system_memory(), run.pa, run.len);
 
         if (section.mr == NULL) {
-            warn_report("sep dma: unbacked 0x%" HWADDR_PRIx "+0x%" HWADDR_PRIx " -> 0x%" HWADDR_PRIx, run.iova, run.len,
-                        run.pa);
+            // warn_report("sep dma: unbacked 0x%" HWADDR_PRIx "+0x%" HWADDR_PRIx " -> 0x%" HWADDR_PRIx, run.iova, run.len,
+            //             run.pa);
             continue;
         }
 
         if (memory_region_is_ram(section.mr) && int128_get64(section.size) == run.len) {
             apple_sep_dma_add_window(s, get_system_memory(), run.iova, run.len, section.mr,
                                      section.offset_within_region);
-            info_report("sep dma: 0x%" HWADDR_PRIx "+0x%" HWADDR_PRIx " -> 0x%" HWADDR_PRIx, run.iova, run.len, run.pa);
+            // info_report("sep dma: 0x%" HWADDR_PRIx "+0x%" HWADDR_PRIx " -> 0x%" HWADDR_PRIx, run.iova, run.len, run.pa);
         }
         else {
-            warn_report("sep dma: skipped 0x%" HWADDR_PRIx "+0x%" HWADDR_PRIx " -> 0x%" HWADDR_PRIx " (%s)", run.iova,
-                        run.len, run.pa, section.mr->name);
+            // warn_report("sep dma: skipped 0x%" HWADDR_PRIx "+0x%" HWADDR_PRIx " -> 0x%" HWADDR_PRIx " (%s)", run.iova,
+            //             run.len, run.pa, section.mr->name);
         }
 
         memory_region_unref(section.mr);
