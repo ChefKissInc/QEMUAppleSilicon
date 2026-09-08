@@ -637,19 +637,6 @@ static void apple_sep_realize(DeviceState* dev, Error** errp)
                           qdev_get_gpio_in_named(DEVICE(s->mailbox), APPLE_A7IOP_SEP_GPIO_TIMER1, 0));
 }
 
-static void map_sepfw(AppleSEPState* s)
-{
-    DPRINTF("%s: entered function\n", __func__);
-    AddressSpace* nsas = &address_space_memory;
-    // Apparently needed because of a bug occurring on XNU
-    // clear lowest 0x4000 bytes as well, because they shouldn't contain any
-    // valid data
-    address_space_set(nsas, 0x0, 0, SEPFW_MAPPING_SIZE, MEMTXATTRS_UNSPECIFIED);
-#ifdef SEP_ENABLE_HARDCODED_FIRMWARE
-    address_space_rw(nsas, 0x4000ULL, MEMTXATTRS_UNSPECIFIED, (uint8_t*)s->fw_data, s->sep_fw_size, true);
-#endif
-}
-
 static void apple_sep_send_message(AppleSEPState* s, uint8_t ep, uint8_t tag, uint8_t op, uint8_t param, uint32_t data)
 {
     AppleA7IOP*        a7iop = &s->parent_obj;
@@ -679,7 +666,6 @@ static void apple_sep_reset_hold(Object* obj, ResetType type)
 
     // apple_ssc_reset is being called, but not here.
     run_on_cpu(CPU(s->cpu), apple_sep_cpu_reset_work, RUN_ON_CPU_HOST_PTR(s));
-    map_sepfw(s);
 
     // iBoot would send those requests. iOS warns about the
     // responses, because it doesn't expect them.

@@ -470,9 +470,6 @@ static void t8030_memory_setup(AppleT8030MachineState* t8030)
         seprom_range = ck_patcher_range_from_ptr("seprom", seprom, fsize);
         ck_sep_seprom_patches(seprom_range);
 
-        // Apparently needed because of a bug occurring on XNU
-        address_space_set(&address_space_memory, 0x300000000ULL, 0, 0x8000000ULL, MEMTXATTRS_UNSPECIFIED);
-        address_space_set(&address_space_memory, 0x340000000ULL, 0, SEP_DMA_MAPPING_SIZE, MEMTXATTRS_UNSPECIFIED);
         address_space_rw(&address_space_memory, SEPROM_BASE, MEMTXATTRS_UNSPECIFIED, (uint8_t*)seprom, fsize, true);
 
         g_free(seprom);
